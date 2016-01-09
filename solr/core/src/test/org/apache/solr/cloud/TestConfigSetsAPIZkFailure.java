@@ -107,7 +107,7 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
     setupBaseConfigSet(BASE_CONFIGSET_NAME, oldProps);
 
     SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, 45000, null);
+        AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
     try {
       ZkConfigManager configManager = new ZkConfigManager(zkClient);
       assertFalse(configManager.configExists(CONFIGSET_NAME));

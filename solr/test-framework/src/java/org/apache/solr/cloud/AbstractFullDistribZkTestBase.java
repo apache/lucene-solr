@@ -1323,7 +1323,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     // do some really inefficient mapping...
     Map<String,Slice> slices = null;
     ClusterState clusterState;
-    try (ZkStateReader zk = new ZkStateReader(zkServer.getZkAddress(), 10000,
+    try (ZkStateReader zk = new ZkStateReader(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT,
         AbstractZkTestCase.TIMEOUT)) {
       zk.createClusterStateWatchersAndUpdate();
       clusterState = zk.getClusterState();
