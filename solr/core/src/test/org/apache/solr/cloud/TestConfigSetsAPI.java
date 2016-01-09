@@ -149,7 +149,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     setupBaseConfigSet(baseConfigSetName, oldProps);
 
     SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, 45000, null);
+        AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
     try {
       ZkConfigManager configManager = new ZkConfigManager(zkClient);
       assertFalse(configManager.configExists(configSetName));
@@ -282,7 +282,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     solrCluster.uploadConfigDir(configDir, configSet);
 
     SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, 45000, null);
+        AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
     try {
       ZkConfigManager configManager = new ZkConfigManager(zkClient);
       assertTrue(configManager.configExists(configSet));
@@ -305,7 +305,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
         new HttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
 
     SolrZkClient zkClient = new SolrZkClient(solrCluster.getZkServer().getZkAddress(),
-        AbstractZkTestCase.TIMEOUT, 45000, null);
+        AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
     try {
       // test empty
       List list = new List();
