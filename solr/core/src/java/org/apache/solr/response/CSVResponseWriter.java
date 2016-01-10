@@ -17,27 +17,38 @@
 
 package org.apache.solr.response;
 
-import org.apache.solr.internal.csv.CSVPrinter;
-import org.apache.solr.internal.csv.CSVStrategy;
+import java.io.CharArrayWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DateUtil;
-import org.apache.solr.util.FastWriter;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.internal.csv.CSVPrinter;
+import org.apache.solr.internal.csv.CSVStrategy;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.util.FastWriter;
 
-import java.io.CharArrayWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.*;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 
 /**
  *
@@ -249,12 +260,11 @@ class CSVWriter extends TextResponseWriter {
         }
       } else {
         // get the list of fields from the index
-        Collection<String> all = req.getSearcher().getFieldNames();
-        if(fields==null) {
-          fields = all;
-        }
-        else {
-          fields.addAll(all);
+        Iterable<String> all = req.getSearcher().getFieldNames();
+        if (fields == null) {
+          fields = Sets.newHashSet(all);
+        } else {
+          Iterables.addAll(fields, all);
         }
       }
       if (returnFields.wantsScore()) {

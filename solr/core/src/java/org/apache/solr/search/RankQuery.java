@@ -30,7 +30,7 @@ import java.io.IOException;
 
 public abstract class RankQuery extends ExtendedQueryBase {
 
-  public abstract TopDocsCollector getTopDocsCollector(int len, SolrIndexSearcher.QueryCommand cmd, IndexSearcher searcher) throws IOException;
+  public abstract TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException;
   public abstract MergeStrategy getMergeStrategy();
   public abstract RankQuery wrap(Query mainQuery);
 

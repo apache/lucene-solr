@@ -81,7 +81,9 @@ import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.Grouping;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -365,12 +367,12 @@ public class QueryComponent extends SearchComponent
                               CursorMarkParams.CURSOR_MARK_PARAM + " and " + CommonParams.TIME_ALLOWED);
     }
 
-    SolrIndexSearcher.QueryCommand cmd = rb.getQueryCommand();
+    QueryCommand cmd = rb.getQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
 
     req.getContext().put(SolrIndexSearcher.STATS_SOURCE, statsCache.get(req));
     
-    SolrIndexSearcher.QueryResult result = new SolrIndexSearcher.QueryResult();
+    QueryResult result = new QueryResult();
 
     //
     // grouping / field collapsing

@@ -24,18 +24,16 @@ import java.util.Map;
 
 /**
  * Primary API for dealing with Solr's internal caches.
- * 
- *
  */
 public interface SolrCache<K,V> extends SolrInfoMBean {
 
   /**
-   * The initialization routine.  Instance specific arguments are passed in
+   * The initialization routine. Instance specific arguments are passed in
    * the <code>args</code> map.
    * <p>
    * The persistence object will exist across different lifetimes of similar caches.
    * For example, all filter caches will share the same persistence object, sometimes
-   * at the same time (it must be threadsafe).  If null is passed, then the cache
+   * at the same time (it must be thread-safe).  If null is passed, then the cache
    * implementation should create and return a new persistence object.  If not null,
    * the passed in object should be returned again.
    * <p>
@@ -48,7 +46,7 @@ public interface SolrCache<K,V> extends SolrInfoMBean {
    * object may be of any type desired by the cache implementation.
    * <p>
    * The {@link CacheRegenerator} is what the cache uses during auto-warming to
-   * renenerate an item in the new cache from an entry in the old cache.
+   * regenerate an item in the new cache from an entry in the old cache.
    *
    */
   public Object init(Map args, Object persistence, CacheRegenerator regenerator);

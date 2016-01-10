@@ -24,8 +24,8 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QueryCommand;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SolrIndexSearcher.QueryCommand;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 
 /**

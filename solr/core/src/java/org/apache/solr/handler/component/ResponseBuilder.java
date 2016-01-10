@@ -32,7 +32,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.QueryCommand;
+import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.RankQuery;
 import org.apache.solr.search.grouping.GroupingSpecification;
@@ -419,8 +420,8 @@ public class ResponseBuilder
    * Creates a SolrIndexSearcher.QueryCommand from this
    * ResponseBuilder.  TimeAllowed is left unset.
    */
-  public SolrIndexSearcher.QueryCommand getQueryCommand() {
-    SolrIndexSearcher.QueryCommand cmd = new SolrIndexSearcher.QueryCommand();
+  public QueryCommand getQueryCommand() {
+    QueryCommand cmd = new QueryCommand();
     cmd.setQuery(wrap(getQuery()))
             .setFilterList(getFilters())
             .setSort(getSortSpec().getSort())
@@ -444,7 +445,7 @@ public class ResponseBuilder
   /**
    * Sets results from a SolrIndexSearcher.QueryResult.
    */
-  public void setResult(SolrIndexSearcher.QueryResult result) {
+  public void setResult(QueryResult result) {
     setResults(result.getDocListAndSet());
     if (result.isPartialResults()) {
       rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);

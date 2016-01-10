@@ -74,6 +74,9 @@ Upgrading from Solr 5.x
   then please ensure that the solrconfig.xml explicitly uses the ClassicIndexSchemaFactory :
   <schemaFactory class="ClassicIndexSchemaFactory"/> or your luceneMatchVersion in the solrconfig.xml is less than 6.0
 
+* SolrIndexSearcher.QueryCommand and QueryResult were moved to their own classes. If you reference them
+  in your code, you should import them under o.a.s.search (or use your IDE's "Organize Imports").
+
 Detailed Change List
 ----------------------
 

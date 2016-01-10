@@ -138,7 +138,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
       return null;
     }
 
-    public TopDocsCollector getTopDocsCollector(int len, SolrIndexSearcher.QueryCommand cmd, IndexSearcher searcher) throws IOException {
+    public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) throws IOException {
 
       if(this.boostedPriority == null) {
         SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
@@ -234,7 +234,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
                            int length,
                            Query reRankQuery,
                            double reRankWeight,
-                           SolrIndexSearcher.QueryCommand cmd,
+                           QueryCommand cmd,
                            IndexSearcher searcher,
                            Map<BytesRef, Integer> boostedPriority) throws IOException {
       super(null);

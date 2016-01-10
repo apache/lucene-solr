@@ -90,7 +90,7 @@ public class ExportQParserPlugin extends QParserPlugin {
     }
 
     public TopDocsCollector getTopDocsCollector(int len,
-                                                SolrIndexSearcher.QueryCommand cmd,
+                                                QueryCommand cmd,
                                                 IndexSearcher searcher) throws IOException {
       int leafCount = searcher.getTopReaderContext().leaves().size();
       FixedBitSet[] sets = new FixedBitSet[leafCount];

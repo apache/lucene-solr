@@ -83,8 +83,8 @@ public class Grouping {
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final SolrIndexSearcher searcher;
-  private final SolrIndexSearcher.QueryResult qr;
-  private final SolrIndexSearcher.QueryCommand cmd;
+  private final QueryResult qr;
+  private final QueryCommand cmd;
   private final List<Command> commands = new ArrayList<>();
   private final boolean main;
   private final boolean cacheSecondPassSearch;
@@ -124,8 +124,8 @@ public class Grouping {
    *                                 the cache is not used in the second pass search.
    */
   public Grouping(SolrIndexSearcher searcher,
-                  SolrIndexSearcher.QueryResult qr,
-                  SolrIndexSearcher.QueryCommand cmd,
+                  QueryResult qr,
+                  QueryCommand cmd,
                   boolean cacheSecondPassSearch,
                   int maxDocsPercentageToCache,
                   boolean main) {

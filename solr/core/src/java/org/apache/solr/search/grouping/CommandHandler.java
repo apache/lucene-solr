@@ -41,6 +41,8 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetCollector;
+import org.apache.solr.search.QueryCommand;
+import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrIndexSearcher.ProcessedFilter;
@@ -58,14 +60,14 @@ public class CommandHandler {
 
   public static class Builder {
 
-    private SolrIndexSearcher.QueryCommand queryCommand;
+    private QueryCommand queryCommand;
     private List<Command> commands = new ArrayList<>();
     private SolrIndexSearcher searcher;
     private boolean needDocSet = false;
     private boolean truncateGroups = false;
     private boolean includeHitCount = false;
 
-    public Builder setQueryCommand(SolrIndexSearcher.QueryCommand queryCommand) {
+    public Builder setQueryCommand(QueryCommand queryCommand) {
       this.queryCommand = queryCommand;
       this.needDocSet = (queryCommand.getFlags() & SolrIndexSearcher.GET_DOCSET) != 0;
       return this;
@@ -83,7 +85,7 @@ public class CommandHandler {
 
     /**
      * Sets whether to compute a {@link DocSet}.
-     * May override the value set by {@link #setQueryCommand(org.apache.solr.search.SolrIndexSearcher.QueryCommand)}.
+     * May override the value set by {@link #setQueryCommand(org.apache.solr.search.QueryCommand)}.
      *
      * @param needDocSet Whether to compute a {@link DocSet}
      * @return this
@@ -115,7 +117,7 @@ public class CommandHandler {
 
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final SolrIndexSearcher.QueryCommand queryCommand;
+  private final QueryCommand queryCommand;
   private final List<Command> commands;
   private final SolrIndexSearcher searcher;
   private final boolean needDocset;
@@ -126,7 +128,7 @@ public class CommandHandler {
 
   private DocSet docSet;
 
-  private CommandHandler(SolrIndexSearcher.QueryCommand queryCommand,
+  private CommandHandler(QueryCommand queryCommand,
                          List<Command> commands,
                          SolrIndexSearcher searcher,
                          boolean needDocset,
@@ -172,7 +174,7 @@ public class CommandHandler {
     final AbstractAllGroupHeadsCollector allGroupHeadsCollector;
     if (fieldType.getNumericType() != null) {
       ValueSource vs = fieldType.getValueSource(sf, null);
-      allGroupHeadsCollector = new FunctionAllGroupHeadsCollector(vs, new HashMap<Object,Object>(), firstCommand.getSortWithinGroup());
+      allGroupHeadsCollector = new FunctionAllGroupHeadsCollector(vs, new HashMap(), firstCommand.getSortWithinGroup());
     } else {
       allGroupHeadsCollector = TermAllGroupHeadsCollector.create(firstCommand.getKey(), firstCommand.getSortWithinGroup());
     }
@@ -188,7 +190,6 @@ public class CommandHandler {
 
   private DocSet computeDocSet(Query query, ProcessedFilter filter, List<Collector> collectors) throws IOException {
     int maxDoc = searcher.maxDoc();
-    final Collector collector;
     final DocSetCollector docSetCollector = new DocSetCollector(maxDoc);
     List<Collector> allCollectors = new ArrayList<>(collectors);
     allCollectors.add(docSetCollector);
@@ -197,7 +198,7 @@ public class CommandHandler {
   }
 
   @SuppressWarnings("unchecked")
-  public NamedList processResult(SolrIndexSearcher.QueryResult queryResult, ShardResultTransformer transformer) throws IOException {
+  public NamedList processResult(QueryResult queryResult, ShardResultTransformer transformer) throws IOException {
     if (docSet != null) {
       queryResult.setDocSet(docSet);
     }

@@ -20,6 +20,8 @@ package org.apache.solr.util;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryCommand;
+import org.apache.solr.search.QueryResult;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.DocList;
@@ -70,8 +72,8 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     RefCounted<SolrIndexSearcher> holder = h.getCore().getSearcher();
     try {
       SolrIndexSearcher srchr = holder.get();
-      SolrIndexSearcher.QueryResult qr = new SolrIndexSearcher.QueryResult();
-      SolrIndexSearcher.QueryCommand cmd = new SolrIndexSearcher.QueryCommand();
+      QueryResult qr = new QueryResult();
+      QueryCommand cmd = new QueryCommand();
       cmd.setQuery(new MatchAllDocsQuery());
       cmd.setLen(10);
       qr = srchr.search(qr, cmd);

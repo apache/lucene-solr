@@ -107,7 +107,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
 
     sanityCheckAssertNumerics();
 
-    waitForThingsToLevelOut(30000); // TODO: why whould we have to wait?
+    waitForThingsToLevelOut(30000); // TODO: why would we have to wait?
     // 
     handle.clear();
     handle.put("QTime", SKIPVAL);
@@ -349,7 +349,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   /**
    * Compare top level stats in response with stats from pivot constraint
    */
-  private void assertPivotStats(String message, PivotField constraint, QueryResponse response) throws SolrServerException {
+  private void assertPivotStats(String message, PivotField constraint, QueryResponse response) {
 
     if (null == constraint.getFieldStatsInfo()) {
       // no stats for this pivot, nothing to check
@@ -678,8 +678,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
   /**
    * Asserts the number of docs found in the response
    */
-  private void assertNumFound(String msg, int expected, QueryResponse response) 
-    throws SolrServerException {
+  private void assertNumFound(String msg, int expected, QueryResponse response) {
 
     countNumFoundChecks++;
 

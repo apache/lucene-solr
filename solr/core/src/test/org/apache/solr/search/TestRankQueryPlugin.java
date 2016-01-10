@@ -133,7 +133,7 @@ public class TestRankQueryPlugin extends QParserPlugin {
       this.mergeStrategy = mergeStrategy;
     }
 
-    public TopDocsCollector getTopDocsCollector(int len, SolrIndexSearcher.QueryCommand cmd, IndexSearcher searcher) {
+    public TopDocsCollector getTopDocsCollector(int len, QueryCommand cmd, IndexSearcher searcher) {
       if(collector == 0)
         return new TestCollector(null);
       else
