@@ -786,7 +786,7 @@ def verifyUnpacked(project, artifact, unpackPath, svnRevision, version, testArgs
 
   if project == 'lucene' and isSrc:
     print('  confirm all releases have coverage in TestBackwardsCompatibility/3x')
-    confirmAllReleasesAreTestedForBackCompat(unpackPath)
+    confirmAllReleasesAreTestedForBackCompat(version, unpackPath)
     
 def testNotice(unpackPath):
   solrNotice = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
@@ -1330,7 +1330,7 @@ def getAllLuceneReleases():
   l.sort()
   return l
 
-def confirmAllReleasesAreTestedForBackCompat(unpackPath):
+def confirmAllReleasesAreTestedForBackCompat(smokeVersion, unpackPath):
 
   print('    find all past Lucene releases...')
   allReleases = getAllLuceneReleases()
@@ -1395,12 +1395,14 @@ def confirmAllReleasesAreTestedForBackCompat(unpackPath):
   notTested = []
   for x in allReleases:
     if x not in testedIndices:
-      version = '.'.join(str(y) for y in x)
-      if version in ('1.4.3', '1.9.1', '2.3.1', '2.3.2'):
+      releaseVersion = '.'.join(str(y) for y in x)
+      if releaseVersion in ('1.4.3', '1.9.1', '2.3.1', '2.3.2'):
         # Exempt the dark ages indices
         continue
-      if version.startswith('5.'):
-        # 4.10.x only!: exempt the future indices
+      if x >= tuple(int(y) for y in smokeVersion.split('.')):
+        # Exempt versions not less than the one being smoke tested
+        print('      Backcompat testing not required for release %s because it\'s not less than %s'
+              % (releaseVersion, smokeVersion))
         continue
       notTested.append(x)
 
