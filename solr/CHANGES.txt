@@ -44,6 +44,9 @@ Upgrading from Solr 5.4
 * All protected methods from CoreAdminHandler other than handleCustomAction() is removed by SOLR-8476 and can
   no more be overridden. If you still wish to override those methods, override the handleRequestBody()
 
+* The PERSIST CoreAdmin action which was a NOOP and returned a deprecated message has been removed. See SOLR-8476
+  for more details. The corresponding SolrJ action has also been removed.
+
 * bin/post now defaults application/json files to the /update/json/docs end-point.  Use `-format solr` to force
   files to the /update end-point.   See SOLR-7042 for more details.
 
@@ -238,7 +241,7 @@ Other Changes
 * SOLR-8455: RecovertStrategy logging improvements and sleep-between-recovery-attempts bug fix.
   (Shai Erera)
 
-* SOLR-8476: Refactor and cleanup CoreAdminHandler (noble)
+* SOLR-8476: Refactor and cleanup CoreAdminHandler (noble, Varun THacker)
 
 * SOLR-8481: TestSearchPerf no longer needs to duplicate SolrIndexSearcher.(NO_CHECK_QCACHE|NO_CHECK_FILTERCACHE)
   (Christine Poerschke)

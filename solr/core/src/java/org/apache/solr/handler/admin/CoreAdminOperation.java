@@ -81,7 +81,6 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.FORC
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.INVOKE;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.MERGEINDEXES;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.OVERSEEROP;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.PERSIST;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.PREPRECOVERY;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REJOINLEADERELECTION;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.RELOAD;
@@ -95,7 +94,16 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.SPLI
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.SWAP;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.UNLOAD;
-import static org.apache.solr.handler.admin.CoreAdminHandler.*;
+import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
+import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
+import static org.apache.solr.handler.admin.CoreAdminHandler.FAILED;
+import static org.apache.solr.handler.admin.CoreAdminHandler.Invocable;
+import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE;
+import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_MESSAGE;
+import static org.apache.solr.handler.admin.CoreAdminHandler.RESPONSE_STATUS;
+import static org.apache.solr.handler.admin.CoreAdminHandler.RUNNING;
+import static org.apache.solr.handler.admin.CoreAdminHandler.buildCoreParams;
+import static org.apache.solr.handler.admin.CoreAdminHandler.normalizePath;
 
 enum CoreAdminOperation {
   CREATE_OP(CREATE) {
@@ -148,13 +156,6 @@ enum CoreAdminOperation {
       } catch (Exception ex) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error handling 'reload' action", ex);
       }
-    }
-  },
-
-  PERSIST_OP(PERSIST) {
-    @Override
-    public void call(CallInfo callInfo) {
-      callInfo.rsp.add("message", "The PERSIST action has been deprecated");
     }
   },
   STATUS_OP(STATUS) {
