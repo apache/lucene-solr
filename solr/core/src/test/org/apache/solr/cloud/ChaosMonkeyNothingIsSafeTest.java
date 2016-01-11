@@ -30,8 +30,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.core.Diagnostics;
-import org.apache.solr.update.SolrCmdDistributor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -60,23 +58,13 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   public static void beforeSuperClass() {
     schemaString = "schema15.xml";      // we need a string id
     System.setProperty("solr.autoCommit.maxTime", "15000");
-    SolrCmdDistributor.testing_errorHook = new Diagnostics.Callable() {
-      @Override
-      public void call(Object... data) {
-        Exception e = (Exception) data[0];
-        if (e == null) return;
-        String msg = e.getMessage();
-        if (msg != null && msg.contains("Timeout")) {
-          Diagnostics.logThreadDumps("REQUESTING THREAD DUMP DUE TO TIMEOUT: " + e.getMessage());
-        }
-      }
-    };
+    setErrorHook();
   }
   
   @AfterClass
   public static void afterSuperClass() {
     System.clearProperty("solr.autoCommit.maxTime");
-    SolrCmdDistributor.testing_errorHook = null;
+    clearErrorHook();
   }
   
   protected static final String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};

@@ -71,9 +71,11 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
@@ -191,6 +193,24 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       return true;
     }
 
+  }
+
+  protected static void setErrorHook() {
+    SolrCmdDistributor.testing_errorHook = new Diagnostics.Callable() {
+      @Override
+      public void call(Object... data) {
+        Exception e = (Exception) data[0];
+        if (e == null) return;
+        String msg = e.getMessage();
+        if (msg != null && msg.contains("Timeout")) {
+          Diagnostics.logThreadDumps("REQUESTING THREAD DUMP DUE TO TIMEOUT: " + e.getMessage());
+        }
+      }
+    };
+  }
+
+  protected static void clearErrorHook() {
+    SolrCmdDistributor.testing_errorHook = null;
   }
 
   @Override
