@@ -146,6 +146,9 @@ Bug Fixes
 
 * SOLR-8494: SimplePostTool and therefore the bin/post script cannot upload files larger than 2.1GB. (shalin)
 
+* SOLR-8533: Raise default maxUpdateConnections and maxUpdateConnectionsPerHost to 100k each.
+  (Mark Miller)
+
 Other Changes
 ----------------------
 

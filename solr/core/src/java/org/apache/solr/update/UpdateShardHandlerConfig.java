@@ -21,8 +21,8 @@ public class UpdateShardHandlerConfig {
 
   public static final int DEFAULT_DISTRIBUPDATECONNTIMEOUT = 60000;
   public static final int DEFAULT_DISTRIBUPDATESOTIMEOUT = 600000;
-  public static final int DEFAULT_MAXUPDATECONNECTIONS = 10000;
-  public static final int DEFAULT_MAXUPDATECONNECTIONSPERHOST = 100;
+  public static final int DEFAULT_MAXUPDATECONNECTIONS = 100000;
+  public static final int DEFAULT_MAXUPDATECONNECTIONSPERHOST = 100000;
 
   public static final UpdateShardHandlerConfig DEFAULT
       = new UpdateShardHandlerConfig(DEFAULT_MAXUPDATECONNECTIONS, DEFAULT_MAXUPDATECONNECTIONSPERHOST,
