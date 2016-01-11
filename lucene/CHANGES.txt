@@ -8,6 +8,9 @@ http://s.apache.org/luceneversions
 
 Bug Fixes
 
+* LUCENE-6918: LRUQueryCache.onDocIdSetEviction is only called when at least
+  one DocIdSet is being evicted. (Adrien Grand)
+
 * LUCENE-6946: SortField.equals now takes the missingValue parameter into
   account. (Adrien Grand)
 
