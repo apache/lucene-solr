@@ -51,7 +51,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
 
   /**
    * @param queryScorer QueryScorer that was used to score hits
-   * @param fragmentSize size in bytes of each fragment
+   * @param fragmentSize size in chars of each fragment
    */
   public SimpleSpanFragmenter(QueryScorer queryScorer, int fragmentSize) {
     this.fragmentSize = fragmentSize;
@@ -65,7 +65,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
   public boolean isNewFragment() {
     position += posIncAtt.getPositionIncrement();
 
-    if (waitForPos == position) {
+    if (waitForPos <= position) {
       waitForPos = -1;
     } else if (waitForPos != -1) {
       return false;
@@ -76,9 +76,9 @@ public class SimpleSpanFragmenter implements Fragmenter {
     if (wSpanTerm != null) {
       List<PositionSpan> positionSpans = wSpanTerm.getPositionSpans();
 
-      for (int i = 0; i < positionSpans.size(); i++) {
-        if (positionSpans.get(i).start == position) {
-          waitForPos = positionSpans.get(i).end + 1;
+      for (PositionSpan positionSpan : positionSpans) {
+        if (positionSpan.start == position) {
+          waitForPos = positionSpan.end + 1;
           break;
         }
       }
