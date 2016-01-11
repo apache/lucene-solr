@@ -102,19 +102,13 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
           logField = uniqueKeyField.getName();
         }
       }
-      String optionalFieldInfo = logField == null ? "."
-          : new StringBuilder(". ")
-              .append(logField)
-              .append("=")
-              .append(
-                  (String) cmd.getSolrInputDocument().getField(logField)
-                      .getValue()).append(", ").toString();
+      String optionalFieldInfo = logField == null ? "." : ". " + logField + "=" + cmd.getSolrInputDocument().
+          getField(logField).getValue() + ", ";
       int len;
       String debugString;
       if (text != null && text.length() > 0) {
         len = Math.min(text.length(), 100);
-        debugString = new StringBuilder(" text=\"")
-            .append(text.substring(0, len)).append("...\"").toString();
+        debugString = " text=\"" + text.substring(0, len) + "...\"";
       } else {
         debugString = " null text";
       }
@@ -124,9 +118,8 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
             new StringBuilder().append(e.getLocalizedMessage())
                 .append(optionalFieldInfo).append(debugString));
       } else {
-        throw new SolrException(ErrorCode.SERVER_ERROR, new StringBuilder(
-            "processing error ").append(e.getLocalizedMessage())
-            .append(optionalFieldInfo).append(debugString).toString(), e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "processing error " + e.getLocalizedMessage() +
+            optionalFieldInfo + debugString, e);
       }
     }
     super.processAdd(cmd);
@@ -142,16 +135,27 @@ public class UIMAUpdateRequestProcessor extends UpdateRequestProcessor {
     if (merge) {
       StringBuilder unifiedText = new StringBuilder("");
       for (String aFieldsToAnalyze : fieldsToAnalyze) {
-        unifiedText.append(String.valueOf(solrInputDocument
-            .getFieldValue(aFieldsToAnalyze)));
+        if (solrInputDocument.getFieldValues(aFieldsToAnalyze) != null) {
+          Object[] Values = solrInputDocument.getFieldValues(aFieldsToAnalyze).toArray();
+          for (Object Value : Values) {
+            if (unifiedText.length() > 0) {
+              unifiedText.append(' ');
+            }
+            unifiedText.append(Value.toString());
+          }
+        }
       }
       textVals = new String[1];
       textVals[0] = unifiedText.toString();
     } else {
       textVals = new String[fieldsToAnalyze.length];
       for (int i = 0; i < fieldsToAnalyze.length; i++) {
-        textVals[i] = String.valueOf(solrInputDocument
-            .getFieldValue(fieldsToAnalyze[i]));
+        if (solrInputDocument.getFieldValues(fieldsToAnalyze[i]) != null) {
+          Object[] Values = solrInputDocument.getFieldValues(fieldsToAnalyze[i]).toArray();
+          for (Object Value : Values) {
+            textVals[i] += Value.toString();
+          }
+        }
       }
     }
     return textVals;
