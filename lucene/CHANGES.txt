@@ -245,6 +245,9 @@ Bug Fixes
 * SOLR-7865: BlendedInfixSuggester was returning too many results
   (Arcadius Ahouansou via Mike McCandless)
 
+* LUCENE-6970: Fixed off-by-one error in Lucene54DocValuesProducer that could
+  potentially corrupt doc values. (Adrien Grand)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features

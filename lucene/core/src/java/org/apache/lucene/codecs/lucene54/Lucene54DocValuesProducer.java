@@ -356,7 +356,7 @@ final class Lucene54DocValuesProducer extends DocValuesProducer implements Close
         break;
       case MONOTONIC_COMPRESSED:
         final int blockShift = meta.readVInt();
-        entry.monotonicMeta = DirectMonotonicReader.loadMeta(meta, maxDoc, blockShift);
+        entry.monotonicMeta = DirectMonotonicReader.loadMeta(meta, maxDoc + 1, blockShift);
         ramBytesUsed.addAndGet(entry.monotonicMeta.ramBytesUsed());
         directAddressesMeta.put(info.name, entry.monotonicMeta);
         break;

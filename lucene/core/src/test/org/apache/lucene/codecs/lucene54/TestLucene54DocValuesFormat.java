@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -47,11 +48,13 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
@@ -63,8 +66,12 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.RAMFile;
+import org.apache.lucene.store.RAMInputStream;
+import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LongValues;
 import org.apache.lucene.util.TestUtil;
 
@@ -505,4 +512,99 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
 
+  @Slow
+  public void testSortedSetAroundBlockSize() throws IOException {
+    final int frontier = 1 << Lucene54DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
+    for (int maxDoc = frontier - 1; maxDoc <= frontier + 1; ++maxDoc) {
+      final Directory dir = newDirectory();
+      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
+      RAMFile buffer = new RAMFile();
+      RAMOutputStream out = new RAMOutputStream(buffer, false);
+      Document doc = new Document();
+      SortedSetDocValuesField field1 = new SortedSetDocValuesField("sset", new BytesRef());
+      doc.add(field1);
+      SortedSetDocValuesField field2 = new SortedSetDocValuesField("sset", new BytesRef());
+      doc.add(field2);
+      for (int i = 0; i < maxDoc; ++i) {
+        BytesRef s1 = new BytesRef(TestUtil.randomSimpleString(random(), 2));
+        BytesRef s2 = new BytesRef(TestUtil.randomSimpleString(random(), 2));
+        field1.setBytesValue(s1);
+        field2.setBytesValue(s2);
+        w.addDocument(doc);
+        Set<BytesRef> set = new TreeSet<>(Arrays.asList(s1, s2));
+        out.writeVInt(set.size());
+        for (BytesRef ref : set) {
+          out.writeVInt(ref.length);
+          out.writeBytes(ref.bytes, ref.offset, ref.length);
+        }
+      }
+      out.close();
+      w.forceMerge(1);
+      DirectoryReader r = DirectoryReader.open(w, false);
+      w.close();
+      SegmentReader sr = getOnlySegmentReader(r);
+      assertEquals(maxDoc, sr.maxDoc());
+      SortedSetDocValues values = sr.getSortedSetDocValues("sset");
+      assertNotNull(values);
+      RAMInputStream in = new RAMInputStream("", buffer);
+      BytesRefBuilder b = new BytesRefBuilder();
+      for (int i = 0; i < maxDoc; ++i) {
+        values.setDocument(i);
+        final int numValues = in.readVInt();
+
+        for (int j = 0; j < numValues; ++j) {
+          b.setLength(in.readVInt());
+          b.grow(b.length());
+          in.readBytes(b.bytes(), 0, b.length());
+          assertEquals(b.get(), values.lookupOrd(values.nextOrd()));
+        }
+
+        assertEquals(SortedSetDocValues.NO_MORE_ORDS, values.nextOrd());
+      }
+      r.close();
+      dir.close();
+    }
+  }
+
+  @Slow
+  public void testSortedNumericAroundBlockSize() throws IOException {
+    final int frontier = 1 << Lucene54DocValuesFormat.DIRECT_MONOTONIC_BLOCK_SHIFT;
+    for (int maxDoc = frontier - 1; maxDoc <= frontier + 1; ++maxDoc) {
+      final Directory dir = newDirectory();
+      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(newLogMergePolicy()));
+      RAMFile buffer = new RAMFile();
+      RAMOutputStream out = new RAMOutputStream(buffer, false);
+      Document doc = new Document();
+      SortedNumericDocValuesField field1 = new SortedNumericDocValuesField("snum", 0L);
+      doc.add(field1);
+      SortedNumericDocValuesField field2 = new SortedNumericDocValuesField("snum", 0L);
+      doc.add(field2);
+      for (int i = 0; i < maxDoc; ++i) {
+        long s1 = random().nextInt(100);
+        long s2 = random().nextInt(100);
+        field1.setLongValue(s1);
+        field2.setLongValue(s2);
+        w.addDocument(doc);
+        out.writeVLong(Math.min(s1, s2));
+        out.writeVLong(Math.max(s1, s2));
+      }
+      out.close();
+      w.forceMerge(1);
+      DirectoryReader r = DirectoryReader.open(w, false);
+      w.close();
+      SegmentReader sr = getOnlySegmentReader(r);
+      assertEquals(maxDoc, sr.maxDoc());
+      SortedNumericDocValues values = sr.getSortedNumericDocValues("snum");
+      assertNotNull(values);
+      RAMInputStream in = new RAMInputStream("", buffer);
+      for (int i = 0; i < maxDoc; ++i) {
+        values.setDocument(i);
+        assertEquals(2, values.count());
+        assertEquals(in.readVLong(), values.valueAt(0));
+        assertEquals(in.readVLong(), values.valueAt(1));
+      }
+      r.close();
+      dir.close();
+    }
+  }
 }
