@@ -186,9 +186,6 @@ Bug Fixes
 * SOLR-7865: BlendedInfixSuggester was returning too many results
   (Arcadius Ahouansou via Mike McCandless)
 
-* LUCENE-6946: SortField.equals now takes the missingValue parameter into
-  account. (Adrien Grand)
-
 * LUCENE-6950: Fix FieldInfos handling of UninvertingReader, e.g. do not
   hide the true docvalues update generation or other properties. 
   (Ishan Chattopadhyaya via Robert Muir)
@@ -240,6 +237,13 @@ Other
 * LUCENE-6964: String-based signatures in JavascriptCompiler replaced
   with better compile-time-checked MethodType; generated class files
   are no longer marked as synthetic.  (Uwe Schindler)
+
+======================= Lucene 5.4.1 =======================
+
+Bug Fixes
+
+* LUCENE-6946: SortField.equals now takes the missingValue parameter into
+  account. (Adrien Grand)
 
 ======================= Lucene 5.4.0 =======================
 
