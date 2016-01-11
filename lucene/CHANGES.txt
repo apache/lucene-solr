@@ -25,6 +25,10 @@ Bug Fixes
   (https://scan.coverity.com/projects/5620 CID 119973 and CID 120081)
   (Christine Poerschke, Coverity Scan (via Rishabh Patel))
 
+* LUCENE-6950: Fix FieldInfos handling of UninvertingReader, e.g. do not
+  hide the true docvalues update generation or other properties. 
+  (Ishan Chattopadhyaya via Robert Muir)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
