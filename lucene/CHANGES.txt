@@ -11,6 +11,9 @@ Bug Fixes
 * LUCENE-6946: SortField.equals now takes the missingValue parameter into
   account. (Adrien Grand)
 
+* SOLR-7865: BlendedInfixSuggester was returning too many results
+  (Arcadius Ahouansou via Mike McCandless)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
