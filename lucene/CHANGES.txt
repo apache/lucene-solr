@@ -177,9 +177,6 @@ Bug Fixes
   (https://scan.coverity.com/projects/5620 CID 119973 and CID 120081)
   (Christine Poerschke, Coverity Scan (via Rishabh Patel))
 
-* LUCENE-6929: Fix SpanNotQuery rewriting to not drop the pre/post parameters.
-  (Tim Allison via Adrien Grand)
-
 * SOLR-7865: BlendedInfixSuggester was returning too many results
   (Arcadius Ahouansou via Mike McCandless)
 
@@ -244,6 +241,9 @@ Bug Fixes
 
 * LUCENE-6918: LRUQueryCache.onDocIdSetEviction is only called when at least
   one DocIdSet is being evicted. (Adrien Grand)
+
+* LUCENE-6929: Fix SpanNotQuery rewriting to not drop the pre/post parameters.
+  (Tim Allison via Adrien Grand)
 
 ======================= Lucene 5.4.0 =======================
 
