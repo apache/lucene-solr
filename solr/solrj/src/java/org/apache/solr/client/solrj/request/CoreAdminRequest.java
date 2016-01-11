@@ -322,34 +322,6 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     }
   }
   
-    //a persist core request
-  public static class Persist extends CoreAdminRequest {
-    protected String fileName = null;
-    
-    public Persist() {
-      action = CoreAdminAction.PERSIST;
-    }
-    
-    public void setFileName(String name) {
-      fileName = name;
-    }
-    public String getFileName() {
-      return fileName;
-    }
-    @Override
-    public SolrParams getParams() {
-      if( action == null ) {
-        throw new RuntimeException( "no action specified!" );
-      }
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set( CoreAdminParams.ACTION, action.toString() );
-      if (fileName != null) {
-        params.set( CoreAdminParams.FILE, fileName);
-      }
-      return params;
-    }
-  }
-  
   public static class OverrideLastPublished extends CoreAdminRequest {
     protected String state;
 
