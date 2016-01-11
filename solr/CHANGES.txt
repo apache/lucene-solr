@@ -353,7 +353,10 @@ Bug Fixes
   HttpSolrCall#remoteQuery should not close streams. (Mark Miller)
 
 * SOLR-8450: Our HttpClient retry policy is too permissive. (Mark Miller, shalin)
-  
+
+* SOLR-8533: Raise default maxUpdateConnections and maxUpdateConnectionsPerHost to 100k each.
+  (Mark Miller)
+
 Other Changes
 ----------------------
 
