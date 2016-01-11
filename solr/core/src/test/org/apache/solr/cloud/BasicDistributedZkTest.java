@@ -365,40 +365,10 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     testUpdateProcessorsRunOnlyOnce("distrib-dup-test-chain-implicit");
 
     testStopAndStartCoresInOneInstance();
-    testFailedCoreCreateCleansUp();
     // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
     }
-  }
-  
-  private void testFailedCoreCreateCleansUp() throws Exception {
-    Create createCmd = new Create();
-    createCmd.setCoreName("core1");
-    createCmd.setCollection("the_core_collection");
-    String coredataDir = createTempDir().toFile().getAbsolutePath();
-    createCmd.setDataDir(coredataDir);
-    createCmd.setNumShards(1);
-    createCmd.setSchemaName("nonexistent_schema.xml");
-    
-    String url = getBaseUrl(clients.get(0));
-    try (final HttpSolrClient client = new HttpSolrClient(url)) {
-      client.request(createCmd);
-      fail("Expected SolrCore create to fail");
-    } catch (Exception e) {
-      
-    }
-
-    TimeOut timeout = new TimeOut(15, TimeUnit.SECONDS);
-    while (cloudClient.getZkStateReader().getZkClient().exists("/collections/the_core_collection", true)) {
-      if (timeout.hasTimedOut()) {
-        fail(cloudClient.getZkStateReader().getZkClient().getChildren("/collections", null, true).toString() + " Collection zk node still exists");
-      }
-      Thread.sleep(100);
-    }
-    
-    
-    assertFalse("Collection zk node still exists", cloudClient.getZkStateReader().getZkClient().exists("/collections/the_core_collection", true));
   }
   
   private void testShardParamVariations() throws Exception {

@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
@@ -84,11 +85,12 @@ public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTes
               .getClusterState().getCollection(collectionName);
       Replica replica = testcoll.getSlice("a").getReplicas().iterator().next();
 
-      removeAndWaitForLastReplicaGone(client, collectionName, replica, "a");
+      removeAndWaitForReplicaGone(client, collectionName, replica, "a", replicationFactor-1);
     }
   }
 
-  protected void removeAndWaitForLastReplicaGone(CloudSolrClient client, String COLL_NAME, Replica replica, String shard)
+  protected void removeAndWaitForReplicaGone(CloudSolrClient client, String COLL_NAME, Replica replica, String shard,
+      final int expectedNumReplicasRemaining)
       throws SolrServerException, IOException, InterruptedException {
     Map m = makeMap("collection", COLL_NAME, "action", DELETEREPLICA.toLower(), "shard",
         shard, "replica", replica.getName());
@@ -102,9 +104,11 @@ public class DeleteLastCustomShardedReplicaTest extends AbstractFullDistribZkTes
     while (! timeout.hasTimedOut()) {
       testcoll = getCommonCloudSolrClient().getZkStateReader()
           .getClusterState().getCollection(COLL_NAME);
-      // In case of a custom sharded collection, the last replica deletion would also lead to
+      // As of SOLR-5209 the last replica deletion no longer leads to
       // the deletion of the slice.
-      success = testcoll.getSlice(shard) == null;
+      final Slice slice = testcoll.getSlice(shard);
+      final int actualNumReplicasRemaining = (slice == null ? 0 : slice.getReplicas().size());
+      success = (actualNumReplicasRemaining == expectedNumReplicasRemaining);
       if (success) {
         log.info("replica cleaned up {}/{} core {}",
             shard + "/" + replica.getName(), replica.getStr("core"));

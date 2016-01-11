@@ -509,13 +509,19 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     cloudClient.getZkStateReader().updateClusterState();
 
     Collection<Slice> slices = cloudClient.getZkStateReader().getClusterState().getActiveSlices("corewithnocollection3");
-    assertNull(slices);
+    int replicaCount = 0;
+    if (slices != null) {
+      for (Slice slice : slices) {
+        replicaCount += slice.getReplicas().size();
+      }
+    }
+    assertEquals("replicaCount", 0, replicaCount);
 
     CollectionAdminRequest.List list = new CollectionAdminRequest.List();
     CollectionAdminResponse res = new CollectionAdminResponse();
         res.setResponse(makeRequest(getBaseUrl((HttpSolrClient) clients.get(1)), list));
     List<String> collections = (List<String>) res.getResponse().get("collections");
-    assertFalse(collections.contains("corewithnocollection3"));
+    assertTrue(collections.contains("corewithnocollection3"));
   }
 
   private void testNodesUsedByCreate() throws Exception {

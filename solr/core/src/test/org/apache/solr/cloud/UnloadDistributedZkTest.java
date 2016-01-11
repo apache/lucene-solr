@@ -149,28 +149,19 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       unloadCmd.setCoreName(unloadCmdCoreName1);
       adminClient.request(unloadCmd);
 
-      // there should be only one shard
-      checkCoreNamePresenceAndSliceCount(collection, unloadCmdCoreName1, false /* shouldBePresent */, numShards-1 /* expectedSliceCount */);
+      // there should still be two shards (as of SOLR-5209)
+      checkCoreNamePresenceAndSliceCount(collection, unloadCmdCoreName1, false /* shouldBePresent */, numShards /* expectedSliceCount */);
 
       // now unload one of the other
       unloadCmd = new Unload(false);
       unloadCmd.setCoreName(unloadCmdCoreName2);
       adminClient.request(unloadCmd);
-      checkCoreNamePresenceAndSliceCount(collection, unloadCmdCoreName2, false /* shouldBePresent */, numShards-2 /* expectedSliceCount */);
+      checkCoreNamePresenceAndSliceCount(collection, unloadCmdCoreName2, false /* shouldBePresent */, numShards /* expectedSliceCount */);
     }
 
     //printLayout();
-    // the collection should be gone
-    final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
-    while (getCommonCloudSolrClient().getZkStateReader().getClusterState().hasCollection(collection)) {
-      if (timeout.hasTimedOut()) {
-        printLayout();
-        fail("Still found collection");
-      }
-      
-      Thread.sleep(50);
-    }
-    
+    // the collection should still be present (as of SOLR-5209 replica removal does not cascade to remove the slice and collection)
+    assertTrue("No longer found collection "+collection, getCommonCloudSolrClient().getZkStateReader().getClusterState().hasCollection(collection));
   }
 
   /**

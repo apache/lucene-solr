@@ -92,45 +92,18 @@ public class SliceMutator {
     }
 
     Map<String, Slice> newSlices = new LinkedHashMap<>();
-    boolean lastSlice = false;
 
     for (Slice slice : coll.getSlices()) {
       Replica replica = slice.getReplica(cnn);
       if (replica != null) {
         Map<String, Replica> newReplicas = slice.getReplicasCopy();
         newReplicas.remove(cnn);
-        // TODO TODO TODO!!! if there are no replicas left for the slice, and the slice has no hash range, remove it
-        // if (newReplicas.size() == 0 && slice.getRange() == null) {
-        // if there are no replicas left for the slice remove it
-        if (newReplicas.size() == 0) {
-          slice = null;
-          lastSlice = true;
-        } else {
-          slice = new Slice(slice.getName(), newReplicas, slice.getProperties());
-        }
+        slice = new Slice(slice.getName(), newReplicas, slice.getProperties());
       }
-
-      if (slice != null) {
-        newSlices.put(slice.getName(), slice);
-      }
+      newSlices.put(slice.getName(), slice);
     }
 
-    if (lastSlice) {
-      // remove all empty pre allocated slices
-      for (Slice slice : coll.getSlices()) {
-        if (slice.getReplicas().size() == 0) {
-          newSlices.remove(slice.getName());
-        }
-      }
-    }
-
-    // if there are no slices left in the collection, remove it?
-    if (newSlices.size() == 0) {
-      return new ClusterStateMutator(zkStateReader).deleteCollection(clusterState,
-          new ZkNodeProps(Utils.makeMap(NAME, collection)));
-    } else {
-      return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices));
-    }
+    return new ZkWriteCommand(collection, coll.copyWithSlices(newSlices));
   }
 
   public ZkWriteCommand setShardLeader(ClusterState clusterState, ZkNodeProps message) {
