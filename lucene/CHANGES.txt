@@ -172,11 +172,6 @@ Optimizations
 
 Bug Fixes
 
-* LUCENE-6910: fix 'if ... > Integer.MAX_VALUE' check in
-  (Binary|Numeric)DocValuesFieldUpdates.merge
-  (https://scan.coverity.com/projects/5620 CID 119973 and CID 120081)
-  (Christine Poerschke, Coverity Scan (via Rishabh Patel))
-
 * SOLR-7865: BlendedInfixSuggester was returning too many results
   (Arcadius Ahouansou via Mike McCandless)
 
@@ -235,6 +230,11 @@ Other
 ======================= Lucene 5.4.1 =======================
 
 Bug Fixes
+
+* LUCENE-6910: fix 'if ... > Integer.MAX_VALUE' check in
+  (Binary|Numeric)DocValuesFieldUpdates.merge
+  (https://scan.coverity.com/projects/5620 CID 119973 and CID 120081)
+  (Christine Poerschke, Coverity Scan (via Rishabh Patel))
 
 * LUCENE-6946: SortField.equals now takes the missingValue parameter into
   account. (Adrien Grand)
