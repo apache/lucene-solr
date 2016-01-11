@@ -33,6 +33,9 @@ Bug Fixes
   by removing an unnecessary long-to-int cast.
   (Michael Lawley via Christine Poerschke)
 
+* LUCENE-6970: Fixed off-by-one error in Lucene54DocValuesProducer that could
+  potentially corrupt doc values. (Adrien Grand)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
