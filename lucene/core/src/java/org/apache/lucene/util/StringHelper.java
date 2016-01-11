@@ -71,14 +71,6 @@ public abstract class StringHelper {
   private StringHelper() {
   }
 
-  public static boolean equals(String s1, String s2) {
-    if (s1 == null) {
-      return s2 == null;
-    } else {
-      return s1.equals(s2);
-    }
-  }
-
   /**
    * Returns <code>true</code> iff the ref starts with the given prefix.
    * Otherwise <code>false</code>.

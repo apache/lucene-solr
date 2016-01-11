@@ -4,6 +4,13 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 
+======================= Lucene 5.4.1 =======================
+
+Bug Fixes
+
+* LUCENE-6946: SortField.equals now takes the missingValue parameter into
+  account. (Adrien Grand)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
