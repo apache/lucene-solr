@@ -179,10 +179,6 @@ Bug Fixes
   stop words following a span can unduly make the fragment way too long.
   (Elmer Garduno, Lukhnos Liu via David Smiley)
 
-* LUCENE-6948: Fix ArrayIndexOutOfBoundsException in PagedBytes$Reader.fill
-  by removing an unnecessary long-to-int cast.
-  (Michael Lawley via Christine Poerschke)
-
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)
@@ -244,6 +240,10 @@ Bug Fixes
 * LUCENE-6950: Fix FieldInfos handling of UninvertingReader, e.g. do not
   hide the true docvalues update generation or other properties.
   (Ishan Chattopadhyaya via Robert Muir)
+
+* LUCENE-6948: Fix ArrayIndexOutOfBoundsException in PagedBytes$Reader.fill
+  by removing an unnecessary long-to-int cast.
+  (Michael Lawley via Christine Poerschke)
 
 ======================= Lucene 5.4.0 =======================
 
