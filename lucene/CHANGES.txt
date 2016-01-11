@@ -170,12 +170,6 @@ Optimizations
 * LUCENE-6940: MUST_NOT clauses execute faster, especially when they are sparse.
   (Adrien Grand)
 
-Bug Fixes
-
-* LUCENE-2229: Fix Highlighter's SimpleSpanFragmenter when multiple adjacent
-  stop words following a span can unduly make the fragment way too long.
-  (Elmer Garduno, Lukhnos Liu via David Smiley)
-
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)
@@ -247,6 +241,10 @@ Bug Fixes
 
 * LUCENE-6970: Fixed off-by-one error in Lucene54DocValuesProducer that could
   potentially corrupt doc values. (Adrien Grand)
+
+* LUCENE-2229: Fix Highlighter's SimpleSpanFragmenter when multiple adjacent
+  stop words following a span can unduly make the fragment way too long.
+  (Elmer Garduno, Lukhnos Liu via David Smiley)
 
 ======================= Lucene 5.4.0 =======================
 
