@@ -87,6 +87,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   boolean shutdownExecutor = false;
   int pollQueueTime = 250;
   private final boolean streamDeletes;
+  private boolean internalHttpClient;
 
   /**
    * Uses an internally managed HttpClient instance.
@@ -102,6 +103,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                                     int threadCount) {
     this(solrServerUrl, null, queueSize, threadCount);
     shutdownExecutor = true;
+    internalHttpClient = true;
   }
   
   public ConcurrentUpdateSolrClient(String solrServerUrl,
@@ -476,7 +478,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   @Override
   @Deprecated
   public void shutdown() {
-    client.shutdown();
+    if (internalHttpClient) IOUtils.closeQuietly(client);
     if (shutdownExecutor) {
       scheduler.shutdown();
       try {
@@ -505,7 +507,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   }
 
   public void shutdownNow() {
-    client.shutdown();
+    if (internalHttpClient) IOUtils.closeQuietly(client);
     if (shutdownExecutor) {
       scheduler.shutdownNow(); // Cancel currently executing tasks
       try {
