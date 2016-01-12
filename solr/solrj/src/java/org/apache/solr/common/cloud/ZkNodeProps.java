@@ -140,4 +140,9 @@ public class ZkNodeProps implements JSONWriter.Writable {
     if(o==null) return b;
     return Boolean.parseBoolean(o.toString());
   }
+
+  @Override
+  public boolean equals(Object that) {
+    return that instanceof ZkNodeProps && ((ZkNodeProps)that).propMap.equals(this.propMap);
+  }
 }
