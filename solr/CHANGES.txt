@@ -473,6 +473,8 @@ Bug Fixes
 * SOLR-8050: Partial update on document with multivalued date field fails to parse date and can
   also fail to remove dates in some cases. (Burkhard Buelte, Luc Vanlerberghe, shalin)
 
+* SOLR-8167: Authorization framework does not work with POST params (noble)
+
 ==================  5.3.1 ==================
 
 Bug Fixes
