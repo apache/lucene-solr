@@ -1294,6 +1294,44 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getLong("field_i") == 1);
 
 
+      //reverse the sort
+      params = new HashMap();
+      params.put(CommonParams.QT, "/sql");
+      params.put("numWorkers", "2");
+      params.put("stmt", "select distinct str_s as myString, field_i from collection1 order by myString desc, field_i desc");
+
+      solrStream = new SolrStream(jetty.url, params);
+      tuples = getTuples(solrStream);
+
+      assert(tuples.size() == 6);
+
+      tuple = tuples.get(0);
+      assert(tuple.get("myString").equals("c"));
+      assert(tuple.getLong("field_i") == 60);
+
+      tuple = tuples.get(1);
+      assert(tuple.get("myString").equals("c"));
+      assert(tuple.getLong("field_i") == 50);
+
+
+      tuple = tuples.get(2);
+      assert(tuple.get("myString").equals("c"));
+      assert(tuple.getLong("field_i") == 30);
+
+      tuple = tuples.get(3);
+      assert(tuple.get("myString").equals("b"));
+      assert(tuple.getLong("field_i") == 2);
+
+
+      tuple = tuples.get(4);
+      assert(tuple.get("myString").equals("a"));
+      assert(tuple.getLong("field_i") == 20);
+
+      tuple = tuples.get(5);
+      assert(tuple.get("myString").equals("a"));
+      assert(tuple.getLong("field_i") == 1);
+
+
       //test with limit
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
@@ -1626,6 +1664,35 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("avg(field_i)") == 13.5D);
 
 
+
+      params = new HashMap();
+      params.put(CommonParams.QT, "/sql");
+      params.put("numWorkers", "2");
+      params.put("stmt", "select str_s, count(*), sum(field_i) as sum, min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s order by sum asc limit 2");
+
+      solrStream = new SolrStream(jetty.url, params);
+      tuples = getTuples(solrStream);
+
+      //Only two results because of the limit.
+      assert(tuples.size() == 2);
+
+      tuple = tuples.get(0);
+      assert(tuple.get("str_s").equals("b"));
+      assert(tuple.getDouble("count(*)") == 2);
+      assert(tuple.getDouble("sum") == 19);
+      assert(tuple.getDouble("min(field_i)") == 8);
+      assert(tuple.getDouble("max(field_i)") == 11);
+      assert(tuple.getDouble("avg(field_i)") == 9.5D);
+
+      tuple = tuples.get(1);
+      assert(tuple.get("str_s").equals("a"));
+      assert(tuple.getDouble("count(*)") == 2);
+      assert(tuple.getDouble("sum") == 27);
+      assert(tuple.getDouble("min(field_i)") == 7);
+      assert(tuple.getDouble("max(field_i)") == 20);
+      assert(tuple.getDouble("avg(field_i)") == 13.5D);
+
+
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
@@ -1662,6 +1729,45 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("min(field_i)") == 7);
       assert(tuple.getDouble("max(field_i)") == 20);
       assert(tuple.getDouble("avg(field_i)") == 13.5D);
+
+
+      params = new HashMap();
+      params.put(CommonParams.QT, "/sql");
+      params.put("numWorkers", "2");
+      params.put("stmt", "select str_s as myString, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by myString order by myString desc");
+
+      solrStream = new SolrStream(jetty.url, params);
+      tuples = getTuples(solrStream);
+
+      //The sort by and order by match and no limit is applied. All the Tuples should be returned in
+      //this scenario.
+
+      assert(tuples.size() == 3);
+
+      tuple = tuples.get(0);
+      assert(tuple.get("myString").equals("c"));
+      assert(tuple.getDouble("count(*)") == 4);
+      assert(tuple.getDouble("sum(field_i)") == 180);
+      assert(tuple.getDouble("min(field_i)") == 30);
+      assert(tuple.getDouble("max(field_i)") == 60);
+      assert(tuple.getDouble("avg(field_i)") == 45);
+
+      tuple = tuples.get(1);
+      assert(tuple.get("myString").equals("b"));
+      assert(tuple.getDouble("count(*)") == 2);
+      assert(tuple.getDouble("sum(field_i)") == 19);
+      assert(tuple.getDouble("min(field_i)") == 8);
+      assert(tuple.getDouble("max(field_i)") == 11);
+      assert(tuple.getDouble("avg(field_i)") == 9.5D);
+
+      tuple = tuples.get(2);
+      assert(tuple.get("myString").equals("a"));
+      assert(tuple.getDouble("count(*)") == 2);
+      assert(tuple.getDouble("sum(field_i)") == 27);
+      assert(tuple.getDouble("min(field_i)") == 7);
+      assert(tuple.getDouble("max(field_i)") == 20);
+      assert(tuple.getDouble("avg(field_i)") == 13.5D);
+
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
