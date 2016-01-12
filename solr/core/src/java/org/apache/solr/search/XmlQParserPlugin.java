@@ -18,7 +18,7 @@ package org.apache.solr.search;
  */
 
 import java.io.ByteArrayInputStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.queryparser.xml.ParserException;
@@ -35,8 +35,6 @@ public class XmlQParserPlugin extends QParserPlugin {
 
   private class XmlQParser extends QParser {
 
-    private final String contentEncoding = "UTF8";
-
     public XmlQParser(String qstr, SolrParams localParams,
         SolrParams params, SolrQueryRequest req) {
       super(qstr, localParams, params, req);
@@ -52,9 +50,7 @@ public class XmlQParserPlugin extends QParserPlugin {
       final Analyzer analyzer = schema.getQueryAnalyzer();
       final SolrCoreParser solrParser = new SolrCoreParser(defaultField, analyzer, req);
       try {
-        return solrParser.parse(new ByteArrayInputStream(qstr.getBytes(contentEncoding)));
-      } catch (UnsupportedEncodingException e) {
-        throw new SyntaxError(e.getMessage() + " in " + req.toString());
+        return solrParser.parse(new ByteArrayInputStream(qstr.getBytes(StandardCharsets.UTF_8)));
       } catch (ParserException e) {
         throw new SyntaxError(e.getMessage() + " in " + req.toString());
       }

@@ -305,7 +305,7 @@ New Features
                </BooleanQuery>
              </Clause>
            </BooleanQuery>
-  (Erik Hatcher, Karl Wettin, Daniel Collins, Nathan Visagan, Christine Poerschke)
+  (Erik Hatcher, Karl Wettin, Daniel Collins, Nathan Visagan, Ahmet Arslan, Christine Poerschke)
 
 Bug Fixes
 ----------------------
