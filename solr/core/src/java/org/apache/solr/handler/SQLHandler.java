@@ -149,6 +149,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       SQLVisitor sqlVistor = new SQLVisitor(new StringBuilder());
 
       sqlVistor.process(statement, new Integer(0));
+      sqlVistor.reverseAliases();
 
       TupleStream sqlStream = null;
 
@@ -234,13 +235,13 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     // Once we make this a Expressionable the problem will be solved.
 
     if(sqlVisitor.havingExpression != null) {
-      tupleStream = new HavingStream(tupleStream, sqlVisitor.havingExpression);
+      tupleStream = new HavingStream(tupleStream, sqlVisitor.havingExpression, sqlVisitor.reverseColumnAliases );
     }
 
     if(sqlVisitor.sorts != null && sqlVisitor.sorts.size() > 0) {
-      if(!sortsEqual(buckets, sortDirection, sqlVisitor.sorts)) {
+      if(!sortsEqual(buckets, sortDirection, sqlVisitor.sorts, sqlVisitor.reverseColumnAliases)) {
         int limit = sqlVisitor.limit == -1 ? 100 : sqlVisitor.limit;
-        StreamComparator comp = getComp(sqlVisitor.sorts);
+        StreamComparator comp = getComp(sqlVisitor.sorts, sqlVisitor.reverseColumnAliases);
         //Rank the Tuples
         //If parallel stream is used ALL the Rolled up tuples from the workers will be ranked
         //Providing a true Top or Bottom.
@@ -252,6 +253,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
           tupleStream = new LimitStream(tupleStream, sqlVisitor.limit);
         }
       }
+    }
+
+    if(sqlVisitor.hasColumnAliases) {
+      tupleStream = new SelectStream(tupleStream, sqlVisitor.columnAliases);
     }
 
     return tupleStream;
@@ -277,7 +282,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     StreamComparator comp = null;
 
     if(sqlVisitor.sorts != null && sqlVisitor.sorts.size() > 0) {
-      StreamComparator[] adjustedSorts = adjustSorts(sqlVisitor.sorts, buckets);
+      StreamComparator[] adjustedSorts = adjustSorts(sqlVisitor.sorts, buckets, sqlVisitor.reverseColumnAliases);
         // Because of the way adjustSorts works we know that each FieldComparator has a single
         // field name. For this reason we can just look at the leftFieldName
       FieldEqualitor[] fieldEqualitors = new FieldEqualitor[adjustedSorts.length];
@@ -364,18 +369,22 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       tupleStream = new LimitStream(tupleStream, sqlVisitor.limit);
     }
 
+    if(sqlVisitor.hasColumnAliases) {
+      tupleStream = new SelectStream(tupleStream, sqlVisitor.columnAliases);
+    }
+
     return tupleStream;
   }
 
-  private static StreamComparator[] adjustSorts(List<SortItem> sorts, Bucket[] buckets) throws IOException {
+  private static StreamComparator[] adjustSorts(List<SortItem> sorts, Bucket[] buckets, Map<String, String> reverseColumnAliases) throws IOException {
     List<FieldComparator> adjustedSorts = new ArrayList();
     Set<String> bucketFields = new HashSet();
     Set<String> sortFields = new HashSet();
 
     for(SortItem sortItem : sorts) {
 
-      sortFields.add(getSortField(sortItem));
-      adjustedSorts.add(new FieldComparator(getSortField(sortItem),
+      sortFields.add(getSortField(sortItem, reverseColumnAliases));
+      adjustedSorts.add(new FieldComparator(getSortField(sortItem, reverseColumnAliases),
                                             ascDescComp(sortItem.getOrdering().toString())));
     }
 
@@ -384,7 +393,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     }
 
     for(SortItem sortItem : sorts) {
-      String sortField = getSortField(sortItem);
+      String sortField = getSortField(sortItem, reverseColumnAliases);
       if(!bucketFields.contains(sortField)) {
         throw new IOException("All sort fields must be in the field list.");
       }
@@ -431,7 +440,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         sorts[i] = new FieldComparator("index", ComparatorOrder.ASCENDING);
       }
     } else {
-      StreamComparator[] comps = adjustSorts(sqlVisitor.sorts, buckets);
+      StreamComparator[] comps = adjustSorts(sqlVisitor.sorts, buckets, sqlVisitor.reverseColumnAliases);
       sorts = new FieldComparator[comps.length];
       for(int i=0; i<comps.length; i++) {
         sorts[i] = (FieldComparator)comps[i];
@@ -450,7 +459,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       tupleStream = new LimitStream(tupleStream, sqlVisitor.limit);
     }
 
-    return new SelectStream(tupleStream, sqlVisitor.fields);
+    return new SelectStream(tupleStream, sqlVisitor.columnAliases);
   }
 
   private static TupleStream doGroupByWithAggregatesFacets(SQLVisitor sqlVisitor) throws IOException {
@@ -480,7 +489,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         sorts[i] = new FieldComparator("index", ComparatorOrder.ASCENDING);
       }
     } else {
-      sorts = getComps(sqlVisitor.sorts);
+      sorts = getComps(sqlVisitor.sorts, sqlVisitor.reverseColumnAliases);
     }
 
     TupleStream tupleStream = new FacetStream(zkHost,
@@ -492,12 +501,16 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
                                               limit);
 
     if(sqlVisitor.havingExpression != null) {
-      tupleStream = new HavingStream(tupleStream, sqlVisitor.havingExpression);
+      tupleStream = new HavingStream(tupleStream, sqlVisitor.havingExpression, sqlVisitor.reverseColumnAliases);
     }
 
     if(sqlVisitor.limit > 0)
     {
       tupleStream = new LimitStream(tupleStream, sqlVisitor.limit);
+    }
+
+    if(sqlVisitor.hasColumnAliases) {
+      tupleStream = new SelectStream(tupleStream, sqlVisitor.columnAliases);
     }
 
     return tupleStream;
@@ -559,7 +572,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         if (comma) {
           siBuf.append(",");
         }
-        siBuf.append(getSortField(sortItem) + " " + ascDesc(sortItem.getOrdering().toString()));
+        siBuf.append(getSortField(sortItem, sqlVisitor.reverseColumnAliases) + " " + ascDesc(sortItem.getOrdering().toString()));
       }
     } else {
       if(sqlVisitor.limit < 0) {
@@ -585,17 +598,25 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       params.put("sort", siBuf.toString());
     }
 
+    TupleStream tupleStream = null;
+
     if(sqlVisitor.limit > -1) {
       params.put("rows", Integer.toString(sqlVisitor.limit));
-      return new LimitStream(new CloudSolrStream(zkHost, collection, params), sqlVisitor.limit);
+      tupleStream = new LimitStream(new CloudSolrStream(zkHost, collection, params), sqlVisitor.limit);
     } else {
       //Only use the export handler when no limit is specified.
       params.put(CommonParams.QT, "/export");
-      return new CloudSolrStream(zkHost, collection, params);
+      tupleStream = new CloudSolrStream(zkHost, collection, params);
+    }
+
+    if(sqlVisitor.hasColumnAliases) {
+      return new SelectStream(tupleStream, sqlVisitor.columnAliases);
+    } else {
+      return tupleStream;
     }
   }
 
-  private static boolean sortsEqual(Bucket[] buckets, String direction, List<SortItem> sortItems) {
+  private static boolean sortsEqual(Bucket[] buckets, String direction, List<SortItem> sortItems, Map<String, String> reverseColumnAliases) {
     if(buckets.length != sortItems.size()) {
       return false;
     }
@@ -603,7 +624,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     for(int i=0; i< buckets.length; i++) {
       Bucket bucket = buckets[i];
       SortItem sortItem = sortItems.get(i);
-      if(!bucket.toString().equals(getSortField(sortItem))) {
+      if(!bucket.toString().equals(getSortField(sortItem, reverseColumnAliases))) {
         return false;
       }
 
@@ -634,6 +655,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
                                               collection,
                                               params,
                                               metrics);
+
+    if(sqlVisitor.hasColumnAliases) {
+      tupleStream = new SelectStream(tupleStream, sqlVisitor.columnAliases);
+    }
 
     return tupleStream;
   }
@@ -690,13 +715,13 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     }
   }
 
-  private static StreamComparator getComp(List<SortItem> sortItems) {
+  private static StreamComparator getComp(List<SortItem> sortItems, Map<String, String> reverseColumnAliases) {
     FieldComparator[] comps = new FieldComparator[sortItems.size()];
     for(int i=0; i<sortItems.size(); i++) {
       SortItem sortItem = sortItems.get(i);
       String ordering = sortItem.getOrdering().toString();
       ComparatorOrder comparatorOrder = ascDescComp(ordering);
-      String sortKey = getSortField(sortItem);
+      String sortKey = getSortField(sortItem, reverseColumnAliases);
       comps[i] = new FieldComparator(sortKey, comparatorOrder);
     }
 
@@ -707,13 +732,13 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     }
   }
 
-  private static FieldComparator[] getComps(List<SortItem> sortItems) {
+  private static FieldComparator[] getComps(List<SortItem> sortItems, Map<String, String> reverseColumnAliases) {
     FieldComparator[] comps = new FieldComparator[sortItems.size()];
     for(int i=0; i<sortItems.size(); i++) {
       SortItem sortItem = sortItems.get(i);
       String ordering = sortItem.getOrdering().toString();
       ComparatorOrder comparatorOrder = ascDescComp(ordering);
-      String sortKey = getSortField(sortItem);
+      String sortKey = getSortField(sortItem, reverseColumnAliases);
       comps[i] = new FieldComparator(sortKey, comparatorOrder);
     }
 
@@ -884,6 +909,9 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     public boolean groupByQuery;
     public Expression havingExpression;
     public boolean isDistinct;
+    public boolean hasColumnAliases;
+    public Map<String, String> columnAliases = new HashMap();
+    public Map<String, String> reverseColumnAliases = new HashMap();
 
     public SQLVisitor(StringBuilder builder) {
       this.builder = builder;
@@ -892,6 +920,28 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     protected Void visitNode(Node node, Integer indent) {
       throw new UnsupportedOperationException("not yet implemented: " + node);
     }
+
+    protected void reverseAliases() {
+      for(String key : columnAliases.keySet()) {
+        reverseColumnAliases.put(columnAliases.get(key), key);
+      }
+
+      //Handle the group by.
+      List<String> newGroups = new ArrayList();
+
+      for(String g : groupBy) {
+        if (reverseColumnAliases.containsKey(g)) {
+          newGroups.add(reverseColumnAliases.get(g));
+        } else {
+          newGroups.add(g);
+        }
+      }
+
+      groupBy = newGroups;
+    }
+
+
+
 
     protected Void visitUnnest(Unnest node, Integer indent) {
       return null;
@@ -966,8 +1016,6 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       return null;
     }
 
-
-
     protected Void visitComparisonExpression(ComparisonExpression node, Integer index) {
       String field = node.getLeft().toString();
       String value = node.getRight().toString();
@@ -1029,6 +1077,11 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       fields.add(field);
 
       if(node.getAlias().isPresent()) {
+        String alias = node.getAlias().get();
+        columnAliases.put(field, alias);
+        hasColumnAliases = true;
+      } else {
+        columnAliases.put(field, field);
       }
 
       return null;
@@ -1078,7 +1131,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     }
   }
 
-  private static String getSortField(SortItem sortItem)
+  private static String getSortField(SortItem sortItem, Map<String, String> reverseColumnAliases)
   {
     String field;
     Expression ex = sortItem.getSortKey();
@@ -1103,6 +1156,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     } else {
       StringLiteral stringLiteral = (StringLiteral)ex;
       field = stripSingleQuotes(stringLiteral.toString());
+    }
+
+    if(reverseColumnAliases.containsKey(field)) {
+      field = reverseColumnAliases.get(field);
     }
 
     return field;
@@ -1238,9 +1295,9 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     private HavingVisitor havingVisitor;
     private Expression havingExpression;
 
-    public HavingStream(TupleStream stream, Expression havingExpression) {
+    public HavingStream(TupleStream stream, Expression havingExpression, Map<String, String> reverseAliasMap) {
       this.stream = stream;
-      this.havingVisitor = new HavingVisitor();
+      this.havingVisitor = new HavingVisitor(reverseAliasMap);
       this.havingExpression = havingExpression;
     }
 
@@ -1282,6 +1339,12 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
   private static class HavingVisitor extends AstVisitor<Boolean, Tuple> {
 
+    private Map<String,String> reverseAliasMap;
+
+    public HavingVisitor(Map<String, String> reverseAliasMap) {
+      this.reverseAliasMap = reverseAliasMap;
+    }
+
     protected Boolean visitLogicalBinaryExpression(LogicalBinaryExpression node, Tuple tuple) {
 
       Boolean b = process(node.getLeft(), tuple);
@@ -1304,6 +1367,11 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
     protected Boolean visitComparisonExpression(ComparisonExpression node, Tuple tuple) {
       String field = getHavingField(node.getLeft());
+
+      if(reverseAliasMap.containsKey(field)) {
+        field = reverseAliasMap.get(field);
+      }
+
       double d = Double.parseDouble(node.getRight().toString());
       double td = tuple.getDouble(field);
       ComparisonExpression.Type t = node.getType();
