@@ -78,8 +78,8 @@ public final class Version {
    * Match settings and bugs in Lucene's 5.3.2 release.
    * @deprecated Use latest
    */
-  @Deprecated
-  public static final Version LUCENE_5_3_2 = new Version(5, 3, 2);
+  //@Deprecated
+  //public static final Version LUCENE_5_3_2 = new Version(5, 3, 2);
 
   /**
    * Match settings and bugs in Lucene's 5.4.0 release.
@@ -92,8 +92,8 @@ public final class Version {
    * Match settings and bugs in Lucene's 5.4.1 release.
    * @deprecated Use latest
    */
-  @Deprecated
-  public static final Version LUCENE_5_4_1 = new Version(5, 4, 1);
+  //@Deprecated
+  //public static final Version LUCENE_5_4_1 = new Version(5, 4, 1);
 
   /**
    * Match settings and bugs in Lucene's 5.5.0 release.
