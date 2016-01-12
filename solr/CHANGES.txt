@@ -470,6 +470,8 @@ Bug Fixes
 * SOLR-8373: KerberosPlugin: Using multiple nodes on same machine leads clients to
   fetch TGT for every request (Ishan Chattopadhyaya via noble)
 
+* SOLR-8340: Fixed NullPointerException in HighlightComponent. (zengjie via Christine Poerschke)
+
 * SOLR-8050: Partial update on document with multivalued date field fails to parse date and can
   also fail to remove dates in some cases. (Burkhard Buelte, Luc Vanlerberghe, shalin)
 
