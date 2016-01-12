@@ -18,6 +18,9 @@ Bug Fixes
 * SOLR-8373: KerberosPlugin: Using multiple nodes on same machine leads clients to
   fetch TGT for every request (Ishan Chattopadhyaya via noble)
 
+* SOLR-8059: &debug=results for distributed search when distrib.singlePass (sometimes activated
+  automatically) could result in an NPE. (David Smiley, Markus Jelsma)
+
 * SOLR-8422: When authentication enabled, requests fail if sent to a node that doesn't host
   the collection (noble)
 
@@ -493,8 +496,8 @@ Bug Fixes
 
 * SOLR-8340: Fixed NullPointerException in HighlightComponent. (zengjie via Christine Poerschke)
 
-* SOLR-8050: Partial update on document with multivalued date field fails to parse date and can
-  also fail to remove dates in some cases. (Burkhard Buelte, Luc Vanlerberghe, shalin)
+* SOLR-8059: &debug=results for distributed search when distrib.singlePass (sometimes activated
+  automatically) could result in an NPE. (David Smiley, Markus Jelsma)
 
 * SOLR-8167: Authorization framework does not work with POST params (noble)
 
@@ -541,6 +544,9 @@ Bug Fixes
 
 * SOLR-8041: Fix VelocityResponseWriter's $resource.get(key,baseName,locale) to use specified locale.
   (Erik Hatcher)
+
+* SOLR-8058: Fix the exclusion filter so that collections that start with js, css, img, tpl
+  can be accessed. (Upayavira, Steve Rowe, Anshum Gupta)
 
 ==================  5.3.0 ==================
 
