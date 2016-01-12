@@ -270,6 +270,30 @@ Other Changes
 * SOLR-7042: bin/post now uses /update/json/docs for application/json content types, including support for
   .jsonl (JSON Lines) files.  (Erik Hatcher and shalin)
 
+==================  5.4.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-8460: /analysis/field could throw exceptions for custom attributes. (David Smiley, Uwe Schindler)
+
+* SOLR-8373: KerberosPlugin: Using multiple nodes on same machine leads clients to
+  fetch TGT for every request (Ishan Chattopadhyaya via noble)
+
+* SOLR-8059: &debug=results for distributed search when distrib.singlePass (sometimes activated
+  automatically) could result in an NPE. (David Smiley, Markus Jelsma)
+
+* SOLR-8422: When authentication enabled, requests fail if sent to a node that doesn't host
+  the collection (noble)
+
+* SOLR-7462: AIOOBE in RecordingJSONParser (Scott Dawson, noble)
+
+
+New Features
+----------------------
+
+* SOLR-8470: Make TTL of PKIAuthenticationPlugin's tokens configurable through a system property
+
 ==================  5.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
