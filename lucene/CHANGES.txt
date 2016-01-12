@@ -36,6 +36,10 @@ Bug Fixes
 * LUCENE-6970: Fixed off-by-one error in Lucene54DocValuesProducer that could
   potentially corrupt doc values. (Adrien Grand)
 
+* LUCENE-2229: Fix Highlighter's SimpleSpanFragmenter when multiple adjacent
+  stop words following a span can unduly make the fragment way too long.
+  (Elmer Garduno, Lukhnos Liu via David Smiley)
+
 ======================= Lucene 5.4.0 =======================
 
 New Features
