@@ -290,6 +290,23 @@ New Features
 
 * SOLR-8477: Let users choose compression mode in SchemaCodecFactory (Tomás Fernández Löbbe)
 
+* SOLR-839: XML QueryParser support (defType=xmlparser)
+  Lucene includes a queryparser that supports the creation of Lucene queries from XML.
+  The queries supported by lucene.queryparser.xml.CoreParser are now supported by the newly
+  created solr.search.SolrCoreParser and in future SolrCoreParser could support additional
+  queries also.
+  Example: <BooleanQuery fieldName="description">
+             <Clause occurs="must"> <TermQuery>shirt</TermQuery> </Clause>
+             <Clause occurs="mustnot"> <TermQuery>plain</TermQuery> </Clause>
+             <Clause occurs="should"> <TermQuery>cotton</TermQuery> </Clause>
+             <Clause occurs="must">
+               <BooleanQuery fieldName="size">
+                 <Clause occurs="should"> <TermsQuery>S M L</TermsQuery> </Clause>
+               </BooleanQuery>
+             </Clause>
+           </BooleanQuery>
+  (Erik Hatcher, Karl Wettin, Daniel Collins, Nathan Visagan, Christine Poerschke)
+
 Bug Fixes
 ----------------------
 

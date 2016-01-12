@@ -190,6 +190,14 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testMatchAllDocsQueryXmlParser() throws Exception {
+    final String type = "xmlparser";
+      assertQueryEquals(type,
+          "{!"+type+"}<MatchAllDocsQuery/>",
+          "<MatchAllDocsQuery/>",
+          "<MatchAllDocsQuery></MatchAllDocsQuery>");
+  }
+
   public void testQueryDismax() throws Exception {
     for (final String type : new String[]{"dismax","edismax"}) {
       assertQueryEquals(type, "{!"+type+"}apache solr",

@@ -31,13 +31,14 @@
 
   <target name="compile-core" depends="compile-solrj,common-solr.compile-core"/>
 
-  <target name="compile-test" depends="jar-analyzers-icu,-compile-analysis-extras,common-solr.compile-test"/>
+  <target name="compile-test" depends="jar-analyzers-icu,-compile-test-lucene-queryparser,-compile-analysis-extras,common-solr.compile-test"/>
 
   <path id="test.classpath">
     <path refid="solr.test.base.classpath"/>
     <fileset dir="${test.lib.dir}" includes="*.jar"/>
     <pathelement location="${analyzers-icu.jar}"/>
     <pathelement location="${common-solr.dir}/build/contrib/solr-analysis-extras/classes/java"/>
+    <pathelement location="${common.dir}/build/queryparser/classes/test"/>
     <fileset dir="${common-solr.dir}/contrib/analysis-extras/lib" includes="icu4j*.jar"/>
   </path>
 

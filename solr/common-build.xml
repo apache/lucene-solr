@@ -461,6 +461,12 @@
     </sequential>
   </macrodef>
 
+  <target name="-compile-test-lucene-queryparser">
+    <ant dir="${common.dir}/queryparser" target="compile-test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
   <!-- Solr contrib targets -->
   <target name="-compile-analysis-extras">
     <ant dir="${common-solr.dir}/contrib/analysis-extras" target="compile" inheritAll="false">
