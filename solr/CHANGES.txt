@@ -297,6 +297,8 @@ Other Changes
 * SOLR-7042: bin/post now uses /update/json/docs for application/json content types, including support for
   .jsonl (JSON Lines) files.  (Erik Hatcher and shalin)
 
+* SOLR-8535: Support forcing define-lucene-javadoc-url to be local (Gregory Chanan)
+
 ==================  5.4.1 ==================
 
 Bug Fixes
