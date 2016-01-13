@@ -1,0 +1,24 @@
+{
+    "type":"org.apache.solr.ltr.ranking.LambdaMARTModel",
+    "name":"lambdamartmodel_no_weight",
+    "features":[
+        { "name": "matchedTitle"},
+        { "name": "constantScoreToForceLambdaMARTScoreAllDocs"}
+    ],
+    "params":{
+        "trees": [
+            {
+                "tree": {
+                    "feature": "matchedTitle",
+                    "threshold": 0.5,
+                    "left" : {
+                        "value" : -100
+                    },
+                    "right": {
+                        "value" : 75
+                    }
+                }
+            }
+        ]
+    }
+}

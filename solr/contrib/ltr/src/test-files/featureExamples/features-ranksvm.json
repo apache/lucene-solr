@@ -1,0 +1,51 @@
+[
+  {
+     "name": "title",
+     "type": "org.apache.solr.ltr.feature.impl.ValueFeature",
+     "params": {
+         "value": 1
+     }
+  },
+  {
+    "name": "description",
+    "type": "org.apache.solr.ltr.feature.impl.ValueFeature",
+    "params": {
+       "value": 2
+    }
+  },
+  {
+    "name": "keywords",
+    "type": "org.apache.solr.ltr.feature.impl.ValueFeature",
+    "params": {
+        "value": 2
+    }
+  },
+ {
+     "name": "popularity",
+     "type": "org.apache.solr.ltr.feature.impl.ValueFeature",
+     "params": {
+         "value": 3
+     }
+ },
+ {
+     "name": "text",
+     "type": "org.apache.solr.ltr.feature.impl.ValueFeature",
+     "params": {
+         "value": 4
+     }
+ },
+ {
+   "name": "queryIntentPerson",
+   "type": "org.apache.solr.ltr.feature.impl.ValueFeature",
+   "params": {
+       "value": 5
+   }
+ },
+ {
+   "name": "queryIntentCompany",
+   "type": "org.apache.solr.ltr.feature.impl.ValueFeature",
+   "params": {
+       "value": 5
+   }
+ }
+]

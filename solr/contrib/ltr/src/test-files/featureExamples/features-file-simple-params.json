@@ -1,0 +1,12 @@
+[
+    {
+        "name": "constant",
+        "type": "org.apache.solr.ltr.feature.impl.ValueFeature",
+        "params": {
+            "value": 100,
+            "complex":{
+		"map":0.1
+            }
+        }
+    }
+]

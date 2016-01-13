@@ -1,0 +1,12 @@
+{
+    "type":"org.apache.solr.ltr.ranking.RankSVMModel",
+    "name":"externalmodel",
+    "features":[
+        { "name": "matchedTitle"}
+    ],
+    "params":{
+        "weights": {
+            "matchedTitle": 0.999
+        }
+    }
+}
