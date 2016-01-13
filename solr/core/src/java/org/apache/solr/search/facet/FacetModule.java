@@ -92,6 +92,7 @@ public class FacetModule extends SearchComponent {
       fproc.process();
       long timeElapsed = (long) timer.getTime();
       fdebug.setElapse(timeElapsed);
+      fdebug.putInfoItem("domainSize", (long)fcontext.base.size());
       rb.req.getContext().put("FacetDebugInfo", fdebug);
     } else {
       fproc.process();

@@ -393,6 +393,9 @@ class FacetFieldProcessorNumeric extends FacetFieldProcessor {
       }
     }
 
+    FacetDebugInfo fdebug = fcontext.getDebugInfo();
+    if (fdebug != null) fdebug.putInfoItem("numBuckets", new Long(numBuckets));
+
     if (freq.allBuckets) {
       SimpleOrderedMap<Object> allBuckets = new SimpleOrderedMap<>();
       // countAcc.setValues(allBuckets, allBucketsSlot);
