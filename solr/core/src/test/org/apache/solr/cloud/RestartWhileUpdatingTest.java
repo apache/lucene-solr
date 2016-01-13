@@ -74,7 +74,6 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
     System.clearProperty("leaderVoteWait");
     System.clearProperty("solr.autoCommit.maxTime");
     System.clearProperty("solr.autoSoftCommit.maxTime");
-    TestInjection.reset();
   }
 
   @Test
