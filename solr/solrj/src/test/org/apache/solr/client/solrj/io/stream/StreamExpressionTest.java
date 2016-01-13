@@ -147,6 +147,10 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     testSubFacetStream();
     testUpdateStream();
     testParallelUpdateStream();
+    testIntersectStream();
+    testParallelIntersectStream();
+    testComplementStream();
+    testParallelComplementStream();
   }
 
   private void testCloudSolrStream() throws Exception {
@@ -2174,6 +2178,155 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     destinationCollectionClient.deleteByQuery("*:*");
     destinationCollectionClient.commit();
     destinationCollectionClient.close();
+    del("*:*");
+    commit();
+  }
+  
+  private void testIntersectStream() throws Exception{
+    indexr(id, "0", "a_s", "setA", "a_i", "0");
+    indexr(id, "2", "a_s", "setA", "a_i", "1");
+    indexr(id, "3", "a_s", "setA", "a_i", "2");
+    indexr(id, "4", "a_s", "setA", "a_i", "3");
+    
+    indexr(id, "5", "a_s", "setB", "a_i", "2");
+    indexr(id, "6", "a_s", "setB", "a_i", "3");
+    
+    indexr(id, "7", "a_s", "setAB", "a_i", "0");
+    indexr(id, "8", "a_s", "setAB", "a_i", "6");
+    commit();
+    
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("intersect", IntersectStream.class);
+      
+    // basic
+    expression = StreamExpressionParser.parse("intersect("
+                                              + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\"),"
+                                              + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\"),"
+                                              + "on=\"a_i\")");
+    stream = new IntersectStream(expression, factory);
+    tuples = getTuples(stream);
+    
+    assert(tuples.size() == 5);
+    assertOrder(tuples, 0,7,3,4,8);
+    
+    del("*:*");
+    commit();
+  }
+  
+  private void testParallelIntersectStream() throws Exception {
+    indexr(id, "0", "a_s", "setA", "a_i", "0");
+    indexr(id, "2", "a_s", "setA", "a_i", "1");
+    indexr(id, "3", "a_s", "setA", "a_i", "2");
+    indexr(id, "4", "a_s", "setA", "a_i", "3");
+    
+    indexr(id, "5", "a_s", "setB", "a_i", "2");
+    indexr(id, "6", "a_s", "setB", "a_i", "3");
+    
+    indexr(id, "7", "a_s", "setAB", "a_i", "0");
+    indexr(id, "8", "a_s", "setAB", "a_i", "6");
+    commit();
+    
+    StreamFactory streamFactory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("intersect", IntersectStream.class)
+      .withFunctionName("parallel", ParallelStream.class);
+    // basic
+    
+    String zkHost = zkServer.getZkAddress();
+    final TupleStream stream = streamFactory.constructStream("parallel("
+        + "collection1, "
+        + "intersect("
+          + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\", partitionKeys=\"a_i\"),"
+          + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\"),"
+          + "on=\"a_i\"),"
+        + "workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_i asc\")");
+    final List<Tuple> tuples = getTuples(stream);
+    
+    assert(tuples.size() == 5);
+    assertOrder(tuples, 0,7,3,4,8);
+    
+    del("*:*");
+    commit();
+  }
+  
+  private void testComplementStream() throws Exception{
+    indexr(id, "0", "a_s", "setA", "a_i", "0");
+    indexr(id, "2", "a_s", "setA", "a_i", "1");
+    indexr(id, "3", "a_s", "setA", "a_i", "2");
+    indexr(id, "4", "a_s", "setA", "a_i", "3");
+    
+    indexr(id, "5", "a_s", "setB", "a_i", "2");
+    indexr(id, "6", "a_s", "setB", "a_i", "3");
+    indexr(id, "9", "a_s", "setB", "a_i", "5");
+    
+    indexr(id, "7", "a_s", "setAB", "a_i", "0");
+    indexr(id, "8", "a_s", "setAB", "a_i", "6");
+    commit();
+    
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("complement", ComplementStream.class);
+      
+    // basic
+    expression = StreamExpressionParser.parse("complement("
+                                              + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\"),"
+                                              + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\"),"
+                                              + "on=\"a_i\")");
+    stream = new ComplementStream(expression, factory);
+    tuples = getTuples(stream);
+   
+    assert(tuples.size() == 1);
+    assertOrder(tuples, 2);
+    
+    del("*:*");
+    commit();
+  }
+  
+  private void testParallelComplementStream() throws Exception {
+    indexr(id, "0", "a_s", "setA", "a_i", "0");
+    indexr(id, "2", "a_s", "setA", "a_i", "1");
+    indexr(id, "3", "a_s", "setA", "a_i", "2");
+    indexr(id, "4", "a_s", "setA", "a_i", "3");
+    
+    indexr(id, "5", "a_s", "setB", "a_i", "2");
+    indexr(id, "6", "a_s", "setB", "a_i", "3");
+    indexr(id, "9", "a_s", "setB", "a_i", "5");
+    
+    indexr(id, "7", "a_s", "setAB", "a_i", "0");
+    indexr(id, "8", "a_s", "setAB", "a_i", "6");
+    commit();
+    
+    StreamFactory streamFactory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("complement", ComplementStream.class)
+      .withFunctionName("parallel", ParallelStream.class);
+    
+    final String zkHost = zkServer.getZkAddress();
+    final TupleStream stream = streamFactory.constructStream("parallel("
+      + "collection1, "
+      + "complement("
+        + "search(collection1, q=a_s:(setA || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc, a_s asc\", partitionKeys=\"a_i\"),"
+        + "search(collection1, q=a_s:(setB || setAB), fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\"),"
+        + "on=\"a_i\"),"
+      + "workers=\"2\", zkHost=\"" + zkHost + "\", sort=\"a_i asc\")");
+    final List<Tuple> tuples = getTuples(stream);
+    
+    assert(tuples.size() == 1);
+    assertOrder(tuples, 2);
+    
     del("*:*");
     commit();
   }

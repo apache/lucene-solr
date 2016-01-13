@@ -19,16 +19,14 @@ package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.eq.Equalitor;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
+import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
@@ -46,9 +44,10 @@ public class UniqueStream extends TupleStream implements Expressible {
 
   private static final long serialVersionUID = 1;
 
-  private TupleStream stream;
-  private Equalitor<Tuple> eq;
-  private transient Tuple currentTuple;
+  private TupleStream originalStream;
+  private StreamEqualitor originalEqualitor;
+  
+  private ReducerStream reducerStream;
 
   public UniqueStream(TupleStream stream, StreamEqualitor eq) throws IOException {
     init(stream,eq);
@@ -76,8 +75,10 @@ public class UniqueStream extends TupleStream implements Expressible {
   }
   
   private void init(TupleStream stream, StreamEqualitor eq) throws IOException{
-    this.stream = stream;
-    this.eq = eq;
+    this.originalStream = stream;
+    this.originalEqualitor = eq;
+    
+    this.reducerStream = new ReducerStream(stream, eq, new DistinctOperation());
 
     if(!eq.isDerivedFrom(stream.getStreamSort())){
       throw new IOException("Invalid UniqueStream - substream comparator (sort) must be a superset of this stream's equalitor.");
@@ -90,16 +91,16 @@ public class UniqueStream extends TupleStream implements Expressible {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     
     // streams
-    if(stream instanceof Expressible){
-      expression.addParameter(((Expressible)stream).toExpression(factory));
+    if(originalStream instanceof Expressible){
+      expression.addParameter(((Expressible)originalStream).toExpression(factory));
     }
     else{
       throw new IOException("This UniqueStream contains a non-expressible TupleStream - it cannot be converted to an expression");
     }
     
     // over
-    if(eq instanceof Expressible){
-      expression.addParameter(new StreamExpressionNamedParameter("over",((Expressible)eq).toExpression(factory)));
+    if(originalEqualitor instanceof Expressible){
+      expression.addParameter(new StreamExpressionNamedParameter("over",((Expressible)originalEqualitor).toExpression(factory)));
     }
     else{
       throw new IOException("This UniqueStream contains a non-expressible equalitor - it cannot be converted to an expression");
@@ -109,52 +110,33 @@ public class UniqueStream extends TupleStream implements Expressible {
   }
     
   public void setStreamContext(StreamContext context) {
-    this.stream.setStreamContext(context);
+    this.originalStream.setStreamContext(context);
+    this.reducerStream.setStreamContext(context);
   }
 
   public List<TupleStream> children() {
     List<TupleStream> l =  new ArrayList<TupleStream>();
-    l.add(stream);
+    l.add(originalStream);
     return l;
   }
 
   public void open() throws IOException {
-    stream.open();
+    reducerStream.open();
+      // opens originalStream as well
   }
 
   public void close() throws IOException {
-    stream.close();
+    reducerStream.close();
+      // closes originalStream as well
   }
 
   public Tuple read() throws IOException {
-    Tuple tuple = stream.read();
-    if(tuple.EOF) {
-      return tuple;
-    }
-
-    if(currentTuple == null) {
-      currentTuple = tuple;
-      return tuple;
-    } else {
-      while(true) {
-        if(eq.test(currentTuple, tuple)){
-          //We have duplicate tuple so read the next tuple from the stream.
-          tuple = stream.read();
-          if(tuple.EOF) {
-            return tuple;
-          }
-        } else {
-          //We have a non duplicate
-          this.currentTuple = tuple;
-          return tuple;
-        }
-      }
-    }
+    return reducerStream.read();
   }
 
   /** Return the stream sort - ie, the order in which records are returned */
   public StreamComparator getStreamSort(){
-    return stream.getStreamSort();
+    return reducerStream.getStreamSort();
   }
   
   public int getCost() {

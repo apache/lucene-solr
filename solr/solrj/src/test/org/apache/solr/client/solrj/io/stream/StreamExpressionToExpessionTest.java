@@ -54,6 +54,8 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
                     .withFunctionName("stats", StatsStream.class)
                     .withFunctionName("facet", FacetStream.class)
                     .withFunctionName("jdbc", JDBCStream.class)
+                    .withFunctionName("intersect", IntersectStream.class)
+                    .withFunctionName("complement", ComplementStream.class)
                     .withFunctionName("count", CountMetric.class)
                     .withFunctionName("sum", SumMetric.class)
                     .withFunctionName("min", MinMetric.class)
@@ -254,6 +256,37 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     assertTrue(expressionString.contains("sort=\"ID asc\""));
   }
 
+  @Test 
+  public void testIntersectStream() throws Exception {
+    IntersectStream stream;
+    String expressionString;
+    
+    // Basic test
+    stream = new IntersectStream(StreamExpressionParser.parse("intersect("
+                              + "search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+                              + "search(collection1, q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+                              + "on=\"a_f, a_s\")"), factory);
+    expressionString = stream.toExpression(factory).toString();
+    assertTrue(expressionString.contains("q=\"id:(0 3 4)\""));
+    assertTrue(expressionString.contains("q=\"id:(1 2)\""));
+    assertTrue(expressionString.contains("on=\"a_f,a_s\""));
+  }
+
+  @Test 
+  public void testComplementStream() throws Exception {
+    ComplementStream stream;
+    String expressionString;
+    
+    // Basic test
+    stream = new ComplementStream(StreamExpressionParser.parse("complement("
+                              + "search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+                              + "search(collection1, q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+                              + "on=\"a_f, a_s\")"), factory);
+    expressionString = stream.toExpression(factory).toString();
+    assertTrue(expressionString.contains("q=\"id:(0 3 4)\""));
+    assertTrue(expressionString.contains("q=\"id:(1 2)\""));
+    assertTrue(expressionString.contains("on=\"a_f,a_s\""));
+  }
   
   @Test
   public void testCountMetric() throws Exception {

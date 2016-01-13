@@ -17,11 +17,8 @@
 
 package org.apache.solr.handler;
 
-import java.io.ByteArrayInputStream;
-import java.io.ObjectInputStream;
-import java.lang.invoke.MethodHandles;
 import java.io.IOException;
-import java.net.URLDecoder;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,14 +27,18 @@ import java.util.Map.Entry;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
+import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
+import org.apache.solr.client.solrj.io.stream.ComplementStream;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.FacetStream;
+import org.apache.solr.client.solrj.io.stream.HashJoinStream;
 import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
+import org.apache.solr.client.solrj.io.stream.IntersectStream;
 import org.apache.solr.client.solrj.io.stream.JDBCStream;
 import org.apache.solr.client.solrj.io.stream.LeftOuterJoinStream;
-import org.apache.solr.client.solrj.io.stream.HashJoinStream;
 import org.apache.solr.client.solrj.io.stream.MergeStream;
 import org.apache.solr.client.solrj.io.stream.OuterHashJoinStream;
 import org.apache.solr.client.solrj.io.stream.ParallelStream;
@@ -60,7 +61,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
@@ -120,6 +120,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("facet", FacetStream.class)
       .withFunctionName("update", UpdateStream.class)
       .withFunctionName("jdbc", JDBCStream.class)
+      .withFunctionName("intersect", IntersectStream.class)
+      .withFunctionName("complement", ComplementStream.class)
       
       // metrics
       .withFunctionName("min", MinMetric.class)
@@ -127,6 +129,13 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("avg", MeanMetric.class)
       .withFunctionName("sum", SumMetric.class)
       .withFunctionName("count", CountMetric.class)
+      
+      // tuple manipulation operations
+      .withFunctionName("replace", ReplaceOperation.class)
+      
+      // stream reduction operations
+      .withFunctionName("group", GroupOperation.class)
+      .withFunctionName("distinct", DistinctOperation.class)
       ;
     
     // This pulls all the overrides and additions from the config
