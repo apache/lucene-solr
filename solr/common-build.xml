@@ -331,9 +331,11 @@
   </macrodef>
 
   <target name="define-lucene-javadoc-url" depends="resolve-groovy" unless="lucene.javadoc.url">
+    <property name="useLocalJavadocUrl" value=""/>
     <groovy><![CDATA[
       String url, version = properties['version'];
-      if (version.contains('-SNAPSHOT')) {
+      String useLocalJavadocUrl = properties['useLocalJavadocUrl'];
+      if (version.contains('-SNAPSHOT') || Boolean.parseBoolean(useLocalJavadocUrl)) {
         url = new File(properties['common.dir'], 'build' + File.separator + 'docs').toURI().toASCIIString();
         if (!(url =~ /\/$/)) url += '/';
       } else {

@@ -508,6 +508,8 @@ Other Changes
 
 * SOLR-8476: Refactor and cleanup CoreAdminHandler (noble, Varun Thacker)
 
+* SOLR-8535: Support forcing define-lucene-javadoc-url to be local (Gregory Chanan)
+
 ==================  5.4.1 ==================
 
 Bug Fixes
