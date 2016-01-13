@@ -623,19 +623,19 @@ public class HttpSolrCall {
       exp = e;
     } finally {
       try {
-        try {
-          if (exp != null) {
+        if (exp != null) {
+          try {
             SimpleOrderedMap info = new SimpleOrderedMap();
             int code = ResponseUtils.getErrorInfo(ex, info, log);
             sendError(code, info.toString());
-          }
-        } finally {
-          if (core == null && localCore != null) {
-            localCore.close();
+          } finally {
+            consumeInput(req);
           }
         }
       } finally {
-        consumeInput(req);
+        if (core == null && localCore != null) {
+          localCore.close();
+        }
       }
     }
   }
