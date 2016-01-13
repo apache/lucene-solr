@@ -310,6 +310,10 @@ New Features
            </BooleanQuery>
   (Erik Hatcher, Karl Wettin, Daniel Collins, Nathan Visagan, Ahmet Arslan, Christine Poerschke)
 
+* SOLR-8312: Add domain size and numBuckets to facet telemetry info (facet debug info
+  for the new Facet Module).  (Michael Sun, yonik)
+
+
 Bug Fixes
 ----------------------
 

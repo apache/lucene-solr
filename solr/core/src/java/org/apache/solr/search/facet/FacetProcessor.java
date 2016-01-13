@@ -233,6 +233,7 @@ public class FacetProcessor<FacetRequestT extends FacetRequest>  {
         subProcessor.process();
         long timeElapsed = (long) timer.getTime();
         fdebug.setElapse(timeElapsed);
+        fdebug.putInfoItem("domainSize", (long)subContext.base.size());
       } else {
         subProcessor.process();
       }
