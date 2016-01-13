@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.impl;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
@@ -76,8 +77,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * A SolrClient implementation that talks directly to a Solr server via HTTP
@@ -472,16 +471,17 @@ public class HttpSolrClient extends SolrClient {
   protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor) throws SolrServerException {
     method.addHeader("User-Agent", AGENT);
     
+    HttpEntity entity = null;
     InputStream respBody = null;
     boolean shouldClose = true;
-    boolean success = false;
     try {
       // Execute the method.
       final HttpResponse response = httpClient.execute(method);
       int httpStatus = response.getStatusLine().getStatusCode();
       
       // Read the contents
-      respBody = response.getEntity().getContent();
+      entity = response.getEntity();
+      respBody = entity.getContent();
       Header ctHeader = response.getLastHeader("content-type");
       String contentType;
       if (ctHeader != null) {
@@ -517,7 +517,6 @@ public class HttpSolrClient extends SolrClient {
         rsp.add("stream", respBody);
         // Only case where stream should not be closed
         shouldClose = false;
-        success = true;
         return rsp;
       }
       
@@ -576,7 +575,6 @@ public class HttpSolrClient extends SolrClient {
         if (metadata != null) rss.setMetadata(metadata);
         throw rss;
       }
-      success = true;
       return rsp;
     } catch (ConnectException e) {
       throw new SolrServerException("Server refused connection at: "
@@ -589,15 +587,11 @@ public class HttpSolrClient extends SolrClient {
       throw new SolrServerException(
           "IOException occured when talking to server at: " + getBaseURL(), e);
     } finally {
-      if (respBody != null && shouldClose) {
+      if (shouldClose) {
         try {
-          respBody.close();
+          EntityUtils.consume(entity);
         } catch (IOException e) {
-          log.error("", e);
-        } finally {
-          if (!success) {
-            method.abort();
-          }
+          log.error("Error consuming and closing http response stream.", e);
         }
       }
     }
