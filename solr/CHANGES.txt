@@ -385,6 +385,9 @@ Bug Fixes
 * SOLR-8533: Raise default maxUpdateConnections and maxUpdateConnectionsPerHost to 100k each.
   (Mark Miller)
 
+* SOLR-8453: Solr should attempt to consume the request inputstream on errors as we cannot
+  count on the container to do it. (Mark Miller, Greg Wilkins, yonik, Joakim Erdfelt)
+
 Other Changes
 ----------------------
 

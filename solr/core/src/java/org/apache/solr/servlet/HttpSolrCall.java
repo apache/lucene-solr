@@ -1,5 +1,7 @@
 package org.apache.solr.servlet;
 
+import javax.servlet.ServletInputStream;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -621,15 +623,19 @@ public class HttpSolrCall {
       exp = e;
     } finally {
       try {
-        if (exp != null) {
-          SimpleOrderedMap info = new SimpleOrderedMap();
-          int code = ResponseUtils.getErrorInfo(ex, info, log);
-          sendError(code, info.toString());
+        try {
+          if (exp != null) {
+            SimpleOrderedMap info = new SimpleOrderedMap();
+            int code = ResponseUtils.getErrorInfo(ex, info, log);
+            sendError(code, info.toString());
+          }
+        } finally {
+          if (core == null && localCore != null) {
+            localCore.close();
+          }
         }
       } finally {
-        if (core == null && localCore != null) {
-          localCore.close();
-        }
+        consumeInput(req);
       }
     }
   }
@@ -639,6 +645,21 @@ public class HttpSolrCall {
       response.sendError(code, message);
     } catch (EOFException e) {
       log.info("Unable to write error response, client closed connection or we are shutting down", e);
+    } finally {
+      consumeInput(req);
+    }
+  }
+
+  // when we send back an error, we make sure we read
+  // the full client request so that the client does
+  // not hit a connection reset and we can reuse the 
+  // connection - see SOLR-8453
+  private void consumeInput(HttpServletRequest req) {
+    try {
+      ServletInputStream is = req.getInputStream();
+      while (!is.isFinished() && is.read() != -1) {}
+    } catch (IOException e) {
+      log.info("Could not consume full client request", e);
     }
   }
 
@@ -725,6 +746,10 @@ public class HttpSolrCall {
       //else http HEAD request, nothing to write out, waited this long just to get ContentType
     } catch (EOFException e) {
       log.info("Unable to write response, client closed connection or we are shutting down", e);
+    } finally {
+      if (solrRsp.getException() != null) {
+        consumeInput(req);
+      }
     }
   }
 
