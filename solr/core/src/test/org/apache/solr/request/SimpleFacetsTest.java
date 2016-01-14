@@ -2548,27 +2548,38 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         ,"*[count(//lst[@name='facet_ranges']/lst[@name='" + field + "']/lst[@name='before'])=0]"
         ,"*[count(//lst[@name='facet_ranges']/lst[@name='" + field + "']/lst[@name='between'])=0]"
     );
-    
-    assertQ("Test facet.range.other",
+
+    // these should have equivilent behavior (multivalued 'other' param: top level vs local)
+    for (SolrQueryRequest req : new SolrQueryRequest[] {
         req("q", "id:[42 TO 47]"
-                ,"facet","true"
-                ,"fl","id," + field
-                ,"facet.range", field
-                ,"facet.range.method", method.toString()
-                ,"facet.range.start","43"
-                ,"facet.range.end","45"
-                ,"facet.range.gap","1"
-                ,"facet.range.other",FacetRangeOther.BEFORE.toString()
-                ,"facet.range.other",FacetRangeOther.AFTER.toString()
-        )
-        ,"*[count(//lst[@name='facet_ranges']/lst)=1]"
-        ,"*[count(//lst[@name='facet_ranges']/lst[@name='" + field + "'])=1]"
-        ,"*[count(//lst[@name='facet_ranges']/lst[@name='" + field + "']/lst[@name='counts'])=1]"
-        ,"*[count(//lst[@name='facet_ranges']/lst[@name='" + field + "']/lst[@name='counts']/int)=2]"
-        ,"*[count(//lst[@name='facet_ranges']/lst[@name='" + field + "']/lst[@name='between'])=0]"
-        ,"//lst[@name='facet_ranges']/lst[@name='" + field + "']/int[@name='after'][.='3']"
-        ,"//lst[@name='facet_ranges']/lst[@name='" + field + "']/int[@name='before'][.='1']"
-    );
+            ,"facet","true"
+            ,"fl","id," + field
+            ,"facet.range", field
+            ,"facet.range.method", method.toString()
+            ,"facet.range.start","43"
+            ,"facet.range.end","45"
+            ,"facet.range.gap","1"
+            ,"facet.range.other",FacetRangeOther.BEFORE.toString()
+            ,"facet.range.other",FacetRangeOther.AFTER.toString()),
+        req("q", "id:[42 TO 47]"
+            ,"facet","true"
+            ,"fl","id," + field
+            ,"facet.range", "{!facet.range.other=before facet.range.other=after}" + field
+            ,"facet.range.method", method.toString()
+            ,"facet.range.start","43"
+            ,"facet.range.end","45"
+            ,"facet.range.gap","1") }) {
+            
+      assertQ("Test facet.range.other: " + req.toString(), req
+              ,"*[count(//lst[@name='facet_ranges']/lst)=1]"
+              ,"*[count(//lst[@name='facet_ranges']/lst[@name='" + field + "'])=1]"
+              ,"*[count(//lst[@name='facet_ranges']/lst[@name='" + field + "']/lst[@name='counts'])=1]"
+              ,"*[count(//lst[@name='facet_ranges']/lst[@name='" + field + "']/lst[@name='counts']/int)=2]"
+              ,"*[count(//lst[@name='facet_ranges']/lst[@name='" + field + "']/lst[@name='between'])=0]"
+              ,"//lst[@name='facet_ranges']/lst[@name='" + field + "']/int[@name='after'][.='3']"
+              ,"//lst[@name='facet_ranges']/lst[@name='" + field + "']/int[@name='before'][.='1']"
+              );
+    }
     
     assertQ("Test facet.range.other",
         req("q", "id:[42 TO 47]"

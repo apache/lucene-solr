@@ -19,7 +19,7 @@ package org.apache.solr.search;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -277,16 +277,16 @@ public abstract class QParser {
     // SolrParams localParams = QueryParsing.getLocalParams(qstr, req.getParams());
 
     String stringIncludingLocalParams = qstr;
-    SolrParams localParams = null;
+    ModifiableSolrParams localParams = null;
     SolrParams globalParams = req.getParams();
     boolean valFollowedParams = true;
     int localParamsEnd = -1;
 
     if (qstr != null && qstr.startsWith(QueryParsing.LOCALPARAM_START)) {
-      Map<String, String> localMap = new HashMap<>();
-      localParamsEnd = QueryParsing.parseLocalParams(qstr, 0, localMap, globalParams);
+      localParams = new ModifiableSolrParams();
+      localParamsEnd = QueryParsing.parseLocalParams(qstr, 0, localParams, globalParams);
 
-      String val = localMap.get(QueryParsing.V);
+      String val = localParams.get(QueryParsing.V);
       if (val != null) {
         // val was directly specified in localParams via v=<something> or v=$arg
         valFollowedParams = false;
@@ -294,9 +294,8 @@ public abstract class QParser {
         // use the remainder of the string as the value
         valFollowedParams = true;
         val = qstr.substring(localParamsEnd);
-        localMap.put(QueryParsing.V, val);
+        localParams.set(QueryParsing.V, val);
       }
-      localParams = new MapSolrParams(localMap);
     }
 
 

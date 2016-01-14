@@ -24,7 +24,7 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -36,11 +36,9 @@ import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.response.transform.ValueSourceAugmenter;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -248,12 +246,13 @@ public class SolrReturnFields extends ReturnFields {
         // This is identical to localParams syntax except it uses [] instead of {!}
 
         if (funcStr.startsWith("[")) {
-          Map<String,String> augmenterArgs = new HashMap<>();
-          int end = QueryParsing.parseLocalParams(funcStr, 0, augmenterArgs, req.getParams(), "[", ']');
+          ModifiableSolrParams augmenterParams = new ModifiableSolrParams();
+          int end = QueryParsing.parseLocalParams(funcStr, 0, augmenterParams, req.getParams(), "[", ']');
           sp.pos += end;
 
           // [foo] is short for [type=foo] in localParams syntax
-          String augmenterName = augmenterArgs.remove("type");
+          String augmenterName = augmenterParams.get("type");
+          augmenterParams.remove("type");
           String disp = key;
           if( disp == null ) {
             disp = '['+augmenterName+']';
@@ -261,7 +260,6 @@ public class SolrReturnFields extends ReturnFields {
 
           TransformerFactory factory = req.getCore().getTransformerFactory( augmenterName );
           if( factory != null ) {
-            MapSolrParams augmenterParams = new MapSolrParams( augmenterArgs );
             DocTransformer t = factory.create(disp, augmenterParams, req);
             if(t!=null) {
               if(!_wantsAllFields) {

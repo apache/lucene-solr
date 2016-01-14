@@ -354,6 +354,21 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     checkQuerySpatial("bbox");
   }
 
+  public void testLocalParamsWithRepeatingParam() throws Exception {
+    SolrQueryRequest req = req("q", "foo",
+                               "bq", "111",
+                               "bq", "222");
+    try {
+      assertQueryEquals("dismax",
+                        req,
+                        "{!dismax}foo",
+                        "{!dismax bq=111 bq=222}foo",
+                        "{!dismax bq=222 bq=111}foo");
+    } finally {
+      req.close();
+    }
+  }
+
   private void checkQuerySpatial(final String type) throws Exception {
     SolrQueryRequest req = req("myVar", "5",
                                "d","109",

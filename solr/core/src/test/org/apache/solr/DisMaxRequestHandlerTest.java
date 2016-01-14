@@ -100,6 +100,11 @@ public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
                 )
             ,"//*[@numFound='3']"
             );
+    
+    assertQ("multi qf as local params",
+            req("q", "{!dismax qf=subject qf=features_t}cool")
+            ,"//*[@numFound='3']"
+            );
 
     assertQ("boost query",
             req("q", "cool stuff"
