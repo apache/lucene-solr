@@ -435,7 +435,8 @@ public class HttpSolrClient extends SolrClient {
           break;
         }
         if (contentStream[0] instanceof RequestWriter.LazyContentStream) {
-          postOrPut.setEntity(new InputStreamEntity(contentStream[0].getStream(), -1) {
+          Long size = contentStream[0].getSize();
+          postOrPut.setEntity(new InputStreamEntity(contentStream[0].getStream(), size == null ? -1 : size) {
             @Override
             public Header getContentType() {
               return new BasicHeader("Content-Type", contentStream[0].getContentType());
@@ -448,7 +449,8 @@ public class HttpSolrClient extends SolrClient {
 
           });
         } else {
-          postOrPut.setEntity(new InputStreamEntity(contentStream[0].getStream(), -1) {
+          Long size = contentStream[0].getSize();
+          postOrPut.setEntity(new InputStreamEntity(contentStream[0].getStream(), size == null ? -1 : size) {
             @Override
             public Header getContentType() {
               return new BasicHeader("Content-Type", contentStream[0].getContentType());

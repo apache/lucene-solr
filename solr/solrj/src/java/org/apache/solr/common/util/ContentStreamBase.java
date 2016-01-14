@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
@@ -150,7 +151,12 @@ public abstract class ContentStreamBase implements ContentStream
       this.str = str;
       this.contentType = contentType;
       name = null;
-      size = new Long( str.length() );
+      try {
+        size = new Long( str.getBytes(DEFAULT_CHARSET).length );
+      } catch (UnsupportedEncodingException e) {
+        // won't happen
+        throw new RuntimeException(e);
+      }
       sourceInfo = "string";
     }
 

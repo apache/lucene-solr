@@ -393,6 +393,11 @@ Bug Fixes
 * SOLR-8453: Solr should attempt to consume the request inputstream on errors as we cannot
   count on the container to do it. (Mark Miller, Greg Wilkins, yonik, Joakim Erdfelt)
 
+Optimizations
+----------------------
+
+* SOLR-8501: Specify the entity request size when known in HttpSolrClient. (Mark Miller)
+
 Other Changes
 ----------------------
 
