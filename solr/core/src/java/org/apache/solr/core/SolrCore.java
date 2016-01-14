@@ -1006,6 +1006,27 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     }
     return updateLogDir;
   }
+
+  /**
+   * Close the core, if it is still in use waits until is no longer in use.
+   * @see #close() 
+   * @see #isClosed() 
+   */
+  public void closeAndWait() {
+    close();
+    while (!isClosed()) {
+      final long milliSleep = 100;
+      log.info("Core {} is not yet closed, waiting {} ms before checking again.", getName(), milliSleep);
+      try {
+        Thread.sleep(milliSleep);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Caught InterruptedException whilst waiting for core " + getName() + " to close: "
+                + e.getMessage(), e);
+      }
+    }
+  }
   
   private Codec initCodec(SolrConfig solrConfig, final IndexSchema schema) {
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());

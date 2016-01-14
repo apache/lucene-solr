@@ -393,6 +393,9 @@ Bug Fixes
 * SOLR-8453: Solr should attempt to consume the request inputstream on errors as we cannot
   count on the container to do it. (Mark Miller, Greg Wilkins, yonik, Joakim Erdfelt)
 
+* SOLR-6279: cores?action=UNLOAD now waits for the core to close before unregistering it from ZK.
+  (Christine Poerschke)
+
 Optimizations
 ----------------------
 

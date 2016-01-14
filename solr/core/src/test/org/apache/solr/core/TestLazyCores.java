@@ -383,11 +383,11 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       createViaAdmin(cc, "core4", true, false);
       createViaAdmin(cc, "core5", true, false);
 
-      SolrCore c1 = cc.getCore("core1");
-      SolrCore c2 = cc.getCore("core2");
-      SolrCore c3 = cc.getCore("core3");
-      SolrCore c4 = cc.getCore("core4");
-      SolrCore c5 = cc.getCore("core5");
+      final SolrCore c1 = cc.getCore("core1");
+      final SolrCore c2 = cc.getCore("core2");
+      final SolrCore c3 = cc.getCore("core3");
+      final SolrCore c4 = cc.getCore("core4");
+      final SolrCore c5 = cc.getCore("core5");
 
       checkNotInCores(cc, "core1", "collection2", "collection3", "collection4", "collection6"
           , "collection7", "collection8", "collection9");
@@ -397,17 +397,46 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       // While we're at it, a test for SOLR-5366, unloading transient core that's been unloaded b/c it's
       // transient generates a "too many closes" errorl
 
+      class TestThread extends Thread {
+        
+        @Override
+        public void run() {
+          
+          final int sleep_millis = random().nextInt(1000);
+          try {
+            if (sleep_millis > 0) {
+              if (VERBOSE) {
+                System.out.println("TestLazyCores.testCreateTransientFromAdmin Thread.run sleeping for "+sleep_millis+" ms");
+              }
+              Thread.sleep(sleep_millis);
+            }
+          }
+          catch (InterruptedException ie) {
+            if (VERBOSE) {
+              System.out.println("TestLazyCores.testCreateTransientFromAdmin Thread.run caught "+ie+" whilst sleeping for "+sleep_millis+" ms");
+            }
+          }
+
+          c1.close();
+          c2.close();
+          c3.close();
+          c4.close();
+          c5.close();
+        }
+      };
+      
+      // with SOLR-6279 UNLOAD will wait for the core's reference count to have reached zero
+      // hence cN.close() need to preceed or run in parallel with unloadViaAdmin(...)
+      final TestThread cThread = new TestThread();
+      cThread.start();
+      
       unloadViaAdmin(cc, "core1");
       unloadViaAdmin(cc, "core2");
       unloadViaAdmin(cc, "core3");
       unloadViaAdmin(cc, "core4");
       unloadViaAdmin(cc, "core5");
 
-      c1.close();
-      c2.close();
-      c3.close();
-      c4.close();
-      c5.close();
+      cThread.join();
 
     } finally {
       cc.shutdown();
@@ -636,6 +665,59 @@ public class TestLazyCores extends SolrTestCaseJ4 {
 
   private static final String makePath(String... args) {
     return StringUtils.join(args, File.separator);
+  }
+
+  @Test
+  public void testMidUseUnload() throws Exception {
+    final int maximumSleepMillis = random().nextInt(10000); // sleep for up to 10 s
+    if (VERBOSE) {
+      System.out.println("TestLazyCores.testMidUseUnload maximumSleepMillis="+maximumSleepMillis);
+    }
+    
+    class TestThread extends Thread {
+      
+      SolrCore core_to_use = null;
+      
+      @Override
+      public void run() {
+        
+        final int sleep_millis = random().nextInt(maximumSleepMillis);
+        try {
+          if (sleep_millis > 0) {
+            if (VERBOSE) {
+              System.out.println("TestLazyCores.testMidUseUnload Thread.run sleeping for "+sleep_millis+" ms");
+            }
+            Thread.sleep(sleep_millis);
+          }
+        }
+        catch (InterruptedException ie) {
+          if (VERBOSE) {
+            System.out.println("TestLazyCores.testMidUseUnload Thread.run caught "+ie+" whilst sleeping for "+sleep_millis+" ms");
+          }
+        }
+        
+        assertFalse(core_to_use.isClosed()); // not closed since we are still using it and hold a reference
+        core_to_use.close(); // now give up our reference to the core
+      }
+    };
+
+    CoreContainer cc = init();
+    
+    try {
+      TestThread thread = new TestThread();
+      
+      thread.core_to_use = cc.getCore("collection1");
+      assertNotNull(thread.core_to_use);
+      assertFalse(thread.core_to_use.isClosed()); // freshly-in-use core is not closed
+      thread.start();
+      
+      unloadViaAdmin(cc, "collection1");
+      assertTrue(thread.core_to_use.isClosed()); // after unload-ing the core is closed
+
+      thread.join();
+    } finally {
+      cc.shutdown();
+    }
   }
 
 }
