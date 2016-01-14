@@ -135,6 +135,9 @@ New Features
 * SOLR-7525: Add ComplementStream and IntersectStream to the Streaming API and Streaming Expressions 
   (Dennis Gove, Jason Gerlowski, Joel Bernstein)
 
+* SOLR-8415: Provide command to switch between non/secure mode in ZK
+  (Mike Drob, Gregory Chanan)
+
 Bug Fixes
 ----------------------
 * SOLR-8386: Add field option in the new admin UI schema page loads up even when no schemaFactory has been
