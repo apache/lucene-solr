@@ -74,14 +74,6 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     }
   }
   
-  public void testLocalParamsWithLinkedHashMap() throws Exception {
-    LinkedHashMap<String, String> target = new LinkedHashMap<String, String>();
-    QueryParsing.parseLocalParams("{!handler foo1=bar1 foo2=bar2 multi=loser multi=winner}", 0, target, new ModifiableSolrParams(), "{!", '}');
-    assertEquals("bar1", target.get("foo1"));
-    assertEquals("bar2", target.get("foo2"));
-    assertEquals("winner", target.get("multi"));
-  }
-
   public void testLocalParamsWithModifiableSolrParams() throws Exception {
     ModifiableSolrParams target = new ModifiableSolrParams();
     QueryParsing.parseLocalParams("{!handler foo1=bar1 foo2=bar2 multi=loser multi=winner}", 0, target, new ModifiableSolrParams(), "{!", '}');

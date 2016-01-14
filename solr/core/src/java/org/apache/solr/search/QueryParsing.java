@@ -91,40 +91,6 @@ public class QueryParsing {
    * @param start Index into text for start of parsing
    * @param target Object to inject with parsed settings
    * @param params Additional existing parameters
-   * @deprecated use {@link #parseLocalParams(String, int, ModifiableSolrParams, SolrParams)} instead
-   */
-  @Deprecated
-  public static int parseLocalParams(String txt, int start, Map<String, String> target, SolrParams params) throws SyntaxError {
-    return parseLocalParams(txt, start, target, params, LOCALPARAM_START, LOCALPARAM_END);
-  }
-
-  /**
-   * @param txt Text to parse
-   * @param start Index into text for start of parsing
-   * @param target Object to inject with parsed settings
-   * @param params Additional existing parameters
-   * @param startString String that indicates the start of a localParams section
-   * @param endChar Character that indicates the end of a localParams section
-   * @deprecated use {@link #parseLocalParams(String, int, ModifiableSolrParams, SolrParams, String, char)} instead
-   */
-  @Deprecated
-  public static int parseLocalParams(String txt, int start, Map<String, String> target, SolrParams params, String startString, char endChar) throws SyntaxError {
-    ModifiableSolrParams newTarget = new ModifiableSolrParams();
-    int retVal = parseLocalParams(txt, start, newTarget, params, startString, endChar);
-    // Translate ModifiableSolrParams to Map<String, String>, implementing "last value wins" for multi-valued params for backward compatibility
-    for (String param : newTarget.getParameterNames()) {
-      for (String value : newTarget.getParams(param)) {
-        target.put(param, value);
-      }
-    }
-    return retVal;
-  }
-
-  /**
-   * @param txt Text to parse
-   * @param start Index into text for start of parsing
-   * @param target Object to inject with parsed settings
-   * @param params Additional existing parameters
    */
   public static int parseLocalParams(String txt, int start, ModifiableSolrParams target, SolrParams params) throws SyntaxError {
     return parseLocalParams(txt, start, target, params, LOCALPARAM_START, LOCALPARAM_END);
