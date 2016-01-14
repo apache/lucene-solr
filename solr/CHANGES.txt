@@ -396,6 +396,9 @@ Bug Fixes
 * SOLR-6279: cores?action=UNLOAD now waits for the core to close before unregistering it from ZK.
   (Christine Poerschke)
 
+* SOLR-2798: Fixed local params to work correctly with multivalued params
+  (Demian Katz via hossman)
+
 Optimizations
 ----------------------
 

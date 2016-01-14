@@ -20,13 +20,13 @@ import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.*;
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.facet.AggValueSource;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class FunctionQParser extends QParser {
@@ -252,7 +252,7 @@ public class FunctionQParser extends QParser {
       String v = sp.val;
   
       String qs = v;
-      HashMap nestedLocalParams = new HashMap<String,String>();
+      ModifiableSolrParams nestedLocalParams = new ModifiableSolrParams();
       int end = QueryParsing.parseLocalParams(qs, start, nestedLocalParams, getParams());
   
       QParser sub;
