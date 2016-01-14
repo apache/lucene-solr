@@ -70,7 +70,7 @@ public class DistribDocExpirationUpdateProcessorTest extends AbstractFullDistrib
       indexDoc(sdoc("id", i));
     }
     commit();
-    waitForThingsToLevelOut(30);
+    waitForRecoveriesToFinish(false, 45);
 
     // this doc better not already exist
     waitForNoResults(0, params("q","id:999","rows","0","_trace","sanity_check"));
@@ -89,7 +89,6 @@ public class DistribDocExpirationUpdateProcessorTest extends AbstractFullDistrib
     waitForNoResults(180, params("q","id:999","rows","0","_trace","did_it_expire_yet"));
 
     // verify only one shard changed
-    waitForThingsToLevelOut(30);
     final Map<String,Long> finalIndexVersions = getIndexVersionOfAllReplicas();
     assertEquals("WTF? not same num versions?", 
                  initIndexVersions.size(),
