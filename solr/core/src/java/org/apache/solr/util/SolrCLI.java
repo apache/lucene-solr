@@ -1360,7 +1360,9 @@ public class SolrCLI {
       Map<String,Object> existsCheckResult = getJson(coreStatusUrl);
       Map<String,Object> status = (Map<String, Object>)existsCheckResult.get("status");
       Map<String,Object> coreStatus = (Map<String, Object>)status.get(coreName);
-      exists = coreStatus != null && coreStatus.containsKey(NAME);
+      Map<String,Object> failureStatus = (Map<String, Object>)existsCheckResult.get("initFailures");
+      String errorMsg = (String) failureStatus.get(coreName);
+      exists = coreStatus != null && coreStatus.containsKey(NAME) || errorMsg != null;
     } catch (Exception exc) {
       // just ignore it since we're only interested in a positive result here
     }
@@ -2284,7 +2286,7 @@ public class SolrCLI {
           throw new Exception("Failed to create "+collectionName+" using command: "+ Arrays.asList(createArgs));
       }
 
-      if ("techproducts".equals(exampleName)) {
+      if ("techproducts".equals(exampleName) && !alreadyExists) {
 
         File exampledocsDir = new File(exampleDir, "exampledocs");
         if (!exampledocsDir.isDirectory()) {

@@ -524,6 +524,9 @@ Other Changes
 
 * SOLR-8535: Support forcing define-lucene-javadoc-url to be local (Gregory Chanan)
 
+* SOLR-8549: Solr start script checks for cores which have failed to load as well before attempting to
+  create a core with the same name (Varun Thacker)
+
 ==================  5.4.1 ==================
 
 Bug Fixes
