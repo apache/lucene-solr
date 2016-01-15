@@ -8,6 +8,14 @@ caching, replication, and a web administration interface.
 
 See http://lucene.apache.org/solr for more information.
 
+==================  5.4.2 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-8541: Highlighting a geo RPT field would throw an NPE instead of doing nothing.
+  (Pawel Rog via David Smiley)
+
 ==================  5.4.1 ==================
 
 Bug Fixes

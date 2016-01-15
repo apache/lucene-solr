@@ -24,6 +24,9 @@ Bug Fixes
 * LUCENE-7002: Fixed MultiCollector to not throw a NPE if setScorer is called
   after one of the sub collectors is done collecting. (John Wang, Adrien Grand)
 
+* LUCENE-6976: BytesRefTermAttributeImpl.copyTo NPE'ed if BytesRef was null.
+  Added equals & hashCode, and a new test for these things. (David Smiley)
+
 ======================= Lucene 5.4.1 =======================
 
 Bug Fixes
