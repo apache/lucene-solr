@@ -144,6 +144,16 @@ API Changes
   instead of extending DocIdSetIterator. asTwoPhaseIterator() has been renamed
   to twoPhaseIterator() for consistency. (Adrien Grand)
 
+* LUCENE-6973: TeeSinkTokenFilter no longer accepts a SinkFilter (the latter
+  has been removed). If you wish to filter the sinks, you can wrap them with
+  any other TokenFilter (e.g. a FilteringTokenFilter). Also, you can no longer
+  add a SinkTokenStream to an existing TeeSinkTokenFilter. If you need to
+  share multiple streams with a single sink, chain them with multiple
+  TeeSinkTokenFilters.
+  DateRecognizerSinkFilter was renamed to DateRecognizerFilter and moved under
+  analysis/common. TokenTypeSinkFilter was removed (use TypeTokenFilter instead).
+  TokenRangeSinkFilter was removed. (Shai Erera, Uwe Schindler)
+
 Optimizations
 
 * LUCENE-6951: Improve GeoPointInPolygonQuery using point orientation based
