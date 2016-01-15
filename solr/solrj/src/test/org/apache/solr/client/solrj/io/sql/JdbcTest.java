@@ -109,6 +109,7 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1", props);
     Statement stmt = con.createStatement();
     ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i desc limit 2");
+    assertTrue(rs.getMetaData() != null);
 
     assert(rs.next());
     assert(rs.getLong("a_i") == 14);

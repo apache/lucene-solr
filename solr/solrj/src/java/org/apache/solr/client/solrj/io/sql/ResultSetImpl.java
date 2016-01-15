@@ -270,7 +270,7 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSetMetaData getMetaData() throws SQLException {
-    throw new UnsupportedOperationException();
+    return new ResultSetMetaDataImpl(this);
   }
 
   @Override
