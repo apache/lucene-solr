@@ -21,15 +21,14 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
-import org.apache.solr.SolrTestCaseJ4;
 
-import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 
 @ThreadLeakAction({ThreadLeakAction.Action.WARN})
@@ -38,8 +37,10 @@ import java.util.Properties;
 @ThreadLeakScope(ThreadLeakScope.Scope.NONE)
 public class TestJdbcDataSourceConvertType extends AbstractDataImportHandlerTestCase {
   public void testConvertType() throws Throwable {
-
-    assumeTrue("Derby is not happy with locale sr__#Latn", !"sr__#Latn".equals(Locale.getDefault().toString()));
+    final Locale loc = Locale.getDefault();
+    assumeFalse("Derby is not happy with locale sr-Latn-*",
+        Objects.equals(new Locale("sr").getLanguage(), loc.getLanguage()) &&
+        Objects.equals("Latn", loc.getScript()));
 
     // ironically convertType=false causes BigDecimal to String conversion
     convertTypeTest("false", String.class);

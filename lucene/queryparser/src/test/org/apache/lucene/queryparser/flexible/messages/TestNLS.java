@@ -101,6 +101,6 @@ public class TestNLS extends LuceneTestCase {
         MessagesTestBundle.Q0005E_MESSAGE_NOT_IN_BUNDLE, locale);
 
     assertEquals("Message with key:Q0005E_MESSAGE_NOT_IN_BUNDLE and locale: "
-        + locale.toString() + " not found.", message);
+        + locale.toLanguageTag() + " not found.", message);
   }
 }

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.IllformedLocaleException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -33,6 +34,7 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DateUtil;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.handler.extraction.ExtractingParams;
 import org.apache.solr.handler.extraction.SolrContentHandler;
 import org.apache.solr.handler.extraction.SolrContentHandlerFactory;
@@ -48,8 +50,6 @@ import org.apache.tika.sax.XHTMLContentHandler;
 import org.apache.tika.sax.xpath.Matcher;
 import org.apache.tika.sax.xpath.MatchingContentHandler;
 import org.apache.tika.sax.xpath.XPathParser;
-import org.apache.xml.serialize.OutputFormat;
-import org.apache.xml.serialize.XMLSerializer;
 
 import org.kitesdk.morphline.api.Command;
 import org.kitesdk.morphline.api.CommandBuilder;
@@ -99,7 +99,7 @@ public final class SolrCellBuilder implements CommandBuilder {
     private final IndexSchema schema;
     private final List<String> dateFormats;
     private final String xpathExpr;
-    private final List<Parser> parsers = new ArrayList();
+    private final List<Parser> parsers = new ArrayList<>();
     private final SolrContentHandlerFactory solrContentHandlerFactory;
     private final Locale locale;
     
@@ -118,7 +118,7 @@ public final class SolrCellBuilder implements CommandBuilder {
       LOG.debug("solrLocator: {}", locator);
       this.schema = locator.getIndexSchema();
       Preconditions.checkNotNull(schema);
-      LOG.trace("Solr schema: \n{}", Joiner.on("\n").join(new TreeMap(schema.getFields()).values()));
+      LOG.trace("Solr schema: \n{}", Joiner.on("\n").join(new TreeMap<>(schema.getFields()).values()));
 
       ListMultimap<String, String> cellParams = ArrayListMultimap.create();
       String uprefix = getConfigs().getString(config, ExtractingParams.UNKNOWN_FIELD_PREFIX, null);
@@ -156,7 +156,7 @@ public final class SolrCellBuilder implements CommandBuilder {
       String handlerStr = getConfigs().getString(config, "solrContentHandlerFactory", TrimSolrContentHandlerFactory.class.getName());
       Class<? extends SolrContentHandlerFactory> factoryClass;
       try {
-        factoryClass = (Class<? extends SolrContentHandlerFactory>)Class.forName(handlerStr);
+        factoryClass = Class.forName(handlerStr).asSubclass(SolrContentHandlerFactory.class);
       } catch (ClassNotFoundException cnfe) {
         throw new MorphlineCompilationException("Could not find class "
           + handlerStr + " to use for " + "solrContentHandlerFactory", config, cnfe);
@@ -208,7 +208,7 @@ public final class SolrCellBuilder implements CommandBuilder {
       }
       //LOG.info("mediaTypeToParserMap="+mediaTypeToParserMap);
 
-      Map<String, String[]> tmp = new HashMap();
+      Map<String, String[]> tmp = new HashMap<>();
       for (Map.Entry<String,Collection<String>> entry : cellParams.asMap().entrySet()) {
         tmp.put(entry.getKey(), entry.getValue().toArray(new String[entry.getValue().size()]));
       }
@@ -327,17 +327,18 @@ public final class SolrCellBuilder implements CommandBuilder {
       return record;
     }
     
+    @SuppressForbidden(reason = "Usage of outdated locale parsing with Locale#toString() because of backwards compatibility")
     private Locale getLocale(String name) {
       for (Locale locale : Locale.getAvailableLocales()) {
         if (locale.toString().equals(name)) {
           return locale;
         }
       }
-      assert Locale.ROOT.toString().equals("");
-      if (name.equals(Locale.ROOT.toString())) {
-        return Locale.ROOT;
+      try {
+        return new Locale.Builder().setLanguageTag(name).build();
+      } catch (IllformedLocaleException ex) {
+        throw new MorphlineCompilationException("Malformed / non-existent locale: " + name, getConfig(), ex);
       }
-      throw new MorphlineCompilationException("Unknown locale: " + name, getConfig());
     }
   }
 

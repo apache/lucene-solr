@@ -53,7 +53,7 @@ import static org.apache.lucene.util.LuceneTestCase.TEST_DOCVALUESFORMAT;
 import static org.apache.lucene.util.LuceneTestCase.TEST_POSTINGSFORMAT;
 import static org.apache.lucene.util.LuceneTestCase.VERBOSE;
 import static org.apache.lucene.util.LuceneTestCase.assumeFalse;
-import static org.apache.lucene.util.LuceneTestCase.localeForName;
+import static org.apache.lucene.util.LuceneTestCase.localeForLanguageTag;
 import static org.apache.lucene.util.LuceneTestCase.random;
 import static org.apache.lucene.util.LuceneTestCase.randomLocale;
 import static org.apache.lucene.util.LuceneTestCase.randomTimeZone;
@@ -200,7 +200,7 @@ final class TestRuleSetupAndRestoreClassEnv extends AbstractBeforeAfterRule {
     // Always pick a random one for consistency (whether tests.locale was specified or not).
     savedLocale = Locale.getDefault();
     Locale randomLocale = randomLocale(random);
-    locale = testLocale.equals("random") ? randomLocale : localeForName(testLocale);
+    locale = testLocale.equals("random") ? randomLocale : localeForLanguageTag(testLocale);
     Locale.setDefault(locale);
 
     savedTimeZone = TimeZone.getDefault();

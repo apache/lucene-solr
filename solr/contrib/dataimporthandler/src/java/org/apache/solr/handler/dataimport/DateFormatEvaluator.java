@@ -8,13 +8,14 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IllformedLocaleException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
-import java.util.WeakHashMap;
 
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.handler.dataimport.config.EntityField;
 import org.apache.solr.util.DateMathParser;
 
@@ -51,24 +52,10 @@ import org.apache.solr.util.DateMathParser;
 public class DateFormatEvaluator extends Evaluator {
   
   public static final String DEFAULT_DATE_FORMAT = "yyyy-MM-dd HH:mm:ss";
-  protected Map<DateFormatCacheKey, SimpleDateFormat> cache = new WeakHashMap<>();
   protected Map<String, Locale> availableLocales = new HashMap<>();
   protected Set<String> availableTimezones = new HashSet<>();
 
-  /**
-   * Used to wrap cache keys containing a Locale, TimeZone and date format String
-   */
-  static protected class DateFormatCacheKey {
-    DateFormatCacheKey(Locale l, TimeZone tz, String df) {
-      this.locale = l;
-      this.timezone = tz;
-      this.dateFormat = df;
-    }
-    Locale locale;
-    TimeZone timezone;
-    String dateFormat;
-  }
-  
+  @SuppressForbidden(reason = "Usage of outdated locale parsing with Locale#toString() because of backwards compatibility")
   public DateFormatEvaluator() {  
     for (Locale locale : Locale.getAvailableLocales()) {
       availableLocales.put(locale.toString(), locale);
@@ -77,17 +64,12 @@ public class DateFormatEvaluator extends Evaluator {
       availableTimezones.add(tz);
     }
   }
+  
   private SimpleDateFormat getDateFormat(String pattern, TimeZone timezone, Locale locale) {
-    DateFormatCacheKey dfck = new DateFormatCacheKey(locale, timezone, pattern);
-    SimpleDateFormat sdf = cache.get(dfck);
-    if(sdf == null) {
-      sdf = new SimpleDateFormat(pattern, locale);
-      sdf.setTimeZone(timezone);
-      cache.put(dfck, sdf);
-    }
+    final SimpleDateFormat sdf = new SimpleDateFormat(pattern, locale);
+    sdf.setTimeZone(timezone);
     return sdf;
   }
-  
   
   @Override
   public String evaluate(String expression, Context context) {
@@ -102,7 +84,7 @@ public class DateFormatEvaluator extends Evaluator {
       o = wrapper.resolve();
       format = o.toString();
     }
-    Locale locale = Locale.ROOT;
+    Locale locale = Locale.ENGLISH; // we default to ENGLISH for dates for full Java 9 compatibility
     if(l.size()>2) {
       Object localeObj = l.get(2);
       String localeStr = null;
@@ -112,8 +94,10 @@ public class DateFormatEvaluator extends Evaluator {
         localeStr = localeObj.toString();
       }
       locale = availableLocales.get(localeStr);
-      if(locale==null) {
-        throw new DataImportHandlerException(SEVERE, "Unsupported locale: " + localeStr);
+      if (locale == null) try {
+        locale = new Locale.Builder().setLanguageTag(localeStr).build();
+      } catch (IllformedLocaleException ex) {
+        throw new DataImportHandlerException(SEVERE, "Malformed / non-existent locale: " + localeStr, ex);
       }
     }
     TimeZone tz = TimeZone.getDefault();

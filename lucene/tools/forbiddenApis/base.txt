@@ -37,3 +37,6 @@ java.lang.Character#codePointAt(char[],int) @ Implicit end offset is error-prone
 java.io.File#delete() @ use Files.delete for real exception, IOUtils.deleteFilesIgnoringExceptions if you dont care
 
 java.util.Collections#shuffle(java.util.List) @ Use shuffle(List, Random) instead so that it can be reproduced
+
+java.util.Locale#forLanguageTag(java.lang.String) @ use new Locale.Builder().setLanguageTag(...).build() which has error handling
+java.util.Locale#toString() @ use Locale#toLanguageTag() for a standardized BCP47 locale name
