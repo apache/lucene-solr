@@ -447,6 +447,17 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     checkRandomData(random, a, iterations, 20, simple, true);
   }
   
+  /** Asserts that the given stream has expected number of tokens. */
+  public static void assertStreamHasNumberOfTokens(TokenStream ts, int expectedCount) throws IOException {
+    ts.reset();
+    int count = 0;
+    while (ts.incrementToken()) {
+      count++;
+    }
+    ts.end();
+    assertEquals("wrong number of tokens", expectedCount, count);
+  }
+  
   static class AnalysisThread extends Thread {
     final int iterations;
     final int maxWordLength;
