@@ -42,7 +42,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
 
   @Override
   public String getURL() throws SQLException {
-    return null;
+    return this.connection.getUrl();
   }
 
   @Override

@@ -41,16 +41,22 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 
 class ConnectionImpl implements Connection {
 
+  private final String url;
   private SolrClientCache sqlSolrClientCache = new SolrClientCache();
   private CloudSolrClient client;
   private String collection;
   Properties props;
   private boolean closed;
 
-  ConnectionImpl(String zkHost, String collection, Properties props) {
+  ConnectionImpl(String url, String zkHost, String collection, Properties props) {
+    this.url = url;
     this.client = sqlSolrClientCache.getCloudSolrClient(zkHost);
     this.collection = collection;
     this.props = props;
+  }
+
+  String getUrl() {
+    return url;
   }
 
   @Override

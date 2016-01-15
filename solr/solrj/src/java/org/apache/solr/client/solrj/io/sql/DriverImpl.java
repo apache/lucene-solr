@@ -69,7 +69,7 @@ public class DriverImpl implements Driver {
 
     String zkHost = uri.getAuthority() + uri.getPath();
 
-    return new ConnectionImpl(zkHost, collection, props);
+    return new ConnectionImpl(url, zkHost, collection, props);
   }
 
   public Connection connect(String url) throws SQLException {

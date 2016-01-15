@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.sql;
 
 import java.io.File;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -299,5 +300,22 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
     stmt.close();
     con.close();
+
+    testDriverMetadata();
+  }
+
+  private void testDriverMetadata() throws Exception {
+    String collection = DEFAULT_COLLECTION;
+    String connectionString = "jdbc:solr://" + zkServer.getZkAddress() + "?collection=" + collection +
+        "&username=&password=&testKey1=testValue&testKey2";
+
+    try (Connection con = DriverManager.getConnection(connectionString)) {
+      assertEquals(collection, con.getCatalog());
+
+      DatabaseMetaData databaseMetaData = con.getMetaData();
+      assertNotNull(databaseMetaData);
+
+      assertEquals(connectionString, databaseMetaData.getURL());
+    }
   }
 }
