@@ -20,11 +20,10 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.ArrayList;
+import java.util.IllformedLocaleException;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * <p>
@@ -45,8 +44,6 @@ import java.util.regex.Pattern;
  */
 public class NumberFormatTransformer extends Transformer {
 
-  private static final Pattern localeRegex = Pattern.compile("^([a-z]{2})-([A-Z]{2})$");
-
   @Override
   @SuppressWarnings("unchecked")
   public Object transformRow(Map<String, Object> row, Context context) {
@@ -55,19 +52,17 @@ public class NumberFormatTransformer extends Transformer {
       if (style != null) {
         String column = fld.get(DataImporter.COLUMN);
         String srcCol = fld.get(RegexTransformer.SRC_COL_NAME);
-        Locale locale = null;
         String localeStr = context.replaceTokens(fld.get(LOCALE));
         if (srcCol == null)
           srcCol = column;
+        Locale locale = Locale.ROOT;
         if (localeStr != null) {
-          Matcher matcher = localeRegex.matcher(localeStr);
-          if (matcher.find() && matcher.groupCount() == 2) {
-            locale = new Locale(matcher.group(1), matcher.group(2));
-          } else {
-            throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Invalid Locale specified for field: " + fld);
+          try {
+            locale = new Locale.Builder().setLanguageTag(localeStr).build();
+          } catch (IllformedLocaleException e) {
+            throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
+                "Invalid Locale '" + localeStr + "' specified for field: " + fld, e);
           }
-        } else {
-          locale = Locale.ROOT;
         }
 
         Object val = row.get(srcCol);

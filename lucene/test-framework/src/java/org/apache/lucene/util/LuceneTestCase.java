@@ -1500,14 +1500,19 @@ public abstract class LuceneTestCase extends Assert {
       throw new IllegalArgumentException("value must be String or BytesRef");
     }
   }
+  
+  private static final String[] availableLanguageTags = Arrays.stream(Locale.getAvailableLocales())
+      .map(Locale::toLanguageTag)
+      .sorted()
+      .distinct()
+      .toArray(String[]::new);
 
   /** 
    * Return a random Locale from the available locales on the system.
    * @see <a href="http://issues.apache.org/jira/browse/LUCENE-4020">LUCENE-4020</a>
    */
   public static Locale randomLocale(Random random) {
-    Locale locales[] = Locale.getAvailableLocales();
-    return locales[random.nextInt(locales.length)];
+    return localeForLanguageTag(availableLanguageTags[random.nextInt(availableLanguageTags.length)]);
   }
 
   /** 
@@ -1520,15 +1525,8 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** return a Locale object equivalent to its programmatic name */
-  public static Locale localeForName(String localeName) {
-    String elements[] = localeName.split("\\_");
-    switch(elements.length) {
-      case 4: /* fallthrough for special cases */
-      case 3: return new Locale(elements[0], elements[1], elements[2]);
-      case 2: return new Locale(elements[0], elements[1]);
-      case 1: return new Locale(elements[0]);
-      default: throw new IllegalArgumentException("Invalid Locale: " + localeName);
-    }
+  public static Locale localeForLanguageTag(String languageTag) {
+    return new Locale.Builder().setLanguageTag(languageTag).build();
   }
 
   private static Directory newFSDirectoryImpl(Class<? extends FSDirectory> clazz, Path path, LockFactory lf) throws IOException {

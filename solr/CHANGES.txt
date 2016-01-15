@@ -532,6 +532,12 @@ Other Changes
 
 * SOLR-8555: SearchGroupShardResponseProcessor (initialCapacity) tweaks (Christine Poerschke)
 
+* LUCENE-6978: Refactor several code places that lookup locales
+  by string name to use BCP47 locale tag instead. LuceneTestCase
+  now also prints locales on failing tests this way. In addition,
+  several places in Solr now additionally support BCP47 in config
+  files.  (Uwe Schindler, Robert Muir)
+
 ==================  5.4.1 ==================
 
 Bug Fixes

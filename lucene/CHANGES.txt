@@ -225,6 +225,12 @@ Other
   with better compile-time-checked MethodType; generated class files
   are no longer marked as synthetic.  (Uwe Schindler)
 
+* LUCENE-6978: Refactor several code places that lookup locales
+  by string name to use BCP47 locale tag instead. LuceneTestCase
+  now also prints locales on failing tests this way.
+  Locale#forLanguageTag() and Locale#toString() were placed on list
+  of forbidden signatures.  (Uwe Schindler, Robert Muir)
+
 ======================= Lucene 5.4.1 =======================
 
 Bug Fixes

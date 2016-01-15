@@ -129,7 +129,7 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
     if (classEnvRule != null) {
       System.err.println("NOTE: test params are: codec=" + classEnvRule.codec +
           ", sim=" + classEnvRule.similarity +
-          ", locale=" + classEnvRule.locale +
+          ", locale=" + classEnvRule.locale.toLanguageTag() +
           ", timezone=" + (classEnvRule.timeZone == null ? "(null)" : classEnvRule.timeZone.getID()));
     }
     System.err.println("NOTE: " + System.getProperty("os.name") + " "
@@ -178,7 +178,7 @@ public final class RunListenerPrintReproduceInfo extends RunListener {
     // Environment.
     if (!TEST_LINE_DOCS_FILE.equals(DEFAULT_LINE_DOCS_FILE)) addVmOpt(b, "tests.linedocsfile", TEST_LINE_DOCS_FILE);
     if (classEnvRule != null) {
-      addVmOpt(b, "tests.locale", classEnvRule.locale);
+      addVmOpt(b, "tests.locale", classEnvRule.locale.toLanguageTag());
       if (classEnvRule.timeZone != null) {
         addVmOpt(b, "tests.timezone", classEnvRule.timeZone.getID());
       }

@@ -47,10 +47,14 @@ public class DateFormatTransformer extends Transformer {
   public Object transformRow(Map<String, Object> aRow, Context context) {
 
     for (Map<String, String> map : context.getAllEntityFields()) {
-      Locale locale = Locale.ROOT;
-      String customLocale = map.get("locale");
-      if(customLocale != null){
-        locale = new Locale(customLocale);
+      Locale locale = Locale.ENGLISH; // we default to ENGLISH for dates for full Java 9 compatibility
+      String customLocale = map.get(LOCALE);
+      if (customLocale != null) {
+        try {
+          locale = new Locale.Builder().setLanguageTag(customLocale).build();
+        } catch (IllformedLocaleException e) {
+          throw new DataImportHandlerException(DataImportHandlerException.SEVERE, "Invalid Locale specified: " + customLocale, e);
+        }
       }
 
       String fmt = map.get(DATE_TIME_FMT);
@@ -97,4 +101,6 @@ public class DateFormatTransformer extends Transformer {
   }
 
   public static final String DATE_TIME_FMT = "dateTimeFormat";
+  
+  public static final String LOCALE = "locale";
 }
