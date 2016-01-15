@@ -110,12 +110,12 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
       return false;
     }
     if (this.nonRetriableClasses.contains(exception.getClass())) {
-      log.debug("Do not retry, non retriable class {}" + exception.getClass());
+      log.debug("Do not retry, non retriable class {}", exception.getClass().getName());
       return false;
     } else {
       for (final Class<? extends IOException> rejectException : this.nonRetriableClasses) {
         if (rejectException.isInstance(exception)) {
-          log.debug("Do not retry, non retriable class {}" + exception.getClass());
+          log.debug("Do not retry, non retriable class {}", exception.getClass().getName());
           return false;
         }
       }
@@ -143,6 +143,7 @@ public class SolrHttpRequestRetryHandler implements HttpRequestRetryHandler {
   
   protected boolean handleAsIdempotent(final HttpClientContext context) {
     String method = context.getRequest().getRequestLine().getMethod();
+    context.getRequest().getRequestLine().getUri();
     return method.equals(GET);
   }
   
