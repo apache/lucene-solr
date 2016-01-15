@@ -399,6 +399,9 @@ Bug Fixes
 * SOLR-2798: Fixed local params to work correctly with multivalued params
   (Demian Katz via hossman)
 
+* SOLR-8541: Highlighting a geo RPT field would throw an NPE instead of doing nothing.
+  (Pawel Rog via David Smiley)
+
 Optimizations
 ----------------------
 

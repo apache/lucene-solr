@@ -180,6 +180,11 @@ Optimizations
 * LUCENE-6940: MUST_NOT clauses execute faster, especially when they are sparse.
   (Adrien Grand)
 
+Bug Fixes
+
+* LUCENE-6976: BytesRefTermAttributeImpl.copyTo NPE'ed if BytesRef was null.
+  Added equals & hashCode, and a new test for these things. (David Smiley)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)
