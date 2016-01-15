@@ -51,14 +51,14 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
   public void process(ResponseBuilder rb, ShardRequest shardRequest) {
     SortSpec ss = rb.getSortSpec();
     Sort groupSort = rb.getGroupingSpec().getGroupSort();
-    String[] fields = rb.getGroupingSpec().getFields();
+    final String[] fields = rb.getGroupingSpec().getFields();
     Sort sortWithinGroup = rb.getGroupingSpec().getSortWithinGroup();
     if (sortWithinGroup == null) { // TODO prevent it from being null in the first place
       sortWithinGroup = Sort.RELEVANCE;
     }
 
-    Map<String, List<Collection<SearchGroup<BytesRef>>>> commandSearchGroups = new HashMap<>();
-    Map<String, Map<SearchGroup<BytesRef>, Set<String>>> tempSearchGroupToShards = new HashMap<>();
+    final Map<String, List<Collection<SearchGroup<BytesRef>>>> commandSearchGroups = new HashMap<>(fields.length, 1.0f);
+    final Map<String, Map<SearchGroup<BytesRef>, Set<String>>> tempSearchGroupToShards = new HashMap<>(fields.length, 1.0f);
     for (String field : fields) {
       commandSearchGroups.put(field, new ArrayList<Collection<SearchGroup<BytesRef>>>(shardRequest.responses.size()));
       tempSearchGroupToShards.put(field, new HashMap<SearchGroup<BytesRef>, Set<String>>());
@@ -74,13 +74,13 @@ public class SearchGroupShardResponseProcessor implements ShardResponseProcessor
 
       NamedList<Object> shardInfo = null;
       if (rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
-        shardInfo = new SimpleOrderedMap<>();
+        shardInfo = new SimpleOrderedMap<>(shardRequest.responses.size());
         rb.rsp.getValues().add(ShardParams.SHARDS_INFO + ".firstPhase", shardInfo);
       }
 
       for (ShardResponse srsp : shardRequest.responses) {
         if (shardInfo != null) {
-          SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
+          SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>(4);
 
           if (srsp.getException() != null) {
             Throwable t = srsp.getException();

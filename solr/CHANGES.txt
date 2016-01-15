@@ -527,6 +527,8 @@ Other Changes
 * SOLR-8549: Solr start script checks for cores which have failed to load as well before attempting to
   create a core with the same name (Varun Thacker)
 
+* SOLR-8555: SearchGroupShardResponseProcessor (initialCapacity) tweaks (Christine Poerschke)
+
 ==================  5.4.1 ==================
 
 Bug Fixes
