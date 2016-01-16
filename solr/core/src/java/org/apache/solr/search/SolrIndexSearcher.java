@@ -1063,6 +1063,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     public DocSet answer;  // the answer, if non-null
     public Filter filter;
     public DelegatingCollector postFilter;
+    public boolean hasDeletedDocs;  // true if it's possible that filter may match deleted docs
   }
 
 
@@ -1128,7 +1129,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     for (final LeafReaderContext leaf : leafContexts) {
       final LeafReader reader = leaf.reader();
-      final Bits liveDocs = reader.getLiveDocs();   // TODO: the filter may already only have liveDocs...
+      Bits liveDocs = reader.getLiveDocs();
       DocIdSet idSet = null;
       if (pf.filter != null) {
         idSet = pf.filter.getDocIdSet(leaf, liveDocs);
@@ -1138,21 +1139,30 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
       if (idSet != null) {
         idIter = idSet.iterator();
         if (idIter == null) continue;
+        if (!pf.hasDeletedDocs) liveDocs = null; // no need to check liveDocs
       }
 
       final LeafCollector leafCollector = collector.getLeafCollector(leaf);
       int max = reader.maxDoc();
 
       if (idIter == null) {
-        for (int docid = 0; docid<max; docid++) {
+        for (int docid = 0; docid < max; docid++) {
           if (liveDocs != null && !liveDocs.get(docid)) continue;
           leafCollector.collect(docid);
         }
       } else {
-        for (int docid = -1; (docid = idIter.advance(docid+1)) < max; ) {
-          leafCollector.collect(docid);
+        if (liveDocs != null) {
+          for (int docid = -1; (docid = idIter.advance(docid + 1)) < max; ) {
+            if (liveDocs.get(docid))
+              leafCollector.collect(docid);
+          }
+        } else {
+          for (int docid = -1; (docid = idIter.advance(docid + 1)) < max;) {
+            leafCollector.collect(docid);
+          }
         }
       }
+
     }
 
     if(collector instanceof DelegatingCollector) {
@@ -1254,6 +1264,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
         weights.add(createNormalizedWeight(qq, true));
       }
       pf.filter = new FilterImpl(answer, weights);
+      pf.hasDeletedDocs = (answer == null);  // if all clauses were uncached, the resulting filter may match deleted docs
     } else {
       if (postFilters == null) {
         if (answer == null) {
