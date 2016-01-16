@@ -556,6 +556,12 @@ Bug Fixes
 
 * SOLR-7462: AIOOBE in RecordingJSONParser (Scott Dawson, noble)
 
+* SOLR-8496: SolrIndexSearcher.getDocSet(List<Query>) incorrectly included deleted documents
+  when all of the queries were uncached (or there was no filter cache).  This caused
+  multi-select faceting (including the JSON Facet API) to include deleted doc counts
+  when the remaining non-excluded filters were all uncached.  This bug was first introduced in 5.3.0
+  (Andreas Müller, Vasiliy Bout, Erick Erickson, Shawn Heisey, Hossman, yonik)
+
 
 New Features
 ----------------------
@@ -1039,6 +1045,13 @@ Bug Fixes
 
 * SOLR-8422: When authentication enabled, requests fail if sent to a node that doesn't host
   the collection (noble)
+
+* SOLR-8496: SolrIndexSearcher.getDocSet(List<Query>) incorrectly included deleted documents
+  when all of the queries were uncached (or there was no filter cache).  This caused
+  multi-select faceting (including the JSON Facet API) to include deleted doc counts
+  when the remaining non-excluded filters were all uncached.  This bug was first introduced in 5.3.0
+  (Andreas Müller, Vasiliy Bout, Erick Erickson, Shawn Heisey, Hossman, yonik)
+
 
 ==================  5.3.1 ==================
 
