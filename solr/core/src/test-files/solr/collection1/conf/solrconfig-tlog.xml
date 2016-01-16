@@ -128,4 +128,30 @@
     </lst>
   </requestHandler>
 
+
+  <query>
+    <filterCache class="solr.FastLRUCache"
+      size="512"
+      initialSize="512"
+      autowarmCount="0" />
+
+    <queryResultCache class="solr.LRUCache"
+      size="512"
+      initialSize="512"
+      autowarmCount="0" />
+
+    <documentCache class="solr.LRUCache"
+      size="512"
+      initialSize="512"
+      autowarmCount="0" />
+
+    <cache name="perSegFilter"
+      class="solr.search.LRUCache"
+      size="10"
+      initialSize="0"
+      autowarmCount="10"
+      regenerator="solr.NoOpRegenerator" />
+
+  </query>
+
 </config>
