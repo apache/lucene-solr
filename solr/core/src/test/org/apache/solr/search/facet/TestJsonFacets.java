@@ -382,7 +382,11 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     client.deleteByQuery("*:*", null);
 
-    client.add(sdoc("id", "1", cat_s, "A", where_s, "NY", num_d, "4", num_i, "2",   super_s, "zodiac",  date,"2001-01-01T01:01:01Z", val_b, "true", sparse_s, "one"), null);
+    SolrInputDocument doc =
+               sdoc("id", "1", cat_s, "A", where_s, "NY", num_d, "4", num_i, "2", super_s, "zodiac", date, "2001-01-01T01:01:01Z", val_b, "true", sparse_s, "one");
+    client.add(doc, null);
+    client.add(doc, null);
+    client.add(doc, null);  // a couple of deleted docs
     client.add(sdoc("id", "2", cat_s, "B", where_s, "NJ", num_d, "-9", num_i, "-5", super_s,"superman", date,"2002-02-02T02:02:02Z", val_b, "false"         , multi_ss,"a", multi_ss,"b" , Z_num_i, "0"), null);
     client.add(sdoc("id", "3"), null);
     client.commit();
@@ -917,6 +921,18 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // multi-select / exclude tagged filters via excludeTags
     ////////////////////////////////////////////////////////////////////////////////////////////
 
+    // test uncached multi-select (see SOLR-8496)
+    client.testJQ(params(p, "q", "{!cache=false}*:*", "fq","{!tag=doc3,allfilt}-id:3"
+
+            , "json.facet", "{" +
+                "f1:{${terms} type:terms, field:${cat_s}, domain:{excludeTags:doc3} }  " +
+                "}"
+        )
+        , "facets=={ count:5, " +
+            " f1:{ buckets:[ {val:B, count:3}, {val:A, count:2} ]  }" +
+            "}"
+    );
+
     // nested query facets on subset (with excludeTags)
     client.testJQ(params(p, "q", "*:*", "fq","{!tag=abc}id:(2 3)"
             , "json.facet", "{ processEmpty:true," +
@@ -941,7 +957,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     );
 
     // terms facet with nested query facet (with excludeTags, using new format inside domain:{})
-    client.testJQ(params(p, "q", "*:*", "fq", "{!tag=doc6,allfilt}-id:6", "fq","{!tag=doc3,allfilt}-id:3"
+    client.testJQ(params(p, "q", "{!cache=false}*:*", "fq", "{!tag=doc6,allfilt}-id:6", "fq","{!tag=doc3,allfilt}-id:3"
 
             , "json.facet", "{processEmpty:true, " +
                 " f0:{${terms} type:terms, field:${cat_s},                                    facet:{nj:{query:'${where_s}:NJ'}} }  " +
