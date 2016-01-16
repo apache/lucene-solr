@@ -74,7 +74,8 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   // recognizes (and propagates) partitions
   protected static final long sleepMsBeforeHealPartition = 2000L;
 
-  protected static final int maxWaitSecsToSeeAllActive = 30;
+  // give plenty of time for replicas to recover when running in slow Jenkins test envs
+  protected static final int maxWaitSecsToSeeAllActive = 90;
 
   public HttpPartitionTest() {
     super();
