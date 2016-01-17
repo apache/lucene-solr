@@ -111,6 +111,18 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
       actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
     }
     assertArrayEquals(expectedIds, actualIds);
+
+    params = new ModifiableSolrParams();
+    params.set(CommonParams.Q, "{!mlt qf=lowerfilt boost=true}17");
+    queryResponse = queryServer(params);
+    solrDocuments = queryResponse.getResults();
+    expectedIds = new int[]{7, 13, 14, 15, 16, 20, 22, 24, 32, 9};
+    actualIds = new int[solrDocuments.size()];
+    i = 0;
+    for (SolrDocument solrDocument : solrDocuments) {
+      actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+    }
+    assertArrayEquals(expectedIds, actualIds);
     
     params = new ModifiableSolrParams();
     params.set(CommonParams.Q, "{!mlt qf=lowerfilt mindf=0 mintf=1}3");
