@@ -14,6 +14,10 @@ Bug Fixes
 * LUCENE-7019: add two-phase iteration to GeoPointTermQueryConstantScoreWrapper.
   (Robert Muir via Nick Knize)
 
+* LUCENE-6932: RAMDirectory's IndexInput should always throw
+  EOFException if you seek past the end of the file and then try to
+  read (Stéphane Campinas via Mike McCandless)
+
 ======================= Lucene 5.4.1 =======================
 
 Bug Fixes
