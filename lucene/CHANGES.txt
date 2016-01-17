@@ -185,6 +185,10 @@ Bug Fixes
 * LUCENE-6976: BytesRefTermAttributeImpl.copyTo NPE'ed if BytesRef was null.
   Added equals & hashCode, and a new test for these things. (David Smiley)
 
+* LUCENE-6932: RAMDirectory's IndexInput should always throw
+  EOFException if you seek past the end of the file and then try to
+  read (Stéphane Campinas via Mike McCandless)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)

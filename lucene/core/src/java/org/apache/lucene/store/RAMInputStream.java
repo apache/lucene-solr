@@ -97,7 +97,7 @@ public class RAMInputStream extends IndexInput implements Cloneable {
       if (enforceEOF) {
         throw new EOFException("read past EOF: " + this);
       } else {
-        // Force EOF if a read takes place at this position
+        // Force EOF if a read later takes place at this position
         currentBufferIndex--;
         bufferPosition = BUFFER_SIZE;
       }
@@ -120,7 +120,10 @@ public class RAMInputStream extends IndexInput implements Cloneable {
       currentBufferIndex = (int) (pos / BUFFER_SIZE);
       switchCurrentBuffer(false);
     }
-    bufferPosition = (int) (pos % BUFFER_SIZE);
+    if (pos < BUFFER_SIZE * (long) file.numBuffers()) {
+      // do not overwrite bufferPosition if EOF should be thrown on the next read
+      bufferPosition = (int) (pos % BUFFER_SIZE);
+    }
   }
 
   @Override
