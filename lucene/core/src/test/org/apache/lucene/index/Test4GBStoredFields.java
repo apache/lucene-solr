@@ -96,7 +96,7 @@ public class Test4GBStoredFields extends LuceneTestCase {
     }
 
     DirectoryReader rd = DirectoryReader.open(dir);
-    StoredDocument sd = rd.document(numDocs - 1);
+    Document sd = rd.document(numDocs - 1);
     assertNotNull(sd);
     assertEquals(1, sd.getFields().size());
     BytesRef valueRef = sd.getBinaryValue("fld");

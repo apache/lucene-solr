@@ -48,9 +48,9 @@ public class TrackingIndexWriter {
   }
 
   /** Calls {@link
-   *  IndexWriter#updateDocument(Term,IndexDocument)} and
+   *  IndexWriter#updateDocument(Term,Iterable)} and
    *  returns the generation that reflects this change. */
-  public long updateDocument(Term t, IndexDocument d) throws IOException {
+  public long updateDocument(Term t, Iterable<? extends IndexableField> d) throws IOException {
     writer.updateDocument(t, d);
     // Return gen as of when indexing finished:
     return indexingGen.get();
@@ -59,7 +59,7 @@ public class TrackingIndexWriter {
   /** Calls {@link
    *  IndexWriter#updateDocuments(Term,Iterable)} and returns
    *  the generation that reflects this change. */
-  public long updateDocuments(Term t, Iterable<? extends IndexDocument> docs) throws IOException {
+  public long updateDocuments(Term t, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     writer.updateDocuments(t, docs);
     // Return gen as of when indexing finished:
     return indexingGen.get();
@@ -105,9 +105,9 @@ public class TrackingIndexWriter {
     return indexingGen.get();
   }
 
-  /** Calls {@link IndexWriter#addDocument(IndexDocument)}
+  /** Calls {@link IndexWriter#addDocument(Iterable)}
    *  and returns the generation that reflects this change. */
-  public long addDocument(IndexDocument d) throws IOException {
+  public long addDocument(Iterable<? extends IndexableField> d) throws IOException {
     writer.addDocument(d);
     // Return gen as of when indexing finished:
     return indexingGen.get();
@@ -115,7 +115,7 @@ public class TrackingIndexWriter {
 
   /** Calls {@link IndexWriter#addDocuments(Iterable)} and
    *  returns the generation that reflects this change. */
-  public long addDocuments(Iterable<? extends IndexDocument> docs) throws IOException {
+  public long addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     writer.addDocuments(docs);
     // Return gen as of when indexing finished:
     return indexingGen.get();

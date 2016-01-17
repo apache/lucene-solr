@@ -446,7 +446,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));
       Document nextDoc = lineFileDocs.nextDoc();
       Document doc = new Document();
-      for (Field field : nextDoc.getFields()) {
+      for (IndexableField field : nextDoc.getFields()) {
         if (field.fieldType().indexOptions() != IndexOptions.NONE) {
           doc.add(field);
           if (random().nextInt(3) == 0) {
@@ -457,7 +457,7 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
       
       writer.addDocument(doc);
       writer.close();
-      for (IndexableField field : doc.indexableFields()) {
+      for (IndexableField field : doc) {
         memory.addField(field.name(), ((Field)field).stringValue(), mockAnalyzer);  
       }
       DirectoryReader competitor = DirectoryReader.open(dir);

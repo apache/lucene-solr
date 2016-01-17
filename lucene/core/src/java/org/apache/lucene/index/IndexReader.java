@@ -17,11 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.util.Bits;  // javadocs
-import org.apache.lucene.util.IOUtils;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collections;
@@ -30,6 +25,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DocumentStoredFieldVisitor;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.Bits;  // javadocs
+import org.apache.lucene.util.IOUtils;
 
 /**
  IndexReader is an abstract class, providing an interface for accessing a
@@ -364,7 +365,7 @@ public abstract class IndexReader implements Closeable {
   // TODO: we need a separate StoredField, so that the
   // Document returned here contains that class not
   // IndexableField
-  public final StoredDocument document(int docID) throws IOException {
+  public final Document document(int docID) throws IOException {
     final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
     document(docID, visitor);
     return visitor.getDocument();
@@ -375,7 +376,7 @@ public abstract class IndexReader implements Closeable {
    * fields.  Note that this is simply sugar for {@link
    * DocumentStoredFieldVisitor#DocumentStoredFieldVisitor(Set)}.
    */
-  public final StoredDocument document(int docID, Set<String> fieldsToLoad)
+  public final Document document(int docID, Set<String> fieldsToLoad)
       throws IOException {
     final DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(
         fieldsToLoad);

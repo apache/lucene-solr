@@ -29,7 +29,7 @@ import java.util.Set;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
@@ -820,7 +820,7 @@ public class Grouping {
           SchemaField schemaField = searcher.getSchema().getField(groupBy);
           FieldType fieldType = schemaField.getType();
           String readableValue = fieldType.indexedToReadable(group.groupValue.utf8ToString());
-          StorableField field = schemaField.createField(readableValue, 1.0f);
+          IndexableField field = schemaField.createField(readableValue, 1.0f);
           nl.add("groupValue", fieldType.toObject(field));
         } else {
           nl.add("groupValue", null);

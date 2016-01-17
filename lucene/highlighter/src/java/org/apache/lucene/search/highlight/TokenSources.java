@@ -25,9 +25,9 @@ import java.io.IOException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.LimitTokenOffsetFilter;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Terms;
 
 /**
@@ -114,7 +114,7 @@ public class TokenSources {
    */
   @Deprecated // maintenance reasons LUCENE-6445
   public static TokenStream getAnyTokenStream(IndexReader reader, int docId,
-      String field, StoredDocument document, Analyzer analyzer) throws IOException {
+      String field, Document document, Analyzer analyzer) throws IOException {
     TokenStream ts = null;
 
     Fields vectors = reader.getTermVectors(docId);
@@ -228,12 +228,12 @@ public class TokenSources {
   @Deprecated // maintenance reasons LUCENE-6445
   public static TokenStream getTokenStream(IndexReader reader, int docId,
       String field, Analyzer analyzer) throws IOException {
-    StoredDocument doc = reader.document(docId);
+    Document doc = reader.document(docId);
     return getTokenStream(doc, field, analyzer);
   }
 
   @Deprecated // maintenance reasons LUCENE-6445
-  public static TokenStream getTokenStream(StoredDocument doc, String field,
+  public static TokenStream getTokenStream(Document doc, String field,
       Analyzer analyzer) {
     String contents = doc.get(field);
     if (contents == null) {

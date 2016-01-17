@@ -25,9 +25,9 @@ import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.StorableField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
@@ -106,7 +106,7 @@ class CrankyStoredFieldsFormat extends StoredFieldsFormat {
     }
 
     @Override
-    public void writeField(FieldInfo info, StorableField field) throws IOException {
+    public void writeField(FieldInfo info, IndexableField field) throws IOException {
       if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from StoredFieldsWriter.writeField()");
       }

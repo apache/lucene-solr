@@ -27,7 +27,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
@@ -194,7 +194,7 @@ public class KNearestNeighborClassifier implements Classifier<BytesRef> {
     Map<BytesRef, Double> classBoosts = new HashMap<>(); // this is a boost based on class ranking positions in topDocs
     float maxScore = topDocs.getMaxScore();
     for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-      StorableField storableField = indexSearcher.doc(scoreDoc.doc).getField(classFieldName);
+      IndexableField storableField = indexSearcher.doc(scoreDoc.doc).getField(classFieldName);
       if (storableField != null) {
         BytesRef cl = new BytesRef(storableField.stringValue());
         //update count

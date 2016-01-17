@@ -17,9 +17,22 @@
 
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
@@ -31,8 +44,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.MoreLikeThisParams.TermStyle;
+import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
@@ -58,19 +71,6 @@ import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Solr MoreLikeThis --
@@ -394,7 +394,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     
     public DocListAndSet getMoreLikeThis( int id, int start, int rows, List<Query> filters, List<InterestingTerm> terms, int flags ) throws IOException
     {
-      StoredDocument doc = reader.document(id);
+      Document doc = reader.document(id);
       rawMLTQuery = mlt.like(id);
       boostedMLTQuery = getBoostedQuery( rawMLTQuery );
       if( terms != null ) {

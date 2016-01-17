@@ -39,7 +39,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.search.IndexSearcher;
@@ -454,7 +453,7 @@ public class DistinctValuesCollectorTest extends AbstractGroupingTestCase {
     DirectoryReader reader = w.getReader();
     if (VERBOSE) {
       for(int docID=0;docID<reader.maxDoc();docID++) {
-        StoredDocument doc = reader.document(docID);
+        Document doc = reader.document(docID);
         System.out.println("docID=" + docID + " id=" + doc.get("id") + " content=" + doc.get("content") + " author=" + doc.get("author") + " publisher=" + doc.get("publisher"));
       }
     }

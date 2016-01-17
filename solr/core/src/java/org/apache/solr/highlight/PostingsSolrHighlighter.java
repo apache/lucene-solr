@@ -17,8 +17,15 @@ package org.apache.solr.highlight;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.text.BreakIterator;
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.postingshighlight.DefaultPassageFormatter;
 import org.apache.lucene.search.postingshighlight.Passage;
@@ -39,13 +46,6 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
-
-import java.io.IOException;
-import java.text.BreakIterator;
-import java.util.Collections;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 /** 
  * Highlighter impl that uses {@link PostingsHighlighter}
@@ -195,7 +195,7 @@ public class PostingsSolrHighlighter extends SolrHighlighter implements PluginIn
       String uniqueKeys[] = new String[docIDs.length];
       for (int i = 0; i < docIDs.length; i++) {
         int docid = docIDs[i];
-        StoredDocument doc = searcher.doc(docid, selector);
+        Document doc = searcher.doc(docid, selector);
         String id = schema.printableUniqueKey(doc);
         uniqueKeys[i] = id;
       }

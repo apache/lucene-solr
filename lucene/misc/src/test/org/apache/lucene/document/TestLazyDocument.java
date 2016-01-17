@@ -87,13 +87,13 @@ public class TestLazyDocument extends LuceneTestCase {
         = new LazyTestingStoredFieldVisitor(new LazyDocument(reader, hits[0].doc),
                                             FIELDS);
       reader.document(hits[0].doc, visitor);
-      StoredDocument d = visitor.doc;
+      Document d = visitor.doc;
 
       int numFieldValues = 0;
       Map<String,Integer> fieldValueCounts = new HashMap<>();
 
       // at this point, all FIELDS should be Lazy and unrealized
-      for (StorableField f : d) {
+      for (IndexableField f : d) {
         numFieldValues++;   
         if (f.name().equals("never_load")) {
           fail("never_load was loaded");
@@ -125,7 +125,7 @@ public class TestLazyDocument extends LuceneTestCase {
 
       // pick a single field name to load a single value
       final String fieldName = FIELDS[random().nextInt(FIELDS.length)];
-      final StorableField[] fieldValues = d.getFields(fieldName);
+      final IndexableField[] fieldValues = d.getFields(fieldName);
       assertEquals("#vals in field: " + fieldName, 
                    NUM_VALUES, fieldValues.length);
       final int valNum = random().nextInt(fieldValues.length);
@@ -133,7 +133,7 @@ public class TestLazyDocument extends LuceneTestCase {
                    fieldValues[valNum].stringValue());
       
       // now every value of fieldName should be loaded
-      for (StorableField f : d) {
+      for (IndexableField f : d) {
         if (f.name().equals("never_load")) {
           fail("never_load was loaded");
         }
@@ -160,7 +160,7 @@ public class TestLazyDocument extends LuceneTestCase {
       // ensure we have all the values we expect now, and that
       // adding one more lazy field didn't "unload" the existing LazyField's
       // we already loaded.
-      for (StorableField f : d) {
+      for (IndexableField f : d) {
         if (f.name().equals("never_load")) {
           fail("never_load was loaded");
         }
@@ -185,7 +185,7 @@ public class TestLazyDocument extends LuceneTestCase {
   }
 
   private static class LazyTestingStoredFieldVisitor extends StoredFieldVisitor {
-    public final StoredDocument doc = new StoredDocument();
+    public final Document doc = new Document();
     public final LazyDocument lazyDoc;
     public final Set<String> lazyFieldNames;
 

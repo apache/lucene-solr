@@ -27,7 +27,6 @@ import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -202,7 +201,7 @@ public class TestCoreParser extends LuceneTestCase {
       System.out.println("=========" + qType + "============");
       ScoreDoc[] scoreDocs = hits.scoreDocs;
       for (int i = 0; i < Math.min(numDocs, hits.totalHits); i++) {
-        StoredDocument ldoc = searcher.doc(scoreDocs[i].doc);
+        Document ldoc = searcher.doc(scoreDocs[i].doc);
         System.out.println("[" + ldoc.get("date") + "]" + ldoc.get("contents"));
       }
       System.out.println();

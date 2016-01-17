@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.*;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
@@ -113,7 +113,7 @@ public class TextField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, f.stringValue(), true);
   }
 

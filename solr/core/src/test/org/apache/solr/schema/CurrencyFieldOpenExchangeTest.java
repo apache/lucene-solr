@@ -16,7 +16,7 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.junit.BeforeClass;

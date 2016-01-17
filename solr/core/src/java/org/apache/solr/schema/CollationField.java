@@ -36,7 +36,7 @@ import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -186,7 +186,7 @@ public class CollationField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, f.stringValue(), true);
   }
 
@@ -256,9 +256,9 @@ public class CollationField extends FieldType {
   }
 
   @Override
-  public List<StorableField> createFields(SchemaField field, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
     if (field.hasDocValues()) {
-      List<StorableField> fields = new ArrayList<>();
+      List<IndexableField> fields = new ArrayList<>();
       fields.add(createField(field, value, boost));
       final BytesRef bytes = getCollationKey(field.getName(), value.toString());
       if (field.multiValued()) {

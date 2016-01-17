@@ -416,8 +416,8 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     assertEquals(parallelHits.length, singleHits.length);
     for(int i = 0; i < parallelHits.length; i++) {
       assertEquals(parallelHits[i].score, singleHits[i].score, 0.001f);
-      StoredDocument docParallel = parallel.doc(parallelHits[i].doc);
-      StoredDocument docSingle = single.doc(singleHits[i].doc);
+      Document docParallel = parallel.doc(parallelHits[i].doc);
+      Document docSingle = single.doc(singleHits[i].doc);
       assertEquals(docParallel.get("f1"), docSingle.get("f1"));
       assertEquals(docParallel.get("f2"), docSingle.get("f2"));
       assertEquals(docParallel.get("f3"), docSingle.get("f3"));

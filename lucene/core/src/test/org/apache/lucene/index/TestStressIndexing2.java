@@ -116,9 +116,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   static Term idTerm = new Term("id","");
   IndexingThread[] threads;
-  static Comparator<GeneralField> fieldNameComparator = new Comparator<GeneralField>() {
+  static Comparator<IndexableField> fieldNameComparator = new Comparator<IndexableField>() {
     @Override
-    public int compare(GeneralField o1, GeneralField o2) {
+    public int compare(IndexableField o1, IndexableField o2) {
       return o1.name().compareTo(o2.name());
     }
   };
@@ -238,7 +238,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     Iterator<Document> iter = docs.values().iterator();
     while (iter.hasNext()) {
       Document d = iter.next();
-      ArrayList<Field> fields = new ArrayList<>();
+      ArrayList<IndexableField> fields = new ArrayList<>();
       fields.addAll(d.getFields());
       // put fields in same order each time
       Collections.sort(fields, fieldNameComparator);
@@ -275,7 +275,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       Bits liveDocs = sub.getLiveDocs();
       System.out.println("  " + ((SegmentReader) sub).getSegmentInfo());
       for(int docID=0;docID<sub.maxDoc();docID++) {
-        StoredDocument doc = sub.document(docID);
+        Document doc = sub.document(docID);
         if (liveDocs == null || liveDocs.get(docID)) {
           System.out.println("    docID=" + docID + " id:" + doc.get("id"));
         } else {
@@ -575,9 +575,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
   }
 
-  public static void verifyEquals(StoredDocument d1, StoredDocument d2) {
-    List<StorableField> ff1 = d1.getFields();
-    List<StorableField> ff2 = d2.getFields();
+  public static void verifyEquals(Document d1, Document d2) {
+    List<IndexableField> ff1 = new ArrayList<>(d1.getFields());
+    List<IndexableField> ff2 = new ArrayList<>(d2.getFields());
 
     Collections.sort(ff1, fieldNameComparator);
     Collections.sort(ff2, fieldNameComparator);
@@ -585,8 +585,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
     assertEquals(ff1 + " : " + ff2, ff1.size(), ff2.size());
 
     for (int i=0; i<ff1.size(); i++) {
-      StorableField f1 = ff1.get(i);
-      StorableField f2 = ff2.get(i);
+      IndexableField f1 = ff1.get(i);
+      IndexableField f2 = ff2.get(i);
       if (f1.binaryValue() != null) {
         assert(f2.binaryValue() != null);
       } else {

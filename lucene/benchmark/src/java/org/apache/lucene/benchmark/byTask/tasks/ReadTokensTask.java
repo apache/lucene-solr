@@ -27,10 +27,11 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.LegacyFloatField;
 import org.apache.lucene.document.LegacyIntField;
-import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.LegacyLongField;
+import org.apache.lucene.index.IndexableField;
 
 /**
  * Simple task to test performance of tokenizers.  It just
@@ -68,10 +69,10 @@ public class ReadTokensTask extends PerfTask {
 
   @Override
   public int doLogic() throws Exception {
-    List<Field> fields = doc.getFields();
+    List<IndexableField> fields = doc.getFields();
     Analyzer analyzer = getRunData().getAnalyzer();
     int tokenCount = 0;
-    for(final Field field : fields) {
+    for(final IndexableField field : fields) {
       if (!field.fieldType().tokenized() ||
           field instanceof LegacyIntField ||
           field instanceof LegacyLongField ||

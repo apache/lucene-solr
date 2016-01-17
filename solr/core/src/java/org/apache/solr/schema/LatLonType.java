@@ -24,7 +24,7 @@ import java.util.Map;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
@@ -69,10 +69,10 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   }
 
   @Override
-  public List<StorableField> createFields(SchemaField field, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
     String externalVal = value.toString();
     //we could have 3 fields (two for the lat & lon, one for storage)
-    List<StorableField> f = new ArrayList<>(3);
+    List<IndexableField> f = new ArrayList<>(3);
     if (field.indexed()) {
       Point point = SpatialUtils.parsePointSolrException(externalVal, SpatialContext.GEO);
       //latitude
@@ -232,7 +232,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, f.stringValue(), true);
   }
 
@@ -251,7 +251,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
   //It never makes sense to create a single field, so make it impossible to happen
 
   @Override
-  public StorableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value, float boost) {
     throw new UnsupportedOperationException("LatLonType uses multiple fields.  field=" + field.getName());
   }
 

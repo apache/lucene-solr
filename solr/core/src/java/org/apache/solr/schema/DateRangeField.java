@@ -25,7 +25,7 @@ import java.util.Map;
 
 import com.spatial4j.core.shape.Shape;
 
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.prefix.NumberRangePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.DateRangePrefixTree;
@@ -63,7 +63,7 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
   }
 
   @Override
-  public List<StorableField> createFields(SchemaField field, Object val, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object val, float boost) {
     if (val instanceof Date || val instanceof Calendar)//From URP?
       val = tree.toUnitShape(val);
     return super.createFields(field, val, boost);

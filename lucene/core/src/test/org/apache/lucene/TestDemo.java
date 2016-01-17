@@ -25,9 +25,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -65,7 +64,7 @@ public class TestDemo extends LuceneTestCase {
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
     }
 

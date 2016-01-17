@@ -677,7 +677,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         // Slowly parse the stored field into a new doc values field:
         for(int i=0;i<maxDoc;i++) {
           // TODO: is this still O(blockSize^2)?
-          StoredDocument oldDoc = reader.document(i);
+          Document oldDoc = reader.document(i);
           Document newDoc = new Document();
           long value = Long.parseLong(oldDoc.get("text").split(" ")[1]);
           newDoc.add(new NumericDocValuesField("number", value));
@@ -733,7 +733,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           // Must slowly parse the stored field into a new doc values field:
           for(int i=0;i<maxDoc;i++) {
             // TODO: is this still O(blockSize^2)?
-            StoredDocument oldDoc = reader.document(i);
+            Document oldDoc = reader.document(i);
             Document newDoc = new Document();
             long value = Long.parseLong(oldDoc.get("text").split(" ")[1]);
             newDoc.add(new NumericDocValuesField("number_" + newSchemaGen, value));
@@ -746,7 +746,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           assertNotNull("oldSchemaGen=" + oldSchemaGen, oldValues);
           for(int i=0;i<maxDoc;i++) {
             // TODO: is this still O(blockSize^2)?
-            StoredDocument oldDoc = reader.document(i);
+            Document oldDoc = reader.document(i);
             Document newDoc = new Document();
             newDoc.add(new NumericDocValuesField("number_" + newSchemaGen, oldValues.get(i)));
             w.addDocument(newDoc);
@@ -776,7 +776,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         int maxDoc = r.maxDoc();
         boolean failed = false;
         for(int i=0;i<maxDoc;i++) {
-          StoredDocument oldDoc = r.document(i);
+          Document oldDoc = r.document(i);
           long value = Long.parseLong(oldDoc.get("text").split(" ")[1]);
           if (value != numbers.get(i)) {
             if (DEBUG) System.out.println("FAIL: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.get(i) + " numbers=" + numbers);
@@ -828,7 +828,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           // Must slowly parse the stored field into a new doc values field:
           for(int i=0;i<maxDoc;i++) {
             // TODO: is this still O(blockSize^2)?
-            StoredDocument oldDoc = reader.document(i);
+            Document oldDoc = reader.document(i);
             Document newDoc = new Document();
             long value = Long.parseLong(oldDoc.get("text").split(" ")[1]);
             newDoc.add(new NumericDocValuesField("number", newSchemaGen*value));
@@ -841,7 +841,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           assertNotNull("oldSchemaGen=" + oldSchemaGen, oldValues);
           for(int i=0;i<maxDoc;i++) {
             // TODO: is this still O(blockSize^2)?
-            StoredDocument oldDoc = reader.document(i);
+            Document oldDoc = reader.document(i);
             Document newDoc = new Document();
             newDoc.add(new NumericDocValuesField("number", newSchemaGen*(oldValues.get(i)/oldSchemaGen)));
             w.addDocument(newDoc);
@@ -875,7 +875,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         int maxDoc = r.maxDoc();
         boolean failed = false;
         for(int i=0;i<maxDoc;i++) {
-          StoredDocument oldDoc = r.document(i);
+          Document oldDoc = r.document(i);
           long value = Long.parseLong(oldDoc.get("text").split(" ")[1]);
           value *= schemaGen;
           if (value != numbers.get(i)) {
@@ -1135,7 +1135,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
           if (numbers != null) {
             int maxDoc = leaf.maxDoc();
             for(int i=0;i<maxDoc;i++) {
-              StoredDocument doc = leaf.document(i);
+              Document doc = leaf.document(i);
               long value = Long.parseLong(doc.get("text").split(" ")[1]);
               long dvValue = numbers.get(i);
               if (value == 0) {
@@ -1302,7 +1302,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     boolean failed = false;
     long t0 = System.currentTimeMillis();
     for(int i=0;i<maxDoc;i++) {
-      StoredDocument oldDoc = r.document(i);
+      Document oldDoc = r.document(i);
       long value = multiplier * Long.parseLong(oldDoc.get("text").split(" ")[1]);
       if (value != numbers.get(i)) {
         System.out.println("FAIL: docID=" + i + " " + oldDoc+ " value=" + value + " number=" + numbers.get(i) + " numbers=" + numbers);

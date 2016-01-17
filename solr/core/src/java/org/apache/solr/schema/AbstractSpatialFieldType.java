@@ -30,18 +30,9 @@ import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
-import com.google.common.base.Throwables;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.SpatialContextFactory;
-import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -63,6 +54,16 @@ import org.apache.solr.util.MapListener;
 import org.apache.solr.util.SpatialUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Throwables;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.spatial4j.core.context.SpatialContext;
+import com.spatial4j.core.context.SpatialContextFactory;
+import com.spatial4j.core.distance.DistanceUtils;
+import com.spatial4j.core.shape.Point;
+import com.spatial4j.core.shape.Rectangle;
+import com.spatial4j.core.shape.Shape;
 
 /**
  * Abstract base class for Solr FieldTypes based on a Lucene 4 {@link SpatialStrategy}.
@@ -192,7 +193,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   }
 
   @Override
-  public List<StorableField> createFields(SchemaField field, Object val, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object val, float boost) {
     String shapeStr = null;
     Shape shape;
     if (val instanceof Shape) {
@@ -206,7 +207,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
       return Collections.emptyList();
     }
 
-    List<StorableField> result = new ArrayList<>();
+    List<IndexableField> result = new ArrayList<>();
     if (field.indexed()) {
       T strategy = getStrategy(field.getName());
       result.addAll(Arrays.asList(strategy.createIndexableFields(shape)));
@@ -384,10 +385,10 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
         if (du != null) {
           multiplier = du.multiplierFromDegreesToThisUnit();
         } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "'score' local-param must be one of " + supportedScoreModes + ", it was: " + score);
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                  "'score' local-param must be one of " + supportedScoreModes + ", it was: " + score);
+        }
     }
-  }
 
     return strategy.makeDistanceValueSource(spatialArgs.getShape().getCenter(), multiplier);
   }
@@ -412,7 +413,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, f.stringValue(), true);
   }
 

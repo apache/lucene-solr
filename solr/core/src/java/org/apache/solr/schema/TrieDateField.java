@@ -19,7 +19,7 @@ package org.apache.solr.schema;
 
 import java.util.Date;
 
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.update.processor.TimestampUpdateProcessorFactory; //jdoc
 import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.DateMathParser;
@@ -90,7 +90,7 @@ public class TrieDateField extends TrieField implements DateValueFieldType {
   }
   
   @Override
-  public Date toObject(StorableField f) {
+  public Date toObject(IndexableField f) {
     return (Date)super.toObject(f);
   }
 

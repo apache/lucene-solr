@@ -281,10 +281,6 @@ class DocHelper {
     return doc.getFields().size();
   }
 
-  public static int numFields(StoredDocument doc) {
-    return doc.getFields().size();
-  }
-  
   public static Document createDocument(int n, String indexName, int numFields) {
     StringBuilder sb = new StringBuilder();
     FieldType customType = new FieldType(TextField.TYPE_STORED);

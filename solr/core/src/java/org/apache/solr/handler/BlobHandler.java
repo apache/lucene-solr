@@ -27,8 +27,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -62,8 +62,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonMap;
-import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.params.CommonParams.JSON;
+import static org.apache.solr.common.util.Utils.makeMap;
 
 public class BlobHandler extends RequestHandlerBase implements PluginInfoInitialized {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -122,7 +122,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
 
         long version = 0;
         if (docs.totalHits > 0) {
-          StoredDocument doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
+          Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
           Number n = doc.getField("version").numericValue();
           version = n.longValue();
         }
@@ -168,8 +168,8 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
 
               @Override
               public void write(OutputStream os) throws IOException {
-                StoredDocument doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
-                StorableField sf = doc.getField("blob");
+                Document doc = req.getSearcher().doc(docs.scoreDocs[0].doc);
+                IndexableField sf = doc.getField("blob");
                 FieldType fieldType = req.getSchema().getField("blob").getType();
                 ByteBuffer buf = (ByteBuffer) fieldType.toObject(sf);
                 if (buf == null) {

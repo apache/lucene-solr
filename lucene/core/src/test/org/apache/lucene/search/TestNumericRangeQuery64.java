@@ -19,15 +19,14 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
@@ -177,7 +176,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
       assertEquals("Score doc count"+type, count, sd.length );
-      StoredDocument doc=searcher.doc(sd[0].doc);
+      Document doc=searcher.doc(sd[0].doc);
       assertEquals("First doc"+type, 2*distance+startOffset, doc.getField(field).numericValue().longValue() );
       doc=searcher.doc(sd[sd.length-1].doc);
       assertEquals("Last doc"+type, (1+count)*distance+startOffset, doc.getField(field).numericValue().longValue() );
@@ -222,7 +221,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
-    StoredDocument doc=searcher.doc(sd[0].doc);
+    Document doc=searcher.doc(sd[0].doc);
     assertEquals("First doc", startOffset, doc.getField(field).numericValue().longValue() );
     doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (count-1)*distance+startOffset, doc.getField(field).numericValue().longValue() );
@@ -267,7 +266,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
-    StoredDocument doc=searcher.doc(sd[0].doc);
+    Document doc=searcher.doc(sd[0].doc);
     assertEquals("First doc", count*distance+startOffset, doc.getField(field).numericValue().longValue() );
     doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (noDocs-1)*distance+startOffset, doc.getField(field).numericValue().longValue() );

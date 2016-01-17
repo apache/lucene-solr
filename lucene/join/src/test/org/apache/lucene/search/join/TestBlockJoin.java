@@ -44,7 +44,6 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
@@ -151,10 +150,10 @@ public class TestBlockJoin extends LuceneTestCase {
     assertEquals(1, results.totalGroupedHitCount);
     assertEquals(1, results.groups.length);
     final GroupDocs<Integer> group = results.groups[0];
-    StoredDocument childDoc = s.doc(group.scoreDocs[0].doc);
+    Document childDoc = s.doc(group.scoreDocs[0].doc);
     assertEquals("java", childDoc.get("skill"));
     assertNotNull(group.groupValue);
-    StoredDocument parentDoc = s.doc(group.groupValue);
+    Document parentDoc = s.doc(group.groupValue);
     assertEquals("Lisa", parentDoc.get("name"));
 
     r.close();
@@ -220,11 +219,11 @@ public class TestBlockJoin extends LuceneTestCase {
     assertEquals(1, group.totalHits);
     assertFalse(Float.isNaN(group.score));
 
-    StoredDocument childDoc = s.doc(group.scoreDocs[0].doc);
+    Document childDoc = s.doc(group.scoreDocs[0].doc);
     //System.out.println("  doc=" + group.scoreDocs[0].doc);
     assertEquals("java", childDoc.get("skill"));
     assertNotNull(group.groupValue);
-    StoredDocument parentDoc = s.doc(group.groupValue);
+    Document parentDoc = s.doc(group.groupValue);
     assertEquals("Lisa", parentDoc.get("name"));
 
 
@@ -422,7 +421,7 @@ public class TestBlockJoin extends LuceneTestCase {
     }
   }
   
-  private StoredDocument getParentDoc(IndexReader reader, BitSetProducer parents, int childDocID) throws IOException {
+  private Document getParentDoc(IndexReader reader, BitSetProducer parents, int childDocID) throws IOException {
     final List<LeafReaderContext> leaves = reader.leaves();
     final int subIndex = ReaderUtil.subIndex(childDocID, leaves);
     final LeafReaderContext leaf = leaves.get(subIndex);
@@ -755,7 +754,7 @@ public class TestBlockJoin extends LuceneTestCase {
         System.out.println("\nTEST: normal index gets " + results.totalHits + " hits; sort=" + parentAndChildSort);
         final ScoreDoc[] hits = results.scoreDocs;
         for(int hitIDX=0;hitIDX<hits.length;hitIDX++) {
-          final StoredDocument doc = s.doc(hits[hitIDX].doc);
+          final Document doc = s.doc(hits[hitIDX].doc);
           //System.out.println("  score=" + hits[hitIDX].score + " parentID=" + doc.get("parentID") + " childID=" + doc.get("childID") + " (docID=" + hits[hitIDX].doc + ")");
           System.out.println("  parentID=" + doc.get("parentID") + " childID=" + doc.get("childID") + " (docID=" + hits[hitIDX].doc + ")");
           FieldDoc fd = (FieldDoc) hits[hitIDX];
@@ -809,10 +808,10 @@ public class TestBlockJoin extends LuceneTestCase {
             }
 
             assertNotNull(group.groupValue);
-            final StoredDocument parentDoc = joinS.doc(group.groupValue);
+            final Document parentDoc = joinS.doc(group.groupValue);
             System.out.println("  group parentID=" + parentDoc.get("parentID") + " (docID=" + group.groupValue + ")");
             for(int hitIDX=0;hitIDX<group.scoreDocs.length;hitIDX++) {
-              final StoredDocument doc = joinS.doc(group.scoreDocs[hitIDX].doc);
+              final Document doc = joinS.doc(group.scoreDocs[hitIDX].doc);
               //System.out.println("    score=" + group.scoreDocs[hitIDX].score + " childID=" + doc.get("childID") + " (docID=" + group.scoreDocs[hitIDX].doc + ")");
               System.out.println("    childID=" + doc.get("childID") + " child0=" + doc.get("child0") + " (docID=" + group.scoreDocs[hitIDX].doc + ")");
             }
@@ -827,7 +826,7 @@ public class TestBlockJoin extends LuceneTestCase {
         TopDocs b = joinS.search(childJoinQuery, 10);
         for (ScoreDoc hit : b.scoreDocs) {
           Explanation explanation = joinS.explain(childJoinQuery, hit.doc);
-          StoredDocument document = joinS.doc(hit.doc - 1);
+          Document document = joinS.doc(hit.doc - 1);
           int childId = Integer.parseInt(document.get("childID"));
           //System.out.println("  hit docID=" + hit.doc + " childId=" + childId + " parentId=" + document.get("parentID"));
           assertTrue(explanation.isMatch());
@@ -949,7 +948,7 @@ public class TestBlockJoin extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("  " + results2.totalHits + " totalHits:");
         for(ScoreDoc sd : results2.scoreDocs) {
-          final StoredDocument doc = s.doc(sd.doc);
+          final Document doc = s.doc(sd.doc);
           System.out.println("  childID=" + doc.get("childID") + " parentID=" + doc.get("parentID") + " docID=" + sd.doc);
         }
       }
@@ -962,8 +961,8 @@ public class TestBlockJoin extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("  " + joinResults2.totalHits + " totalHits:");
         for(ScoreDoc sd : joinResults2.scoreDocs) {
-          final StoredDocument doc = joinS.doc(sd.doc);
-          final StoredDocument parentDoc = getParentDoc(joinR, parentsFilter, sd.doc);
+          final Document doc = joinS.doc(sd.doc);
+          final Document parentDoc = getParentDoc(joinR, parentsFilter, sd.doc);
           System.out.println("  childID=" + doc.get("childID") + " parentID=" + parentDoc.get("parentID") + " docID=" + sd.doc);
         }
       }
@@ -983,8 +982,8 @@ public class TestBlockJoin extends LuceneTestCase {
     for(int hitCount=0;hitCount<results.scoreDocs.length;hitCount++) {
       ScoreDoc hit = results.scoreDocs[hitCount];
       ScoreDoc joinHit = joinResults.scoreDocs[hitCount];
-      StoredDocument doc1 = r.document(hit.doc);
-      StoredDocument doc2 = joinR.document(joinHit.doc);
+      Document doc1 = r.document(hit.doc);
+      Document doc2 = joinR.document(joinHit.doc);
       assertEquals("hit " + hitCount + " differs",
                    doc1.get("childID"), doc2.get("childID"));
       // don't compare scores -- they are expected to differ
@@ -1011,14 +1010,14 @@ public class TestBlockJoin extends LuceneTestCase {
       final GroupDocs<Integer> group = groupDocs[joinGroupUpto++];
       final ScoreDoc[] groupHits = group.scoreDocs;
       assertNotNull(group.groupValue);
-      final StoredDocument parentDoc = joinR.document(group.groupValue);
+      final Document parentDoc = joinR.document(group.groupValue);
       final String parentID = parentDoc.get("parentID");
       //System.out.println("GROUP groupDoc=" + group.groupDoc + " parent=" + parentDoc);
       assertNotNull(parentID);
       assertTrue(groupHits.length > 0);
       for(int hitIDX=0;hitIDX<groupHits.length;hitIDX++) {
-        final StoredDocument nonJoinHit = r.document(hits[resultUpto++].doc);
-        final StoredDocument joinHit = joinR.document(groupHits[hitIDX].doc);
+        final Document nonJoinHit = r.document(hits[resultUpto++].doc);
+        final Document joinHit = joinR.document(groupHits[hitIDX].doc);
         assertEquals(parentID,
                      nonJoinHit.get("parentID"));
         assertEquals(joinHit.get("childID"),
@@ -1100,11 +1099,11 @@ public class TestBlockJoin extends LuceneTestCase {
     final GroupDocs<Integer> group = jobResults.groups[0];
     assertEquals(1, group.totalHits);
 
-    StoredDocument childJobDoc = s.doc(group.scoreDocs[0].doc);
+    Document childJobDoc = s.doc(group.scoreDocs[0].doc);
     //System.out.println("  doc=" + group.scoreDocs[0].doc);
     assertEquals("java", childJobDoc.get("skill"));
     assertNotNull(group.groupValue);
-    StoredDocument parentDoc = s.doc(group.groupValue);
+    Document parentDoc = s.doc(group.groupValue);
     assertEquals("Lisa", parentDoc.get("name"));
 
     // Now Examine qualification children
@@ -1116,7 +1115,7 @@ public class TestBlockJoin extends LuceneTestCase {
     final GroupDocs<Integer> qGroup = qualificationResults.groups[0];
     assertEquals(1, qGroup.totalHits);
 
-    StoredDocument childQualificationDoc = s.doc(qGroup.scoreDocs[0].doc);
+    Document childQualificationDoc = s.doc(qGroup.scoreDocs[0].doc);
     assertEquals("maths", childQualificationDoc.get("qualification"));
     assertNotNull(qGroup.groupValue);
     parentDoc = s.doc(qGroup.groupValue);
@@ -1236,13 +1235,13 @@ public class TestBlockJoin extends LuceneTestCase {
       assertEquals(2, group.totalHits);
       assertFalse(Float.isNaN(group.score));
       assertNotNull(group.groupValue);
-      StoredDocument parentDoc = s.doc(group.groupValue);
+      Document parentDoc = s.doc(group.groupValue);
       assertEquals("Frank", parentDoc.get("name"));
 
       assertEquals(2, group.scoreDocs.length); //all matched child documents collected
 
       for (ScoreDoc scoreDoc : group.scoreDocs) {
-        StoredDocument childDoc = s.doc(scoreDoc.doc);
+        Document childDoc = s.doc(scoreDoc.doc);
         assertEquals("java", childDoc.get("skill"));
         int year = Integer.parseInt(childDoc.get("year"));
         assertTrue(year >= 2006 && year <= 2011);
@@ -1259,13 +1258,13 @@ public class TestBlockJoin extends LuceneTestCase {
     assertEquals(2, group.totalHits);
     assertFalse(Float.isNaN(group.score));
     assertNotNull(group.groupValue);
-    StoredDocument parentDoc = s.doc(group.groupValue);
+    Document parentDoc = s.doc(group.groupValue);
     assertEquals("Frank", parentDoc.get("name"));
 
     assertEquals(1, group.scoreDocs.length); //not all matched child documents collected
 
     for (ScoreDoc scoreDoc : group.scoreDocs) {
-      StoredDocument childDoc = s.doc(scoreDoc.doc);
+      Document childDoc = s.doc(scoreDoc.doc);
       assertEquals("java", childDoc.get("skill"));
       int year = Integer.parseInt(childDoc.get("year"));
       assertTrue(year >= 2006 && year <= 2011);
@@ -1332,7 +1331,7 @@ public class TestBlockJoin extends LuceneTestCase {
     assertEquals(1, groups.totalGroupedHitCount);
 
     GroupDocs<Integer> group = groups.groups[0];
-    StoredDocument doc = r.document(group.groupValue.intValue());
+    Document doc = r.document(group.groupValue.intValue());
     assertEquals("0", doc.get("parentID"));
 
     group = groups.groups[1];
@@ -1403,7 +1402,7 @@ public class TestBlockJoin extends LuceneTestCase {
     assertEquals(0, groups.totalGroupedHitCount);
 
     GroupDocs<Integer> group = groups.groups[0];
-    StoredDocument doc = r.document(group.groupValue.intValue());
+    Document doc = r.document(group.groupValue.intValue());
     assertEquals("0", doc.get("parentID"));
 
     group = groups.groups[1];

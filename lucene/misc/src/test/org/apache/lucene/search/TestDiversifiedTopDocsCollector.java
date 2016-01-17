@@ -22,8 +22,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.LegacyFloatField;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -37,7 +37,6 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.Similarity;
@@ -389,7 +388,7 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     int result = 0;
     HashMap<String, Integer> artistCounts = new HashMap<String, Integer>();
     for (int i = 0; i < sd.length; i++) {
-      StoredDocument doc = reader.document(sd[i].doc);
+      Document doc = reader.document(sd[i].doc);
       Record record = parsedRecords.get(doc.get("id"));
       Integer count = artistCounts.get(record.artist);
       int newCount = 1;

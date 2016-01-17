@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
@@ -41,10 +41,10 @@ public class StrField extends PrimitiveFieldType {
   }
 
   @Override
-  public List<StorableField> createFields(SchemaField field, Object value,
+  public List<IndexableField> createFields(SchemaField field, Object value,
       float boost) {
     if (field.hasDocValues()) {
-      List<StorableField> fields = new ArrayList<>();
+      List<IndexableField> fields = new ArrayList<>();
       fields.add(createField(field, value, boost));
       final BytesRef bytes = new BytesRef(value.toString());
       if (field.multiValued()) {
@@ -73,7 +73,7 @@ public class StrField extends PrimitiveFieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, f.stringValue(), true);
   }
 

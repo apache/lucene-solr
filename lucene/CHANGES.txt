@@ -60,14 +60,6 @@ New Features
 
 API Changes
 
-* LUCENE-3312: The API of oal.document was restructured to
-  differentiate between stored documents and indexed documents.
-  IndexReader.document(int) now returns StoredDocument
-  instead of Document. In most cases a simple replacement
-  of the return type is enough to upgrade (see MIGRATE.txt).
-  (Nikola Tanković, Uwe Schindler, Chris Male, Mike McCandless,
-  Robert Muir)
-
 * LUCENE-6067: Accountable.getChildResources has a default
   implementation returning the empty list.  (Robert Muir)
 

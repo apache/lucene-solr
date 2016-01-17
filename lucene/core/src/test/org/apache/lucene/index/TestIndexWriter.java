@@ -1236,8 +1236,8 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
 
     IndexReader ir = DirectoryReader.open(dir);
-    StoredDocument doc2 = ir.document(0);
-    StorableField f3 = doc2.getField("binary");
+    Document doc2 = ir.document(0);
+    IndexableField f3 = doc2.getField("binary");
     b = f3.binaryValue().bytes;
     assertTrue(b != null);
     assertEquals(17, b.length, 17);
@@ -2063,69 +2063,6 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
   
-  public void testNullIterable1() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    // add 3 good docs
-    for (int i = 0; i < 3; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
-      iw.addDocument(doc);
-    }
-    // add broken doc
-    try {
-      iw.addDocument(new IndexDocument() {
-        @Override
-        public Iterable<IndexableField> indexableFields() {
-          return null;
-        }
-        
-        @Override
-        public Iterable<StorableField> storableFields() {
-          return Collections.emptyList();
-        }
-      });
-      fail();
-    } catch (NullPointerException expected) {}
-    // ensure good docs are still ok
-    IndexReader ir = iw.getReader();
-    assertEquals(3, ir.numDocs());
-    ir.close();
-    iw.close();
-    dir.close();
-  }
-  
-  public void testNullIterable2() throws IOException {
-    Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    // add 3 good docs
-    for (int i = 0; i < 3; i++) {
-      Document doc = new Document();
-      doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
-      iw.addDocument(doc);
-    }
-    // add broken doc
-    try {
-      iw.addDocument(new IndexDocument() {
-        @Override
-        public Iterable<IndexableField> indexableFields() {
-          return Collections.emptyList();
-        }
-        
-        @Override
-        public Iterable<StorableField> storableFields() {
-          return null;
-        }
-      });
-    } catch (NullPointerException expected) {}
-    // ensure good docs are still ok
-    IndexReader ir = iw.getReader();
-    assertEquals(3, ir.numDocs());
-    ir.close();
-    iw.close();
-    dir.close();
-  }
-  
   public void testIterableFieldThrowsException() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
@@ -2137,27 +2074,14 @@ public class TestIndexWriter extends LuceneTestCase {
       int numDocs = atLeast(4);
       for (int j = 0; j < numDocs; j++) {
         String id = Integer.toString(docId++);
-        final List<StorableField> storedFields = new ArrayList<>();
-        storedFields.add(new StoredField("id", id));
-        storedFields.add(new StoredField("foo",TestUtil.randomSimpleString(random())));
-        final List<IndexableField> indexFields = new ArrayList<>();
-        indexFields.add(new StringField("id", id, Field.Store.NO));
-        indexFields.add(new StringField("foo", TestUtil.randomSimpleString(random()), Field.Store.NO));
+        final List<IndexableField> fields = new ArrayList<>();
+        fields.add(new StringField("id", id, Field.Store.YES));
+        fields.add(new StringField("foo", TestUtil.randomSimpleString(random()), Field.Store.NO));
         docId++;
         
         boolean success = false;
         try {
-          w.addDocument(new IndexDocument() {
-            @Override
-            public Iterable<IndexableField> indexableFields() {
-              return new RandomFailingIterable<IndexableField>(indexFields, random());
-            }
-
-            @Override
-            public Iterable<StorableField> storableFields() {
-              return new RandomFailingIterable<StorableField>(storedFields, random());
-            }        
-          });
+          w.addDocument(new RandomFailingIterable<IndexableField>(fields, random()));
           success = true;
         } catch (RuntimeException e) {
           assertEquals("boom", e.getMessage());
@@ -2195,28 +2119,24 @@ public class TestIndexWriter extends LuceneTestCase {
     int docId = 0;
     Set<String> liveIds = new HashSet<>();
     for (int i = 0; i < iters; i++) {
-      List<Document> docs = new ArrayList<>();
-      FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
-      FieldType idFt = new FieldType(TextField.TYPE_STORED);
-      
       int numDocs = atLeast(4);
       for (int j = 0; j < numDocs; j++) {
-        Document doc = new Document();
-        doc.add(newField("id", ""+ (docId++), idFt));
-        doc.add(newField("foo", TestUtil.randomSimpleString(random()), ft));
-        docs.add(doc);
-      }
-      boolean success = false;
-      try {
-        w.addDocuments(new RandomFailingIterable<IndexDocument>(docs, random()));
-        success = true;
-      } catch (RuntimeException e) {
-        assertEquals("boom", e.getMessage());
-      } finally {
-        if (success) {
-          docCount += docs.size();
-          for (Document indexDocument : docs) {
-            liveIds.add(indexDocument.get("id"));  
+        String id = Integer.toString(docId++);
+        final List<IndexableField> fields = new ArrayList<>();
+        fields.add(new StringField("id", id, Field.Store.YES));
+        fields.add(new StringField("foo", TestUtil.randomSimpleString(random()), Field.Store.NO));
+        docId++;
+
+        boolean success = false;
+        try {
+          w.addDocument(new RandomFailingIterable<IndexableField>(fields, random()));
+          success = true;
+        } catch (RuntimeException e) {
+          assertEquals("boom", e.getMessage());
+        } finally {
+          if (success) {
+            docCount++;
+            liveIds.add(id);
           }
         }
       }

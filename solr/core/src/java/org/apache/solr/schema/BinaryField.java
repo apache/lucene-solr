@@ -22,7 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
@@ -41,7 +41,7 @@ public class BinaryField extends FieldType  {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, toBase64String(toObject(f)), false);
   }
 
@@ -61,18 +61,18 @@ public class BinaryField extends FieldType  {
   }
 
   @Override
-  public String toExternal(StorableField f) {
+  public String toExternal(IndexableField f) {
     return toBase64String(toObject(f));
   }
 
   @Override
-  public ByteBuffer toObject(StorableField f) {
+  public ByteBuffer toObject(IndexableField f) {
     BytesRef bytes = f.binaryValue();
     return  ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
   }
 
   @Override
-  public StorableField createField(SchemaField field, Object val, float boost) {
+  public IndexableField createField(SchemaField field, Object val, float boost) {
     if (val == null) return null;
     if (!field.stored()) {
       log.trace("Ignoring unstored binary field: " + field);

@@ -30,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader; // javadocs
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.IndexReader;
@@ -38,7 +39,6 @@ import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -312,7 +312,6 @@ public class IndexSearcher {
     }
     return slices;
   }
-
   
   /** Return the {@link IndexReader} this searches. */
   public IndexReader getIndexReader() {
@@ -323,7 +322,7 @@ public class IndexSearcher {
    * Sugar for <code>.getIndexReader().document(docID)</code> 
    * @see IndexReader#document(int) 
    */
-  public StoredDocument doc(int docID) throws IOException {
+  public Document doc(int docID) throws IOException {
     return reader.document(docID);
   }
 
@@ -339,7 +338,7 @@ public class IndexSearcher {
    * Sugar for <code>.getIndexReader().document(docID, fieldsToLoad)</code>
    * @see IndexReader#document(int, Set) 
    */
-  public StoredDocument doc(int docID, Set<String> fieldsToLoad) throws IOException {
+  public Document doc(int docID, Set<String> fieldsToLoad) throws IOException {
     return reader.document(docID, fieldsToLoad);
   }
 

@@ -38,7 +38,7 @@ import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.EnumFieldSource;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -168,7 +168,7 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public EnumFieldValue toObject(StorableField f) {
+  public EnumFieldValue toObject(IndexableField f) {
     Integer intValue = null;
     String stringValue = null;
     final Number val = f.numericValue();
@@ -213,7 +213,7 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     final Number val = f.numericValue();
     if (val == null) {
       writer.writeNull(name);
@@ -314,7 +314,7 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public String toExternal(StorableField f) {
+  public String toExternal(IndexableField f) {
     final Number val = f.numericValue();
     if (val == null)
       return null;
@@ -361,7 +361,7 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public String storedToIndexed(StorableField f) {
+  public String storedToIndexed(IndexableField f) {
     final Number val = f.numericValue();
     if (val == null)
       return null;
@@ -374,7 +374,7 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public StorableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value, float boost) {
     final boolean indexed = field.indexed();
     final boolean stored = field.stored();
     final boolean docValues = field.hasDocValues();
@@ -413,10 +413,10 @@ public class EnumField extends PrimitiveFieldType {
    * {@inheritDoc}
    */
   @Override
-  public List<StorableField> createFields(SchemaField sf, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField sf, Object value, float boost) {
     if (sf.hasDocValues()) {
-      List<StorableField> fields = new ArrayList<>();
-      final StorableField field = createField(sf, value, boost);
+      List<IndexableField> fields = new ArrayList<>();
+      final IndexableField field = createField(sf, value, boost);
       fields.add(field);
 
       if (sf.multiValued()) {

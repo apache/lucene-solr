@@ -21,10 +21,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 
@@ -133,7 +133,7 @@ public class DocumentValueSourceDictionary extends DocumentDictionary {
      * by the <code>weightsValueSource</code>
      * */
     @Override
-    protected long getWeight(StoredDocument doc, int docId) {    
+    protected long getWeight(Document doc, int docId) {    
       if (currentWeightValues == null) {
         return 0;
       }

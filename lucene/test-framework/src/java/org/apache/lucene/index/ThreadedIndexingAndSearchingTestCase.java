@@ -91,19 +91,19 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     return in;
   }
 
-  protected void updateDocuments(Term id, List<? extends IndexDocument> docs) throws Exception {
+  protected void updateDocuments(Term id, List<? extends Iterable<? extends IndexableField>> docs) throws Exception {
     writer.updateDocuments(id, docs);
   }
 
-  protected void addDocuments(Term id, List<? extends IndexDocument> docs) throws Exception {
+  protected void addDocuments(Term id, List<? extends Iterable<? extends IndexableField>> docs) throws Exception {
     writer.addDocuments(docs);
   }
 
-  protected void addDocument(Term id, IndexDocument doc) throws Exception {
+  protected void addDocument(Term id, Iterable<? extends IndexableField> doc) throws Exception {
     writer.addDocument(doc);
   }
 
-  protected void updateDocument(Term term, IndexDocument doc) throws Exception {
+  protected void updateDocument(Term term, Iterable<? extends IndexableField> doc) throws Exception {
     writer.updateDocument(term, doc);
   }
 
@@ -476,7 +476,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
         final int inc = Math.max(1, maxDoc/50);
         for(int docID=0;docID<maxDoc;docID += inc) {
           if (liveDocs == null || liveDocs.get(docID)) {
-            final StoredDocument doc = reader.document(docID);
+            final Document doc = reader.document(docID);
             sum += doc.getFields().size();
           }
         }
@@ -587,7 +587,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
               startDocID = docID;
             }
             lastDocID = docID;
-            final StoredDocument doc = s.doc(docID);
+            final Document doc = s.doc(docID);
             assertEquals(subDocs.packID, doc.get("packID"));
           }
 

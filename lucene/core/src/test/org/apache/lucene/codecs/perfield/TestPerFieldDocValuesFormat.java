@@ -38,7 +38,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomCodec;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -111,7 +110,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv1");

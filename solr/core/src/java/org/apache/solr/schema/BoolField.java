@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.BoolDocValues;
@@ -123,12 +123,12 @@ public class BoolField extends PrimitiveFieldType {
   }
 
   @Override
-  public String toExternal(StorableField f) {
+  public String toExternal(IndexableField f) {
     return indexedToReadable(f.stringValue());
   }
 
   @Override
-  public Boolean toObject(StorableField f) {
+  public Boolean toObject(IndexableField f) {
     return Boolean.valueOf( toExternal(f) );
   }
 
@@ -157,7 +157,7 @@ public class BoolField extends PrimitiveFieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeBool(name, f.stringValue().charAt(0) == 'T');
   }
 

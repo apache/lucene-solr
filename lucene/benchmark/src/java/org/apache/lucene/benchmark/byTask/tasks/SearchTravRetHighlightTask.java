@@ -25,8 +25,8 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Highlighter;
 import org.apache.lucene.search.highlight.QueryScorer;
@@ -101,7 +101,7 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
     return new BenchmarkHighlighter(){
       @Override
       public int doHighlight(IndexReader reader, int doc, String field,
-          StoredDocument document, Analyzer analyzer, String text) throws Exception {
+          Document document, Analyzer analyzer, String text) throws Exception {
         final int maxStartOffset = highlighter.getMaxDocCharsToAnalyze() - 1;
         TokenStream ts = TokenSources.getTokenStream(field, reader.getTermVectors(doc), text, analyzer, maxStartOffset);
         TextFragment[] frag = highlighter.getBestTextFragments(ts, text, mergeContiguous, maxFrags);
@@ -111,7 +111,7 @@ public class SearchTravRetHighlightTask extends SearchTravTask {
   }
 
   @Override
-  protected Collection<String> getFieldsToHighlight(StoredDocument document) {
+  protected Collection<String> getFieldsToHighlight(Document document) {
     Collection<String> result = super.getFieldsToHighlight(document);
     //if stored is false, then result will be empty, in which case just get all the param fields
     if (paramFields.isEmpty() == false && result.isEmpty() == false) {

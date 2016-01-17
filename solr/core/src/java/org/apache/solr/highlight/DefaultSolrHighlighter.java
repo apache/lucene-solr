@@ -34,12 +34,12 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.Encoder;
@@ -399,7 +399,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     DocIterator iterator = docs.iterator();
     for (int i = 0; i < docs.size(); i++) {
       int docId = iterator.nextDoc();
-      StoredDocument doc = searcher.doc(docId, preFetchFieldNames);
+      Document doc = searcher.doc(docId, preFetchFieldNames);
 
       @SuppressWarnings("rawtypes")
       NamedList docHighlights = new SimpleOrderedMap();
@@ -468,7 +468,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
   /** Highlights and returns the highlight object for this field -- a String[] by default.  Null if none. */
   @SuppressWarnings("unchecked")
-  protected Object doHighlightingByFastVectorHighlighter(StoredDocument doc, int docId,
+  protected Object doHighlightingByFastVectorHighlighter(Document doc, int docId,
                                                          SchemaField schemaField, FastVectorHighlighter highlighter,
                                                          FieldQuery fieldQuery,
                                                          IndexReader reader, SolrQueryRequest req) throws IOException {
@@ -491,7 +491,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
   /** Highlights and returns the highlight object for this field -- a String[] by default. Null if none. */
   @SuppressWarnings("unchecked")
-  protected Object doHighlightingByHighlighter(StoredDocument doc, int docId, SchemaField schemaField, Query query,
+  protected Object doHighlightingByHighlighter(Document doc, int docId, SchemaField schemaField, Query query,
                                                IndexReader reader, SolrQueryRequest req) throws IOException {
     final SolrParams params = req.getParams();
     final String fieldName = schemaField.getName();
@@ -633,11 +633,11 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   /** Fetches field values to highlight. If the field value should come from an atypical place (or another aliased
    * field name, then a subclass could override to implement that.
    */
-  protected List<String> getFieldValues(StoredDocument doc, String fieldName, int maxValues, int maxCharsToAnalyze,
+  protected List<String> getFieldValues(Document doc, String fieldName, int maxValues, int maxCharsToAnalyze,
                                         SolrQueryRequest req) {
     // Collect the Fields we will examine (could be more than one if multi-valued)
     List<String> result = new ArrayList<>();
-    for (StorableField thisField : doc.getFields()) {
+    for (IndexableField thisField : doc.getFields()) {
       if (! thisField.name().equals(fieldName)) {
         continue;
       }
@@ -667,19 +667,19 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
   /** Returns the alternate highlight object for this field -- a String[] by default.  Null if none. */
   @SuppressWarnings("unchecked")
-  protected Object alternateField(StoredDocument doc, String fieldName, SolrQueryRequest req) {
+  protected Object alternateField(Document doc, String fieldName, SolrQueryRequest req) {
     SolrParams params = req.getParams();
     String alternateField = params.getFieldParam(fieldName, HighlightParams.ALTERNATE_FIELD);
     if (alternateField == null || alternateField.length() == 0) {
       return null;
     }
-    StorableField[] docFields = doc.getFields(alternateField);
+    IndexableField[] docFields = doc.getFields(alternateField);
     if (docFields.length == 0) {
       // The alternate field did not exist, treat the original field as fallback instead
       docFields = doc.getFields(fieldName);
     }
     List<String> listFields = new ArrayList<>();
-    for (StorableField field : docFields) {
+    for (IndexableField field : docFields) {
       if (field.binaryValue() == null)
         listFields.add(field.stringValue());
     }

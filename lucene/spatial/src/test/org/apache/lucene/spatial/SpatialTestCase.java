@@ -36,7 +36,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -263,11 +262,11 @@ public abstract class SpatialTestCase extends LuceneTestCase {
   protected static class SearchResult {
 
     public float score;
-    public StoredDocument document;
+    public Document document;
 
-    public SearchResult(float score, StoredDocument storedDocument) {
+    public SearchResult(float score, Document document) {
       this.score = score;
-      this.document = storedDocument;
+      this.document = document;
     }
 
     public String getId() {

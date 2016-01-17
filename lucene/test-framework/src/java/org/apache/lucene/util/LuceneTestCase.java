@@ -66,6 +66,7 @@ import java.util.logging.Logger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -2296,25 +2297,27 @@ public abstract class LuceneTestCase extends Assert {
   public void assertStoredFieldsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
     assert leftReader.maxDoc() == rightReader.maxDoc();
     for (int i = 0; i < leftReader.maxDoc(); i++) {
-      StoredDocument leftDoc = leftReader.document(i);
-      StoredDocument rightDoc = rightReader.document(i);
+      Document leftDoc = leftReader.document(i);
+      Document rightDoc = rightReader.document(i);
       
       // TODO: I think this is bogus because we don't document what the order should be
       // from these iterators, etc. I think the codec/IndexReader should be free to order this stuff
       // in whatever way it wants (e.g. maybe it packs related fields together or something)
       // To fix this, we sort the fields in both documents by name, but
       // we still assume that all instances with same name are in order:
-      Comparator<StorableField> comp = new Comparator<StorableField>() {
+      Comparator<IndexableField> comp = new Comparator<IndexableField>() {
         @Override
-        public int compare(StorableField arg0, StorableField arg1) {
+        public int compare(IndexableField arg0, IndexableField arg1) {
           return arg0.name().compareTo(arg1.name());
         }        
       };
-      Collections.sort(leftDoc.getFields(), comp);
-      Collections.sort(rightDoc.getFields(), comp);
+      List<IndexableField> leftFields = new ArrayList<>(leftDoc.getFields());
+      List<IndexableField> rightFields = new ArrayList<>(rightDoc.getFields());
+      Collections.sort(leftFields, comp);
+      Collections.sort(rightFields, comp);
 
-      Iterator<StorableField> leftIterator = leftDoc.iterator();
-      Iterator<StorableField> rightIterator = rightDoc.iterator();
+      Iterator<IndexableField> leftIterator = leftFields.iterator();
+      Iterator<IndexableField> rightIterator = rightFields.iterator();
       while (leftIterator.hasNext()) {
         assertTrue(info, rightIterator.hasNext());
         assertStoredFieldEquals(info, leftIterator.next(), rightIterator.next());
@@ -2326,7 +2329,7 @@ public abstract class LuceneTestCase extends Assert {
   /** 
    * checks that two stored fields are equivalent 
    */
-  public void assertStoredFieldEquals(String info, StorableField leftField, StorableField rightField) {
+  public void assertStoredFieldEquals(String info, IndexableField leftField, IndexableField rightField) {
     assertEquals(info, leftField.name(), rightField.name());
     assertEquals(info, leftField.binaryValue(), rightField.binaryValue());
     assertEquals(info, leftField.stringValue(), rightField.stringValue());

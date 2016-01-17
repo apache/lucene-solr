@@ -393,7 +393,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
   }
 
-  boolean updateDocuments(final Iterable<? extends IndexDocument> docs, final Analyzer analyzer,
+  boolean updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
                           final Term delTerm) throws IOException, AbortingException {
     boolean hasEvents = preUpdate();
 
@@ -429,7 +429,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     return postUpdate(flushingDWPT, hasEvents);
   }
 
-  boolean updateDocument(final IndexDocument doc, final Analyzer analyzer,
+  boolean updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
       final Term delTerm) throws IOException, AbortingException {
 
     boolean hasEvents = preUpdate();

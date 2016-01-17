@@ -7,7 +7,7 @@ import java.util.Map;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * <p>Fields are specified using the same patterns as in {@link FieldMutatingUpdateProcessorFactory}.
  * They are then checked whether they follow a pre-analyzed format defined by <code>parser</code>.
  * Valid fields are then parsed. The original {@link SchemaField} is used for the initial
- * creation of {@link StorableField}, which is then modified to add the results from
+ * creation of {@link IndexableField}, which is then modified to add the results from
  * parsing (token stream value and/or string value) and then it will be directly added to
  * the final Lucene {@link Document} to be indexed.</p>
  * <p>Fields that are declared in the patterns list but are not present
@@ -67,7 +67,7 @@ import org.slf4j.LoggerFactory;
  * uses the "simple" parser ({@link SimplePreAnalyzedParser}) and one that uses
  * the "json" parser ({@link JsonPreAnalyzedParser}). Field "nonexistent" will be
  * removed from input documents if not present in the schema. Other fields will be
- * analyzed and if valid they will be converted to {@link StorableField}-s or if
+ * analyzed and if valid they will be converted to {@link IndexableField}-s or if
  * they are not in a valid format that can be parsed with the selected parser they
  * will be passed as-is. Assuming that <code>ssto</code> field is stored but not
  * indexed, and <code>sind</code> field is indexed but not stored: if

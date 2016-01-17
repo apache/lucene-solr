@@ -13,7 +13,7 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.utils.StreamUtils;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -63,7 +63,7 @@ public class WriteEnwikiLineDocTask extends WriteLineDocTask {
   
   @Override
   protected PrintWriter lineFileOut(Document doc) {
-    StorableField titleField = doc.getField(DocMaker.TITLE_FIELD);
+    IndexableField titleField = doc.getField(DocMaker.TITLE_FIELD);
     if (titleField!=null && titleField.stringValue().startsWith("Category:")) {
       return categoryLineFileOut;
     }

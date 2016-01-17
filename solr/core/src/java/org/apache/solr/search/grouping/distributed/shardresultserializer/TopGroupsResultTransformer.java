@@ -24,8 +24,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
@@ -212,7 +212,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
         NamedList<Object> document = new NamedList<>();
         documents.add(document);
 
-        StoredDocument doc = retrieveDocument(uniqueField, searchGroup.scoreDocs[i].doc);
+        Document doc = retrieveDocument(uniqueField, searchGroup.scoreDocs[i].doc);
         document.add("id", uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
         if (!Float.isNaN(searchGroup.scoreDocs[i].score))  {
           document.add("score", searchGroup.scoreDocs[i].score);
@@ -262,7 +262,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
       NamedList<Object> document = new NamedList<>();
       documents.add(document);
 
-      StoredDocument doc = retrieveDocument(uniqueField, scoreDoc.doc);
+      Document doc = retrieveDocument(uniqueField, scoreDoc.doc);
       document.add("id", uniqueField.getType().toExternal(doc.getField(uniqueField.getName())));
       if (!Float.isNaN(scoreDoc.score))  {
         document.add("score", scoreDoc.score);
@@ -292,7 +292,7 @@ public class TopGroupsResultTransformer implements ShardResultTransformer<List<C
     return queryResult;
   }
 
-  private StoredDocument retrieveDocument(final SchemaField uniqueField, int doc) throws IOException {
+  private Document retrieveDocument(final SchemaField uniqueField, int doc) throws IOException {
     DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(uniqueField.getName());
     rb.req.getSearcher().doc(doc, visitor);
     return visitor.getDocument();

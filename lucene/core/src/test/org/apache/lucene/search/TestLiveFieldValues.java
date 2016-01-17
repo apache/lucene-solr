@@ -34,7 +34,6 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -67,7 +66,7 @@ public class TestLiveFieldValues extends LuceneTestCase {
           if (hits.totalHits == 0) {
             return null;
           } else {
-            StoredDocument doc = s.doc(hits.scoreDocs[0].doc);
+            Document doc = s.doc(hits.scoreDocs[0].doc);
             return (Integer) doc.getField("field").numericValue();
           }
         }

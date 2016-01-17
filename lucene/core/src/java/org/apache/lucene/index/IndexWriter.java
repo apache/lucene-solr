@@ -87,10 +87,10 @@ import org.apache.lucene.util.Version;
   new index if there is not already an index at the provided path
   and otherwise open the existing index.</p>
 
-  <p>In either case, documents are added with {@link #addDocument(IndexDocument)
+  <p>In either case, documents are added with {@link #addDocument(Iterable)
   addDocument} and removed with {@link #deleteDocuments(Term...)} or {@link
   #deleteDocuments(Query...)}. A document can be updated with {@link
-  #updateDocument(Term, IndexDocument) updateDocument} (which just deletes
+  #updateDocument(Term, Iterable) updateDocument} (which just deletes
   and then adds the entire document). When finished adding, deleting 
   and updating documents, {@link #close() close} should be called.</p>
 
@@ -1238,7 +1238,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void addDocument(IndexDocument doc) throws IOException {
+  public void addDocument(Iterable<? extends IndexableField> doc) throws IOException {
     updateDocument(null, doc);
   }
 
@@ -1263,7 +1263,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * perhaps to obtain better index compression), in which case
    * you may need to fully re-index your documents at that time.
    *
-   * <p>See {@link #addDocument(IndexDocument)} for details on
+   * <p>See {@link #addDocument(Iterable)} for details on
    * index and IndexWriter state after an Exception, and
    * flushing/merging temporary free space requirements.</p>
    *
@@ -1279,7 +1279,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @lucene.experimental
    */
-  public void addDocuments(Iterable<? extends IndexDocument> docs) throws IOException {
+  public void addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     updateDocuments(null, docs);
   }
 
@@ -1296,7 +1296,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @lucene.experimental
    */
-  public void updateDocuments(Term delTerm, Iterable<? extends IndexDocument> docs) throws IOException {
+  public void updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     ensureOpen();
     try {
       boolean success = false;
@@ -1455,7 +1455,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void updateDocument(Term term, IndexDocument doc) throws IOException {
+  public void updateDocument(Term term, Iterable<? extends IndexableField> doc) throws IOException {
     ensureOpen();
     try {
       boolean success = false;

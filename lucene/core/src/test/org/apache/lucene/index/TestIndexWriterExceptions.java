@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
@@ -56,14 +57,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 @SuppressCodecs("SimpleText") // too slow here
@@ -1747,46 +1748,49 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     try {
       doc = new Document();
       // try to boost with norms omitted
-      IndexDocument docList = new IndexDocument() {
-        
-        List<IndexableField> list = new ArrayList<>();
-        List<StorableField> storedList = new ArrayList<>();
-        
+      List<IndexableField> list = new ArrayList<>();
+      list.add(new IndexableField() {
         @Override
-        public Iterable<IndexableField> indexableFields() {
-          if (list.size() == 0) {
-            list.add(new IndexableField() {
-              @Override
-              public String name() {
-                return "foo";
-              }
-
-              @Override
-              public IndexableFieldType fieldType() {
-                return StringField.TYPE_NOT_STORED;
-              }
-
-              @Override
-              public float boost() {
-                return 5f;
-              }
-
-              @Override
-              public TokenStream tokenStream(Analyzer analyzer, TokenStream previous) throws IOException {
-                return null;
-              }
-            });
-          }
-          return list;
+        public String name() {
+          return "foo";
         }
 
         @Override
-        public Iterable<StorableField> storableFields() {
-          return storedList;
+        public IndexableFieldType fieldType() {
+          return StringField.TYPE_NOT_STORED;
         }
-        
-      };
-      iw.addDocument(docList);
+
+        @Override
+        public float boost() {
+          return 5f;
+        }
+
+        @Override
+        public BytesRef binaryValue() {
+          return null;
+        }
+
+        @Override
+        public String stringValue() {
+          return "baz";
+        }
+
+        @Override
+        public Reader readerValue() {
+          return null;
+        }
+
+        @Override
+        public Number numericValue() {
+          return null;
+        }
+
+        @Override
+        public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException {
+          return null;
+        }
+      });
+      iw.addDocument(list);
       fail("didn't get any exception, boost silently discarded");
     } catch (UnsupportedOperationException expected) {
       // expected

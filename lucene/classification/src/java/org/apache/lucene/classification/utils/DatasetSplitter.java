@@ -26,9 +26,8 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ScoreDoc;
@@ -92,24 +91,24 @@ public class DatasetSplitter {
 
         // create a new document for indexing
         Document doc = new Document();
-        StoredDocument document = originalIndex.document(scoreDoc.doc);
+        Document document = originalIndex.document(scoreDoc.doc);
         if (fieldNames != null && fieldNames.length > 0) {
           for (String fieldName : fieldNames) {
-            StorableField field = document.getField(fieldName);
+            IndexableField field = document.getField(fieldName);
             if (field != null) {
               doc.add(new Field(fieldName, field.stringValue(), ft));
             }
           }
         } else {
-          for (StorableField storableField : document.getFields()) {
-            if (storableField.readerValue() != null) {
-              doc.add(new Field(storableField.name(), storableField.readerValue(), ft));
-            } else if (storableField.binaryValue() != null) {
-              doc.add(new Field(storableField.name(), storableField.binaryValue(), ft));
-            } else if (storableField.stringValue() != null) {
-              doc.add(new Field(storableField.name(), storableField.stringValue(), ft));
-            } else if (storableField.numericValue() != null) {
-              doc.add(new Field(storableField.name(), storableField.numericValue().toString(), ft));
+          for (IndexableField field : document.getFields()) {
+            if (field.readerValue() != null) {
+              doc.add(new Field(field.name(), field.readerValue(), ft));
+            } else if (field.binaryValue() != null) {
+              doc.add(new Field(field.name(), field.binaryValue(), ft));
+            } else if (field.stringValue() != null) {
+              doc.add(new Field(field.name(), field.stringValue(), ft));
+            } else if (field.numericValue() != null) {
+              doc.add(new Field(field.name(), field.numericValue().toString(), ft));
             }
           }
         }

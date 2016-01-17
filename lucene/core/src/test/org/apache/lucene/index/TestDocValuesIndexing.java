@@ -213,7 +213,7 @@ public class TestDocValuesIndexing extends LuceneTestCase {
     NumericDocValues dv = slow.getNumericDocValues("dv");
     for (int i = 0; i < 50; i++) {
       assertEquals(i, dv.get(i));
-      StoredDocument d = slow.document(i);
+      Document d = slow.document(i);
       // cannot use d.get("dv") due to another bug!
       assertNull(d.getField("dv"));
       assertEquals(Integer.toString(i), d.get("docId"));

@@ -39,6 +39,7 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -1795,7 +1796,7 @@ public final class CheckIndex implements Closeable {
         // make sure they too are not corrupt:
         DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor();
         storedFields.visitDocument(j, visitor);
-        StoredDocument doc = visitor.getDocument();
+        Document doc = visitor.getDocument();
         if (liveDocs == null || liveDocs.get(j)) {
           status.docCount++;
           status.totFields += doc.getFields().size();

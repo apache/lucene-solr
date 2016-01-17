@@ -34,7 +34,7 @@ import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
@@ -112,7 +112,7 @@ public class TrieField extends PrimitiveFieldType {
   }
 
   @Override
-  public Object toObject(StorableField f) {
+  public Object toObject(IndexableField f) {
     final Number val = f.numericValue();
     if (val != null) {
       return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
@@ -295,7 +295,7 @@ public class TrieField extends PrimitiveFieldType {
   }
   
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeVal(name, toObject(f));
   }
 
@@ -445,7 +445,7 @@ public class TrieField extends PrimitiveFieldType {
   }
 
   @Override
-  public String storedToReadable(StorableField f) {
+  public String storedToReadable(IndexableField f) {
     return toExternal(f);
   }
 
@@ -491,13 +491,13 @@ public class TrieField extends PrimitiveFieldType {
     return readableToIndexed(val);
   }
 
-  static String badFieldString(StorableField f) {
+  static String badFieldString(IndexableField f) {
     String s = f.stringValue();
     return "ERROR:SCHEMA-INDEX-MISMATCH,stringValue="+s;
   }
 
   @Override
-  public String toExternal(StorableField f) {
+  public String toExternal(IndexableField f) {
     return (type == TrieTypes.DATE)
       ? DateFormatUtil.formatExternal((Date) toObject(f))
       : toObject(f).toString();
@@ -569,13 +569,13 @@ public class TrieField extends PrimitiveFieldType {
   }
 
   @Override
-  public String storedToIndexed(StorableField f) {
+  public String storedToIndexed(IndexableField f) {
     final BytesRefBuilder bytes = new BytesRefBuilder();
     storedToIndexed(f, bytes);
     return bytes.get().utf8ToString();
   }
 
-  private void storedToIndexed(StorableField f, final BytesRefBuilder bytes) {
+  private void storedToIndexed(IndexableField f, final BytesRefBuilder bytes) {
     final Number val = f.numericValue();
     if (val != null) {
       switch (type) {
@@ -633,7 +633,7 @@ public class TrieField extends PrimitiveFieldType {
   }
   
   @Override
-  public StorableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value, float boost) {
     boolean indexed = field.indexed();
     boolean stored = field.stored();
     boolean docValues = field.hasDocValues();
@@ -713,10 +713,10 @@ public class TrieField extends PrimitiveFieldType {
   }
 
   @Override
-  public List<StorableField> createFields(SchemaField sf, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField sf, Object value, float boost) {
     if (sf.hasDocValues()) {
-      List<StorableField> fields = new ArrayList<>();
-      final StorableField field = createField(sf, value, boost);
+      List<IndexableField> fields = new ArrayList<>();
+      final IndexableField field = createField(sf, value, boost);
       fields.add(field);
       
       if (sf.multiValued()) {

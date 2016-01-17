@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -431,7 +430,7 @@ public class TestField extends LuceneTestCase {
     IndexSearcher s = newSearcher(r);
     TopDocs hits = s.search(new TermQuery(new Term("binary", br)), 1);
     assertEquals(1, hits.totalHits);
-    StoredDocument storedDoc = s.doc(hits.scoreDocs[0].doc);
+    Document storedDoc = s.doc(hits.scoreDocs[0].doc);
     assertEquals(br, storedDoc.getField("binary").binaryValue());
 
     r.close();

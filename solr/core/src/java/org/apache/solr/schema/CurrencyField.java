@@ -37,7 +37,7 @@ import javax.xml.xpath.XPathFactory;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -171,10 +171,10 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   }
 
   @Override
-  public List<StorableField> createFields(SchemaField field, Object externalVal, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object externalVal, float boost) {
     CurrencyValue value = CurrencyValue.parse(externalVal.toString(), defaultCurrency);
 
-    List<StorableField> f = new ArrayList<>();
+    List<IndexableField> f = new ArrayList<>();
     SchemaField amountField = getAmountField(field);
     f.add(amountField.createField(String.valueOf(value.getAmount()), amountField.indexed() && !amountField.omitNorms() ? boost : 1F));
     SchemaField currencyField = getCurrencyField(field);
@@ -355,7 +355,7 @@ public class CurrencyField extends FieldType implements SchemaAware, ResourceLoa
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField field) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField field) throws IOException {
     writer.writeStr(name, field.stringValue(), true);
   }
 

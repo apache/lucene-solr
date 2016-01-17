@@ -31,7 +31,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -155,7 +154,7 @@ public class SpatialExample extends LuceneTestCase {
       assertDocMatchedIds(indexSearcher, docs, 2);
       //Now, lets get the distance for the 1st doc via computing from stored point value:
       // (this computation is usually not redundant)
-      StoredDocument doc1 = indexSearcher.doc(docs.scoreDocs[0].doc);
+      Document doc1 = indexSearcher.doc(docs.scoreDocs[0].doc);
       String doc1Str = doc1.getField(strategy.getFieldName()).stringValue();
       //assume doc1Str is "x y" as written in newSampleDocument()
       int spaceIdx = doc1Str.indexOf(' ');

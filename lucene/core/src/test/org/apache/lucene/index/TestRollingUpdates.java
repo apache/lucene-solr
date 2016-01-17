@@ -76,7 +76,7 @@ public class TestRollingUpdates extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("  docIter=" + docIter + " id=" + id);
       }
-      doc.getField("docid").setStringValue(myID);
+      ((Field) doc.getField("docid")).setStringValue(myID);
 
       Term idTerm = new Term("docid", myID);
 

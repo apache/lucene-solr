@@ -77,7 +77,7 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
     IndexReader reader = DirectoryReader.open(dir);
-    StoredDocument doc = reader.document(0);
+    Document doc = reader.document(0);
     assertTrue(doc != null);
     assertTrue(doc.getField(DocHelper.TEXT_FIELD_1_KEY) != null);
 
@@ -102,7 +102,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
     DocumentStoredFieldVisitor visitor = new DocumentStoredFieldVisitor(DocHelper.TEXT_FIELD_3_KEY);
     reader.document(0, visitor);
-    final List<StorableField> fields = visitor.getDocument().getFields();
+    final List<IndexableField> fields = visitor.getDocument().getFields();
     assertEquals(1, fields.size());
     assertEquals(DocHelper.TEXT_FIELD_3_KEY, fields.get(0).name());
     reader.close();

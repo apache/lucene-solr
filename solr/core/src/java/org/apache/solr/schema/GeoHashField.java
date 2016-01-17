@@ -23,7 +23,7 @@ import com.spatial4j.core.context.SpatialContext;
 import com.spatial4j.core.distance.DistanceUtils;
 import com.spatial4j.core.io.GeohashUtils;
 import com.spatial4j.core.shape.Point;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
 import org.apache.lucene.search.Query;
@@ -70,13 +70,13 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField f)
+  public void write(TextResponseWriter writer, String name, IndexableField f)
           throws IOException {
     writer.writeStr(name, toExternal(f), false);
   }
 
   @Override
-  public String toExternal(StorableField f) {
+  public String toExternal(IndexableField f) {
     Point p = GeohashUtils.decode(f.stringValue(), SpatialContext.GEO);
     return p.getY() + "," + p.getX();
   }

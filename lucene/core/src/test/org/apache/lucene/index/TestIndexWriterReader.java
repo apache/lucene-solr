@@ -152,7 +152,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     String id10 = r1.document(10).getField("id").stringValue();
     
-    Document newDoc = new Document(r1.document(10));
+    Document newDoc = r1.document(10);
     newDoc.removeField("id");
     newDoc.add(newStringField("id", Integer.toString(8000), Field.Store.YES));
     writer.updateDocument(new Term("id", id10), newDoc);
@@ -280,9 +280,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertEquals(100, index2df);
 
     // verify the docs are from different indexes
-    StoredDocument doc5 = r1.document(5);
+    Document doc5 = r1.document(5);
     assertEquals("index1", doc5.get("indexname"));
-    StoredDocument doc150 = r1.document(150);
+    Document doc150 = r1.document(150);
     assertEquals("index2", doc150.get("indexname"));
     r1.close();
     writer.close();

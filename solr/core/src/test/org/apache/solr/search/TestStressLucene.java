@@ -17,20 +17,6 @@
 package org.apache.solr.search;
 
 
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.Directory;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,6 +26,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
+import org.junit.Test;
 
 import static org.apache.solr.core.SolrCore.verbose;
 
@@ -337,7 +336,7 @@ public class TestStressLucene extends TestRTGBase {
                   verbose("ERROR: Couldn't find a doc for id", id, "using reader",r);
                 }
                 assertTrue(docid >= 0);   // we should have found the document, or its tombstone
-                StoredDocument doc = r.document(docid);
+                Document doc = r.document(docid);
                 long foundVal = Long.parseLong(doc.get(field));
                 if (foundVal < Math.abs(val)) {
                   verbose("ERROR: id",id,"model_val=",val," foundVal=",foundVal,"reader=",reader);

@@ -62,10 +62,10 @@ public class TestDirectoryReader extends LuceneTestCase {
     assertTrue(reader != null);
     assertTrue(reader instanceof StandardDirectoryReader);
     
-    StoredDocument newDoc1 = reader.document(0);
+    Document newDoc1 = reader.document(0);
     assertTrue(newDoc1 != null);
     assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
-    StoredDocument newDoc2 = reader.document(1);
+    Document newDoc2 = reader.document(1);
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
     Terms vector = reader.getTermVectors(0).terms(DocHelper.TEXT_FIELD_2_KEY);
@@ -385,11 +385,11 @@ void assertTermDocsCount(String msg,
     writer.addDocument(doc);
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
-    StoredDocument doc2 = reader.document(reader.maxDoc() - 1);
-    StorableField[] fields = doc2.getFields("bin1");
+    Document doc2 = reader.document(reader.maxDoc() - 1);
+    IndexableField[] fields = doc2.getFields("bin1");
     assertNotNull(fields);
     assertEquals(1, fields.length);
-    StorableField b1 = fields[0];
+    IndexableField b1 = fields[0];
     assertTrue(b1.binaryValue() != null);
     BytesRef bytesRef = b1.binaryValue();
     assertEquals(bin.length, bytesRef.length);
@@ -595,13 +595,13 @@ public void testFilesOpenClose() throws IOException {
     // check stored fields
     for (int i = 0; i < index1.maxDoc(); i++) {
       if (liveDocs1 == null || liveDocs1.get(i)) {
-        StoredDocument doc1 = index1.document(i);
-        StoredDocument doc2 = index2.document(i);
-        List<StorableField> field1 = doc1.getFields();
-        List<StorableField> field2 = doc2.getFields();
+        Document doc1 = index1.document(i);
+        Document doc2 = index2.document(i);
+        List<IndexableField> field1 = doc1.getFields();
+        List<IndexableField> field2 = doc2.getFields();
         assertEquals("Different numbers of fields for doc " + i + ".", field1.size(), field2.size());
-        Iterator<StorableField> itField1 = field1.iterator();
-        Iterator<StorableField> itField2 = field2.iterator();
+        Iterator<IndexableField> itField1 = field1.iterator();
+        Iterator<IndexableField> itField2 = field2.iterator();
         while (itField1.hasNext()) {
           Field curField1 = (Field) itField1.next();
           Field curField2 = (Field) itField2.next();
@@ -1044,7 +1044,7 @@ public void testFilesOpenClose() throws IOException {
     Set<String> fieldsToLoad = new HashSet<>();
     assertEquals(0, r.document(0, fieldsToLoad).getFields().size());
     fieldsToLoad.add("field1");
-    StoredDocument doc2 = r.document(0, fieldsToLoad);
+    Document doc2 = r.document(0, fieldsToLoad);
     assertEquals(1, doc2.getFields().size());
     assertEquals("foobar", doc2.get("field1"));
     r.close();

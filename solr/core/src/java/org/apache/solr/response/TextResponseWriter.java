@@ -26,8 +26,8 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
@@ -127,8 +127,8 @@ public abstract class TextResponseWriter {
     } else if (val instanceof String) {
       writeStr(name, val.toString(), true);
       // micro-optimization... using toString() avoids a cast first
-    } else if (val instanceof StorableField) {
-      StorableField f = (StorableField)val;
+    } else if (val instanceof IndexableField) {
+      IndexableField f = (IndexableField)val;
       SchemaField sf = schema.getFieldOrNull( f.name() );
       if( sf != null ) {
         sf.getType().write(this, name, f);
@@ -142,8 +142,8 @@ public abstract class TextResponseWriter {
       writeBool(name, (Boolean)val);
     } else if (val instanceof Date) {
       writeDate(name,(Date)val);
-    } else if (val instanceof StoredDocument) {
-      SolrDocument doc = DocsStreamer.getDoc((StoredDocument) val, schema);
+    } else if (val instanceof Document) {
+      SolrDocument doc = DocsStreamer.getDoc((Document) val, schema);
       writeSolrDocument(name, doc,returnFields, 0 );
     } else if (val instanceof SolrDocument) {
       writeSolrDocument(name, (SolrDocument)val,returnFields, 0);

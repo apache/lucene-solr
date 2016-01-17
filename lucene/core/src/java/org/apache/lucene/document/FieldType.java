@@ -452,8 +452,6 @@ public class FieldType implements IndexableFieldType  {
     return result.toString();
   }
   
-  /* from StorableFieldType */
-  
   /**
    * {@inheritDoc}
    * <p>

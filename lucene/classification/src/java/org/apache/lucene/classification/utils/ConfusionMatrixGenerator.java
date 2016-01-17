@@ -30,8 +30,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.Classifier;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermRangeQuery;
@@ -73,7 +73,7 @@ public class ConfusionMatrixGenerator {
       double time = 0d;
 
       for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-        StoredDocument doc = reader.document(scoreDoc.doc);
+        Document doc = reader.document(scoreDoc.doc);
         String[] correctAnswers = doc.getValues(classFieldName);
 
         if (correctAnswers != null && correctAnswers.length > 0) {

@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortField;
@@ -110,9 +110,9 @@ public class PreAnalyzedField extends FieldType {
   }
 
   @Override
-  public StorableField createField(SchemaField field, Object value,
+  public IndexableField createField(SchemaField field, Object value,
           float boost) {
-    StorableField f = null;
+    IndexableField f = null;
     try {
       f = fromString(field, String.valueOf(value), boost);
     } catch (Exception e) {
@@ -139,7 +139,7 @@ public class PreAnalyzedField extends FieldType {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField f)
+  public void write(TextResponseWriter writer, String name, IndexableField f)
           throws IOException {
     writer.writeStr(name, f.stringValue(), true);
   }
@@ -216,7 +216,7 @@ public class PreAnalyzedField extends FieldType {
   }
   
   
-  public StorableField fromString(SchemaField field, String val, float boost) throws Exception {
+  public IndexableField fromString(SchemaField field, String val, float boost) throws Exception {
     if (val == null || val.trim().length() == 0) {
       return null;
     }

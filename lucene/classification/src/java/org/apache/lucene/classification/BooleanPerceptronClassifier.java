@@ -25,10 +25,10 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -125,12 +125,12 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
     // run the search and use stored field values
     for (ScoreDoc scoreDoc : indexSearcher.search(q.build(),
             Integer.MAX_VALUE).scoreDocs) {
-      StoredDocument doc = indexSearcher.doc(scoreDoc.doc);
+      Document doc = indexSearcher.doc(scoreDoc.doc);
 
-      StorableField textField = doc.getField(textFieldName);
+      IndexableField textField = doc.getField(textFieldName);
 
       // get the expected result
-      StorableField classField = doc.getField(classFieldName);
+      IndexableField classField = doc.getField(classFieldName);
 
       if (textField != null && classField != null) {
         // assign class to the doc

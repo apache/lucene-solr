@@ -54,7 +54,7 @@ to check if the results are what we expect):</p>
     assertEquals(1, hits.length);
     // Iterate through the results:
     for (int i = 0; i < hits.length; i++) {
-      StoredDocument hitDoc = isearcher.doc(hits[i].doc);
+      Document hitDoc = isearcher.doc(hits[i].doc);
       assertEquals("This is the text to be indexed.", hitDoc.get("fieldname"));
     }
     ireader.close();
@@ -130,7 +130,7 @@ adding
 
 <li>
 Create an {@link org.apache.lucene.index.IndexWriter IndexWriter}
-and add documents to it with {@link org.apache.lucene.index.IndexWriter#addDocument(org.apache.lucene.index.IndexDocument) addDocument()};</li>
+and add documents to it with {@link org.apache.lucene.index.IndexWriter#addDocument(Iterable) addDocument()};</li>
 
 <li>
 Call <a href="../queryparser/org/apache/lucene/queryparser/classic/QueryParserBase.html#parse(java.lang.String)">QueryParser.parse()</a>

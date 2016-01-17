@@ -70,7 +70,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     IndexReader ir;
     ir = DirectoryReader.open(dirs[0]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1); // rounding error
-    StoredDocument doc = ir.document(0);
+    Document doc = ir.document(0);
     assertEquals("0", doc.get("id"));
     TermsEnum te = MultiFields.getTerms(ir, "id").iterator();
     assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seekCeil(new BytesRef("1")));
@@ -115,7 +115,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     IndexReader ir;
     ir = DirectoryReader.open(dirs[0]);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
-    StoredDocument doc = ir.document(0);
+    Document doc = ir.document(0);
     assertEquals("0", doc.get("id"));
     int start = ir.numDocs();
     ir.close();

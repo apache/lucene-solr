@@ -37,7 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocValuesRangeQuery;
@@ -58,8 +58,8 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.Version;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -256,7 +256,7 @@ public abstract class FieldType extends FieldProperties {
    *
    *
    */
-  public StorableField createField(SchemaField field, Object value, float boost) {
+  public IndexableField createField(SchemaField field, Object value, float boost) {
     if (!field.indexed() && !field.stored()) {
       if (log.isTraceEnabled())
         log.trace("Ignoring unindexed/unstored field: " + field);
@@ -293,7 +293,7 @@ public abstract class FieldType extends FieldProperties {
    * @param boost The boost value
    * @return the {@link org.apache.lucene.index.IndexableField}.
    */
-  protected StorableField createField(String name, String val, org.apache.lucene.document.FieldType type, float boost){
+  protected IndexableField createField(String name, String val, org.apache.lucene.document.FieldType type, float boost){
     Field f = new Field(name, val, type);
     f.setBoost(boost);
     return f;
@@ -309,15 +309,15 @@ public abstract class FieldType extends FieldProperties {
    * @see #createField(SchemaField, Object, float)
    * @see #isPolyField()
    */
-  public List<StorableField> createFields(SchemaField field, Object value, float boost) {
-    StorableField f = createField( field, value, boost);
+  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
+    IndexableField f = createField( field, value, boost);
     if (field.hasDocValues() && f.fieldType().docValuesType() == null) {
       // field types that support doc values should either override createField
       // to return a field with doc values or extend createFields if this can't
       // be done in a single field instance (see StrField for example)
       throw new UnsupportedOperationException("This field type does not support doc values: " + this);
     }
-    return f==null ? Collections.<StorableField>emptyList() : Collections.singletonList(f);
+    return f==null ? Collections.<IndexableField>emptyList() : Collections.singletonList(f);
   }
 
   protected IndexOptions getIndexOptions(SchemaField field, String internalVal) {
@@ -350,7 +350,7 @@ public abstract class FieldType extends FieldProperties {
    * value
    * @see #toInternal
    */
-  public String toExternal(StorableField f) {
+  public String toExternal(IndexableField f) {
     // currently used in writing XML of the search result (but perhaps
     // a more efficient toXML(IndexableField f, Writer w) should be used
     // in the future.
@@ -362,14 +362,14 @@ public abstract class FieldType extends FieldProperties {
    * @see #toInternal
    * @since solr 1.3
    */
-  public Object toObject(StorableField f) {
+  public Object toObject(IndexableField f) {
     return toExternal(f); // by default use the string
   }
 
   public Object toObject(SchemaField sf, BytesRef term) {
     final CharsRefBuilder ref = new CharsRefBuilder();
     indexedToReadable(term, ref);
-    final StorableField f = createField(sf, ref.toString(), 1.0f);
+    final IndexableField f = createField(sf, ref.toString(), 1.0f);
     return toObject(f);
   }
 
@@ -385,12 +385,12 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /** Given the stored field, return the human readable representation */
-  public String storedToReadable(StorableField f) {
+  public String storedToReadable(IndexableField f) {
     return toExternal(f);
   }
 
   /** Given the stored field, return the indexed form */
-  public String storedToIndexed(StorableField f) {
+  public String storedToIndexed(IndexableField f) {
     // right now, the transformation of single valued fields like SortableInt
     // is done when the Field is created, not at analysis time... this means
     // that the indexed form is the same as the stored field form.
@@ -651,7 +651,7 @@ public abstract class FieldType extends FieldProperties {
   /**
    * calls back to TextResponseWriter to write the field value
    */
-  public abstract void write(TextResponseWriter writer, String name, StorableField f) throws IOException;
+  public abstract void write(TextResponseWriter writer, String name, IndexableField f) throws IOException;
 
 
   /**

@@ -17,19 +17,19 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.document.SortedSetDocValuesField;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.FieldComparatorSource;
-import org.apache.lucene.search.SortField;
-import org.apache.lucene.util.BytesRef;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FieldComparatorSource;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Custom field representing a {@link BinaryField} that's sortable.
@@ -42,10 +42,10 @@ public class SortableBinaryField extends BinaryField {
   }
 
   @Override
-  public List<StorableField> createFields(SchemaField field, Object value, float boost) {
+  public List<IndexableField> createFields(SchemaField field, Object value, float boost) {
     if (field.hasDocValues()) {
-      List<StorableField> fields = new ArrayList<>();
-      StorableField storedField = createField(field, value, boost);
+      List<IndexableField> fields = new ArrayList<>();
+      IndexableField storedField = createField(field, value, boost);
       fields.add(storedField);
       ByteBuffer byteBuffer = toObject(storedField);
       BytesRef bytes = new BytesRef

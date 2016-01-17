@@ -26,9 +26,8 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -171,7 +170,7 @@ public class TestDocument extends LuceneTestCase {
   public void testGetFieldsImmutable() {
     Document doc = makeDocumentWithFields();
     assertEquals(10, doc.getFields().size());
-    List<Field> fields = doc.getFields();
+    List<IndexableField> fields = doc.getFields();
     try {
       fields.add( new StringField("name", "value", Field.Store.NO) );
       fail("Document.getFields() should return immutable List");
@@ -213,14 +212,14 @@ public class TestDocument extends LuceneTestCase {
     
     IndexSearcher searcher = newSearcher(reader);
     
-    // search for something that does exists
+    // search for something that does exist
     Query query = new TermQuery(new Term("keyword", "test1"));
     
     // ensure that queries return expected results without DateFilter first
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     
-    doAssert(searcher.doc(hits[0].doc));
+    doAssert(searcher.doc(hits[0].doc), true);
     writer.close();
     reader.close();
     dir.close();
@@ -250,7 +249,7 @@ public class TestDocument extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
     
-    doAssert(searcher.doc(hits[0].doc));
+    doAssert(searcher.doc(hits[0].doc), true);
     writer.close();
     reader.close();
     dir.close();    
@@ -276,14 +275,11 @@ public class TestDocument extends LuceneTestCase {
     return doc;
   }
   
-  private void doAssert(StoredDocument doc) {
-    doAssert(new Document(doc), true);
-  }
   private void doAssert(Document doc, boolean fromIndex) {
-    StorableField[] keywordFieldValues = doc.getFields("keyword");
-    StorableField[] textFieldValues = doc.getFields("text");
-    StorableField[] unindexedFieldValues = doc.getFields("unindexed");
-    StorableField[] unstoredFieldValues = doc.getFields("unstored");
+    IndexableField[] keywordFieldValues = doc.getFields("keyword");
+    IndexableField[] textFieldValues = doc.getFields("text");
+    IndexableField[] unindexedFieldValues = doc.getFields("unindexed");
+    IndexableField[] unstoredFieldValues = doc.getFields("unstored");
     
     assertTrue(keywordFieldValues.length == 2);
     assertTrue(textFieldValues.length == 2);
@@ -333,7 +329,7 @@ public class TestDocument extends LuceneTestCase {
     assertEquals(3, hits.length);
     int result = 0;
     for (int i = 0; i < 3; i++) {
-      StoredDocument doc2 = searcher.doc(hits[i].doc);
+      Document doc2 = searcher.doc(hits[i].doc);
       Field f = (Field) doc2.getField("id");
       if (f.stringValue().equals("id1")) result |= 1;
       else if (f.stringValue().equals("id2")) result |= 2;
@@ -370,7 +366,7 @@ public class TestDocument extends LuceneTestCase {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
-    StoredDocument sdoc = ir.document(0);
+    Document sdoc = ir.document(0);
     assertEquals("5", sdoc.get("int"));
     assertNull(sdoc.get("somethingElse"));
     assertArrayEquals(new String[] { "5", "4" }, sdoc.getValues("int"));

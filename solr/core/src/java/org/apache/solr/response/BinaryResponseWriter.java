@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -91,10 +91,10 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         writeResults(ctx, codec);
         return null; // null means we completely handled it
       }
-      if( o instanceof StorableField ) {
+      if( o instanceof IndexableField ) {
         if(schema == null) schema = solrQueryRequest.getSchema();
 
-        StorableField f = (StorableField)o;
+        IndexableField f = (IndexableField)o;
         SchemaField sf = schema.getFieldOrNull(f.name());
         try {
           o = DocsStreamer.getValue(sf, f);

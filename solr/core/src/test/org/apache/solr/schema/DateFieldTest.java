@@ -24,7 +24,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
 
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -183,7 +183,7 @@ public class DateFieldTest extends SolrTestCaseJ4 {
   public void testCreateField() {
     int props = FieldProperties.INDEXED ^ FieldProperties.STORED;
     SchemaField sf = new SchemaField( "test", f, props, null );
-    StorableField out = f.createField(sf, "1995-12-31T23:59:59Z", 1.0f );
+    IndexableField out = f.createField(sf, "1995-12-31T23:59:59Z", 1.0f );
     assertEquals(820454399000l, f.toObject( out ).getTime() );
     
     out = f.createField(sf, new Date(820454399000l), 1.0f );

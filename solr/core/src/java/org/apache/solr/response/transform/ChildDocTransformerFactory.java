@@ -18,16 +18,16 @@ package org.apache.solr.response.transform;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.BitSetProducer;
+import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.DocsStreamer;
@@ -126,8 +126,8 @@ class ChildDocTransformer extends DocTransformer {
     FieldType idFt = idField.getType();
     Object parentIdField = doc.getFirstValue(idField.getName());
     
-    String parentIdExt = parentIdField instanceof StorableField
-      ? idFt.toExternal((StorableField)parentIdField)
+    String parentIdExt = parentIdField instanceof IndexableField
+      ? idFt.toExternal((IndexableField)parentIdField)
       : parentIdField.toString();
 
     try {
@@ -138,7 +138,7 @@ class ChildDocTransformer extends DocTransformer {
         DocIterator i = children.iterator();
         while(i.hasNext()) {
           Integer childDocNum = i.next();
-          StoredDocument childDoc = context.getSearcher().doc(childDocNum);
+          Document childDoc = context.getSearcher().doc(childDocNum);
           SolrDocument solrChildDoc = DocsStreamer.getDoc(childDoc, schema);
 
           // TODO: future enhancement...

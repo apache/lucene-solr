@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.StoredFieldVisitor;
 
 /** A {@link StoredFieldVisitor} that creates a {@link
@@ -37,7 +36,7 @@ import org.apache.lucene.index.StoredFieldVisitor;
  * @lucene.experimental */
 
 public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
-  private final StoredDocument doc = new StoredDocument();
+  private final Document doc = new Document();
   private final Set<String> fieldsToAdd;
 
   /** 
@@ -102,12 +101,12 @@ public class DocumentStoredFieldVisitor extends StoredFieldVisitor {
 
   /**
    * Retrieve the visited document.
-   * @return {@link StoredDocument} populated with stored fields. Note that only
+   * @return {@link Document} populated with stored fields. Note that only
    *         the stored information in the field instances is valid,
    *         data such as indexing options, term vector options,
    *         etc is not set.
    */
-  public StoredDocument getDocument() {
+  public Document getDocument() {
     return doc;
   }
 }

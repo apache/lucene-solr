@@ -16,7 +16,7 @@
  */
 package org.apache.solr.schema;
 
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
@@ -82,7 +82,7 @@ public class ExternalFileField extends FieldType implements SchemaAware {
   }
 
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     throw new UnsupportedOperationException();
   }
 

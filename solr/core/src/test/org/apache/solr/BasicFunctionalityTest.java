@@ -17,8 +17,6 @@
 
 package org.apache.solr;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -27,11 +25,13 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LazyDocument;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -504,7 +504,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     
     IndexSchema ischema = IndexSchemaFactory.buildIndexSchema(getSchemaFile(), solrConfig);
     SchemaField f; // Solr field type
-    StorableField luf; // Lucene field
+    IndexableField luf; // Lucene field
 
     f = ischema.getField("test_basictv");
     luf = f.createField("test", 0f);
@@ -711,7 +711,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     core.execute(core.getRequestHandler(req.getParams().get(CommonParams.QT)), req, rsp);
 
     DocList dl = ((ResultContext) rsp.getResponse()).getDocList();
-    StoredDocument d = req.getSearcher().doc(dl.iterator().nextDoc());
+    Document d = req.getSearcher().doc(dl.iterator().nextDoc());
     // ensure field in fl is not lazy
     assertFalse( ((Field) d.getField("test_hlt")).getClass().getSimpleName().equals("LazyField"));
     assertFalse( ((Field) d.getField("title")).getClass().getSimpleName().equals("LazyField"));
@@ -737,8 +737,8 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     DocList dl = ((ResultContext) rsp.getResponse()).getDocList();
     DocIterator di = dl.iterator();    
-    StoredDocument d1 = req.getSearcher().doc(di.nextDoc());
-    StorableField[] values1 = null;
+    Document d1 = req.getSearcher().doc(di.nextDoc());
+    IndexableField[] values1 = null;
 
     // ensure fl field is non lazy, and non-fl field is lazy
     assertFalse( d1.getField("title") instanceof LazyDocument.LazyField);
@@ -759,10 +759,10 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
     dl = ((ResultContext) rsp.getResponse()).getDocList();
     di = dl.iterator();    
-    StoredDocument d2 = req.getSearcher().doc(di.nextDoc());
+    Document d2 = req.getSearcher().doc(di.nextDoc());
     // ensure same doc, same lazy field now
     assertTrue("Doc was not cached", d1 == d2);
-    StorableField[] values2 = d2.getFields("test_hlt");
+    IndexableField[] values2 = d2.getFields("test_hlt");
     assertEquals(values1.length, values2.length);
     for (int i = 0; i < values1.length; i++) {
       assertSame("LazyField wasn't reused", 

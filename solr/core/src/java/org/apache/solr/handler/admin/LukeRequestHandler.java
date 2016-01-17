@@ -36,19 +36,19 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -60,8 +60,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -158,7 +158,7 @@ public class LukeRequestHandler extends RequestHandlerBase
       if( style != null && style != ShowStyle.DOC ) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "missing doc param for doc style");
       }
-      StoredDocument doc = null;
+      Document doc = null;
       try {
         doc = reader.document( docId );
       }
@@ -195,7 +195,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   /**
    * @return a string representing a IndexableField's flags.  
    */
-  private static String getFieldFlags( StorableField f )
+  private static String getFieldFlags( IndexableField f )
   {
     IndexOptions opts = (f == null) ? null : f.fieldType().indexOptions();
 
@@ -272,7 +272,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     return key;
   }
 
-  private static SimpleOrderedMap<Object> getDocumentFieldsInfo( StoredDocument doc, int docId, IndexReader reader,
+  private static SimpleOrderedMap<Object> getDocumentFieldsInfo( Document doc, int docId, IndexReader reader,
                                                                  IndexSchema schema ) throws IOException
   {
     final CharsRefBuilder spare = new CharsRefBuilder();
@@ -375,12 +375,12 @@ public class LukeRequestHandler extends RequestHandlerBase
 
       if(sfield != null && sfield.indexed() ) {
         if (params.getBool(INCLUDE_INDEX_FIELD_FLAGS,true)) {
-          StoredDocument doc = getFirstLiveDoc(terms, reader);
+          Document doc = getFirstLiveDoc(terms, reader);
 
           if (doc != null) {
             // Found a document with this field
             try {
-              StorableField fld = doc.getField(fieldName);
+              IndexableField fld = doc.getField(fieldName);
               if (fld != null) {
                 fieldMap.add("index", getFieldFlags(fld));
               } else {
@@ -406,7 +406,7 @@ public class LukeRequestHandler extends RequestHandlerBase
   // Just get a document with the term in it, the first one will do!
   // Is there a better way to do this? Shouldn't actually be very costly
   // to do it this way.
-  private static StoredDocument getFirstLiveDoc(Terms terms, LeafReader reader) throws IOException {
+  private static Document getFirstLiveDoc(Terms terms, LeafReader reader) throws IOException {
     PostingsEnum postingsEnum = null;
     TermsEnum termsEnum = terms.iterator();
     BytesRef text;

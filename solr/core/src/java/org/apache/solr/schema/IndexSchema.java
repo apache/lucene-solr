@@ -17,14 +17,14 @@
 
 package org.apache.solr.schema;
 
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.regex.Pattern;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
@@ -33,16 +33,15 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Version;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.Config;
@@ -327,8 +326,8 @@ public class IndexSchema {
    * the specified Document
    * @return null if this schema has no unique key field
    */
-  public String printableUniqueKey(StoredDocument doc) {
-    StorableField f = doc.getField(uniqueKeyFieldName);
+  public String printableUniqueKey(org.apache.lucene.document.Document doc) {
+    IndexableField f = doc.getField(uniqueKeyFieldName);
     return f==null ? null : uniqueKeyFieldType.toExternal(f);
   }
 

@@ -48,6 +48,7 @@ import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiPostingsEnum;
@@ -56,16 +57,14 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.StoredFieldVisitor.Status;
+import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Collector;
@@ -101,13 +100,13 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrDocumentBase;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean;
@@ -166,7 +165,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final boolean cachingEnabled;
   private final SolrCache<Query,DocSet> filterCache;
   private final SolrCache<QueryResultKey,DocList> queryResultCache;
-  private final SolrCache<Integer,StoredDocument> documentCache;
+  private final SolrCache<Integer,Document> documentCache;
   private final SolrCache<String,UnInvertedField> fieldValueCache;
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
@@ -643,7 +642,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   /** FieldSelector which loads the specified fields, and loads all other field lazily. */
   private static class SetNonLazyFieldSelector extends DocumentStoredFieldVisitor {
-    private final StoredDocument doc;
+    private final Document doc;
     private final LazyDocument lazyDoc;
 
     SetNonLazyFieldSelector(Set<String> toLoad, IndexReader reader, int docID) {
@@ -666,7 +665,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * Retrieve the {@link Document} instance corresponding to the document id.
    */
   @Override
-  public StoredDocument doc(int i) throws IOException {
+  public Document doc(int i) throws IOException {
     return doc(i, (Set<String>) null);
   }
 
@@ -679,7 +678,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   @Override
   public void doc(int n, StoredFieldVisitor visitor) throws IOException {
     if (documentCache != null) {
-      StoredDocument cached = documentCache.get(n);
+      Document cached = documentCache.get(n);
       if (cached != null) {
         visitFromCached(cached, visitor);
         return;
@@ -689,8 +688,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   /** Executes a stored field visitor against a hit from the document cache */
-  private void visitFromCached(StoredDocument document, StoredFieldVisitor visitor) throws IOException {
-    for (StorableField f : document) {
+  private void visitFromCached(Document document, StoredFieldVisitor visitor) throws IOException {
+    for (IndexableField f : document) {
       final FieldInfo info = fieldInfos.fieldInfo(f.name());
       final Status needsField = visitor.needsField(info);
       if (needsField == Status.STOP) return;
@@ -726,9 +725,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    * fields will be loaded (the remainder will be available lazily).
    */
   @Override
-  public StoredDocument doc(int i, Set<String> fields) throws IOException {
+  public Document doc(int i, Set<String> fields) throws IOException {
 
-    StoredDocument d;
+    Document d;
     if (documentCache != null) {
       d = documentCache.get(i);
       if (d != null) return d;
@@ -830,14 +829,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /**
    * Takes a list of docs (the doc ids actually), and reads them into an array of Documents.
    */
-  public void readDocs(StoredDocument[] docs, DocList ids) throws IOException {
+  public void readDocs(Document[] docs, DocList ids) throws IOException {
     readDocs(docs, ids, null);
   }
 
   /**
    * Takes a list of docs (the doc ids actually) and a set of fields to load, and reads them into an array of Documents.
    */
-  public void readDocs(StoredDocument[] docs, DocList ids, Set<String> fields) throws IOException {
+  public void readDocs(Document[] docs, DocList ids, Set<String> fields) throws IOException {
     final DocIterator iter = ids.iterator();
     for (int i = 0; i < docs.length; i++) {
       docs[i] = doc(iter.nextDoc(), fields);
@@ -2288,8 +2287,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /**
    * Takes a list of document IDs, and returns an array of Documents containing all of the stored fields.
    */
-  public StoredDocument[] readDocs(DocList ids) throws IOException {
-    final StoredDocument[] docs = new StoredDocument[ids.size()];
+  public Document[] readDocs(DocList ids) throws IOException {
+    final Document[] docs = new Document[ids.size()];
     readDocs(docs, ids);
     return docs;
   }

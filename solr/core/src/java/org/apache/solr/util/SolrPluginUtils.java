@@ -32,12 +32,10 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
-import com.google.common.collect.ImmutableMap;
-
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
@@ -82,6 +80,8 @@ import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * <p>Utilities that may be of use to RequestHandlers.</p>
@@ -437,7 +437,7 @@ public class SolrPluginUtils {
     for (int i=0; i<docs.size(); i++) {
       int id = iterator.nextDoc();
 
-      StoredDocument doc = searcher.doc(id);
+      Document doc = searcher.doc(id);
       String strid = schema.printableUniqueKey(doc);
 
       explainList.add(strid, searcher.explain(query, id) );
@@ -1019,10 +1019,10 @@ public class SolrPluginUtils {
     while (dit.hasNext()) {
       int docid = dit.nextDoc();
 
-      StoredDocument luceneDoc = searcher.doc(docid, fields);
+      Document luceneDoc = searcher.doc(docid, fields);
       SolrDocument doc = new SolrDocument();
       
-      for( StorableField field : luceneDoc) {
+      for( IndexableField field : luceneDoc) {
         if (null == fields || fields.contains(field.name())) {
           SchemaField sf = schema.getField( field.name() );
           doc.addField( field.name(), sf.getType().toObject( field ) );

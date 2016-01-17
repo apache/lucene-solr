@@ -931,7 +931,7 @@ public class TestTermsEnum extends LuceneTestCase {
         int docID = postingsEnum.nextDoc();
         assertTrue(docID != PostingsEnum.NO_MORE_DOCS);
         assertEquals(docID, pkLookup.lookup(termBytesRef));
-        StoredDocument doc = r.document(docID);
+        Document doc = r.document(docID);
         assertEquals(term, doc.get("id"));
 
         if (random().nextInt(7) == 1) {

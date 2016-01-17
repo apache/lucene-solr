@@ -33,6 +33,7 @@ import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.SimpleNaiveBayesClassifier;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
@@ -155,8 +156,8 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
         fieldName = field2boost[0];
         boost = Float.parseFloat(field2boost[1]);
       }
-      Field[] fieldValues = inputDocument.getFields(fieldName);
-      for (Field fieldValue : fieldValues) {
+      IndexableField[] fieldValues = inputDocument.getFields(fieldName);
+      for (IndexableField fieldValue : fieldValues) {
         TokenStream fieldTokens = fieldValue.tokenStream(field2analyzer.get(fieldName), null);
         String[] fieldTokensArray = getTokenArray(fieldTokens);
         tokenizedValues.add(fieldTokensArray);

@@ -17,15 +17,15 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.StorableField;
+import java.io.IOException;
+
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-
-import java.io.IOException;
 
 /**
  * Custom field that overrides the PrefixQuery behaviour to map queries such that:
@@ -36,7 +36,7 @@ public class MyCrazyCustomField extends TextField {
 
 
   @Override
-  public void write(TextResponseWriter writer, String name, StorableField f) throws IOException {
+  public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, f.stringValue(), true);
   }
 

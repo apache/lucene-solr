@@ -17,6 +17,9 @@ package org.apache.lucene.collation;
  * limitations under the License.
  */
 
+import java.text.Collator;
+import java.util.Locale;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -24,7 +27,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
@@ -34,9 +36,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-import java.text.Collator;
-import java.util.Locale;
 
 /**
  * trivial test of CollationDocValuesField
@@ -118,7 +117,7 @@ public class TestCollationDocValuesField extends LuceneTestCase {
   private void doTestRanges(IndexSearcher is, String startPoint, String endPoint, BytesRef startBR, BytesRef endBR, Collator collator) throws Exception { 
     SortedDocValues dvs = MultiDocValues.getSortedValues(is.getIndexReader(), "collated");
     for(int docID=0;docID<is.getIndexReader().maxDoc();docID++) {
-      StoredDocument doc = is.doc(docID);
+      Document doc = is.doc(docID);
       String s = doc.getField("field").stringValue();
       boolean collatorAccepts = collate(collator, s, startPoint) >= 0 && collate(collator, s, endPoint) <= 0;
       BytesRef br = dvs.get(docID);

@@ -26,15 +26,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.BitSetProducer;
+import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.solr.common.util.StrUtils;
@@ -249,7 +249,7 @@ public class TestHierarchicalDocBuilder extends AbstractDataImportHandlerTestCas
     assertEquals(values.length, result.totalHits);
     List<String> actualValues = new ArrayList<String>();
     for (int index = 0; index < values.length; ++index) {
-      StoredDocument doc = searcher.doc(result.scoreDocs[index].doc);
+      Document doc = searcher.doc(result.scoreDocs[index].doc);
       actualValues.add(doc.get(field));
     }
     

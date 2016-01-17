@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -36,7 +35,7 @@ import org.apache.solr.schema.SchemaField;
 /**
  *
  */
-public class AddUpdateCommand extends UpdateCommand implements Iterable<IndexDocument> {
+public class AddUpdateCommand extends UpdateCommand implements Iterable<Document> {
    // optional id in "internal" indexed form... if it is needed and not supplied,
    // it will be obtained from the doc.
    private BytesRef indexedId;
@@ -163,8 +162,8 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<IndexDoc
   }
 
   @Override
-  public Iterator<IndexDocument> iterator() {
-    return new Iterator<IndexDocument>() {
+  public Iterator<Document> iterator() {
+    return new Iterator<Document>() {
       Iterator<SolrInputDocument> iter;
 
       {
@@ -188,7 +187,7 @@ public class AddUpdateCommand extends UpdateCommand implements Iterable<IndexDoc
       }
 
       @Override
-      public IndexDocument next() {
+      public Document next() {
         return DocumentBuilder.toDocument(iter.next(), req.getSchema());
       }
 

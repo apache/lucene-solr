@@ -18,11 +18,13 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.search.similarities.ClassicSimilarity; // javadocs
 import org.apache.lucene.search.similarities.Similarity; // javadocs
+import org.apache.lucene.util.BytesRef;
 
 // TODO: how to handle versioning here...?
 
@@ -31,7 +33,14 @@ import org.apache.lucene.search.similarities.Similarity; // javadocs
  *
  *  @lucene.experimental */
 
-public interface IndexableField extends GeneralField {
+public interface IndexableField {
+
+  /** Field name */
+  public String name();
+
+  /** {@link IndexableFieldType} describing the properties
+   * of this field. */
+  public IndexableFieldType fieldType();
 
   /**
    * Creates the TokenStream used for indexing this field.  If appropriate,
@@ -71,4 +80,16 @@ public interface IndexableField extends GeneralField {
    * @see ClassicSimilarity#encodeNormValue(float)
    */
   public float boost();
+
+  /** Non-null if this field has a binary value */
+  public BytesRef binaryValue();
+
+  /** Non-null if this field has a string value */
+  public String stringValue();
+
+  /** Non-null if this field has a Reader value */
+  public Reader readerValue();
+
+  /** Non-null if this field has a numeric value */
+  public Number numericValue();
 }

@@ -24,8 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
@@ -129,7 +129,7 @@ public class DocsStreamer implements Iterator<SolrDocument> {
       sdoc = new SolrDocument();
     } else {
       try {
-        StoredDocument doc = rctx.getSearcher().doc(id, fnames);
+        Document doc = rctx.getSearcher().doc(id, fnames);
         sdoc = getDoc(doc, rctx.getSearcher().getSchema()); // make sure to use the schema from the searcher and not the request (cross-core)
 
         // decorate the document with non-stored docValues fields
@@ -153,9 +153,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
 
   }
 
-  public static SolrDocument getDoc(StoredDocument doc, final IndexSchema schema) {
+  public static SolrDocument getDoc(Document doc, final IndexSchema schema) {
     SolrDocument out = new SolrDocument();
-    for (StorableField f : doc.getFields()) {
+    for (IndexableField f : doc.getFields()) {
       // Make sure multivalued fields are represented as lists
       Object existing = out.get(f.name());
       if (existing == null) {
@@ -178,7 +178,7 @@ public class DocsStreamer implements Iterator<SolrDocument> {
   public void remove() { //do nothing
   }
 
-  public static Object getValue(SchemaField sf, StorableField f) {
+  public static Object getValue(SchemaField sf, IndexableField f) {
     FieldType ft = null;
     if (sf != null) ft = sf.getType();
 

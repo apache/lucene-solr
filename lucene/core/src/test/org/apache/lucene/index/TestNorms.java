@@ -115,7 +115,7 @@ public class TestNorms extends LuceneTestCase {
     NumericDocValues normValues = open.getNormValues(byteTestField);
     assertNotNull(normValues);
     for (int i = 0; i < open.maxDoc(); i++) {
-      StoredDocument document = open.document(i);
+      Document document = open.document(i);
       int expected = Integer.parseInt(document.get(byteTestField));
       assertEquals(expected, normValues.get(i));
     }

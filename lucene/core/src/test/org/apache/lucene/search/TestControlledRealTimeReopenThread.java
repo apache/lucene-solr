@@ -30,10 +30,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexDocument;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -93,7 +93,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
   }
 
   @Override
-  protected void updateDocuments(Term id, List<? extends IndexDocument> docs) throws Exception {
+  protected void updateDocuments(Term id, List<? extends Iterable<? extends IndexableField>> docs) throws Exception {
     final long gen = genWriter.updateDocuments(id, docs);
 
     // Randomly verify the update "took":
@@ -118,7 +118,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
   }
 
   @Override
-  protected void addDocuments(Term id, List<? extends IndexDocument> docs) throws Exception {
+  protected void addDocuments(Term id, List<? extends Iterable<? extends IndexableField>> docs) throws Exception {
     final long gen = genWriter.addDocuments(docs);
     // Randomly verify the add "took":
     if (random().nextInt(20) == 2) {
@@ -141,7 +141,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
   }
 
   @Override
-  protected void addDocument(Term id, IndexDocument doc) throws Exception {
+  protected void addDocument(Term id, Iterable<? extends IndexableField> doc) throws Exception {
     final long gen = genWriter.addDocument(doc);
 
     // Randomly verify the add "took":
@@ -165,7 +165,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
   }
 
   @Override
-  protected void updateDocument(Term id, IndexDocument doc) throws Exception {
+  protected void updateDocument(Term id, Iterable<? extends IndexableField> doc) throws Exception {
     final long gen = genWriter.updateDocument(id, doc);
     // Randomly verify the udpate "took":
     if (random().nextInt(20) == 2) {
@@ -394,7 +394,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
 
     @Override
     public void updateDocument(Term term,
-        IndexDocument doc)
+        Iterable<? extends IndexableField> doc)
         throws IOException {
       super.updateDocument(term, doc);
       try {

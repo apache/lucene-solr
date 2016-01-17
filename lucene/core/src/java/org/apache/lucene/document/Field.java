@@ -28,8 +28,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
-import org.apache.lucene.index.StorableField;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -52,7 +52,7 @@ import org.apache.lucene.util.BytesRef;
  * Field it is used in.  It is strongly recommended that no
  * changes be made after Field instantiation.
  */
-public class Field implements IndexableField, StorableField {
+public class Field implements IndexableField {
 
   /**
    * Field's type

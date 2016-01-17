@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -31,8 +32,7 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -161,8 +161,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
     StringBuilder buff = new StringBuilder(10);
     int n = result.length;
     for (int i = 0 ; i < n ; ++i) {
-      StoredDocument doc = searcher.doc(result[i].doc);
-      StorableField[] v = doc.getFields("tracer");
+      Document doc = searcher.doc(result[i].doc);
+      IndexableField[] v = doc.getFields("tracer");
       for (int j = 0 ; j < v.length ; ++j) {
         buff.append(v[j].stringValue());
       }

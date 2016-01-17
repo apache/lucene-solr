@@ -99,11 +99,11 @@ public class TestSegmentMerger extends LuceneTestCase {
                                                    newIOContext(random()));
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
-    StoredDocument newDoc1 = mergedReader.document(0);
+    Document newDoc1 = mergedReader.document(0);
     assertTrue(newDoc1 != null);
     //There are 2 unstored fields on the document
     assertTrue(DocHelper.numFields(newDoc1) == DocHelper.numFields(doc1) - DocHelper.unstored.size());
-    StoredDocument newDoc2 = mergedReader.document(1);
+    Document newDoc2 = mergedReader.document(1);
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
 

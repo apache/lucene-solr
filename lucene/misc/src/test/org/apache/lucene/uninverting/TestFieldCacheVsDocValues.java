@@ -43,7 +43,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
@@ -204,7 +203,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
 
     BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
     for(int docID=0;docID<docBytes.size();docID++) {
-      StoredDocument doc = ar.document(docID);
+      Document doc = ar.document(docID);
       BytesRef bytes = s.get(docID);
       byte[] expected = docBytes.get(Integer.parseInt(doc.get("id")));
       assertEquals(expected.length, bytes.length);
@@ -279,7 +278,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
 
     BinaryDocValues s = FieldCache.DEFAULT.getTerms(ar, "field", false);
     for(int docID=0;docID<docBytes.size();docID++) {
-      StoredDocument doc = ar.document(docID);
+      Document doc = ar.document(docID);
       BytesRef bytes = s.get(docID);
       byte[] expected = docBytes.get(Integer.parseInt(doc.get("id")));
       assertEquals(expected.length, bytes.length);

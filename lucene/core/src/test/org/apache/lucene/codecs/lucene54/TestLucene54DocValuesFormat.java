@@ -50,6 +50,7 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -59,12 +60,10 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.StorableField;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMFile;
 import org.apache.lucene.store.RAMInputStream;
@@ -224,8 +223,8 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
       final Bits sortedSetBits = DocValues.getDocsWithField(reader, "sorted_set");
 
       for (int i = 0; i < reader.maxDoc(); ++i) {
-        final StoredDocument doc = reader.document(i);
-        final StorableField valueField = doc.getField("value");
+        final Document doc = reader.document(i);
+        final IndexableField valueField = doc.getField("value");
         final Long value = valueField == null ? null : valueField.numericValue().longValue();
 
         if (value == null) {
@@ -247,9 +246,9 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
           assertTrue(binaryBits.get(i));
         }
 
-        final StorableField[] valuesFields = doc.getFields("values");
+        final IndexableField[] valuesFields = doc.getFields("values");
         final Set<Long> valueSet = new HashSet<>();
-        for (StorableField sf : valuesFields) {
+        for (IndexableField sf : valuesFields) {
           valueSet.add(sf.numericValue().longValue());
         }
 

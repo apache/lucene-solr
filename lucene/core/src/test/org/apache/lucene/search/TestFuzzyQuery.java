@@ -28,7 +28,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
@@ -265,12 +264,12 @@ public class TestFuzzyQuery extends LuceneTestCase {
     for (String searchTerm : searchTerms) {
       FuzzyQuery query = new FuzzyQuery(new Term("field", searchTerm), 2, 1);
       ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
-      StoredDocument bestDoc = searcher.doc(hits[0].doc);
+      Document bestDoc = searcher.doc(hits[0].doc);
       assertTrue(hits.length > 0);
       String topMatch = bestDoc.get("field");
       assertEquals(searchTerm, topMatch);
       if (hits.length > 1) {
-        StoredDocument worstDoc = searcher.doc(hits[hits.length - 1].doc);
+        Document worstDoc = searcher.doc(hits[hits.length - 1].doc);
         String worstMatch = worstDoc.get("field");
         assertNotSame(searchTerm, worstMatch);
       }
@@ -312,15 +311,15 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
     // Matches on the rare surname should be worth more than matches on the common forename
     assertEquals(7, hits.length);
-    StoredDocument bestDoc = searcher.doc(hits[0].doc);
+    Document bestDoc = searcher.doc(hits[0].doc);
     String topMatch = bestDoc.get("field");
     assertTrue(topMatch.contains(rareSearchTerm));
 
-    StoredDocument runnerUpDoc = searcher.doc(hits[1].doc);
+    Document runnerUpDoc = searcher.doc(hits[1].doc);
     String runnerUpMatch = runnerUpDoc.get("field");
     assertTrue(runnerUpMatch.contains("cuttin"));
 
-    StoredDocument worstDoc = searcher.doc(hits[hits.length - 1].doc);
+    Document worstDoc = searcher.doc(hits[hits.length - 1].doc);
     String worstMatch = worstDoc.get("field");
     assertTrue(worstMatch.contains("micheal")); //misspelling of common name
 

@@ -31,7 +31,6 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.CustomScoreQuery;
 import org.apache.lucene.search.BooleanClause;
@@ -941,7 +940,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     String snippets[] = highlighter.highlight("body", query, searcher, hits);
     assertEquals(numDocs, snippets.length);
     for(int hit=0;hit<numDocs;hit++) {
-      StoredDocument doc = searcher.doc(hits.scoreDocs[hit].doc);
+      Document doc = searcher.doc(hits.scoreDocs[hit].doc);
       int id = Integer.parseInt(doc.get("id"));
       String expected = "the <b>answer</b> is " + id;
       if ((id  & 1) == 0) {

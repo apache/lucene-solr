@@ -22,7 +22,7 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.StorableField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -39,13 +39,13 @@ import com.google.common.collect.Sets;
 public class DocumentBuilder {
 
   private static void addField(Document doc, SchemaField field, Object val, float boost) {
-    if (val instanceof StorableField) {
+    if (val instanceof IndexableField) {
       // set boost to the calculated compound boost
       ((Field)val).setBoost(boost);
       doc.add((Field)val);
       return;
     }
-    for (StorableField f : field.getType().createFields(field, val, boost)) {
+    for (IndexableField f : field.getType().createFields(field, val, boost)) {
       if (f != null) doc.add((Field) f); // null fields are not added
     }
   }

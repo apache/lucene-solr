@@ -190,7 +190,7 @@
  * <ul>
  *   <li>
  *     At indexing, as a consequence of 
- *     {@link org.apache.lucene.index.IndexWriter#addDocument(org.apache.lucene.index.IndexDocument) addDocument(doc)},
+ *     {@link org.apache.lucene.index.IndexWriter#addDocument(Iterable) addDocument(doc)},
  *     the <code>Analyzer</code> in effect for indexing is invoked for each indexed field of the added document.
  *   </li>
  *   <li>
@@ -264,7 +264,7 @@
  * </p>
  * <h3>Field Section Boundaries</h3>
  * <p>
- *   When {@link org.apache.lucene.document.Document#add(org.apache.lucene.document.Field) document.add(field)}
+ *   When {@link org.apache.lucene.document.Document#add(org.apache.lucene.index.IndexableField) document.add(field)}
  *   is called multiple times for the same field name, we could say that each such call creates a new 
  *   section for that field in that document. 
  *   In fact, a separate call to 

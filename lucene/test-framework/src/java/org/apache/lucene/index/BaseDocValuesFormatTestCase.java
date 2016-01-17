@@ -119,7 +119,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
@@ -151,7 +151,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
@@ -184,7 +184,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv1");
@@ -219,7 +219,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv1");
@@ -256,7 +256,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv1");
@@ -293,7 +293,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv1");
@@ -335,7 +335,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     BytesRef scratch = new BytesRef();
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv2");
@@ -404,7 +404,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assert ireader.leaves().size() == 1;
     NumericDocValues dv = ireader.leaves().get(0).reader().getNumericDocValues("dv");
     for(int i=0;i<2;i++) {
-      StoredDocument doc2 = ireader.leaves().get(0).reader().document(i);
+      Document doc2 = ireader.leaves().get(0).reader().document(i);
       long expected;
       if (doc2.get("id").equals("0")) {
         expected = -10;
@@ -496,7 +496,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     assertEquals(1, hits.totalHits);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
@@ -533,7 +533,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     BinaryDocValues dv = ireader.leaves().get(0).reader().getBinaryDocValues("dv");
     BytesRef scratch = new BytesRef();
     for(int i=0;i<2;i++) {
-      StoredDocument doc2 = ireader.leaves().get(0).reader().document(i);
+      Document doc2 = ireader.leaves().get(0).reader().document(i);
       String expected;
       if (doc2.get("id").equals("0")) {
         expected = "hello world 1";
@@ -601,7 +601,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     BytesRef scratch = new BytesRef();
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
-      StoredDocument hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals(text, hitDoc.get("fieldname"));
       assert ireader.leaves().size() == 1;
       SortedDocValues dv = ireader.leaves().get(0).reader().getSortedDocValues("dv");
@@ -708,7 +708,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     scratch = dv.lookupOrd(1);
     assertEquals(new BytesRef("hello world 2"), scratch);
     for(int i=0;i<2;i++) {
-      StoredDocument doc2 = ireader.leaves().get(0).reader().document(i);
+      Document doc2 = ireader.leaves().get(0).reader().document(i);
       String expected;
       if (doc2.get("id").equals("0")) {
         expected = "hello world 1";

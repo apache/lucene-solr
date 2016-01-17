@@ -43,7 +43,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DimensionalRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
@@ -450,7 +449,7 @@ public class TestSuggestField extends LuceneTestCase {
       assertTrue(key.startsWith("abc_"));
       String substring = key.substring(4);
       int fieldValue = Integer.parseInt(substring);
-      StoredDocument doc = reader.document(suggestScoreDoc.doc);
+      Document doc = reader.document(suggestScoreDoc.doc);
       assertEquals(doc.getField("int_field").numericValue().intValue(), fieldValue);
     }
 

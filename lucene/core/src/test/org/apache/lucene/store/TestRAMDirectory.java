@@ -34,7 +34,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.StoredDocument;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.IOUtils;
@@ -110,7 +109,7 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
     
     // search for all documents
     for (int i = 0; i < docsToAdd; i++) {
-      StoredDocument doc = searcher.doc(i);
+      Document doc = searcher.doc(i);
       assertTrue(doc.getField("content") != null);
     }
 

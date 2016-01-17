@@ -17,23 +17,22 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.StoredDocument;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
-import org.apache.lucene.search.similarities.Similarity;
-import org.apache.lucene.store.Directory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 import java.util.Random;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /** Test that BooleanQuery.setMinimumNumberShouldMatch works.
  */
@@ -446,7 +445,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         DecimalFormat f = new DecimalFormat("0.000000", DecimalFormatSymbols.getInstance(Locale.ROOT));
 
         for (int i = 0; i < h.length; i++) {
-            StoredDocument d = searcher.doc(h[i].doc);
+            Document d = searcher.doc(h[i].doc);
             float score = h[i].score;
             System.err.println("#" + i + ": " + f.format(score) + " - " +
                                d.get("id") + " - " + d.get("data"));
