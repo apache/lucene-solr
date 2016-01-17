@@ -227,7 +227,8 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     else
       pivotResult = Math.min(pivotMax, (g - 1) * (pivotMax - pivot) + pivot);
 
-    return mean + flip * pivotResult;
+    double result = mean + flip * pivotResult;
+    return (result < 0 || result > max) ? mean : result; // due this due to computational numerical precision
   }
 
   // ================================================= Inner Classes =================================================
