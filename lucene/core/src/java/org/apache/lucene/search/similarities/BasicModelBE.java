@@ -24,10 +24,10 @@ import static org.apache.lucene.search.similarities.SimilarityBase.log2;
  * slightly from the one in the original paper: {@code F} is increased by {@code tfn+1}
  * and {@code N} is increased by {@code F} 
  * @lucene.experimental
- * NOTE: in some corner cases this model may give poor performance with Normalizations that
- * return large values for {@code tfn} such as NormalizationH3. Consider using the 
- * geometric approximation ({@link BasicModelG}) instead, which provides the same relevance
- * but with less practical problems. 
+ * NOTE: in some corner cases this model may give poor performance or infinite scores with 
+ * Normalizations that return large or small values for {@code tfn} such as NormalizationH3. 
+ * Consider using the geometric approximation ({@link BasicModelG}) instead, which provides 
+ * the same relevance but with less practical problems. 
  */
 public class BasicModelBE extends BasicModel {
   

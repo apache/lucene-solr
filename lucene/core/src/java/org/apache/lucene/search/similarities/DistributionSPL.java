@@ -23,6 +23,8 @@ package org.apache.lucene.search.similarities;
  * <p>Unlike for DFR, the natural logarithm is used, as
  * it is faster to compute and the original paper does not express any
  * preference to a specific base.</p>
+ * WARNING: this model currently returns infinite scores for very small
+ * tf values and negative scores for very large tf values
  * @lucene.experimental
  */
 public class DistributionSPL extends Distribution {

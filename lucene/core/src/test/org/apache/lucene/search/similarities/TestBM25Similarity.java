@@ -19,24 +19,17 @@ package org.apache.lucene.search.similarities;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestDefaultSimilarity extends LuceneTestCase {
-
-  // Javadocs give this as an example so we test to make sure it's correct:
-  public void testPrecisionLoss() throws Exception {
-    DefaultSimilarity sim = new DefaultSimilarity();
-    float v = sim.decodeNormValue(sim.encodeNormValue(.89f));
-    assertEquals(0.875f, v, 0.0001f);
-  }
-
+public class TestBM25Similarity extends LuceneTestCase {
+  
   public void testSaneNormValues() {
-    ClassicSimilarity sim = new ClassicSimilarity();
+    BM25Similarity sim = new BM25Similarity();
     for (int i = 0; i < 256; i++) {
-      float boost = sim.decodeNormValue((byte) i);
-      assertFalse("negative boost: " + boost + ", byte=" + i, boost < 0.0f);
-      assertFalse("inf bost: " + boost + ", byte=" + i, Float.isInfinite(boost));
-      assertFalse("nan boost for byte=" + i, Float.isNaN(boost));
+      float len = sim.decodeNormValue((byte) i);
+      assertFalse("negative len: " + len + ", byte=" + i, len < 0.0f);
+      assertFalse("inf len: " + len + ", byte=" + i, Float.isInfinite(len));
+      assertFalse("nan len for byte=" + i, Float.isNaN(len));
       if (i > 0) {
-        assertTrue("boost is not increasing: " + boost + ",byte=" + i, boost > sim.decodeNormValue((byte)(i-1)));
+        assertTrue("len is not decreasing: " + len + ",byte=" + i, len < sim.decodeNormValue((byte)(i-1)));
       }
     }
   }
