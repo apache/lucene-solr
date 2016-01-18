@@ -40,7 +40,7 @@ public class TestDocValues extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     iw.addDocument(new Document());
-    DirectoryReader dr = DirectoryReader.open(iw, true);
+    DirectoryReader dr = DirectoryReader.open(iw);
     LeafReader r = getOnlySegmentReader(dr);
     
     // ok
@@ -65,7 +65,7 @@ public class TestDocValues extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new StringField("foo", "bar", Field.Store.NO));
     iw.addDocument(doc);
-    DirectoryReader dr = DirectoryReader.open(iw, true);
+    DirectoryReader dr = DirectoryReader.open(iw);
     LeafReader r = getOnlySegmentReader(dr);
    
     // errors
@@ -108,7 +108,7 @@ public class TestDocValues extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new NumericDocValuesField("foo", 3));
     iw.addDocument(doc);
-    DirectoryReader dr = DirectoryReader.open(iw, true);
+    DirectoryReader dr = DirectoryReader.open(iw);
     LeafReader r = getOnlySegmentReader(dr);
     
     // ok
@@ -144,7 +144,7 @@ public class TestDocValues extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new BinaryDocValuesField("foo", new BytesRef("bar")));
     iw.addDocument(doc);
-    DirectoryReader dr = DirectoryReader.open(iw, true);
+    DirectoryReader dr = DirectoryReader.open(iw);
     LeafReader r = getOnlySegmentReader(dr);
     
     // ok
@@ -183,7 +183,7 @@ public class TestDocValues extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new SortedDocValuesField("foo", new BytesRef("bar")));
     iw.addDocument(doc);
-    DirectoryReader dr = DirectoryReader.open(iw, true);
+    DirectoryReader dr = DirectoryReader.open(iw);
     LeafReader r = getOnlySegmentReader(dr);
     
     // ok
@@ -216,7 +216,7 @@ public class TestDocValues extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new SortedSetDocValuesField("foo", new BytesRef("bar")));
     iw.addDocument(doc);
-    DirectoryReader dr = DirectoryReader.open(iw, true);
+    DirectoryReader dr = DirectoryReader.open(iw);
     LeafReader r = getOnlySegmentReader(dr);
     
     // ok
@@ -255,7 +255,7 @@ public class TestDocValues extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new SortedNumericDocValuesField("foo", 3));
     iw.addDocument(doc);
-    DirectoryReader dr = DirectoryReader.open(iw, true);
+    DirectoryReader dr = DirectoryReader.open(iw);
     LeafReader r = getOnlySegmentReader(dr);
     
     // ok

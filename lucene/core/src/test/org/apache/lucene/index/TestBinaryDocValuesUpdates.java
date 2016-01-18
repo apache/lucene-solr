@@ -124,7 +124,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       writer.close();
       reader = DirectoryReader.open(dir);
     } else { // NRT
-      reader = DirectoryReader.open(writer, true);
+      reader = DirectoryReader.open(writer);
       writer.close();
     }
     
@@ -166,7 +166,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       writer.close();
       reader = DirectoryReader.open(dir);
     } else { // NRT
-      reader = DirectoryReader.open(writer, true);
+      reader = DirectoryReader.open(writer);
       writer.close();
     }
     
@@ -195,7 +195,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     final boolean isNRT = random().nextBoolean();
     final DirectoryReader reader1;
     if (isNRT) {
-      reader1 = DirectoryReader.open(writer, true);
+      reader1 = DirectoryReader.open(writer);
     } else {
       writer.commit();
       reader1 = DirectoryReader.open(dir);
@@ -249,7 +249,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       writer.close();
       reader = DirectoryReader.open(dir);
     } else { // NRT
-      reader = DirectoryReader.open(writer, true);
+      reader = DirectoryReader.open(writer);
       writer.close();
     }
     
@@ -293,7 +293,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       writer.close();
       reader = DirectoryReader.open(dir);
     } else { // NRT
-      reader = DirectoryReader.open(writer, true);
+      reader = DirectoryReader.open(writer);
       writer.close();
     }
     
@@ -567,7 +567,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
         writer.commit();
         reader = DirectoryReader.open(dir);
       } else {
-        reader = DirectoryReader.open(writer, true);
+        reader = DirectoryReader.open(writer);
       }
       
       assertEquals(1, reader.leaves().size());
@@ -625,7 +625,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     final boolean isNRT = random.nextBoolean();
     DirectoryReader reader;
     if (isNRT) {
-      reader = DirectoryReader.open(writer, true);
+      reader = DirectoryReader.open(writer);
     } else {
       writer.commit();
       reader = DirectoryReader.open(dir);
@@ -892,7 +892,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
               if (random.nextDouble() < 0.1) { // reopen NRT reader (apply updates), on average once every 10 updates
                 if (reader == null) {
 //                  System.out.println("[" + Thread.currentThread().getName() + "] open NRT");
-                  reader = DirectoryReader.open(writer, true);
+                  reader = DirectoryReader.open(writer);
                 } else {
 //                  System.out.println("[" + Thread.currentThread().getName() + "] reopen NRT");
                   DirectoryReader r2 = DirectoryReader.openIfChanged(reader, writer, true);
@@ -972,7 +972,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
       Term t = new Term("id", "doc" + doc);
       long value = random().nextLong();
       writer.updateDocValues(t, new BinaryDocValuesField("f", toBytes(value)), new BinaryDocValuesField("cf", toBytes(value*2)));
-      DirectoryReader reader = DirectoryReader.open(writer, true);
+      DirectoryReader reader = DirectoryReader.open(writer);
       for (LeafReaderContext context : reader.leaves()) {
         LeafReader r = context.reader();
         BinaryDocValues fbdv = r.getBinaryDocValues("f");
@@ -1291,7 +1291,7 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     conf.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
     writer = new IndexWriter(cachingDir, conf);
     writer.updateBinaryDocValue(new Term("id", "doc-0"), "val", toBytes(100L));
-    DirectoryReader reader = DirectoryReader.open(writer, true); // flush
+    DirectoryReader reader = DirectoryReader.open(writer); // flush
     assertEquals(0, cachingDir.listCachedFiles().length);
     
     IOUtils.close(reader, writer, cachingDir);

@@ -38,7 +38,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     w.addDocument(new Document());
     w.commit();
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     assertEquals(1, r.maxDoc());
     w.close();
 
@@ -91,7 +91,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     w.addDocument(new Document());
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     w.rollback();
 
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -120,7 +120,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     w.commit();
     w.addDocument(new Document());
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     assertEquals(2, r.maxDoc());
     w.close();
 
@@ -148,7 +148,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     w.addDocument(new Document());
     w.commit();
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     assertEquals(1, r.maxDoc());
 
     // Add another doc
@@ -184,7 +184,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     // an NRT reader, the commit before that NRT reader must exist
     w.commit();
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     int nrtReaderNumDocs = 0;
     int writerNumDocs = 0;
 
@@ -287,7 +287,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
           writerNumDocs = nrtReaderNumDocs;
           liveIDs = new HashSet<>(nrtLiveIDs);
           r.close();
-          r = DirectoryReader.open(w, true);
+          r = DirectoryReader.open(w);
         }
         break;
 
@@ -318,7 +318,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     doc.add(newStringField("f0", "foo", Field.Store.NO));
     w.addDocument(doc);
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     assertEquals(1, r.maxDoc());
 
     doc = new Document();
@@ -351,7 +351,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     w.addDocument(new Document());
     w.commit();
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     assertEquals(1, r.maxDoc());
     w.close();
 
@@ -374,7 +374,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     w.addDocument(new Document());
     w.commit();
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     assertEquals(1, r.maxDoc());
     IndexCommit commit = r.getIndexCommit();
     r.close();
@@ -397,7 +397,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     w.addDocument(new Document());
     w.commit();
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     assertEquals(1, r.maxDoc());
     w.addDocument(new Document());
 
@@ -412,7 +412,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     assertEquals(1, w.numDocs());
 
     r.close();
-    DirectoryReader r3 = DirectoryReader.open(w, true);
+    DirectoryReader r3 = DirectoryReader.open(w);
     assertEquals(1, r3.numDocs());
     
     w.addDocument(new Document());
@@ -432,7 +432,7 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     w.commit();
     w.addDocument(new Document());
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     assertEquals(2, r.maxDoc());
     w.rollback();
 
@@ -470,11 +470,11 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     w.commit();
     w.addDocument(new Document());
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     assertEquals(2, r.maxDoc());
     w.addDocument(new Document());
 
-    DirectoryReader r2 = DirectoryReader.open(w, true);
+    DirectoryReader r2 = DirectoryReader.open(w);
     assertEquals(3, r2.maxDoc());
     IOUtils.close(r2, w);
 

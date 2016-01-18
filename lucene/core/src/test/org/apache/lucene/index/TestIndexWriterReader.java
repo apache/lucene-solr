@@ -1139,7 +1139,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newStringField("id", ""+i, Field.Store.NO));
       w.addDocument(doc);
-      IndexReader r = DirectoryReader.open(w, true);
+      IndexReader r = DirectoryReader.open(w);
       // Make sure segment count never exceeds 100:
       assertTrue(r.leaves().size() < 100);
       r.close();
@@ -1156,7 +1156,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.addDocument(new Document());
 
     // Pull NRT reader; it has 1 segment:
-    DirectoryReader r1 = DirectoryReader.open(w, true);
+    DirectoryReader r1 = DirectoryReader.open(w);
     assertEquals(1, r1.leaves().size());
     w.addDocument(new Document());
     w.commit();

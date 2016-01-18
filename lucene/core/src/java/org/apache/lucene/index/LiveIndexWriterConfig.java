@@ -393,7 +393,7 @@ public class LiveIndexWriterConfig {
 
   /**
    * Returns {@code true} if {@link IndexWriter} should pool readers even if
-   * {@link DirectoryReader#open(IndexWriter, boolean)} has not been called.
+   * {@link DirectoryReader#open(IndexWriter)} has not been called.
    */
   public boolean getReaderPooling() {
     return readerPooling;

@@ -780,7 +780,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
         iw.addDocument(doc);
       }
       
-      DirectoryReader reader = DirectoryReader.open(iw, true);
+      DirectoryReader reader = DirectoryReader.open(iw);
       // mix up fields explicitly
       if (random().nextBoolean()) {
         reader = new MismatchedDirectoryReader(reader, random());
@@ -799,7 +799,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     iw.addIndexes(dirs);
     iw.forceMerge(1);
     
-    LeafReader ir = getOnlySegmentReader(DirectoryReader.open(iw, true));
+    LeafReader ir = getOnlySegmentReader(DirectoryReader.open(iw));
     for (int i = 0; i < ir.maxDoc(); i++) {
       Document doc = ir.document(i);
       assertEquals(10, doc.getFields().size());

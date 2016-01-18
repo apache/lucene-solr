@@ -46,7 +46,7 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
 
     boolean anyOpenDelFiles = false;
 
-    DirectoryReader r = DirectoryReader.open(writer, true);
+    DirectoryReader r = DirectoryReader.open(writer);
 
     while (System.currentTimeMillis() < stopTime && !failed.get()) {
       if (random().nextBoolean()) {
@@ -73,7 +73,7 @@ public class TestNRTThreads extends ThreadedIndexingAndSearchingTestCase {
         if (VERBOSE) {
           System.out.println("TEST: now open");
         }
-        r = DirectoryReader.open(writer, true);
+        r = DirectoryReader.open(writer);
       }
       if (VERBOSE) {
         System.out.println("TEST: got new reader=" + r);

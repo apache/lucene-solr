@@ -45,7 +45,7 @@ public class TestMultiPhraseEnum extends LuceneTestCase {
     doc.add(new TextField("field", "foo bar", Field.Store.NO));
     writer.addDocument(doc);
     
-    DirectoryReader ir = DirectoryReader.open(writer, true);
+    DirectoryReader ir = DirectoryReader.open(writer);
     writer.close();
 
     PostingsEnum p1 = getOnlySegmentReader(ir).postings(new Term("field", "foo"), PostingsEnum.POSITIONS);
@@ -87,7 +87,7 @@ public class TestMultiPhraseEnum extends LuceneTestCase {
     writer.addDocument(doc);
     
     writer.forceMerge(1);
-    DirectoryReader ir = DirectoryReader.open(writer, true);
+    DirectoryReader ir = DirectoryReader.open(writer);
     writer.close();
 
     PostingsEnum p1 = getOnlySegmentReader(ir).postings(new Term("field", "foo"), PostingsEnum.POSITIONS);

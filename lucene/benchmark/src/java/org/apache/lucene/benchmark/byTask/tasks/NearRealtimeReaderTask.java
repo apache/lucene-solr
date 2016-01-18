@@ -60,7 +60,7 @@ public class NearRealtimeReaderTask extends PerfTask {
     }
     
     long t = System.currentTimeMillis();
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     runData.setIndexReader(r);
     // Transfer our reference to runData
     r.decRef();

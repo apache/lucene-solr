@@ -63,6 +63,12 @@ public class SearcherTaxonomyManager extends ReferenceManager<SearcherTaxonomyMa
 
   /** Creates near-real-time searcher and taxonomy reader
    *  from the corresponding writers. */
+  public SearcherTaxonomyManager(IndexWriter writer, SearcherFactory searcherFactory, DirectoryTaxonomyWriter taxoWriter) throws IOException {
+    this(writer, true, searcherFactory, taxoWriter);
+  }
+
+  /** Expert: creates near-real-time searcher and taxonomy reader
+   *  from the corresponding writers, controlling whether deletes should be applied. */
   public SearcherTaxonomyManager(IndexWriter writer, boolean applyAllDeletes, SearcherFactory searcherFactory, DirectoryTaxonomyWriter taxoWriter) throws IOException {
     if (searcherFactory == null) {
       searcherFactory = new SearcherFactory();

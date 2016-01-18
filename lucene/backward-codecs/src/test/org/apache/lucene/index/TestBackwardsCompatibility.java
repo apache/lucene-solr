@@ -1367,7 +1367,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                            .setOpenMode(OpenMode.APPEND));
       writer.addDocument(new Document());
-      DirectoryReader r = DirectoryReader.open(writer, true);
+      DirectoryReader r = DirectoryReader.open(writer);
       writer.commit();
       r.close();
       writer.forceMerge(1);

@@ -114,7 +114,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     }
 
     if (VERBOSE) System.out.println("\nTEST: now done");
-    IndexReader r = DirectoryReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w);
 
     List<String> sortedTerms = new ArrayList<>(terms);
     Collections.sort(sortedTerms);
@@ -242,7 +242,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
       w.forceMerge(1);
     }
 
-    IndexReader r = DirectoryReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w);
 
     List<Integer> sortedTerms = new ArrayList<>(terms);
     Collections.sort(sortedTerms);
@@ -365,7 +365,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
       w.forceMerge(1);
     }
 
-    IndexReader r = DirectoryReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w);
 
     List<String> sortedTerms = new ArrayList<>(terms);
     Collections.sort(sortedTerms);
@@ -475,7 +475,7 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
       w.forceMerge(1);
     }
 
-    IndexReader r = DirectoryReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w);
     Terms terms = MultiFields.getTerms(r, "field");
     if (VERBOSE) {
       System.out.println("\nTEST: now intersect");

@@ -300,7 +300,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     oneDoc.add(customField);
     oneDoc.add(new NumericDocValuesField("field", 5));
     iw.addDocument(oneDoc);
-    LeafReader oneDocReader = getOnlySegmentReader(DirectoryReader.open(iw, true));
+    LeafReader oneDocReader = getOnlySegmentReader(DirectoryReader.open(iw));
     iw.close();
     
     // now feed to codec apis manually

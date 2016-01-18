@@ -82,7 +82,7 @@ public class TestFunctionRangeQuery extends FunctionTestSetup {
     try {
       writer.deleteDocuments(new FunctionRangeQuery(valueSource, 3, 3, true, true));//delete the one with #3
       assert writer.hasDeletions();
-      try (IndexReader indexReader2 = DirectoryReader.open(writer, true)) {//applyAllDeletes
+      try (IndexReader indexReader2 = DirectoryReader.open(writer)) {
         IndexSearcher indexSearcher2 = new IndexSearcher(indexReader2);
         TopDocs topDocs = indexSearcher2.search(new FunctionRangeQuery(valueSource, 3, 4, true, true), N_DOCS);
         expectScores(topDocs.scoreDocs, 4);//missing #3 because it's deleted

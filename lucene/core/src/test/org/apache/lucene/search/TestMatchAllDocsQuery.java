@@ -48,7 +48,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     addDoc("one", iw, 1f);
     addDoc("two", iw, 20f);
     addDoc("three four", iw, 300f);
-    IndexReader ir = DirectoryReader.open(iw, true);
+    IndexReader ir = DirectoryReader.open(iw);
 
     IndexSearcher is = newSearcher(ir);
     ScoreDoc[] hits;
@@ -75,7 +75,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
 
     iw.deleteDocuments(new Term("key", "one"));
     ir.close();
-    ir = DirectoryReader.open(iw, true);
+    ir = DirectoryReader.open(iw);
     is = newSearcher(ir);
     
     hits = is.search(new MatchAllDocsQuery(), 1000).scoreDocs;

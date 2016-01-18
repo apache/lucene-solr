@@ -671,7 +671,7 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     } catch (IllegalArgumentException iae) {
       // expected
     }
-    IndexReader r = DirectoryReader.open(iw, true);
+    IndexReader r = DirectoryReader.open(iw);
 
     // Make sure the exc didn't lose our first document:
     assertEquals(1, r.numDocs());

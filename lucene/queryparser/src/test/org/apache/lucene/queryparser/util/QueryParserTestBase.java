@@ -1092,7 +1092,7 @@ public abstract class QueryParserTestBase extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newTextField("field", "the wizard of ozzy", Field.Store.NO));
     w.addDocument(doc);
-    IndexReader r = DirectoryReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w);
     w.close();
     IndexSearcher s = newSearcher(r);
     

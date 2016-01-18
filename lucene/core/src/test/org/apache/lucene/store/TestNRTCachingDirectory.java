@@ -71,7 +71,7 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
       w.addDocument(doc);
       if (random().nextInt(20) == 17) {
         if (r == null) {
-          r = DirectoryReader.open(w.w, false);
+          r = DirectoryReader.open(w.w);
         } else {
           final DirectoryReader r2 = DirectoryReader.openIfChanged(r);
           if (r2 != null) {

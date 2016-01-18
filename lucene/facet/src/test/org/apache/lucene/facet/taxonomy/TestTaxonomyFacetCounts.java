@@ -530,7 +530,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
       iw.addDocument(config.build(taxoWriter, doc));
     }
     
-    DirectoryReader r = DirectoryReader.open(iw, true);
+    DirectoryReader r = DirectoryReader.open(iw);
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
     
     FacetsCollector sfc = new FacetsCollector();
@@ -558,7 +558,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
       iw.addDocument(config.build(taxoWriter, doc));
     }
     
-    DirectoryReader r = DirectoryReader.open(iw, true);
+    DirectoryReader r = DirectoryReader.open(iw);
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
     
     FacetsCollector sfc = new FacetsCollector();
@@ -586,7 +586,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
     doc.add(new FacetField("b", "1"));
     iw.addDocument(config.build(taxoWriter, doc));
     
-    DirectoryReader r = DirectoryReader.open(iw, true);
+    DirectoryReader r = DirectoryReader.open(iw);
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
 
     final FacetsCollector sfc = new FacetsCollector();
@@ -615,7 +615,7 @@ public class TestTaxonomyFacetCounts extends FacetTestCase {
       iw.addDocument(config.build(taxoWriter, doc));
     }
     
-    DirectoryReader r = DirectoryReader.open(iw, true);
+    DirectoryReader r = DirectoryReader.open(iw);
     DirectoryTaxonomyReader taxoReader = new DirectoryTaxonomyReader(taxoWriter);
     
     FacetsCollector sfc = new FacetsCollector();

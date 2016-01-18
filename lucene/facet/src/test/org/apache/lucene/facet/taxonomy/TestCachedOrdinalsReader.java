@@ -52,7 +52,7 @@ public class TestCachedOrdinalsReader extends FacetTestCase {
     doc.add(new FacetField("A", "2"));
     writer.addDocument(config.build(taxoWriter, doc));
     
-    final DirectoryReader reader = DirectoryReader.open(writer, true);
+    final DirectoryReader reader = DirectoryReader.open(writer);
     final CachedOrdinalsReader ordsReader = new CachedOrdinalsReader(new DocValuesOrdinalsReader(FacetsConfig.DEFAULT_INDEX_FIELD_NAME));
     Thread[] threads = new Thread[3];
     for (int i = 0; i < threads.length; i++) {

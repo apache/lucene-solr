@@ -131,7 +131,7 @@ public class TestBlockJoin extends LuceneTestCase {
     w.addDocuments(docs);
     w.commit();
     
-    IndexReader r = DirectoryReader.open(w, random().nextBoolean());
+    IndexReader r = DirectoryReader.open(w);
     w.close();
     IndexSearcher s = new IndexSearcher(r);
     BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("docType", "resume")));

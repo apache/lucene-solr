@@ -227,7 +227,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
         dir.allIndexInputs.clear();
 
-        IndexReader reader = DirectoryReader.open(writer, true);
+        IndexReader reader = DirectoryReader.open(writer);
         Term aaa = new Term("content", "aaa");
         Term bbb = new Term("content", "bbb");
         
@@ -235,7 +235,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         
         dir.tweakBufferSizes();
         writer.deleteDocuments(new Term("id", "0"));
-        reader = DirectoryReader.open(writer, true);
+        reader = DirectoryReader.open(writer);
         IndexSearcher searcher = newSearcher(reader);
         ScoreDoc[] hits = searcher.search(new TermQuery(bbb), 1000).scoreDocs;
         dir.tweakBufferSizes();
@@ -245,7 +245,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         
         dir.tweakBufferSizes();
         writer.deleteDocuments(new Term("id", "4"));
-        reader = DirectoryReader.open(writer, true);
+        reader = DirectoryReader.open(writer);
         searcher = newSearcher(reader);
 
         hits = searcher.search(new TermQuery(bbb), 1000).scoreDocs;

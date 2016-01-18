@@ -140,7 +140,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
       // start with empty commit:
       w.commit();
-      mgr = new ReaderManager(new ParallelLeafDirectoryReader(DirectoryReader.open(w, true)));
+      mgr = new ReaderManager(new ParallelLeafDirectoryReader(DirectoryReader.open(w)));
     }
 
     protected abstract IndexWriterConfig getIndexWriterConfig() throws IOException;

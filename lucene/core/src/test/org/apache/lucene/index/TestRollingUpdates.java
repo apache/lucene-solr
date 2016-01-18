@@ -218,7 +218,7 @@ public class TestRollingUpdates extends LuceneTestCase {
           writer.updateDocument(new Term("id", br), doc);
           if (random().nextInt(3) == 0) {
             if (open == null) {
-              open = DirectoryReader.open(writer, true);
+              open = DirectoryReader.open(writer);
             }
             DirectoryReader reader = DirectoryReader.openIfChanged(open);
             if (reader != null) {

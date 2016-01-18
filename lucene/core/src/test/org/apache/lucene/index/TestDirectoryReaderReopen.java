@@ -611,7 +611,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     List<IndexCommit> commits = DirectoryReader.listCommits(dir);
     assertEquals(1, commits.size());
     w.addDocument(doc);
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
 
     assertEquals(2, r.numDocs());
     IndexReader r2 = DirectoryReader.openIfChanged(r, commits.get(0));

@@ -326,7 +326,7 @@ public class TestFSTs extends LuceneTestCase {
       writer.addDocument(doc);
       docCount++;
     }
-    IndexReader r = DirectoryReader.open(writer, true);
+    IndexReader r = DirectoryReader.open(writer);
     writer.close();
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
 

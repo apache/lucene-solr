@@ -183,7 +183,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     
     DirectoryReader r;
     try {
-      r = DirectoryReader.open(w, true);
+      r = DirectoryReader.open(w);
     } catch (IllegalArgumentException iae) {
       if (iae.getMessage().indexOf("is too large") == -1) {
         throw iae;
@@ -269,7 +269,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
       w.addDocument(doc);
     }
     
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     w.close();
 
     LeafReader ar = SlowCompositeReaderWrapper.wrap(r);

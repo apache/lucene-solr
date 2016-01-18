@@ -539,7 +539,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
       }
       out.close();
       w.forceMerge(1);
-      DirectoryReader r = DirectoryReader.open(w, false);
+      DirectoryReader r = DirectoryReader.open(w);
       w.close();
       SegmentReader sr = getOnlySegmentReader(r);
       assertEquals(maxDoc, sr.maxDoc());
@@ -589,7 +589,7 @@ public class TestLucene54DocValuesFormat extends BaseCompressingDocValuesFormatT
       }
       out.close();
       w.forceMerge(1);
-      DirectoryReader r = DirectoryReader.open(w, false);
+      DirectoryReader r = DirectoryReader.open(w);
       w.close();
       SegmentReader sr = getOnlySegmentReader(r);
       assertEquals(maxDoc, sr.maxDoc());

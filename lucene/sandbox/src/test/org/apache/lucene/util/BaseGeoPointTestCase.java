@@ -596,7 +596,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     if (random().nextBoolean()) {
       w.forceMerge(1);
     }
-    final IndexReader r = DirectoryReader.open(w, true);
+    final IndexReader r = DirectoryReader.open(w);
     w.close();
 
     // We can't wrap with "exotic" readers because the BKD query must see the BKDDVFormat:
