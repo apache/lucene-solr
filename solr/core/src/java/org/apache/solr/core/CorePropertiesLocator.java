@@ -24,15 +24,18 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
 import org.apache.solr.common.SolrException;
@@ -123,7 +126,10 @@ public class CorePropertiesLocator implements CoresLocator {
     logger.info("Looking for core definitions underneath {}", rootDirectory);
     final List<CoreDescriptor> cds = Lists.newArrayList();
     try {
-      Files.walkFileTree(this.rootDirectory, new SimpleFileVisitor<Path>() {
+      Set<FileVisitOption> options = new HashSet<>();
+      options.add(FileVisitOption.FOLLOW_LINKS);
+      final int maxDepth = 256;
+      Files.walkFileTree(this.rootDirectory, options, maxDepth, new SimpleFileVisitor<Path>() {
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
           if (file.getFileName().toString().equals(PROPERTIES_FILENAME)) {
