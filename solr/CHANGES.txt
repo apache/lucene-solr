@@ -402,6 +402,8 @@ Bug Fixes
 * SOLR-8548: Core discovery was not following symlinks (Aaron LaBella via Alan
   Woodward)
 
+* SOLR-8564: Fix Embedded ZooKeeper to use <solrHome>/zoo_data for it's data directory
+
 Optimizations
 ----------------------
 
