@@ -350,6 +350,11 @@ Bug Fixes
 
 * SOLR-8418: Adapt to changes in LUCENE-6590 for use of boosts with MLTHandler and
   Simple/CloudMLTQParser (Jens Wille, Ramkumar Aiyengar)
+  
+* SOLR-8561: Doing a rolling upgrade to 5.4.0 fails because the new nodes cannot find the 
+  shard leader properties where they expect. This bug was first introduced in 5.4.0 and a
+  fallback was added so that the leader properties are searched in both the old location
+  and the new one. (Shai Erera)
 
 New Features
 ----------------------

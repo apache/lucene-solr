@@ -1021,11 +1021,8 @@ public final class ZkController {
     Exception exp = null;
     while (iterCount-- > 0) {
       try {
-        byte[] data = zkClient.getData(
-            ZkStateReader.getShardLeadersPath(collection, slice), null, null,
-            true);
-        ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(
-            ZkNodeProps.load(data));
+        byte[] data = getLeaderPropsWithFallback(collection, slice);
+        ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
         return leaderProps;
       } catch (InterruptedException e) {
         throw e;
@@ -1046,6 +1043,17 @@ public final class ZkController {
     throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "Could not get leader props", exp);
   }
 
+  private byte[] getLeaderPropsWithFallback(String collection, String slice) throws KeeperException, InterruptedException {
+    final String leaderPath = ZkStateReader.getShardLeadersPath(collection, slice);
+    try {
+      return zkClient.getData(leaderPath, null, null, true);
+    } catch (final KeeperException.NoNodeException e) {
+      // If the original leader node isn't found, fallback to a pre-5.4 format, where the leader props were set
+      // on the parent node (in case the current leader is a pre-5.4 Solr instance).
+      final String parentLeaderPath = new org.apache.hadoop.fs.Path(leaderPath).getParent().toString();
+      return zkClient.getData(parentLeaderPath, null, null, true);
+    }
+  }
 
   private void joinElection(CoreDescriptor cd, boolean afterExpiration, boolean joinAtHead)
       throws InterruptedException, KeeperException, IOException {
