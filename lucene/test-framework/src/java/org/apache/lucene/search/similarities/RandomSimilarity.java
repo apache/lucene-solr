@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.search.similarities;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,37 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.lucene.search.similarities.AfterEffect;
-import org.apache.lucene.search.similarities.AfterEffectB;
-import org.apache.lucene.search.similarities.AfterEffectL;
-import org.apache.lucene.search.similarities.BM25Similarity;
-import org.apache.lucene.search.similarities.BasicModel;
-import org.apache.lucene.search.similarities.BasicModelBE;
-import org.apache.lucene.search.similarities.BasicModelD;
-import org.apache.lucene.search.similarities.BasicModelG;
-import org.apache.lucene.search.similarities.BasicModelIF;
-import org.apache.lucene.search.similarities.BasicModelIn;
-import org.apache.lucene.search.similarities.BasicModelIne;
-import org.apache.lucene.search.similarities.BasicModelP;
-import org.apache.lucene.search.similarities.DFRSimilarity;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
-import org.apache.lucene.search.similarities.Distribution;
-import org.apache.lucene.search.similarities.DistributionLL;
-import org.apache.lucene.search.similarities.DistributionSPL;
-import org.apache.lucene.search.similarities.IBSimilarity;
-import org.apache.lucene.search.similarities.LMDirichletSimilarity;
-import org.apache.lucene.search.similarities.LMJelinekMercerSimilarity;
-import org.apache.lucene.search.similarities.Lambda;
-import org.apache.lucene.search.similarities.LambdaDF;
-import org.apache.lucene.search.similarities.LambdaTTF;
-import org.apache.lucene.search.similarities.Normalization;
-import org.apache.lucene.search.similarities.NormalizationH1;
-import org.apache.lucene.search.similarities.NormalizationH2;
-import org.apache.lucene.search.similarities.NormalizationH3;
-import org.apache.lucene.search.similarities.NormalizationZ;
-import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
-import org.apache.lucene.search.similarities.Similarity;
-
 /**
  * Similarity implementation that randomizes Similarity implementations
  * per-field.
@@ -62,7 +31,7 @@ import org.apache.lucene.search.similarities.Similarity;
  * The choices are 'sticky', so the selected algorithm is always used
  * for the same field.
  */
-public class RandomSimilarityProvider extends PerFieldSimilarityWrapper {
+public class RandomSimilarity extends PerFieldSimilarityWrapper {
   final ClassicSimilarity defaultSim = new ClassicSimilarity();
   final List<Similarity> knownSims;
   Map<String,Similarity> previousMappings = new HashMap<>();
@@ -70,7 +39,7 @@ public class RandomSimilarityProvider extends PerFieldSimilarityWrapper {
   final int coordType; // 0 = no coord, 1 = coord, 2 = crazy coord
   final boolean shouldQueryNorm;
   
-  public RandomSimilarityProvider(Random random) {
+  public RandomSimilarity(Random random) {
     perFieldSeed = random.nextInt();
     coordType = random.nextInt(3);
     shouldQueryNorm = random.nextBoolean();
@@ -159,6 +128,7 @@ public class RandomSimilarityProvider extends PerFieldSimilarityWrapper {
     allSims.add(new LMDirichletSimilarity()); */
     allSims.add(new LMJelinekMercerSimilarity(0.1f));
     allSims.add(new LMJelinekMercerSimilarity(0.7f));
+    allSims.add(new DFISimilarity());
   }
   
   @Override
@@ -171,6 +141,6 @@ public class RandomSimilarityProvider extends PerFieldSimilarityWrapper {
     } else {
       coordMethod = "crazy";
     }
-    return "RandomSimilarityProvider(queryNorm=" + shouldQueryNorm + ",coord=" + coordMethod + "): " + previousMappings.toString();
+    return "RandomSimilarity(queryNorm=" + shouldQueryNorm + ",coord=" + coordMethod + "): " + previousMappings.toString();
   }
 }

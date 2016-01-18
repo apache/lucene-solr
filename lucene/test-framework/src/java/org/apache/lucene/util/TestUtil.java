@@ -1217,7 +1217,7 @@ public final class TestUtil {
     int evilness = TestUtil.nextInt(random, 0, 20);
 
     StringBuilder sb = new StringBuilder();
-    while (sb.length() < wordLength) {;
+    while (sb.length() < wordLength) {
       if (simple) {
         sb.append(random.nextBoolean() ? TestUtil.randomSimpleString(random, wordLength) : TestUtil.randomHtmlishString(random, wordLength));
       } else {

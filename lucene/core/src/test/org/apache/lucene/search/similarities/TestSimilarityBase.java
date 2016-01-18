@@ -140,6 +140,7 @@ public class TestSimilarityBase extends LuceneTestCase {
     sims.add(new LMDirichletSimilarity());
     sims.add(new LMJelinekMercerSimilarity(0.1f));
     sims.add(new LMJelinekMercerSimilarity(0.7f));
+    sims.add(new DFISimilarity());
   }
   
   // ------------------------------- Unit tests --------------------------------
