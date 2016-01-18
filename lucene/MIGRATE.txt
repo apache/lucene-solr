@@ -17,13 +17,6 @@ Some Similarity implementations (such as the ones instantiated with Normalizatio
 Especially if you have a collection of documents with varying lengths.
 Because NormalizationH2 tends to punish documents longer than avdl.
 
-## Separation of IndexDocument and StoredDocument (LUCENE-3312)
-
-The API of oal.document was restructured to differentiate between stored 
-documents and indexed documents. IndexReader.document(int) now returns 
-StoredDocument instead of Document. In most cases a simple replacement
-of the return type is enough to upgrade.
-
 ## FunctionValues.exist() Behavior Changes due to ValueSource bug fixes (LUCENE-5961)
 
 Bugs fixed in several ValueSource functions may result in different behavior in 
