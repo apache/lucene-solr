@@ -540,6 +540,9 @@ Other Changes
   several places in Solr now additionally support BCP47 in config
   files.  (Uwe Schindler, Robert Muir)
 
+* SOLR-7907: Remove CLUSTERSTATUS related exclusivity checks while running commands in the Overseer because the
+  CLUSTERSTATUS request is served by the individual nodes itself and not via the Overseer node.
+
 ==================  5.4.1 ==================
 
 Bug Fixes
