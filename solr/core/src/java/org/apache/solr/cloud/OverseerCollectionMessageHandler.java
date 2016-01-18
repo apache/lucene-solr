@@ -261,9 +261,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         case OVERSEERSTATUS:
           getOverseerStatus(message, results);
           break;
-        case CLUSTERSTATUS://TODO . deprecated. OCP does not need to do it .remove in a later release
-          new ClusterStatus(zkStateReader, message).getClusterStatus(results);
-          break;
         case ADDREPLICAPROP:
           processReplicaAddPropertyCommand(message);
           break;
@@ -2500,8 +2497,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   @Override
   public void markExclusiveTask(String collectionName, ZkNodeProps message) {
-    //TODO deprecated remove this check .
-    if (!CLUSTERSTATUS.isEqual(message.getStr(Overseer.QUEUE_OPERATION)) && collectionName != null) {
+    if (collectionName != null) {
       synchronized (collectionWip) {
         collectionWip.add(collectionName);
       }
@@ -2510,7 +2506,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   @Override
   public void unmarkExclusiveTask(String collectionName, String operation, ZkNodeProps message) {
-    if(!CLUSTERSTATUS.isEqual(operation) && collectionName != null) {
+    if(collectionName != null) {
       synchronized (collectionWip) {
         collectionWip.remove(collectionName);
       }
@@ -2519,11 +2515,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   @Override
   public ExclusiveMarking checkExclusiveMarking(String collectionName, ZkNodeProps message) {
-    // CLUSTERSTATUS is always mutually exclusive
-    //TODO deprecated remove this check .
-    if(CLUSTERSTATUS.isEqual(message.getStr(Overseer.QUEUE_OPERATION)))
-      return ExclusiveMarking.EXCLUSIVE;
-
     synchronized (collectionWip) {
       if(collectionWip.contains(collectionName))
         return ExclusiveMarking.NONEXCLUSIVE;
