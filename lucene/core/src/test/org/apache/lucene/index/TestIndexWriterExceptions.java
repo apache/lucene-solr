@@ -1795,7 +1795,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     } catch (UnsupportedOperationException expected) {
       // expected
     }
-    DirectoryReader ir = DirectoryReader.open(iw, false);
+    DirectoryReader ir = DirectoryReader.open(iw);
     assertEquals(1, ir.numDocs());
     assertEquals("sometext", ir.document(0).get("field1"));
     ir.close();
@@ -2203,7 +2203,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     iw.addDocument(doc);
     
     // pool readers
-    DirectoryReader r = DirectoryReader.open(iw, false);
+    DirectoryReader r = DirectoryReader.open(iw);
 
     // sometimes sneak in a pending commit: we don't want to leak a file handle to that segments_N
     if (random().nextBoolean()) {
@@ -2274,7 +2274,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       iw.addDocument(doc);
       
       // pool readers
-      DirectoryReader r = DirectoryReader.open(iw, false);
+      DirectoryReader r = DirectoryReader.open(iw);
       
       // sometimes sneak in a pending commit: we don't want to leak a file handle to that segments_N
       if (random().nextBoolean()) {
@@ -2351,7 +2351,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         w.addDocument(doc);
         if (random().nextInt(10) == 7) {
           // Flush new segment:
-          DirectoryReader.open(w, true).close();
+          DirectoryReader.open(w).close();
         }
       } catch (AlreadyClosedException ace) {
         // OK: e.g. CMS hit the exc in BG thread and closed the writer

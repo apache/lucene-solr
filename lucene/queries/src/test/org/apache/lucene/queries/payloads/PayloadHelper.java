@@ -127,7 +127,7 @@ public class PayloadHelper {
       doc.add(new TextField(NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES));
       writer.addDocument(doc);
     }
-    reader = DirectoryReader.open(writer, true);
+    reader = DirectoryReader.open(writer);
     writer.close();
 
     IndexSearcher searcher = LuceneTestCase.newSearcher(reader);

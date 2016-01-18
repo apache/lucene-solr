@@ -53,7 +53,7 @@ public class TestMaxPosition extends LuceneTestCase {
     }
 
     // Document should not be visible:
-    IndexReader r = DirectoryReader.open(iw, true);
+    IndexReader r = DirectoryReader.open(iw);
     assertEquals(0, r.numDocs());
     r.close();
 
@@ -79,7 +79,7 @@ public class TestMaxPosition extends LuceneTestCase {
     iw.addDocument(doc);
 
     // Document should be visible:
-    IndexReader r = DirectoryReader.open(iw, true);
+    IndexReader r = DirectoryReader.open(iw);
     assertEquals(1, r.numDocs());
     PostingsEnum postings = MultiFields.getTermPositionsEnum(r, "foo", new BytesRef("foo"));
 

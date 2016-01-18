@@ -53,7 +53,7 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
     }
     w.forceMerge(1);
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     assertEquals(1, r.leaves().size());
     FieldReader field = (FieldReader) r.leaves().get(0).reader().fields().terms("field");
     // We should see exactly two blocks: one root block (prefix empty string) and one block for z* terms (prefix z):

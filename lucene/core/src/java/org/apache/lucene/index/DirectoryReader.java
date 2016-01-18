@@ -67,6 +67,23 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * Open a near real time IndexReader from the {@link org.apache.lucene.index.IndexWriter}.
    *
    * @param writer The IndexWriter to open from
+   * @return The new IndexReader
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   *
+   * @see #openIfChanged(DirectoryReader,IndexWriter,boolean)
+   *
+   * @lucene.experimental
+   */
+  public static DirectoryReader open(final IndexWriter writer) throws IOException {
+    return open(writer, true);
+  }
+
+  /**
+   * Expert: open a near real time IndexReader from the {@link org.apache.lucene.index.IndexWriter},
+   * controlling whether past deletions should be applied.
+   *
+   * @param writer The IndexWriter to open from
    * @param applyAllDeletes If true, all buffered deletes will
    * be applied (made visible) in the returned reader.  If
    * false, the deletes are not applied but remain buffered
@@ -74,11 +91,8 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * future.  Applying deletes can be costly, so if your app
    * can tolerate deleted documents being returned you might
    * gain some performance by passing false.
-   * @return The new IndexReader
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
    *
-   * @see #openIfChanged(DirectoryReader,IndexWriter,boolean)
+   * @see #open(IndexWriter)
    *
    * @lucene.experimental
    */
@@ -184,6 +198,21 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @return DirectoryReader that covers entire index plus all
    * changes made so far by this IndexWriter instance, or
    * null if there are no new changes
+   *
+   * @param writer The IndexWriter to open from
+   *
+   * @throws IOException if there is a low-level IO error
+   *
+   * @lucene.experimental
+   */
+  public static DirectoryReader openIfChanged(DirectoryReader oldReader, IndexWriter writer) throws IOException {
+    return openIfChanged(oldReader, writer, true);
+  }
+
+  /**
+   * Expert: Opens a new reader, if there are any changes, controlling whether past deletions should be applied.
+   *
+   * @see #openIfChanged(DirectoryReader,IndexWriter)
    *
    * @param writer The IndexWriter to open from
    *
@@ -368,7 +397,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    *
    * <p>If instead this reader is a near real-time reader
    * (ie, obtained by a call to {@link
-   * DirectoryReader#open(IndexWriter,boolean)}, or by calling {@link #openIfChanged}
+   * DirectoryReader#open(IndexWriter)}, or by calling {@link #openIfChanged}
    * on a near real-time reader), then this method checks if
    * either a new commit has occurred, or any new
    * uncommitted changes have taken place via the writer.

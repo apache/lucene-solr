@@ -450,7 +450,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newTextField("field", "a b c d", Field.Store.NO));
     w.addDocument(doc);
-    IndexReader r = DirectoryReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w);
     IndexSearcher s = newSearcher(r);
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     bq.add(new TermQuery(new Term("field", "a")), BooleanClause.Occur.SHOULD);

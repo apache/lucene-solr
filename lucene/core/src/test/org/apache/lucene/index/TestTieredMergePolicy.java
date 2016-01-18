@@ -229,7 +229,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
       doc.add(newTextField("id", random().nextLong() + "" + random().nextLong(), Field.Store.YES));
       w.addDocument(doc);
     }
-    IndexReader r = DirectoryReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w);
 
     // Make sure TMP always merged equal-number-of-docs segments:
     for(LeafReaderContext ctx : r.leaves()) {

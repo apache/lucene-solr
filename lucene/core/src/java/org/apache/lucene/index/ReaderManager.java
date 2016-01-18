@@ -41,6 +41,19 @@ public final class ReaderManager extends ReferenceManager<DirectoryReader> {
    * 
    * @param writer
    *          the IndexWriter to open the IndexReader from.
+   * 
+   * @throws IOException If there is a low-level I/O error
+   */
+  public ReaderManager(IndexWriter writer) throws IOException {
+    this(writer, true);
+  }
+
+  /**
+   * Expert: creates and returns a new ReaderManager from the given
+   * {@link IndexWriter}, controlling whether past deletions should be applied.
+   * 
+   * @param writer
+   *          the IndexWriter to open the IndexReader from.
    * @param applyAllDeletes
    *          If <code>true</code>, all buffered deletes will be applied (made
    *          visible) in the {@link IndexSearcher} / {@link DirectoryReader}.

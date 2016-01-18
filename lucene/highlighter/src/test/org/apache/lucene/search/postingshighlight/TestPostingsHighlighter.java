@@ -1137,7 +1137,7 @@ public class TestPostingsHighlighter extends LuceneTestCase {
     doc.add(new StoredField("body", "foo"));
     iw.addDocument(doc);
     
-    IndexReader ir = DirectoryReader.open(iw.w, true);
+    IndexReader ir = DirectoryReader.open(iw.w);
     iw.close();
     
     IndexSearcher searcher = new IndexSearcher(ir);

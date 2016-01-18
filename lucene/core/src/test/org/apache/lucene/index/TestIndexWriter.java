@@ -1669,7 +1669,7 @@ public class TestIndexWriter extends LuceneTestCase {
         w.addDocument(doc);
       }
       w.commit();
-      DirectoryReader.open(w, true).close();
+      DirectoryReader.open(w).close();
 
       w.deleteAll();
       w.commit();
@@ -2643,7 +2643,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.commit();
 
     // newly opened NRT reader should see gen=1 segments file
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     assertEquals(1, r.getIndexCommit().getGeneration());
     assertEquals("segments_1", r.getIndexCommit().getSegmentsFileName());
 
@@ -2683,7 +2683,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.commit();
 
     w.addDocument(new Document());
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     w.commit();
 
     // commit even with no other changes counts as a "change" that NRT reader reopen will see:
@@ -2702,7 +2702,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     w.commit();
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     Map<String,String> m = new HashMap<>();
     m.put("foo", "bar");
     w.setCommitData(m);
@@ -2721,7 +2721,7 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     w.commit();
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     Map<String,String> m = new HashMap<>();
     m.put("foo", "bar");
     w.setCommitData(m);
@@ -2741,7 +2741,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     w.addDocument(new Document());
 
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     w.commit();
 
     assertFalse(r.isCurrent());

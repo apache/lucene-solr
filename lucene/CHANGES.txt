@@ -146,6 +146,9 @@ API Changes
   analysis/common. TokenTypeSinkFilter was removed (use TypeTokenFilter instead).
   TokenRangeSinkFilter was removed. (Shai Erera, Uwe Schindler)
 
+* LUCENE-6980: Default applyAllDeletes to true when opening
+  near-real-time readers (Mike McCandless)
+
 Optimizations
 
 * LUCENE-6951: Improve GeoPointInPolygonQuery using point orientation based

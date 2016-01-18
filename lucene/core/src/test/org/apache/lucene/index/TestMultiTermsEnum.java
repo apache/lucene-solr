@@ -56,7 +56,7 @@ public class TestMultiTermsEnum extends LuceneTestCase {
     document.add(new StringField("deleted", "0", Field.Store.YES));
     writer.addDocument(document);
 
-    DirectoryReader reader = DirectoryReader.open(writer, true);
+    DirectoryReader reader = DirectoryReader.open(writer);
     writer.close();
 
     Directory directory2 = new RAMDirectory();

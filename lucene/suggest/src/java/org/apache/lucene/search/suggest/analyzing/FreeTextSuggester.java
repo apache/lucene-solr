@@ -339,7 +339,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
         writer.addDocument(doc);
         count++;
       }
-      reader = DirectoryReader.open(writer, false);
+      reader = DirectoryReader.open(writer);
 
       Terms terms = MultiFields.getTerms(reader, "body");
       if (terms == null) {

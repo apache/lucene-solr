@@ -68,7 +68,7 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
     }
 
     w.forceMerge(1);
-    final IndexReader r = DirectoryReader.open(w, true);
+    final IndexReader r = DirectoryReader.open(w);
     w.close();
 
     assertEquals(1, r.leaves().size());

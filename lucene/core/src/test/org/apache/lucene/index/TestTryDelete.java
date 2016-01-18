@@ -90,7 +90,7 @@ public class TestTryDelete extends LuceneTestCase
 
     long result;
     if (random().nextBoolean()) {
-      IndexReader r = DirectoryReader.open(writer, true);
+      IndexReader r = DirectoryReader.open(writer);
       result = mgrWriter.tryDeleteDocument(r, 0);
       r.close();
     } else {
@@ -135,8 +135,7 @@ public class TestTryDelete extends LuceneTestCase
     assertEquals(1, topDocs.totalHits);
 
     TrackingIndexWriter mgrWriter = new TrackingIndexWriter(writer);
-    long result = mgrWriter.tryDeleteDocument(DirectoryReader.open(writer,
-                                                                   true), 0);
+    long result = mgrWriter.tryDeleteDocument(DirectoryReader.open(writer), 0);
 
     assertEquals(1, result);
 

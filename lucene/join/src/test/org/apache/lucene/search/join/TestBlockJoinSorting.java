@@ -208,7 +208,7 @@ public class TestBlockJoinSorting extends LuceneTestCase {
     w.addDocuments(docs);
     w.commit();
 
-    IndexSearcher searcher = new IndexSearcher(DirectoryReader.open(w.w, false));
+    IndexSearcher searcher = new IndexSearcher(DirectoryReader.open(w.w));
     w.close();
     BitSetProducer parentFilter = new QueryBitSetProducer(new TermQuery(new Term("__type", "parent")));
     CheckJoinIndex.check(searcher.getIndexReader(), parentFilter);

@@ -48,7 +48,7 @@ public class TestMatchNoDocsQuery extends LuceneTestCase {
     addDoc("one", iw);
     addDoc("two", iw);
     addDoc("three four", iw);
-    IndexReader ir = DirectoryReader.open(iw, true);
+    IndexReader ir = DirectoryReader.open(iw);
 
     IndexSearcher is = newSearcher(ir);
     ScoreDoc[] hits;

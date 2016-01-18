@@ -57,7 +57,7 @@ public class TestTragicIndexWriterDeadlock extends LuceneTestCase {
         }
       };
     commitThread.start();
-    final DirectoryReader r0 = DirectoryReader.open(w, true);
+    final DirectoryReader r0 = DirectoryReader.open(w);
     Thread nrtThread = new Thread() {
         @Override
         public void run() {

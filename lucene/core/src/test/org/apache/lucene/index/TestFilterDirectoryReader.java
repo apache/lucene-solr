@@ -57,7 +57,7 @@ public class TestFilterDirectoryReader extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     w.addDocument(new Document());
 
-    DirectoryReader reader = DirectoryReader.open(w, false);
+    DirectoryReader reader = DirectoryReader.open(w);
     DirectoryReader wrapped = new DummyFilterDirectoryReader(reader);
 
     // Calling close() on the original reader and wrapped reader should only close

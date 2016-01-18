@@ -1002,7 +1002,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc.add(newStringField("t", "1", Field.Store.NO));
     w.addDocument(doc);
 
-    IndexReader r = UninvertingReader.wrap(DirectoryReader.open(w, true), 
+    IndexReader r = UninvertingReader.wrap(DirectoryReader.open(w), 
                     Collections.singletonMap("f", Type.SORTED));
     w.close();
     IndexSearcher s = newSearcher(r);
@@ -1063,7 +1063,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
       w.commit();
     }
 
-    IndexReader r = UninvertingReader.wrap(DirectoryReader.open(w, true),
+    IndexReader r = UninvertingReader.wrap(DirectoryReader.open(w),
                     Collections.singletonMap("id", Type.INTEGER));
     w.close();
     Query q = new TermQuery(new Term("body", "text"));

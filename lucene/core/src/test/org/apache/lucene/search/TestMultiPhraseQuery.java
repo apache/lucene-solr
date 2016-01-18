@@ -470,7 +470,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new TextField("field", new CannedTokenStream(INCR_0_DOC_TOKENS)));
     writer.addDocument(doc);
-    IndexReader r = DirectoryReader.open(writer,false);
+    IndexReader r = DirectoryReader.open(writer);
     writer.close();
     IndexSearcher s = newSearcher(r);
     

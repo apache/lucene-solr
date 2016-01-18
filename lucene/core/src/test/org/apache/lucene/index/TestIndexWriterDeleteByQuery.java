@@ -33,7 +33,7 @@ public class TestIndexWriterDeleteByQuery extends LuceneTestCase {
     // Norms are disabled:
     doc.add(newStringField("field", "foo", Field.Store.NO));
     w.addDocument(doc);
-    DirectoryReader r = DirectoryReader.open(w, true);
+    DirectoryReader r = DirectoryReader.open(w);
     FieldInfo fi = MultiFields.getMergedFieldInfos(r).fieldInfo("field");
     assertNotNull(fi);
     assertFalse(fi.hasNorms());

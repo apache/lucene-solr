@@ -249,7 +249,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       w.addDocument(doc);
     }
     w.forceMerge(1);
-    IndexReader r = DirectoryReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w);
     TermsEnum te = MultiFields.getTerms(r, "field").iterator();
 
     if (VERBOSE) {
@@ -299,7 +299,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       w.addDocument(doc);
     }
     w.forceMerge(1);
-    IndexReader r = DirectoryReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w);
     TermsEnum te = MultiFields.getTerms(r, "field").iterator();
 
     BytesRef term;
@@ -337,7 +337,7 @@ public class TestOrdsBlockTree extends BasePostingsFormatTestCase {
       }
     }
     w.forceMerge(1);
-    IndexReader r = DirectoryReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w);
     TermsEnum te = MultiFields.getTerms(r, "body").iterator();
 
     for(int i=0;i<30;i++) {

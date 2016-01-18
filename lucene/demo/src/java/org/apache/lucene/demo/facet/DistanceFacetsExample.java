@@ -114,7 +114,7 @@ public class DistanceFacetsExample implements Closeable {
     writer.addDocument(doc);
 
     // Open near-real-time searcher
-    searcher = new IndexSearcher(DirectoryReader.open(writer, true));
+    searcher = new IndexSearcher(DirectoryReader.open(writer));
     writer.close();
   }
 

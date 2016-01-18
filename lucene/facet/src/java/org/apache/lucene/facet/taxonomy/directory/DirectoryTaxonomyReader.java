@@ -217,7 +217,7 @@ public class DirectoryTaxonomyReader extends TaxonomyReader {
   /** Open the {@link DirectoryReader} from this {@link
    *  IndexWriter}. */
   protected DirectoryReader openIndexReader(IndexWriter writer) throws IOException {
-    return DirectoryReader.open(writer, false);
+    return DirectoryReader.open(writer);
   }
 
   /**

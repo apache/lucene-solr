@@ -74,7 +74,7 @@ public class RangeFacetsExample implements Closeable {
     }
 
     // Open near-real-time searcher
-    searcher = new IndexSearcher(DirectoryReader.open(indexWriter, true));
+    searcher = new IndexSearcher(DirectoryReader.open(indexWriter));
     indexWriter.close();
   }
 

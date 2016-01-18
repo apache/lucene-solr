@@ -57,7 +57,7 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
             setMergePolicy(newLogMergePolicy(false)).setCodec(TestUtil.getDefaultCodec()).setUseCompoundFile(false)
     );
     TestIndexWriterReader.createIndexNoClose(true, "ram", writer);
-    IndexReader reader = DirectoryReader.open(writer, true);
+    IndexReader reader = DirectoryReader.open(writer);
     assertEquals(100, reader.maxDoc());
     writer.commit();
     // we should see only fdx,fdt files here

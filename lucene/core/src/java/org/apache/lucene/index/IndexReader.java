@@ -37,7 +37,7 @@ import org.apache.lucene.util.IOUtils;
  point-in-time view of an index.  Any changes made to the index
  via {@link IndexWriter} will not be visible until a new
  {@code IndexReader} is opened.  It's best to use {@link
- DirectoryReader#open(IndexWriter,boolean)} to obtain an
+ DirectoryReader#open(IndexWriter)} to obtain an
  {@code IndexReader}, if your {@link IndexWriter} is
  in-process.  When you need to re-open to see changes to the
  index, it's best to use {@link DirectoryReader#openIfChanged(DirectoryReader)}
