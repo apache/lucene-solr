@@ -251,7 +251,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
     Explanation e = searcher.explain(q, 1);
     assertTrue("Scorer explanation value for doc#1 isn't positive: "
                + e.toString(),
-               0.0f < e.getValue());
+               0.0f <= e.getValue());
   }
 
   public void testGaps() throws Exception {
