@@ -33,4 +33,50 @@ public class TestBM25Similarity extends LuceneTestCase {
       }
     }
   }
+  
+  public void testIllegalK1() {
+    try {
+      new BM25Similarity(Float.POSITIVE_INFINITY, 0.75f);
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("illegal k1 value"));
+    }
+    
+    try {
+      new BM25Similarity(-1, 0.75f);
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("illegal k1 value"));
+    }
+    
+    try {
+      new BM25Similarity(Float.NaN, 0.75f);
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("illegal k1 value"));
+    }
+  }
+  
+  public void testIllegalB() {
+    try {
+      new BM25Similarity(1.2f, 2f);
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("illegal b value"));
+    }
+    
+    try {
+      new BM25Similarity(1.2f, -1f);
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("illegal b value"));
+    }
+    
+    try {
+      new BM25Similarity(1.2f, Float.POSITIVE_INFINITY);
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("illegal b value"));
+    }
+    
+    try {
+      new BM25Similarity(1.2f, Float.NaN);
+    } catch (IllegalArgumentException expected) {
+      assertTrue(expected.getMessage().contains("illegal b value"));
+    }
+  }
 }

@@ -46,8 +46,16 @@ public class BM25Similarity extends Similarity {
    * BM25 with the supplied parameter values.
    * @param k1 Controls non-linear term frequency normalization (saturation).
    * @param b Controls to what degree document length normalizes tf values.
+   * @throws IllegalArgumentException if {@code k1} is infinite or negative, or if {@code b} is 
+   *         not within the range {@code [0..1]}
    */
   public BM25Similarity(float k1, float b) {
+    if (Float.isNaN(k1) || Float.isInfinite(k1) || k1 < 0) {
+      throw new IllegalArgumentException("illegal k1 value: " + k1 + ", must be a non-negative finite value");
+    }
+    if (Float.isNaN(b) || b < 0 || b > 1) {
+      throw new IllegalArgumentException("illegal b value: " + b + ", must be between 0 and 1");
+    }
     this.k1 = k1;
     this.b  = b;
   }
@@ -59,8 +67,7 @@ public class BM25Similarity extends Similarity {
    * </ul>
    */
   public BM25Similarity() {
-    this.k1 = 1.2f;
-    this.b  = 0.75f;
+    this(1.2f, 0.75f);
   }
   
   /** Implemented as <code>log(1 + (numDocs - docFreq + 0.5)/(docFreq + 0.5))</code>. */
