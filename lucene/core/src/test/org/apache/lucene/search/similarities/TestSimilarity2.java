@@ -69,6 +69,7 @@ public class TestSimilarity2 extends LuceneTestCase {
     sims.add(new LMDirichletSimilarity());
     sims.add(new LMJelinekMercerSimilarity(0.1f));
     sims.add(new LMJelinekMercerSimilarity(0.7f));
+    sims.add(new DFISimilarity());
   }
   
   /** because of stupid things like querynorm, it's possible we computeStats on a field that doesnt exist at all
