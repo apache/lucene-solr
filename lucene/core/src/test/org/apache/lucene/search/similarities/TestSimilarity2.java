@@ -286,8 +286,9 @@ public class TestSimilarity2 extends LuceneTestCase {
       TopDocs td = is.search(query, 10);
       assertEquals(1, td.totalHits);
       float score = td.scoreDocs[0].score;
-      assertTrue(score >= 0.0f);
+      assertFalse("negative score for " + sim, score < 0.0f);
       assertFalse("inf score for " + sim, Float.isInfinite(score));
+      assertFalse("nan score for " + sim, Float.isNaN(score));
     }
     ir.close();
     dir.close();

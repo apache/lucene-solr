@@ -128,10 +128,11 @@ public class BM25Similarity extends Similarity {
   private static final float[] NORM_TABLE = new float[256];
 
   static {
-    for (int i = 0; i < 256; i++) {
+    for (int i = 1; i < 256; i++) {
       float f = SmallFloat.byte315ToFloat((byte)i);
       NORM_TABLE[i] = 1.0f / (f*f);
     }
+    NORM_TABLE[0] = 1.0f / NORM_TABLE[255]; // otherwise inf
   }
 
 

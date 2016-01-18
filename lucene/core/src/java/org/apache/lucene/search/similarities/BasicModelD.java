@@ -28,7 +28,7 @@ import static org.apache.lucene.search.similarities.SimilarityBase.log2;
  * <p>
  * WARNING: for terms that do not meet the expected random distribution
  * (e.g. stopwords), this model may give poor performance, such as
- * abnormally high scores for low tf values.
+ * abnormally high or NaN scores for low tf values.
  * @lucene.experimental
  */
 public class BasicModelD extends BasicModel {

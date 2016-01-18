@@ -158,4 +158,17 @@ public class TestClassicSimilarity extends LuceneTestCase {
     assertEquals(1, topDocs.scoreDocs.length);
     assertTrue(topDocs.scoreDocs[0].score != 0);
   }
+  
+  public void testSaneNormValues() {
+    ClassicSimilarity sim = new ClassicSimilarity();
+    for (int i = 0; i < 256; i++) {
+      float boost = sim.decodeNormValue((byte) i);
+      assertFalse("negative boost: " + boost + ", byte=" + i, boost < 0.0f);
+      assertFalse("inf bost: " + boost + ", byte=" + i, Float.isInfinite(boost));
+      assertFalse("nan boost for byte=" + i, Float.isNaN(boost));
+      if (i > 0) {
+        assertTrue("boost is not increasing: " + boost + ",byte=" + i, boost > sim.decodeNormValue((byte)(i-1)));
+      }
+    }
+  }
 }

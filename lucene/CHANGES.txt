@@ -184,6 +184,10 @@ Bug Fixes
   EOFException if you seek past the end of the file and then try to
   read (Stéphane Campinas via Mike McCandless)
 
+* LUCENE-6896: Don't treat the smallest possible norm value as an infinitely
+  long document in SimilarityBase or BM25Similarity. Add more warnings to sims
+  that will not work well with extreme tf values. (Ahmet Arslan, Robert Muir)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)
