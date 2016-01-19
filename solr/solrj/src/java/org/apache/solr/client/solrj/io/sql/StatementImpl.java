@@ -50,6 +50,10 @@ class StatementImpl implements Statement {
     this.connection = connection;
   }
 
+  public SolrStream getSolrStream() {
+    return this.solrStream;
+  }
+
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
     try {
@@ -59,7 +63,7 @@ class StatementImpl implements Statement {
       context.setSolrClientCache(this.connection.getSolrClientCache());
       this.solrStream.setStreamContext(context);
       this.solrStream.open();
-      return new ResultSetImpl(this.solrStream);
+      return new ResultSetImpl(this);
     } catch(Exception e) {
       throw new SQLException(e);
     }

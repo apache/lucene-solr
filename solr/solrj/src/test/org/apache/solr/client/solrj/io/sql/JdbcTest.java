@@ -309,6 +309,7 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     String collection = DEFAULT_COLLECTION;
     String connectionString = "jdbc:solr://" + zkServer.getZkAddress() + "?collection=" + collection +
         "&username=&password=&testKey1=testValue&testKey2";
+    String sql = "select id, a_i, a_s, a_f from " + collection + " order by a_i desc limit 2";
 
     try (Connection con = DriverManager.getConnection(connectionString)) {
       assertEquals(collection, con.getCatalog());
@@ -320,6 +321,10 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
       try (Statement statement = con.createStatement()) {
         assertEquals(con, statement.getConnection());
+
+        try (ResultSet rs = statement.executeQuery(sql)) {
+          assertEquals(statement, rs.getStatement());
+        }
       }
     }
   }

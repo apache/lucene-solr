@@ -39,29 +39,29 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
 
-import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.SolrStream;
 
 class ResultSetImpl implements ResultSet {
-
-  private SolrStream solrStream;
+  private final StatementImpl statement;
+  private final SolrStream solrStream;
   private Tuple tuple;
   private boolean done;
   private boolean closed;
 
-  ResultSetImpl(SolrStream solrStream) {
-    this.solrStream = solrStream;
+  ResultSetImpl(StatementImpl statement) {
+    this.statement = statement;
+    this.solrStream = statement.getSolrStream();
   }
 
   @Override
   public boolean next() throws SQLException {
     try {
-
       if(done) {
         return false;
       }
 
-      tuple = solrStream.read();
+      tuple = this.solrStream.read();
       if(tuple.EOF) {
         done = true;
         return false;
@@ -640,7 +640,7 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public Statement getStatement() throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.statement;
   }
 
   @Override
