@@ -1209,8 +1209,10 @@ public class TestFieldCacheSort extends LuceneTestCase {
     bq.add(new MatchAllDocsQuery(), Occur.SHOULD);
     TopDocs td = searcher.search(bq.build(), 10, sort);
     assertEquals(2, td.totalHits);
-    assertEquals(1, td.scoreDocs[0].doc);
-    assertEquals(0, td.scoreDocs[1].doc);
+    if (Float.isNaN(td.scoreDocs[0].score) == false && Float.isNaN(td.scoreDocs[1].score) == false) {
+      assertEquals(1, td.scoreDocs[0].doc);
+      assertEquals(0, td.scoreDocs[1].doc);
+    }
     TestUtil.checkReader(ir);
     ir.close();
     dir.close();
