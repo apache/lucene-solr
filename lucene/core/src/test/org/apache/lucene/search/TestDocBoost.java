@@ -86,7 +86,9 @@ public class TestDocBoost extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println(searcher.explain(new TermQuery(new Term("field", "word")), i));
       }
-      assertTrue("score: " + scores[i] + " should be > lastScore: " + lastScore, scores[i] > lastScore);
+      if (scores[i] != 0.0) {
+        assertTrue("score: " + scores[i] + " should be > lastScore: " + lastScore, scores[i] > lastScore);
+      }
       lastScore = scores[i];
     }
     
