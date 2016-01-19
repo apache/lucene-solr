@@ -295,7 +295,7 @@ public class TestBooleanRewrites extends LuceneTestCase {
 
   private Query randomBooleanQuery() {
     if (random().nextInt(10) == 0) {
-      return new BoostQuery(randomBooleanQuery(), random().nextFloat());
+      return new BoostQuery(randomBooleanQuery(), TestUtil.nextInt(random(), 1, 10));
     }
     final int numClauses = random().nextInt(5);
     BooleanQuery.Builder b = new BooleanQuery.Builder();
