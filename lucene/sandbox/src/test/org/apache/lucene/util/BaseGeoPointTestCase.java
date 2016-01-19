@@ -422,7 +422,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     } else {
       result = -90 + 180.0 * random().nextDouble();
     }
-    return unscaleLat(scaleLat(result));
+    return result;
   }
 
   public double randomLon(boolean small) {
@@ -432,7 +432,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     } else {
       result = -180 + 360.0 * random().nextDouble();
     }
-    return unscaleLon(scaleLon(result));
+    return result;
   }
 
   protected GeoRect randomRect(boolean small, boolean canCrossDateLine) {
