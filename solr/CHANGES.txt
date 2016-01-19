@@ -195,6 +195,12 @@ Optimizations
 
 * SOLR-8501: Specify the entity request size when known in HttpSolrClient. (Mark Miller)
 
+* SOLR-8559: FCS facet performance optimization which significantly speeds up processing when terms
+  are high cardinality and the matching docset is small. When facet minCount > 0 and the number of
+  matching documents is small (or 0) this enhancement prevents considering terms which have a 0
+  count. Also includes change to move to the next non-zero term value when selecting a segment
+  position. (Keith Laban, Steve Bower, Dennis Gove)
+
 Other Changes
 ----------------------
 

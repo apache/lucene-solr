@@ -163,7 +163,7 @@ class PerSegmentSingleValuedFaceting {
         } else {
           seg.pos = seg.startTermIndex;
         }
-        if (seg.pos < seg.endTermIndex) {
+        if (seg.pos < seg.endTermIndex && (mincount < 1 || seg.hasAnyCount)) {  
           seg.tenum = seg.si.termsEnum();
           seg.tenum.seekExact(seg.pos);
           seg.tempBR = seg.tenum.term();
@@ -201,14 +201,22 @@ class PerSegmentSingleValuedFaceting {
           count += seg.counts[seg.pos - seg.startTermIndex];
         }
 
-        // TODO: OPTIMIZATION...
         // if mincount>0 then seg.pos++ can skip ahead to the next non-zero entry.
-        seg.pos++;
+        do{
+          ++seg.pos;
+        }
+        while(  
+            (seg.pos < seg.endTermIndex)  //stop incrementing before we run off the end
+         && (seg.tenum.next() != null || true) //move term enum forward with position -- dont care about value 
+         && (mincount > 0) //only skip ahead if mincount > 0
+         && (seg.counts[seg.pos - seg.startTermIndex] == 0) //check zero count
+        );
+        
         if (seg.pos >= seg.endTermIndex) {
           queue.pop();
           seg = queue.top();
         } else {
-          seg.tempBR = seg.tenum.next();
+          seg.tempBR = seg.tenum.term();
           seg = queue.updateTop();
         }
       } while (seg != null && val.get().compareTo(seg.tempBR) == 0);
@@ -248,6 +256,10 @@ class PerSegmentSingleValuedFaceting {
     int startTermIndex;
     int endTermIndex;
     int[] counts;
+    
+    //whether this segment has any non-zero term counts
+    //used to ignore insignificant segments when mincount>0
+    boolean hasAnyCount = false; 
 
     int pos; // only used when merging
     TermsEnum tenum; // only used when merging
@@ -285,7 +297,9 @@ class PerSegmentSingleValuedFaceting {
         // specialized version when collecting counts for all terms
         int doc;
         while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-          counts[1+si.getOrd(doc)]++;
+          int t = 1+si.getOrd(doc);
+          hasAnyCount = hasAnyCount || t > 0; //counts[0] == missing counts
+          counts[t]++;
         }
       } else {
         // version that adjusts term numbers because we aren't collecting the full range
@@ -293,7 +307,10 @@ class PerSegmentSingleValuedFaceting {
         while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
           int term = si.getOrd(doc);
           int arrIdx = term-startTermIndex;
-          if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+          if (arrIdx>=0 && arrIdx<nTerms){
+            counts[arrIdx]++;
+            hasAnyCount = true;
+          }
         }
       }
     }
