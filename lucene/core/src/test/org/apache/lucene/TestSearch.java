@@ -57,8 +57,8 @@ public class TestSearch extends LuceneTestCase {
         
         ScoreDoc[] hits = searcher.search(q, 1000).scoreDocs;
         assertEquals(1, hits.length);
-        assertTrue("score is not negative: " + hits[0].score,
-                   hits[0].score < 0);
+        assertTrue("score is positive: " + hits[0].score,
+                   hits[0].score <= 0);
 
         Explanation explain = searcher.explain(q, hits[0].doc);
         assertEquals("score doesn't match explanation",
