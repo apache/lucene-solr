@@ -543,6 +543,9 @@ Other Changes
 * SOLR-7907: Remove CLUSTERSTATUS related exclusivity checks while running commands in the Overseer because the
   CLUSTERSTATUS request is served by the individual nodes itself and not via the Overseer node (Varun Thacker)
 
+* SOLR-8566: various initialCapacity tweaks (Fix Versions: trunk 5.5)
+  (Christine Poerschke)
+
 ==================  5.4.1 ==================
 
 Bug Fixes
