@@ -42,26 +42,38 @@ import org.apache.solr.client.solrj.io.SolrClientCache;
 class ConnectionImpl implements Connection {
 
   private final String url;
-  private SolrClientCache sqlSolrClientCache = new SolrClientCache();
-  private CloudSolrClient client;
-  private String collection;
-  Properties props;
+  private final SolrClientCache solrClientCache = new SolrClientCache();
+  private final CloudSolrClient client;
+  private final String collection;
+  private final Properties properties;
   private boolean closed;
 
-  ConnectionImpl(String url, String zkHost, String collection, Properties props) {
+  ConnectionImpl(String url, String zkHost, String collection, Properties properties) {
     this.url = url;
-    this.client = sqlSolrClientCache.getCloudSolrClient(zkHost);
+    this.client = solrClientCache.getCloudSolrClient(zkHost);
     this.collection = collection;
-    this.props = props;
+    this.properties = properties;
   }
 
   String getUrl() {
     return url;
   }
 
+  CloudSolrClient getClient() {
+    return client;
+  }
+
+  Properties getProperties() {
+    return properties;
+  }
+
+  SolrClientCache getSolrClientCache() {
+    return this.solrClientCache;
+  }
+
   @Override
   public Statement createStatement() throws SQLException {
-    return new StatementImpl(client, this.collection, props, sqlSolrClientCache);
+    return new StatementImpl(this);
   }
 
   @Override
@@ -105,7 +117,7 @@ class ConnectionImpl implements Connection {
       return;
     }
     try {
-      this.sqlSolrClientCache.close();
+      this.solrClientCache.close();
       this.closed = true;
     } catch (Exception e) {
       throw new SQLException(e);

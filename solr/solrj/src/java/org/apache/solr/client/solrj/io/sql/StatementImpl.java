@@ -29,12 +29,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
-import java.util.Properties;
 import java.util.Random;
 
 import org.apache.solr.client.solrj.io.stream.SolrStream;
-import org.apache.solr.client.solrj.io.SolrClientCache;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -45,28 +42,21 @@ import org.apache.solr.common.params.CommonParams;
 
 class StatementImpl implements Statement {
 
-  private CloudSolrClient client;
-  private SolrClientCache sqlSolrClientCache;
-  private String collection;
-  private Properties properties;
+  private final ConnectionImpl connection;
   private SolrStream solrStream;
   private boolean closed;
 
-  StatementImpl(CloudSolrClient client, String collection, Properties properties, SolrClientCache sqlSolrClientCache) {
-    this.client = client;
-    this.collection = collection;
-    this.properties = properties;
-    this.sqlSolrClientCache = sqlSolrClientCache;
+  StatementImpl(ConnectionImpl connection) {
+    this.connection = connection;
   }
 
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
-
     try {
       closed = false;  // If closed reopen so Statement can be reused.
       this.solrStream = constructStream(sql);
       StreamContext context = new StreamContext();
-      context.setSolrClientCache(sqlSolrClientCache);
+      context.setSolrClientCache(this.connection.getSolrClientCache());
       this.solrStream.setStreamContext(context);
       this.solrStream.open();
       return new ResultSetImpl(this.solrStream);
@@ -76,19 +66,16 @@ class StatementImpl implements Statement {
   }
 
   protected SolrStream constructStream(String sql) throws IOException {
-
     try {
-      ZkStateReader zkStateReader = client.getZkStateReader();
+      ZkStateReader zkStateReader = this.connection.getClient().getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
-      Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
+      Collection<Slice> slices = clusterState.getActiveSlices(this.connection.getCatalog());
 
       if(slices == null) {
-        throw new Exception("Collection not found:"+this.collection);
+        throw new Exception("Collection not found:"+this.connection.getCatalog());
       }
 
-      Map params = new HashMap();
-
-      List<Replica> shuffler = new ArrayList();
+      List<Replica> shuffler = new ArrayList<>();
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
         for (Replica replica : replicas) {
@@ -98,15 +85,17 @@ class StatementImpl implements Statement {
 
       Collections.shuffle(shuffler, new Random());
 
+      Map<String, String> params = new HashMap<>();
       params.put(CommonParams.QT, "/sql");
       params.put("stmt", sql);
-      params.putAll(properties);
+      for(String propertyName : this.connection.getProperties().stringPropertyNames()) {
+        params.put(propertyName, this.connection.getProperties().getProperty(propertyName));
+      }
 
       Replica rep = shuffler.get(0);
       ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
       String url = zkProps.getCoreUrl();
       return new SolrStream(url, params);
-
     } catch (Exception e) {
       throw new IOException(e);
     }
@@ -119,13 +108,14 @@ class StatementImpl implements Statement {
 
   @Override
   public void close() throws SQLException {
-
     if(closed) {
       return;
     }
 
     try {
-      this.solrStream.close();
+      if(this.solrStream != null) {
+        this.solrStream.close();
+      }
       this.closed = true;
     } catch (Exception e) {
       throw new SQLException(e);
@@ -254,7 +244,7 @@ class StatementImpl implements Statement {
 
   @Override
   public Connection getConnection() throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.connection;
   }
 
   @Override

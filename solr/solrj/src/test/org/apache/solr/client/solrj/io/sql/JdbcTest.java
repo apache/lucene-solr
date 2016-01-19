@@ -217,7 +217,7 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     //Test params on the url
     con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1&aggregationMode=map_reduce&numWorkers=2");
 
-    Properties p = ((ConnectionImpl) con).props;
+    Properties p = ((ConnectionImpl) con).getProperties();
 
     assert(p.getProperty("aggregationMode").equals("map_reduce"));
     assert(p.getProperty("numWorkers").equals("2"));
@@ -244,7 +244,7 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     con = DriverManager.getConnection(
         "jdbc:solr://" + zkHost + "?collection=collection1&username=&password=&testKey1=testValue&testKey2");
 
-    p = ((ConnectionImpl) con).props;
+    p = ((ConnectionImpl) con).getProperties();
     assert(p.getProperty("username").equals(""));
     assert(p.getProperty("password").equals(""));
     assert(p.getProperty("testKey1").equals("testValue"));
@@ -278,7 +278,7 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
     con = DriverManager.getConnection("jdbc:solr://" + zkHost, providedProperties);
 
-    p = ((ConnectionImpl) con).props;
+    p = ((ConnectionImpl) con).getProperties();
     assert(p.getProperty("username").equals(""));
     assert(p.getProperty("password").equals(""));
     assert(p.getProperty("testKey1").equals("testValue"));
@@ -317,6 +317,10 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
       assertNotNull(databaseMetaData);
 
       assertEquals(connectionString, databaseMetaData.getURL());
+
+      try (Statement statement = con.createStatement()) {
+        assertEquals(con, statement.getConnection());
+      }
     }
   }
 }
