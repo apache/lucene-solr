@@ -165,6 +165,12 @@ Optimizations
   speedups were up to 2.5x for production of filters, and up to 10x for query evaluation with
   embedded term range queres that resulted in filter cache hits.  (yonik)
 
+* SOLR-8559: FCS facet performance optimization which significantly speeds up processing when terms 
+  are high cardinality and the matching docset is small. When facet minCount > 0 and the number of
+  matching documents is small (or 0) this enhancement prevents considering terms which have a 0
+  count. Also includes change to move to the next non-zero term value when selecting a segment
+  position. (Keith Laban, Steve Bower, Dennis Gove)
+
 Other Changes
 ----------------------
 
