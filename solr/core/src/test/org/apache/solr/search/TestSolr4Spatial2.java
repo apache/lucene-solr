@@ -17,9 +17,6 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.CachingTokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
