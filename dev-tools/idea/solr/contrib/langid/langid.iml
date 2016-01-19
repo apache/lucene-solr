@@ -28,16 +28,6 @@
     </orderEntry>
     <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
     <orderEntry type="module" scope="TEST" module-name="solr-test-framework" />
-    <orderEntry type="module-library" scope="TEST">
-      <library>
-        <CLASSES>
-          <root url="file://$MODULE_DIR$/test-lib" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-        <jarDirectory url="file://$MODULE_DIR$/test-lib" recursive="false" />
-      </library>
-    </orderEntry>
     <orderEntry type="module" module-name="solr-core" />
     <orderEntry type="module" module-name="solrj" />
   </component>
