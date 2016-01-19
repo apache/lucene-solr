@@ -17,12 +17,22 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
 /**
@@ -82,5 +92,139 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   
       assertEquals("Shard split did not complete. Last recorded state: " + state, "completed", state);
     }
+  }
+
+  @Test
+  public void testAsyncRequests() throws Exception {
+    String collection = "testAsyncOperations";
+
+    Create createCollectionRequest = new Create()
+        .setCollectionName(collection)
+        .setNumShards(1)
+        .setRouterName("implicit")
+        .setShards("shard1")
+        .setConfigName("conf1")
+        .setAsyncId("42");
+    CollectionAdminResponse response = createCollectionRequest.process(cloudClient);
+    assertEquals("42", response.getResponse().get("requestid"));
+    String state = getRequestStateAfterCompletion("42", MAX_TIMEOUT_SECONDS, cloudClient);
+    assertEquals("CreateCollection task did not complete!", "completed", state);
+
+    //Add a few documents to shard1
+    int numDocs = TestUtil.nextInt(random(), 10, 100);
+    List<SolrInputDocument> docs = new ArrayList<>(numDocs);
+    for (int i=0; i<numDocs; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", i);
+      doc.addField("_route_", "shard1");
+      docs.add(doc);
+    }
+    cloudClient.add(collection, docs);
+    cloudClient.commit(collection);
+
+    SolrQuery query = new SolrQuery("*:*");
+    query.set("shards", "shard1");
+    assertEquals(numDocs, cloudClient.query(collection, query).getResults().getNumFound());
+
+    CollectionAdminRequest.Reload reloadCollection = new CollectionAdminRequest.Reload();
+    reloadCollection.setCollectionName(collection).setAsyncId("43");
+    response = reloadCollection.process(cloudClient);
+    assertEquals("43", response.getResponse().get("requestid"));
+    state = getRequestStateAfterCompletion("43", MAX_TIMEOUT_SECONDS, cloudClient);
+    assertEquals("ReloadCollection did not complete", "completed", state);
+
+    CollectionAdminRequest.CreateShard createShard = new CollectionAdminRequest.CreateShard()
+        .setCollectionName(collection)
+        .setShardName("shard2")
+        .setAsyncId("44");
+    response = createShard.process(cloudClient);
+    assertEquals("44", response.getResponse().get("requestid"));
+    state = getRequestStateAfterCompletion("44", MAX_TIMEOUT_SECONDS, cloudClient);
+    assertEquals("CreateShard did not complete", "completed", state);
+
+    //Add a doc to shard2 to make sure shard2 was created properly
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", numDocs + 1);
+    doc.addField("_route_", "shard2");
+    cloudClient.add(collection, doc);
+    cloudClient.commit(collection);
+    query = new SolrQuery("*:*");
+    query.set("shards", "shard2");
+    assertEquals(1, cloudClient.query(collection, query).getResults().getNumFound());
+
+    CollectionAdminRequest.DeleteShard deleteShard = new CollectionAdminRequest.DeleteShard()
+        .setCollectionName(collection)
+        .setShardName("shard2")
+        .setAsyncId("45");
+    response = deleteShard.process(cloudClient);
+    assertEquals("45", response.getResponse().get("requestid"));
+    state = getRequestStateAfterCompletion("45", MAX_TIMEOUT_SECONDS, cloudClient);
+    assertEquals("DeleteShard did not complete", "completed", state);
+
+    CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica()
+        .setCollectionName(collection)
+        .setShardName("shard1")
+        .setAsyncId("46");
+    response = addReplica.process(cloudClient);
+    assertEquals("46", response.getResponse().get("requestid"));
+    state = getRequestStateAfterCompletion("46", MAX_TIMEOUT_SECONDS, cloudClient);
+    assertEquals("AddReplica did not complete", "completed", state);
+
+    //cloudClient watch might take a couple of seconds to reflect it
+    Slice shard1 = cloudClient.getZkStateReader().getClusterState().getSlice(collection, "shard1");
+    int count = 0;
+    while (shard1.getReplicas().size() != 2) {
+      if (count++ > 1000) {
+        fail("2nd Replica not reflecting in the cluster state");
+      }
+      Thread.sleep(100);
+    }
+
+    CollectionAdminRequest.CreateAlias createAlias = new CollectionAdminRequest.CreateAlias()
+        .setAliasName("myalias")
+        .setAliasedCollections(collection)
+        .setAsyncId("47");
+    response = createAlias.process(cloudClient);
+    assertEquals("47", response.getResponse().get("requestid"));
+    state = getRequestStateAfterCompletion("47", MAX_TIMEOUT_SECONDS, cloudClient);
+    assertEquals("CreateAlias did not complete", "completed", state);
+
+    query = new SolrQuery("*:*");
+    query.set("shards", "shard1");
+    assertEquals(numDocs, cloudClient.query("myalias", query).getResults().getNumFound());
+
+    CollectionAdminRequest.DeleteAlias deleteAlias = new CollectionAdminRequest.DeleteAlias()
+        .setAliasName("myalias")
+        .setAsyncId("48");
+    response = deleteAlias.process(cloudClient);
+    assertEquals("48", response.getResponse().get("requestid"));
+    state = getRequestStateAfterCompletion("48", MAX_TIMEOUT_SECONDS, cloudClient);
+    assertEquals("DeleteAlias did not complete", "completed", state);
+
+    try {
+      cloudClient.query("myalias", query);
+      fail("Alias should not exist");
+    } catch (SolrException e) {
+      //expected
+    }
+
+    String replica = shard1.getReplicas().iterator().next().getName();
+    CollectionAdminRequest.DeleteReplica deleteReplica = new CollectionAdminRequest.DeleteReplica()
+        .setCollectionName(collection)
+        .setShardName("shard1")
+        .setReplica(replica)
+        .setAsyncId("47");
+    response = deleteReplica.process(cloudClient);
+    assertEquals("47", response.getResponse().get("requestid"));
+    state = getRequestStateAfterCompletion("47", MAX_TIMEOUT_SECONDS, cloudClient);
+    assertEquals("DeleteReplica did not complete", "completed", state);
+
+    CollectionAdminRequest.Delete deleteCollection = new CollectionAdminRequest.Delete()
+        .setCollectionName(collection)
+        .setAsyncId("48");
+    response = deleteCollection.process(cloudClient);
+    assertEquals("48", response.getResponse().get("requestid"));
+    state = getRequestStateAfterCompletion("48", MAX_TIMEOUT_SECONDS, cloudClient);
+    assertEquals("DeleteCollection did not complete", "completed", state);
   }
 }

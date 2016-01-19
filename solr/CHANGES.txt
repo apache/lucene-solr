@@ -318,6 +318,10 @@ New Features
 * SOLR-8312: Add domain size and numBuckets to facet telemetry info (facet debug info
   for the new Facet Module).  (Michael Sun, yonik)
 
+* SOLR-8534: Add generic support for collection APIs to be async. Thus more actions benefit from having async
+  support. The commands that additionally get async support are: delete/reload collection, create/delete alias,
+  create/delete shard, delete replica, add/delete replica property, add/remove role,
+  overseer status, balance shard unique, rebalance leaders, modify collection, migrate state format (Varun Thacker)
 
 Bug Fixes
 ----------------------
