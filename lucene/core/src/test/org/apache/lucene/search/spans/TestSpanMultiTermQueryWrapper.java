@@ -17,6 +17,8 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+import java.io.IOException;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -24,11 +26,13 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 /**
  * Tests for {@link SpanMultiTermQueryWrapper}, wrapping a few MultiTermQueries.
@@ -225,5 +229,20 @@ public class TestSpanMultiTermQueryWrapper extends LuceneTestCase {
     SpanQuery spanPrfxNoSuch = new SpanMultiTermQueryWrapper<>(prfxNoSuch);
     spanFirst = new SpanFirstQuery(spanPrfxNoSuch, 10);
     assertEquals(0, searcher.search(spanFirst, 10).totalHits);
+  }
+
+  @Test
+  public void testWrappedQueryIsNotModified() {
+    final PrefixQuery pq = new PrefixQuery(new Term("field", "test"));
+    int pqHash = pq.hashCode();
+    SpanMultiTermQueryWrapper<PrefixQuery> wrapper = new SpanMultiTermQueryWrapper<>(pq);
+    assertEquals(pqHash, pq.hashCode());
+    wrapper.setRewriteMethod(new SpanMultiTermQueryWrapper.SpanRewriteMethod() {
+      @Override
+      public SpanQuery rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
+        return null;
+      }
+    });
+    assertEquals(pqHash, pq.hashCode());
   }
 }

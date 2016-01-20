@@ -20,6 +20,11 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.util.Objects;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
@@ -29,11 +34,6 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoringRewrite;
 import org.apache.lucene.search.TopTermsRewrite;
-
-import java.io.IOException;
-import java.util.Objects;
-import java.util.List;
-import java.util.ArrayList;
 
 /**
  * Wraps any {@link MultiTermQuery} as a {@link SpanQuery}, 
@@ -52,7 +52,9 @@ import java.util.ArrayList;
  * </pre></blockquote>
  */
 public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQuery {
+
   protected final Q query;
+  private SpanRewriteMethod rewriteMethod;
 
   /**
    * Create a new SpanMultiTermQueryWrapper. 
@@ -67,13 +69,16 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   @SuppressWarnings({"rawtypes","unchecked"})
   public SpanMultiTermQueryWrapper(Q query) {
     this.query = Objects.requireNonNull(query);
-    
+    this.rewriteMethod = selectRewriteMethod(query);
+  }
+
+  private static SpanRewriteMethod selectRewriteMethod(MultiTermQuery query) {
     MultiTermQuery.RewriteMethod method = query.getRewriteMethod();
     if (method instanceof TopTermsRewrite) {
       final int pqsize = ((TopTermsRewrite) method).getSize();
-      setRewriteMethod(new TopTermsSpanBooleanQueryRewrite(pqsize));
+      return new TopTermsSpanBooleanQueryRewrite(pqsize);
     } else {
-      setRewriteMethod(SCORING_SPAN_QUERY_REWRITE); 
+      return SCORING_SPAN_QUERY_REWRITE;
     }
   }
 
@@ -81,10 +86,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
    * Expert: returns the rewriteMethod
    */
   public final SpanRewriteMethod getRewriteMethod() {
-    final MultiTermQuery.RewriteMethod m = query.getRewriteMethod();
-    if (!(m instanceof SpanRewriteMethod))
-      throw new UnsupportedOperationException("You can only use SpanMultiTermQueryWrapper with a suitable SpanRewriteMethod.");
-    return (SpanRewriteMethod) m;
+    return rewriteMethod;
   }
 
   /**
@@ -92,7 +94,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
    * to be a span rewrite method.
    */
   public final void setRewriteMethod(SpanRewriteMethod rewriteMethod) {
-    query.setRewriteMethod(rewriteMethod);
+    this.rewriteMethod = rewriteMethod;
   }
 
   @Override
@@ -124,10 +126,7 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
     if (getBoost() != 1f) {
       return super.rewrite(reader);
     }
-    final Query q = query.rewrite(reader);
-    if (!(q instanceof SpanQuery))
-      throw new UnsupportedOperationException("You can only use SpanMultiTermQueryWrapper with a suitable SpanRewriteMethod.");
-    return q;
+    return rewriteMethod.rewrite(reader, query);
   }
   
   @Override
