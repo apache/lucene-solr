@@ -25,7 +25,6 @@ import java.util.TreeMap;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
-import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 
@@ -50,7 +49,7 @@ public abstract class SpanQuery extends Query {
    * Build a map of terms to termcontexts, for use in constructing SpanWeights
    * @lucene.internal
    */
-  protected static Map<Term, TermContext> getTermContexts(SpanWeight... weights) {
+  public static Map<Term, TermContext> getTermContexts(SpanWeight... weights) {
     Map<Term, TermContext> terms = new TreeMap<>();
     for (SpanWeight w : weights) {
       w.extractTermContexts(terms);
@@ -62,7 +61,7 @@ public abstract class SpanQuery extends Query {
    * Build a map of terms to termcontexts, for use in constructing SpanWeights
    * @lucene.internal
    */
-  protected static Map<Term, TermContext> getTermContexts(Collection<SpanWeight> weights) {
+  public static Map<Term, TermContext> getTermContexts(Collection<SpanWeight> weights) {
     Map<Term, TermContext> terms = new TreeMap<>();
     for (SpanWeight w : weights) {
       w.extractTermContexts(terms);
