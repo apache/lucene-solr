@@ -194,6 +194,9 @@ Bug Fixes
   long document in SimilarityBase or BM25Similarity. Add more warnings to sims
   that will not work well with extreme tf values. (Ahmet Arslan, Robert Muir)
 
+* LUCENE-6984: SpanMultiTermQueryWrapper no longer modifies its wrapped query.
+  (Alan Woodward, Adrien Grand)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)
