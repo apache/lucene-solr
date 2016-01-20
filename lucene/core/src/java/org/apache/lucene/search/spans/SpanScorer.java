@@ -47,6 +47,11 @@ public class SpanScorer extends Scorer {
     this.docScorer = docScorer;
   }
 
+  /** return the Spans for this Scorer **/
+  public Spans getSpans() {
+    return spans;
+  }
+
   @Override
   public int docID() {
     return spans.docID();

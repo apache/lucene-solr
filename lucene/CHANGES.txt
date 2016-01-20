@@ -152,6 +152,9 @@ API Changes
 * LUCENE-6980: Default applyAllDeletes to true when opening
   near-real-time readers (Mike McCandless)
 
+* LUCENE-6981: SpanQuery.getTermContexts() helper methods are now public, and
+  SpanScorer has a public getSpans() method. (Alan Woodward)
+
 Optimizations
 
 * LUCENE-6951: Improve GeoPointInPolygonQuery using point orientation based

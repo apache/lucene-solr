@@ -17,15 +17,15 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermContext;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermContext;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 
 /** Base class for span-based queries. */
 public abstract class SpanQuery extends Query {
@@ -42,7 +42,7 @@ public abstract class SpanQuery extends Query {
    * Build a map of terms to termcontexts, for use in constructing SpanWeights
    * @lucene.internal
    */
-  protected static Map<Term, TermContext> getTermContexts(SpanWeight... weights) {
+  public static Map<Term, TermContext> getTermContexts(SpanWeight... weights) {
     Map<Term, TermContext> terms = new TreeMap<>();
     for (SpanWeight w : weights) {
       w.extractTermContexts(terms);
@@ -54,7 +54,7 @@ public abstract class SpanQuery extends Query {
    * Build a map of terms to termcontexts, for use in constructing SpanWeights
    * @lucene.internal
    */
-  protected static Map<Term, TermContext> getTermContexts(Collection<SpanWeight> weights) {
+  public static Map<Term, TermContext> getTermContexts(Collection<SpanWeight> weights) {
     Map<Term, TermContext> terms = new TreeMap<>();
     for (SpanWeight w : weights) {
       w.extractTermContexts(terms);
