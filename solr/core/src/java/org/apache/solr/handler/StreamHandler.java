@@ -27,6 +27,7 @@ import java.util.Map.Entry;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
@@ -132,6 +133,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       
       // tuple manipulation operations
       .withFunctionName("replace", ReplaceOperation.class)
+      .withFunctionName("concat", ConcatOperation.class)
       
       // stream reduction operations
       .withFunctionName("group", GroupOperation.class)

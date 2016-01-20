@@ -28,6 +28,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -1334,7 +1335,9 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("innerJoin", InnerJoinStream.class)
       .withFunctionName("select", SelectStream.class)
-      .withFunctionName("replace", ReplaceOperation.class);
+      .withFunctionName("replace", ReplaceOperation.class)
+      .withFunctionName("concat", ConcatOperation.class)
+      ;
     
     // Basic test
     clause = "select("
@@ -1361,7 +1364,29 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertLong(tuples.get(2), "join1", 12);
     assertLong(tuples.get(7), "join1", 12);
     assertString(tuples.get(6), "join1", "d");
+    
 
+    // Basic with replacements and concat test
+    clause = "select("
+            +   "id, join1_i as join1, join2_s as join2, ident_s as identity,"
+            +   "replace(join1, 0, withValue=12), replace(join1, 3, withValue=12), replace(join1, 2, withField=join2),"
+            +   "concat(fields=\"identity,join1\", as=\"newIdentity\",delim=\"-\"),"
+            +   "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
+            + ")";
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+    assertFields(tuples, "id", "join1", "join2", "identity", "newIdentity");
+    assertNotFields(tuples, "join1_i", "join2_s", "ident_s");
+    assertLong(tuples.get(0), "join1", 12);
+    assertString(tuples.get(0), "newIdentity", "left_1-12");
+    assertLong(tuples.get(1), "join1", 12); 
+    assertString(tuples.get(1), "newIdentity", "left_1-12");
+    assertLong(tuples.get(2), "join1", 12); 
+    assertString(tuples.get(2), "newIdentity", "left_2-12");
+    assertLong(tuples.get(7), "join1", 12); 
+    assertString(tuples.get(7), "newIdentity", "left_7-12");
+    assertString(tuples.get(6), "join1", "d");
+    assertString(tuples.get(6), "newIdentity", "left_6-d");
     
     // Inner stream test
     clause = "innerJoin("
