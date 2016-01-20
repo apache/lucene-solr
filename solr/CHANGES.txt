@@ -556,6 +556,8 @@ Other Changes
 * SOLR-8566: various initialCapacity tweaks (Fix Versions: trunk 5.5)
   (Christine Poerschke)
 
+* SOLR-8565: add & use CommonParams.(ROWS|START)_DEFAULT constants (Christine Poerschke)
+
 ==================  5.4.1 ==================
 
 Bug Fixes

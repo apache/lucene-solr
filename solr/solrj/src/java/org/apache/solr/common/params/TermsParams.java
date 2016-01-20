@@ -63,7 +63,7 @@ public interface TermsParams {
   public static final String TERMS_LOWER_INCLUSIVE = TERMS_PREFIX + "lower.incl";
 
   /**
-   * Optional.  The number of results to return.  If not specified, looks for {@link org.apache.solr.common.params.CommonParams#ROWS}.  If that's not specified, uses 10.
+   * Optional.  The number of results to return.  If not specified, looks for {@link org.apache.solr.common.params.CommonParams#ROWS}.  If that's not specified, uses {@link org.apache.solr.common.params.CommonParams#ROWS_DEFAULT}.
    */
   public static final String TERMS_LIMIT = TERMS_PREFIX + "limit";
 
