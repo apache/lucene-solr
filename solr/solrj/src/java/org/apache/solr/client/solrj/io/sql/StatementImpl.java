@@ -45,6 +45,8 @@ class StatementImpl implements Statement {
   private final ConnectionImpl connection;
   private SolrStream solrStream;
   private boolean closed;
+  private String currentSQL;
+  private ResultSetImpl currentResultSet;
 
   StatementImpl(ConnectionImpl connection) {
     this.connection = connection;
@@ -56,14 +58,22 @@ class StatementImpl implements Statement {
 
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
+
     try {
+      if(this.currentResultSet != null) {
+        this.currentResultSet.close();
+        this.currentResultSet = null;
+        this.solrStream.close();
+      }
+
       closed = false;  // If closed reopen so Statement can be reused.
       this.solrStream = constructStream(sql);
       StreamContext context = new StreamContext();
       context.setSolrClientCache(this.connection.getSolrClientCache());
       this.solrStream.setStreamContext(context);
       this.solrStream.open();
-      return new ResultSetImpl(this);
+      this.currentResultSet = new ResultSetImpl(this);
+      return this.currentResultSet;
     } catch(Exception e) {
       throw new SQLException(e);
     }
@@ -183,17 +193,30 @@ class StatementImpl implements Statement {
 
   @Override
   public boolean execute(String sql) throws SQLException {
-    throw new UnsupportedOperationException();
+
+    if(this.currentResultSet != null) {
+      this.currentResultSet.close();
+      this.currentResultSet = null;
+    }
+
+    // TODO Add logic when update statements are added to JDBC.
+    this.currentSQL = sql;
+    return true;
   }
 
   @Override
   public ResultSet getResultSet() throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.executeQuery(this.currentSQL);
   }
 
   @Override
   public int getUpdateCount() throws SQLException {
-    throw new UnsupportedOperationException();
+    if(isClosed()) {
+      throw new SQLException("Statement is closed");
+    }
+
+    // TODO Add logic when update statements are added to JDBC.
+    return -1;
   }
 
   @Override

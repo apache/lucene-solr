@@ -22,6 +22,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.util.Properties;
 
@@ -324,8 +325,41 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
         try (ResultSet rs = statement.executeQuery(sql)) {
           assertEquals(statement, rs.getStatement());
+
+          checkResultSetMetadata(rs);
+          checkResultSet(rs);
+        }
+
+        assertTrue(statement.execute(sql));
+        assertEquals(-1, statement.getUpdateCount());
+
+        try (ResultSet rs = statement.getResultSet()) {
+          assertEquals(statement, rs.getStatement());
+
+          checkResultSetMetadata(rs);
+          checkResultSet(rs);
         }
       }
     }
+  }
+
+  private void checkResultSetMetadata(ResultSet rs) throws Exception {
+    ResultSetMetaData resultSetMetaData = rs.getMetaData();
+
+    assertNotNull(resultSetMetaData);
+  }
+
+  private void checkResultSet(ResultSet rs) throws Exception {
+    assertTrue(rs.next());
+    assertEquals(14, rs.getLong("a_i"));
+    assertEquals("hello0", rs.getString("a_s"));
+    assertEquals(10, rs.getDouble("a_f"), 0);
+
+    assertTrue(rs.next());
+    assertEquals(13, rs.getLong("a_i"));
+    assertEquals("hello3", rs.getString("a_s"));
+    assertEquals(9, rs.getDouble("a_f"), 0);
+
+    assertFalse(rs.next());
   }
 }
