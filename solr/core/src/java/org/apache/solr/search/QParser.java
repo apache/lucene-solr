@@ -241,8 +241,8 @@ public abstract class QParser {
       }
     }
 
-    int start = startS != null ? Integer.parseInt(startS) : 0;
-    int rows = rowsS != null ? Integer.parseInt(rowsS) : 10;
+    int start = startS != null ? Integer.parseInt(startS) : CommonParams.START_DEFAULT;
+    int rows = rowsS != null ? Integer.parseInt(rowsS) : CommonParams.ROWS_DEFAULT;
 
     SortSpec sort = SortSpecParsing.parseSortSpec(sortStr, req);
 

@@ -90,8 +90,8 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
       double reRankWeight = localParams.getDouble("reRankWeight",2.0d);
 
-      int start = params.getInt(CommonParams.START,0);
-      int rows = params.getInt(CommonParams.ROWS,10);
+      int start = params.getInt(CommonParams.START,CommonParams.START_DEFAULT);
+      int rows = params.getInt(CommonParams.ROWS,CommonParams.ROWS_DEFAULT);
       int length = start+rows;
       return new ReRankQuery(reRankQuery, reRankDocs, reRankWeight, length);
     }

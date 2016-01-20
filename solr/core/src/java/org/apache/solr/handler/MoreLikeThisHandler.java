@@ -166,8 +166,8 @@ public class MoreLikeThisHandler extends RequestHandlerBase
             }
           }
 
-          int start = params.getInt(CommonParams.START, 0);
-          int rows = params.getInt(CommonParams.ROWS, 10);
+          int start = params.getInt(CommonParams.START, CommonParams.START_DEFAULT);
+          int rows = params.getInt(CommonParams.ROWS, CommonParams.ROWS_DEFAULT);
 
           // Find documents MoreLikeThis - either with a reader or a query
           // --------------------------------------------------------------------------------
