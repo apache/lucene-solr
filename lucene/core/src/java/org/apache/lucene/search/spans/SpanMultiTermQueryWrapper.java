@@ -57,11 +57,6 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
    * Create a new SpanMultiTermQueryWrapper. 
    * 
    * @param query Query to wrap.
-   * <p>
-   * NOTE: This will call {@link MultiTermQuery#setRewriteMethod(MultiTermQuery.RewriteMethod)}
-   * on the wrapped <code>query</code>, changing its rewrite method to a suitable one for spans.
-   * Be sure to not change the rewrite method on the wrapped query afterwards! Doing so will
-   * throw {@link UnsupportedOperationException} on rewriting this query!
    */
   @SuppressWarnings({"rawtypes","unchecked"})
   public SpanMultiTermQueryWrapper(Q query) {
