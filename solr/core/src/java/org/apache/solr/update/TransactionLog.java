@@ -65,8 +65,8 @@ import org.slf4j.LoggerFactory;
  */
 public class TransactionLog implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static boolean debug = log.isDebugEnabled();
-  private static boolean trace = log.isTraceEnabled();
+  private boolean debug = log.isDebugEnabled();
+  private boolean trace = log.isTraceEnabled();
 
   public final static String END_MESSAGE="SOLR_TLOG_END";
 

@@ -77,8 +77,8 @@ public class UpdateLog implements PluginInfoInitialized {
   public static String TLOG_NAME="tlog";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static boolean debug = log.isDebugEnabled();
-  private static boolean trace = log.isTraceEnabled();
+  private boolean debug = log.isDebugEnabled();
+  private boolean trace = log.isTraceEnabled();
 
   // TODO: hack
   public FileSystem getFs() {

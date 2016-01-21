@@ -64,7 +64,7 @@ public class CdcrUpdateLog extends UpdateLog {
   public static String LOG_FILENAME_PATTERN = "%s.%019d.%1d";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static boolean debug = log.isDebugEnabled();
+  private boolean debug = log.isDebugEnabled();
 
   @Override
   public void init(UpdateHandler uhandler, SolrCore core) {
