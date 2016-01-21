@@ -126,6 +126,9 @@ New Features
 * LUCENE-6818: Add DFISimilarity implementing the divergence from independence
   model. (Ahmet Arslan via Robert Muir)
 
+* SOLR-4619: Added removeAllAttributes() to AttributeSource, which removes
+  all previously added attributes.
+
 API Changes
 
 * LUCENE-6908: GeoUtils static relational methods have been refactored to new 

@@ -331,6 +331,8 @@ New Features
   create/delete shard, delete replica, add/delete replica property, add/remove role,
   overseer status, balance shard unique, rebalance leaders, modify collection, migrate state format (Varun Thacker)
 
+* SOLR-4619: Improve PreAnalyzedField query analysis. (Andrzej Bialecki, Steve Rowe)
+
 Bug Fixes
 ----------------------
 

@@ -18,9 +18,12 @@ package org.apache.lucene.util;
  */
 
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.*;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public class TestAttributeSource extends LuceneTestCase {
 
@@ -175,5 +178,52 @@ public class TestAttributeSource extends LuceneTestCase {
     clone.getPayload().bytes[0] = 10; // modify one byte, srcBytes shouldn't change
     assertEquals("clone() wasn't deep", 1, src.getPayload().bytes[0]);
   }
-  
+
+  public void testRemoveAllAttributes() {
+    List<Class<? extends Attribute>> attrClasses = new ArrayList<>();
+    attrClasses.add(CharTermAttribute.class);
+    attrClasses.add(OffsetAttribute.class);
+    attrClasses.add(FlagsAttribute.class);
+    attrClasses.add(PayloadAttribute.class);
+    attrClasses.add(PositionIncrementAttribute.class);
+    attrClasses.add(TypeAttribute.class);
+
+    // Add attributes with the default factory, then try to remove all of them
+    AttributeSource defaultFactoryAttributeSource = new AttributeSource();
+
+    assertFalse(defaultFactoryAttributeSource.hasAttributes());
+
+    for (Class<? extends Attribute> attrClass : attrClasses) {
+      defaultFactoryAttributeSource.addAttribute(attrClass);
+      assertTrue("Missing added attribute " + attrClass.getSimpleName(),
+          defaultFactoryAttributeSource.hasAttribute(attrClass));
+    }
+
+    defaultFactoryAttributeSource.removeAllAttributes();
+
+    for (Class<? extends Attribute> attrClass : attrClasses) {
+      assertFalse("Didn't remove attribute " + attrClass.getSimpleName(),
+          defaultFactoryAttributeSource.hasAttribute(attrClass));
+    }
+    assertFalse(defaultFactoryAttributeSource.hasAttributes());
+
+    // Add attributes with the packed implementations factory, then try to remove all of them
+    AttributeSource packedImplsAttributeSource
+        = new AttributeSource(TokenStream.DEFAULT_TOKEN_ATTRIBUTE_FACTORY);
+    assertFalse(packedImplsAttributeSource.hasAttributes());
+
+    for (Class<? extends Attribute> attrClass : attrClasses) {
+      packedImplsAttributeSource.addAttribute(attrClass);
+      assertTrue("Missing added attribute " + attrClass.getSimpleName(),
+          packedImplsAttributeSource.hasAttribute(attrClass));
+    }
+
+    packedImplsAttributeSource.removeAllAttributes();
+
+    for (Class<? extends Attribute> attrClass : attrClasses) {
+      assertFalse("Didn't remove attribute " + attrClass.getSimpleName(),
+          packedImplsAttributeSource.hasAttribute(attrClass));
+    }
+    assertFalse(packedImplsAttributeSource.hasAttributes());
+  }
 }

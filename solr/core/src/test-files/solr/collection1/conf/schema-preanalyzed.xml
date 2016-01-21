@@ -18,7 +18,18 @@
 <schema name="tiny" version="1.1">
 
   <types>
-    <fieldType name="preanalyzed" class="solr.PreAnalyzedField" parserImpl="json"/>
+    <fieldType name="preanalyzed-no-analyzer" class="solr.PreAnalyzedField" parserImpl="json"/>
+    <fieldType name="preanalyzed-with-analyzer" class="solr.PreAnalyzedField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      </analyzer>
+    </fieldType>
+    <fieldType name="preanalyzed-with-query-analyzer" class="solr.PreAnalyzedField">
+      <analyzer type="query">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldType>
     <fieldType name="string" class="solr.StrField"/>
     <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
   </types>
@@ -26,7 +37,9 @@
   <fields>
     <field name="id" type="string" indexed="true" stored="true" required="true"/>
     <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
-    <field name="pre" type="preanalyzed" indexed="true" stored="true" multiValued="false"/>
+    <field name="pre_no_analyzer" type="preanalyzed-no-analyzer" indexed="true" stored="true" multiValued="false"/>
+    <field name="pre_with_analyzer" type="preanalyzed-with-analyzer" indexed="true" stored="true" multiValued="false"/>
+    <field name="pre_with_query_analyzer" type="preanalyzed-with-query-analyzer" indexed="true" stored="true" multiValued="false"/>
   </fields>
 
   <uniqueKey>id</uniqueKey>

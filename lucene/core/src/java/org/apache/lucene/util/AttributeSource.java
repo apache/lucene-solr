@@ -270,7 +270,15 @@ public class AttributeSource {
       state.attribute.clear();
     }
   }
-  
+
+  /**
+   * Removes all attributes and their implementations from this AttributeSource.
+   */
+  public final void removeAllAttributes() {
+    attributes.clear();
+    attributeImpls.clear();
+  }
+
   /**
    * Captures the state of all Attributes. The return value can be passed to
    * {@link #restoreState} to restore the state of this or another AttributeSource.
