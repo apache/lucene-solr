@@ -72,7 +72,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.BlobHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.ShardHandler;
-import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.zookeeper.CreateMode;
@@ -169,23 +168,26 @@ public class CollectionsHandler extends RequestHandlerBase {
     String a = params.get(CoreAdminParams.ACTION);
     if (a != null) {
       CollectionAction action = CollectionAction.get(a);
-      if (action == null)
+      if (action == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
+      }
       CollectionOperation operation = CollectionOperation.get(action);
       log.info("Invoked Collection Action :{} with params {} ", action.toLower(), req.getParamString());
-      Map<String, Object> result = operation.call(req, rsp, this);
-      if (result != null) {
-        result.put(QUEUE_OPERATION, operation.action.toLower());
-        ZkNodeProps props = new ZkNodeProps(result);
-        if (operation.sendToOCPQueue) handleResponse(operation.action.toLower(), props, rsp, operation.timeOut);
-        else Overseer.getInQueue(coreContainer.getZkController().getZkClient()).offer(Utils.toJSON(props));
 
+      Map<String, Object> props = operation.call(req, rsp, this);
+      String asyncId = req.getParams().get(ASYNC);
+      if (props != null) {
+        if (asyncId != null) {
+          props.put(ASYNC, asyncId);
+        }
+        props.put(QUEUE_OPERATION, operation.action.toLower());
+        ZkNodeProps zkProps = new ZkNodeProps(props);
+        if (operation.sendToOCPQueue) handleResponse(operation.action.toLower(), zkProps, rsp, operation.timeOut);
+        else Overseer.getInQueue(coreContainer.getZkController().getZkClient()).offer(Utils.toJSON(props));
       }
     } else {
       throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");
-
     }
-
     rsp.setHttpCaching(false);
   }
 
@@ -315,7 +317,6 @@ public class CollectionsHandler extends RequestHandlerBase {
             MAX_SHARDS_PER_NODE,
             CREATE_NODE_SET, CREATE_NODE_SET_SHUFFLE,
             SHARDS_PROP,
-            ASYNC,
             STATE_FORMAT,
             AUTO_ADD_REPLICAS,
             RULE,
@@ -366,7 +367,6 @@ public class CollectionsHandler extends RequestHandlerBase {
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler handler)
           throws Exception {
         return req.getParams().required().getAll(null, NAME);
-
       }
     },
     SYNCSHARD_OP(SYNCSHARD) {
@@ -381,7 +381,6 @@ public class CollectionsHandler extends RequestHandlerBase {
         ZkNodeProps leaderProps = clusterState.getLeader(collection, shard);
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
 
-        ;
         try (HttpSolrClient client = new HttpSolrClient(nodeProps.getBaseUrl())) {
           client.setConnectionTimeout(15000);
           client.setSoTimeout(60000);
@@ -436,8 +435,7 @@ public class CollectionsHandler extends RequestHandlerBase {
             COLLECTION_PROP,
             SHARD_ID_PROP,
             "split.key",
-            CoreAdminParams.RANGES,
-            ASYNC);
+            CoreAdminParams.RANGES);
         return copyPropertiesWithPrefix(req.getParams(), map, COLL_PROP_PREFIX);
       }
     },
@@ -453,7 +451,6 @@ public class CollectionsHandler extends RequestHandlerBase {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler handler) throws Exception {
         forceLeaderElection(req, handler);
-
         return null;
       }
     },
@@ -468,7 +465,7 @@ public class CollectionsHandler extends RequestHandlerBase {
           throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections");
         req.getParams().getAll(map,
             REPLICATION_FACTOR,
-            CREATE_NODE_SET, ASYNC);
+            CREATE_NODE_SET);
         return copyPropertiesWithPrefix(req.getParams(), map, COLL_PROP_PREFIX);
       }
     },
@@ -479,14 +476,14 @@ public class CollectionsHandler extends RequestHandlerBase {
             COLLECTION_PROP,
             SHARD_ID_PROP,
             REPLICA_PROP);
-        return req.getParams().getAll(map, ASYNC, ONLY_IF_DOWN);
+        return req.getParams().getAll(map, ONLY_IF_DOWN);
       }
     },
     MIGRATE_OP(MIGRATE) {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
         Map<String, Object> map = req.getParams().required().getAll(null, COLLECTION_PROP, "split.key", "target.collection");
-        return req.getParams().getAll(map, "forward.timeout", ASYNC);
+        return req.getParams().getAll(map, "forward.timeout");
       }
     },
     ADDROLE_OP(ADDROLE) {
@@ -586,8 +583,7 @@ public class CollectionsHandler extends RequestHandlerBase {
             _ROUTE_,
             CoreAdminParams.NAME,
             INSTANCE_DIR,
-            DATA_DIR,
-            ASYNC);
+            DATA_DIR);
         return copyPropertiesWithPrefix(req.getParams(), props, COLL_PROP_PREFIX);
       }
     },
@@ -687,8 +683,7 @@ public class CollectionsHandler extends RequestHandlerBase {
           prop = COLL_PROP_PREFIX + prop;
         }
 
-        if (!shardUnique &&
-            !SliceMutator.SLICE_UNIQUE_BOOLEAN_PROPERTIES.contains(prop)) {
+        if (!shardUnique && !SliceMutator.SLICE_UNIQUE_BOOLEAN_PROPERTIES.contains(prop)) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "Balancing properties amongst replicas in a slice requires that"
               + " the property be pre-defined as a unique property (e.g. 'preferredLeader') or that 'shardUnique' be set to 'true'. " +
               " Property: " + prop + " shardUnique: " + Boolean.toString(shardUnique));
