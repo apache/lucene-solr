@@ -226,7 +226,7 @@ public class TestMixedDocValuesUpdates extends LuceneTestCase {
                   reader = DirectoryReader.open(writer);
                 } else {
 //                  System.out.println("[" + Thread.currentThread().getName() + "] reopen NRT");
-                  DirectoryReader r2 = DirectoryReader.openIfChanged(reader, writer, true);
+                  DirectoryReader r2 = DirectoryReader.openIfChanged(reader, writer);
                   if (r2 != null) {
                     reader.close();
                     reader = r2;

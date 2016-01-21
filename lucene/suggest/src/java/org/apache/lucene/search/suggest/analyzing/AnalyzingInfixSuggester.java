@@ -250,7 +250,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       // Already built; open it:
       writer = new IndexWriter(dir,
                                getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.APPEND));
-      searcherMgr = new SearcherManager(writer, true, null);
+      searcherMgr = new SearcherManager(writer, null);
     }
   }
 
@@ -312,7 +312,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       if (commitOnBuild) {
         commit();
       }
-      searcherMgr = new SearcherManager(writer, true, null);
+      searcherMgr = new SearcherManager(writer, null);
       success = true;
     } finally {
       if (success == false && writer != null) {
@@ -365,7 +365,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
       }
       writer = new IndexWriter(dir,
           getIndexWriterConfig(getGramAnalyzer(), IndexWriterConfig.OpenMode.CREATE));
-      searcherMgr = new SearcherManager(writer, true, null);
+      searcherMgr = new SearcherManager(writer, null);
     }
   }
 

@@ -141,12 +141,12 @@ public class TestStressNRT extends LuceneTestCase {
                       if (VERBOSE) {
                         System.out.println("TEST: " + Thread.currentThread().getName() + ": call writer.getReader");
                       }
-                      newReader = writer.getReader(true);
+                      newReader = writer.getReader();
                     } else {
                       if (VERBOSE) {
                         System.out.println("TEST: " + Thread.currentThread().getName() + ": reopen reader=" + oldReader + " version=" + version);
                       }
-                      newReader = DirectoryReader.openIfChanged(oldReader, writer.w, true);
+                      newReader = DirectoryReader.openIfChanged(oldReader, writer.w);
                     }
                   } else {
                     // assertU(commit());

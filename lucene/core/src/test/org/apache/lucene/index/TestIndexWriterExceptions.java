@@ -2001,7 +2001,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
 
         // Trigger writeLiveDocs + writeFieldUpdates so we hit fake exc:
-        IndexReader r = w.getReader(true);
+        IndexReader r = w.getReader();
 
         // Sometimes we will make it here (we only randomly
         // throw the exc):
