@@ -21,7 +21,6 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -152,10 +151,12 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
         }
       };
     }
-    for (int i=0; i<numThreads; i++)
+    for (int i=0; i<numThreads; i++) {
       threads[i].start();
-    for (int i=0; i<numThreads; i++)
+    }
+    for (int i=0; i<numThreads; i++) {
       threads[i].join();
+    }
 
     writer.forceMerge(1);
     assertEquals(ramDir.sizeInBytes(), ramDir.getRecomputedSizeInBytes());
@@ -188,4 +189,5 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
         }
       }
     }
-  }}
+  }
+}

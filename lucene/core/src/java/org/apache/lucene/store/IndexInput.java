@@ -63,7 +63,10 @@ public abstract class IndexInput extends DataInput implements Cloneable,Closeabl
    */
   public abstract long getFilePointer();
 
-  /** Sets current position in this file, where the next read will occur.
+  /** Sets current position in this file, where the next read will occur.  If this is
+   *  beyond the end of the file then this will throw {@code EOFException} and then the
+   *  stream is in an undetermined state.
+   *
    * @see #getFilePointer()
    */
   public abstract void seek(long pos) throws IOException;
