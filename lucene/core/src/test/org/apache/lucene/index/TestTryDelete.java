@@ -77,7 +77,6 @@ public class TestTryDelete extends LuceneTestCase
     IndexWriter writer = getWriter(directory);
 
     ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer,
-                                                              true,
                                                               new SearcherFactory());
 
     TrackingIndexWriter mgrWriter = new TrackingIndexWriter(writer);
@@ -125,7 +124,6 @@ public class TestTryDelete extends LuceneTestCase
     IndexWriter writer = getWriter(directory);
 
     ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer,
-                                                              true,
                                                               new SearcherFactory());
 
     IndexSearcher searcher = mgr.acquire();
@@ -169,7 +167,6 @@ public class TestTryDelete extends LuceneTestCase
     IndexWriter writer = getWriter(directory);
 
     ReferenceManager<IndexSearcher> mgr = new SearcherManager(writer,
-                                                              true,
                                                               new SearcherFactory());
 
     IndexSearcher searcher = mgr.acquire();

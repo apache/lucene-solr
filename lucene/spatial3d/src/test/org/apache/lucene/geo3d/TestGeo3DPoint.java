@@ -109,7 +109,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new Geo3DPoint("field", PlanetModel.WGS84, toRadians(50.7345267), toRadians(-97.5303555)));
     w.addDocument(doc);
-    IndexReader r = DirectoryReader.open(w, true);
+    IndexReader r = DirectoryReader.open(w);
     // We can't wrap with "exotic" readers because the query must see the BKD3DDVFormat:
     IndexSearcher s = newSearcher(r, false);
     assertEquals(1, s.search(new PointInGeo3DShapeQuery(PlanetModel.WGS84,
@@ -678,7 +678,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     if (random().nextBoolean()) {
       w.forceMerge(1);
     }
-    final IndexReader r = DirectoryReader.open(w, true);
+    final IndexReader r = DirectoryReader.open(w);
     w.close();
 
     // We can't wrap with "exotic" readers because the geo3d query must see the Geo3DDVFormat:

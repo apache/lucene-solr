@@ -1062,7 +1062,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     // Deletes nothing in reality...:
     w.deleteDocuments(new Term("foo", "bar"));
-    DirectoryReader r5 = DirectoryReader.openIfChanged(r3, w, true);
+    DirectoryReader r5 = DirectoryReader.openIfChanged(r3, w);
     assertNull(r5);
 
     r3.close();

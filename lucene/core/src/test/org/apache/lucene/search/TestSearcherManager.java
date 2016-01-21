@@ -89,7 +89,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       // TODO: can we randomize the applyAllDeletes?  But
       // somehow for final searcher we must apply
       // deletes...
-      mgr = new SearcherManager(writer, true, factory);
+      mgr = new SearcherManager(writer, factory);
       isNRT = true;
     } else {
       // SearcherManager needs to see empty commit:

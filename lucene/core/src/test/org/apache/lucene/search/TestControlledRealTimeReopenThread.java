@@ -232,7 +232,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
       };
 
     nrtNoDeletes = new SearcherManager(writer, false, sf);
-    nrtDeletes = new SearcherManager(writer, true, sf);
+    nrtDeletes = new SearcherManager(writer, sf);
                          
     nrtDeletesThread = new ControlledRealTimeReopenThread<>(genWriter, nrtDeletes, maxReopenSec, minReopenSec);
     nrtDeletesThread.setName("NRTDeletes Reopen Thread");
@@ -437,7 +437,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
     final AtomicBoolean afterRefreshCalled = new AtomicBoolean(false);
-    SearcherManager sm = new SearcherManager(iw, true, new SearcherFactory());
+    SearcherManager sm = new SearcherManager(iw, new SearcherFactory());
     sm.addListener(new ReferenceManager.RefreshListener() {
       @Override
       public void beforeRefresh() {
@@ -484,7 +484,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     config.setIndexDeletionPolicy(sdp);
     config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
     final IndexWriter iw = new IndexWriter(dir, config);
-    SearcherManager sm = new SearcherManager(iw, true, new SearcherFactory());
+    SearcherManager sm = new SearcherManager(iw, new SearcherFactory());
     final TrackingIndexWriter tiw = new TrackingIndexWriter(iw);
     ControlledRealTimeReopenThread<IndexSearcher> controlledRealTimeReopenThread =
       new ControlledRealTimeReopenThread<>(tiw, sm, maxStaleSecs, 0);

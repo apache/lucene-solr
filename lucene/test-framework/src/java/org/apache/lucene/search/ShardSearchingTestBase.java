@@ -461,7 +461,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
         iwc.setInfoStream(new PrintStreamInfoStream(System.out));
       }
       writer = new IndexWriter(dir, iwc);
-      mgr = new SearcherManager(writer, true, null);
+      mgr = new SearcherManager(writer, null);
       searchers = new SearcherLifetimeManager();
 
       // Init w/ 0s... caller above will do initial
