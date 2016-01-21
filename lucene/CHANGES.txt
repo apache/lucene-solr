@@ -161,6 +161,9 @@ API Changes
 * LUCENE-6981: SpanQuery.getTermContexts() helper methods are now public, and
   SpanScorer has a public getSpans() method. (Alan Woodward)
 
+* LUCENE-6932: IndexInput.seek implementations now throw EOFException
+  if you seek beyond the end of the file (Adrien Grand, Mike McCandless)
+
 Optimizations
 
 * LUCENE-6951: Improve GeoPointInPolygonQuery using point orientation based
@@ -192,9 +195,9 @@ Bug Fixes
 * LUCENE-6976: BytesRefTermAttributeImpl.copyTo NPE'ed if BytesRef was null.
   Added equals & hashCode, and a new test for these things. (David Smiley)
 
-* LUCENE-6932: RAMDirectory's IndexInput should always throw
-  EOFException if you seek past the end of the file and then try to
-  read (Stéphane Campinas via Mike McCandless)
+* LUCENE-6932: RAMDirectory's IndexInput was failing to throw
+  EOFException in some cases (Stéphane Campinas, Adrien Grand via Mike
+  McCandless)
 
 * LUCENE-6896: Don't treat the smallest possible norm value as an infinitely
   long document in SimilarityBase or BM25Similarity. Add more warnings to sims
