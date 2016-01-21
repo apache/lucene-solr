@@ -153,15 +153,15 @@ public class GeoRelationUtils {
         final double minBy = Math.min(bY1, bY2);
         final double maxBy = Math.max(bY1, bY2);
 
-        return !(minBy > maxAy || maxBy < minAy) || !(minAy > maxBy || maxAy < minBy);
+        return !(minBy >= maxAy || maxBy <= minAy);
       }
       // horizontally collinear
       final double minAx = Math.min(aX1, aX2);
-      final double maxAx = Math.max(aX1, aY2);
+      final double maxAx = Math.max(aX1, aX2);
       final double minBx = Math.min(bX1, bX2);
       final double maxBx = Math.max(bX1, bX2);
 
-      return !(minBx >= maxAx || maxBx <= minAx) || !(minAx >= maxBx || maxAx <= minBx);
+      return !(minBx >= maxAx || maxBx <= minAx);
     }
     return false;
   }
@@ -181,6 +181,11 @@ public class GeoRelationUtils {
     // approximation: check if rectangle crosses poly (to handle concave/pacman polys), then check one of the corners
     // are contained
     if (approx == true) {
+      // short-cut: if bounding boxes cross, rect is not within
+      if (rectCrosses(rMinX, rMinY, rMaxX, rMaxY, sMinX, sMinY, sMaxX, sMaxY) == true) {
+        return false;
+      }
+
       return !(rectCrossesPoly(rMinX, rMinY, rMaxX, rMaxY, shapeX, shapeY, sMinX, sMinY, sMaxX, sMaxY) ||
           !pointInPolygon(shapeX, shapeY, rMinY, rMinX));
     }
