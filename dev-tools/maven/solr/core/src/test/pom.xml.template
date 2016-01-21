@@ -54,6 +54,13 @@
       <artifactId>solr-core</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-queryparser</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
 @solr-core.internal.test.dependencies@
 @solr-core.external.test.dependencies@
   </dependencies>
