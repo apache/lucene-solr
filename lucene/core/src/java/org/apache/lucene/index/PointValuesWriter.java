@@ -19,8 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.DimensionalReader;
-import org.apache.lucene.codecs.DimensionalWriter;
+import org.apache.lucene.codecs.PointReader;
+import org.apache.lucene.codecs.PointWriter;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
@@ -28,7 +28,7 @@ import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /** Buffers up pending byte[][] value(s) per doc, then flushes when segment flushes. */
-class DimensionalValuesWriter {
+class PointValuesWriter {
   private final FieldInfo fieldInfo;
   private final ByteBlockPool bytes;
   private final Counter iwBytesUsed;
@@ -36,21 +36,21 @@ class DimensionalValuesWriter {
   private int numDocs;
   private final byte[] packedValue;
 
-  public DimensionalValuesWriter(DocumentsWriterPerThread docWriter, FieldInfo fieldInfo) {
+  public PointValuesWriter(DocumentsWriterPerThread docWriter, FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = docWriter.bytesUsed;
     this.bytes = new ByteBlockPool(docWriter.byteBlockAllocator);
     docIDs = new int[16];
     iwBytesUsed.addAndGet(16 * RamUsageEstimator.NUM_BYTES_INT);
-    packedValue = new byte[fieldInfo.getDimensionCount() * fieldInfo.getDimensionNumBytes()];
+    packedValue = new byte[fieldInfo.getPointDimensionCount() * fieldInfo.getPointNumBytes()];
   }
 
   public void addPackedValue(int docID, BytesRef value) {
     if (value == null) {
-      throw new IllegalArgumentException("field=" + fieldInfo.name + ": dimensional value cannot be null");
+      throw new IllegalArgumentException("field=" + fieldInfo.name + ": point value cannot be null");
     }
-    if (value.length != fieldInfo.getDimensionCount() * fieldInfo.getDimensionNumBytes()) {
-      throw new IllegalArgumentException("field=" + fieldInfo.name + ": this field's value has length=" + value.length + " but should be " + (fieldInfo.getDimensionCount() * fieldInfo.getDimensionNumBytes()));
+    if (value.length != fieldInfo.getPointDimensionCount() * fieldInfo.getPointNumBytes()) {
+      throw new IllegalArgumentException("field=" + fieldInfo.name + ": this field's value has length=" + value.length + " but should be " + (fieldInfo.getPointDimensionCount() * fieldInfo.getPointNumBytes()));
     }
     if (docIDs.length == numDocs) {
       docIDs = ArrayUtil.grow(docIDs, numDocs+1);
@@ -61,10 +61,10 @@ class DimensionalValuesWriter {
     numDocs++;
   }
 
-  public void flush(SegmentWriteState state, DimensionalWriter writer) throws IOException {
+  public void flush(SegmentWriteState state, PointWriter writer) throws IOException {
 
     writer.writeField(fieldInfo,
-                      new DimensionalReader() {
+                      new PointReader() {
                         @Override
                         public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
                           if (fieldName.equals(fieldInfo.name) == false) {

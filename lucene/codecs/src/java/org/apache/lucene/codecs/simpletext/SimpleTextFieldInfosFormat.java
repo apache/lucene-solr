@@ -232,11 +232,11 @@ public class SimpleTextFieldInfosFormat extends FieldInfosFormat {
         }
 
         SimpleTextUtil.write(out, DIM_COUNT);
-        SimpleTextUtil.write(out, Integer.toString(fi.getDimensionCount()), scratch);
+        SimpleTextUtil.write(out, Integer.toString(fi.getPointDimensionCount()), scratch);
         SimpleTextUtil.writeNewline(out);
         
         SimpleTextUtil.write(out, DIM_NUM_BYTES);
-        SimpleTextUtil.write(out, Integer.toString(fi.getDimensionNumBytes()), scratch);
+        SimpleTextUtil.write(out, Integer.toString(fi.getPointNumBytes()), scratch);
         SimpleTextUtil.writeNewline(out);
       }
       SimpleTextUtil.writeChecksum(out, scratch);

@@ -28,12 +28,12 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DimensionalFormat;
-import org.apache.lucene.codecs.DimensionalReader;
-import org.apache.lucene.codecs.DimensionalWriter;
+import org.apache.lucene.codecs.PointFormat;
+import org.apache.lucene.codecs.PointReader;
+import org.apache.lucene.codecs.PointWriter;
 import org.apache.lucene.codecs.FilterCodec;
-import org.apache.lucene.codecs.lucene60.Lucene60DimensionalReader;
-import org.apache.lucene.codecs.lucene60.Lucene60DimensionalWriter;
+import org.apache.lucene.codecs.lucene60.Lucene60PointReader;
+import org.apache.lucene.codecs.lucene60.Lucene60PointWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -60,7 +60,7 @@ import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
-public class TestGeo3DPointField extends LuceneTestCase {
+public class TestGeo3DPoint extends LuceneTestCase {
 
   private static boolean smallBBox;
   
@@ -77,21 +77,21 @@ public class TestGeo3DPointField extends LuceneTestCase {
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 16, 2048);
       double maxMBSortInHeap = 3.0 + (3*random().nextDouble());
       if (VERBOSE) {
-        System.out.println("TEST: using Lucene60DimensionalFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
+        System.out.println("TEST: using Lucene60PointFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
 
       return new FilterCodec("Lucene60", Codec.getDefault()) {
         @Override
-        public DimensionalFormat dimensionalFormat() {
-          return new DimensionalFormat() {
+        public PointFormat pointFormat() {
+          return new PointFormat() {
             @Override
-            public DimensionalWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-              return new Lucene60DimensionalWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
+            public PointWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
+              return new Lucene60PointWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
             }
 
             @Override
-            public DimensionalReader fieldsReader(SegmentReadState readState) throws IOException {
-              return new Lucene60DimensionalReader(readState);
+            public PointReader fieldsReader(SegmentReadState readState) throws IOException {
+              return new Lucene60PointReader(readState);
             }
           };
         }
@@ -107,7 +107,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
     iwc.setCodec(getCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new Geo3DPointField("field", PlanetModel.WGS84, toRadians(50.7345267), toRadians(-97.5303555)));
+    doc.add(new Geo3DPoint("field", PlanetModel.WGS84, toRadians(50.7345267), toRadians(-97.5303555)));
     w.addDocument(doc);
     IndexReader r = DirectoryReader.open(w, true);
     // We can't wrap with "exotic" readers because the query must see the BKD3DDVFormat:
@@ -663,7 +663,7 @@ public class TestGeo3DPointField extends LuceneTestCase {
       doc.add(newStringField("id", ""+id, Field.Store.NO));
       doc.add(new NumericDocValuesField("id", id));
       if (Double.isNaN(lats[id]) == false) {
-        doc.add(new Geo3DPointField("point", planetModel, lats[id], lons[id]));
+        doc.add(new Geo3DPoint("point", planetModel, lats[id], lons[id]));
       }
       w.addDocument(doc);
       if (id > 0 && random().nextInt(100) == 42) {

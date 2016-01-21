@@ -34,7 +34,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DimensionalValues;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -814,7 +814,7 @@ public class MemoryIndex {
     }
 
     @Override
-    public DimensionalValues getDimensionalValues() {
+    public PointValues getPointValues() {
       return null;
     }
 

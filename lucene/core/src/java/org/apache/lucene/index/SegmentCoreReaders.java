@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DimensionalReader;
+import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -54,7 +54,7 @@ final class SegmentCoreReaders {
 
   final StoredFieldsReader fieldsReaderOrig;
   final TermVectorsReader termVectorsReaderOrig;
-  final DimensionalReader dimensionalReader;
+  final PointReader pointReader;
   final Directory cfsReader;
   /** 
    * fieldinfos for this core: means gen=-1.
@@ -124,10 +124,10 @@ final class SegmentCoreReaders {
         termVectorsReaderOrig = null;
       }
 
-      if (coreFieldInfos.hasDimensionalValues()) {
-        dimensionalReader = codec.dimensionalFormat().fieldsReader(segmentReadState);
+      if (coreFieldInfos.hasPointValues()) {
+        pointReader = codec.pointFormat().fieldsReader(segmentReadState);
       } else {
-        dimensionalReader = null;
+        pointReader = null;
       }
       success = true;
     } finally {
@@ -157,7 +157,7 @@ final class SegmentCoreReaders {
       Throwable th = null;
       try {
         IOUtils.close(termVectorsLocal, fieldsReaderLocal, fields, termVectorsReaderOrig, fieldsReaderOrig,
-                      cfsReader, normsProducer, dimensionalReader);
+                      cfsReader, normsProducer, pointReader);
       } catch (Throwable throwable) {
         th = throwable;
       } finally {

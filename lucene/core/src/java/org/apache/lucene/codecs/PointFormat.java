@@ -23,19 +23,19 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
 /** 
- * Encodes/decodes indexed dimensional data.
+ * Encodes/decodes indexed points.
  *
  * @lucene.experimental */
-public abstract class DimensionalFormat {
+public abstract class PointFormat {
 
   /**
-   * Creates a new dimensional format.
+   * Creates a new point format.
    */
-  protected DimensionalFormat() {
+  protected PointFormat() {
   }
 
   /** Writes a new segment */
-  public abstract DimensionalWriter fieldsWriter(SegmentWriteState state) throws IOException;
+  public abstract PointWriter fieldsWriter(SegmentWriteState state) throws IOException;
 
   /** Reads a segment.  NOTE: by the time this call
    *  returns, it must hold open any files it will need to
@@ -46,18 +46,18 @@ public abstract class DimensionalFormat {
    *  IOExceptions are expected and will automatically cause a retry of the 
    *  segment opening logic with the newly revised segments.
    *  */
-  public abstract DimensionalReader fieldsReader(SegmentReadState state) throws IOException;
+  public abstract PointReader fieldsReader(SegmentReadState state) throws IOException;
 
-  /** A {@code DimensionalFormat} that has nothing indexed */
-  public static final DimensionalFormat EMPTY = new DimensionalFormat() {
+  /** A {@code PointFormat} that has nothing indexed */
+  public static final PointFormat EMPTY = new PointFormat() {
       @Override
-      public DimensionalWriter fieldsWriter(SegmentWriteState state) {
+      public PointWriter fieldsWriter(SegmentWriteState state) {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public DimensionalReader fieldsReader(SegmentReadState state) {
-        return new DimensionalReader() {
+      public PointReader fieldsReader(SegmentReadState state) {
+        return new PointReader() {
           @Override
           public void close() {
           }
@@ -73,27 +73,27 @@ public abstract class DimensionalFormat {
 
           @Override
           public void intersect(String fieldName, IntersectVisitor visitor) {
-            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with dimensional values");
+            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
           }
 
           @Override
           public byte[] getMinPackedValue(String fieldName) {
-            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with dimensional values");
+            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
           }
 
           @Override
           public byte[] getMaxPackedValue(String fieldName) {
-            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with dimensional values");
+            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
           }
 
           @Override
           public int getNumDimensions(String fieldName) {
-            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with dimensional values");
+            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
           }
 
           @Override
           public int getBytesPerDimension(String fieldName) {
-            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with dimensional values");
+            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
           }
         };
       }

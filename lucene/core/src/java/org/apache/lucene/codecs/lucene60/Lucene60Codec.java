@@ -21,7 +21,7 @@ import java.util.Objects;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
-import org.apache.lucene.codecs.DimensionalFormat;
+import org.apache.lucene.codecs.PointFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
@@ -129,8 +129,8 @@ public class Lucene60Codec extends Codec {
   }
 
   @Override
-  public final DimensionalFormat dimensionalFormat() {
-    return new Lucene60DimensionalFormat();
+  public final PointFormat pointFormat() {
+    return new Lucene60PointFormat();
   }
 
   /** Returns the postings format that should be used for writing 

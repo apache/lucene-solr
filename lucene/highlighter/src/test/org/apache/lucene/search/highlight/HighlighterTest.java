@@ -45,7 +45,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.DimensionalIntField;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -63,7 +63,7 @@ import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.DimensionalRangeQuery;
+import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
@@ -585,7 +585,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   public void testDimensionalRangeQuery() throws Exception {
     // doesn't currently highlight, but make sure it doesn't cause exception either
-    query = DimensionalRangeQuery.new1DIntRange(NUMERIC_FIELD_NAME, 2, true, 6, true);
+    query = PointRangeQuery.new1DIntRange(NUMERIC_FIELD_NAME, 2, true, 6, true);
     searcher = newSearcher(reader);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;
@@ -2076,22 +2076,22 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     // a few tests need other docs...:
     Document doc = new Document();
-    doc.add(new DimensionalIntField(NUMERIC_FIELD_NAME, 1));
+    doc.add(new IntPoint(NUMERIC_FIELD_NAME, 1));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 1));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new DimensionalIntField(NUMERIC_FIELD_NAME, 3));
+    doc.add(new IntPoint(NUMERIC_FIELD_NAME, 3));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 3));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new DimensionalIntField(NUMERIC_FIELD_NAME, 5));
+    doc.add(new IntPoint(NUMERIC_FIELD_NAME, 5));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 5));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new DimensionalIntField(NUMERIC_FIELD_NAME, 7));
+    doc.add(new IntPoint(NUMERIC_FIELD_NAME, 7));
     doc.add(new StoredField(NUMERIC_FIELD_NAME, 7));
     writer.addDocument(doc);
 

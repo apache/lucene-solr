@@ -21,12 +21,12 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
-/** An int field that is indexed dimensionally such that finding
- *  all documents within an N-dimensional shape or range at search time is
+/** A field that is indexed dimensionally such that finding
+ *  all documents within an N-dimensional at search time is
  *  efficient.  Muliple values for the same field in one documents
  *  is allowed. */
 
-public final class DimensionalIntField extends Field {
+public final class FloatPoint extends Field {
 
   private static FieldType getType(int numDims) {
     FieldType type = new FieldType();
@@ -36,28 +36,28 @@ public final class DimensionalIntField extends Field {
   }
 
   @Override
-  public void setIntValue(int value) {
-    setIntValues(value);
+  public void setFloatValue(float value) {
+    setFloatValues(value);
   }
 
   /** Change the values of this field */
-  public void setIntValues(int... point) {
+  public void setFloatValues(float... point) {
     fieldsData = pack(point);
   }
 
   @Override
   public void setBytesValue(BytesRef bytes) {
-    throw new IllegalArgumentException("cannot change value type from int to BytesRef");
+    throw new IllegalArgumentException("cannot change value type from float to BytesRef");
   }
 
   @Override
   public Number numericValue() {
     BytesRef bytes = (BytesRef) fieldsData;
     assert bytes.length == RamUsageEstimator.NUM_BYTES_INT;
-    return NumericUtils.bytesToInt(bytes.bytes, bytes.offset);
+    return NumericUtils.sortableIntToFloat(NumericUtils.bytesToIntDirect(bytes.bytes, bytes.offset));
   }
 
-  private static BytesRef pack(int... point) {
+  private static BytesRef pack(float... point) {
     if (point == null) {
       throw new IllegalArgumentException("point cannot be null");
     }
@@ -67,20 +67,20 @@ public final class DimensionalIntField extends Field {
     byte[] packed = new byte[point.length * RamUsageEstimator.NUM_BYTES_INT];
     
     for(int dim=0;dim<point.length;dim++) {
-      NumericUtils.intToBytes(point[dim], packed, dim);
+      NumericUtils.intToBytesDirect(NumericUtils.floatToSortableInt(point[dim]), packed, dim);
     }
 
     return new BytesRef(packed);
   }
 
-  /** Creates a new DimensionalIntField, indexing the
-   *  provided N-dimensional int point.
+  /** Creates a new FloatPoint, indexing the
+   *  provided N-dimensional float point.
    *
    *  @param name field name
    *  @param point int[] value
    *  @throws IllegalArgumentException if the field name or value is null.
    */
-  public DimensionalIntField(String name, int... point) {
+  public FloatPoint(String name, float... point) {
     super(name, pack(point), getType(point.length));
   }
 }

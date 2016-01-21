@@ -33,7 +33,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DimensionalReader;
+import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
@@ -215,8 +215,8 @@ public final class CheckIndex implements Closeable {
       /** Status for testing of DocValues (null if DocValues could not be tested). */
       public DocValuesStatus docValuesStatus;
 
-      /** Status for testing of DimensionalValues (null if DimensionalValues could not be tested). */
-      public DimensionalValuesStatus dimensionalValuesStatus;
+      /** Status for testing of PointValues (null if PointValues could not be tested). */
+      public PointsStatus pointsStatus;
     }
     
     /**
@@ -358,17 +358,17 @@ public final class CheckIndex implements Closeable {
     }
 
     /**
-     * Status from testing DimensionalValues
+     * Status from testing PointValues
      */
-    public static final class DimensionalValuesStatus {
+    public static final class PointsStatus {
 
-      DimensionalValuesStatus() {
+      PointsStatus() {
       }
 
-      /** Total number of dimensional values points tested. */
+      /** Total number of values points tested. */
       public long totalValuePoints;
 
-      /** Total number of fields with dimensional values. */
+      /** Total number of fields with points. */
       public int totalValueFields;
       
       /** Exception thrown during doc values test (null on success) */
@@ -721,8 +721,8 @@ public final class CheckIndex implements Closeable {
           // Test Docvalues
           segInfoStat.docValuesStatus = testDocValues(reader, infoStream, failFast);
 
-          // Test DimensionalValues
-          segInfoStat.dimensionalValuesStatus = testDimensionalValues(reader, infoStream, failFast);
+          // Test PointValues
+          segInfoStat.pointsStatus = testPoints(reader, infoStream, failFast);
 
           // Rethrow the first exception we encountered
           //  This will cause stats for failed segments to be incremented properly
@@ -1681,23 +1681,23 @@ public final class CheckIndex implements Closeable {
   }
 
   /**
-   * Test the dimensional values index.
+   * Test the points index
    * @lucene.experimental
    */
-  public static Status.DimensionalValuesStatus testDimensionalValues(CodecReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+  public static Status.PointsStatus testPoints(CodecReader reader, PrintStream infoStream, boolean failFast) throws IOException {
     FieldInfos fieldInfos = reader.getFieldInfos();
-    Status.DimensionalValuesStatus status = new Status.DimensionalValuesStatus();
+    Status.PointsStatus status = new Status.PointsStatus();
     try {
-      if (fieldInfos.hasDimensionalValues()) {
-        DimensionalReader values = reader.getDimensionalReader();
+      if (fieldInfos.hasPointValues()) {
+        PointReader values = reader.getPointReader();
         if (values == null) {
-          throw new RuntimeException("there are fields with dimensional values, but reader.getDimensionalRader() is null");
+          throw new RuntimeException("there are fields with points, but reader.getPointReader() is null");
         }
         for (FieldInfo fieldInfo : fieldInfos) {
-          if (fieldInfo.getDimensionCount() > 0) {
+          if (fieldInfo.getPointDimensionCount() > 0) {
             status.totalValueFields++;
-            int dimCount = fieldInfo.getDimensionCount();
-            int bytesPerDim = fieldInfo.getDimensionNumBytes();
+            int dimCount = fieldInfo.getPointDimensionCount();
+            int bytesPerDim = fieldInfo.getPointNumBytes();
             byte[] lastMinPackedValue = new byte[dimCount*bytesPerDim];
             BytesRef lastMinPacked = new BytesRef(lastMinPackedValue);
             byte[] lastMaxPackedValue = new byte[dimCount*bytesPerDim];
@@ -1707,7 +1707,7 @@ public final class CheckIndex implements Closeable {
             lastMinPacked.length = bytesPerDim;
             scratch.length = bytesPerDim;
             values.intersect(fieldInfo.name,
-                             new DimensionalValues.IntersectVisitor() {
+                             new PointValues.IntersectVisitor() {
                                @Override
                                public void visit(int docID) {
                                  throw new RuntimeException("codec called IntersectVisitor.visit without a packed value for docID=" + docID);
@@ -1737,7 +1737,7 @@ public final class CheckIndex implements Closeable {
                                }
 
                                @Override
-                               public DimensionalValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+                               public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
                                  checkPackedValue("min packed value", minPackedValue, -1);
                                  System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, minPackedValue.length);
                                  checkPackedValue("max packed value", maxPackedValue, -1);
@@ -1745,7 +1745,7 @@ public final class CheckIndex implements Closeable {
 
                                  // We always pretend the query shape is so complex that it crosses every cell, so
                                  // that packedValue is passed for every document
-                                 return DimensionalValues.Relation.CELL_CROSSES_QUERY;
+                                 return PointValues.Relation.CELL_CROSSES_QUERY;
                                }
 
                                private void checkPackedValue(String desc, byte[] packedValue, int docID) {

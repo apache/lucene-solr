@@ -26,20 +26,20 @@ import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DimensionalFormat;
-import org.apache.lucene.codecs.DimensionalReader;
-import org.apache.lucene.codecs.DimensionalWriter;
+import org.apache.lucene.codecs.PointFormat;
+import org.apache.lucene.codecs.PointReader;
+import org.apache.lucene.codecs.PointWriter;
 import org.apache.lucene.codecs.FilterCodec;
-import org.apache.lucene.codecs.lucene60.Lucene60DimensionalReader;
-import org.apache.lucene.codecs.lucene60.Lucene60DimensionalWriter;
-import org.apache.lucene.document.DimensionalBinaryField;
-import org.apache.lucene.document.DimensionalIntField;
+import org.apache.lucene.codecs.lucene60.Lucene60PointReader;
+import org.apache.lucene.codecs.lucene60.Lucene60PointWriter;
+import org.apache.lucene.document.BinaryPoint;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
-import org.apache.lucene.index.DimensionalValues.Relation;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
@@ -52,10 +52,10 @@ import org.apache.lucene.util.TestUtil;
 
 // TODO: factor out a BaseTestDimensionFormat
 
-public class TestDimensionalValues extends LuceneTestCase {
+public class TestPointValues extends LuceneTestCase {
   public void testBasic() throws Exception {
     Directory dir = getDirectory(20);
-    // TODO: randomize codec once others support dimensional format
+    // TODO: randomize codec once others support points format
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter w = new IndexWriter(dir, iwc);
@@ -63,7 +63,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     for(int i=0;i<20;i++) {
       Document doc = new Document();
       NumericUtils.intToBytes(i, point, 0);
-      doc.add(new DimensionalBinaryField("dim", point));
+      doc.add(new BinaryPoint("dim", point));
       w.addDocument(doc);
     }
     w.forceMerge(1);
@@ -71,7 +71,7 @@ public class TestDimensionalValues extends LuceneTestCase {
 
     DirectoryReader r = DirectoryReader.open(dir);
     LeafReader sub = getOnlySegmentReader(r);
-    DimensionalValues values = sub.getDimensionalValues();
+    PointValues values = sub.getPointValues();
 
     // Simple test: make sure intersect can visit every doc:
     BitSet seen = new BitSet();
@@ -102,7 +102,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     for(int i=0;i<20;i++) {
       Document doc = new Document();
       NumericUtils.intToBytes(i, point, 0);
-      doc.add(new DimensionalBinaryField("dim", point));
+      doc.add(new BinaryPoint("dim", point));
       w.addDocument(doc);
       if (i == 10) {
         w.commit();
@@ -113,7 +113,7 @@ public class TestDimensionalValues extends LuceneTestCase {
 
     DirectoryReader r = DirectoryReader.open(dir);
     LeafReader sub = getOnlySegmentReader(r);
-    DimensionalValues values = sub.getDimensionalValues();
+    PointValues values = sub.getPointValues();
 
     // Simple test: make sure intersect can visit every doc:
     BitSet seen = new BitSet();
@@ -135,7 +135,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     IOUtils.close(r, dir);
   }
 
-  public void testAllDimensionalDocsDeletedInSegment() throws Exception {
+  public void testAllPointDocsDeletedInSegment() throws Exception {
     Directory dir = getDirectory(20);
     IndexWriterConfig iwc = newIndexWriterConfig();
     IndexWriter w = new IndexWriter(dir, iwc);
@@ -143,7 +143,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     for(int i=0;i<10;i++) {
       Document doc = new Document();
       NumericUtils.intToBytes(i, point, 0);
-      doc.add(new DimensionalBinaryField("dim", point));
+      doc.add(new BinaryPoint("dim", point));
       doc.add(new NumericDocValuesField("id", i));
       doc.add(newStringField("x", "x", Field.Store.NO));
       w.addDocument(doc);
@@ -156,7 +156,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     w.close();
     DirectoryReader r = DirectoryReader.open(dir);
     assertEquals(1, r.numDocs());
-    DimensionalValues values = MultiDimensionalValues.get(r);
+    PointValues values = MultiPointValues.get(r);
     Bits liveDocs = MultiFields.getLiveDocs(r);
     NumericDocValues idValues = MultiDocValues.getNumericValues(r, "id");
 
@@ -186,8 +186,8 @@ public class TestDimensionalValues extends LuceneTestCase {
   /** Make sure we close open files, delete temp files, etc., on exception */
   public void testWithExceptions() throws Exception {
     int numDocs = atLeast(10000);
-    int numBytesPerDim = TestUtil.nextInt(random(), 2, DimensionalValues.MAX_NUM_BYTES);
-    int numDims = TestUtil.nextInt(random(), 1, DimensionalValues.MAX_DIMENSIONS);
+    int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
 
     byte[][][] docValues = new byte[numDocs][][];
 
@@ -246,8 +246,8 @@ public class TestDimensionalValues extends LuceneTestCase {
   }
 
   public void testMultiValued() throws Exception {
-    int numBytesPerDim = TestUtil.nextInt(random(), 2, DimensionalValues.MAX_NUM_BYTES);
-    int numDims = TestUtil.nextInt(random(), 1, DimensionalValues.MAX_DIMENSIONS);
+    int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
 
     int numDocs = atLeast(1000);
     List<byte[][]> docValues = new ArrayList<>();
@@ -276,8 +276,8 @@ public class TestDimensionalValues extends LuceneTestCase {
   }
 
   public void testAllEqual() throws Exception {
-    int numBytesPerDim = TestUtil.nextInt(random(), 2, DimensionalValues.MAX_NUM_BYTES);
-    int numDims = TestUtil.nextInt(random(), 1, DimensionalValues.MAX_DIMENSIONS);
+    int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
 
     int numDocs = atLeast(1000);
     byte[][][] docValues = new byte[numDocs][][];
@@ -299,8 +299,8 @@ public class TestDimensionalValues extends LuceneTestCase {
   }
 
   public void testOneDimEqual() throws Exception {
-    int numBytesPerDim = TestUtil.nextInt(random(), 2, DimensionalValues.MAX_NUM_BYTES);
-    int numDims = TestUtil.nextInt(random(), 1, DimensionalValues.MAX_DIMENSIONS);
+    int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
 
     int numDocs = atLeast(1000);
     int theEqualDim = random().nextInt(numDims);
@@ -326,8 +326,8 @@ public class TestDimensionalValues extends LuceneTestCase {
 
     int numDocs = atLeast(1000);
     try (Directory dir = getDirectory(numDocs)) {
-      int numBytesPerDim = TestUtil.nextInt(random(), 2, DimensionalValues.MAX_NUM_BYTES);
-      int numDims = TestUtil.nextInt(random(), 1, DimensionalValues.MAX_DIMENSIONS);
+      int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
+      int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
       IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
       // We rely on docIDs not changing:
       iwc.setMergePolicy(newLogMergePolicy());
@@ -350,14 +350,14 @@ public class TestDimensionalValues extends LuceneTestCase {
         }
         docs[docID] = values;
         Document doc = new Document();
-        doc.add(new DimensionalBinaryField("field", bytes));
+        doc.add(new BinaryPoint("field", bytes));
         w.addDocument(doc);
       }
 
       DirectoryReader r = w.getReader();
       w.close();
 
-      DimensionalValues dimValues = MultiDimensionalValues.get(r);
+      PointValues dimValues = MultiPointValues.get(r);
 
       int iters = atLeast(100);
       for(int iter=0;iter<iters;iter++) {
@@ -459,8 +459,8 @@ public class TestDimensionalValues extends LuceneTestCase {
     doTestRandomBinary(200000);
   }
 
-  // Suddenly add dimensional values to an existing field:
-  public void testUpgradeFieldToDimensional() throws Exception {
+  // Suddenly add points to an existing field:
+  public void testUpgradeFieldToPoints() throws Exception {
     Directory dir = getDirectory(1);
     IndexWriterConfig iwc = newIndexWriterConfig();
     IndexWriter w = new IndexWriter(dir, iwc);
@@ -471,7 +471,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     
     iwc = newIndexWriterConfig();
     w = new IndexWriter(dir, iwc);
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
     w.close();
     dir.close();
   }
@@ -483,13 +483,13 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
-    doc.add(new DimensionalBinaryField("dim", new byte[4], new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
     try {
       w.addDocument(doc);
     } catch (IllegalArgumentException iae) {
       // expected
-      assertEquals("cannot change dimension count from 1 to 2 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", iae.getMessage());
     }
     w.close();
     dir.close();
@@ -500,15 +500,15 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4], new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
     try {
       w.addDocument(doc);
     } catch (IllegalArgumentException iae) {
       // expected
-      assertEquals("cannot change dimension count from 1 to 2 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", iae.getMessage());
     }
     w.close();
     dir.close();
@@ -519,16 +519,16 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     w.commit();
     doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4], new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
     try {
       w.addDocument(doc);
     } catch (IllegalArgumentException iae) {
       // expected
-      assertEquals("cannot change dimension count from 1 to 2 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", iae.getMessage());
     }
     w.close();
     dir.close();
@@ -539,18 +539,18 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     w.close();
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     w = new IndexWriter(dir, iwc);
     doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4], new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
     try {
       w.addDocument(doc);
     } catch (IllegalArgumentException iae) {
       // expected
-      assertEquals("cannot change dimension count from 1 to 2 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", iae.getMessage());
     }
     w.close();
     dir.close();
@@ -561,7 +561,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     w.close();
 
@@ -569,12 +569,12 @@ public class TestDimensionalValues extends LuceneTestCase {
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     w = new IndexWriter(dir2, iwc);
     doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4], new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
     w.addDocument(doc);
     try {
       w.addIndexes(new Directory[] {dir});
     } catch (IllegalArgumentException iae) {
-      assertEquals("cannot change dimension count from 2 to 1 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", iae.getMessage());
     }
     IOUtils.close(w, dir, dir2);
   }
@@ -584,7 +584,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     w.close();
 
@@ -592,13 +592,13 @@ public class TestDimensionalValues extends LuceneTestCase {
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     w = new IndexWriter(dir2, iwc);
     doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4], new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
     w.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(dir);
     try {
       w.addIndexes(new CodecReader[] {getOnlySegmentReader(r)});
     } catch (IllegalArgumentException iae) {
-      assertEquals("cannot change dimension count from 2 to 1 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", iae.getMessage());
     }
     IOUtils.close(r, w, dir, dir2);
   }
@@ -608,7 +608,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     w.close();
 
@@ -616,13 +616,13 @@ public class TestDimensionalValues extends LuceneTestCase {
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     w = new IndexWriter(dir2, iwc);
     doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4], new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
     w.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(dir);
     try {
       TestUtil.addIndexesSlowly(w, r);
     } catch (IllegalArgumentException iae) {
-      assertEquals("cannot change dimension count from 2 to 1 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", iae.getMessage());
     }
     IOUtils.close(r, w, dir, dir2);
   }
@@ -632,13 +632,13 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
-    doc.add(new DimensionalBinaryField("dim", new byte[6]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[6]));
     try {
       w.addDocument(doc);
     } catch (IllegalArgumentException iae) {
       // expected
-      assertEquals("cannot change dimension numBytes from 4 to 6 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point numBytes from 4 to 6 for field=\"dim\"", iae.getMessage());
     }
     w.close();
     dir.close();
@@ -649,15 +649,15 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[6]));
+    doc.add(new BinaryPoint("dim", new byte[6]));
     try {
       w.addDocument(doc);
     } catch (IllegalArgumentException iae) {
       // expected
-      assertEquals("cannot change dimension numBytes from 4 to 6 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point numBytes from 4 to 6 for field=\"dim\"", iae.getMessage());
     }
     w.close();
     dir.close();
@@ -668,16 +668,16 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     w.commit();
     doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[6]));
+    doc.add(new BinaryPoint("dim", new byte[6]));
     try {
       w.addDocument(doc);
     } catch (IllegalArgumentException iae) {
       // expected
-      assertEquals("cannot change dimension numBytes from 4 to 6 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point numBytes from 4 to 6 for field=\"dim\"", iae.getMessage());
     }
     w.close();
     dir.close();
@@ -688,18 +688,18 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     w.close();
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     w = new IndexWriter(dir, iwc);
     doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[6]));
+    doc.add(new BinaryPoint("dim", new byte[6]));
     try {
       w.addDocument(doc);
     } catch (IllegalArgumentException iae) {
       // expected
-      assertEquals("cannot change dimension numBytes from 4 to 6 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point numBytes from 4 to 6 for field=\"dim\"", iae.getMessage());
     }
     w.close();
     dir.close();
@@ -710,7 +710,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     w.close();
 
@@ -718,12 +718,12 @@ public class TestDimensionalValues extends LuceneTestCase {
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     w = new IndexWriter(dir2, iwc);
     doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[6]));
+    doc.add(new BinaryPoint("dim", new byte[6]));
     w.addDocument(doc);
     try {
       w.addIndexes(new Directory[] {dir});
     } catch (IllegalArgumentException iae) {
-      assertEquals("cannot change dimension numBytes from 6 to 4 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point numBytes from 6 to 4 for field=\"dim\"", iae.getMessage());
     }
     IOUtils.close(w, dir, dir2);
   }
@@ -733,7 +733,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     w.close();
 
@@ -741,13 +741,13 @@ public class TestDimensionalValues extends LuceneTestCase {
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     w = new IndexWriter(dir2, iwc);
     doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[6]));
+    doc.add(new BinaryPoint("dim", new byte[6]));
     w.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(dir);
     try {
       w.addIndexes(new CodecReader[] {getOnlySegmentReader(r)});
     } catch (IllegalArgumentException iae) {
-      assertEquals("cannot change dimension numBytes from 6 to 4 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point numBytes from 6 to 4 for field=\"dim\"", iae.getMessage());
     }
     IOUtils.close(r, w, dir, dir2);
   }
@@ -757,7 +757,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[4]));
+    doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     w.close();
 
@@ -765,13 +765,13 @@ public class TestDimensionalValues extends LuceneTestCase {
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     w = new IndexWriter(dir2, iwc);
     doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[6]));
+    doc.add(new BinaryPoint("dim", new byte[6]));
     w.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(dir);
     try {
       TestUtil.addIndexesSlowly(w, r);
     } catch (IllegalArgumentException iae) {
-      assertEquals("cannot change dimension numBytes from 6 to 4 for field=\"dim\"", iae.getMessage());
+      assertEquals("cannot change point numBytes from 6 to 4 for field=\"dim\"", iae.getMessage());
     }
     IOUtils.close(r, w, dir, dir2);
   }
@@ -781,7 +781,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new DimensionalBinaryField("dim", new byte[DimensionalValues.MAX_NUM_BYTES+1]));
+    doc.add(new BinaryPoint("dim", new byte[PointValues.MAX_NUM_BYTES+1]));
     try {
       w.addDocument(doc);
       fail("did not hit exception");
@@ -789,7 +789,7 @@ public class TestDimensionalValues extends LuceneTestCase {
       // expected
     }
     doc = new Document();
-    doc.add(new DimensionalIntField("dim", 17));
+    doc.add(new IntPoint("dim", 17));
     w.addDocument(doc);
     w.close();
     dir.close();
@@ -800,11 +800,11 @@ public class TestDimensionalValues extends LuceneTestCase {
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    byte[][] values = new byte[DimensionalValues.MAX_DIMENSIONS+1][];
+    byte[][] values = new byte[PointValues.MAX_DIMENSIONS+1][];
     for(int i=0;i<values.length;i++) {
       values[i] = new byte[4];
     }
-    doc.add(new DimensionalBinaryField("dim", values));
+    doc.add(new BinaryPoint("dim", values));
     try {
       w.addDocument(doc);
       fail("did not hit exception");
@@ -812,7 +812,7 @@ public class TestDimensionalValues extends LuceneTestCase {
       // expected
     }
     doc = new Document();
-    doc.add(new DimensionalIntField("dim", 17));
+    doc.add(new IntPoint("dim", 17));
     w.addDocument(doc);
     w.close();
     dir.close();
@@ -820,8 +820,8 @@ public class TestDimensionalValues extends LuceneTestCase {
 
   private void doTestRandomBinary(int count) throws Exception {
     int numDocs = TestUtil.nextInt(random(), count, count*2);
-    int numBytesPerDim = TestUtil.nextInt(random(), 2, DimensionalValues.MAX_NUM_BYTES);
-    int numDims = TestUtil.nextInt(random(), 1, DimensionalValues.MAX_DIMENSIONS);
+    int numBytesPerDim = TestUtil.nextInt(random(), 2, PointValues.MAX_NUM_BYTES);
+    int numDims = TestUtil.nextInt(random(), 1, PointValues.MAX_DIMENSIONS);
 
     byte[][][] docValues = new byte[numDocs][][];
 
@@ -843,21 +843,21 @@ public class TestDimensionalValues extends LuceneTestCase {
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);
       double maxMBSortInHeap = 0.1 + (3*random().nextDouble());
       if (VERBOSE) {
-        System.out.println("TEST: using Lucene60DimensionalFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
+        System.out.println("TEST: using Lucene60PointFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
 
       return new FilterCodec("Lucene60", Codec.getDefault()) {
         @Override
-        public DimensionalFormat dimensionalFormat() {
-          return new DimensionalFormat() {
+        public PointFormat pointFormat() {
+          return new PointFormat() {
             @Override
-            public DimensionalWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-              return new Lucene60DimensionalWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
+            public PointWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
+              return new Lucene60PointWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
             }
 
             @Override
-            public DimensionalReader fieldsReader(SegmentReadState readState) throws IOException {
-              return new Lucene60DimensionalReader(readState);
+            public PointReader fieldsReader(SegmentReadState readState) throws IOException {
+              return new Lucene60PointReader(readState);
             }
           };
         }
@@ -931,7 +931,7 @@ public class TestDimensionalValues extends LuceneTestCase {
     }
 
     // 20% of the time we add into a separate directory, then at some point use
-    // addIndexes to bring the indexed dimensional values to the main directory:
+    // addIndexes to bring the indexed point values to the main directory:
     Directory saveDir;
     RandomIndexWriter saveW;
     int addIndexesAt;
@@ -981,7 +981,7 @@ public class TestDimensionalValues extends LuceneTestCase {
           doc = new Document();
           doc.add(new NumericDocValuesField("id", id));
         }
-        doc.add(new DimensionalBinaryField("field", docValues[ord]));
+        doc.add(new BinaryPoint("field", docValues[ord]));
         lastID = id;
 
         if (random().nextInt(30) == 17) {
@@ -999,7 +999,7 @@ public class TestDimensionalValues extends LuceneTestCase {
         if (random().nextInt(30) == 17) {
           // randomly index some documents with this field, but we will delete them:
           Document xdoc = new Document();
-          xdoc.add(new DimensionalBinaryField("field", docValues[ord]));
+          xdoc.add(new BinaryPoint("field", docValues[ord]));
           xdoc.add(new StringField("nukeme", "yes", Field.Store.NO));
           if (useRealWriter) {
             w.w.addDocument(xdoc);
@@ -1051,7 +1051,7 @@ public class TestDimensionalValues extends LuceneTestCase {
         System.out.println("TEST: reader=" + r);
       }
 
-      DimensionalValues dimValues = MultiDimensionalValues.get(r);
+      PointValues dimValues = MultiPointValues.get(r);
       if (VERBOSE) {
         System.out.println("  dimValues=" + dimValues);
       }
@@ -1102,7 +1102,7 @@ public class TestDimensionalValues extends LuceneTestCase {
 
         final BitSet hits = new BitSet();
 
-        dimValues.intersect("field", new DimensionalValues.IntersectVisitor() {
+        dimValues.intersect("field", new PointValues.IntersectVisitor() {
             @Override
             public void visit(int docID) {
               if (liveDocs == null || liveDocs.get(docID)) {

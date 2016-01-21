@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.DimensionalReader;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.util.Bits;
 
@@ -301,9 +300,9 @@ public abstract class LeafReader extends IndexReader {
    */
   public abstract Bits getLiveDocs();
 
-  /** Returns the {@link DimensionalReader} used for numeric or
-   *  spatial searches, or null if there are no dimensional fields. */
-  public abstract DimensionalValues getDimensionalValues();
+  /** Returns the {@link org.apache.lucene.codecs.PointReader} used for numeric or
+   *  spatial searches, or null if there are no point fields. */
+  public abstract PointValues getPointValues();
 
   /**
    * Checks consistency of this reader.

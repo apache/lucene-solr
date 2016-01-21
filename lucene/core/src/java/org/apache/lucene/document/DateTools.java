@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import org.apache.lucene.search.DimensionalRangeQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.TermRangeQuery;
 
@@ -39,12 +38,12 @@ import org.apache.lucene.search.TermRangeQuery;
  * {@link TermRangeQuery} and {@link PrefixQuery} will require more memory and become slower.
  * 
  * <P>
- * Another approach is {@link DimensionalLongField}, which indexes the
+ * Another approach is {@link LongPoint}, which indexes the
  * values in sorted order.
  * For indexing a {@link Date} or {@link Calendar}, just get the unix timestamp as
  * <code>long</code> using {@link Date#getTime} or {@link Calendar#getTimeInMillis} and
- * index this as a numeric value with {@link DimensionalLongField}
- * and use {@link DimensionalRangeQuery} to query it.
+ * index this as a numeric value with {@link LongPoint}
+ * and use {@link org.apache.lucene.search.PointRangeQuery} to query it.
  */
 public class DateTools {
   

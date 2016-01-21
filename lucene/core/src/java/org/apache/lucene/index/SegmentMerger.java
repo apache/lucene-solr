@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DimensionalWriter;
+import org.apache.lucene.codecs.PointWriter;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.NormsConsumer;
@@ -113,12 +113,12 @@ final class SegmentMerger {
     if (mergeState.infoStream.isEnabled("SM")) {
       t0 = System.nanoTime();
     }
-    if (mergeState.mergeFieldInfos.hasDimensionalValues()) {
-      mergeDimensionalValues(segmentWriteState);
+    if (mergeState.mergeFieldInfos.hasPointValues()) {
+      mergePoints(segmentWriteState);
     }
     if (mergeState.infoStream.isEnabled("SM")) {
       long t1 = System.nanoTime();
-      mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge dimensional values [" + numMerged + " docs]");
+      mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge points [" + numMerged + " docs]");
     }
     
     if (mergeState.mergeFieldInfos.hasNorms()) {
@@ -163,8 +163,8 @@ final class SegmentMerger {
     }
   }
 
-  private void mergeDimensionalValues(SegmentWriteState segmentWriteState) throws IOException {
-    try (DimensionalWriter writer = codec.dimensionalFormat().fieldsWriter(segmentWriteState)) {
+  private void mergePoints(SegmentWriteState segmentWriteState) throws IOException {
+    try (PointWriter writer = codec.pointFormat().fieldsWriter(segmentWriteState)) {
       writer.merge(mergeState);
     }
   }

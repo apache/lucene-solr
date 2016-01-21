@@ -20,10 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.document.DimensionalLatLonField;
-import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
-import org.apache.lucene.index.DimensionalValues.Relation;
-import org.apache.lucene.index.DimensionalValues;
+import org.apache.lucene.document.LatLonPoint;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.DocIdSetBuilder;
@@ -33,11 +33,11 @@ import org.apache.lucene.util.NumericUtils;
 
 /** Finds all previously indexed points that fall within the specified polygon.
  *
- *  <p>The field must be indexed with using {@link DimensionalLatLonField} added per document.
+ *  <p>The field must be indexed with using {@link org.apache.lucene.document.LatLonPoint} added per document.
  *
  *  @lucene.experimental */
 
-public class DimensionalPointInPolygonQuery extends Query {
+public class PointInPolygonQuery extends Query {
   final String field;
   final double minLat;
   final double maxLat;
@@ -47,7 +47,7 @@ public class DimensionalPointInPolygonQuery extends Query {
   final double[] polyLons;
 
   /** The lats/lons must be clockwise or counter-clockwise. */
-  public DimensionalPointInPolygonQuery(String field, double[] polyLats, double[] polyLons) {
+  public PointInPolygonQuery(String field, double[] polyLats, double[] polyLons) {
     this.field = field;
     if (polyLats.length != polyLons.length) {
       throw new IllegalArgumentException("polyLats and polyLons must be equal length");
@@ -105,9 +105,9 @@ public class DimensionalPointInPolygonQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        DimensionalValues values = reader.getDimensionalValues();
+        PointValues values = reader.getPointValues();
         if (values == null) {
-          // No docs in this segment had any dimensional fields
+          // No docs in this segment had any points fields
           return null;
         }
 
@@ -124,8 +124,8 @@ public class DimensionalPointInPolygonQuery extends Query {
                            @Override
                            public void visit(int docID, byte[] packedValue) {
                              assert packedValue.length == 8;
-                             double lat = DimensionalLatLonField.decodeLat(NumericUtils.bytesToInt(packedValue, 0));
-                             double lon = DimensionalLatLonField.decodeLon(NumericUtils.bytesToInt(packedValue, 1));
+                             double lat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(packedValue, 0));
+                             double lon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(packedValue, 1));
                              if (GeoRelationUtils.pointInPolygon(polyLons, polyLats, lat, lon)) {
                                hitCount[0]++;
                                result.add(docID);
@@ -134,10 +134,10 @@ public class DimensionalPointInPolygonQuery extends Query {
 
                            @Override
                            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                             double cellMinLat = DimensionalLatLonField.decodeLat(NumericUtils.bytesToInt(minPackedValue, 0));
-                             double cellMinLon = DimensionalLatLonField.decodeLon(NumericUtils.bytesToInt(minPackedValue, 1));
-                             double cellMaxLat = DimensionalLatLonField.decodeLat(NumericUtils.bytesToInt(maxPackedValue, 0));
-                             double cellMaxLon = DimensionalLatLonField.decodeLon(NumericUtils.bytesToInt(maxPackedValue, 1));
+                             double cellMinLat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(minPackedValue, 0));
+                             double cellMinLon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(minPackedValue, 1));
+                             double cellMaxLat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(maxPackedValue, 0));
+                             double cellMaxLon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(maxPackedValue, 1));
 
                              if (cellMinLat <= minLat && cellMaxLat >= maxLat && cellMinLon <= minLon && cellMaxLon >= maxLon) {
                                // Cell fully encloses the query
@@ -169,7 +169,7 @@ public class DimensionalPointInPolygonQuery extends Query {
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
 
-    DimensionalPointInPolygonQuery that = (DimensionalPointInPolygonQuery) o;
+    PointInPolygonQuery that = (PointInPolygonQuery) o;
 
     if (Arrays.equals(polyLons, that.polyLons) == false) {
       return false;

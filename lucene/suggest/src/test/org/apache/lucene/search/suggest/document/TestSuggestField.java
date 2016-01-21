@@ -34,7 +34,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60Codec;
-import org.apache.lucene.document.DimensionalIntField;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StoredField;
@@ -44,7 +44,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.DimensionalRangeQuery;
+import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.suggest.BitsProducer;
@@ -305,7 +305,7 @@ public class TestSuggestField extends LuceneTestCase {
       Document document = new Document();
       document.add(new SuggestField("suggest_field", "abc_" + i, i));
       document.add(new StoredField("weight_fld", i));
-      document.add(new DimensionalIntField("weight_fld", i));
+      document.add(new IntPoint("weight_fld", i));
       iw.addDocument(document);
 
       if (usually()) {
@@ -313,7 +313,7 @@ public class TestSuggestField extends LuceneTestCase {
       }
     }
 
-    iw.deleteDocuments(DimensionalRangeQuery.new1DIntRange("weight_fld", 2, true, null, false));
+    iw.deleteDocuments(PointRangeQuery.new1DIntRange("weight_fld", 2, true, null, false));
 
     DirectoryReader reader = DirectoryReader.open(iw);
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);

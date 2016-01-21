@@ -19,9 +19,9 @@ package org.apache.lucene.geo3d;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
-import org.apache.lucene.index.DimensionalValues.Relation;
-import org.apache.lucene.index.DimensionalValues;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -35,7 +35,7 @@ import org.apache.lucene.util.NumericUtils;
 
 /** Finds all previously indexed points that fall within the specified polygon.
  *
- * <p>The field must be indexed using {@link Geo3DPointField}.
+ * <p>The field must be indexed using {@link Geo3DPoint}.
  *
  * @lucene.experimental */
 
@@ -62,7 +62,7 @@ public class PointInGeo3DShapeQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        DimensionalValues values = reader.getDimensionalValues();
+        PointValues values = reader.getPointValues();
         if (values == null) {
           return null;
         }

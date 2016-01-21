@@ -20,16 +20,16 @@ package org.apache.lucene.codecs.simpletext;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.bkd.BKDReader;
 
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.BLOCK_COUNT;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.BLOCK_DOC_ID;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.BLOCK_VALUE;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.BLOCK_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.BLOCK_DOC_ID;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.BLOCK_VALUE;
 
 class SimpleTextBKDReader extends BKDReader {
 

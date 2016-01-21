@@ -17,24 +17,22 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.DimensionalLatLonField;
+import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BaseGeoPointTestCase;
 import org.apache.lucene.util.GeoDistanceUtils;
 import org.apache.lucene.util.GeoRect;
-import org.apache.lucene.util.SloppyMath;
 
-public class TestDimensionalQueries extends BaseGeoPointTestCase {
+public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
   @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
-    doc.add(new DimensionalLatLonField(field, lat, lon));
+    doc.add(new LatLonPoint(field, lat, lon));
   }
 
   @Override
   protected Query newRectQuery(String field, GeoRect rect) {
-    return new DimensionalPointInRectQuery(field, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+    return new PointInRectQuery(field, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
   }
 
   @Override
@@ -50,7 +48,7 @@ public class TestDimensionalQueries extends BaseGeoPointTestCase {
 
   @Override
   protected Query newPolygonQuery(String field, double[] lats, double[] lons) {
-    return new DimensionalPointInPolygonQuery(FIELD_NAME, lats, lons);
+    return new PointInPolygonQuery(FIELD_NAME, lats, lons);
   }
 
   @Override
@@ -58,13 +56,13 @@ public class TestDimensionalQueries extends BaseGeoPointTestCase {
 
     assert Double.isNaN(pointLat) == false;
 
-    int rectLatMinEnc = DimensionalLatLonField.encodeLat(rect.minLat);
-    int rectLatMaxEnc = DimensionalLatLonField.encodeLat(rect.maxLat);
-    int rectLonMinEnc = DimensionalLatLonField.encodeLon(rect.minLon);
-    int rectLonMaxEnc = DimensionalLatLonField.encodeLon(rect.maxLon);
+    int rectLatMinEnc = LatLonPoint.encodeLat(rect.minLat);
+    int rectLatMaxEnc = LatLonPoint.encodeLat(rect.maxLat);
+    int rectLonMinEnc = LatLonPoint.encodeLon(rect.minLon);
+    int rectLonMaxEnc = LatLonPoint.encodeLon(rect.maxLon);
 
-    int pointLatEnc = DimensionalLatLonField.encodeLat(pointLat);
-    int pointLonEnc = DimensionalLatLonField.encodeLon(pointLon);
+    int pointLatEnc = LatLonPoint.encodeLat(pointLat);
+    int pointLonEnc = LatLonPoint.encodeLon(pointLon);
 
     if (rect.minLon < rect.maxLon) {
       return pointLatEnc >= rectLatMinEnc &&
@@ -114,12 +112,12 @@ public class TestDimensionalQueries extends BaseGeoPointTestCase {
     boolean small = random().nextBoolean();
     for(int iter=0;iter<iters;iter++) {
       double lat = randomLat(small);
-      double latQuantized = DimensionalLatLonField.decodeLat(DimensionalLatLonField.encodeLat(lat));
-      assertEquals(lat, latQuantized, DimensionalLatLonField.TOLERANCE);
+      double latQuantized = LatLonPoint.decodeLat(LatLonPoint.encodeLat(lat));
+      assertEquals(lat, latQuantized, LatLonPoint.TOLERANCE);
 
       double lon = randomLon(small);
-      double lonQuantized = DimensionalLatLonField.decodeLon(DimensionalLatLonField.encodeLon(lon));
-      assertEquals(lon, lonQuantized, DimensionalLatLonField.TOLERANCE);
+      double lonQuantized = LatLonPoint.decodeLon(LatLonPoint.encodeLon(lon));
+      assertEquals(lon, lonQuantized, LatLonPoint.TOLERANCE);
     }
   }
 }

@@ -22,8 +22,7 @@ import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.NumericUtils;
 
 /** Add this to a document to index lat/lon point dimensionally */
-public final class DimensionalLatLonField extends Field {
-
+public class LatLonPoint extends Field {
   public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDimensions(2, 4);
@@ -31,13 +30,13 @@ public final class DimensionalLatLonField extends Field {
   }
 
   /** 
-   * Creates a new DimensionalLatLonField with the specified lat and lon
+   * Creates a new LatLonPoint with the specified lat and lon
    * @param name field name
    * @param lat double latitude
    * @param lon double longitude
    * @throws IllegalArgumentException if the field name is null or lat or lon are out of bounds
    */
-  public DimensionalLatLonField(String name, double lat, double lon) {
+  public LatLonPoint(String name, double lat, double lon) {
     super(name, TYPE);
     if (GeoUtils.isValidLat(lat) == false) {
       throw new IllegalArgumentException("invalid lat (" + lat + "): must be -90 to 90");

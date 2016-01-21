@@ -19,9 +19,9 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.DimensionalFormat;
-import org.apache.lucene.codecs.DimensionalReader;
-import org.apache.lucene.codecs.DimensionalWriter;
+import org.apache.lucene.codecs.PointFormat;
+import org.apache.lucene.codecs.PointReader;
+import org.apache.lucene.codecs.PointWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -33,21 +33,21 @@ import org.apache.lucene.index.SegmentWriteState;
  *  any text editor, and even edit it to alter your index.
  *
  *  @lucene.experimental */
-public final class SimpleTextDimensionalFormat extends DimensionalFormat {
+public final class SimpleTextPointFormat extends PointFormat {
   
   @Override
-  public DimensionalWriter fieldsWriter(SegmentWriteState state) throws IOException {
-    return new SimpleTextDimensionalWriter(state);
+  public PointWriter fieldsWriter(SegmentWriteState state) throws IOException {
+    return new SimpleTextPointWriter(state);
   }
 
   @Override
-  public DimensionalReader fieldsReader(SegmentReadState state) throws IOException {
-    return new SimpleTextDimensionalReader(state);
+  public PointReader fieldsReader(SegmentReadState state) throws IOException {
+    return new SimpleTextPointReader(state);
   }
 
-  /** Extension of dimensional data file */
-  static final String DIMENSIONAL_EXTENSION = "dim";
+  /** Extension of points data file */
+  static final String POINT_EXTENSION = "dim";
 
-  /** Extension of dimensional index file */
-  static final String DIMENSIONAL_INDEX_EXTENSION = "dii";
+  /** Extension of points index file */
+  static final String POINT_INDEX_EXTENSION = "dii";
 }

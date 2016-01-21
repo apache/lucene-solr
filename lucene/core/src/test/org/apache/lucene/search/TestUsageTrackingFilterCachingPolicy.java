@@ -26,7 +26,7 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
 
   public void testCostlyFilter() {
     assertTrue(UsageTrackingQueryCachingPolicy.isCostly(new PrefixQuery(new Term("field", "prefix"))));
-    assertTrue(UsageTrackingQueryCachingPolicy.isCostly(DimensionalRangeQuery.new1DIntRange("intField", 1, true, 1000, true)));
+    assertTrue(UsageTrackingQueryCachingPolicy.isCostly(PointRangeQuery.new1DIntRange("intField", 1, true, 1000, true)));
     assertFalse(UsageTrackingQueryCachingPolicy.isCostly(new TermQuery(new Term("field", "value"))));
   }
 

@@ -24,7 +24,6 @@ import java.util.Map;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.document.DimensionalLongField;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -96,8 +95,8 @@ import org.apache.lucene.store.IndexOutput;
  *       there are no DocValues updates to that field. Anything above zero means there 
  *       are updates stored by {@link DocValuesFormat}.</li>
  *   <li>Attributes: a key-value map of codec-private attributes.</li>
- *   <li>DimensionCount, DimensionNumBytes: these are non-zero only if the field is
- *       indexed dimensionally, e.g. using {@link DimensionalLongField}</li>
+ *   <li>PointDimensionCount, PointNumBytes: these are non-zero only if the field is
+ *       indexed as points, e.g. using {@link org.apache.lucene.document.LongPoint}</li>
  * </ul>
  *
  * @lucene.experimental
@@ -149,18 +148,18 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
             attributes = lastAttributes;
           }
           lastAttributes = attributes;
-          int dimensionCount = input.readVInt();
-          int dimensionNumBytes;
-          if (dimensionCount != 0) {
-            dimensionNumBytes = input.readVInt();
+          int pointDimensionCount = input.readVInt();
+          int pointNumBytes;
+          if (pointDimensionCount != 0) {
+            pointNumBytes = input.readVInt();
           } else {
-            dimensionNumBytes = 0;
+            pointNumBytes = 0;
           }
 
           try {
             infos[i] = new FieldInfo(name, fieldNumber, storeTermVector, omitNorms, storePayloads, 
                                      indexOptions, docValuesType, dvGen, attributes,
-                                     dimensionCount, dimensionNumBytes);
+                                     pointDimensionCount, pointNumBytes);
             infos[i].checkConsistency();
           } catch (IllegalStateException e) {
             throw new CorruptIndexException("invalid fieldinfo for field: " + name + ", fieldNumber=" + fieldNumber, input, e);
@@ -286,10 +285,10 @@ public final class Lucene60FieldInfosFormat extends FieldInfosFormat {
         output.writeByte(docValuesByte(fi.getDocValuesType()));
         output.writeLong(fi.getDocValuesGen());
         output.writeMapOfStrings(fi.attributes());
-        int dimensionCount = fi.getDimensionCount();
-        output.writeVInt(dimensionCount);
-        if (dimensionCount != 0) {
-          output.writeVInt(fi.getDimensionNumBytes());
+        int pointDimensionCount = fi.getPointDimensionCount();
+        output.writeVInt(pointDimensionCount);
+        if (pointDimensionCount != 0) {
+          output.writeVInt(fi.getPointNumBytes());
         }
       }
       CodecUtil.writeFooter(output);

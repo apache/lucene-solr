@@ -157,7 +157,7 @@ import org.apache.lucene.index.Term; // for javadocs
  * precision step). This query type was developed for a geographic portal, where the performance for
  * e.g. bounding boxes or exact date/time stamps is important.</p>
  *
- * @deprecated Please use {@link DimensionalRangeQuery} instead
+ * @deprecated Please use {@link PointRangeQuery} instead
  *
  * @since 2.9
  **/

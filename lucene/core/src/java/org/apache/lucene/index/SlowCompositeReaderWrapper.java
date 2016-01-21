@@ -234,9 +234,9 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
-  public DimensionalValues getDimensionalValues() {
+  public PointValues getPointValues() {
     ensureOpen();
-    return MultiDimensionalValues.get(in);
+    return MultiPointValues.get(in);
   }
 
   @Override

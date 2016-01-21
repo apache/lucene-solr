@@ -19,10 +19,10 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.DimensionalLatLonField;
-import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
-import org.apache.lucene.index.DimensionalValues.Relation;
-import org.apache.lucene.index.DimensionalValues;
+import org.apache.lucene.document.LatLonPoint;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -32,11 +32,11 @@ import org.apache.lucene.util.NumericUtils;
 
 /** Finds all previously indexed points that fall within the specified boundings box.
  *
- *  <p>The field must be indexed with using {@link DimensionalLatLonField} added per document.
+ *  <p>The field must be indexed with using {@link org.apache.lucene.document.LatLonPoint} added per document.
  *
  *  @lucene.experimental */
 
-public class DimensionalPointInRectQuery extends Query {
+public class PointInRectQuery extends Query {
   final String field;
   final double minLat;
   final double maxLat;
@@ -44,7 +44,7 @@ public class DimensionalPointInRectQuery extends Query {
   final double maxLon;
 
   /** Matches all points &gt;= minLon, minLat (inclusive) and &lt; maxLon, maxLat (exclusive). */ 
-  public DimensionalPointInRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
+  public PointInRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
     this.field = field;
     if (GeoUtils.isValidLat(minLat) == false) {
       throw new IllegalArgumentException("minLat=" + minLat + " is not a valid latitude");
@@ -74,9 +74,9 @@ public class DimensionalPointInRectQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        DimensionalValues values = reader.getDimensionalValues();
+        PointValues values = reader.getPointValues();
         if (values == null) {
-          // No docs in this segment had any dimensional fields
+          // No docs in this segment had any points fields
           return null;
         }
 
@@ -98,8 +98,8 @@ public class DimensionalPointInRectQuery extends Query {
                            @Override
                            public void visit(int docID, byte[] packedValue) {
                              assert packedValue.length == 8;
-                             double lat = DimensionalLatLonField.decodeLat(NumericUtils.bytesToInt(packedValue, 0));
-                             double lon = DimensionalLatLonField.decodeLon(NumericUtils.bytesToInt(packedValue, 1));
+                             double lat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(packedValue, 0));
+                             double lon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(packedValue, 1));
                              if (lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon) {
                                hitCount[0]++;
                                result.add(docID);
@@ -108,10 +108,10 @@ public class DimensionalPointInRectQuery extends Query {
 
                            @Override
                            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                             double cellMinLat = DimensionalLatLonField.decodeLat(NumericUtils.bytesToInt(minPackedValue, 0));
-                             double cellMinLon = DimensionalLatLonField.decodeLon(NumericUtils.bytesToInt(minPackedValue, 1));
-                             double cellMaxLat = DimensionalLatLonField.decodeLat(NumericUtils.bytesToInt(maxPackedValue, 0));
-                             double cellMaxLon = DimensionalLatLonField.decodeLon(NumericUtils.bytesToInt(maxPackedValue, 1));
+                             double cellMinLat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(minPackedValue, 0));
+                             double cellMinLon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(minPackedValue, 1));
+                             double cellMaxLat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(maxPackedValue, 0));
+                             double cellMaxLon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(maxPackedValue, 1));
 
                              if (minLat <= cellMinLat && maxLat >= cellMaxLat && minLon <= cellMinLon && maxLon >= cellMaxLon) {
                                return Relation.CELL_INSIDE_QUERY;
@@ -141,9 +141,9 @@ public class DimensionalPointInRectQuery extends Query {
       q.setDisableCoord(true);
 
       // E.g.: maxLon = -179, minLon = 179
-      DimensionalPointInRectQuery left = new DimensionalPointInRectQuery(field, minLat, maxLat, GeoUtils.MIN_LON_INCL, maxLon);
+      PointInRectQuery left = new PointInRectQuery(field, minLat, maxLat, GeoUtils.MIN_LON_INCL, maxLon);
       q.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
-      DimensionalPointInRectQuery right = new DimensionalPointInRectQuery(field, minLat, maxLat, minLon, GeoUtils.MAX_LON_INCL);
+      PointInRectQuery right = new PointInRectQuery(field, minLat, maxLat, minLon, GeoUtils.MAX_LON_INCL);
       q.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
       return new ConstantScoreQuery(q.build());
     } else {
@@ -163,8 +163,8 @@ public class DimensionalPointInRectQuery extends Query {
 
   @Override
   public boolean equals(Object other) {
-    if (super.equals(other) && other instanceof DimensionalPointInRectQuery) {
-      final DimensionalPointInRectQuery q = (DimensionalPointInRectQuery) other;
+    if (super.equals(other) && other instanceof PointInRectQuery) {
+      final PointInRectQuery q = (PointInRectQuery) other;
       return field.equals(q.field) &&
         minLat == q.minLat &&
         maxLat == q.maxLat &&

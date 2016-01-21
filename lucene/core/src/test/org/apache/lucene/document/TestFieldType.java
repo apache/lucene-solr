@@ -89,7 +89,7 @@ public class TestFieldType extends LuceneTestCase {
       if ((method.getModifiers() & Modifier.PUBLIC) != 0 && method.getName().startsWith("set")) {
         final Class<?>[] parameterTypes = method.getParameterTypes();
         final Object[] args = new Object[parameterTypes.length];
-        if (method.getName().equals("setDimensions")) {
+        if (method.getName().equals("setPointDimensions")) {
           args[0] = 1 + random().nextInt(15);
           args[1] = 1 + random().nextInt(100);
         } else {

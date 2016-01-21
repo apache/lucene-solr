@@ -24,8 +24,8 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
-import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
-import org.apache.lucene.index.DimensionalValues.Relation;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;

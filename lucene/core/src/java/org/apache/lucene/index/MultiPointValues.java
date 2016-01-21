@@ -23,30 +23,30 @@ import java.util.List;
 
 import org.apache.lucene.util.StringHelper;
 
-class MultiDimensionalValues extends DimensionalValues {
+class MultiPointValues extends PointValues {
 
-  private final List<DimensionalValues> subs;
+  private final List<PointValues> subs;
   private final List<Integer> docBases;
 
-  private MultiDimensionalValues(List<DimensionalValues> subs, List<Integer> docBases) {
+  private MultiPointValues(List<PointValues> subs, List<Integer> docBases) {
     this.subs = subs;
     this.docBases = docBases;
   }
 
-  public static DimensionalValues get(IndexReader r) {
+  public static PointValues get(IndexReader r) {
     final List<LeafReaderContext> leaves = r.leaves();
     final int size = leaves.size();
     if (size == 0) {
       return null;
     } else if (size == 1) {
-      return leaves.get(0).reader().getDimensionalValues();
+      return leaves.get(0).reader().getPointValues();
     }
 
-    List<DimensionalValues> values = new ArrayList<>();
+    List<PointValues> values = new ArrayList<>();
     List<Integer> docBases = new ArrayList<>();
     for (int i = 0; i < size; i++) {
       LeafReaderContext context = leaves.get(i);
-      DimensionalValues v = context.reader().getDimensionalValues();
+      PointValues v = context.reader().getPointValues();
       if (v != null) {
         values.add(v);
         docBases.add(context.docBase);
@@ -57,7 +57,7 @@ class MultiDimensionalValues extends DimensionalValues {
       return null;
     }
 
-    return new MultiDimensionalValues(values, docBases);
+    return new MultiPointValues(values, docBases);
   }
 
   /** Finds all documents and points matching the provided visitor */
@@ -85,7 +85,7 @@ class MultiDimensionalValues extends DimensionalValues {
   @Override
   public String toString() {
     StringBuilder b = new StringBuilder();
-    b.append("MultiDimensionalValues(");
+    b.append("MultiPointValues(");
     for(int i=0;i<subs.size();i++) {
       if (i > 0) {
         b.append(", ");

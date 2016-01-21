@@ -21,7 +21,7 @@ import java.util.Objects;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
-import org.apache.lucene.codecs.DimensionalFormat;
+import org.apache.lucene.codecs.PointFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
@@ -160,8 +160,8 @@ public class Lucene53Codec extends Codec {
   }
 
   @Override
-  public final DimensionalFormat dimensionalFormat() {
-    return DimensionalFormat.EMPTY;
+  public final PointFormat pointFormat() {
+    return PointFormat.EMPTY;
   }
 
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene50");

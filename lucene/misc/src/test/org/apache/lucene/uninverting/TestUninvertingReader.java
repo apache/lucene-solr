@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Collections;
 
-import org.apache.lucene.document.DimensionalIntField;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -356,7 +356,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     doc.add(new StringField("id", idBytes, Store.YES));
     doc.add(new LegacyIntField("int", 5, Store.YES));
     doc.add(new NumericDocValuesField("dv", 5));
-    doc.add(new DimensionalIntField("dint", 5));
+    doc.add(new IntPoint("dint", 5));
     doc.add(new StoredField("stored", 5)); // not indexed
     iw.addDocument(doc);
 
@@ -373,12 +373,12 @@ public class TestUninvertingReader extends LuceneTestCase {
 
     FieldInfo intFInfo = leafReader.getFieldInfos().fieldInfo("int");
     assertEquals(DocValuesType.NUMERIC, intFInfo.getDocValuesType());
-    assertEquals(0, intFInfo.getDimensionCount());
-    assertEquals(0, intFInfo.getDimensionNumBytes());
+    assertEquals(0, intFInfo.getPointDimensionCount());
+    assertEquals(0, intFInfo.getPointNumBytes());
 
     FieldInfo dintFInfo = leafReader.getFieldInfos().fieldInfo("dint");
-    assertEquals(1, dintFInfo.getDimensionCount());
-    assertEquals(4, dintFInfo.getDimensionNumBytes());
+    assertEquals(1, dintFInfo.getPointDimensionCount());
+    assertEquals(4, dintFInfo.getPointNumBytes());
 
     FieldInfo dvFInfo = leafReader.getFieldInfos().fieldInfo("dv");
     assertEquals(DocValuesType.NUMERIC, dvFInfo.getDocValuesType());

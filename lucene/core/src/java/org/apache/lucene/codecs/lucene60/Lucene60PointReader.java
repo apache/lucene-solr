@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.DimensionalReader;
+import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
@@ -39,31 +39,31 @@ import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDReader;
 
-/** Reads dimensional values previously written with {@link Lucene60DimensionalWriter} */
-public class Lucene60DimensionalReader extends DimensionalReader implements Closeable {
+/** Reads point values previously written with {@link Lucene60PointWriter} */
+public class Lucene60PointReader extends PointReader implements Closeable {
   final IndexInput dataIn;
   final SegmentReadState readState;
   final Map<Integer,BKDReader> readers = new HashMap<>();
 
   /** Sole constructor */
-  public Lucene60DimensionalReader(SegmentReadState readState) throws IOException {
+  public Lucene60PointReader(SegmentReadState readState) throws IOException {
     this.readState = readState;
     String dataFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
                                                          readState.segmentSuffix,
-                                                         Lucene60DimensionalFormat.DATA_EXTENSION);
+                                                         Lucene60PointFormat.DATA_EXTENSION);
     dataIn = readState.directory.openInput(dataFileName, readState.context);
     String indexFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
                                                           readState.segmentSuffix,
-                                                          Lucene60DimensionalFormat.INDEX_EXTENSION);
+                                                          Lucene60PointFormat.INDEX_EXTENSION);
 
     boolean success = false;
 
     // Read index file
     try (ChecksumIndexInput indexIn = readState.directory.openChecksumInput(indexFileName, readState.context)) {
       CodecUtil.checkIndexHeader(indexIn,
-                                 Lucene60DimensionalFormat.CODEC_NAME,
-                                 Lucene60DimensionalFormat.INDEX_VERSION_START,
-                                 Lucene60DimensionalFormat.INDEX_VERSION_START,
+                                 Lucene60PointFormat.CODEC_NAME,
+                                 Lucene60PointFormat.INDEX_VERSION_START,
+                                 Lucene60PointFormat.INDEX_VERSION_START,
                                  readState.segmentInfo.getId(),
                                  readState.segmentSuffix);
       int count = indexIn.readVInt();
@@ -89,8 +89,8 @@ public class Lucene60DimensionalReader extends DimensionalReader implements Clos
     if (fieldInfo == null) {
       throw new IllegalArgumentException("field=\"" + fieldName + "\" is unrecognized");
     }
-    if (fieldInfo.getDimensionCount() == 0) {
-      throw new IllegalArgumentException("field=\"" + fieldName + "\" did not index dimensional values");
+    if (fieldInfo.getPointDimensionCount() == 0) {
+      throw new IllegalArgumentException("field=\"" + fieldName + "\" did not index point values");
     }
 
     return readers.get(fieldInfo.number);
@@ -101,8 +101,8 @@ public class Lucene60DimensionalReader extends DimensionalReader implements Clos
     BKDReader bkdReader = getBKDReader(fieldName);
 
     if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index dimensional values in the past, but
-      // now all docs having this dimensional field were deleted in this segment:
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this point field were deleted in this segment:
       return;
     }
 
@@ -144,8 +144,8 @@ public class Lucene60DimensionalReader extends DimensionalReader implements Clos
   public byte[] getMinPackedValue(String fieldName) {
     BKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index dimensional values in the past, but
-      // now all docs having this dimensional field were deleted in this segment:
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this point field were deleted in this segment:
       return null;
     }
 
@@ -156,8 +156,8 @@ public class Lucene60DimensionalReader extends DimensionalReader implements Clos
   public byte[] getMaxPackedValue(String fieldName) {
     BKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index dimensional values in the past, but
-      // now all docs having this dimensional field were deleted in this segment:
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this point field were deleted in this segment:
       return null;
     }
 
@@ -168,8 +168,8 @@ public class Lucene60DimensionalReader extends DimensionalReader implements Clos
   public int getNumDimensions(String fieldName) {
     BKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index dimensional values in the past, but
-      // now all docs having this dimensional field were deleted in this segment:
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this point field were deleted in this segment:
       return 0;
     }
     return bkdReader.getNumDimensions();
@@ -179,8 +179,8 @@ public class Lucene60DimensionalReader extends DimensionalReader implements Clos
   public int getBytesPerDimension(String fieldName) {
     BKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index dimensional values in the past, but
-      // now all docs having this dimensional field were deleted in this segment:
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this point field were deleted in this segment:
       return 0;
     }
     return bkdReader.getBytesPerDimension();

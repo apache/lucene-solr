@@ -19,7 +19,6 @@ package org.apache.lucene.util;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DimensionalValues;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.Terms;
@@ -60,7 +59,7 @@ import org.apache.lucene.index.TermsEnum;
  *
  * @lucene.internal
  *
- * @deprecated Please use {@link DimensionalValues} instead.
+ * @deprecated Please use {@link org.apache.lucene.index.PointValues} instead.
  *
  * @since 2.9, API changed non backwards-compliant in 4.0
  */

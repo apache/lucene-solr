@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.index.DimensionalValues;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeFactory;
 import org.apache.lucene.util.AttributeImpl;
@@ -86,7 +85,7 @@ import org.apache.lucene.util.LegacyNumericUtils;
  * href="../search/LegacyNumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
  * parameter as well as how numeric fields work under the hood.</p>
  *
- * @deprecated Please switch to {@link DimensionalValues} instead
+ * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
  *
  * @since 2.9
  */

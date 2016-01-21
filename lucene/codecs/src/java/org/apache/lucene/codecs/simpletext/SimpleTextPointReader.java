@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.codecs.DimensionalReader;
+import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
@@ -36,32 +36,32 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.bkd.BKDReader;
 
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.BLOCK_FP;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.BYTES_PER_DIM;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.FIELD_COUNT;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.FIELD_FP;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.FIELD_FP_NAME;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.INDEX_COUNT;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.MAX_LEAF_POINTS;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.MAX_VALUE;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.MIN_VALUE;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.NUM_DIMS;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.SPLIT_COUNT;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.SPLIT_DIM;
-import static org.apache.lucene.codecs.simpletext.SimpleTextDimensionalWriter.SPLIT_VALUE;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.BLOCK_FP;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.BYTES_PER_DIM;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.FIELD_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.FIELD_FP;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.FIELD_FP_NAME;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.INDEX_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.MAX_LEAF_POINTS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.MAX_VALUE;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.MIN_VALUE;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.NUM_DIMS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.SPLIT_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.SPLIT_DIM;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.SPLIT_VALUE;
 
-class SimpleTextDimensionalReader extends DimensionalReader {
+class SimpleTextPointReader extends PointReader {
 
   private final IndexInput dataIn;
   final SegmentReadState readState;
   final Map<String,BKDReader> readers = new HashMap<>();
   final BytesRefBuilder scratch = new BytesRefBuilder();
 
-  public SimpleTextDimensionalReader(SegmentReadState readState) throws IOException {
+  public SimpleTextPointReader(SegmentReadState readState) throws IOException {
     // Initialize readers now:
-    String fileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextDimensionalFormat.DIMENSIONAL_EXTENSION);
+    String fileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextPointFormat.POINT_EXTENSION);
     dataIn = readState.directory.openInput(fileName, IOContext.DEFAULT);
-    String indexFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextDimensionalFormat.DIMENSIONAL_INDEX_EXTENSION);
+    String indexFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextPointFormat.POINT_INDEX_EXTENSION);
     try (ChecksumIndexInput in = readState.directory.openChecksumInput(indexFileName, IOContext.DEFAULT)) {
       readLine(in);
       int count = parseInt(FIELD_COUNT);
@@ -78,7 +78,7 @@ class SimpleTextDimensionalReader extends DimensionalReader {
   }
 
   private BKDReader initReader(long fp) throws IOException {
-    // NOTE: matches what writeIndex does in SimpleTextDimensionalWriter
+    // NOTE: matches what writeIndex does in SimpleTextPointWriter
     dataIn.seek(fp);
     readLine(dataIn);
     int numDims = parseInt(NUM_DIMS);
@@ -151,8 +151,8 @@ class SimpleTextDimensionalReader extends DimensionalReader {
     if (fieldInfo == null) {
       throw new IllegalArgumentException("field=\"" + fieldName + "\" is unrecognized");
     }
-    if (fieldInfo.getDimensionCount() == 0) {
-      throw new IllegalArgumentException("field=\"" + fieldName + "\" did not index dimensional values");
+    if (fieldInfo.getPointDimensionCount() == 0) {
+      throw new IllegalArgumentException("field=\"" + fieldName + "\" did not index points");
     }
     return readers.get(fieldName);
   }
@@ -162,8 +162,8 @@ class SimpleTextDimensionalReader extends DimensionalReader {
   public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
     BKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index dimensional values in the past, but
-      // now all docs having this dimensional field were deleted in this segment:
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this field were deleted in this segment:
       return;
     }
     bkdReader.intersect(visitor);
@@ -203,15 +203,15 @@ class SimpleTextDimensionalReader extends DimensionalReader {
 
   @Override
   public String toString() {
-    return "SimpleTextDimensionalReader(segment=" + readState.segmentInfo.name + " maxDoc=" + readState.segmentInfo.maxDoc() + ")";
+    return "SimpleTextPointReader(segment=" + readState.segmentInfo.name + " maxDoc=" + readState.segmentInfo.maxDoc() + ")";
   }
 
   @Override
   public byte[] getMinPackedValue(String fieldName) {
     BKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index dimensional values in the past, but
-      // now all docs having this dimensional field were deleted in this segment:
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this field were deleted in this segment:
       return null;
     }
     return bkdReader.getMinPackedValue();
@@ -221,8 +221,8 @@ class SimpleTextDimensionalReader extends DimensionalReader {
   public byte[] getMaxPackedValue(String fieldName) {
     BKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index dimensional values in the past, but
-      // now all docs having this dimensional field were deleted in this segment:
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this field were deleted in this segment:
       return null;
     }
     return bkdReader.getMaxPackedValue();
@@ -232,8 +232,8 @@ class SimpleTextDimensionalReader extends DimensionalReader {
   public int getNumDimensions(String fieldName) {
     BKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index dimensional values in the past, but
-      // now all docs having this dimensional field were deleted in this segment:
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this field were deleted in this segment:
       return 0;
     }
     return bkdReader.getNumDimensions();
@@ -243,8 +243,8 @@ class SimpleTextDimensionalReader extends DimensionalReader {
   public int getBytesPerDimension(String fieldName) {
     BKDReader bkdReader = getBKDReader(fieldName);
     if (bkdReader == null) {
-      // Schema ghost corner case!  This field did index dimensional values in the past, but
-      // now all docs having this dimensional field were deleted in this segment:
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this field were deleted in this segment:
       return 0;
     }
     return bkdReader.getBytesPerDimension();

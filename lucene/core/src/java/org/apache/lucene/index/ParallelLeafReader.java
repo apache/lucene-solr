@@ -315,15 +315,15 @@ public class ParallelLeafReader extends LeafReader {
   }
 
   @Override
-  public DimensionalValues getDimensionalValues() {
-    return new DimensionalValues() {
+  public PointValues getPointValues() {
+    return new PointValues() {
       @Override
       public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
         LeafReader reader = fieldToReader.get(fieldName);
         if (reader == null) {
           return;
         }
-        DimensionalValues dimValues = reader.getDimensionalValues();
+        PointValues dimValues = reader.getPointValues();
         if (dimValues == null) {
           return;
         }
@@ -336,7 +336,7 @@ public class ParallelLeafReader extends LeafReader {
         if (reader == null) {
           return null;
         }
-        DimensionalValues dimValues = reader.getDimensionalValues();
+        PointValues dimValues = reader.getPointValues();
         if (dimValues == null) {
           return null;
         }
@@ -349,7 +349,7 @@ public class ParallelLeafReader extends LeafReader {
         if (reader == null) {
           return null;
         }
-        DimensionalValues dimValues = reader.getDimensionalValues();
+        PointValues dimValues = reader.getPointValues();
         if (dimValues == null) {
           return null;
         }
@@ -362,7 +362,7 @@ public class ParallelLeafReader extends LeafReader {
         if (reader == null) {
           return 0;
         }
-        DimensionalValues dimValues = reader.getDimensionalValues();
+        PointValues dimValues = reader.getPointValues();
         if (dimValues == null) {
           return 0;
         }
@@ -375,7 +375,7 @@ public class ParallelLeafReader extends LeafReader {
         if (reader == null) {
           return 0;
         }
-        DimensionalValues dimValues = reader.getDimensionalValues();
+        PointValues dimValues = reader.getPointValues();
         if (dimValues == null) {
           return 0;
         }

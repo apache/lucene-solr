@@ -39,24 +39,27 @@ New Features
 
 * LUCENE-6825: Add low-level support for block-KD trees (Mike McCandless)
 
-* LUCENE-6852: Add support for dimensionally indexed values to index,
-  document and codec APIs, including a simple text implementation.
-  (Mike McCandless)
+* LUCENE-6852, LUCENE-6975: Add support for points (dimensionally
+  indexed values) to index, document and codec APIs, including a
+  simple text implementation.  (Mike McCandless)
 
-* LUCENE-6861: Create Lucene60Codec, supporting dimensional values.
+* LUCENE-6861: Create Lucene60Codec, supporting points.
   (Mike McCandless)
 
 * LUCENE-6879: Allow to define custom CharTokenizer instances without
   subclassing using Java 8 lambdas or method references. (Uwe Schindler)
 
-* LUCENE-6881: Cutover all BKD implementations to dimensional values
+* LUCENE-6881: Cutover all BKD implementations to points
   (Mike McCandless)
 
 * LUCENE-6837: Add N-best output support to JapaneseTokenizer.
   (Hiroharu Konno via Christian Moen)
 
-* LUCENE-6962: Add per-dimension min/max to dimensional values
+* LUCENE-6962: Add per-dimension min/max to points
   (Mike McCandless)
+
+* LUCENE-6975: Add ExactPointQuery, to match a single N-dimensional
+  point (Robert Muir, Mike McCandless)
 
 API Changes
 
@@ -82,18 +85,18 @@ API Changes
   McCandless)
 
 * LUCENE-6917: Deprecate and rename NumericXXX classes to
-  LegacyNumericXXX in favor of dimensional values (Mike McCandless)
+  LegacyNumericXXX in favor of points (Mike McCandless)
 
 * LUCENE-6947: SortField.missingValue is now protected. You can read its value
   using the new SortField.getMissingValue getter. (Adrien Grand)
 
 Optimizations
 
-* LUCENE-6891: Use prefix coding when writing dimensional values in 
+* LUCENE-6891: Use prefix coding when writing points in 
   each leaf block in the default codec, to reduce the index
   size (Mike McCandless)
 
-* LUCENE-6901: Optimize dimensional values indexing: use faster
+* LUCENE-6901: Optimize points indexing: use faster
   IntroSorter instead of InPlaceMergeSorter, and specialize 1D
   merging to merge sort the already sorted segments instead of
   re-indexing (Mike McCandless)

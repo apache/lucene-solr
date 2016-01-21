@@ -20,14 +20,14 @@ package org.apache.lucene.codecs.lucene60;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.DimensionalFormat;
-import org.apache.lucene.codecs.DimensionalReader;
-import org.apache.lucene.codecs.DimensionalWriter;
+import org.apache.lucene.codecs.PointFormat;
+import org.apache.lucene.codecs.PointReader;
+import org.apache.lucene.codecs.PointWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
 /**
- * Lucene 6.0 dimensional format, which encodes dimensional values in a block KD-tree structure
+ * Lucene 6.0 point format, which encodes dimensional values in a block KD-tree structure
  * for fast shape intersection filtering. See <a href="https://www.cs.duke.edu/~pankaj/publications/papers/bkd-sstd.pdf">this paper</a> for details.
  *
  * <p>This data structure is written as a series of blocks on disk, with an in-memory perfectly balanced
@@ -71,9 +71,9 @@ import org.apache.lucene.index.SegmentWriteState;
  * @lucene.experimental
  */
 
-public final class Lucene60DimensionalFormat extends DimensionalFormat {
+public final class Lucene60PointFormat extends PointFormat {
 
-  static final String CODEC_NAME = "Lucene60DimensionalFormat";
+  static final String CODEC_NAME = "Lucene60PointFormat";
 
   /**
    * Filename extension for the leaf blocks
@@ -92,16 +92,16 @@ public final class Lucene60DimensionalFormat extends DimensionalFormat {
   static final int INDEX_VERSION_CURRENT = INDEX_VERSION_START;
 
   /** Sole constructor */
-  public Lucene60DimensionalFormat() {
+  public Lucene60PointFormat() {
   }
 
   @Override
-  public DimensionalWriter fieldsWriter(SegmentWriteState state) throws IOException {
-    return new Lucene60DimensionalWriter(state);
+  public PointWriter fieldsWriter(SegmentWriteState state) throws IOException {
+    return new Lucene60PointWriter(state);
   }
 
   @Override
-  public DimensionalReader fieldsReader(SegmentReadState state) throws IOException {
-    return new Lucene60DimensionalReader(state);
+  public PointReader fieldsReader(SegmentReadState state) throws IOException {
+    return new Lucene60PointReader(state);
   }
 }

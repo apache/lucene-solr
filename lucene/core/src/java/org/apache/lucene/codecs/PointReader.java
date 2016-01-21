@@ -20,17 +20,17 @@ package org.apache.lucene.codecs;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.apache.lucene.index.DimensionalValues;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.Accountable;
 
-/** Abstract API to visit dimensional values.
+/** Abstract API to visit point values.
  *
  * @lucene.experimental
  */
-public abstract class DimensionalReader extends DimensionalValues implements Closeable, Accountable {
+public abstract class PointReader extends PointValues implements Closeable, Accountable {
 
   /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
-  protected DimensionalReader() {}
+  protected PointReader() {}
 
   /** 
    * Checks consistency of this reader.
@@ -45,7 +45,7 @@ public abstract class DimensionalReader extends DimensionalValues implements Clo
    * Returns an instance optimized for merging.
    * <p>
    * The default implementation returns {@code this} */
-  public DimensionalReader getMergeInstance() throws IOException {
+  public PointReader getMergeInstance() throws IOException {
     return this;
   }
 }

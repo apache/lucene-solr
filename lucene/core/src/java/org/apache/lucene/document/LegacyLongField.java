@@ -115,7 +115,7 @@ import org.apache.lucene.index.IndexOptions;
  * class is a wrapper around this token stream type for
  * easier, more intuitive usage.</p>
  *
- * @deprecated Please use {@link DimensionalLongField} instead
+ * @deprecated Please use {@link LongPoint} instead
  *
  * @since 2.9
  */

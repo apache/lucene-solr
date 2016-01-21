@@ -35,8 +35,8 @@
  *   the process of taking a file and converting it into a Lucene {@link org.apache.lucene.document.Document}.
  * </p>
  * <p>The {@link org.apache.lucene.document.DateTools} is a utility class to make dates and times searchable. {@link
- * org.apache.lucene.document.DimensionalIntField}, {@link org.apache.lucene.document.DimensionalLongField},
- * {@link org.apache.lucene.document.DimensionalFloatField} and {@link org.apache.lucene.document.DimensionalDoubleField} enable indexing
- * of numeric values (and also dates) for fast range queries using {@link org.apache.lucene.search.DimensionalRangeQuery}</p>
+ * org.apache.lucene.document.IntPoint}, {@link org.apache.lucene.document.LongPoint},
+ * {@link org.apache.lucene.document.FloatPoint} and {@link org.apache.lucene.document.DoublePoint} enable indexing
+ * of numeric values (and also dates) for fast range queries using {@link org.apache.lucene.search.PointRangeQuery}</p>
  */
 package org.apache.lucene.document;

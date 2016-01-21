@@ -39,7 +39,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
   private final boolean hasVectors;
   private final boolean hasNorms;
   private final boolean hasDocValues;
-  private final boolean hasDimensionalValues;
+  private final boolean hasPointValues;
   
   // used only by fieldInfo(int)
   private final FieldInfo[] byNumberTable; // contiguous
@@ -59,7 +59,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     boolean hasFreq = false;
     boolean hasNorms = false;
     boolean hasDocValues = false;
-    boolean hasDimensionalValues = false;
+    boolean hasPointValues = false;
     
     TreeMap<Integer, FieldInfo> byNumber = new TreeMap<>();
     for (FieldInfo info : infos) {
@@ -82,7 +82,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       hasNorms |= info.hasNorms();
       hasDocValues |= info.getDocValuesType() != DocValuesType.NONE;
       hasPayloads |= info.hasPayloads();
-      hasDimensionalValues |= (info.getDimensionCount() != 0);
+      hasPointValues |= (info.getPointDimensionCount() != 0);
     }
     
     this.hasVectors = hasVectors;
@@ -92,7 +92,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
     this.hasFreq = hasFreq;
     this.hasNorms = hasNorms;
     this.hasDocValues = hasDocValues;
-    this.hasDimensionalValues = hasDimensionalValues;
+    this.hasPointValues = hasPointValues;
     this.values = Collections.unmodifiableCollection(byNumber.values());
     Integer max = byNumber.isEmpty() ? null : Collections.max(byNumber.keySet());
     
@@ -147,9 +147,9 @@ public class FieldInfos implements Iterable<FieldInfo> {
     return hasDocValues;
   }
 
-  /** Returns true if any fields have DimensionalValues */
-  public boolean hasDimensionalValues() {
-    return hasDimensionalValues;
+  /** Returns true if any fields have PointValues */
+  public boolean hasPointValues() {
+    return hasPointValues;
   }
   
   /** Returns the number of fields */
@@ -249,10 +249,10 @@ public class FieldInfos implements Iterable<FieldInfo> {
         FieldDimensions dims = dimensions.get(fieldName);
         if (dims != null) {
           if (dims.dimensionCount != dimensionCount) {
-            throw new IllegalArgumentException("cannot change dimension count from " + dims.dimensionCount + " to " + dimensionCount + " for field=\"" + fieldName + "\"");
+            throw new IllegalArgumentException("cannot change point dimension count from " + dims.dimensionCount + " to " + dimensionCount + " for field=\"" + fieldName + "\"");
           }
           if (dims.dimensionNumBytes != dimensionNumBytes) {
-            throw new IllegalArgumentException("cannot change dimension numBytes from " + dims.dimensionNumBytes + " to " + dimensionNumBytes + " for field=\"" + fieldName + "\"");
+            throw new IllegalArgumentException("cannot change point numBytes from " + dims.dimensionNumBytes + " to " + dimensionNumBytes + " for field=\"" + fieldName + "\"");
           }
         } else {
           dimensions.put(fieldName, new FieldDimensions(dimensionCount, dimensionNumBytes));
@@ -302,10 +302,10 @@ public class FieldInfos implements Iterable<FieldInfo> {
       FieldDimensions dim = dimensions.get(name);
       if (dim != null) {
         if (dim.dimensionCount != dimensionCount) {
-          throw new IllegalArgumentException("cannot change dimension count from " + dim.dimensionCount + " to " + dimensionCount + " for field=\"" + name + "\"");
+          throw new IllegalArgumentException("cannot change point dimension count from " + dim.dimensionCount + " to " + dimensionCount + " for field=\"" + name + "\"");
         }
         if (dim.dimensionNumBytes != dimensionNumBytes) {
-          throw new IllegalArgumentException("cannot change dimension numBytes from " + dim.dimensionNumBytes + " to " + dimensionNumBytes + " for field=\"" + name + "\"");
+          throw new IllegalArgumentException("cannot change point numBytes from " + dim.dimensionNumBytes + " to " + dimensionNumBytes + " for field=\"" + name + "\"");
         }
       }
     }
@@ -337,11 +337,11 @@ public class FieldInfos implements Iterable<FieldInfo> {
     }
 
     synchronized void setDimensions(int number, String name, int dimensionCount, int dimensionNumBytes) {
-      if (dimensionNumBytes > DimensionalValues.MAX_NUM_BYTES) {
-        throw new IllegalArgumentException("dimension numBytes must be <= DimensionalValues.MAX_NUM_BYTES (= " + DimensionalValues.MAX_NUM_BYTES + "); got " + dimensionNumBytes + " for field=\"" + name + "\"");
+      if (dimensionNumBytes > PointValues.MAX_NUM_BYTES) {
+        throw new IllegalArgumentException("dimension numBytes must be <= PointValues.MAX_NUM_BYTES (= " + PointValues.MAX_NUM_BYTES + "); got " + dimensionNumBytes + " for field=\"" + name + "\"");
       }
-      if (dimensionCount > DimensionalValues.MAX_DIMENSIONS) {
-        throw new IllegalArgumentException("dimensionCount must be <= DimensionalValues.MAX_DIMENSIONS (= " + DimensionalValues.MAX_DIMENSIONS + "); got " + dimensionCount + " for field=\"" + name + "\"");
+      if (dimensionCount > PointValues.MAX_DIMENSIONS) {
+        throw new IllegalArgumentException("pointDimensionCount must be <= PointValues.MAX_DIMENSIONS (= " + PointValues.MAX_DIMENSIONS + "); got " + dimensionCount + " for field=\"" + name + "\"");
       }
       verifyConsistentDimensions(number, name, dimensionCount, dimensionNumBytes);
       dimensions.put(name, new FieldDimensions(dimensionCount, dimensionNumBytes));
@@ -432,7 +432,7 @@ public class FieldInfos implements Iterable<FieldInfo> {
       return addOrUpdateInternal(fi.name, fi.number, fi.hasVectors(),
                                  fi.omitsNorms(), fi.hasPayloads(),
                                  fi.getIndexOptions(), fi.getDocValuesType(),
-                                 fi.getDimensionCount(), fi.getDimensionNumBytes());
+                                 fi.getPointDimensionCount(), fi.getPointNumBytes());
     }
     
     public FieldInfo fieldInfo(String fieldName) {

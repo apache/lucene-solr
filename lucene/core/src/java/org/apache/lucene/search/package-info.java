@@ -160,22 +160,22 @@
  *     and an upper
  *     {@link org.apache.lucene.index.Term Term}
  *     according to {@link org.apache.lucene.util.BytesRef#compareTo BytesRef.compareTo()}. It is not intended
- *     for numerical ranges; use {@link org.apache.lucene.search.DimensionalRangeQuery DimensionalRangeQuery} instead.
+ *     for numerical ranges; use {@link org.apache.lucene.search.PointRangeQuery PointRangeQuery} instead.
  * 
  *     For example, one could find all documents
  *     that have terms beginning with the letters <tt>a</tt> through <tt>c</tt>.
  * 
  * <h3>
- *     {@link org.apache.lucene.search.DimensionalRangeQuery DimensionalRangeQuery}
+ *     {@link org.apache.lucene.search.PointRangeQuery PointRangeQuery}
  * </h3>
  * 
  * <p>The
- *     {@link org.apache.lucene.search.DimensionalRangeQuery DimensionalRangeQuery}
+ *     {@link org.apache.lucene.search.PointRangeQuery PointRangeQuery}
  *     matches all documents that occur in a numeric range.
- *     For DimensionalRangeQuery to work, you must index the values
- *     using a one of the numeric fields ({@link org.apache.lucene.document.DimensionalIntField DimensionalIntField},
- *     {@link org.apache.lucene.document.DimensionalLongField DimensionalLongField}, {@link org.apache.lucene.document.DimensionalFloatField DimensionalFloatField},
- *     or {@link org.apache.lucene.document.DimensionalDoubleField DimensionalDoubleField}).
+ *     For PointRangeQuery to work, you must index the values
+ *     using a one of the numeric fields ({@link org.apache.lucene.document.IntPoint IntPoint},
+ *     {@link org.apache.lucene.document.LongPoint LongPoint}, {@link org.apache.lucene.document.FloatPoint FloatPoint},
+ *     or {@link org.apache.lucene.document.DoublePoint DoublePoint}).
  * 
  * <h3>
  *     {@link org.apache.lucene.search.PrefixQuery PrefixQuery},

@@ -21,14 +21,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.apache.lucene.document.DimensionalBinaryField;
-import org.apache.lucene.document.DimensionalDoubleField;
-import org.apache.lucene.document.DimensionalFloatField;
-import org.apache.lucene.document.DimensionalIntField;
-import org.apache.lucene.document.DimensionalLongField;
-import org.apache.lucene.index.DimensionalValues;
-import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
-import org.apache.lucene.index.DimensionalValues.Relation;
+import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -37,11 +32,11 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
-/** Searches for ranges in fields previously indexed using dimensional
- *  fields, e.g. {@link DimensionalLongField}.  In a 1D field this is
+/** Searches for ranges in fields previously indexed using points e.g.
+ *  {@link org.apache.lucene.document.LongPoint}.  In a 1D field this is
  *  a simple range query; in a multi-dimensional field it's a box shape. */
 
-public class DimensionalRangeQuery extends Query {
+public class PointRangeQuery extends Query {
   final String field;
   final int numDims;
   final byte[][] lowerPoint;
@@ -51,9 +46,9 @@ public class DimensionalRangeQuery extends Query {
   // This is null only in the "fully open range" case
   final Integer bytesPerDim;
 
-  public DimensionalRangeQuery(String field,
-                               byte[][] lowerPoint, boolean[] lowerInclusive,
-                               byte[][] upperPoint, boolean[] upperInclusive) {
+  public PointRangeQuery(String field,
+                         byte[][] lowerPoint, boolean[] lowerInclusive,
+                         byte[][] upperPoint, boolean[] upperInclusive) {
     this.field = field;
     if (lowerPoint == null) {
       throw new IllegalArgumentException("lowerPoint must not be null");
@@ -96,29 +91,29 @@ public class DimensionalRangeQuery extends Query {
     }
   }
 
-  /** Use in the 1D case when you indexed 1D int values using {@link DimensionalIntField} */
-  public static DimensionalRangeQuery new1DIntRange(String field, Integer lowerValue, boolean lowerInclusive, Integer upperValue, boolean upperInclusive) {
-    return new DimensionalRangeQuery(field, pack(lowerValue), new boolean[] {lowerInclusive}, pack(upperValue), new boolean[] {upperInclusive});
+  /** Use in the 1D case when you indexed 1D int values using {@link org.apache.lucene.document.IntPoint} */
+  public static PointRangeQuery new1DIntRange(String field, Integer lowerValue, boolean lowerInclusive, Integer upperValue, boolean upperInclusive) {
+    return new PointRangeQuery(field, pack(lowerValue), new boolean[] {lowerInclusive}, pack(upperValue), new boolean[] {upperInclusive});
   }
 
-  /** Use in the 1D case when you indexed 1D long values using {@link DimensionalLongField} */
-  public static DimensionalRangeQuery new1DLongRange(String field, Long lowerValue, boolean lowerInclusive, Long upperValue, boolean upperInclusive) {
-    return new DimensionalRangeQuery(field, pack(lowerValue), new boolean[] {lowerInclusive}, pack(upperValue), new boolean[] {upperInclusive});
+  /** Use in the 1D case when you indexed 1D long values using {@link org.apache.lucene.document.LongPoint} */
+  public static PointRangeQuery new1DLongRange(String field, Long lowerValue, boolean lowerInclusive, Long upperValue, boolean upperInclusive) {
+    return new PointRangeQuery(field, pack(lowerValue), new boolean[] {lowerInclusive}, pack(upperValue), new boolean[] {upperInclusive});
   }
 
-  /** Use in the 1D case when you indexed 1D float values using {@link DimensionalFloatField} */
-  public static DimensionalRangeQuery new1DFloatRange(String field, Float lowerValue, boolean lowerInclusive, Float upperValue, boolean upperInclusive) {
-    return new DimensionalRangeQuery(field, pack(lowerValue), new boolean[] {lowerInclusive}, pack(upperValue), new boolean[] {upperInclusive});
+  /** Use in the 1D case when you indexed 1D float values using {@link org.apache.lucene.document.FloatPoint} */
+  public static PointRangeQuery new1DFloatRange(String field, Float lowerValue, boolean lowerInclusive, Float upperValue, boolean upperInclusive) {
+    return new PointRangeQuery(field, pack(lowerValue), new boolean[] {lowerInclusive}, pack(upperValue), new boolean[] {upperInclusive});
   }
 
-  /** Use in the 1D case when you indexed 1D double values using {@link DimensionalDoubleField} */
-  public static DimensionalRangeQuery new1DDoubleRange(String field, Double lowerValue, boolean lowerInclusive, Double upperValue, boolean upperInclusive) {
-    return new DimensionalRangeQuery(field, pack(lowerValue), new boolean[] {lowerInclusive}, pack(upperValue), new boolean[] {upperInclusive});
+  /** Use in the 1D case when you indexed 1D double values using {@link org.apache.lucene.document.DoublePoint} */
+  public static PointRangeQuery new1DDoubleRange(String field, Double lowerValue, boolean lowerInclusive, Double upperValue, boolean upperInclusive) {
+    return new PointRangeQuery(field, pack(lowerValue), new boolean[] {lowerInclusive}, pack(upperValue), new boolean[] {upperInclusive});
   }
 
-  /** Use in the 1D case when you indexed binary values using {@link DimensionalBinaryField} */
-  public static DimensionalRangeQuery new1DBinaryRange(String field, byte[] lowerValue, boolean lowerInclusive, byte[] upperValue, boolean upperInclusive) {
-    return new DimensionalRangeQuery(field, new byte[][] {lowerValue}, new boolean[] {lowerInclusive}, new byte[][] {upperValue}, new boolean[] {upperInclusive});
+  /** Use in the 1D case when you indexed binary values using {@link org.apache.lucene.document.BinaryPoint} */
+  public static PointRangeQuery new1DBinaryRange(String field, byte[] lowerValue, boolean lowerInclusive, byte[] upperValue, boolean upperInclusive) {
+    return new PointRangeQuery(field, new byte[][] {lowerValue}, new boolean[] {lowerInclusive}, new byte[][] {upperValue}, new boolean[] {upperInclusive});
   }
 
   private static byte[][] pack(Long value) {
@@ -172,9 +167,9 @@ public class DimensionalRangeQuery extends Query {
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         LeafReader reader = context.reader();
-        DimensionalValues values = reader.getDimensionalValues();
+        PointValues values = reader.getPointValues();
         if (values == null) {
-          // No docs in this segment indexed any field dimensionally
+          // No docs in this segment indexed any points
           return null;
         }
         FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
@@ -182,13 +177,13 @@ public class DimensionalRangeQuery extends Query {
           // No docs in this segment indexed this field at all
           return null;
         }
-        if (fieldInfo.getDimensionCount() != numDims) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + fieldInfo.getDimensionCount() + " but this query has numDims=" + numDims);
+        if (fieldInfo.getPointDimensionCount() != numDims) {
+          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + fieldInfo.getPointDimensionCount() + " but this query has numDims=" + numDims);
         }
-        if (bytesPerDim != null && bytesPerDim.intValue() != fieldInfo.getDimensionNumBytes()) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + fieldInfo.getDimensionNumBytes() + " but this query has bytesPerDim=" + bytesPerDim);
+        if (bytesPerDim != null && bytesPerDim.intValue() != fieldInfo.getPointNumBytes()) {
+          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + " but this query has bytesPerDim=" + bytesPerDim);
         }
-        int bytesPerDim = fieldInfo.getDimensionNumBytes();
+        int bytesPerDim = fieldInfo.getPointNumBytes();
 
         byte[] packedLowerIncl = new byte[numDims * bytesPerDim];
         byte[] packedUpperIncl = new byte[numDims * bytesPerDim];
@@ -320,7 +315,7 @@ public class DimensionalRangeQuery extends Query {
   @Override
   public boolean equals(Object other) {
     if (super.equals(other)) {
-      final DimensionalRangeQuery q = (DimensionalRangeQuery) other;
+      final PointRangeQuery q = (PointRangeQuery) other;
       return q.numDims == numDims &&
         q.bytesPerDim == bytesPerDim &&
         Arrays.equals(lowerPoint, q.lowerPoint) &&

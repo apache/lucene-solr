@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import java.util.Objects;
 
-import org.apache.lucene.codecs.DimensionalReader;
+import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
@@ -82,13 +82,13 @@ public class FilterCodecReader extends CodecReader {
   }
 
   @Override
-  public DimensionalReader getDimensionalReader() {
-    return in.getDimensionalReader();
+  public PointReader getPointReader() {
+    return in.getPointReader();
   }
 
   @Override
-  public DimensionalValues getDimensionalValues() {
-    return in.getDimensionalValues();
+  public PointValues getPointValues() {
+    return in.getPointValues();
   }
 
   @Override

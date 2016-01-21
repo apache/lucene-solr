@@ -105,7 +105,7 @@ public abstract class FilterCodec extends Codec {
   }
 
   @Override
-  public DimensionalFormat dimensionalFormat() {
-    return delegate.dimensionalFormat();
+  public PointFormat pointFormat() {
+    return delegate.pointFormat();
   }
 }

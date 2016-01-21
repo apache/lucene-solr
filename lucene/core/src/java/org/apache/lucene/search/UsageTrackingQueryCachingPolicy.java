@@ -43,7 +43,7 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
     // DocIdSet in the first place
     return query instanceof MultiTermQuery ||
         query instanceof MultiTermQueryConstantScoreWrapper ||
-        query instanceof DimensionalRangeQuery;
+        query instanceof PointRangeQuery;
   }
 
   static boolean isCheap(Query query) {

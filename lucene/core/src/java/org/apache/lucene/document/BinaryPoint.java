@@ -24,7 +24,7 @@ import org.apache.lucene.util.BytesRef;
  *  efficient.  Muliple values for the same field in one documents
  *  is allowed. */
 
-public final class DimensionalBinaryField extends Field {
+public final class BinaryPoint extends Field {
 
   private static FieldType getType(byte[][] point) {
     if (point == null) {
@@ -89,22 +89,22 @@ public final class DimensionalBinaryField extends Field {
     return new BytesRef(packed);
   }
 
-  /** General purpose API: creates a new DimensionalField, indexing the
+  /** General purpose API: creates a new BinaryPoint, indexing the
    *  provided N-dimensional binary point.
    *
    *  @param name field name
    *  @param point byte[][] value
    *  @throws IllegalArgumentException if the field name or value is null.
    */
-  public DimensionalBinaryField(String name, byte[]... point) {
+  public BinaryPoint(String name, byte[]... point) {
     super(name, pack(point), getType(point));
   }
 
   /** Expert API */
-  public DimensionalBinaryField(String name, byte[] packedPoint, FieldType type) {
+  public BinaryPoint(String name, byte[] packedPoint, FieldType type) {
     super(name, packedPoint, type);
-    if (packedPoint.length != type.dimensionCount() * type.dimensionNumBytes()) {
-      throw new IllegalArgumentException("packedPoint is length=" + packedPoint.length + " but type.dimensionCount()=" + type.dimensionCount() + " and type.dimensionNumBytes()=" + type.dimensionNumBytes());
+    if (packedPoint.length != type.pointDimensionCount() * type.pointNumBytes()) {
+      throw new IllegalArgumentException("packedPoint is length=" + packedPoint.length + " but type.pointDimensionCount()=" + type.pointDimensionCount() + " and type.pointNumBytes()=" + type.pointNumBytes());
     }
   }
 }

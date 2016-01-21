@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Collections;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.DimensionalReader;
+import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -218,9 +218,9 @@ public final class SegmentReader extends CodecReader {
   }
   
   @Override
-  public DimensionalValues getDimensionalValues() {
+  public PointValues getPointValues() {
     ensureOpen();
-    return core.dimensionalReader;
+    return core.pointReader;
   }
 
   @Override
@@ -242,9 +242,9 @@ public final class SegmentReader extends CodecReader {
   }
 
   @Override
-  public DimensionalReader getDimensionalReader() {
+  public PointReader getPointReader() {
     ensureOpen();
-    return core.dimensionalReader;
+    return core.pointReader;
   }
 
   @Override

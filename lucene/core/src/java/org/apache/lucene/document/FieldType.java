@@ -18,7 +18,6 @@ package org.apache.lucene.document;
  */
 
 import org.apache.lucene.analysis.Analyzer; // javadocs
-import org.apache.lucene.index.DimensionalValues; // javadocs
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
@@ -32,7 +31,7 @@ public class FieldType implements IndexableFieldType  {
   /** Data type of the numeric value
    * @since 3.2
    *
-   * @deprecated Please switch to {@link DimensionalValues} instead
+   * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
    */
   @Deprecated
   public enum LegacyNumericType {
@@ -304,7 +303,7 @@ public class FieldType implements IndexableFieldType  {
    *         future modifications.
    * @see #numericType()
    *
-   * @deprecated Please switch to {@link DimensionalValues} instead
+   * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
    */
   @Deprecated
   public void setNumericType(LegacyNumericType type) {
@@ -320,7 +319,7 @@ public class FieldType implements IndexableFieldType  {
    * The default is <code>null</code> (no numeric type) 
    * @see #setNumericType(org.apache.lucene.document.FieldType.LegacyNumericType)
    *
-   * @deprecated Please switch to {@link DimensionalValues} instead
+   * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
    */
   @Deprecated
   public LegacyNumericType numericType() {
@@ -335,7 +334,7 @@ public class FieldType implements IndexableFieldType  {
    *         future modifications.
    * @see #numericPrecisionStep()
    *
-   * @deprecated Please switch to {@link DimensionalValues} instead
+   * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
    */
   @Deprecated
   public void setNumericPrecisionStep(int precisionStep) {
@@ -354,7 +353,7 @@ public class FieldType implements IndexableFieldType  {
    * The default is {@link org.apache.lucene.util.LegacyNumericUtils#PRECISION_STEP_DEFAULT}
    * @see #setNumericPrecisionStep(int)
    *
-   * @deprecated Please switch to {@link DimensionalValues} instead
+   * @deprecated Please switch to {@link org.apache.lucene.index.PointValues} instead
    */
   @Deprecated
   public int numericPrecisionStep() {
@@ -362,22 +361,22 @@ public class FieldType implements IndexableFieldType  {
   }
 
   /**
-   * Enables dimensional indexing.
+   * Enables points indexing.
    */
   public void setDimensions(int dimensionCount, int dimensionNumBytes) {
     if (dimensionCount < 0) {
-      throw new IllegalArgumentException("dimensionCount must be >= 0; got " + dimensionCount);
+      throw new IllegalArgumentException("pointDimensionCount must be >= 0; got " + dimensionCount);
     }
     if (dimensionNumBytes < 0) {
-      throw new IllegalArgumentException("dimensionNumBytes must be >= 0; got " + dimensionNumBytes);
+      throw new IllegalArgumentException("pointNumBytes must be >= 0; got " + dimensionNumBytes);
     }
     if (dimensionCount == 0) {
       if (dimensionNumBytes != 0) {
-        throw new IllegalArgumentException("when dimensionCount is 0 dimensionNumBytes must 0; got " + dimensionNumBytes);
+        throw new IllegalArgumentException("when pointDimensionCount is 0 pointNumBytes must 0; got " + dimensionNumBytes);
       }
     } else if (dimensionNumBytes == 0) {
       if (dimensionCount != 0) {
-        throw new IllegalArgumentException("when dimensionNumBytes is 0 dimensionCount must 0; got " + dimensionCount);
+        throw new IllegalArgumentException("when pointNumBytes is 0 pointDimensionCount must 0; got " + dimensionCount);
       }
     }
 
@@ -386,12 +385,12 @@ public class FieldType implements IndexableFieldType  {
   }
 
   @Override
-  public int dimensionCount() {
+  public int pointDimensionCount() {
     return dimensionCount;
   }
 
   @Override
-  public int dimensionNumBytes() {
+  public int pointNumBytes() {
     return dimensionNumBytes;
   }
 
@@ -435,9 +434,9 @@ public class FieldType implements IndexableFieldType  {
         result.append(numericPrecisionStep);
       }
       if (dimensionCount != 0) {
-        result.append(",dimensionCount=");
+        result.append(",pointDimensionCount=");
         result.append(dimensionCount);
-        result.append(",dimensionNumBytes=");
+        result.append(",pointNumBytes=");
         result.append(dimensionNumBytes);
       }
     }

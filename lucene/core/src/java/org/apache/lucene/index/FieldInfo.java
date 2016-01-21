@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.util.Map;
 import java.util.Objects;
 
-import org.apache.lucene.codecs.DimensionalFormat;
-
 /**
  *  Access to the Field Info file that describes document fields and whether or
  *  not they are indexed. Each segment has a separate Field Info file. Objects
@@ -50,10 +48,10 @@ public final class FieldInfo {
 
   private long dvGen;
 
-  /** If both of these are positive it means this is a dimensionally indexed
-   *  field (see {@link DimensionalFormat}). */
-  private int dimensionCount;
-  private int dimensionNumBytes;
+  /** If both of these are positive it means this field indexed points
+   *  (see {@link org.apache.lucene.codecs.PointFormat}). */
+  private int pointDimensionCount;
+  private int pointNumBytes;
 
   /**
    * Sole constructor.
@@ -62,7 +60,7 @@ public final class FieldInfo {
    */
   public FieldInfo(String name, int number, boolean storeTermVector, boolean omitNorms, 
                    boolean storePayloads, IndexOptions indexOptions, DocValuesType docValues,
-                   long dvGen, Map<String,String> attributes, int dimensionCount, int dimensionNumBytes) {
+                   long dvGen, Map<String,String> attributes, int pointDimensionCount, int pointNumBytes) {
     this.name = Objects.requireNonNull(name);
     this.number = number;
     this.docValuesType = Objects.requireNonNull(docValues, "DocValuesType cannot be null (field: \"" + name + "\")");
@@ -78,8 +76,8 @@ public final class FieldInfo {
     }
     this.dvGen = dvGen;
     this.attributes = Objects.requireNonNull(attributes);
-    this.dimensionCount = dimensionCount;
-    this.dimensionNumBytes = dimensionNumBytes;
+    this.pointDimensionCount = pointDimensionCount;
+    this.pointNumBytes = pointNumBytes;
     assert checkConsistency();
   }
 
@@ -105,20 +103,20 @@ public final class FieldInfo {
       }
     }
 
-    if (dimensionCount < 0) {
-      throw new IllegalStateException("dimensionCount must be >= 0; got " + dimensionCount);
+    if (pointDimensionCount < 0) {
+      throw new IllegalStateException("pointDimensionCount must be >= 0; got " + pointDimensionCount);
     }
 
-    if (dimensionNumBytes < 0) {
-      throw new IllegalStateException("dimensionNumBytes must be >= 0; got " + dimensionNumBytes);
+    if (pointNumBytes < 0) {
+      throw new IllegalStateException("pointNumBytes must be >= 0; got " + pointNumBytes);
     }
 
-    if (dimensionCount != 0 && dimensionNumBytes == 0) {
-      throw new IllegalStateException("dimensionNumBytes must be > 0 when dimensionCount=" + dimensionCount);
+    if (pointDimensionCount != 0 && pointNumBytes == 0) {
+      throw new IllegalStateException("pointNumBytes must be > 0 when pointDimensionCount=" + pointDimensionCount);
     }
 
-    if (dimensionNumBytes != 0 && dimensionCount == 0) {
-      throw new IllegalStateException("dimensionCount must be > 0 when dimensionNumBytes=" + dimensionNumBytes);
+    if (pointNumBytes != 0 && pointDimensionCount == 0) {
+      throw new IllegalStateException("pointDimensionCount must be > 0 when pointNumBytes=" + pointNumBytes);
     }
     
     if (dvGen != -1 && docValuesType == DocValuesType.NONE) {
@@ -144,9 +142,9 @@ public final class FieldInfo {
       }
     }
 
-    if (this.dimensionCount == 0 && dimensionCount != 0) {
-      this.dimensionCount = dimensionCount;
-      this.dimensionNumBytes = dimensionNumBytes;
+    if (this.pointDimensionCount == 0 && dimensionCount != 0) {
+      this.pointDimensionCount = dimensionCount;
+      this.pointNumBytes = dimensionNumBytes;
     }
 
     if (this.indexOptions != IndexOptions.NONE) { // if updated field data is not for indexing, leave the updates out
@@ -165,40 +163,40 @@ public final class FieldInfo {
     assert checkConsistency();
   }
 
-  /** Record that this field is indexed dimensionally, with the
+  /** Record that this field is indexed with points, with the
    *  specified number of dimensions and bytes per dimension. */
-  public void setDimensions(int count, int numBytes) {
+  public void setPointDimensions(int count, int numBytes) {
     if (count <= 0) {
-      throw new IllegalArgumentException("dimension count must be >= 0; got " + count + " for field=\"" + name + "\"");
+      throw new IllegalArgumentException("point dimension count must be >= 0; got " + count + " for field=\"" + name + "\"");
     }
-    if (count > DimensionalValues.MAX_DIMENSIONS) {
-      throw new IllegalArgumentException("dimension count must be < DimensionalValues.MAX_DIMENSIONS (= " + DimensionalValues.MAX_DIMENSIONS + "); got " + count + " for field=\"" + name + "\"");
+    if (count > PointValues.MAX_DIMENSIONS) {
+      throw new IllegalArgumentException("point dimension count must be < PointValues.MAX_DIMENSIONS (= " + PointValues.MAX_DIMENSIONS + "); got " + count + " for field=\"" + name + "\"");
     }
     if (numBytes <= 0) {
-      throw new IllegalArgumentException("dimension numBytes must be >= 0; got " + numBytes + " for field=\"" + name + "\"");
+      throw new IllegalArgumentException("point numBytes must be >= 0; got " + numBytes + " for field=\"" + name + "\"");
     }
-    if (numBytes > DimensionalValues.MAX_NUM_BYTES) {
-      throw new IllegalArgumentException("dimension numBytes must be <= DimensionalValues.MAX_NUM_BYTES (= " + DimensionalValues.MAX_NUM_BYTES + "); got " + numBytes + " for field=\"" + name + "\"");
+    if (numBytes > PointValues.MAX_NUM_BYTES) {
+      throw new IllegalArgumentException("point numBytes must be <= PointValues.MAX_NUM_BYTES (= " + PointValues.MAX_NUM_BYTES + "); got " + numBytes + " for field=\"" + name + "\"");
     }
-    if (dimensionCount != 0 && dimensionCount != count) {
-      throw new IllegalArgumentException("cannot change dimension count from " + dimensionCount + " to " + count + " for field=\"" + name + "\"");
+    if (pointDimensionCount != 0 && pointDimensionCount != count) {
+      throw new IllegalArgumentException("cannot change point dimension count from " + pointDimensionCount + " to " + count + " for field=\"" + name + "\"");
     }
-    if (dimensionNumBytes != 0 && dimensionNumBytes != numBytes) {
-      throw new IllegalArgumentException("cannot change dimension numBytes from " + dimensionNumBytes + " to " + numBytes + " for field=\"" + name + "\"");
+    if (pointNumBytes != 0 && pointNumBytes != numBytes) {
+      throw new IllegalArgumentException("cannot change point numBytes from " + pointNumBytes + " to " + numBytes + " for field=\"" + name + "\"");
     }
 
-    dimensionCount = count;
-    dimensionNumBytes = numBytes;
+    pointDimensionCount = count;
+    pointNumBytes = numBytes;
   }
 
-  /** Return dimension count */
-  public int getDimensionCount() {
-    return dimensionCount;
+  /** Return point dimension count */
+  public int getPointDimensionCount() {
+    return pointDimensionCount;
   }
 
   /** Return number of bytes per dimension */
-  public int getDimensionNumBytes() {
-    return dimensionNumBytes;
+  public int getPointNumBytes() {
+    return pointNumBytes;
   }
 
   void setDocValuesType(DocValuesType type) {

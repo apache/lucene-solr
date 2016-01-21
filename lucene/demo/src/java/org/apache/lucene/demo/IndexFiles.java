@@ -32,7 +32,7 @@ import java.util.Date;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.document.DimensionalLongField;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -178,13 +178,13 @@ public class IndexFiles {
       doc.add(pathField);
       
       // Add the last modified date of the file a field named "modified".
-      // Use a DimensionalLongField that is indexed (i.e. efficiently filterable with
-      // DimensionalRangeQuery).  This indexes to milli-second resolution, which
+      // Use a LongPoint that is indexed (i.e. efficiently filterable with
+      // PointRangeQuery).  This indexes to milli-second resolution, which
       // is often too fine.  You could instead create a number based on
       // year/month/day/hour/minutes/seconds, down the resolution you require.
       // For example the long value 2011021714 would mean
       // February 17, 2011, 2-3 PM.
-      doc.add(new DimensionalLongField("modified", lastModified));
+      doc.add(new LongPoint("modified", lastModified));
       
       // Add the contents of the file to a field named "contents".  Specify a Reader,
       // so that the text of the file is tokenized and indexed, but not stored.

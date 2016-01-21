@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.codecs.DimensionalFormat;
-import org.apache.lucene.codecs.DimensionalWriter;
+import org.apache.lucene.codecs.PointFormat;
+import org.apache.lucene.codecs.PointWriter;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsConsumer;
@@ -93,7 +93,7 @@ final class DefaultIndexingChain extends DocConsumer {
     int maxDoc = state.segmentInfo.maxDoc();
     writeNorms(state);
     writeDocValues(state);
-    writeDimensionalValues(state);
+    writePoints(state);
     
     // it's possible all docs hit non-aborting exceptions...
     initStoredFieldsWriter();
@@ -121,33 +121,33 @@ final class DefaultIndexingChain extends DocConsumer {
     docWriter.codec.fieldInfosFormat().write(state.directory, state.segmentInfo, "", state.fieldInfos, IOContext.DEFAULT);
   }
 
-  /** Writes all buffered dimensional values. */
-  private void writeDimensionalValues(SegmentWriteState state) throws IOException {
-    DimensionalWriter dimensionalWriter = null;
+  /** Writes all buffered points. */
+  private void writePoints(SegmentWriteState state) throws IOException {
+    PointWriter pointWriter = null;
     boolean success = false;
     try {
       for (int i=0;i<fieldHash.length;i++) {
         PerField perField = fieldHash[i];
         while (perField != null) {
-          if (perField.dimensionalValuesWriter != null) {
-            if (perField.fieldInfo.getDimensionCount() == 0) {
+          if (perField.pointValuesWriter != null) {
+            if (perField.fieldInfo.getPointDimensionCount() == 0) {
               // BUG
-              throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has no dimensional values but wrote them");
+              throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has no points but wrote them");
             }
-            if (dimensionalWriter == null) {
+            if (pointWriter == null) {
               // lazy init
-              DimensionalFormat fmt = state.segmentInfo.getCodec().dimensionalFormat();
+              PointFormat fmt = state.segmentInfo.getCodec().pointFormat();
               if (fmt == null) {
-                throw new IllegalStateException("field=\"" + perField.fieldInfo.name + "\" was indexed dimensionally but codec does not support dimensional formats");
+                throw new IllegalStateException("field=\"" + perField.fieldInfo.name + "\" was indexed as points but codec does not support points");
               }
-              dimensionalWriter = fmt.fieldsWriter(state);
+              pointWriter = fmt.fieldsWriter(state);
             }
 
-            perField.dimensionalValuesWriter.flush(state, dimensionalWriter);
-            perField.dimensionalValuesWriter = null;
-          } else if (perField.fieldInfo.getDimensionCount() != 0) {
+            perField.pointValuesWriter.flush(state, pointWriter);
+            perField.pointValuesWriter = null;
+          } else if (perField.fieldInfo.getPointDimensionCount() != 0) {
             // BUG
-            throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has dimensional values but did not write them");
+            throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has points but did not write them");
           }
           perField = perField.next;
         }
@@ -155,9 +155,9 @@ final class DefaultIndexingChain extends DocConsumer {
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(dimensionalWriter);
+        IOUtils.close(pointWriter);
       } else {
-        IOUtils.closeWhileHandlingException(dimensionalWriter);
+        IOUtils.closeWhileHandlingException(pointWriter);
       }
     }
   }
@@ -419,11 +419,11 @@ final class DefaultIndexingChain extends DocConsumer {
       }
       indexDocValue(fp, dvType, field);
     }
-    if (fieldType.dimensionCount() != 0) {
+    if (fieldType.pointDimensionCount() != 0) {
       if (fp == null) {
         fp = getOrAddField(fieldName, fieldType, false);
       }
-      indexDimensionalValue(fp, field);
+      indexPoint(fp, field);
     }
     
     return fieldCount;
@@ -448,24 +448,24 @@ final class DefaultIndexingChain extends DocConsumer {
     }
   }
 
-  /** Called from processDocument to index one field's dimensional value */
-  private void indexDimensionalValue(PerField fp, IndexableField field) throws IOException {
-    int dimensionCount = field.fieldType().dimensionCount();
+  /** Called from processDocument to index one field's point */
+  private void indexPoint(PerField fp, IndexableField field) throws IOException {
+    int pointDimensionCount = field.fieldType().pointDimensionCount();
 
-    int dimensionNumBytes = field.fieldType().dimensionNumBytes();
+    int dimensionNumBytes = field.fieldType().pointNumBytes();
 
     // Record dimensions for this field; this setter will throw IllegalArgExc if
     // the dimensions were already set to something different:
-    if (fp.fieldInfo.getDimensionCount() == 0) {
-      fieldInfos.globalFieldNumbers.setDimensions(fp.fieldInfo.number, fp.fieldInfo.name, dimensionCount, dimensionNumBytes);
+    if (fp.fieldInfo.getPointDimensionCount() == 0) {
+      fieldInfos.globalFieldNumbers.setDimensions(fp.fieldInfo.number, fp.fieldInfo.name, pointDimensionCount, dimensionNumBytes);
     }
 
-    fp.fieldInfo.setDimensions(dimensionCount, dimensionNumBytes);
+    fp.fieldInfo.setPointDimensions(pointDimensionCount, dimensionNumBytes);
 
-    if (fp.dimensionalValuesWriter == null) {
-      fp.dimensionalValuesWriter = new DimensionalValuesWriter(docWriter, fp.fieldInfo);
+    if (fp.pointValuesWriter == null) {
+      fp.pointValuesWriter = new PointValuesWriter(docWriter, fp.fieldInfo);
     }
-    fp.dimensionalValuesWriter.addPackedValue(docState.docID, field.binaryValue());
+    fp.pointValuesWriter.addPackedValue(docState.docID, field.binaryValue());
   }
 
   /** Called from processDocument to index one field's doc value */
@@ -596,8 +596,8 @@ final class DefaultIndexingChain extends DocConsumer {
     // segment:
     DocValuesWriter docValuesWriter;
 
-    // Non-null if this field ever had dimensional values in this segment:
-    DimensionalValuesWriter dimensionalValuesWriter;
+    // Non-null if this field ever had points in this segment:
+    PointValuesWriter pointValuesWriter;
 
     /** We use this to know when a PerField is seen for the
      *  first time in the current document. */

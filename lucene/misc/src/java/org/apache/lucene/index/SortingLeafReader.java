@@ -254,12 +254,12 @@ public class SortingLeafReader extends FilterLeafReader {
     }
   }
 
-  private static class SortingDimensionalValues extends DimensionalValues {
+  private static class SortingPointValues extends PointValues {
 
-    private final DimensionalValues in;
+    private final PointValues in;
     private final Sorter.DocMap docMap;
 
-    public SortingDimensionalValues(final DimensionalValues in, Sorter.DocMap docMap) {
+    public SortingPointValues(final PointValues in, Sorter.DocMap docMap) {
       this.in = in;
       this.docMap = docMap;
     }
@@ -851,13 +851,13 @@ public class SortingLeafReader extends FilterLeafReader {
   }
 
   @Override
-  public DimensionalValues getDimensionalValues() {
-    final DimensionalValues inDimensionalValues = in.getDimensionalValues();
-    if (inDimensionalValues == null) {
+  public PointValues getPointValues() {
+    final PointValues inPointValues = in.getPointValues();
+    if (inPointValues == null) {
       return null;
     } else {
       // TODO: this is untested!
-      return new SortingDimensionalValues(inDimensionalValues, docMap);
+      return new SortingPointValues(inPointValues, docMap);
     }
   }
 

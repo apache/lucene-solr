@@ -105,7 +105,7 @@ import org.apache.lucene.util.LegacyNumericUtils;
  * class is a wrapper around this token stream type for
  * easier, more intuitive usage.</p>
  *
- * @deprecated Please use {@link DimensionalIntField} instead
+ * @deprecated Please use {@link IntPoint} instead
  *
  * @since 2.9
  */

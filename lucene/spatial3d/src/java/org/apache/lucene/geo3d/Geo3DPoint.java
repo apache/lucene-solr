@@ -24,11 +24,11 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /** Add this to a document to index lat/lon or x/y/z point, indexed as a dimensional value.
- *  Multiple values are allowed: just add multiple Geo3DPointField to the document with the
+ *  Multiple values are allowed: just add multiple Geo3DPoint to the document with the
  *  same field name.
  *
  *  @lucene.experimental */
-public final class Geo3DPointField extends Field {
+public final class Geo3DPoint extends Field {
 
   /** Indexing {@link FieldType}. */
   public static final FieldType TYPE = new FieldType();
@@ -38,11 +38,11 @@ public final class Geo3DPointField extends Field {
   }
 
   /** 
-   * Creates a new Geo3DPointField field with the specified lat, lon (in radians), given a planet model.
+   * Creates a new Geo3DPoint field with the specified lat, lon (in radians), given a planet model.
    *
    * @throws IllegalArgumentException if the field name is null or lat or lon are out of bounds
    */
-  public Geo3DPointField(String name, PlanetModel planetModel, double lat, double lon) {
+  public Geo3DPoint(String name, PlanetModel planetModel, double lat, double lon) {
     super(name, TYPE);
     // Translate lat/lon to x,y,z:
     final GeoPoint point = new GeoPoint(planetModel, lat, lon);
@@ -50,11 +50,11 @@ public final class Geo3DPointField extends Field {
   }
 
   /** 
-   * Creates a new Geo3DPointField field with the specified x,y,z.
+   * Creates a new Geo3DPoint field with the specified x,y,z.
    *
    * @throws IllegalArgumentException if the field name is null or lat or lon are out of bounds
    */
-  public Geo3DPointField(String name, PlanetModel planetModel, double x, double y, double z) {
+  public Geo3DPoint(String name, PlanetModel planetModel, double x, double y, double z) {
     super(name, TYPE);
     fillFieldsData(planetModel.getMaximumMagnitude(), x, y, z);
   }

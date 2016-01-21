@@ -21,66 +21,66 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
-/** A field that is indexed dimensionally such that finding
- *  all documents within an N-dimensional at search time is
+/** A long field that is indexed dimensionally such that finding
+ *  all documents within an N-dimensional shape or range at search time is
  *  efficient.  Muliple values for the same field in one documents
  *  is allowed. */
 
-public final class DimensionalFloatField extends Field {
+public final class LongPoint extends Field {
 
   private static FieldType getType(int numDims) {
     FieldType type = new FieldType();
-    type.setDimensions(numDims, RamUsageEstimator.NUM_BYTES_INT);
+    type.setDimensions(numDims, RamUsageEstimator.NUM_BYTES_LONG);
     type.freeze();
     return type;
   }
 
   @Override
-  public void setFloatValue(float value) {
-    setFloatValues(value);
+  public void setLongValue(long value) {
+    setLongValues(value);
   }
 
   /** Change the values of this field */
-  public void setFloatValues(float... point) {
+  public void setLongValues(long... point) {
     fieldsData = pack(point);
   }
 
   @Override
   public void setBytesValue(BytesRef bytes) {
-    throw new IllegalArgumentException("cannot change value type from float to BytesRef");
+    throw new IllegalArgumentException("cannot change value type from long to BytesRef");
   }
 
   @Override
   public Number numericValue() {
     BytesRef bytes = (BytesRef) fieldsData;
-    assert bytes.length == RamUsageEstimator.NUM_BYTES_INT;
-    return NumericUtils.sortableIntToFloat(NumericUtils.bytesToIntDirect(bytes.bytes, bytes.offset));
+    assert bytes.length == RamUsageEstimator.NUM_BYTES_LONG;
+    return NumericUtils.bytesToLong(bytes.bytes, bytes.offset);
   }
 
-  private static BytesRef pack(float... point) {
+  private static BytesRef pack(long... point) {
     if (point == null) {
       throw new IllegalArgumentException("point cannot be null");
     }
     if (point.length == 0) {
       throw new IllegalArgumentException("point cannot be 0 dimensions");
     }
-    byte[] packed = new byte[point.length * RamUsageEstimator.NUM_BYTES_INT];
+    byte[] packed = new byte[point.length * RamUsageEstimator.NUM_BYTES_LONG];
     
     for(int dim=0;dim<point.length;dim++) {
-      NumericUtils.intToBytesDirect(NumericUtils.floatToSortableInt(point[dim]), packed, dim);
+      NumericUtils.longToBytes(point[dim], packed, dim);
     }
 
     return new BytesRef(packed);
   }
 
-  /** Creates a new DimensionalFloatField, indexing the
-   *  provided N-dimensional float point.
+  /** Creates a new LongPoint, indexing the
+   *  provided N-dimensional int point.
    *
    *  @param name field name
    *  @param point int[] value
    *  @throws IllegalArgumentException if the field name or value is null.
    */
-  public DimensionalFloatField(String name, float... point) {
+  public LongPoint(String name, long... point) {
     super(name, pack(point), getType(point.length));
   }
 }

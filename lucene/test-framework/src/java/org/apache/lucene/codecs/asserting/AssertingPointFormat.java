@@ -20,9 +20,9 @@ package org.apache.lucene.codecs.asserting;
 import java.io.IOException;
 import java.util.Collection;
 
-import org.apache.lucene.codecs.DimensionalFormat;
-import org.apache.lucene.codecs.DimensionalReader;
-import org.apache.lucene.codecs.DimensionalWriter;
+import org.apache.lucene.codecs.PointFormat;
+import org.apache.lucene.codecs.PointReader;
+import org.apache.lucene.codecs.PointWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentReadState;
@@ -31,26 +31,26 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Just like the default dimensional format but with additional asserts.
+ * Just like the default point format but with additional asserts.
  */
 
-public final class AssertingDimensionalFormat extends DimensionalFormat {
-  private final DimensionalFormat in = TestUtil.getDefaultCodec().dimensionalFormat();
+public final class AssertingPointFormat extends PointFormat {
+  private final PointFormat in = TestUtil.getDefaultCodec().pointFormat();
   
   @Override
-  public DimensionalWriter fieldsWriter(SegmentWriteState state) throws IOException {
-    return new AssertingDimensionalWriter(state, in.fieldsWriter(state));
+  public PointWriter fieldsWriter(SegmentWriteState state) throws IOException {
+    return new AssertingPointWriter(state, in.fieldsWriter(state));
   }
 
   @Override
-  public DimensionalReader fieldsReader(SegmentReadState state) throws IOException {
-    return new AssertingDimensionalReader(in.fieldsReader(state));
+  public PointReader fieldsReader(SegmentReadState state) throws IOException {
+    return new AssertingPointReader(in.fieldsReader(state));
   }
   
-  static class AssertingDimensionalReader extends DimensionalReader {
-    private final DimensionalReader in;
+  static class AssertingPointReader extends PointReader {
+    private final PointReader in;
     
-    AssertingDimensionalReader(DimensionalReader in) {
+    AssertingPointReader(PointReader in) {
       this.in = in;
       // do a few simple checks on init
       assert toString() != null;
@@ -90,8 +90,8 @@ public final class AssertingDimensionalFormat extends DimensionalFormat {
     }
     
     @Override
-    public DimensionalReader getMergeInstance() throws IOException {
-      return new AssertingDimensionalReader(in.getMergeInstance());
+    public PointReader getMergeInstance() throws IOException {
+      return new AssertingPointReader(in.getMergeInstance());
     }
 
     @Override
@@ -120,17 +120,17 @@ public final class AssertingDimensionalFormat extends DimensionalFormat {
     }
   }
 
-  static class AssertingDimensionalWriter extends DimensionalWriter {
-    private final DimensionalWriter in;
+  static class AssertingPointWriter extends PointWriter {
+    private final PointWriter in;
 
-    AssertingDimensionalWriter(SegmentWriteState writeState, DimensionalWriter in) {
+    AssertingPointWriter(SegmentWriteState writeState, PointWriter in) {
       this.in = in;
     }
     
     @Override
-    public void writeField(FieldInfo fieldInfo, DimensionalReader values) throws IOException {
-      if (fieldInfo.getDimensionCount() == 0) {
-        throw new IllegalArgumentException("writing field=\"" + fieldInfo.name + "\" but dimensionalCount is 0");
+    public void writeField(FieldInfo fieldInfo, PointReader values) throws IOException {
+      if (fieldInfo.getPointDimensionCount() == 0) {
+        throw new IllegalArgumentException("writing field=\"" + fieldInfo.name + "\" but pointDimensionalCount is 0");
       }
       in.writeField(fieldInfo, values);
     }

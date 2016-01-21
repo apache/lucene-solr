@@ -105,7 +105,7 @@ import org.apache.lucene.index.IndexOptions;
  * class is a wrapper around this token stream type for
  * easier, more intuitive usage.</p>
  *
- * @deprecated Please use {@link DimensionalDoubleField} instead
+ * @deprecated Please use {@link DoublePoint} instead
  *
  * @since 2.9
  */

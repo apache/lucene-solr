@@ -2,11 +2,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.DimensionalBinaryField;
-import org.apache.lucene.document.DimensionalDoubleField;
-import org.apache.lucene.document.DimensionalFloatField;
-import org.apache.lucene.document.DimensionalIntField;
-import org.apache.lucene.document.DimensionalLongField;
 import org.apache.lucene.util.bkd.BKDWriter;
 
 /*
@@ -26,12 +21,12 @@ import org.apache.lucene.util.bkd.BKDWriter;
  * limitations under the License.
  */
 
-/** Allows recursively visiting dimensional values indexed with {@link DimensionalIntField},
- *  {@link DimensionalFloatField}, {@link DimensionalLongField}, {@link DimensionalDoubleField}
- *  or {@link DimensionalBinaryField}.
+/** Allows recursively visiting point values indexed with {@link org.apache.lucene.document.IntPoint},
+ *  {@link org.apache.lucene.document.FloatPoint}, {@link org.apache.lucene.document.LongPoint}, {@link org.apache.lucene.document.DoublePoint}
+ *  or {@link org.apache.lucene.document.BinaryPoint}.
  *
  *  @lucene.experimental */
-public abstract class DimensionalValues {
+public abstract class PointValues {
 
   /** Maximum number of bytes for each dimension */
   public static final int MAX_NUM_BYTES = 16;
@@ -40,7 +35,7 @@ public abstract class DimensionalValues {
   public static final int MAX_DIMENSIONS = BKDWriter.MAX_DIMS;
 
   /** Default constructor */
-  protected DimensionalValues() {
+  protected PointValues() {
   }
 
   /** Used by {@link #intersect} to check how each recursive cell corresponds to the query. */

@@ -25,10 +25,10 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.DimensionalReader;
-import org.apache.lucene.codecs.DimensionalWriter;
-import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
-import org.apache.lucene.index.DimensionalValues.Relation;
+import org.apache.lucene.codecs.PointReader;
+import org.apache.lucene.codecs.PointWriter;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
@@ -40,7 +40,7 @@ import org.apache.lucene.util.bkd.BKDReader;
 import org.apache.lucene.util.bkd.BKDWriter;
 
 /** Writes dimensional values */
-public class Lucene60DimensionalWriter extends DimensionalWriter implements Closeable {
+public class Lucene60PointWriter extends PointWriter implements Closeable {
   
   final IndexOutput dataOut;
   final Map<String,Long> indexFPs = new HashMap<>();
@@ -50,20 +50,20 @@ public class Lucene60DimensionalWriter extends DimensionalWriter implements Clos
   private boolean closed;
 
   /** Full constructor */
-  public Lucene60DimensionalWriter(SegmentWriteState writeState, int maxPointsInLeafNode, double maxMBSortInHeap) throws IOException {
-    assert writeState.fieldInfos.hasDimensionalValues();
+  public Lucene60PointWriter(SegmentWriteState writeState, int maxPointsInLeafNode, double maxMBSortInHeap) throws IOException {
+    assert writeState.fieldInfos.hasPointValues();
     this.writeState = writeState;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.maxMBSortInHeap = maxMBSortInHeap;
     String dataFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
                                                          writeState.segmentSuffix,
-                                                         Lucene60DimensionalFormat.DATA_EXTENSION);
+                                                         Lucene60PointFormat.DATA_EXTENSION);
     dataOut = writeState.directory.createOutput(dataFileName, writeState.context);
     boolean success = false;
     try {
       CodecUtil.writeIndexHeader(dataOut,
-                                 Lucene60DimensionalFormat.CODEC_NAME,
-                                 Lucene60DimensionalFormat.DATA_VERSION_CURRENT,
+                                 Lucene60PointFormat.CODEC_NAME,
+                                 Lucene60PointFormat.DATA_VERSION_CURRENT,
                                  writeState.segmentInfo.getId(),
                                  writeState.segmentSuffix);
       success = true;
@@ -75,17 +75,17 @@ public class Lucene60DimensionalWriter extends DimensionalWriter implements Clos
   }
 
   /** Uses the defaults values for {@code maxPointsInLeafNode} (1024) and {@code maxMBSortInHeap} (16.0) */
-  public Lucene60DimensionalWriter(SegmentWriteState writeState) throws IOException {
+  public Lucene60PointWriter(SegmentWriteState writeState) throws IOException {
     this(writeState, BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
   }
 
   @Override
-  public void writeField(FieldInfo fieldInfo, DimensionalReader values) throws IOException {
+  public void writeField(FieldInfo fieldInfo, PointReader values) throws IOException {
 
     try (BKDWriter writer = new BKDWriter(writeState.directory,
                                           writeState.segmentInfo.name,
-                                          fieldInfo.getDimensionCount(),
-                                          fieldInfo.getDimensionNumBytes(),
+                                          fieldInfo.getPointDimensionCount(),
+                                          fieldInfo.getPointNumBytes(),
                                           maxPointsInLeafNode,
                                           maxMBSortInHeap)) {
 
@@ -114,8 +114,8 @@ public class Lucene60DimensionalWriter extends DimensionalWriter implements Clos
 
   @Override
   public void merge(MergeState mergeState) throws IOException {
-    for(DimensionalReader reader : mergeState.dimensionalReaders) {
-      if (reader instanceof Lucene60DimensionalReader == false) {
+    for(PointReader reader : mergeState.pointReaders) {
+      if (reader instanceof Lucene60PointReader == false) {
         // We can only bulk merge when all to-be-merged segments use our format:
         super.merge(mergeState);
         return;
@@ -123,25 +123,25 @@ public class Lucene60DimensionalWriter extends DimensionalWriter implements Clos
     }
 
     for (FieldInfo fieldInfo : mergeState.mergeFieldInfos) {
-      if (fieldInfo.getDimensionCount() != 0) {
-        if (fieldInfo.getDimensionCount() == 1) {
+      if (fieldInfo.getPointDimensionCount() != 0) {
+        if (fieldInfo.getPointDimensionCount() == 1) {
           //System.out.println("MERGE: field=" + fieldInfo.name);
           // Optimize the 1D case to use BKDWriter.merge, which does a single merge sort of the
           // already sorted incoming segments, instead of trying to sort all points again as if
           // we were simply reindexing them:
           try (BKDWriter writer = new BKDWriter(writeState.directory,
                                                 writeState.segmentInfo.name,
-                                                fieldInfo.getDimensionCount(),
-                                                fieldInfo.getDimensionNumBytes(),
+                                                fieldInfo.getPointDimensionCount(),
+                                                fieldInfo.getPointNumBytes(),
                                                 maxPointsInLeafNode,
                                                 maxMBSortInHeap)) {
             List<BKDReader> bkdReaders = new ArrayList<>();
             List<MergeState.DocMap> docMaps = new ArrayList<>();
             List<Integer> docIDBases = new ArrayList<>();
-            for(int i=0;i<mergeState.dimensionalReaders.length;i++) {
-              DimensionalReader reader = mergeState.dimensionalReaders[i];
+            for(int i=0;i<mergeState.pointReaders.length;i++) {
+              PointReader reader = mergeState.pointReaders[i];
 
-              Lucene60DimensionalReader reader60 = (Lucene60DimensionalReader) reader;
+              Lucene60PointReader reader60 = (Lucene60PointReader) reader;
               if (reader60 != null) {
                 // TODO: I could just use the merged fieldInfo.number instead of resolving to this
                 // reader's FieldInfo, right?  Field numbers are always consistent across segments,
@@ -180,12 +180,12 @@ public class Lucene60DimensionalWriter extends DimensionalWriter implements Clos
 
       String indexFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
                                                             writeState.segmentSuffix,
-                                                            Lucene60DimensionalFormat.INDEX_EXTENSION);
+                                                            Lucene60PointFormat.INDEX_EXTENSION);
       // Write index file
       try (IndexOutput indexOut = writeState.directory.createOutput(indexFileName, writeState.context)) {
         CodecUtil.writeIndexHeader(indexOut,
-                                   Lucene60DimensionalFormat.CODEC_NAME,
-                                   Lucene60DimensionalFormat.INDEX_VERSION_CURRENT,
+                                   Lucene60PointFormat.CODEC_NAME,
+                                   Lucene60PointFormat.INDEX_VERSION_CURRENT,
                                    writeState.segmentInfo.getId(),
                                    writeState.segmentSuffix);
         int count = indexFPs.size();

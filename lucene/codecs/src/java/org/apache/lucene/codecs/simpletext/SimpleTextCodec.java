@@ -19,7 +19,7 @@ package org.apache.lucene.codecs.simpletext;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
-import org.apache.lucene.codecs.DimensionalFormat;
+import org.apache.lucene.codecs.PointFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
@@ -45,7 +45,7 @@ public final class SimpleTextCodec extends Codec {
   private final LiveDocsFormat liveDocs = new SimpleTextLiveDocsFormat();
   private final DocValuesFormat dvFormat = new SimpleTextDocValuesFormat();
   private final CompoundFormat compoundFormat = new SimpleTextCompoundFormat();
-  private final DimensionalFormat dimensionalFormat = new SimpleTextDimensionalFormat();
+  private final PointFormat pointFormat = new SimpleTextPointFormat();
   
   public SimpleTextCodec() {
     super("SimpleText");
@@ -97,7 +97,7 @@ public final class SimpleTextCodec extends Codec {
   }
 
   @Override
-  public DimensionalFormat dimensionalFormat() {
-    return dimensionalFormat;
+  public PointFormat pointFormat() {
+    return pointFormat;
   }
 }

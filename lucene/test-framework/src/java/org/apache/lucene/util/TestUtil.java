@@ -57,7 +57,7 @@ import org.apache.lucene.codecs.lucene60.Lucene60Codec;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.DimensionalBinaryField;
+import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType.LegacyNumericType;
@@ -1037,7 +1037,7 @@ public final class TestUtil {
       final Field field1 = (Field) f;
       final Field field2;
       final DocValuesType dvType = field1.fieldType().docValuesType();
-      final int dimCount = field1.fieldType().dimensionCount();
+      final int dimCount = field1.fieldType().pointDimensionCount();
       final LegacyNumericType numType = field1.fieldType().numericType();
       if (dvType != DocValuesType.NONE) {
         switch(dvType) {
@@ -1057,7 +1057,7 @@ public final class TestUtil {
         BytesRef br = field1.binaryValue();
         byte[] bytes = new byte[br.length];
         System.arraycopy(br.bytes, br.offset, bytes, 0, br.length);
-        field2 = new DimensionalBinaryField(field1.name(), bytes, field1.fieldType());
+        field2 = new BinaryPoint(field1.name(), bytes, field1.fieldType());
       } else if (numType != null) {
         switch (numType) {
           case INT:

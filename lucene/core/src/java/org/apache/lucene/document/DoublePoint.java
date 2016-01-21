@@ -26,7 +26,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  *  efficient.  Muliple values for the same field in one documents
  *  is allowed. */
 
-public final class DimensionalDoubleField extends Field {
+public final class DoublePoint extends Field {
 
   private static FieldType getType(int numDims) {
     FieldType type = new FieldType();
@@ -73,14 +73,14 @@ public final class DimensionalDoubleField extends Field {
     return new BytesRef(packed);
   }
 
-  /** Creates a new DimensionalDoubleField, indexing the
+  /** Creates a new DoublePoint, indexing the
    *  provided N-dimensional int point.
    *
    *  @param name field name
    *  @param point double[] value
    *  @throws IllegalArgumentException if the field name or value is null.
    */
-  public DimensionalDoubleField(String name, double... point) {
+  public DoublePoint(String name, double... point) {
     super(name, pack(point), getType(point.length));
   }
 }

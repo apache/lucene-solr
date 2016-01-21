@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.BinaryDocValuesField;
-import org.apache.lucene.document.DimensionalBinaryField;
+import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
@@ -41,8 +41,8 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
-import org.apache.lucene.index.DimensionalValues.Relation;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.SortingLeafReader.SortingDocsEnum;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.CollectionStatistics;
@@ -175,7 +175,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     doc.add(new Field(TERM_VECTORS_FIELD, Integer.toString(id), TERM_VECTORS_TYPE));
     byte[] bytes = new byte[4];
     NumericUtils.intToBytes(id, bytes, 0);
-    doc.add(new DimensionalBinaryField(DIMENSIONAL_FIELD, bytes));
+    doc.add(new BinaryPoint(DIMENSIONAL_FIELD, bytes));
     return doc;
   }
 
@@ -379,8 +379,8 @@ public abstract class SorterTestBase extends LuceneTestCase {
     }
   }
 
-  public void testDimensionalValues() throws Exception {
-    DimensionalValues values = sortedReader.getDimensionalValues();
+  public void testPoints() throws Exception {
+    PointValues values = sortedReader.getPointValues();
     values.intersect(DIMENSIONAL_FIELD,
                      new IntersectVisitor() {
                        @Override

@@ -21,10 +21,10 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.codecs.DimensionalReader;
-import org.apache.lucene.codecs.DimensionalWriter;
-import org.apache.lucene.index.DimensionalValues.IntersectVisitor;
-import org.apache.lucene.index.DimensionalValues.Relation;
+import org.apache.lucene.codecs.PointReader;
+import org.apache.lucene.codecs.PointWriter;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
@@ -33,7 +33,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.bkd.BKDWriter;
 
-class SimpleTextDimensionalWriter extends DimensionalWriter {
+class SimpleTextPointWriter extends PointWriter {
 
   final static BytesRef NUM_DIMS      = new BytesRef("num dims ");
   final static BytesRef BYTES_PER_DIM = new BytesRef("bytes per dim ");
@@ -57,20 +57,20 @@ class SimpleTextDimensionalWriter extends DimensionalWriter {
   final SegmentWriteState writeState;
   final Map<String,Long> indexFPs = new HashMap<>();
 
-  public SimpleTextDimensionalWriter(SegmentWriteState writeState) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name, writeState.segmentSuffix, SimpleTextDimensionalFormat.DIMENSIONAL_EXTENSION);
+  public SimpleTextPointWriter(SegmentWriteState writeState) throws IOException {
+    String fileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name, writeState.segmentSuffix, SimpleTextPointFormat.POINT_EXTENSION);
     dataOut = writeState.directory.createOutput(fileName, writeState.context);
     this.writeState = writeState;
   }
 
   @Override
-  public void writeField(FieldInfo fieldInfo, DimensionalReader values) throws IOException {
+  public void writeField(FieldInfo fieldInfo, PointReader values) throws IOException {
 
     // We use the normal BKDWriter, but subclass to customize how it writes the index and blocks to disk:
     BKDWriter writer = new BKDWriter(writeState.directory,
                                      writeState.segmentInfo.name,
-                                     fieldInfo.getDimensionCount(),
-                                     fieldInfo.getDimensionNumBytes(),
+                                     fieldInfo.getPointDimensionCount(),
+                                     fieldInfo.getPointNumBytes(),
                                      BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
                                      BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP) {
 
@@ -108,8 +108,8 @@ class SimpleTextDimensionalWriter extends DimensionalWriter {
             newline(out);
           }
 
-          assert (splitPackedValues.length % (1 + fieldInfo.getDimensionNumBytes())) == 0;
-          int count = splitPackedValues.length / (1 + fieldInfo.getDimensionNumBytes());
+          assert (splitPackedValues.length % (1 + fieldInfo.getPointNumBytes())) == 0;
+          int count = splitPackedValues.length / (1 + fieldInfo.getPointNumBytes());
           assert count == leafBlockFPs.length;
 
           write(out, SPLIT_COUNT);
@@ -118,10 +118,10 @@ class SimpleTextDimensionalWriter extends DimensionalWriter {
 
           for(int i=0;i<count;i++) {
             write(out, SPLIT_DIM);
-            writeInt(out, splitPackedValues[i * (1 + fieldInfo.getDimensionNumBytes())] & 0xff);
+            writeInt(out, splitPackedValues[i * (1 + fieldInfo.getPointNumBytes())] & 0xff);
             newline(out);
             write(out, SPLIT_VALUE);
-            br = new BytesRef(splitPackedValues, 1+(i * (1+fieldInfo.getDimensionNumBytes())), fieldInfo.getDimensionNumBytes());
+            br = new BytesRef(splitPackedValues, 1+(i * (1+fieldInfo.getPointNumBytes())), fieldInfo.getPointNumBytes());
             write(out, br.toString());
             newline(out);
           }
@@ -170,7 +170,7 @@ class SimpleTextDimensionalWriter extends DimensionalWriter {
         }
       });
 
-    // We could have 0 points on merge since all docs with dimensional fields may be deleted:
+    // We could have 0 points on merge since all docs with points may be deleted:
     if (writer.getPointCount() > 0) {
       indexFPs.put(fieldInfo.name, writer.finish(dataOut));
     }
@@ -204,7 +204,7 @@ class SimpleTextDimensionalWriter extends DimensionalWriter {
       dataOut = null;
 
       // Write index file
-      String fileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name, writeState.segmentSuffix, SimpleTextDimensionalFormat.DIMENSIONAL_INDEX_EXTENSION);
+      String fileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name, writeState.segmentSuffix, SimpleTextPointFormat.POINT_INDEX_EXTENSION);
       try (IndexOutput indexOut = writeState.directory.createOutput(fileName, writeState.context)) {
         int count = indexFPs.size();
         write(indexOut, FIELD_COUNT);

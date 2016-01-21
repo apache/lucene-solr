@@ -23,9 +23,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.document.DimensionalDoubleField;
-import org.apache.lucene.document.DimensionalFloatField;
-import org.apache.lucene.document.DimensionalLongField;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.FloatDocValuesField;
@@ -55,7 +55,7 @@ import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.search.DimensionalRangeQuery;
+import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -219,7 +219,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       // For computing range facet counts:
       doc.add(new NumericDocValuesField("field", l));
       // For drill down by numeric range:
-      doc.add(new DimensionalLongField("field", l));
+      doc.add(new LongPoint("field", l));
 
       if ((l&3) == 0) {
         doc.add(new FacetField("dim", "a"));
@@ -295,7 +295,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
     // Third search, drill down on "less than or equal to 10":
     ddq = new DrillDownQuery(config);
-    ddq.add("field", DimensionalRangeQuery.new1DLongRange("field", 0L, true, 10L, true));
+    ddq.add("field", PointRangeQuery.new1DLongRange("field", 0L, true, 10L, true));
     dsr = ds.search(null, ddq, 10);
 
     assertEquals(11, dsr.hits.totalHits);
@@ -383,7 +383,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       long v = random().nextLong();
       values[i] = v;
       doc.add(new NumericDocValuesField("field", v));
-      doc.add(new DimensionalLongField("field", v));
+      doc.add(new LongPoint("field", v));
       w.addDocument(doc);
       minValue = Math.min(minValue, v);
       maxValue = Math.max(maxValue, v);
@@ -475,9 +475,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
       Query fastMatchQuery;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchQuery = DimensionalRangeQuery.new1DLongRange("field", minValue, true, maxValue, true);
+          fastMatchQuery = PointRangeQuery.new1DLongRange("field", minValue, true, maxValue, true);
         } else {
-          fastMatchQuery = DimensionalRangeQuery.new1DLongRange("field", minAcceptedValue, true, maxAcceptedValue, true);
+          fastMatchQuery = PointRangeQuery.new1DLongRange("field", minAcceptedValue, true, maxAcceptedValue, true);
         }
       } else {
         fastMatchQuery = null;
@@ -499,7 +499,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(config);
         if (random().nextBoolean()) {
-          ddq.add("field", DimensionalRangeQuery.new1DLongRange("field", range.min, range.minInclusive, range.max, range.maxInclusive));
+          ddq.add("field", PointRangeQuery.new1DLongRange("field", range.min, range.minInclusive, range.max, range.maxInclusive));
         } else {
           ddq.add("field", range.getQuery(fastMatchQuery, vs));
         }
@@ -524,7 +524,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       float v = random().nextFloat();
       values[i] = v;
       doc.add(new FloatDocValuesField("field", v));
-      doc.add(new DimensionalFloatField("field", v));
+      doc.add(new FloatPoint("field", v));
       w.addDocument(doc);
       minValue = Math.min(minValue, v);
       maxValue = Math.max(maxValue, v);
@@ -630,9 +630,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
       Query fastMatchQuery;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchQuery = DimensionalRangeQuery.new1DFloatRange("field", minValue, true, maxValue, true);
+          fastMatchQuery = PointRangeQuery.new1DFloatRange("field", minValue, true, maxValue, true);
         } else {
-          fastMatchQuery = DimensionalRangeQuery.new1DFloatRange("field", minAcceptedValue, true, maxAcceptedValue, true);
+          fastMatchQuery = PointRangeQuery.new1DFloatRange("field", minAcceptedValue, true, maxAcceptedValue, true);
         }
       } else {
         fastMatchQuery = null;
@@ -654,7 +654,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(config);
         if (random().nextBoolean()) {
-          ddq.add("field", DimensionalRangeQuery.new1DFloatRange("field", (float) range.min, range.minInclusive, (float) range.max, range.maxInclusive));
+          ddq.add("field", PointRangeQuery.new1DFloatRange("field", (float) range.min, range.minInclusive, (float) range.max, range.maxInclusive));
         } else {
           ddq.add("field", range.getQuery(fastMatchQuery, vs));
         }
@@ -679,7 +679,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
       double v = random().nextDouble();
       values[i] = v;
       doc.add(new DoubleDocValuesField("field", v));
-      doc.add(new DimensionalDoubleField("field", v));
+      doc.add(new DoublePoint("field", v));
       w.addDocument(doc);
       minValue = Math.min(minValue, v);
       maxValue = Math.max(maxValue, v);
@@ -769,9 +769,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
       Query fastMatchFilter;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchFilter = DimensionalRangeQuery.new1DDoubleRange("field", minValue, true, maxValue, true);
+          fastMatchFilter = PointRangeQuery.new1DDoubleRange("field", minValue, true, maxValue, true);
         } else {
-          fastMatchFilter = DimensionalRangeQuery.new1DDoubleRange("field", minAcceptedValue, true, maxAcceptedValue, true);
+          fastMatchFilter = PointRangeQuery.new1DDoubleRange("field", minAcceptedValue, true, maxAcceptedValue, true);
         }
       } else {
         fastMatchFilter = null;
@@ -793,7 +793,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(config);
         if (random().nextBoolean()) {
-          ddq.add("field", DimensionalRangeQuery.new1DDoubleRange("field", range.min, range.minInclusive, range.max, range.maxInclusive));
+          ddq.add("field", PointRangeQuery.new1DDoubleRange("field", range.min, range.minInclusive, range.max, range.maxInclusive));
         } else {
           ddq.add("field", range.getQuery(fastMatchFilter, vs));
         }
