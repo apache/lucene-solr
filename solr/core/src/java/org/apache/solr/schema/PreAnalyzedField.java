@@ -95,7 +95,7 @@ public class PreAnalyzedField extends TextField {
   }
 
   /**
-   * Overridden to return an analyzer consisting of a {@link PreAnalyzedTokenizer}.
+   * Overridden to return an analyzer consisting of a PreAnalyzedTokenizer.
    * NOTE: If an index analyzer is specified in the schema, it will be ignored.
    */
   @Override
