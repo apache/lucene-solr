@@ -329,6 +329,9 @@ public final class SolrCellBuilder implements CommandBuilder {
     
     @SuppressForbidden(reason = "Usage of outdated locale parsing with Locale#toString() because of backwards compatibility")
     private Locale getLocale(String name) {
+      if (name == null || name.isEmpty()) {
+        return Locale.ROOT;
+      }
       for (Locale locale : Locale.getAvailableLocales()) {
         if (locale.toString().equals(name)) {
           return locale;
