@@ -51,7 +51,7 @@ import static org.apache.solr.common.params.CommonParams.JSON;
  * Pre-analyzed field type provides a way to index a serialized token stream,
  * optionally with an independent stored value of a field.
  */
-public class PreAnalyzedField extends FieldType {
+public class PreAnalyzedField extends TextField {
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** Init argument name. Value is a fully-qualified class name of the parser
@@ -63,8 +63,8 @@ public class PreAnalyzedField extends FieldType {
 
   
   private PreAnalyzedParser parser;
-  private Analyzer analyzer;
-  
+  private PreAnalyzedAnalyzer preAnalyzer;
+
   @Override
   public void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
@@ -91,22 +91,31 @@ public class PreAnalyzedField extends FieldType {
       args.remove(PARSER_IMPL);
     }
     // create Analyzer instance for reuse:
-    analyzer = new SolrAnalyzer() {
-      @Override
-      protected TokenStreamComponents createComponents(String fieldName) {
-        return new TokenStreamComponents(new PreAnalyzedTokenizer(parser));
-      }
-    };
+    preAnalyzer = new PreAnalyzedAnalyzer(parser);
   }
 
+  /**
+   * Overridden to return an analyzer consisting of a {@link PreAnalyzedTokenizer}.
+   * NOTE: If an index analyzer is specified in the schema, it will be ignored.
+   */
   @Override
   public Analyzer getIndexAnalyzer() {
-    return analyzer;
+    return preAnalyzer;
   }
-  
+
+  /**
+   * Returns the query analyzer defined via the schema, unless there is none,
+   * in which case the index-time pre-analyzer is returned.
+   *
+   * Note that if the schema specifies an index-time analyzer via either
+   * {@code <analyzer>} or {@code <analyzer type="index">}, but no query-time
+   * analyzer, the query analyzer returned here will be the index-time
+   * analyzer specified in the schema rather than the pre-analyzer.
+   */
   @Override
   public Analyzer getQueryAnalyzer() {
-    return getIndexAnalyzer();
+    Analyzer queryAnalyzer = super.getQueryAnalyzer();
+    return queryAnalyzer instanceof FieldType.DefaultAnalyzer ? getIndexAnalyzer() : queryAnalyzer;
   }
 
   @Override
@@ -221,8 +230,10 @@ public class PreAnalyzedField extends FieldType {
       return null;
     }
     PreAnalyzedTokenizer parse = new PreAnalyzedTokenizer(parser);
-    parse.setReader(new StringReader(val));
-    parse.reset(); // consume
+    Reader reader = new StringReader(val);
+    parse.setReader(reader);
+    parse.decodeInput(reader); // consume
+    parse.reset();
     org.apache.lucene.document.FieldType type = createFieldType(field);
     if (type == null) {
       parse.close();
@@ -263,7 +274,7 @@ public class PreAnalyzedField extends FieldType {
     }
     return f;
   }
-    
+
   /**
    * Token stream that works from a list of saved states.
    */
@@ -273,7 +284,8 @@ public class PreAnalyzedField extends FieldType {
     private String stringValue = null;
     private byte[] binaryValue = null;
     private PreAnalyzedParser parser;
-    
+    private IOException readerConsumptionException;
+
     public PreAnalyzedTokenizer(PreAnalyzedParser parser) {
       // we don't pack attributes: since we are used for (de)serialization and dont want bloat.
       super(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY);
@@ -294,29 +306,44 @@ public class PreAnalyzedField extends FieldType {
 
     @Override
     public final boolean incrementToken() {
-      // lazy init the iterator
-      if (it == null) {
-        it = cachedStates.iterator();
-      }
-    
       if (!it.hasNext()) {
         return false;
       }
       
-      AttributeSource.State state = (State) it.next();
+      AttributeSource.State state = it.next();
       restoreState(state.clone());
       return true;
     }
-  
+
+    /**
+     * Throws a delayed exception if one was thrown from decodeInput()
+     * while reading from the input reader.
+     */
     @Override
     public final void reset() throws IOException {
-      // NOTE: this acts like rewind if you call it again
-      if (it == null) {
-        super.reset();
-        cachedStates.clear();
-        stringValue = null;
-        binaryValue = null;
-        ParseResult res = parser.parse(input, this);
+      super.reset();
+      if (readerConsumptionException != null) {
+        IOException e = new IOException(readerConsumptionException);
+        readerConsumptionException = null;
+        throw e;
+      }
+      it = cachedStates.iterator();
+    }
+
+    private void setReaderConsumptionException(IOException e) {
+      readerConsumptionException = e;
+    }
+
+    /**
+     * Parses the input reader and adds attributes specified there.
+     */
+    private void decodeInput(Reader reader) throws IOException {
+      removeAllAttributes();  // reset attributes to the empty set
+      cachedStates.clear();
+      stringValue = null;
+      binaryValue = null;
+      try {
+        ParseResult res = parser.parse(reader, this);
         if (res != null) {
           stringValue = res.str;
           binaryValue = res.bin;
@@ -324,9 +351,35 @@ public class PreAnalyzedField extends FieldType {
             cachedStates.addAll(res.states);
           }
         }
+      } catch (IOException e) {
+        removeAllAttributes();  // reset attributes to the empty set
+        throw e; // rethrow
       }
-      it = cachedStates.iterator();
     }
   }
-  
+
+  private static class PreAnalyzedAnalyzer extends SolrAnalyzer {
+    private PreAnalyzedParser parser;
+
+    PreAnalyzedAnalyzer(PreAnalyzedParser parser) {
+      this.parser = parser;
+    }
+
+    @Override
+    protected TokenStreamComponents createComponents(String fieldName) {
+      final PreAnalyzedTokenizer tokenizer = new PreAnalyzedTokenizer(parser);
+      return new TokenStreamComponents(tokenizer) {
+        @Override
+        protected void setReader(final Reader reader) {
+          super.setReader(reader);
+          try {
+            tokenizer.decodeInput(reader);
+          } catch (IOException e) {
+            // save this exception for reporting when reset() is called
+            tokenizer.setReaderConsumptionException(e);
+          }
+        }
+      };
+    }
+  }
 }

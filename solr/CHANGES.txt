@@ -106,6 +106,7 @@ New Features
 * SOLR-8312: Add domain size and numBuckets to facet telemetry info (facet debug info
   for the new Facet Module).  (Michael Sun, yonik)
 
+* SOLR-4619: Improve PreAnalyzedField query analysis. (Andrzej Bialecki, Steve Rowe)
 
 Bug Fixes
 ----------------------
