@@ -586,15 +586,15 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     Directory dir = getDirectory(createTempDir("testSeekToEOFThenBack"));
 
     IndexOutput o = dir.createOutput("out", newIOContext(random()));
-    byte[] bytes = new byte[3*RAMInputStream.BUFFER_SIZE];
+    byte[] bytes = new byte[3*RAMOutputStream.BUFFER_SIZE];
     o.writeBytes(bytes, 0, bytes.length);
     o.close();
 
     IndexInput i = dir.openInput("out", newIOContext(random()));
-    i.seek(2*RAMInputStream.BUFFER_SIZE-1);
-    i.seek(3*RAMInputStream.BUFFER_SIZE);
-    i.seek(RAMInputStream.BUFFER_SIZE);
-    i.readBytes(bytes, 0, 2*RAMInputStream.BUFFER_SIZE);
+    i.seek(2*RAMOutputStream.BUFFER_SIZE-1);
+    i.seek(3*RAMOutputStream.BUFFER_SIZE);
+    i.seek(RAMOutputStream.BUFFER_SIZE);
+    i.readBytes(bytes, 0, 2*RAMOutputStream.BUFFER_SIZE);
     i.close();
     dir.close();
   }
@@ -1164,5 +1164,41 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     in.close();
     in.close(); // close again
     dir.close();
+  }
+
+  public void testSeekToEndOfFile() throws IOException {
+    try (Directory dir = newDirectory()) {
+      try (IndexOutput out = dir.createOutput("a", IOContext.DEFAULT)) {
+        for (int i = 0; i < 1024; ++i) {
+          out.writeByte((byte) 0);
+        }
+      }
+      try (IndexInput in = dir.openInput("a", IOContext.DEFAULT)) {
+        in.seek(100);
+        assertEquals(100, in.getFilePointer());
+        in.seek(1024);
+        assertEquals(1024, in.getFilePointer());
+      }
+    }
+  }
+
+  public void testSeekBeyondEndOfFile() throws IOException {
+    try (Directory dir = newDirectory()) {
+      try (IndexOutput out = dir.createOutput("a", IOContext.DEFAULT)) {
+        for (int i = 0; i < 1024; ++i) {
+          out.writeByte((byte) 0);
+        }
+      }
+      try (IndexInput in = dir.openInput("a", IOContext.DEFAULT)) {
+        in.seek(100);
+        assertEquals(100, in.getFilePointer());
+        try {
+          in.seek(1025);
+          fail("didn't hit expected exception");
+        } catch (EOFException eofe) {
+          // expected
+        }
+      }
+    }
   }
 }
