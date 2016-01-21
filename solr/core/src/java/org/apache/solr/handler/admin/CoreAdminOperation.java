@@ -573,25 +573,21 @@ enum CoreAdminOperation {
     @Override
     public void call(final CallInfo callInfo) throws IOException {
       final SolrParams params = callInfo.req.getParams();
-      log.info("It has been requested that we recover: core="+params.get(CoreAdminParams.CORE));
-      Thread thread = new Thread() {
-        @Override
-        public void run() {
-          String cname = params.get(CoreAdminParams.CORE);
-          if (cname == null) {
-            cname = "";
-          }
-          try (SolrCore core = callInfo.handler.coreContainer.getCore(cname)) {
-            if (core != null) {
-              core.getUpdateHandler().getSolrCoreState().doRecovery(callInfo.handler.coreContainer, core.getCoreDescriptor());
-            } else {
-              SolrException.log(log, "Could not find core to call recovery:" + cname);
-            }
-          }
+      log.info("It has been requested that we recover: core=" + params.get(CoreAdminParams.CORE));
+      
+      String cname = params.get(CoreAdminParams.CORE);
+      if (cname == null) {
+        cname = "";
+      }
+      try (SolrCore core = callInfo.handler.coreContainer.getCore(cname)) {
+        if (core != null) {
+          core.getUpdateHandler().getSolrCoreState().doRecovery(callInfo.handler.coreContainer,
+              core.getCoreDescriptor());
+        } else {
+          SolrException.log(log, "Could not find core to call recovery:" + cname);
         }
-      };
-
-      thread.start();
+      }
+      
     }
   },
   REQUESTSYNCSHARD_OP(REQUESTSYNCSHARD) {
