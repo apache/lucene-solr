@@ -76,9 +76,9 @@ import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
  * e - token offset, end position (integer)
  * t - token type (string)
  * f - token flags (hexadecimal integer)
- * p - payload (bytes in hexadecimal format)
+ * p - payload (bytes in hexadecimal format; whitespace is ignored)
  * </pre>
- * Token positions are tracked and implicitly added to the token stream - 
+ * Token offsets are tracked and implicitly added to the token stream -
  * the start and end offsets consider only the term text and whitespace,
  * and exclude the space taken by token attributes.
  * <h2>Example token streams</h2>
@@ -92,9 +92,9 @@ import org.apache.solr.schema.PreAnalyzedField.PreAnalyzedParser;
  1 one  two   three 
   - version 1
   - stored: 'null'
-  - tok: '(term=one,startOffset=1,endOffset=4)'
-  - tok: '(term=two,startOffset=6,endOffset=9)'
-  - tok: '(term=three,startOffset=12,endOffset=17)'
+  - tok: '(term=one,startOffset=0,endOffset=3)'
+  - tok: '(term=two,startOffset=5,endOffset=8)'
+  - tok: '(term=three,startOffset=11,endOffset=16)'
 1 one,s=123,e=128,i=22  two three,s=20,e=22
   - version 1
   - stored: 'null'
@@ -163,7 +163,7 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
   
   private static final byte[] EMPTY_BYTES = new byte[0];
   
-  /** Utility method to convert byte array to a hex string. */
+  /** Utility method to convert a hex string to a byte array. */
   static byte[] hexToBytes(String hex) {
     if (hex == null) {
       return EMPTY_BYTES;
