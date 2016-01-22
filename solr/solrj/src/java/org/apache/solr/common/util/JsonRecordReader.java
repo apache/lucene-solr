@@ -136,8 +136,7 @@ public class JsonRecordReader {
 
   public void streamRecords(JSONParser parser, Handler handler) throws IOException {
     rootNode.parse(parser, handler,
-        new LinkedHashMap<String, Object>(),
-        new Stack<Set<String>>(), false);
+        new LinkedHashMap<String, Object>());
   }
 
 
@@ -277,22 +276,21 @@ public class JsonRecordReader {
 
     private void parse(JSONParser parser,
                        Handler handler,
-                       Map<String, Object> values,
-                       Stack<Set<String>> stack, // lists of values to purge
-                       boolean recordStarted) throws IOException {
+                       Map<String, Object> values) throws IOException {
 
       int event = -1;
+      boolean recordStarted = false;
       for (; ; ) {
         event = parser.nextEvent();
         if (event == EOF) break;
         if (event == OBJECT_START) {
-          handleObjectStart(parser, new HashSet<Node>(), handler, values, stack, recordStarted, null);
+          handleObjectStart(parser, handler, values, new Stack<Set<String>>(), recordStarted, null);
         } else if (event == ARRAY_START) {
           for (; ; ) {
             event = parser.nextEvent();
             if (event == ARRAY_END) break;
             if (event == OBJECT_START) {
-              handleObjectStart(parser, new HashSet<Node>(), handler, values, stack, recordStarted, null);
+              handleObjectStart(parser, handler, values, new Stack<Set<String>>(), recordStarted, null);
             }
           }
         }
@@ -312,7 +310,7 @@ public class JsonRecordReader {
      * any inner chil tags are compared against the cache and jumped to if
      * matched.
      */
-    private void handleObjectStart(final JSONParser parser, final Set<Node> childrenFound,
+    private void handleObjectStart(final JSONParser parser,
                                    final Handler handler, final Map<String, Object> values,
                                    final Stack<Set<String>> stack, boolean recordStarted,
                                    MethodFrameWrapper frameWrapper)
@@ -342,13 +340,13 @@ public class JsonRecordReader {
         @Override
         public void walk(int event) throws IOException {
           if (event == OBJECT_START) {
-            node.handleObjectStart(parser, childrenFound, handler, values, stack, isRecordStarted, this);
+            node.handleObjectStart(parser, handler, values, stack, isRecordStarted, this);
           } else if (event == ARRAY_START) {
             for (; ; ) {
               event = parser.nextEvent();
               if (event == ARRAY_END) break;
               if (event == OBJECT_START) {
-                node.handleObjectStart(parser, childrenFound, handler, values, stack, isRecordStarted, this);
+                node.handleObjectStart(parser, handler, values, stack, isRecordStarted, this);
               }
             }
           }
