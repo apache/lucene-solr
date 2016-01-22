@@ -126,8 +126,8 @@ New Features
   as alternative to their SPI name. This enables compile-time safety when
   defining analyzer's components.  (Uwe Schindler, Shai Erera)
 
-* LUCENE-6818: Add DFISimilarity implementing the divergence from independence
-  model. (Ahmet Arslan via Robert Muir)
+* LUCENE-6818, LUCENE-6986: Add DFISimilarity implementing the divergence 
+  from independence model. (Ahmet Arslan via Robert Muir)
 
 * SOLR-4619: Added removeAllAttributes() to AttributeSource, which removes
   all previously added attributes.

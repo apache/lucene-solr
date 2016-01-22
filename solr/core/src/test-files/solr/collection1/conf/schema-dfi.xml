@@ -25,13 +25,16 @@
     <!-- default parameters -->
     <fieldType name="text" class="solr.TextField">
       <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
-      <similarity class="solr.DFISimilarityFactory"/>
+      <similarity class="solr.DFISimilarityFactory">
+        <str name="independenceMeasure">ChiSquared</str>
+      </similarity>
     </fieldType>
 
     <!-- with discountOverlaps parameter -->
     <fieldType name="text_params" class="solr.TextField">
       <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
       <similarity class="solr.DFISimilarityFactory">
+        <str name="independenceMeasure">ChiSquared</str>
         <bool name="discountOverlaps">false</bool>
       </similarity>
     </fieldType>
