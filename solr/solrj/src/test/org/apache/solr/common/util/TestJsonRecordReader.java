@@ -22,10 +22,12 @@ import org.apache.solr.util.RecordingJSONParser;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.ref.WeakReference;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 public class TestJsonRecordReader extends SolrTestCaseJ4 {
@@ -254,6 +256,28 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
         assertFalse(e.getValue() instanceof List);
       }
     }
+  }
+
+  public void testArrayOfRootObjects() throws Exception {
+    String json = "[{'fieldA':'A1'}, {'fieldB':'B2'}]";
+    JsonRecordReader streamer;
+    List<Map<String, Object>> records;
+
+    final AtomicReference<WeakReference<String>> ref = new AtomicReference<>();
+    streamer = JsonRecordReader.getInst("/", Collections.singletonList("$FQN:/**"));
+    streamer.streamRecords(new StringReader(json), new JsonRecordReader.Handler() {
+      @Override
+      public void handle(Map<String, Object> record, String path) {
+        System.gc();
+        if (ref.get() != null) {
+          assertNull("This reference is still intact :" +ref.get().get() ,ref.get().get());
+        }
+        String fName = record.keySet().iterator().next();
+        ref.set(new WeakReference<String>(fName));
+      }
+    });
+
+
   }
 
   public void testAIOOBE() throws IOException {

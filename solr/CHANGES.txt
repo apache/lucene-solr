@@ -420,6 +420,9 @@ Bug Fixes
 
 * SOLR-8371: Try and prevent too many recovery requests from stacking up and clean up some faulty 
   cancel recovery logic. (Mark Miller)
+
+* SOLR-8582 : memory leak in JsonRecordReader affecting /update/json/docs. Large payloads
+  cause OOM (noble, shalin)
   
 Optimizations
 ----------------------
