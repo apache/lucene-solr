@@ -165,7 +165,10 @@ public class RAFDirectory extends FSDirectory {
     }
   
     @Override
-    protected void seekInternal(long position) {
+    protected void seekInternal(long pos) throws IOException {
+      if (pos > length()) {
+        throw new EOFException("read past EOF: pos=" + pos + " vs length=" + length() + ": " + this);
+      }
     }
     
     boolean isFDValid() throws IOException {
