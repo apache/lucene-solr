@@ -1,5 +1,3 @@
-package org.apache.solr.cloud;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,12 @@ package org.apache.solr.cloud;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.cloud;
+
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
+import static org.apache.solr.common.util.Utils.makeMap;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,6 +55,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -73,7 +78,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrCmdDistributor;
 import org.apache.solr.util.RTimer;
@@ -85,11 +89,6 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
-import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * TODO: we should still test this works as a custom update chain as well as
@@ -1895,16 +1894,16 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return cs;
   }
 
-
-  static String getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
+  static RequestStatusState getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)
       throws IOException, SolrServerException {
-    String state = null;
+    RequestStatusState state = null;
     final TimeOut timeout = new TimeOut(waitForSeconds, TimeUnit.SECONDS);
 
-    while (! timeout.hasTimedOut())  {
+    while (!timeout.hasTimedOut())  {
       state = getRequestState(requestId, client);
-      if(state.equals("completed") || state.equals("failed"))
+      if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED) {
         return state;
+      }
       try {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
@@ -1914,17 +1913,17 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return state;
   }
 
-  static String getRequestState(int requestId, SolrClient client) throws IOException, SolrServerException {
+  static RequestStatusState getRequestState(int requestId, SolrClient client) throws IOException, SolrServerException {
     return getRequestState(String.valueOf(requestId), client);
   }
 
-  static String getRequestState(String requestId, SolrClient client) throws IOException, SolrServerException {
+  static RequestStatusState getRequestState(String requestId, SolrClient client) throws IOException, SolrServerException {
     CollectionAdminRequest.RequestStatus requestStatusRequest = new CollectionAdminRequest.RequestStatus();
     requestStatusRequest.setRequestId(requestId);
     CollectionAdminResponse response = requestStatusRequest.process(client);
 
     NamedList innerResponse = (NamedList) response.getResponse().get("status");
-    return (String) innerResponse.get("state");
+    return RequestStatusState.fromKey((String) innerResponse.get("state"));
   }
 
 }

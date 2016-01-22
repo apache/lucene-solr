@@ -330,6 +330,9 @@ New Features
 
 * SOLR-4619: Improve PreAnalyzedField query analysis. (Andrzej Bialecki, Steve Rowe)
 
+* SOLR-8560: Added RequestStatusState enum which can be used when comparing states of 
+  asynchronous requests. (Shai Erera)
+
 Bug Fixes
 ----------------------
 

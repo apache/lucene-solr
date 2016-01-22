@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -71,7 +72,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
       e.printStackTrace();
     }
 
-    assertEquals("Task 1000 not found in completed tasks.", "found 1000 in completed tasks", message);
+    assertEquals("found [1000] in completed tasks", message);
 
     // Check for a random (hopefully non-existent request id
     params = new ModifiableSolrParams();
@@ -85,7 +86,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
       e.printStackTrace();
     }
 
-    assertEquals("Task 9999999 found in tasks queue.", "Did not find taskid [9999999] in any tasks queue", message);
+    assertEquals("Did not find [9999999] in any tasks queue", message);
 
     params = new ModifiableSolrParams();
     params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.SPLITSHARD.toString());
@@ -99,36 +100,35 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     }
 
     // Check for the request to be completed.
-      params = new ModifiableSolrParams();
-      params.set("action", CollectionParams.CollectionAction.REQUESTSTATUS.toString());
-      params.set(OverseerCollectionMessageHandler.REQUESTID, "1001");
+    params = new ModifiableSolrParams();
+    params.set("action", CollectionParams.CollectionAction.REQUESTSTATUS.toString());
+    params.set(OverseerCollectionMessageHandler.REQUESTID, "1001");
     try {
       message = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
     } catch (SolrServerException | IOException e) {
       e.printStackTrace();
     }
 
-    assertEquals("Task 1001 not found in completed tasks.", "found 1001 in completed tasks", message);
+    assertEquals("found [1001] in completed tasks", message);
 
-      params = new ModifiableSolrParams();
-      params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());
-      params.set("name", "collection2");
-      params.set("numShards", 2);
-      params.set("replicationFactor", 1);
-      params.set("maxShardsPerNode", 100);
-      params.set("collection.configName", "conf1");
-      params.set(CommonAdminParams.ASYNC, "1002");
+    params = new ModifiableSolrParams();
+    params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());
+    params.set("name", "collection2");
+    params.set("numShards", 2);
+    params.set("replicationFactor", 1);
+    params.set("maxShardsPerNode", 100);
+    params.set("collection.configName", "conf1");
+    params.set(CommonAdminParams.ASYNC, "1002");
     try {
       sendRequest(params);
     } catch (SolrServerException | IOException e) {
       e.printStackTrace();
     }
 
-
     params = new ModifiableSolrParams();
 
-      params.set("action", CollectionParams.CollectionAction.REQUESTSTATUS.toString());
-      params.set(OverseerCollectionMessageHandler.REQUESTID, "1002");
+    params.set("action", CollectionParams.CollectionAction.REQUESTSTATUS.toString());
+    params.set(OverseerCollectionMessageHandler.REQUESTID, "1002");
 
     try {
       message = sendStatusRequestWithRetry(params, MAX_WAIT_TIMEOUT_SECONDS);
@@ -137,27 +137,24 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     }
 
 
-    assertEquals("Task 1002 not found in completed tasks.", "found 1002 in failed tasks", message);
+    assertEquals("found [1002] in failed tasks", message);
 
-      params = new ModifiableSolrParams();
-      params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());
-      params.set("name", "collection3");
-      params.set("numShards", 1);
-      params.set("replicationFactor", 1);
-      params.set("maxShardsPerNode", 100);
-      params.set("collection.configName", "conf1");
-      params.set(CommonAdminParams.ASYNC, "1002");
+    params = new ModifiableSolrParams();
+    params.set(CollectionParams.ACTION, CollectionParams.CollectionAction.CREATE.toString());
+    params.set("name", "collection3");
+    params.set("numShards", 1);
+    params.set("replicationFactor", 1);
+    params.set("maxShardsPerNode", 100);
+    params.set("collection.configName", "conf1");
+    params.set(CommonAdminParams.ASYNC, "1002");
     try {
       r = sendRequest(params);
     } catch (SolrServerException | IOException e) {
       e.printStackTrace();
     }
 
-    assertEquals("Did not error out on duplicate requests (same request id)",
-          "Task with the same requestid already exists.", r.get("error"));
-
+    assertEquals("Task with the same requestid already exists.", r.get("error"));
   }
-
 
   /**
    * Helper method to send a status request with specific retry limit and return
@@ -165,23 +162,20 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
    */
   private String sendStatusRequestWithRetry(ModifiableSolrParams params, int maxCounter)
       throws SolrServerException, IOException{
-    NamedList status = null;
-    String state = null;
     String message = null;
-    NamedList r;
-    while(maxCounter-- > 0) {
-      r = sendRequest(params);
-      status = (NamedList) r.get("status");
-      state = (String) status.get("state");
+    while (maxCounter-- > 0) {
+      final NamedList r = sendRequest(params);
+      final NamedList status = (NamedList) r.get("status");
+      final RequestStatusState state = RequestStatusState.fromKey((String) status.get("state"));
       message = (String) status.get("msg");
 
-      if(state.equals("completed") || state.equals("failed"))
-        return (String) status.get("msg");
+      if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED) {
+        return message;
+      }
 
       try {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
-
       }
 
     }
@@ -193,8 +187,7 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    String baseUrl = ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.solrClient)
-        .getBaseURL();
+    String baseUrl = ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.solrClient).getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
     try (HttpSolrClient baseServer = new HttpSolrClient(baseUrl)) {

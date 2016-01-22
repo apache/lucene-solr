@@ -28,11 +28,11 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
 /**
@@ -57,10 +57,9 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
               .setAsyncId("1001");
       createCollectionRequest.process(client);
   
-      String state = getRequestStateAfterCompletion("1001", MAX_TIMEOUT_SECONDS, client);
+      RequestStatusState state = getRequestStateAfterCompletion("1001", MAX_TIMEOUT_SECONDS, client);
   
-      assertEquals("CreateCollection task did not complete!", "completed", state);
-  
+      assertSame("CreateCollection task did not complete!", RequestStatusState.COMPLETED, state);
   
       createCollectionRequest = new Create()
               .setCollectionName("testasynccollectioncreation")
@@ -71,7 +70,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   
       state = getRequestStateAfterCompletion("1002", MAX_TIMEOUT_SECONDS, client);
   
-      assertEquals("Recreating a collection with the same name didn't fail, should have.", "failed", state);
+      assertSame("Recreating a collection with the same should have failed.", RequestStatusState.FAILED, state);
   
       CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica()
               .setCollectionName("testasynccollectioncreation")
@@ -79,8 +78,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
               .setAsyncId("1003");
       client.request(addReplica);
       state = getRequestStateAfterCompletion("1003", MAX_TIMEOUT_SECONDS, client);
-      assertEquals("Add replica did not complete", "completed", state);
-  
+      assertSame("Add replica did not complete", RequestStatusState.COMPLETED, state);
   
       SplitShard splitShardRequest = new SplitShard()
               .setCollectionName("testasynccollectioncreation")
@@ -90,7 +88,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
   
       state = getRequestStateAfterCompletion("1004", MAX_TIMEOUT_SECONDS * 2, client);
   
-      assertEquals("Shard split did not complete. Last recorded state: " + state, "completed", state);
+      assertEquals("Shard split did not complete. Last recorded state: " + state, RequestStatusState.COMPLETED, state);
     }
   }
 
@@ -107,8 +105,8 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
         .setAsyncId("42");
     CollectionAdminResponse response = createCollectionRequest.process(cloudClient);
     assertEquals("42", response.getResponse().get("requestid"));
-    String state = getRequestStateAfterCompletion("42", MAX_TIMEOUT_SECONDS, cloudClient);
-    assertEquals("CreateCollection task did not complete!", "completed", state);
+    RequestStatusState state = getRequestStateAfterCompletion("42", MAX_TIMEOUT_SECONDS, cloudClient);
+    assertSame("CreateCollection task did not complete!", RequestStatusState.COMPLETED, state);
 
     //Add a few documents to shard1
     int numDocs = TestUtil.nextInt(random(), 10, 100);
@@ -131,7 +129,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
     response = reloadCollection.process(cloudClient);
     assertEquals("43", response.getResponse().get("requestid"));
     state = getRequestStateAfterCompletion("43", MAX_TIMEOUT_SECONDS, cloudClient);
-    assertEquals("ReloadCollection did not complete", "completed", state);
+    assertSame("ReloadCollection did not complete", RequestStatusState.COMPLETED, state);
 
     CollectionAdminRequest.CreateShard createShard = new CollectionAdminRequest.CreateShard()
         .setCollectionName(collection)
@@ -140,7 +138,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
     response = createShard.process(cloudClient);
     assertEquals("44", response.getResponse().get("requestid"));
     state = getRequestStateAfterCompletion("44", MAX_TIMEOUT_SECONDS, cloudClient);
-    assertEquals("CreateShard did not complete", "completed", state);
+    assertSame("CreateShard did not complete", RequestStatusState.COMPLETED, state);
 
     //Add a doc to shard2 to make sure shard2 was created properly
     SolrInputDocument doc = new SolrInputDocument();
@@ -159,7 +157,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
     response = deleteShard.process(cloudClient);
     assertEquals("45", response.getResponse().get("requestid"));
     state = getRequestStateAfterCompletion("45", MAX_TIMEOUT_SECONDS, cloudClient);
-    assertEquals("DeleteShard did not complete", "completed", state);
+    assertSame("DeleteShard did not complete", RequestStatusState.COMPLETED, state);
 
     CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica()
         .setCollectionName(collection)
@@ -168,7 +166,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
     response = addReplica.process(cloudClient);
     assertEquals("46", response.getResponse().get("requestid"));
     state = getRequestStateAfterCompletion("46", MAX_TIMEOUT_SECONDS, cloudClient);
-    assertEquals("AddReplica did not complete", "completed", state);
+    assertSame("AddReplica did not complete", RequestStatusState.COMPLETED, state);
 
     //cloudClient watch might take a couple of seconds to reflect it
     Slice shard1 = cloudClient.getZkStateReader().getClusterState().getSlice(collection, "shard1");
@@ -187,7 +185,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
     response = createAlias.process(cloudClient);
     assertEquals("47", response.getResponse().get("requestid"));
     state = getRequestStateAfterCompletion("47", MAX_TIMEOUT_SECONDS, cloudClient);
-    assertEquals("CreateAlias did not complete", "completed", state);
+    assertSame("CreateAlias did not complete", RequestStatusState.COMPLETED, state);
 
     query = new SolrQuery("*:*");
     query.set("shards", "shard1");
@@ -199,7 +197,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
     response = deleteAlias.process(cloudClient);
     assertEquals("48", response.getResponse().get("requestid"));
     state = getRequestStateAfterCompletion("48", MAX_TIMEOUT_SECONDS, cloudClient);
-    assertEquals("DeleteAlias did not complete", "completed", state);
+    assertSame("DeleteAlias did not complete", RequestStatusState.COMPLETED, state);
 
     try {
       cloudClient.query("myalias", query);
@@ -217,7 +215,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
     response = deleteReplica.process(cloudClient);
     assertEquals("47", response.getResponse().get("requestid"));
     state = getRequestStateAfterCompletion("47", MAX_TIMEOUT_SECONDS, cloudClient);
-    assertEquals("DeleteReplica did not complete", "completed", state);
+    assertSame("DeleteReplica did not complete", RequestStatusState.COMPLETED, state);
 
     CollectionAdminRequest.Delete deleteCollection = new CollectionAdminRequest.Delete()
         .setCollectionName(collection)
@@ -225,6 +223,6 @@ public class CollectionsAPIAsyncDistributedZkTest extends AbstractFullDistribZkT
     response = deleteCollection.process(cloudClient);
     assertEquals("48", response.getResponse().get("requestid"));
     state = getRequestStateAfterCompletion("48", MAX_TIMEOUT_SECONDS, cloudClient);
-    assertEquals("DeleteCollection did not complete", "completed", state);
+    assertSame("DeleteCollection did not complete", RequestStatusState.COMPLETED, state);
   }
 }

@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -53,11 +54,11 @@ public class AsyncMigrateRouteKeyTest extends MigrateRouteKeyTest {
     params.set(OverseerCollectionMessageHandler.REQUESTID, asyncId);
     // This task takes long enough to run. Also check for the current state of the task to be running.
     message = sendStatusRequestWithRetry(params, 5);
-    assertEquals("found " + asyncId + " in running tasks", message);
+    assertEquals("found [" + asyncId + "] in running tasks", message);
     // Now wait until the task actually completes successfully/fails.
     message = sendStatusRequestWithRetry(params, MAX_WAIT_SECONDS);
-    assertEquals("Task " + asyncId + " not found in completed tasks.",
-        "found " + asyncId + " in completed tasks", message);
+    assertEquals("Task " + asyncId + " not found in completed tasks.", 
+        "found [" + asyncId + "] in completed tasks", message);
   }
 
   @Override
@@ -83,17 +84,18 @@ public class AsyncMigrateRouteKeyTest extends MigrateRouteKeyTest {
   private String sendStatusRequestWithRetry(ModifiableSolrParams params, int maxCounter)
       throws SolrServerException, IOException {
     NamedList status = null;
-    String state = null;
+    RequestStatusState state = null;
     String message = null;
     NamedList r;
     while (maxCounter-- > 0) {
       r = sendRequest(params);
       status = (NamedList) r.get("status");
-      state = (String) status.get("state");
+      state = RequestStatusState.fromKey((String) status.get("state"));
       message = (String) status.get("msg");
 
-      if (state.equals("completed") || state.equals("failed"))
+      if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED) {
         return (String) status.get("msg");
+      }
       try {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
@@ -106,11 +108,10 @@ public class AsyncMigrateRouteKeyTest extends MigrateRouteKeyTest {
   }
 
   protected NamedList sendRequest(ModifiableSolrParams params) throws SolrServerException, IOException {
-    SolrRequest request = new QueryRequest(params);
+    final SolrRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
 
-    String baseUrl = ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.solrClient)
-        .getBaseURL();
+    String baseUrl = ((HttpSolrClient) shardToJetty.get(SHARD1).get(0).client.solrClient).getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
     try (HttpSolrClient baseServer = new HttpSolrClient(baseUrl)) {
