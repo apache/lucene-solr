@@ -77,7 +77,7 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
     @Override
     public DirectoryReader newReader(IndexWriter writer, SolrCore core) throws IOException {
       TestIndexReaderFactory.newReaderCalled = true;
-      return DirectoryReader.open(writer, true);
+      return DirectoryReader.open(writer);
     }
   }
 

@@ -109,7 +109,7 @@ public class TestStressLucene extends TestRTGBase {
     // reader = IndexReader.open(dir);
     // make this reader an NRT reader from the start to avoid the first non-writer openIfChanged
     // to only opening at the last commit point.
-    reader = DirectoryReader.open(writer.w, true);
+    reader = DirectoryReader.open(writer.w);
 
     for (int i=0; i<nWriteThreads; i++) {
       Thread thread = new Thread("WRITER"+i) {

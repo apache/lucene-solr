@@ -38,6 +38,6 @@ public class StandardIndexReaderFactory extends IndexReaderFactory {
 
   @Override
   public DirectoryReader newReader(IndexWriter writer, SolrCore core) throws IOException {
-    return DirectoryReader.open(writer, true);
+    return DirectoryReader.open(writer);
   }
 }
