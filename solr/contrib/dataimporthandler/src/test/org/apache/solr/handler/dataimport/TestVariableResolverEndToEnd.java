@@ -64,7 +64,7 @@ public class TestVariableResolverEndToEnd  extends AbstractDIHJdbcTestCase {
   
   @Override
   protected String generateConfig() {
-    String thirdLocaleParam = random().nextBoolean() ? "" : (", '" + Locale.getDefault() + "'");
+    String thirdLocaleParam = random().nextBoolean() ? "" : (", '" + Locale.getDefault().toLanguageTag() + "'");
     StringBuilder sb = new StringBuilder();
     sb.append("<dataConfig> \n");
     sb.append("<dataSource name=\"hsqldb\" driver=\"${dataimporter.request.dots.in.hsqldb.driver}\" url=\"jdbc:hsqldb:mem:.\" /> \n");

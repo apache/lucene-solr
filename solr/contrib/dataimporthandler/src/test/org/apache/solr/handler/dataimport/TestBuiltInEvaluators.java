@@ -135,14 +135,14 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
       SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd HH", defaultLocale);
       String sdf = sdfDate.format(twoDaysAgo(defaultLocale, TimeZone.getDefault()));
       String dfe = dateFormatEval.evaluate(
-          "'NOW-2DAYS','yyyy-MM-dd HH','" + defaultLocale + "'", context);
+          "'NOW-2DAYS','yyyy-MM-dd HH','" + defaultLocale.toLanguageTag() + "'", context);
       assertEquals(sdf,dfe);
       for(String tzStr : TimeZone.getAvailableIDs()) {  
         TimeZone tz = TimeZone.getTimeZone(tzStr);
         sdfDate.setTimeZone(tz);
         sdf = sdfDate.format(twoDaysAgo(defaultLocale, tz));
         dfe = dateFormatEval.evaluate(
-            "'NOW-2DAYS','yyyy-MM-dd HH','" + defaultLocale + "','" + tzStr + "'", context);
+            "'NOW-2DAYS','yyyy-MM-dd HH','" + defaultLocale.toLanguageTag() + "','" + tzStr + "'", context);
         assertEquals(sdf,dfe);          
       }
     }
@@ -157,7 +157,7 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
         dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm'", context));
     assertEquals(
         new SimpleDateFormat("yyyy-MM-dd HH:mm", defaultLocale).format(d),
-        dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm','" + defaultLocale + "'", context));
+        dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm','" + defaultLocale.toLanguageTag() + "'", context));
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm", defaultLocale);
     for(String tzStr : TimeZone.getAvailableIDs()) {
       TimeZone tz = TimeZone.getTimeZone(tzStr);
@@ -165,7 +165,7 @@ public class TestBuiltInEvaluators extends AbstractDataImportHandlerTestCase {
       assertEquals(
           sdf.format(d),
           dateFormatEval.evaluate(
-              "A.key, 'yyyy-MM-dd HH:mm','" + defaultLocale + "', '" + tzStr + "'", context));     
+              "A.key, 'yyyy-MM-dd HH:mm','" + defaultLocale.toLanguageTag() + "', '" + tzStr + "'", context));     
       
     }
     

@@ -163,7 +163,7 @@ public final class SolrCellBuilder implements CommandBuilder {
       }
       this.solrContentHandlerFactory = getSolrContentHandlerFactory(factoryClass, dateFormats, config);
 
-      this.locale = getLocale(getConfigs().getString(config, "locale", ""));
+      this.locale = getLocale(getConfigs().getString(config, "locale", null));
       
       this.mediaTypeToParserMap = new HashMap<>();
       //MimeTypes mimeTypes = MimeTypes.getDefaultMimeTypes(); // FIXME getMediaTypeRegistry.normalize() 
@@ -329,7 +329,7 @@ public final class SolrCellBuilder implements CommandBuilder {
     
     @SuppressForbidden(reason = "Usage of outdated locale parsing with Locale#toString() because of backwards compatibility")
     private Locale getLocale(String name) {
-      if (name == null || name.isEmpty()) {
+      if (name == null) {
         return Locale.ROOT;
       }
       for (Locale locale : Locale.getAvailableLocales()) {
