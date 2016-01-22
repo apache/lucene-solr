@@ -434,8 +434,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     } else {
       result = -90 + 180.0 * random().nextDouble();
     }
-    // TODO: we should not do this here!  it weakens the test, and users don't pre-quantize the lat/lons they send us:
-    return unscaleLat(scaleLat(result));
+    return result;
   }
 
   public double randomLon(boolean small) {
@@ -445,8 +444,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     } else {
       result = -180 + 360.0 * random().nextDouble();
     }
-    // TODO: we should not do this here!  it weakens the test, and users don't pre-quantize the lat/lons they send us:
-    return unscaleLon(scaleLon(result));
+    return result;
   }
 
   protected GeoRect randomRect(boolean small, boolean canCrossDateLine) {
