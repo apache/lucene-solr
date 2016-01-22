@@ -61,6 +61,7 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
                     .withFunctionName("min", MinMetric.class)
                     .withFunctionName("max", MaxMetric.class)
                     .withFunctionName("avg", MeanMetric.class)
+                    .withFunctionName("daemon", DaemonStream.class)
                     ;
   }
     
@@ -101,6 +102,24 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
     assertTrue(expressionString.contains("a_s as fieldA"));
     
+  }
+
+  @Test
+  public void testDaemonStream() throws Exception {
+
+    DaemonStream stream;
+    String expressionString;
+
+    // Basic test
+    stream = new DaemonStream(StreamExpressionParser.parse("daemon(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), id=\"blah\", runInterval=\"1000\", queueSize=\"100\")"), factory);
+    expressionString = stream.toExpression(factory).toString();
+    assertTrue(expressionString.contains("daemon(search(collection1,"));
+    assertTrue(expressionString.contains("q=\"*:*\""));
+    assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
+    assertTrue(expressionString.contains("sort=\"a_f asc, a_i asc\""));
+    assertTrue(expressionString.contains("id=blah"));
+    assertTrue(expressionString.contains("queueSize=100"));
+    assertTrue(expressionString.contains("runInterval=1000"));
   }
   
   @Test

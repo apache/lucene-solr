@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -46,6 +47,7 @@ import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -134,6 +136,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     testUniqueStream();
     testRollupStream();
     testStatsStream();
+    testDaemonStream();
     testParallelUniqueStream();
     testParallelReducerStream();
     testParallelRankStream();
@@ -148,6 +151,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     testSubFacetStream();
     testUpdateStream();
     testParallelUpdateStream();
+    testParallelDaemonUpdateStream();
     testIntersectStream();
     testParallelIntersectStream();
     testComplementStream();
@@ -524,6 +528,130 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     del("*:*");
     commit();
   }
+
+  private void testDaemonStream() throws Exception {
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
+    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
+    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
+    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
+    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
+    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
+    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+
+    commit();
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("rollup", RollupStream.class)
+        .withFunctionName("sum", SumMetric.class)
+        .withFunctionName("min", MinMetric.class)
+        .withFunctionName("max", MaxMetric.class)
+        .withFunctionName("avg", MeanMetric.class)
+        .withFunctionName("count", CountMetric.class)
+        .withFunctionName("daemon", DaemonStream.class);
+
+    StreamExpression expression;
+    DaemonStream daemonStream;
+
+    expression = StreamExpressionParser.parse("daemon(rollup("
+        + "search(collection1, q=*:*, fl=\"a_i,a_s\", sort=\"a_s asc\"),"
+        + "over=\"a_s\","
+        + "sum(a_i)"
+        + "), id=\"test\", runInterval=\"1000\", queueSize=\"9\")");
+    daemonStream = (DaemonStream)factory.constructStream(expression);
+
+
+    //Test Long and Double Sums
+
+    daemonStream.open(); // This will start the daemon thread
+
+    for(int i=0; i<4; i++) {
+      Tuple tuple = daemonStream.read(); // Reads from the queue
+      String bucket = tuple.getString("a_s");
+      Double sumi = tuple.getDouble("sum(a_i)");
+
+      //System.out.println("#################################### Bucket 1:"+bucket);
+      assertTrue(bucket.equals("hello0"));
+      assertTrue(sumi.doubleValue() == 17.0D);
+
+      tuple = daemonStream.read();
+      bucket = tuple.getString("a_s");
+      sumi = tuple.getDouble("sum(a_i)");
+
+      //System.out.println("#################################### Bucket 2:"+bucket);
+      assertTrue(bucket.equals("hello3"));
+      assertTrue(sumi.doubleValue() == 38.0D);
+
+      tuple = daemonStream.read();
+      bucket = tuple.getString("a_s");
+      sumi = tuple.getDouble("sum(a_i)");
+      //System.out.println("#################################### Bucket 3:"+bucket);
+      assertTrue(bucket.equals("hello4"));
+      assertTrue(sumi.longValue() == 15);
+    }
+
+    //Now lets wait until the internal queue fills up
+
+    while(daemonStream.remainingCapacity() > 0) {
+      try {
+        Thread.sleep(1000);
+      } catch (Exception e) {
+
+      }
+    }
+
+    //OK capacity is full, let's index a new doc
+
+    indexr(id, "10", "a_s", "hello0", "a_i", "1", "a_f", "10");
+    commit();
+
+    //Now lets clear the existing docs in the queue 9, plus 3 more to get passed the run that was blocked. The next run should
+    //have the tuples with the updated count.
+    for(int i=0; i<12;i++) {
+      daemonStream.read();
+    }
+
+    //And rerun the loop. It should have a new count for hello0
+    for(int i=0; i<4; i++) {
+      Tuple tuple = daemonStream.read(); // Reads from the queue
+      String bucket = tuple.getString("a_s");
+      Double sumi = tuple.getDouble("sum(a_i)");
+
+      //System.out.println("#################################### Bucket 1:"+bucket);
+      assertTrue(bucket.equals("hello0"));
+      assertTrue(sumi.doubleValue() == 18.0D);
+
+      tuple = daemonStream.read();
+      bucket = tuple.getString("a_s");
+      sumi = tuple.getDouble("sum(a_i)");
+
+      //System.out.println("#################################### Bucket 2:"+bucket);
+      assertTrue(bucket.equals("hello3"));
+      assertTrue(sumi.doubleValue() == 38.0D);
+
+      tuple = daemonStream.read();
+      bucket = tuple.getString("a_s");
+      sumi = tuple.getDouble("sum(a_i)");
+      //System.out.println("#################################### Bucket 3:"+bucket);
+      assertTrue(bucket.equals("hello4"));
+      assertTrue(sumi.longValue() == 15);
+    }
+
+    daemonStream.close(); //This should stop the daemon thread
+
+    del("*:*");
+    commit();
+  }
+
+
+
+
+
 
   private void testRollupStream() throws Exception {
 
@@ -2206,6 +2334,174 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     del("*:*");
     commit();
   }
+
+  private void testParallelDaemonUpdateStream() throws Exception {
+    CloudSolrClient destinationCollectionClient = createCloudClient("parallelDestinationCollection1");
+    createCollection("parallelDestinationCollection1", destinationCollectionClient, 2, 2);
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0", "s_multi", "aaaa",  "s_multi", "bbbb",  "i_multi", "4", "i_multi", "7");
+    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0", "s_multi", "aaaa1", "s_multi", "bbbb1", "i_multi", "44", "i_multi", "77");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "s_multi", "aaaa2", "s_multi", "bbbb2", "i_multi", "444", "i_multi", "777");
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "s_multi", "aaaa3", "s_multi", "bbbb3", "i_multi", "4444", "i_multi", "7777");
+    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1", "s_multi", "aaaa4", "s_multi", "bbbb4", "i_multi", "44444", "i_multi", "77777");
+    commit();
+    waitForRecoveriesToFinish("parallelDestinationCollection1", false);
+
+    StreamExpression expression;
+    TupleStream stream;
+    Tuple t;
+
+    String zkHost = zkServer.getZkAddress();
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withCollectionZkHost("parallelDestinationCollection1", zkServer.getZkAddress())
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("update", UpdateStream.class)
+        .withFunctionName("parallel", ParallelStream.class)
+        .withFunctionName("daemon", DaemonStream.class);
+
+    //Copy all docs to destinationCollection
+    String updateExpression = "daemon(update(parallelDestinationCollection1, batchSize=2, search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\")), runInterval=\"1000\", id=\"test\")";
+    TupleStream parallelUpdateStream = factory.constructStream("parallel(collection1, " + updateExpression + ", workers=\"2\", zkHost=\""+zkHost+"\", sort=\"batchNumber asc\")");
+    List<Tuple> tuples = getTuples(parallelUpdateStream);
+    assert(tuples.size() == 2);
+
+    //Lets sleep long enough for daemon updates to run.
+    //Lets stop the daemons
+    Map params = new HashMap();
+    params.put(CommonParams.QT,"/stream");
+    params.put("action","list");
+
+    int workersComplete = 0;
+    for(CloudJettyRunner jetty : this.cloudJettys) {
+      int iterations = 0;
+      INNER:
+      while(iterations == 0) {
+        SolrStream solrStream = new SolrStream(jetty.url, params);
+        solrStream.open();
+        Tuple tupleResponse = solrStream.read();
+        if (tupleResponse.EOF) {
+          solrStream.close();
+          break INNER;
+        } else {
+          long l = tupleResponse.getLong("iterations");
+          if(l > 0) {
+            ++workersComplete;
+          } else {
+            try {
+              Thread.sleep(1000);
+            } catch(Exception e) {
+
+            }
+          }
+          iterations = (int) l;
+          solrStream.close();
+        }
+      }
+    }
+
+    assert(workersComplete == 2);
+
+    destinationCollectionClient.commit();
+
+    //Lets stop the daemons
+    params = new HashMap();
+    params.put(CommonParams.QT,"/stream");
+    params.put("action", "stop");
+    params.put("id", "test");
+    for(CloudJettyRunner jetty : this.cloudJettys) {
+      SolrStream solrStream = new SolrStream(jetty.url, params);
+      solrStream.open();
+      Tuple tupleResponse = solrStream.read();
+      solrStream.close();
+    }
+
+    params = new HashMap();
+    params.put(CommonParams.QT,"/stream");
+    params.put("action","list");
+
+    workersComplete = 0;
+    for(CloudJettyRunner jetty : this.cloudJettys) {
+      long stopTime = 0;
+      INNER:
+      while(stopTime == 0) {
+        SolrStream solrStream = new SolrStream(jetty.url, params);
+        solrStream.open();
+        Tuple tupleResponse = solrStream.read();
+        if (tupleResponse.EOF) {
+          solrStream.close();
+          break INNER;
+        } else {
+          stopTime = tupleResponse.getLong("stopTime");
+          if (stopTime > 0) {
+            ++workersComplete;
+          } else {
+            try {
+              Thread.sleep(1000);
+            } catch(Exception e) {
+
+            }
+          }
+          solrStream.close();
+        }
+      }
+    }
+
+    assertTrue(workersComplete == 2);
+    //Ensure that destinationCollection actually has the new docs.
+    expression = StreamExpressionParser.parse("search(parallelDestinationCollection1, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_i asc\")");
+    stream = new CloudSolrStream(expression, factory);
+    tuples = getTuples(stream);
+    assertEquals(5, tuples.size());
+
+    Tuple tuple = tuples.get(0);
+    assert(tuple.getLong("id") == 0);
+    assert(tuple.get("a_s").equals("hello0"));
+    assert(tuple.getLong("a_i") == 0);
+    assert(tuple.getDouble("a_f") == 0.0);
+    assertList(tuple.getStrings("s_multi"), "aaaa", "bbbb");
+    assertList(tuple.getLongs("i_multi"), Long.parseLong("4"), Long.parseLong("7"));
+
+    tuple = tuples.get(1);
+    assert(tuple.getLong("id") == 1);
+    assert(tuple.get("a_s").equals("hello1"));
+    assert(tuple.getLong("a_i") == 1);
+    assert(tuple.getDouble("a_f") == 1.0);
+    assertList(tuple.getStrings("s_multi"), "aaaa4", "bbbb4");
+    assertList(tuple.getLongs("i_multi"), Long.parseLong("44444"), Long.parseLong("77777"));
+
+    tuple = tuples.get(2);
+    assert(tuple.getLong("id") == 2);
+    assert(tuple.get("a_s").equals("hello2"));
+    assert(tuple.getLong("a_i") == 2);
+    assert(tuple.getDouble("a_f") == 0.0);
+    assertList(tuple.getStrings("s_multi"), "aaaa1", "bbbb1");
+    assertList(tuple.getLongs("i_multi"), Long.parseLong("44"), Long.parseLong("77"));
+
+    tuple = tuples.get(3);
+    assert(tuple.getLong("id") == 3);
+    assert(tuple.get("a_s").equals("hello3"));
+    assert(tuple.getLong("a_i") == 3);
+    assert(tuple.getDouble("a_f") == 3.0);
+    assertList(tuple.getStrings("s_multi"), "aaaa2", "bbbb2");
+    assertList(tuple.getLongs("i_multi"), Long.parseLong("444"), Long.parseLong("777"));
+
+    tuple = tuples.get(4);
+    assert(tuple.getLong("id") == 4);
+    assert(tuple.get("a_s").equals("hello4"));
+    assert(tuple.getLong("a_i") == 4);
+    assert(tuple.getDouble("a_f") == 4.0);
+    assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
+    assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
+
+    destinationCollectionClient.deleteByQuery("*:*");
+    destinationCollectionClient.commit();
+    destinationCollectionClient.close();
+    del("*:*");
+    commit();
+  }
+
+
   
   private void testIntersectStream() throws Exception{
     indexr(id, "0", "a_s", "setA", "a_i", "0");

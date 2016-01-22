@@ -140,6 +140,8 @@ New Features
 
 * SOLR-8556: Add ConcatOperation to be used with the SelectStream (Joel Bernstein, Dennis Gove)
 
+* SOLR-8550: Add asynchronous DaemonStreams to the Streaming API (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 * SOLR-8386: Add field option in the new admin UI schema page loads up even when no schemaFactory has been

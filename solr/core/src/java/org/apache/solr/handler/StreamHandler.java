@@ -19,7 +19,9 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -31,26 +33,7 @@ import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
-import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
-import org.apache.solr.client.solrj.io.stream.ComplementStream;
-import org.apache.solr.client.solrj.io.stream.ExceptionStream;
-import org.apache.solr.client.solrj.io.stream.FacetStream;
-import org.apache.solr.client.solrj.io.stream.HashJoinStream;
-import org.apache.solr.client.solrj.io.stream.InnerJoinStream;
-import org.apache.solr.client.solrj.io.stream.IntersectStream;
-import org.apache.solr.client.solrj.io.stream.JDBCStream;
-import org.apache.solr.client.solrj.io.stream.LeftOuterJoinStream;
-import org.apache.solr.client.solrj.io.stream.MergeStream;
-import org.apache.solr.client.solrj.io.stream.OuterHashJoinStream;
-import org.apache.solr.client.solrj.io.stream.ParallelStream;
-import org.apache.solr.client.solrj.io.stream.RankStream;
-import org.apache.solr.client.solrj.io.stream.ReducerStream;
-import org.apache.solr.client.solrj.io.stream.RollupStream;
-import org.apache.solr.client.solrj.io.stream.StatsStream;
-import org.apache.solr.client.solrj.io.stream.StreamContext;
-import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.client.solrj.io.stream.UniqueStream;
-import org.apache.solr.client.solrj.io.stream.UpdateStream;
+import org.apache.solr.client.solrj.io.stream.*;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
@@ -78,6 +61,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
   private StreamFactory streamFactory = new StreamFactory();
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
+  private Map<String, DaemonStream> daemons = new HashMap();
 
   public void inform(SolrCore core) {
     
@@ -123,6 +107,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("jdbc", JDBCStream.class)
       .withFunctionName("intersect", IntersectStream.class)
       .withFunctionName("complement", ComplementStream.class)
+         .withFunctionName("daemon", DaemonStream.class)
       
       // metrics
       .withFunctionName("min", MinMetric.class)
@@ -167,6 +152,12 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
     SolrParams params = req.getParams();
     params = adjustParams(params);
     req.setParams(params);
+
+    if(params.get("action") != null) {
+      handleAdmin(req, rsp, params);
+      return;
+    }
+
     TupleStream tupleStream = null;
 
     try {
@@ -187,7 +178,46 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
     context.setSolrClientCache(clientCache);
     context.put("core", this.coreName);
     tupleStream.setStreamContext(context);
-    rsp.add("result-set", new TimerStream(new ExceptionStream(tupleStream)));
+    if(tupleStream instanceof DaemonStream) {
+      DaemonStream daemonStream = (DaemonStream)tupleStream;
+      if(daemons.containsKey(daemonStream.getId())) {
+        daemons.remove(daemonStream.getId()).close();
+      }
+      daemonStream.open();  //This will start the deamonStream
+      daemons.put(daemonStream.getId(), daemonStream);
+      rsp.add("result-set", new DaemonResponseStream("Deamon:"+daemonStream.getId()+" started on "+coreName));
+    } else {
+      rsp.add("result-set", new TimerStream(new ExceptionStream(tupleStream)));
+    }
+  }
+
+  private void handleAdmin(SolrQueryRequest req, SolrQueryResponse rsp, SolrParams params) {
+    String action = params.get("action");
+    if("stop".equalsIgnoreCase(action)) {
+      String id = params.get("id");
+      DaemonStream d = daemons.get(id);
+      if(d != null) {
+        d.close();
+        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " stopped on " + coreName));
+      } else {
+        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " not found on " + coreName));
+      }
+    } else if("start".equalsIgnoreCase(action)) {
+      String id = params.get("id");
+      DaemonStream d = daemons.get(id);
+      d.open();
+      rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " started on " + coreName));
+    } else if("list".equalsIgnoreCase(action)) {
+      Collection<DaemonStream> vals = daemons.values();
+      rsp.add("result-set", new DaemonCollectionStream(vals));
+    } else if("kill".equalsIgnoreCase(action)) {
+      String id = params.get("id");
+      DaemonStream d = daemons.remove(id);
+      if (d != null) {
+        d.close();
+      }
+      rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " killed on " + coreName));
+    }
   }
 
   private SolrParams adjustParams(SolrParams params) {
@@ -235,6 +265,78 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       m.put("EOF", true);
       m.put("EXCEPTION", msg);
       return new Tuple(m);
+    }
+  }
+
+  public static class DaemonCollectionStream extends TupleStream {
+    private Iterator<DaemonStream> it;
+
+    public DaemonCollectionStream(Collection<DaemonStream> col) {
+      this.it = col.iterator();
+    }
+    public StreamComparator getStreamSort() {
+      return null;
+    }
+
+    public void close() {
+    }
+
+    public void open() {
+    }
+
+    public void setStreamContext(StreamContext context) {
+    }
+
+    public List<TupleStream> children() {
+      return null;
+    }
+
+    public Tuple read() {
+      if(it.hasNext()) {
+        return it.next().getInfo();
+      } else {
+        Map m = new HashMap();
+        m.put("EOF", true);
+        return new Tuple(m);
+      }
+    }
+  }
+
+  public static class DaemonResponseStream extends TupleStream {
+    private String message;
+    private boolean sendEOF = false;
+
+    public DaemonResponseStream(String message) {
+      this.message = message;
+    }
+    public StreamComparator getStreamSort() {
+      return null;
+    }
+
+    public void close() {
+    }
+
+    public void open() {
+    }
+
+    public void setStreamContext(StreamContext context) {
+    }
+
+    public List<TupleStream> children() {
+      return null;
+    }
+
+    public Tuple read() {
+      if (sendEOF) {
+        Map m = new HashMap();
+        m.put("EOF", true);
+        return new Tuple(m);
+      } else {
+        sendEOF = true;
+        Map m = new HashMap();
+        m.put("DaemonOp",message);
+        return new Tuple(m);
+      }
     }
   }
 

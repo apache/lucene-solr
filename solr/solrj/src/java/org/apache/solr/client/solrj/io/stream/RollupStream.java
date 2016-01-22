@@ -162,6 +162,9 @@ public class RollupStream extends TupleStream implements Expressible {
 
   public void close() throws IOException {
     tupleStream.close();
+    this.currentMetrics = null;
+    this.currentKey = new HashKey("-");
+    this.finished = false;
   }
 
   public Tuple read() throws IOException {
