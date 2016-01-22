@@ -32,16 +32,21 @@ package org.apache.lucene.search.similarities;
  * For more information see: <a href="http://dx.doi.org/10.1007/s10791-013-9225-4">A nonparametric term weighting method for information retrieval based on measuring the divergence from independence</a>
  *
  * @lucene.experimental
- * @see org.apache.lucene.search.similarities.DFRSimilarity
+ * @see org.apache.lucene.search.similarities.IndependenceStandardized
+ * @see org.apache.lucene.search.similarities.IndependenceSaturated
+ * @see org.apache.lucene.search.similarities.IndependenceChiSquared
  */
 
 
 public class DFISimilarity extends SimilarityBase {
-
+  private final Independence independence;
+  
   /**
-   * Sole constructor: DFI is parameter-free.
+   * Create DFI with the specified divergence from independence measure
+   * @param independenceMeasure measure of divergence from independence
    */
-  public DFISimilarity() {
+  public DFISimilarity(Independence independenceMeasure) {
+    this.independence = independenceMeasure;
   }
 
   @Override
@@ -52,14 +57,21 @@ public class DFISimilarity extends SimilarityBase {
     // if the observed frequency is less than or equal to the expected value, then return zero.
     if (freq <= expected) return 0;
 
-    final float chiSquare = (freq - expected) * (freq - expected) / expected;
+    final float measure = independence.score(freq, expected);
 
-    return stats.getBoost() * (float) log2(chiSquare + 1);
+    return stats.getBoost() * (float) log2(measure + 1);
+  }
+
+  /**
+   * Returns the measure of independence
+   */
+  public Independence getIndependence() {
+    return independence;
   }
 
   @Override
   public String toString() {
-    return "DFI";
+    return "DFI(" + independence + ")";
   }
 }
 

@@ -53,6 +53,9 @@
  *     for IR;</li>
  *   <li>The implementation of two {@linkplain org.apache.lucene.search.similarities.LMSimilarity language models} from
  *   Zhai and Lafferty's paper.</li>
+ *   <li>{@linkplain org.apache.lucene.search.similarities.DFISimilarity Divergence from independence} models as described
+ *   in "IRRA at TREC 2012" (Dinçer).
+ *   <li>
  * </ul>
  * 
  * Since {@link org.apache.lucene.search.similarities.SimilarityBase} is not

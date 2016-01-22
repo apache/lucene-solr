@@ -105,6 +105,10 @@ public class RandomSimilarity extends PerFieldSimilarityWrapper {
   static Lambda[] LAMBDAS = {
     new LambdaDF(), new LambdaTTF()
   };
+  /** Independence measures for DFI */
+  static Independence[] INDEPENDENCE_MEASURES = {
+    new IndependenceStandardized(), new IndependenceSaturated(), new IndependenceChiSquared() 
+  };
   static List<Similarity> allSims;
   static {
     allSims = new ArrayList<>();
@@ -128,7 +132,9 @@ public class RandomSimilarity extends PerFieldSimilarityWrapper {
     allSims.add(new LMDirichletSimilarity()); */
     allSims.add(new LMJelinekMercerSimilarity(0.1f));
     allSims.add(new LMJelinekMercerSimilarity(0.7f));
-    allSims.add(new DFISimilarity());
+    for (Independence independence : INDEPENDENCE_MEASURES) {
+      allSims.add(new DFISimilarity(independence));
+    }
   }
   
   @Override

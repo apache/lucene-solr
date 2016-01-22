@@ -18,6 +18,7 @@ package org.apache.solr.search.similarities;
  */
 
 import org.apache.lucene.search.similarities.DFISimilarity;
+import org.apache.lucene.search.similarities.IndependenceChiSquared;
 import org.apache.lucene.search.similarities.Similarity;
 import org.junit.BeforeClass;
 
@@ -39,6 +40,7 @@ public class TestDFISimilarityFactory extends BaseSimilarityTestCase {
     assertEquals(DFISimilarity.class, sim.getClass());
     DFISimilarity dfi = (DFISimilarity) sim;
     assertTrue(dfi.getDiscountOverlaps());
+    assertTrue(dfi.getIndependence() instanceof IndependenceChiSquared);
   }
 
   /**

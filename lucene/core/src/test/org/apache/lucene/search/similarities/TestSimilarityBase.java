@@ -95,6 +95,10 @@ public class TestSimilarityBase extends LuceneTestCase {
   static Lambda[] LAMBDAS = {
     new LambdaDF(), new LambdaTTF()
   };
+  /** Independence measures for DFI */
+  static Independence[] INDEPENDENCE_MEASURES = {
+    new IndependenceStandardized(), new IndependenceSaturated(), new IndependenceChiSquared()  
+  };
   
   private IndexSearcher searcher;
   private Directory dir;
@@ -140,7 +144,9 @@ public class TestSimilarityBase extends LuceneTestCase {
     sims.add(new LMDirichletSimilarity());
     sims.add(new LMJelinekMercerSimilarity(0.1f));
     sims.add(new LMJelinekMercerSimilarity(0.7f));
-    sims.add(new DFISimilarity());
+    for (Independence independence : INDEPENDENCE_MEASURES) {
+      sims.add(new DFISimilarity(independence));
+    }
   }
   
   // ------------------------------- Unit tests --------------------------------
