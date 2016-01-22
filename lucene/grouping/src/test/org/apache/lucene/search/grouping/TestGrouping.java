@@ -775,18 +775,27 @@ public class TestGrouping extends LuceneTestCase {
       
       final ShardState shards = new ShardState(s);
       
+      Set<Integer> seenIDs = new HashSet<>();
       for(int contentID=0;contentID<3;contentID++) {
         final ScoreDoc[] hits = s.search(new TermQuery(new Term("content", "real"+contentID)), numDocs).scoreDocs;
         for(ScoreDoc hit : hits) {
-          final GroupDoc gd = groupDocs[(int) docIDToID.get(hit.doc)];
+          int idValue = (int) docIDToID.get(hit.doc);
+
+          final GroupDoc gd = groupDocs[idValue];
+          seenIDs.add(idValue);
           assertTrue(gd.score == 0.0);
           gd.score = hit.score;
-          assertEquals(gd.id, docIDToID.get(hit.doc));
+          assertEquals(gd.id, idValue);
         }
       }
       
+      // make sure all groups were seen across the hits
+      assertEquals(groupDocs.length, seenIDs.size());
+
       for(GroupDoc gd : groupDocs) {
-        assertTrue(gd.score != 0.0);
+        assertFalse(Float.isNaN(gd.score));
+        assertFalse(Float.isInfinite(gd.score));
+        assertTrue(gd.score >= 0.0);
       }
       
       // Build 2nd index, where docs are added in blocks by
