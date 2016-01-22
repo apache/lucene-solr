@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -129,7 +130,9 @@ public class TestMiniSolrCloudClusterBase extends LuceneTestCase {
       final String asyncId = (random().nextBoolean() ? null : "asyncId("+collectionName+".create)="+random().nextInt());
       createCollection(miniCluster, collectionName, null, asyncId);
       if (asyncId != null) {
-        assertEquals("did not see async createCollection completion", "completed", AbstractFullDistribZkTestBase.getRequestStateAfterCompletion(asyncId, 330, cloudSolrClient));
+        final RequestStatusState state = AbstractFullDistribZkTestBase.getRequestStateAfterCompletion(asyncId, 330,
+            cloudSolrClient);
+        assertSame("did not see async createCollection completion", RequestStatusState.COMPLETED, state);
       }
 
       try (SolrZkClient zkClient = new SolrZkClient

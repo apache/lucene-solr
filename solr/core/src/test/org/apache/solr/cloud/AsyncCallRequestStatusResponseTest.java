@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
@@ -34,12 +35,12 @@ public class AsyncCallRequestStatusResponseTest extends AbstractFullDistribZkTes
     create.setConfigName("conf1");
     create.process(cloudClient);
     waitForCollection(cloudClient.getZkStateReader(), "asynccall", 2);
-    String state = getRequestStateAfterCompletion("1000", 30, cloudClient);
-    assertTrue(state.equals("completed"));
+    final RequestStatusState state = getRequestStateAfterCompletion("1000", 30, cloudClient);
+    assertSame(RequestStatusState.COMPLETED, state);
     CollectionAdminRequest.RequestStatus requestStatus = new CollectionAdminRequest.RequestStatus();
     requestStatus.setRequestId("1000");
     CollectionAdminResponse rsp = requestStatus.process(cloudClient);
-    NamedList r = rsp.getResponse();
+    NamedList<?> r = rsp.getResponse();
     // Check that there's more response than the hardcoded status and states
     assertEquals("Assertion Failure" + r.toString(), 5, r.size());
   }

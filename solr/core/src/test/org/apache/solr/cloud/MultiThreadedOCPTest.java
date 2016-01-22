@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.SplitShard;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -76,13 +77,15 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       while(true) {
         int numRunningTasks = 0;
         for (int i = 1; i <= NUM_COLLECTIONS; i++)
-          if (getRequestState(i + "", client).equals("running"))
+          if (getRequestState(i + "", client) == RequestStatusState.RUNNING) {
             numRunningTasks++;
-        if(numRunningTasks > 1) {
+          }
+        if (numRunningTasks > 1) {
           pass = true;
           break;
-        } else if(counter++ > 100)
+        } else if (counter++ > 100) {
           break;
+        }
         try {
           Thread.sleep(100);
         } catch (InterruptedException e) {
@@ -90,9 +93,9 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
         }
       }
       assertTrue("More than one tasks were supposed to be running in parallel but they weren't.", pass);
-      for(int i=1;i<=NUM_COLLECTIONS;i++) {
-        String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
-        assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
+      for (int i = 1; i <= NUM_COLLECTIONS; i++) {
+        final RequestStatusState state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
+        assertSame("Task " + i + " did not complete, final state: " + state, RequestStatusState.COMPLETED, state);
       }
     }
   }
@@ -122,13 +125,14 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       while(true) {
         int runningTasks = 0;
         int completedTasks = 0;
-        for (int i=1001;i<=1002;i++) {
-          String state = getRequestState(i, client);
-          if (state.equals("running"))
+        for (int i = 1001; i <= 1002; i++) {
+          final RequestStatusState state = getRequestState(i, client);
+          if (state == RequestStatusState.RUNNING) {
             runningTasks++;
-          if (state.equals("completed"))
+          } else if (state == RequestStatusState.COMPLETED) {
             completedTasks++;
-          assertTrue("We have a failed SPLITSHARD task", !state.equals("failed"));
+          }
+          assertNotSame("We have a failed SPLITSHARD task", RequestStatusState.FAILED, state);
         }
         // TODO: REQUESTSTATUS might come back with more than 1 running tasks over multiple calls.
         // The only way to fix this is to support checking of multiple requestids in a single REQUESTSTATUS task.
@@ -145,9 +149,9 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
           return;
         }
       }
-      for (int i=1001;i<=1002;i++) {
-        String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
-        assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
+      for (int i = 1001; i <= 1002; i++) {
+        final RequestStatusState state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
+        assertSame("Task " + i + " did not complete, final state: " + state, RequestStatusState.COMPLETED, state);
       }
     }
   }
@@ -184,9 +188,9 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
       assertEquals("Duplicate request was supposed to exist but wasn't found. De-duplication of submitted task failed.",
           "Task with the same requestid already exists.", r.get("error"));
   
-      for (int i=3001;i<=3002;i++) {
-        String state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
-        assertTrue("Task " + i + " did not complete, final state: " + state,state.equals("completed"));
+      for (int i = 3001; i <= 3002; i++) {
+        final RequestStatusState state = getRequestStateAfterCompletion(i + "", REQUEST_STATUS_TIMEOUT, client);
+        assertSame("Task " + i + " did not complete, final state: " + state, RequestStatusState.COMPLETED, state);
       }
     }
   }
@@ -216,12 +220,13 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
               .setAsyncId("2000");
       splitShardRequest.process(client);
 
-      String state = getRequestState("2000", client);
-      while (state.equals("submitted")) {
+      RequestStatusState state = getRequestState("2000", client);
+      while (state ==  RequestStatusState.SUBMITTED) {
         state = getRequestState("2000", client);
         Thread.sleep(10);
       }
-      assertTrue("SplitShard task [2000] was supposed to be in [running] but isn't. It is [" + state + "]", state.equals("running"));
+      assertSame("SplitShard task [2000] was supposed to be in [running] but isn't. It is [" + state + "]",
+          RequestStatusState.RUNNING, state);
 
       // CLUSTERSTATE is always mutually exclusive, it should return with a response before the split completes
 
@@ -235,8 +240,8 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
 
       state = getRequestState("2000", client);
 
-      assertTrue("After invoking OVERSEERSTATUS, SplitShard task [2000] was still supposed to be in [running] but isn't." +
-          "It is [" + state + "]", state.equals("running"));
+      assertSame("After invoking OVERSEERSTATUS, SplitShard task [2000] was still supposed to be in [running] but "
+          + "isn't. It is [" + state + "]", RequestStatusState.RUNNING, state);
 
     } finally {
       try {
