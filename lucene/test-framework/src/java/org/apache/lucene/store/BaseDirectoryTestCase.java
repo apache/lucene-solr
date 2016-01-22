@@ -1167,7 +1167,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   }
 
   public void testSeekToEndOfFile() throws IOException {
-    try (Directory dir = newDirectory()) {
+    try (Directory dir = getDirectory(createTempDir())) {
       try (IndexOutput out = dir.createOutput("a", IOContext.DEFAULT)) {
         for (int i = 0; i < 1024; ++i) {
           out.writeByte((byte) 0);
@@ -1183,7 +1183,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   }
 
   public void testSeekBeyondEndOfFile() throws IOException {
-    try (Directory dir = newDirectory()) {
+    try (Directory dir = getDirectory(createTempDir())) {
       try (IndexOutput out = dir.createOutput("a", IOContext.DEFAULT)) {
         for (int i = 0; i < 1024; ++i) {
           out.writeByte((byte) 0);

@@ -190,6 +190,10 @@ public class SimpleFSDirectory extends FSDirectory {
     }
 
     @Override
-    protected void seekInternal(long pos) throws IOException {}
+    protected void seekInternal(long pos) throws IOException {
+      if (pos > length()) {
+        throw new EOFException("read past EOF: pos=" + pos + " vs length=" + length() + ": " + this);
+      }
+    }
   }
 }
