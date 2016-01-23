@@ -176,8 +176,8 @@ public class TestGrouping extends LuceneTestCase {
     assertEquals(0, group.scoreDocs[0].doc);
     assertEquals(1, group.scoreDocs[1].doc);
     assertEquals(2, group.scoreDocs[2].doc);
-    assertTrue(group.scoreDocs[0].score > group.scoreDocs[1].score);
-    assertTrue(group.scoreDocs[1].score > group.scoreDocs[2].score);
+    assertTrue(group.scoreDocs[0].score >= group.scoreDocs[1].score);
+    assertTrue(group.scoreDocs[1].score >= group.scoreDocs[2].score);
 
     group = groups.groups[2];
     compareGroupValue("author2", group);
