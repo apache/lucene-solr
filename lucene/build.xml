@@ -350,7 +350,7 @@
     <!-- Exclude clover license files incompatible with the ASL -->
     <delete dir="${src.export.dir}/tools/clover"/>
 
-    <!-- because we only package the "lucene/" folder, we have to adjust dir to work on: ->
+    <!-- because we only package the "lucene/" folder, we have to adjust dir to work on: -->
     <property name="local.src.export.dir" location="${src.export.dir}/lucene"/>
     
     <build-changes changes.src.file="${local.src.export.dir}/CHANGES.txt"
