@@ -341,7 +341,7 @@
   <target name="package-tgz-src" depends="init-dist"
           description="--> Generates the Lucene source distribution as .tgz">
     <property name="source.package.file"
-              value="${dist.dir}/lucene-${version}-src.tgz"/>
+              location="${dist.dir}/lucene-${version}-src.tgz"/>
     <delete file="${source.package.file}"/>
     <export-source source.dir="."/>
 
@@ -350,11 +350,14 @@
     <!-- Exclude clover license files incompatible with the ASL -->
     <delete dir="${src.export.dir}/tools/clover"/>
 
-    <build-changes changes.src.file="${src.export.dir}/CHANGES.txt"
-                   changes.target.dir="${src.export.dir}/docs/changes"
+    <!-- because we only package the "lucene/" folder, we have to adjust dir to work on: ->
+    <property name="local.src.export.dir" location="${src.export.dir}/lucene"/>
+    
+    <build-changes changes.src.file="${local.src.export.dir}/CHANGES.txt"
+                   changes.target.dir="${local.src.export.dir}/docs/changes"
                    changes.product="LUCENE"/>
     <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
-      <tarfileset prefix="lucene-${version}" dir="${src.export.dir}"/>
+      <tarfileset prefix="lucene-${version}" dir="${local.src.export.dir}"/>
     </tar>
     <make-checksums file="${source.package.file}"/>
   </target>
