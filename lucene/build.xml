@@ -336,25 +336,25 @@
     </target>
 
   <!-- ================================================================== -->
-  <!-- Packages the sources from "svn export" with tar-gzip               -->
+  <!-- Packages the sources with tar-gzip               -->
   <!-- ================================================================== -->
   <target name="package-tgz-src" depends="init-dist"
-          description="--> Generates the Lucene source distribution from 'svn export' as .tgz">
+          description="--> Generates the Lucene source distribution as .tgz">
     <property name="source.package.file"
               value="${dist.dir}/lucene-${version}-src.tgz"/>
     <delete file="${source.package.file}"/>
-    <svn-export-source source.dir="."/>
+    <export-source source.dir="."/>
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
-    <delete dir="${svn.export.dir}/tools/javadoc/java8"/>
+    <delete dir="${src.export.dir}/tools/javadoc/java8"/>
     <!-- Exclude clover license files incompatible with the ASL -->
-    <delete dir="${svn.export.dir}/tools/clover"/>
+    <delete dir="${src.export.dir}/tools/clover"/>
 
-    <build-changes changes.src.file="${svn.export.dir}/CHANGES.txt"
-                   changes.target.dir="${svn.export.dir}/docs/changes"
+    <build-changes changes.src.file="${src.export.dir}/CHANGES.txt"
+                   changes.target.dir="${src.export.dir}/docs/changes"
                    changes.product="LUCENE"/>
     <tar tarfile="${source.package.file}" compression="gzip" longfile="gnu">
-      <tarfileset prefix="lucene-${version}" dir="${svn.export.dir}"/>
+      <tarfileset prefix="lucene-${version}" dir="${src.export.dir}"/>
     </tar>
     <make-checksums file="${source.package.file}"/>
   </target>
