@@ -608,13 +608,22 @@
     <attribute name="manifest.file" default="${manifest.file}"/>
     <element name="additional-manifest-attributes" optional="true"/>
     <sequential>
-      <exec dir="." executable="${git.exe}" outputproperty="checkoutid" failifexecutionfails="false">
+      <local name="-checkoutid"/>
+      <local name="-giterr"/>
+      <local name="checkoutid"/>
+      
+      <!-- If possible, include the GIT hash into manifest: -->
+      <exec dir="." executable="${git.exe}" outputproperty="-checkoutid" errorproperty="-giterr" failifexecutionfails="false">
         <arg value="log"/>
-        <arg value="--format='%H'"/>
+        <arg value="--format=%H"/>
         <arg value="-n"/>
         <arg value="1"/>
       </exec>
+      <condition property="checkoutid" value="${-checkoutid}" else="unknown">
+        <matches pattern="^[0-9a-z]+$" string="${-checkoutid}" casesensitive="false" multiline="true"/>
+      </condition>
 
+      <!-- create manifest: -->
       <manifest file="@{manifest.file}">
         <!--
         http://java.sun.com/j2se/1.5.0/docs/guide/jar/jar.html#JAR%20Manifest
