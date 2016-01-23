@@ -38,9 +38,9 @@
     <module>solr</module>
   </modules>
   <properties>
-    <vc-anonymous-base-url>http://svn.apache.org/repos/asf/lucene/dev/trunk</vc-anonymous-base-url>
-    <vc-dev-base-url>https://svn.apache.org/repos/asf/lucene/dev/trunk</vc-dev-base-url>
-    <vc-browse-base-url>http://svn.apache.org/viewvc/lucene/dev/trunk</vc-browse-base-url>
+    <vc-anonymous-base-url>http://git-wip-us.apache.org/repos/asf/lucene-solr.git</vc-anonymous-base-url>
+    <vc-dev-base-url>https://git-wip-us.apache.org/repos/asf/lucene-solr.git</vc-dev-base-url>
+    <vc-browse-base-url>https://git1-us-west.apache.org/repos/asf?p=lucene-solr.git;a=tree</vc-browse-base-url>
     <specification.version>@spec.version@</specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     <java.compat.version>1.8</java.compat.version>
@@ -108,8 +108,8 @@
   </mailingLists>
   <inceptionYear>2000</inceptionYear>
   <scm>
-    <connection>scm:svn:${vc-anonymous-base-url}</connection>
-    <developerConnection>scm:svn:${vc-dev-base-url}</developerConnection>
+    <connection>scm:git:${vc-anonymous-base-url}</connection>
+    <developerConnection>scm:git:${vc-dev-base-url}</developerConnection>
     <url>${vc-browse-base-url}</url>
   </scm>
   <licenses>
@@ -295,7 +295,7 @@
                 <Specification-Version>${specification.version}</Specification-Version>
                 <Specification-Vendor>The Apache Software Foundation</Specification-Vendor>
                 <!-- impl version can be any string -->
-                <Implementation-Version>${project.version} ${svn.revision} - ${user.name} - ${now.timestamp}</Implementation-Version>
+                <Implementation-Version>${project.version} ${checkoutid} - ${user.name} - ${now.timestamp}</Implementation-Version>
                 <Implementation-Vendor>The Apache Software Foundation</Implementation-Vendor>
                 <Implementation-Vendor-Id>${project.groupId}</Implementation-Vendor-Id>
                 <X-Compile-Source-JDK>${java.compat.version}</X-Compile-Source-JDK>
@@ -364,7 +364,7 @@
           <doUpdate>false</doUpdate>
           <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
           <revisionOnScmFailure>NO-REVISION-AVAILABLE</revisionOnScmFailure>
-          <buildNumberPropertyName>svn.revision</buildNumberPropertyName>
+          <buildNumberPropertyName>checkoutid</buildNumberPropertyName>
           <scmDirectory>${top-level}</scmDirectory>
         </configuration>
       </plugin>
@@ -421,7 +421,7 @@
             <Specification-Version>${specification.version}</Specification-Version>
             <Specification-Vendor>The Apache Software Foundation</Specification-Vendor>
             <!-- impl version can be any string -->
-            <Implementation-Version>${project.version} ${svn.revision} - ${user.name} - ${now.timestamp}</Implementation-Version>
+            <Implementation-Version>${project.version} ${checkoutid} - ${user.name} - ${now.timestamp}</Implementation-Version>
             <Implementation-Vendor>The Apache Software Foundation</Implementation-Vendor>
             <Implementation-Vendor-Id>${project.groupId}</Implementation-Vendor-Id>
             <X-Compile-Source-JDK>${java.compat.version}</X-Compile-Source-JDK>
