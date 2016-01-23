@@ -1,0 +1,154 @@
+#!/bin/bash
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Shell script to clean up snapshots of a Solr Lucene collection.
+
+orig_dir=$(pwd)
+cd ${0%/*}/..
+solr_root=$(pwd)
+cd ${orig_dir}
+
+unset days num data_dir user verbose debug
+. ${solr_root}/bin/scripts-util
+
+# set up variables
+prog=${0##*/}
+log=${solr_root}/logs/${prog}.log
+
+# define usage string
+USAGE="\
+usage: $prog -D <days> | -N <num> [-d dir] [-u username] [-v]
+       -D <days>   cleanup snapshots more than <days> days old
+       -N <num>    keep the most recent <num> number of snapshots and
+                   cleanup up the remaining ones that are not being pulled
+       -d          specify directory holding index data
+       -u          specify user to sudo to before running script
+       -v          increase verbosity
+       -V          output debugging info
+"
+
+# parse args
+while getopts D:N:d:u:vV OPTION
+do
+    case $OPTION in
+    D)
+        days="$OPTARG"
+        ;;
+    N)
+        num="$OPTARG"
+        ;;
+    d)
+        data_dir="$OPTARG"
+        ;;
+    u)
+        user="$OPTARG"
+        ;;
+    v)
+        verbose="v"
+        ;;
+    V)
+        debug="V"
+        ;;
+    *)
+        echo "$USAGE"
+        exit 1
+    esac
+done
+
+[[ -n $debug ]] && set -x
+
+if [[ -z ${days} && -z ${num} ]]
+then
+    echo "$USAGE"
+    exit 1
+fi
+
+fixUser "$@"
+
+# use default value for data_dir if not specified
+# relative path starts at ${solr_root}
+if [[ -z ${data_dir} ]]
+then
+    data_dir=${solr_root}/data
+elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
+then
+    data_dir=${solr_root}/${data_dir}
+fi
+
+function remove
+{
+    if [[ "${OS}" == "Darwin" || "${OS}" == "FreeBSD" ]]
+    then
+     syncing=`ps -www -U ${user} |grep -w rsync|grep -v grep|grep -w $1`
+    else
+     syncing=`ps -fwwwu ${user}|grep -w rsync|grep -v grep|grep -w $1`
+    fi
+
+    if [[ -n $syncing ]]
+    then
+	logMessage $1 not removed - rsync in progress
+    else
+	logMessage removing snapshot $1
+	/bin/rm -rf $1
+    fi
+}
+
+setStartTime
+
+logMessage started by $oldwhoami
+logMessage command: $0 $@
+
+# trap control-c
+trap 'echo "caught INT/TERM, exiting now but partial cleanup may have already occured";logExit aborted 13' INT TERM
+
+if [[ -n ${days} ]]
+then
+    #is maxdepth supported?
+    find ${data_dir} -maxdepth 0 -name foobar >/dev/null 2>&1
+    if [ $? = 0 ]; then
+      maxdepth="-maxdepth 1"
+    else
+      unset maxdepth
+    fi
+
+    logMessage cleaning up snapshots more than ${days} days old
+    for i in `find ${data_dir} ${maxdepth} -name 'snapshot.*' -mtime +${days} -print`
+    do
+        remove $i
+    done
+elif [[ -n ${num} ]]
+then
+    logMessage cleaning up all snapshots except for the most recent ${num} ones
+    unset snapshots count
+    snapshots=`find ${data_dir} -type d -name 'snapshot.*' 2>/dev/null| sort -r`
+    if [[ $? == 0 ]]
+    then
+        count=`echo $snapshots|wc -w`
+        startpos=`expr $num + 1`
+        if [[ $count -gt $num ]]
+        then
+            for i in `echo $snapshots|cut -f${startpos}- -d" "`
+            do
+	        remove $i
+	    done
+        fi
+    fi
+fi
+
+logExit ended 0
+
+

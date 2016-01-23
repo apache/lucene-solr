@@ -1,0 +1,38 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<add>
+<doc>
+  <field name="id">SOLR1000</field>
+  <field name="name">Solr, the Enterprise Search Server</field>
+  <field name="manu">Apache Software Foundation</field>
+  <field name="cat">software</field>
+  <field name="cat">search</field>
+  <field name="features">Advanced Full-Text Search Capabilities using Lucene</field>
+  <field name="features">Optimized for High Volume Web Traffic</field>
+  <field name="features">Standards Based Open Interfaces - XML and HTTP</field>
+  <field name="features">Comprehensive HTML Administration Interfaces</field>
+  <field name="features">Scalability - Efficient Replication to other Solr Search Servers</field>
+  <field name="features">Flexible and Adaptable with XML configuration and Schema</field>
+  <field name="features">Good unicode support: h&#xE9;llo (hello with an accent over the e)</field>
+  <field name="price">0</field>
+  <field name="popularity">10</field>
+  <field name="inStock">true</field>
+  <field name="incubationdate_dt">2006-01-17T00:00:00.000Z</field>
+</doc>
+</add>
+

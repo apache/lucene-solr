@@ -1,0 +1,10 @@
+<dataConfig>
+  <dataSource type="ContentStreamDataSource" name="c"/>
+  <document>
+    <entity name="b" dataSource="c" processor="XPathEntityProcessor"
+            forEach="/root/b">
+      <field column="desc" xpath="/root/b/c"/>
+      <field column="id" xpath="/root/b/id"/>
+    </entity>
+  </document>
+</dataConfig>

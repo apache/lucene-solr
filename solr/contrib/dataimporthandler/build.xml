@@ -1,0 +1,210 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="solr-dataimporthandler" default="build">
+	
+  <property name="solr-path" value="../.." />
+  <property name="tikalibs-path" value="../extraction/lib" />
+
+  <import file="../../common-build.xml"/>
+
+  <description>
+    Data Import Handler
+  </description>
+  <path id="classpath.jetty">
+    <!-- jetty -->
+    <fileset dir="${solr-path}/example/lib">
+      <include name="**/*.jar" />
+    </fileset>
+  </path>
+  <path id="common.classpath">
+  	<pathelement location="${solr-path}/build/solr" />
+  	<pathelement location="${solr-path}/build/solrj" />
+  	<fileset dir="${solr-path}/lib" includes="*.jar"/>
+  </path>
+
+  <path id="extras.classpath">
+  	<pathelement location="${solr-path}/build/solr" />
+  	<pathelement location="${solr-path}/build/solrj" />
+  	<pathelement location="target/classes" />
+  	<fileset dir="${solr-path}/lib" includes="*.jar"/>
+  	<fileset dir="lib/" includes="*.jar"/>
+  	<fileset dir="${tikalibs-path}" includes="*.jar"/>
+  </path>
+	
+  <path id="test.classpath">
+  	<path refid="common.classpath" />
+  	<path refid="classpath.jetty" />
+	  <pathelement path="target/classes" />
+  	<pathelement path="target/test-classes" />
+    <pathelement path="${java.class.path}"/>
+  </path>
+
+  <path id="test.extras.classpath">
+  	<path refid="extras.classpath" />
+  	<path refid="classpath.jetty" />
+	  <pathelement path="target/classes" />
+	  <pathelement path="target/extras/classes" />
+  	<pathelement path="target/test-classes" />
+  	<pathelement path="target/extras/test-classes" />
+    <pathelement path="${java.class.path}"/>
+  </path>
+	
+  <target name="clean">
+  	<delete failonerror="false" dir="target"/>
+    <delete failonerror="false">
+      <fileset dir="src/test/resources" includes="**/dataimport.properties" />
+    </delete>
+    <!-- Clean up examples -->
+    <delete failonerror="false">
+      <!-- we no longer copy things into this directory, but we still clean it up
+           the files are still there from a previous checkout
+        -->
+      <fileset dir="${example}/example-DIH/solr/mail/lib" includes="*.jar" />
+    </delete>
+  </target>
+	
+  <target name="init">
+  	<mkdir dir="target/classes"/>
+    <mkdir dir="${build.javadoc}" />
+    <ant dir="../../" inheritall="false" target="compile" />
+    <ant dir="../../" inheritall="false" target="make-manifest" />
+  </target>
+	
+  <target name="compile" depends="init">
+    <solr-javac destdir="target/classes"
+                classpathref="common.classpath">
+      <src path="src/main/java" />
+    </solr-javac>
+  </target>
+
+  <target name="compileExtras" depends="compile">
+    <solr-javac destdir="target/extras/classes"
+                classpathref="extras.classpath">
+      <src path="src/extras/main/java" />
+    </solr-javac>
+  </target>
+	
+  <target name="build" depends="compile,compileExtras">
+    <solr-jar destfile="target/${fullnamever}.jar" basedir="target/classes"
+              manifest="${common.dir}/${dest}/META-INF/MANIFEST.MF" />
+    <solr-jar destfile="target/apache-${ant.project.name}-extras-${version}.jar" basedir="target/extras/classes"
+              manifest="${common.dir}/${dest}/META-INF/MANIFEST.MF" />
+  </target>
+	
+  <target name="compileTests" depends="compile">
+  	<solr-javac destdir="target/test-classes"
+  	                classpathref="test.classpath">
+  	  <src path="src/test/java" />
+  	</solr-javac>
+  </target>
+
+  <target name="compileExtrasTests" depends="compileExtras">
+  	<solr-javac destdir="target/extras/test-classes"
+  	                classpathref="test.classpath">
+  	  <src path="src/extras/test/java" />
+  	</solr-javac>
+  </target>
+
+  <target  name="test" depends="testCore,testExtras"/>
+	
+  <target name="testCore" depends="compileTests">
+  	<mkdir dir="${junit.output.dir}"/>
+  	
+  	<junit printsummary="on"
+           haltonfailure="no"
+           errorProperty="tests.failed"
+           failureProperty="tests.failed"
+           dir="src/test/resources/"
+           >
+      <formatter type="brief" usefile="false" if="junit.details"/>
+      <classpath refid="test.classpath"/>
+      <formatter type="xml"/>
+      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
+        <fileset dir="src/test/java" includes="${junit.includes}"/>
+      </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
+        <fileset dir="src/test/java" includes="**/${testcase}.java"/>
+      </batchtest>
+    </junit>
+
+    <fail if="tests.failed">Tests failed!</fail>
+  </target>
+
+  <target name="testExtras" depends="compileExtrasTests">
+  	<mkdir dir="${junit.output.dir}"/>
+
+  	<junit printsummary="on"
+           haltonfailure="no"
+           errorProperty="tests.failed"
+           failureProperty="tests.failed"
+           dir="src/extras/test/resources/"
+           >
+      <formatter type="brief" usefile="false" if="junit.details"/>
+      <classpath refid="test.extras.classpath"/>
+      <formatter type="xml"/>
+      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
+        <fileset dir="src/extras/test/java" includes="${junit.includes}"/>
+      </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
+        <fileset dir="src/extras/test/java" includes="**/${testcase}.java"/>
+      </batchtest>
+    </junit>
+
+    <fail if="tests.failed">Tests failed!</fail>
+  </target>
+	
+  <target name="dist" depends="build">
+  	<copy todir="../../build/web">
+  		<fileset dir="src/main/webapp" includes="**" />
+  	</copy>
+  	<mkdir dir="../../build/web/WEB-INF/lib"/>
+  	<copy file="target/${fullnamever}.jar" todir="${solr-path}/build/web/WEB-INF/lib"></copy>
+  	<copy file="target/${fullnamever}.jar" todir="${solr-path}/dist"></copy>
+  	<copy file="target/apache-${ant.project.name}-extras-${version}.jar" todir="${solr-path}/dist"></copy>
+  </target>
+	
+  <target name="javadoc">
+   	<sequential>
+      <mkdir dir="${build.javadoc}/contrib-${name}"/>
+
+      <path id="javadoc.classpath">
+        <path refid="common.classpath"/>
+        <path refid="extras.classpath"/>
+      </path>
+
+      <invoke-javadoc
+        destdir="${build.javadoc}/contrib-${name}"
+      	title="${Name} ${version} contrib-${fullnamever} API">
+        <sources>
+          <packageset dir="src/main/java"/>
+          <packageset dir="src/extras/main/java"/>
+        </sources>
+      </invoke-javadoc>
+    </sequential>
+  </target>
+
+  <target name="example" depends="build,dist">
+    <!--
+        this target use to copy libs, but that is no longer needed.
+        now we just depend on dist to ensure the extra's jar exists.
+     -->
+  </target>
+  
+</project>

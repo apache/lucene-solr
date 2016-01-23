@@ -1,0 +1,56 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<add>
+
+<doc>
+  <field name="id">F8V7067-APL-KIT</field>
+  <field name="name">Belkin Mobile Power Cord for iPod w/ Dock</field>
+  <field name="manu">Belkin</field>
+  <field name="cat">electronics</field>
+  <field name="cat">connector</field>
+  <field name="features">car power adapter, white</field>
+  <field name="weight">4</field>
+  <field name="price">19.95</field>
+  <field name="popularity">1</field>
+  <field name="inStock">false</field>
+  <!-- Buffalo store -->
+  <field name="store">45.17614,-93.87341</field>
+  <field name="manufacturedate_dt">2005-08-01T16:30:25Z</field>
+</doc>
+
+<doc>
+  <field name="id">IW-02</field>
+  <field name="name">iPod &amp; iPod Mini USB 2.0 Cable</field>
+  <field name="manu">Belkin</field>
+  <field name="cat">electronics</field>
+  <field name="cat">connector</field>
+  <field name="features">car power adapter for iPod, white</field>
+  <field name="weight">2</field>
+  <field name="price">11.50</field>
+  <field name="popularity">1</field>
+  <field name="inStock">false</field>
+  <!-- San Francisco store -->
+  <field name="store">37.7752,-122.4232</field>
+  <field name="manufacturedate_dt">2006-02-14T23:55:59Z</field>
+</doc>
+
+
+</add>
+
+
+

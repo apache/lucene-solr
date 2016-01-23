@@ -1,0 +1,16 @@
+<div class="result-document">
+  #foreach($fieldname in $doc.fieldNames)
+     <p>
+       <span class="field-name">$fieldname :</span>
+       <span>
+       #foreach($value in $doc.getFieldValues($fieldname))
+         $value
+       #end
+       </span>
+     </p>
+  #end
+  #if($params.getBool("debugQuery",false))
+    <a href="#" onclick='jQuery(this).siblings("pre").toggle(); return false;'>toggle explain</a>
+    <pre style="display:none">$response.getExplainMap().get($doc.getFirstValue('id'))</pre>
+  #end
+</div>

@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<html>
+<head>
+<title>Min Number Should Match Specification Format</title>
+</head>
+
+<body>
+<h1>Min Number Should Match Specification Format</h1>
+
+<blockquote>
+This document explains the format used for specifying the
+"Min Number Should Match" criteria of the BooleanQuery objects built by the
+DisMaxRequestHandler. 
+</blockquote>
+
+
+<h2>Explaination of Concept: "Min Number Should Match"</h2>
+<div>
+:TODO:
+</div>
+
+
+<h2>Specification Format</h2>
+<div>
+
+<p>Specification strings may have the following formats...</p>
+
+<dl>
+
+ <dt><code>3</code></dt>
+ <dd>A positive integer, indicating a fixed value regardless of the
+     number of optional clauses.
+ </dd>
+
+ <dt><code>-2</code></dt>
+ <dd>A negative integer, indicating that the total number of optional clauses,
+     minus this number should be mandatory.
+ </dd>
+
+ <dt><code>75%</code></dt>
+ <dd>A percentage, indicating that this percent of the total number of
+     optional clauses are neccessary.  The number computed from the
+     percentage is rounded down and used as the minimum.
+ </dd>
+
+ <dt><code>-25%</code></dt>
+ <dd>A negative percentage, indicating that this percent of the total
+     number of optional clauses can be missing.  The number computed from the
+     percentage is rounded down, before being subtracted from the total
+     to determine the minimum.
+ </dd>
+
+ <dt><code>3&lt;90%</code></dt>
+ <dd>A positive integer, followed by the less-than symbol, followed
+     by any of the previously mentioned specifiers is a conditional
+     specification.  It indicates that if the number of optional clauses is
+     equal to (or less than) the integer, they are all required, but
+     if it's greater then the integer, the specification applies.
+     In this example: if there are 1 to 3 clauses they are all required,
+     but for 4 or more clauses only 90% are required.
+ </dd>
+
+ <dt><code>2&lt;-25% 9&lt;-3</code></dt>
+ <dd>Multiple conditional specifications can be seperated by spaces,
+     each one only being valid for numbers greater then the one before it.
+     In this example: if there are 1 or 2 clauses both are required,
+     if there are 3-9 clauses all but 25% are requred, and if there
+     are more then 9 clauses, all but three are required.
+ </dd>
+</dl>
+
+<p>
+ A few important notes...
+</p>
+ 
+<ul>
+ <li>
+ When dealing with percentages, negative values can be used to get
+ different behavior in edge cases.  75% and -25% mean the same thing
+ when dealing with 4 clauses, but when dealing with 5 clauses 75% means
+ 3 are required, but -25% means 4 are required.
+ </li>
+ <li>
+ If the calculations based on the specification determine that no
+ optional clauses are needed, the usual rules about BooleanQueries
+ still apply at search time (a BooleanQuery containing no required
+ clauses must still match at least one optional clause)
+ </li>
+ <li>
+ No matter what number the calculation arrives at,
+ a value greater then the number of optional clauses, or a value less then
+ 1 will never be used.  (ie: no matter how low or how high the result of the
+ calculation result is, the minimum number of required matches will never
+ be lower then 1 or greatered then the number of clauses.
+ </li>
+</ul>
+
+
+</div>
+
+
+
+
+<hr>
+<pre>
+$Id:$
+$Source:$
+</pre>
+
+</body> </html>

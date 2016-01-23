@@ -1,0 +1,198 @@
+#!/bin/bash
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Shell script to install a snapshot into place as the Lucene collection
+# for a Solr server
+
+orig_dir=$(pwd)
+cd ${0%/*}/..
+solr_root=$(pwd)
+cd ${orig_dir}
+
+unset master_host master_status_dir data_dir user verbose debug
+. ${solr_root}/bin/scripts-util
+
+# set up variables
+prog=${0##*/}
+log=${solr_root}/logs/${prog}.log
+
+LOCKDIR="${solr_root}/logs/snapinstaller-lock"
+PIDFILE="${LOCKDIR}/PID"
+
+
+# define usage string
+USAGE="\
+usage: $prog [-M master] [-S sdir] [-d dir] [-u username] [-v]
+       -M master   specify hostname of master server from where to pull index
+                   snapshot
+       -S          specify directory holding snapshot status on master server
+       -d          specify directory holding index data on local machine
+       -u          specify user to sudo to before running script
+       -v          increase verbosity
+       -V          output debugging info
+"
+
+# parse args
+while getopts M:S:d:u:vV OPTION
+do
+    case $OPTION in
+    M)
+        master_host="$OPTARG"
+        ;;
+    S)
+        master_status_dir="$OPTARG"
+        ;;
+    d)
+        data_dir="$OPTARG"
+        ;;
+    u)
+        user="$OPTARG"
+        ;;
+    v)
+        verbose="v"
+        ;;
+    V)
+        debug="V"
+        ;;
+    *)
+        echo "$USAGE"
+        exit 1
+    esac
+done
+
+[[ -n $debug ]] && set -x
+
+if [[ -z ${master_host} ]]
+then
+    echo "name of master server missing in $confFile or command line."
+    echo "$USAGE"
+    exit 1
+fi
+
+if [[ -z ${master_status_dir} ]]
+then
+    echo "directory holding snapshot status on master server missing in $confFile or command line."
+    echo "$USAGE"
+    exit 1
+fi
+
+fixUser "$@"
+
+# use default value for data_dir if not specified
+# relative path starts at ${solr_root}
+if [[ -z ${data_dir} ]]
+then
+    data_dir=${solr_root}/data
+elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
+then
+    data_dir=${solr_root}/${data_dir}
+fi
+
+# assume relative path to start at ${solr_root}
+if [[ "`echo ${master_status_dir}|cut -c1`" != "/" ]]
+then
+    master_status_dir=${solr_root}/${master_status_dir}
+fi
+
+setStartTime
+
+if test -r $PIDFILE
+then
+  OTHERPID="$(cat "${PIDFILE}")"
+  if ! kill -0 $OTHERPID &>/dev/null; then
+    logMessage removing stale lock ${OTHERPID}
+    rm -rf "${LOCKDIR}"
+  else
+    logExit "lock failed, PID ${OTHERPID} is active" 1
+  fi
+fi
+
+mkdir "${LOCKDIR}" &>/dev/null
+echo "$$" >"${PIDFILE}"
+
+logMessage started by $oldwhoami
+logMessage command: $0 $@
+
+# get directory name of latest snapshot
+name=`perl -e 'chdir q|'${data_dir}'|; print ((sort grep {/^snapshot[.][1-9][0-9]{13}$/} <*>)[-1])'`
+
+# clean up after INT/TERM
+trap 'echo "caught INT/TERM, exiting now but partial installation may have already occured";/bin/rm -rf ${data_dir"/index.tmp$$;logExit aborted 13' INT TERM
+
+# is there a snapshot
+if [[ "${name}" == "" ]]
+then
+    logMessage no shapshot available
+    logExit ended 0
+fi
+
+name=${data_dir}/${name}
+
+# has snapshot already been installed
+if [[ ${name} == `cat ${solr_root}/logs/snapshot.current 2>/dev/null` ]]
+then
+    logMessage latest snapshot ${name} already installed
+    logExit ended 0
+fi
+
+# make sure master has directory for hold slaves stats/state
+if
+    ! ssh -o StrictHostKeyChecking=no ${master_host} mkdir -p ${master_status_dir}
+then
+    logMessage failed to ssh to master ${master_host}, snapshot status not updated on master
+fi
+
+# install using hard links into temporary directory
+# remove original index and then atomically copy new one into place
+logMessage installing snapshot ${name}
+if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin" || "${OS}" == "FreeBSD" ]]
+then
+  orig_dir=$(pwd)
+  mkdir ${data_dir}/index.tmp$$ && \
+  cd ${name} && \
+  find . -print|cpio -pdlmu ${data_dir}/index.tmp$$ 1>/dev/null 2>&1 && \
+  /bin/rm -rf ${data_dir}/index && \
+  mv -f ${data_dir}/index.tmp$$ ${data_dir}/index
+  cd ${orig_dir}
+else
+  cp -lr ${name}/ ${data_dir}/index.tmp$$ && \
+  /bin/rm -rf ${data_dir}/index && \
+  mv -f ${data_dir}/index.tmp$$ ${data_dir}/index
+fi
+
+# update distribution stats
+echo ${name} > ${solr_root}/logs/snapshot.current
+
+# push stats/state to master
+if
+    ! scp -q -o StrictHostKeyChecking=no ${solr_root}/logs/snapshot.current ${master_host}:${master_status_dir}/snapshot.current.`uname -n`
+then
+    logMessage failed to ssh to master ${master_host}, snapshot status not updated on master
+fi
+
+# notify Solr to open a new Searcher
+logMessage notifing Solr to open a new Searcher
+${solr_root}/bin/commit
+if [[ $? != 0 ]]
+then
+  logMessage failed to connect to Solr server
+  logMessage snapshot installed but Solr server has not open a new Searcher
+  logExit failed 1
+fi
+
+rm -rf "${LOCKDIR}"
+logExit ended 0

@@ -1,0 +1,269 @@
+#!/bin/bash
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Shell script to copy snapshots of a Solr Lucene collection from the master
+
+orig_dir=$(pwd)
+cd ${0%/*}/..
+solr_root=$(pwd)
+cd ${orig_dir}
+
+unset master_host rsyncd_port master_data_dir master_status_dir snap_name
+unset sizeonly stats data_dir user verbose debug compress startStatus
+. ${solr_root}/bin/scripts-util
+
+# set up variables
+prog=${0##*/}
+log=${solr_root}/logs/${prog}.log
+
+# define usage string
+USAGE="\
+usage: $prog [-M master] [-P portnum] [-D mdir] [-S sdir] [-n snapshot] [-d dir] [-u username] [-svz]
+       -M master   specify hostname of master server from where to pull index
+                   snapshot
+       -P port     specify rsyncd port number of master server from where to
+                   pull index snapshot
+       -D          specify directory holding index data on master server
+       -S          specify directory holding snapshot status on master server
+       -n snapshot pull a specific snapshot by name
+       -d          specify directory holding index data on local machine
+       -u          specify user to sudo to before running script
+       -s          use the --size-only option with rsync
+       -v          increase verbosity (-vv show file transfer stats also)
+       -V          output debugging info
+       -z          enable compression of data
+"
+
+# parse args
+while getopts M:P:D:S:n:d:u:svVz OPTION
+do
+    case $OPTION in
+    M)
+        master_host="$OPTARG"
+        ;;
+    P)
+        rsyncd_port="$OPTARG"
+        ;;
+    D)
+        master_data_dir="$OPTARG"
+        ;;
+    S)
+        master_status_dir="$OPTARG"
+        ;;
+    n)
+        snap_name="$OPTARG"
+        ;;
+    d)
+        data_dir="$OPTARG"
+        ;;
+    u)
+        user="$OPTARG"
+        ;;
+    s)
+        sizeonly="--size-only"
+        ;;
+    v)
+        [[ -n $verbose ]] && stats="--stats" || verbose=v
+        ;;
+    V)
+        debug="V"
+        ;;
+    z)
+        compress="z"
+        ;;
+    *)
+        echo "$USAGE"
+        exit 1
+    esac
+done
+
+[[ -n $debug ]] && set -x
+
+if [[ -z ${master_host} ]]
+then
+    echo "name of master server missing in $confFile or command line."
+    echo "$USAGE"
+    exit 1
+fi
+
+# try to determine rsyncd port number from $confFile if not specified on
+# command line, default to solr_port+10000
+if [[ -z ${rsyncd_port} ]]
+then
+    if [[ "${solr_port}" ]]
+    then
+        rsyncd_port=`expr 10000 + ${solr_port}`
+    else
+        echo "rsyncd port number of master server missing in $confFile or command line."
+        echo "$USAGE"
+        exit 1
+    fi
+fi
+
+if [[ -z ${master_data_dir} ]]
+then
+    echo "directory holding index data on master server missing in $confFile or command line."
+    echo "$USAGE"
+    exit 1
+fi
+
+if [[ -z ${master_status_dir} ]]
+then
+    echo "directory holding snapshot status on master server missing in $confFile or command line."
+    echo "$USAGE"
+    exit 1
+fi
+
+fixUser "$@"
+
+# use default value for data_dir if not specified
+# relative path starts at ${solr_root}
+if [[ -z ${data_dir} ]]
+then
+    data_dir=${solr_root}/data
+elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
+then
+    data_dir=${solr_root}/${data_dir}
+fi
+
+# assume relative path to start at ${solr_root}
+if [[ "`echo ${master_data_dir}|cut -c1`" != "/" ]]
+then
+    master_data_dir=${solr_root}/${master_data_dir}
+fi
+if [[ "`echo ${master_status_dir}|cut -c1`" != "/" ]]
+then
+    master_status_dir=${solr_root}/${master_status_dir}
+fi
+
+# push stats/state to master if necessary
+function pushStatus
+{
+    scp -q -o StrictHostKeyChecking=no ${solr_root}/logs/snappuller.status ${master_host}:${master_status_dir}/snapshot.status.`uname -n`
+}
+
+setStartTime
+
+logMessage started by $oldwhoami
+logMessage command: $0 $@
+
+if [[ ! -f ${solr_root}/logs/snappuller-enabled ]]
+then
+    logMessage snappuller disabled
+    exit 2
+fi
+
+# make sure we can ssh to master
+if
+    ! ssh -o StrictHostKeyChecking=no ${master_host} id 1>/dev/null 2>&1
+then
+    logMessage failed to ssh to master ${master_host}
+    exit 1
+fi
+
+# get directory name of latest snapshot if not specified on command line
+if [[ -z ${snap_name} ]]
+then
+    snap_name=`ssh -o StrictHostKeyChecking=no ${master_host} "perl -e 'chdir q|${master_data_dir}|; print ((sort grep {/^snapshot[.][1-9][0-9]{13}$/} <*>)[-1])'"`
+fi
+if [[ "${snap_name}" == "" ]]
+then
+    logMessage no snapshot available on ${master_host} in ${master_data_dir}
+    logExit ended 0
+else
+    name=`basename ${snap_name}`
+fi
+
+# clean up after INT/TERM
+trap 'echo cleaning up, please wait ...;/bin/rm -rf ${data_dir}/${name} ${data_dir}/${name}-wip;echo ${startStatus} aborted:$(timeStamp)>${solr_root}/logs/snappuller.status;pushStatus;logExit aborted 13' INT TERM
+
+if [[ -d ${data_dir}/${name} || -d ${data_dir}/${name}-wip ]]
+then
+    logMessage no new snapshot available on ${master_host} in ${master_data_dir}
+    logExit ended 0
+fi
+
+# take a snapshot of current index so that only modified files will be rsync-ed
+# put the snapshot in the 'work-in-progress" directory to prevent it from
+# being installed while the copying is still in progress
+if [[ "${OS}" == "SunOS" || "${OS}" == "Darwin" || "${OS}" == "FreeBSD"  ]]
+then
+  orig_dir=$(pwd)
+  mkdir ${data_dir}/${name}-wip
+  cd ${data_dir}/index
+  find . -print|cpio -pdlmu ${data_dir}/${name}-wip 1>/dev/null 2>&1
+  cd ${orig_dir}
+else
+  cp -lr ${data_dir}/index ${data_dir}/${name}-wip
+fi
+# force rsync of segments and .del files since we are doing size-only
+if [[ -n ${sizeonly} ]]
+then
+    rm -f ${data_dir}/${name}-wip/segments
+    rm -f ${data_dir}/${name}-wip/*.del
+fi
+
+logMessage pulling snapshot ${name}
+
+# make sure master has directory for hold slaves stats/state
+ssh -o StrictHostKeyChecking=no ${master_host} mkdir -p ${master_status_dir}
+
+# start new distribution stats
+rsyncStart=`date +'%Y-%m-%d %H:%M:%S'`
+if [[ "${OS}" == "Darwin" || "${OS}" == "FreeBSD"  ]]
+then
+  startTimestamp=`date -j -f '%Y-%m-%d %H:%M:%S' "$rsyncStart" +'%Y%m%d-%H%M%S'`
+  rsyncStartSec=`date -j -f '%Y-%m-%d %H:%M:%S' "$rsyncStart" +'%s'`
+else
+startTimestamp=`date -d "$rsyncStart" +'%Y%m%d-%H%M%S'`
+rsyncStartSec=`date -d "$rsyncStart" +'%s'`
+fi
+startStatus="rsync of `basename ${name}` started:$startTimestamp"
+echo ${startStatus} > ${solr_root}/logs/snappuller.status
+pushStatus
+
+# rsync over files that have changed
+rsync -Wa${verbose}${compress} --delete ${sizeonly} \
+${stats} rsync://${master_host}:${rsyncd_port}/solr/${name}/ ${data_dir}/${name}-wip
+
+rc=$?
+rsyncEnd=`date +'%Y-%m-%d %H:%M:%S'`
+if [[ "${OS}" == "Darwin" || "${OS}" == "FreeBSD"  ]]
+then
+  endTimestamp=`date -j -f '%Y-%m-%d %H:%M:%S' "$rsyncEnd" +'%Y%m%d-%H%M%S'`
+  rsyncEndSec=`date -j -f '%Y-%m-%d %H:%M:%S' "$rsyncEnd" +'%s'`
+else
+endTimestamp=`date -d "$rsyncEnd" +'%Y%m%d-%H%M%S'`
+rsyncEndSec=`date -d "$rsyncEnd" +'%s'`
+fi
+elapsed=`expr $rsyncEndSec - $rsyncStartSec`
+if [[ $rc != 0 ]]
+then
+  logMessage rsync failed
+  /bin/rm -rf ${data_dir}/${name}-wip
+  echo ${startStatus} failed:$endTimestamp > ${solr_root}/logs/snappuller.status
+  pushStatus
+  logExit failed 1
+fi
+
+# move into place atomically
+mv ${data_dir}/${name}-wip ${data_dir}/${name}
+
+# finish new distribution stats`
+echo ${startStatus} ended:$endTimestamp rsync-elapsed:${elapsed} > ${solr_root}/logs/snappuller.status
+pushStatus
+logExit ended 0

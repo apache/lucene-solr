@@ -1,0 +1,56 @@
+solr-ruby exposes the power of Solr as a Ruby  DSL (domain specific language).
+
+  Visit the solr-ruby wiki for more information: http://wiki.apache.org/solr/solr-ruby
+
+USAGE 
+
+First launch Solr:
+
+  cd solr
+  java -jar start.jar
+
+In a separate shell, launch {{{irb -Ilib}}}:
+
+  require 'solr'  # load the library
+  include Solr    # Allow Solr:: to be omitted from class/module references
+
+  # connect to the solr instance
+  conn = Connection.new('http://localhost:8983/solr', :autocommit => :on)
+
+  # add a document to the index
+  conn.add(:id => 123, :title_text => 'Lucene in Action')
+
+  # update the document
+  conn.update(:id => 123, :title_text => 'Solr in Action')
+
+  # print out the first hit in a query for 'action'
+  response = conn.query('action')
+  print response.hits[0]
+
+  # iterate through all the hits for 'action'
+  conn.query('action') do |hit|
+    puts hit.inspect
+  end
+
+  # delete document by id
+  conn.delete(123)
+
+INSTALLATION
+
+First run the tests:
+
+  rake
+  
+then build the gem:
+
+  rake package
+
+and install the versioned gem:
+
+  gem install pkg/solr-x.x.x.gem 
+
+LICENSE
+
+This package is licensed using the Apache Software License 2.0.
+
+<http://www.apache.org/licenses/LICENSE-2.0>
