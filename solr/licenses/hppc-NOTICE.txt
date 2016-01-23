@@ -1,5 +1,0 @@
-
-HPPC library integrates the following classes from other open-source projects:
-
-- fast BitSets from Apache Lucene (Apache license; same as HPPC).
-

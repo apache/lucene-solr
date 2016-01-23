@@ -1,6 +1,0 @@
-Copyright (C) 2000-2004 Jason Hunter & Brett McLaughlin.
-All rights reserved.
-
-JDOM is available under an Apache-style open source license, with the acknowledgment clause removed.
-This license is among the least restrictive license available, enabling developers to use JDOM in 
-creating new products without requiring them to release their own products as open source.

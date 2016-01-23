@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="Derby">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/solr/example/example-DIH/solr/db/lib/derby-10.9.1.0.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

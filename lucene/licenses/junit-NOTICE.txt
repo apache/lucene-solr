@@ -1,2 +1,0 @@
-JUnit (under lib/junit-4.10.jar) is licensed under the Common Public License v. 1.0
-See http://junit.sourceforge.net/cpl-v10.html

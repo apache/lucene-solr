@@ -1,3 +1,0 @@
-#macro(legacy_macro)legacy_macro_SUCCESS#end
-
-#macro(url_root)Loaded from: VM_global_library.vm#end
