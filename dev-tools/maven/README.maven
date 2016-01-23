@@ -71,7 +71,6 @@ D. How to use Maven to build Lucene/Solr
 
    In summary, to enable Maven builds, perform the following:
 
-         svn update
          ant get-maven-poms
          cd maven-build
 
@@ -79,9 +78,7 @@ D. How to use Maven to build Lucene/Solr
 
    1. Prerequisites: JDK 1.8+ and Maven 2.2.1 or 3.X
 
-   2. Make sure your sources are up to date.  If you checked your sources out
-      from the Apache Subversion repository, run "svn update" from the top
-      level.
+   2. Make sure your sources are up to date.
 
    3. Copy the Maven POM templates from under dev-tools/maven/ to the
       maven-build/ directory using the following command from the top-level
@@ -90,8 +87,8 @@ D. How to use Maven to build Lucene/Solr
          ant get-maven-poms
 
       Note that you will need to do this whenever changes to the POM
-      templates are committed.  It's a good idea to follow every "svn update"
-      with "ant get-maven-poms" for this reason.
+      templates are committed.  For this reason, it's a good idea run
+      "ant get-maven-poms" after you update from origin.
 
       The above command copies all of the POM templates from dev-tools/maven/,
       filling in the project version with the default "X.X-SNAPSHOT".  If you
