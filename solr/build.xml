@@ -453,7 +453,7 @@
   <target name="package-src-tgz" depends="init-dist"
           description="Packages the Solr Source Distribution">
     <property name="source.package.file"
-              value="${package.dir}/${fullnamever}-src.tgz"/>
+              location="${package.dir}/${fullnamever}-src.tgz"/>
     <delete file="${source.package.file}" failonerror="false" />
     <export-source source.dir=".."/>
 
