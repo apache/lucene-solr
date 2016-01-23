@@ -238,14 +238,7 @@
 
   <property name="manifest.file" location="${build.dir}/MANIFEST.MF"/>
 
-  <!-- 
-    we attempt to exec svnversion to get details build information
-    for jar manifests.  this property can be set at runtime to an
-    explicit path as needed, or ant will just try to find it in the
-    default PATH. (this is useful for Hudson)
-  -->
-  <property name="svnversion.exe" value="svnversion" />
-  <property name="svn.exe" value="svn" />
+  <property name="git.exe" value="git" />
   <property name="perl.exe" value="perl" />
   
   <property name="python.exe" value="python" />
@@ -615,14 +608,12 @@
     <attribute name="manifest.file" default="${manifest.file}"/>
     <element name="additional-manifest-attributes" optional="true"/>
     <sequential>
-      <local name="-svnversion-raw"/>
-      <local name="svnversion"/>
-      
-      <!-- If possible, include the svnversion -->
-      <exec dir="." executable="${svnversion.exe}" outputproperty="-svnversion-raw" failifexecutionfails="false"/>
-      <condition property="svnversion" value="${-svnversion-raw}" else="unknown">
-        <matches pattern="^\s*[\d:MSP]+\s*$" string="${-svnversion-raw}" casesensitive="true"/>
-      </condition>
+      <exec dir="." executable="${git.exe}" outputproperty="checkoutid" failifexecutionfails="false">
+        <arg value="log"/>
+        <arg value="--format='%H'"/>
+        <arg value="-n"/>
+        <arg value="1"/>
+      </exec>
 
       <manifest file="@{manifest.file}">
         <!--
@@ -654,7 +645,7 @@
         <attribute name="Implementation-Title" value="@{implementation.title}"/>
         <!-- impl version can be any string -->
         <attribute name="Implementation-Version"
-                   value="${version} ${svnversion} - ${user.name} - ${DSTAMP} ${TSTAMP}"/>
+                   value="${version} ${checkoutid} - ${user.name} - ${DSTAMP} ${TSTAMP}"/>
         <attribute name="Implementation-Vendor"
                    value="The Apache Software Foundation"/>
         <attribute name="X-Compile-Source-JDK" value="${javac.source}"/>
@@ -1540,7 +1531,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   
   $ ant -Dclover.license.path=/path/to/clover.license -Drun.clover=true ...
   
-  Apache Lucene/Solr source checkouts from SVN already contain the
+  Apache Lucene/Solr source checkouts from Git already contain the
   file, but source distributions cannot because of legal reasons.
   #########################################################################
   
@@ -2170,48 +2161,18 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <target name="validate">
   </target>
 
-  <property name="svn.export.dir" location="${build.dir}/svn-export"/>
-  <macrodef name="svn-export-source"
-            description="Runs 'svn export' with the same URL and revision as the current working copy.">
+  <property name="src.export.dir" location="${build.dir}/src-export"/>
+  <macrodef name="export-source"
+            description="Exports the source to src.export.dir.">
     <attribute name="source.dir"/>
     <sequential>
-      <delete dir="${svn.export.dir}" includeemptydirs="true" failonerror="false"/>
-      <get-svn-info directory="@{source.dir}"/>
-      <exec dir="@{source.dir}" executable="${svn.exe}" failonerror="true">
-        <arg value="export"/>
-        <arg value="--native-eol"/>
-        <arg value="LF"/>
-        <arg value="-r"/>
-        <arg value="${svn.Revision}"/>
-        <arg value="${svn.URL}"/>
-        <arg value="${svn.export.dir}"/>
+      <delete dir="${src.export.dir}" includeemptydirs="true" failonerror="false"/>
+      <exec dir="@{source.dir}" executable="${git.exe}" failonerror="true">
+        <arg value="checkout-index"/>
+        <arg value="-a"/>
+        <arg value="-f"/>
+        <arg value="--prefix=${src.export.dir}/"/>
       </exec>
-    </sequential>
-  </macrodef>
-
-  <macrodef name="get-svn-info"
-            description="Populates properties svn.URL and svn.Revision using 'svn info'.">
-    <attribute name="directory"/>
-    <sequential>
-      <exec dir="@{directory}" executable="${svnversion.exe}" outputproperty="svn.ver"/>
-      <fail message="A subversion checkout is required for this target">
-        <condition>
-          <matches pattern="(exported|unversioned.*)" string="${svn.ver}" casesensitive="false"/>
-        </condition>
-      </fail>
-      <exec dir="@{directory}" executable="${svn.exe}" outputproperty="svn.info" failonerror="true">
-        <arg value="info"/>
-      </exec>
-      <loadproperties>
-        <propertyresource name="svn.info"/>
-        <filterchain>
-          <linecontainsregexp>
-            <regexp pattern="(URL|Revision):"/>
-          </linecontainsregexp>
-          <replacestring from=": " to="="/>
-          <prefixlines prefix="svn."/>
-        </filterchain>
-      </loadproperties>
     </sequential>
   </macrodef>
 

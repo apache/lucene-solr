@@ -448,36 +448,36 @@
         dest="${package.dir}/KEYS"/>
   </target>
  
-  <!-- Makes a tarball from running "svn export" at the root level.    -->
+  <!-- Makes a tarball of the source.    -->
   <!-- Copies NOTICE.txt and LICENSE.txt from solr/ to the root level. -->
   <target name="package-src-tgz" depends="init-dist"
           description="Packages the Solr Source Distribution">
     <property name="source.package.file"
               value="${package.dir}/${fullnamever}-src.tgz"/>
     <delete file="${source.package.file}" failonerror="false" />
-    <svn-export-source source.dir=".."/>
+    <export-source source.dir=".."/>
 
     <!-- Exclude javadoc package-list files under licenses incompatible with the ASL -->
-    <delete dir="${svn.export.dir}/lucene/tools/javadoc/java8"/>
+    <delete dir="${src.export.dir}/lucene/tools/javadoc/java8"/>
     <!-- Exclude clover license files incompatible with the ASL -->
-    <delete dir="${svn.export.dir}/lucene/tools/clover"/>
+    <delete dir="${src.export.dir}/lucene/tools/clover"/>
 
-    <build-changes changes.src.file="${svn.export.dir}/solr/CHANGES.txt"
-                   changes.target.dir="${svn.export.dir}/solr/docs/changes"
+    <build-changes changes.src.file="${src.export.dir}/solr/CHANGES.txt"
+                   changes.target.dir="${src.export.dir}/solr/docs/changes"
                    changes.product="SOLR"/>
 
     <tar destfile="${source.package.file}" compression="gzip" longfile="gnu">
-      <tarfileset dir="${svn.export.dir}/lucene"
+      <tarfileset dir="${src.export.dir}/lucene"
                   includes="CHANGES.txt"
                   fullpath="${fullnamever}/solr/LUCENE_CHANGES.txt" />
-      <tarfileset dir="${svn.export.dir}"
+      <tarfileset dir="${src.export.dir}"
                   prefix="${fullnamever}"
                   excludes="solr/example/**/*.sh solr/example/**/bin/ solr/scripts/**"/>
-      <tarfileset dir="${svn.export.dir}"
+      <tarfileset dir="${src.export.dir}"
                   prefix="${fullnamever}"
                   filemode="755"
                   includes="solr/example/**/*.sh solr/example/**/bin/ solr/scripts/**"/>
-      <tarfileset dir="${svn.export.dir}/solr" prefix="${fullnamever}"
+      <tarfileset dir="${src.export.dir}/solr" prefix="${fullnamever}"
                   includes="NOTICE.txt,LICENSE.txt"/>
     </tar>
     <make-checksums file="${source.package.file}"/>
