@@ -1,0 +1,39 @@
+body {
+  font-family: Georgia, "Times New Roman", Times, serif;
+  color: black;
+  background-color: white;
+}
+
+h1 {
+  font-family: Helvetica, Geneva, Arial, SunSans-Regular, sans-serif;
+  color: black; 
+  background-color: light-gray;
+}
+
+h2 {
+  font-family: Helvetica, Geneva, Arial, SunSans-Regular, sans-serif;
+  color: black; 
+  background-color: #D8D8D8;
+}
+
+a:link {
+  color: blue;
+}
+
+a:visited {
+  color: purple; 
+}
+
+li.bulleted-list {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+li {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+span.attrib {
+  color: darkgreen;
+}

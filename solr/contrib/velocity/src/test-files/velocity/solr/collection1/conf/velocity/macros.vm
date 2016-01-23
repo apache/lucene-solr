@@ -1,0 +1,3 @@
+#macro(test_macro)test_macro_SUCCESS#end
+
+#macro(url_root)Loaded from: macros.vm#end

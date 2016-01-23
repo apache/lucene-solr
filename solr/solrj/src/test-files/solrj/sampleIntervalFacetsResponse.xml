@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+
+<response>
+
+<lst name="responseHeader">
+  <int name="status">0</int>
+  <int name="QTime">3</int>
+  <lst name="params">
+    <arr name="f.price.facet.interval.set">
+      <str>[0,10]</str>
+      <str>(10,100]</str>
+      <str>(100,*]</str>
+    </arr>
+    <str name="facet">true</str>
+    <str name="indent">true</str>
+    <arr name="f.popularity.facet.interval.set">
+      <str>{!key=bad}[0,4]</str>
+      <str>{!key=average}(4,7]</str>
+      <str>{!key=good}(7,*]</str>
+    </arr>
+    <arr name="facet.interval">
+      <str>price</str>
+      <str>popularity</str>
+    </arr>
+    <str name="q">*:*</str>
+    <str name="wt">xml</str>
+  </lst>
+</lst>
+<result name="response" numFound="32" start="0">
+  <doc>
+    <str name="id">GB18030TEST</str>
+    <str name="name">Test with some GB18030 encoded characters</str>
+    <arr name="features">
+      <str>No accents here</str>
+      <str>这是一个功能</str>
+      <str>This is a feature (translated)</str>
+      <str>这份文件是很有光泽</str>
+      <str>This document is very shiny (translated)</str>
+    </arr>
+    <float name="price">0.0</float>
+    <str name="price_c">0,USD</str>
+    <bool name="inStock">true</bool>
+    <long name="_version_">1475377182535581696</long></doc>
+  <doc>
+    <str name="id">SP2514N</str>
+    <str name="name">Samsung SpinPoint P120 SP2514N - hard drive - 250 GB - ATA-133</str>
+    <str name="manu">Samsung Electronics Co. Ltd.</str>
+    <str name="manu_id_s">samsung</str>
+    <arr name="cat">
+      <str>electronics</str>
+      <str>hard drive</str>
+    </arr>
+    <arr name="features">
+      <str>7200RPM, 8MB cache, IDE Ultra ATA-133</str>
+      <str>NoiseGuard, SilentSeek technology, Fluid Dynamic Bearing (FDB) motor</str>
+    </arr>
+    <float name="price">92.0</float>
+    <str name="price_c">92,USD</str>
+    <int name="popularity">6</int>
+    <bool name="inStock">true</bool>
+    <date name="manufacturedate_dt">2006-02-13T15:26:37Z</date>
+    <str name="store">35.0752,-97.032</str>
+    <long name="_version_">1475377182576476160</long></doc>
+  <doc>
+    <str name="id">6H500F0</str>
+    <str name="name">Maxtor DiamondMax 11 - hard drive - 500 GB - SATA-300</str>
+    <str name="manu">Maxtor Corp.</str>
+    <str name="manu_id_s">maxtor</str>
+    <arr name="cat">
+      <str>electronics</str>
+      <str>hard drive</str>
+    </arr>
+    <arr name="features">
+      <str>SATA 3.0Gb/s, NCQ</str>
+      <str>8.5ms seek</str>
+      <str>16MB cache</str>
+    </arr>
+    <float name="price">350.0</float>
+    <str name="price_c">350,USD</str>
+    <int name="popularity">6</int>
+    <bool name="inStock">true</bool>
+    <str name="store">45.17614,-93.87341</str>
+    <date name="manufacturedate_dt">2006-02-13T15:26:37Z</date>
+    <long name="_version_">1475377182582767616</long></doc>
+  <doc>
+    <str name="id">F8V7067-APL-KIT</str>
+    <str name="name">Belkin Mobile Power Cord for iPod w/ Dock</str>
+    <str name="manu">Belkin</str>
+    <str name="manu_id_s">belkin</str>
+    <arr name="cat">
+      <str>electronics</str>
+      <str>connector</str>
+    </arr>
+    <arr name="features">
+      <str>car power adapter, white</str>
+    </arr>
+    <float name="weight">4.0</float>
+    <float name="price">19.95</float>
+    <str name="price_c">19.95,USD</str>
+    <int name="popularity">1</int>
+    <bool name="inStock">false</bool>
+    <str name="store">45.18014,-93.87741</str>
+    <date name="manufacturedate_dt">2005-08-01T16:30:25Z</date>
+    <long name="_version_">1475377182589059072</long></doc>
+  <doc>
+    <str name="id">IW-02</str>
+    <str name="name">iPod &amp; iPod Mini USB 2.0 Cable</str>
+    <str name="manu">Belkin</str>
+    <str name="manu_id_s">belkin</str>
+    <arr name="cat">
+      <str>electronics</str>
+      <str>connector</str>
+    </arr>
+    <arr name="features">
+      <str>car power adapter for iPod, white</str>
+    </arr>
+    <float name="weight">2.0</float>
+    <float name="price">11.5</float>
+    <str name="price_c">11.50,USD</str>
+    <int name="popularity">1</int>
+    <bool name="inStock">false</bool>
+    <str name="store">37.7752,-122.4232</str>
+    <date name="manufacturedate_dt">2006-02-14T23:55:59Z</date>
+    <long name="_version_">1475377182591156224</long></doc>
+  <doc>
+    <str name="id">MA147LL/A</str>
+    <str name="name">Apple 60 GB iPod with Video Playback Black</str>
+    <str name="manu">Apple Computer Inc.</str>
+    <str name="manu_id_s">apple</str>
+    <arr name="cat">
+      <str>electronics</str>
+      <str>music</str>
+    </arr>
+    <arr name="features">
+      <str>iTunes, Podcasts, Audiobooks</str>
+      <str>Stores up to 15,000 songs, 25,000 photos, or 150 hours of video</str>
+      <str>2.5-inch, 320x240 color TFT LCD display with LED backlight</str>
+      <str>Up to 20 hours of battery life</str>
+      <str>Plays AAC, MP3, WAV, AIFF, Audible, Apple Lossless, H.264 video</str>
+      <str>Notes, Calendar, Phone book, Hold button, Date display, Photo wallet, Built-in games, JPEG photo playback, Upgradeable firmware, USB 2.0 compatibility, Playback speed control, Rechargeable capability, Battery level indication</str>
+    </arr>
+    <str name="includes">earbud headphones, USB cable</str>
+    <float name="weight">5.5</float>
+    <float name="price">399.0</float>
+    <str name="price_c">399.00,USD</str>
+    <int name="popularity">10</int>
+    <bool name="inStock">true</bool>
+    <str name="store">37.7752,-100.0232</str>
+    <date name="manufacturedate_dt">2005-10-12T08:00:00Z</date>
+    <long name="_version_">1475377182597447680</long></doc>
+  <doc>
+    <str name="id">adata</str>
+    <str name="compName_s">A-Data Technology</str>
+    <str name="address_s">46221 Landing Parkway Fremont, CA 94538</str>
+    <long name="_version_">1475377182608982016</long></doc>
+  <doc>
+    <str name="id">apple</str>
+    <str name="compName_s">Apple</str>
+    <str name="address_s">1 Infinite Way, Cupertino CA</str>
+    <long name="_version_">1475377182608982017</long></doc>
+  <doc>
+    <str name="id">asus</str>
+    <str name="compName_s">ASUS Computer</str>
+    <str name="address_s">800 Corporate Way Fremont, CA 94539</str>
+    <long name="_version_">1475377182610030592</long></doc>
+  <doc>
+    <str name="id">ati</str>
+    <str name="compName_s">ATI Technologies</str>
+    <str name="address_s">33 Commerce Valley Drive East Thornhill, ON L3T 7N6 Canada</str>
+    <long name="_version_">1475377182610030593</long></doc>
+</result>
+<lst name="facet_counts">
+  <lst name="facet_queries"/>
+  <lst name="facet_fields"/>
+  <lst name="facet_dates"/>
+  <lst name="facet_ranges"/>
+  <lst name="facet_intervals">
+    <lst name="price">
+      <int name="[0,10]">3</int>
+      <int name="(10,100]">4</int>
+      <int name="(100,*]">9</int>
+    </lst>
+    <lst name="popularity">
+      <int name="bad">3</int>
+      <int name="average">10</int>
+      <int name="good">2</int>
+    </lst>
+  </lst>
+</lst>
+</response>

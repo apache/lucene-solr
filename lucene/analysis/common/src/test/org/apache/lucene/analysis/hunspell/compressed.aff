@@ -1,0 +1,29 @@
+AF 5
+AF AA
+AF BB
+AF CC
+AF DD
+AF EE
+
+SET UTF-8
+TRY abcdefghijklmopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+FLAG long
+
+SFX AA Y 3
+SFX AA   0     e         n
+SFX AA   0     e         t
+SFX AA   0     e         h
+
+SFX CC Y 2
+SFX CC   0     d/3       c
+SFX CC   0     c         b
+
+SFX DD Y 1
+SFX DD   0     s         o
+
+SFX EE Y 1
+SFX EE   0     d         o
+
+PFX BB Y 1
+PFX BB   0     s         o

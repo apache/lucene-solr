@@ -1,0 +1,5 @@
+#id	name	shape	
+C5	CenterAt5	ENVELOPE(-5, 5, 5, -5)
+C10	CenterAt10	ENVELOPE(-10, 10, 10, -10)
+NW15	NorthWest	ENVELOPE(15, 20, 20, 15)
+

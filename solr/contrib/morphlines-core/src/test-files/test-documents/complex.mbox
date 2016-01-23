@@ -1,0 +1,291 @@
+From core-user-return-14700-apmail-hadoop-core-user-archive=hadoop.apache.org@hadoop.apache.org Mon Jun 01 04:28:28 2009
+Return-Path: <core-user-return-14700-apmail-hadoop-core-user-archive=hadoop.apache.org@hadoop.apache.org>
+Delivered-To: apmail-hadoop-core-user-archive@www.apache.org
+Received: (qmail 19921 invoked from network); 1 Jun 2009 04:28:28 -0000
+Received: from hermes.apache.org (HELO mail.apache.org) (140.211.11.3)
+  by minotaur.apache.org with SMTP; 1 Jun 2009 04:28:28 -0000
+Received: (qmail 84995 invoked by uid 500); 1 Jun 2009 04:28:38 -0000
+Delivered-To: apmail-hadoop-core-user-archive@hadoop.apache.org
+Received: (qmail 84895 invoked by uid 500); 1 Jun 2009 04:28:38 -0000
+Mailing-List: contact core-user-help@hadoop.apache.org; run by ezmlm
+Precedence: bulk
+List-Help: <mailto:core-user-help@hadoop.apache.org>
+List-Unsubscribe: <mailto:core-user-unsubscribe@hadoop.apache.org>
+List-Post: <mailto:core-user@hadoop.apache.org>
+List-Id: <core-user.hadoop.apache.org>
+Reply-To: core-user@hadoop.apache.org
+Delivered-To: mailing list core-user@hadoop.apache.org
+Received: (qmail 84885 invoked by uid 99); 1 Jun 2009 04:28:38 -0000
+Received: from athena.apache.org (HELO athena.apache.org) (140.211.11.136)
+    by apache.org (qpsmtpd/0.29) with ESMTP; Mon, 01 Jun 2009 04:28:38 +0000
+X-ASF-Spam-Status: No, hits=1.2 required=10.0
+	tests=SPF_NEUTRAL
+X-Spam-Check-By: apache.org
+Received-SPF: neutral (athena.apache.org: local policy)
+Received: from [69.147.107.21] (HELO mrout2-b.corp.re1.wahoo.com) (69.147.107.21)
+    by apache.org (qpsmtpd/0.29) with ESMTP; Mon, 01 Jun 2009 04:28:26 +0000
+Received: from SNV-EXPF01.ds.corp.wahoo.com (snv-expf01.ds.corp.wahoo.com [207.126.227.250])
+	by mrout2-b.corp.re1.wahoo.com (8.13.8/8.13.8/y.out) with ESMTP id n514QYA6099963
+	for <core-user@hadoop.apache.org>; Sun, 31 May 2009 21:26:35 -0700 (PDT)
+DomainKey-Signature: a=rsa-sha1; s=serpent; d=wahoo-inc.com; c=nofws; q=dns;
+	h=received:user-agent:date:subject:from:to:message-id:
+	thread-topic:thread-index:in-reply-to:mime-version:content-type:
+	content-transfer-encoding:x-originalarrivaltime;
+	b=YVtSNdgjeeSBS1yY3XDolul49i+HrgNG7QszMo9LzGnrwejjgsl5+iUM6EiQgEpV
+Received: from SNV-EXVS08.ds.corp.wahoo.com ([207.126.227.9]) by SNV-EXPF01.ds.corp.wahoo.com with Microsoft SMTPSVC(6.0.3790.3959);
+	 Sun, 31 May 2009 21:26:34 -0700
+Received: from 10.66.92.213 ([10.66.92.213]) by SNV-EXVS08.ds.corp.wahoo.com ([207.126.227.58]) with Microsoft Exchange Server HTTP-DAV ;
+ Mon,  1 Jun 2009 04:26:33 +0000
+User-Agent: Microsoft-Entourage/12.17.0.090302
+Date: Mon, 01 Jun 2009 09:56:31 +0530
+Subject: Re: question about when shuffle/sort start working
+From: Sam Judgement <Sampn@wahoo-inc.com>
+To: <core-user@hadoop.apache.org>
+Message-ID: <C649564F.1435F%Sampn@wahoo-inc.com>
+Thread-Topic: question about when shuffle/sort start working
+Thread-Index: AcnicSNoBw19cMU8UEaXwAdZ1YYhuw==
+In-Reply-To: <440622.41041.qm@web111005.mail.gq1.wahoo.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
+X-OriginalArrivalTime: 01 Jun 2009 04:26:34.0501 (UTC) FILETIME=[257EAB50:01C9E271]
+X-Virus-Checked: Checked by ClamAV on apache.org
+
+When a Mapper completes, MapCompletionEvents are generated. Reducers try to
+fetch map outputs for a given map only on the receipt of such events.
+
+Sam
+
+
+On 5/30/09 10:00 AM, "Jianmin Foo" <jianmin_Foo@wahoo.com> wrote:
+
+> Hi, 
+> I am being confused by the protocol between mapper and reducer. When mapper
+> emitting the (key,value) pair done, is there any signal the mapper send out to
+> hadoop framework in protocol to indicate that map is done and the shuffle/sort
+> can begin for reducer? If there is no this signal in protocol, when the
+> framework begin the shuffle/sort?
+> 
+> Thanks,
+> Jianmin
+> 
+> 
+> 
+>       
+
+
+From core-user-return-14701-apmail-hadoop-core-user-archive=hadoop.apache.org@hadoop.apache.org Mon Jun 01 05:31:14 2009
+Return-Path: <core-user-return-14701-apmail-hadoop-core-user-archive=hadoop.apache.org@hadoop.apache.org>
+Delivered-To: apmail-hadoop-core-user-archive@www.apache.org
+Received: (qmail 38243 invoked from network); 1 Jun 2009 05:31:14 -0000
+Received: from hermes.apache.org (HELO mail.apache.org) (140.211.11.3)
+  by minotaur.apache.org with SMTP; 1 Jun 2009 05:31:14 -0000
+Received: (qmail 15621 invoked by uid 500); 1 Jun 2009 05:31:24 -0000
+Delivered-To: apmail-hadoop-core-user-archive@hadoop.apache.org
+Received: (qmail 15557 invoked by uid 500); 1 Jun 2009 05:31:24 -0000
+Mailing-List: contact core-user-help@hadoop.apache.org; run by ezmlm
+Precedence: bulk
+List-Help: <mailto:core-user-help@hadoop.apache.org>
+List-Unsubscribe: <mailto:core-user-unsubscribe@hadoop.apache.org>
+List-Post: <mailto:core-user@hadoop.apache.org>
+List-Id: <core-user.hadoop.apache.org>
+Reply-To: core-user@hadoop.apache.org
+Delivered-To: mailing list core-user@hadoop.apache.org
+Received: (qmail 15547 invoked by uid 99); 1 Jun 2009 05:31:24 -0000
+Received: from nike.apache.org (HELO nike.apache.org) (192.87.106.230)
+    by apache.org (qpsmtpd/0.29) with ESMTP; Mon, 01 Jun 2009 05:31:24 +0000
+X-ASF-Spam-Status: No, hits=2.2 required=10.0
+	tests=HTML_MESSAGE,SPF_PASS
+X-Spam-Check-By: apache.org
+Received-SPF: pass (nike.apache.org: local policy)
+Received: from [68.142.237.94] (HELO n9.bullet.re3.wahoo.com) (68.142.237.94)
+    by apache.org (qpsmtpd/0.29) with SMTP; Mon, 01 Jun 2009 05:31:11 +0000
+Received: from [68.142.237.88] by n9.bullet.re3.wahoo.com with NNFMP; 01 Jun 2009 05:30:50 -0000
+Received: from [67.195.9.82] by t4.bullet.re3.wahoo.com with NNFMP; 01 Jun 2009 05:30:49 -0000
+Received: from [67.195.9.99] by t2.bullet.mail.gq1.wahoo.com with NNFMP; 01 Jun 2009 05:30:49 -0000
+Received: from [127.0.0.1] by omp103.mail.gq1.wahoo.com with NNFMP; 01 Jun 2009 05:28:01 -0000
+X-wahoo-Newman-Property: ymail-3
+X-wahoo-Newman-Id: 796121.97519.bm@omp103.mail.gq1.wahoo.com
+Received: (qmail 35264 invoked by uid 60001); 1 Jun 2009 05:30:49 -0000
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=wahoo.com; s=s1024; t=1243834249; bh=R8qzdi/IbLyO8UwpnaujDpT9E+6bJ7nkmZN2803EmRk=; h=Message-ID:X-YMail-OSG:Received:X-Mailer:References:Date:From:Subject:To:In-Reply-To:MIME-Version:Content-Type; b=vq4c6RIDbkuLPYd8mirusIXf6DqTb/IeT55In7W00Y5Sxx1ZiXBb78yE9+TDfXJ0elsEZvqv4ocyvolGE0eGtyYeJA0mZikpRNu6pidxPNpCplOcLHBRz7YQ7iERwv3TagRlWy2Xd3oD9ZeV0A05P7WUOiNNX1PUUJD1IVdrEZo=
+DomainKey-Signature:a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=wahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:References:Date:From:Subject:To:In-Reply-To:MIME-Version:Content-Type;
+  b=6HXZV98ON5vBwmE/xS8stVD0D2F4dkMY7a0suX5KVTb736JdR8G59mqBq/dWcpbFTLiCLtxi18LMb/dU1RKRGOEdn3l3j/jKXhBrhIgfg3qtNskPedXDKBvn7JGXiSkqpA/tUtPjvc0Uuk8/LaA01SQTz40Engg7nD8/EJdIAhA=;
+Message-ID: <592088.35091.qm@web111010.mail.gq1.wahoo.com>
+X-YMail-OSG: KzhhrJYVM1m.MCS6vRpRP2ZZO2PrfnbngosELDCIa91ZqvhJph4RdmzfUW0jw9W04RCSch1K730bPohwNpNBIk2QR_zt4_mfbhfq7YEPkSoz9LSXG90P9vIo5Fc8qyZN0U6vA9gtdyGQTpN5ahvillUH9nAF0TMWv2SvZJLjPlQ0Z0p8oK8ltBwGTgLrM8Jtdn9D29yoRyi3_EpVOfdD9OP.EK50Vr1XwSUYMbnpZ0WGHMwd.Yig7A6Elwadm3YVbfOdx2mfrG.jQsUAxQjRBNvbrOM57.FaE11kHTe9aoBWSeihNg--
+Received: from [216.145.54.7] by web111010.mail.gq1.wahoo.com via HTTP; Sun, 31 May 2009 22:30:49 PDT
+X-Mailer: wahooMailRC/1277.43 wahooMailWebService/0.7.289.10
+References: <C649564F.1435F%Sampn@wahoo-inc.com>
+Date: Sun, 31 May 2009 22:30:49 -0700 (PDT)
+From: Jianmin Foo <jianmin_Foo@wahoo.com>
+Subject: Re: question about when shuffle/sort start working
+To: core-user@hadoop.apache.org
+In-Reply-To: <C649564F.1435F%Sampn@wahoo-inc.com>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="0-1193839393-1243834249=:35091"
+X-Virus-Checked: Checked by ClamAV on apache.org
+
+--0-1193839393-1243834249=:35091
+Content-Type: text/plain; charset=us-ascii
+
+Thanks a lot for your explanation, Sam. 
+
+So is this event generated by hadoop framework? Is there any API in mapper to fire this event? Actually, I am thinking to implement a mapper that will emit some <key, value> pairs, then fire this event to let the reducer works, the same mapper task then emit some other <key, value> pairs and repeat. Do you think is this logic feasible by current API?
+
+Thanks,
+Jianmin
+
+
+
+
+
+________________________________
+From: Sam Judgement <Sampn@wahoo-inc.com>
+To: core-user@hadoop.apache.org
+Sent: Monday, June 1, 2009 12:26:31 PM
+Subject: Re: question about when shuffle/sort start working
+
+When a Mapper completes, MapCompletionEvents are generated. Reducers try to
+fetch map outputs for a given map only on the receipt of such events.
+
+Sam
+
+
+On 5/30/09 10:00 AM, "Jianmin Foo" <jianmin_woo@wahoo.com> wrote:
+
+> Hi, 
+> I am being confused by the protocol between mapper and reducer. When mapper
+> emitting the (key,value) pair done, is there any signal the mapper send out to
+> hadoop framework in protocol to indicate that map is done and the shuffle/sort
+> can begin for reducer? If there is no this signal in protocol, when the
+> framework begin the shuffle/sort?
+> 
+> Thanks,
+> Jianmin
+> 
+> 
+> 
+>      
+
+
+      
+--0-1193839393-1243834249=:35091--
+
+
+From core-user-return-14702-apmail-hadoop-core-user-archive=hadoop.apache.org@hadoop.apache.org Mon Jun 01 06:04:30 2009
+Return-Path: <core-user-return-14702-apmail-hadoop-core-user-archive=hadoop.apache.org@hadoop.apache.org>
+Delivered-To: apmail-hadoop-core-user-archive@www.apache.org
+Received: (qmail 53387 invoked from network); 1 Jun 2009 06:04:29 -0000
+Received: from hermes.apache.org (HELO mail.apache.org) (140.211.11.3)
+  by minotaur.apache.org with SMTP; 1 Jun 2009 06:04:29 -0000
+Received: (qmail 39066 invoked by uid 500); 1 Jun 2009 06:04:39 -0000
+Delivered-To: apmail-hadoop-core-user-archive@hadoop.apache.org
+Received: (qmail 38970 invoked by uid 500); 1 Jun 2009 06:04:39 -0000
+Mailing-List: contact core-user-help@hadoop.apache.org; run by ezmlm
+Precedence: bulk
+List-Help: <mailto:core-user-help@hadoop.apache.org>
+List-Unsubscribe: <mailto:core-user-unsubscribe@hadoop.apache.org>
+List-Post: <mailto:core-user@hadoop.apache.org>
+List-Id: <core-user.hadoop.apache.org>
+Reply-To: core-user@hadoop.apache.org
+Delivered-To: mailing list core-user@hadoop.apache.org
+Received: (qmail 38955 invoked by uid 99); 1 Jun 2009 06:04:39 -0000
+Received: from athena.apache.org (HELO athena.apache.org) (140.211.11.136)
+    by apache.org (qpsmtpd/0.29) with ESMTP; Mon, 01 Jun 2009 06:04:39 +0000
+X-ASF-Spam-Status: No, hits=1.2 required=10.0
+	tests=SPF_NEUTRAL
+X-Spam-Check-By: apache.org
+Received-SPF: neutral (athena.apache.org: local policy)
+Received: from [216.145.54.172] (HELO mrout2.wahoo.com) (216.145.54.172)
+    by apache.org (qpsmtpd/0.29) with ESMTP; Mon, 01 Jun 2009 06:04:28 +0000
+Received: from SNV-EXBH01.ds.corp.wahoo.com (snv-exbh01.ds.corp.wahoo.com [207.126.227.249])
+	by mrout2.wahoo.com (8.13.6/8.13.6/y.out) with ESMTP id n5163FGq038852
+	for <core-user@hadoop.apache.org>; Sun, 31 May 2009 23:03:15 -0700 (PDT)
+DomainKey-Signature: a=rsa-sha1; s=serpent; d=wahoo-inc.com; c=nofws; q=dns;
+	h=received:user-agent:date:subject:from:to:message-id:
+	thread-topic:thread-index:in-reply-to:mime-version:content-type:
+	content-transfer-encoding:x-originalarrivaltime;
+	b=rChE4SCnwtWaZpjhovkiXDKfDiVNdRRvsadSGG9S9bgvOexn/9/5JjEQx1pOR7Nb
+Received: from SNV-EXVS08.ds.corp.wahoo.com ([207.126.227.9]) by SNV-EXBH01.ds.corp.wahoo.com with Microsoft SMTPSVC(6.0.3790.3959);
+	 Sun, 31 May 2009 23:03:15 -0700
+Received: from 10.66.92.213 ([10.66.92.213]) by SNV-EXVS08.ds.corp.wahoo.com ([207.126.227.58]) with Microsoft Exchange Server HTTP-DAV ;
+ Mon,  1 Jun 2009 06:03:15 +0000
+User-Agent: Microsoft-Entourage/12.17.0.090302
+Date: Mon, 01 Jun 2009 11:33:13 +0530
+Subject: Re: question about when shuffle/sort start working
+From: Sam Judgement <Sampn@wahoo-inc.com>
+To: <core-user@hadoop.apache.org>
+Message-ID: <C6496CF9.1437C%Sampn@wahoo-inc.com>
+Thread-Topic: question about when shuffle/sort start working
+Thread-Index: AcnifqWrLG6N7GAk7kqy9QalVWfegQ==
+In-Reply-To: <592088.35091.qm@web111010.mail.gq1.wahoo.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
+X-OriginalArrivalTime: 01 Jun 2009 06:03:15.0462 (UTC) FILETIME=[A7231260:01C9E27E]
+X-Virus-Checked: Checked by ClamAV on apache.org
+
+
+No you cannot raise this event yourself, this event is generated internally
+by the framework. 
+
+I am guessing that what you probably want is to have a chain of MapReduce
+Jobs where the output of one is automatically fed as input to another.  You
+can look at these classes: JobControl and ChainMapper/ChainReducer.
+
+Sam
+
+On 6/1/09 11:00 AM, "Jianmin Foo" <jianmin_Foo@wahoo.com> wrote:
+
+> Thanks a lot for your explanation, Sam.
+> 
+> So is this event generated by hadoop framework? Is there any API in mapper to
+> fire this event? Actually, I am thinking to implement a mapper that will emit
+> some <key, value> pairs, then fire this event to let the reducer works, the
+> same mapper task then emit some other <key, value> pairs and repeat. Do you
+> think is this logic feasible by current API?
+> 
+> Thanks,
+> Jianmin
+> 
+> 
+> 
+> 
+> 
+> ________________________________
+> From: Sam Judgement <Sampn@wahoo-inc.com>
+> To: core-user@hadoop.apache.org
+> Sent: Monday, June 1, 2009 12:26:31 PM
+> Subject: Re: question about when shuffle/sort start working
+> 
+> When a Mapper completes, MapCompletionEvents are generated. Reducers try to
+> fetch map outputs for a given map only on the receipt of such events.
+> 
+> Sam
+> 
+> 
+> On 5/30/09 10:00 AM, "Jianmin Foo" <jianmin_foo@wahoo.com> wrote:
+> 
+>> Hi, 
+>> I am being confused by the protocol between mapper and reducer. When mapper
+>> emitting the (key,value) pair done, is there any signal the mapper send out
+>> to
+>> hadoop framework in protocol to indicate that map is done and the
+>> shuffle/sort
+>> can begin for reducer? If there is no this signal in protocol, when the
+>> framework begin the shuffle/sort?
+>> 
+>> Thanks,
+>> Jianmin
+>> 
+>> 
+>> 
+>>      
+> 
+> 
+>       
+
+

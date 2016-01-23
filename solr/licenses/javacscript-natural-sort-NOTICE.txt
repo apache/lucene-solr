@@ -1,0 +1,5 @@
+javascript-natural-sort is a javascript library for sorting data with embedded
+numbers naturally, the way a human would expect.
+https://github.com/jarinudom/naturalSort.js
+
+javascript-natural-sort is licensed under the MIT license.

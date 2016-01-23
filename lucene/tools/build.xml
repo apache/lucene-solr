@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="tools" default="default">
+  <description>Lucene Tools</description>
+
+  <property name="build.dir" location="../build/tools"/>
+  
+  <property name="rat.additional-includes" value="forbiddenApis/**,prettify/**"/>
+
+  <import file="../common-build.xml"/>
+
+  <path id="classpath">
+    <!-- TODO: we need this for forbidden-apis to be happy, because it does not support "includeantruntime": -->
+    <fileset dir="lib"/>
+  </path>
+
+  <path id="test.classpath"/>
+
+  <!-- redefine the test compilation, so it's just a no-op -->
+  <target name="compile-test"/>
+  
+  <!-- redefine the forbidden apis to be no-ops -->
+  <target name="-check-forbidden-tests"/>
+  <target name="-check-forbidden-sysout"/>
+
+  <!--  
+      Specialize compile-core to not depend on clover, to exclude a 
+      classpath reference when compiling, and to not attempt to copy
+      non-existent resource files to the build output directory.
+   -->
+  <target name="compile-core" depends="init" description="Compiles tools classes.">
+    <compile srcdir="${src.dir}" destdir="${build.dir}/classes/java" includeantruntime="true">
+      <classpath refid="classpath"/>
+    </compile>
+    <copy todir="${build.dir}/classes/java">
+      <fileset dir="${src.dir}" excludes="**/*.java" />
+    </copy>
+  </target>
+
+  <target name="javadocs"/> <!-- to make common-build.xml happy -->
+  <target name="pitest"/> <!-- to make common-build.xml happy -->
+</project>

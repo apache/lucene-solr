@@ -1,0 +1,40 @@
+MIME-Version: 1.0
+Received: by 10.216.199.5 with HTTP; Wed, 27 Nov 2013 12:01:23 -0800
+(PST)
+Date: Wed, 27 Nov 2013 13:01:23 -0700
+Delivered-To: foo@cloudera.com
+Message-ID:
+<CAOi5V169EW4GCfde_aNKSBgqAD=KSPVO6Batw_Oko-8cmAgK6w@mail.gmail.com>
+Subject: Test EML
+From: Patrick Foo <foo@cloudera.com>
+To: Patrick Foo <foo@cloudera.com>
+Content-Type: multipart/alternative;
+boundary=001a11c3815cb55dda04ec2e0f3b
+
+--001a11c3815cb55dda04ec2e0f3b
+Content-Type: text/plain; charset=ISO-8859-1
+
+This is a test
+
+-- 
+Patrick Foo
+Customer Operations Engineer
+
+<http://www.cloudera.com>
+
+--001a11c3815cb55dda04ec2e0f3b
+Content-Type: text/html; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
+
+<div dir=3D"ltr">This is a test<br clear=3D"all"><div><br></div>--
+<br><div=
+ dir=3D"ltr">Patrick Foo<div>Customer Operations
+Engineer</div><div><br>=
+</div><div><a href=3D"http://www.cloudera.com" target=3D"_blank"><img
+src=
+=3D"http://files.cloudera.com.s3.amazonaws.com/New%20Branding/cloudera-smal=
+l.png"></a><br>
+</div></div>
+</div>
+
+--001a11c3815cb55dda04ec2e0f3b--

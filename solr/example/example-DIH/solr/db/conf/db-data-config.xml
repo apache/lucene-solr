@@ -1,0 +1,29 @@
+<dataConfig>
+    <dataSource driver="org.hsqldb.jdbcDriver" url="jdbc:hsqldb:${solr.install.dir}/example/example-DIH/hsqldb/ex" user="sa" />
+    <document>
+        <entity name="item" query="select * from item"
+                deltaQuery="select id from item where last_modified > '${dataimporter.last_index_time}'">
+            <field column="NAME" name="name" />
+
+            <entity name="feature"  
+                    query="select DESCRIPTION from FEATURE where ITEM_ID='${item.ID}'"
+                    deltaQuery="select ITEM_ID from FEATURE where last_modified > '${dataimporter.last_index_time}'"
+                    parentDeltaQuery="select ID from item where ID=${feature.ITEM_ID}">
+                <field name="features" column="DESCRIPTION" />
+            </entity>
+            
+            <entity name="item_category"
+                    query="select CATEGORY_ID from item_category where ITEM_ID='${item.ID}'"
+                    deltaQuery="select ITEM_ID, CATEGORY_ID from item_category where last_modified > '${dataimporter.last_index_time}'"
+                    parentDeltaQuery="select ID from item where ID=${item_category.ITEM_ID}">
+                <entity name="category"
+                        query="select DESCRIPTION from category where ID = '${item_category.CATEGORY_ID}'"
+                        deltaQuery="select ID from category where last_modified > '${dataimporter.last_index_time}'"
+                        parentDeltaQuery="select ITEM_ID, CATEGORY_ID from item_category where CATEGORY_ID=${category.ID}">
+                    <field column="DESCRIPTION" name="cat" />
+                </entity>
+            </entity>
+        </entity>
+    </document>
+</dataConfig>
+

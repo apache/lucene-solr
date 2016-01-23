@@ -1,0 +1,3 @@
+langdetect
+
+http://code.google.com/p/language-detection/

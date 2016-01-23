@@ -1,0 +1,1208 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head>
+<meta http-equiv='CONTENT-TYPE' content='text/html; charset=UTF-8' />
+<link rel='StyleSheet' href='DTDDocStyle.css' type='text/css' media='screen' />
+<title>Contrib Lucene</title>
+</head><body>
+<p class='DTDSource'><b><code>LuceneContribQuery.dtd</code></b>: <a href='LuceneContribQuery.dtd.html'>Elements</a> - <a href='LuceneContribQuery.dtd.entities.html'>Entities</a> - <a href='LuceneContribQuery.dtd.org.html'>Source</a> | <a href='intro.html'>Intro</a> - <a href='elementsIndex.html'>Index</a><br /><a href='index.html' target='_top'>FRAMES</a>&nbsp;/&nbsp;<a href='LuceneContribQuery.dtd.html' target='_top'>NO FRAMES</a></p><h1>Contrib Lucene</h1>
+<p>This DTD builds on the <a href="LuceneCoreQuery.dtd.html">core Lucene XML syntax</a> and adds support for features found in the "contrib" section of the Lucene project.</p><p>CorePlusExtensionsParser.java is the Java class that encapsulates this parser behaviour.</p><p>The features added are:
+<ul>
+<li><a href="#LikeThisQuery">LikeThisQuery</a></li>
+Support for querying using large amounts of example text indicative of the users' general area of interest
+<li><a href="#FuzzyLikeThisQuery">FuzzyLikeThisQuery</a></li>
+A style of fuzzy query which automatically looks for fuzzy variations on only the "interesting" terms
+<li><a href="#BooleanFilter">BooleanFilter</a></li>
+Is to Filters what core Lucene's BooleanQuery is to Queries - allows mixing of clauses using Boolean logic
+<li><a href="#TermsFilter">TermsFilter</a></li>
+Constructs a filter from an arbitrary set of terms (unlike <a href="#RangeFilter">RangeFilter</a> which requires a contiguous range of terms)
+<li><a href="#DuplicateFilter">DuplicateFilter</a></li>
+Removes duplicated documents from results where "duplicate" means documents share a value for a particular field (e.g. a primary key)
+<li><a href="#BoostingQuery">BoostingQuery</a></li>
+Influence score of a query's matches in a subtle way which can't be achieved using BooleanQuery
+</ul></p><br />
+<a name='BooleanQuery'></a>
+<br /><table class='elementTitle' summary="BooleanQuery"><tr><td class='leftElementTitle'>
+&lt;BooleanQuery&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>BooleanQuerys implement Boolean logic which controls how multiple Clauses should be interpreted.
+Some clauses may represent optional Query criteria while others represent mandatory criteria.</p><p><span class='inTextTitle'>Example:</span> <em>Find articles about banks, preferably talking about mergers but nothing to do with "sumitomo"</em>
+</p><pre>            
+            &lt;BooleanQuery fieldName="contents"&gt;
+               &lt;Clause occurs="should"&gt;
+                  &lt;TermQuery&gt;merger&lt;/TermQuery&gt;
+               &lt;/Clause&gt;
+               &lt;Clause occurs="mustnot"&gt;
+                  &lt;TermQuery&gt;sumitomo&lt;/TermQuery&gt;
+               &lt;/Clause&gt;
+               &lt;Clause occurs="must"&gt;
+                  &lt;TermQuery&gt;bank&lt;/TermQuery&gt;
+               &lt;/Clause&gt;
+            &lt;/BooleanQuery&gt;
+
+           </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;BooleanQuery&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;BooleanQuery&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#Clause'>Clause</a></td><td>At least one</td></tr>
+</tbody></table></td><td class='construct'><table  summary="&lt;BooleanQuery&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;BooleanQuery&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#BooleanQuery_boost'>boost</a></td><td></td><td>1.0</td></tr><tr><td><a href='#BooleanQuery_disableCoord'>disableCoord</a></td><td>true, false</td><td>false</td></tr><tr><td><a href='#BooleanQuery_fieldName'>fieldName</a></td><td></td><td></td></tr><tr><td><a href='#BooleanQuery_minimumNumberShouldMatch'>minimumNumberShouldMatch</a></td><td></td><td>0</td></tr></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#Clause'>Clause</a>)+</p><a name='BooleanQuery_boost'></a>
+<br /><table class='attributeTitle' summary="boost"><tr><td class='leftAttributeTitle'>
+@boost</td><td class='rightAttributeTitle'>
+Attribute of <a href='#BooleanQuery'>BooleanQuery</a>
+</td></tr></table>
+<p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='BooleanQuery_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#BooleanQuery'>BooleanQuery</a>
+</td></tr></table>
+<p>fieldName can optionally be defined here as a default attribute used by all child elements</p><a name='BooleanQuery_disableCoord'></a>
+<br /><table class='attributeTitle' summary="disableCoord"><tr><td class='leftAttributeTitle'>
+@disableCoord</td><td class='rightAttributeTitle'>
+Attribute of <a href='#BooleanQuery'>BooleanQuery</a>
+</td></tr></table>
+<p>The "Coordination factor" rewards documents that contain more of the optional clauses in this list. This flag can be used to turn off this factor.</p><p><span class='inTextTitle'>Possible values</span>: true, false - <span class='inTextTitle'>Default value</span>: false</p><a name='BooleanQuery_minimumNumberShouldMatch'></a>
+<br /><table class='attributeTitle' summary="minimumNumberShouldMatch"><tr><td class='leftAttributeTitle'>
+@minimumNumberShouldMatch</td><td class='rightAttributeTitle'>
+Attribute of <a href='#BooleanQuery'>BooleanQuery</a>
+</td></tr></table>
+<p>The minimum number of optional clauses that should be present in any one document before it is considered to be a match.</p><p><span class='inTextTitle'>Default value</span>: 0</p><a name='Clause'></a>
+<br /><table class='elementTitle' summary="Clause"><tr><td class='leftElementTitle'>
+&lt;Clause&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BooleanFilter'>BooleanFilter</a>, <a href='#BooleanQuery'>BooleanQuery</a>
+</td></tr></table>
+<p>NOTE: "Clause" tag has 2 modes of use - inside &lt;BooleanQuery> in which case only "query" types can be
+child elements - while in a &lt;BooleanFilter> clause only "filter" types can be contained.</p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;Clause&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;Clause&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#BooleanFilter'>BooleanFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#BooleanQuery'>BooleanQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#BoostingQuery'>BoostingQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#BoostingTermQuery'>BoostingTermQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#CachedFilter'>CachedFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#ConstantScoreQuery'>ConstantScoreQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#DuplicateFilter'>DuplicateFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#FilteredQuery'>FilteredQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#FuzzyLikeThisQuery'>FuzzyLikeThisQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#LikeThisQuery'>LikeThisQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#MatchAllDocsQuery'>MatchAllDocsQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#NumericRangeFilter'>NumericRangeFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#NumericRangeQuery'>NumericRangeQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#RangeFilter'>RangeFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanFirst'>SpanFirst</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNear'>SpanNear</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNot'>SpanNot</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOr'>SpanOr</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOrTerms'>SpanOrTerms</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanTerm'>SpanTerm</a></td><td>One or none</td></tr>
+<tr><td><a href='#TermQuery'>TermQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#TermsFilter'>TermsFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#TermsQuery'>TermsQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#UserQuery'>UserQuery</a></td><td>One or none</td></tr>
+</tbody></table></td><td class='construct'><table  summary="&lt;Clause&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;Clause&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#Clause_occurs'>occurs</a></td><td>should, must, mustnot</td><td>should</td></tr></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#BooleanQuery'>BooleanQuery</a> | <a href='#UserQuery'>UserQuery</a> | <a href='#FilteredQuery'>FilteredQuery</a> | <a href='#TermQuery'>TermQuery</a> | <a href='#TermsQuery'>TermsQuery</a> | <a href='#MatchAllDocsQuery'>MatchAllDocsQuery</a> | <a href='#ConstantScoreQuery'>ConstantScoreQuery</a> | <a href='#BoostingTermQuery'>BoostingTermQuery</a> | <a href='#NumericRangeQuery'>NumericRangeQuery</a> | <a href='#SpanOr'>SpanOr</a> | <a href='#SpanNear'>SpanNear</a> | <a href='#SpanOrTerms'>SpanOrTerms</a> | <a href='#SpanFirst'>SpanFirst</a> | <a href='#SpanNot'>SpanNot</a> | <a href='#SpanTerm'>SpanTerm</a> | <a href='#BoostingTermQuery'>BoostingTermQuery</a> | <a href='#LikeThisQuery'>LikeThisQuery</a> | <a href='#BoostingQuery'>BoostingQuery</a> | <a href='#FuzzyLikeThisQuery'>FuzzyLikeThisQuery</a> | <a href='#RangeFilter'>RangeFilter</a> | <a href='#NumericRangeFilter'>NumericRangeFilter</a> | <a href='#CachedFilter'>CachedFilter</a> | <a href='#TermsFilter'>TermsFilter</a> | <a href='#BooleanFilter'>BooleanFilter</a> | <a href='#DuplicateFilter'>DuplicateFilter</a>)</p><a name='Clause_occurs'></a>
+<br /><table class='attributeTitle' summary="occurs"><tr><td class='leftAttributeTitle'>
+@occurs</td><td class='rightAttributeTitle'>
+Attribute of <a href='#Clause'>Clause</a>
+</td></tr></table>
+<p>Controls if the clause is optional (should), mandatory (must) or unacceptable (mustNot)</p><p><span class='inTextTitle'>Possible values</span>: should, must, mustnot - <span class='inTextTitle'>Default value</span>: should</p><a name='CachedFilter'></a>
+<br /><table class='elementTitle' summary="CachedFilter"><tr><td class='leftElementTitle'>
+&lt;CachedFilter&gt;</td><td class='rightElementTitle'>
+Child of <a href='#Clause'>Clause</a>, <a href='#Filter'>Filter</a>, <a href='#ConstantScoreQuery'>ConstantScoreQuery</a>
+</td></tr></table>
+<p>Caches any nested query or filter in an LRU (Least recently used) Cache. Cached queries, like filters, are turned into
+Bitsets at a cost of 1 bit per document in the index. The memory cost of a cached query/filter is therefore numberOfDocsinIndex/8 bytes.
+Queries that are cached as filters obviously retain none of the scoring information associated with results - they retain just
+a Boolean yes/no record of which documents matched.</p><p><span class='inTextTitle'>Example:</span> <em>Search for documents about banks from the last 10 years - caching the commonly-used "last 10 year" filter as a BitSet in
+RAM to eliminate the cost of building this filter from disk for every query</em>
+</p><pre>            
+            &lt;FilteredQuery&gt;
+               &lt;Query&gt;
+                  &lt;UserQuery&gt;bank&lt;/UserQuery&gt;
+               &lt;/Query&gt;  
+               &lt;Filter&gt;
+                  &lt;CachedFilter&gt;
+                     &lt;RangeFilter fieldName="date" lowerTerm="19970101" upperTerm="20070101"/&gt;
+                  &lt;/CachedFilter&gt;
+               &lt;/Filter&gt;  
+            &lt;/FilteredQuery&gt;
+           </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;CachedFilter&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;CachedFilter&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#BooleanFilter'>BooleanFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#BooleanQuery'>BooleanQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#BoostingQuery'>BoostingQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#BoostingTermQuery'>BoostingTermQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#CachedFilter'>CachedFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#ConstantScoreQuery'>ConstantScoreQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#DuplicateFilter'>DuplicateFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#FilteredQuery'>FilteredQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#FuzzyLikeThisQuery'>FuzzyLikeThisQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#LikeThisQuery'>LikeThisQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#MatchAllDocsQuery'>MatchAllDocsQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#NumericRangeFilter'>NumericRangeFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#NumericRangeQuery'>NumericRangeQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#RangeFilter'>RangeFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanFirst'>SpanFirst</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNear'>SpanNear</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNot'>SpanNot</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOr'>SpanOr</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOrTerms'>SpanOrTerms</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanTerm'>SpanTerm</a></td><td>One or none</td></tr>
+<tr><td><a href='#TermQuery'>TermQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#TermsFilter'>TermsFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#TermsQuery'>TermsQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#UserQuery'>UserQuery</a></td><td>One or none</td></tr>
+</tbody></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#BooleanQuery'>BooleanQuery</a> | <a href='#UserQuery'>UserQuery</a> | <a href='#FilteredQuery'>FilteredQuery</a> | <a href='#TermQuery'>TermQuery</a> | <a href='#TermsQuery'>TermsQuery</a> | <a href='#MatchAllDocsQuery'>MatchAllDocsQuery</a> | <a href='#ConstantScoreQuery'>ConstantScoreQuery</a> | <a href='#BoostingTermQuery'>BoostingTermQuery</a> | <a href='#NumericRangeQuery'>NumericRangeQuery</a> | <a href='#SpanOr'>SpanOr</a> | <a href='#SpanNear'>SpanNear</a> | <a href='#SpanOrTerms'>SpanOrTerms</a> | <a href='#SpanFirst'>SpanFirst</a> | <a href='#SpanNot'>SpanNot</a> | <a href='#SpanTerm'>SpanTerm</a> | <a href='#BoostingTermQuery'>BoostingTermQuery</a> | <a href='#LikeThisQuery'>LikeThisQuery</a> | <a href='#BoostingQuery'>BoostingQuery</a> | <a href='#FuzzyLikeThisQuery'>FuzzyLikeThisQuery</a> | <a href='#RangeFilter'>RangeFilter</a> | <a href='#NumericRangeFilter'>NumericRangeFilter</a> | <a href='#CachedFilter'>CachedFilter</a> | <a href='#TermsFilter'>TermsFilter</a> | <a href='#BooleanFilter'>BooleanFilter</a> | <a href='#DuplicateFilter'>DuplicateFilter</a>)</p><a name='UserQuery'></a>
+<br /><table class='elementTitle' summary="UserQuery"><tr><td class='leftElementTitle'>
+&lt;UserQuery&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>Passes content directly through to the standard LuceneQuery parser see "Lucene Query Syntax"</p><p><span class='inTextTitle'>Example:</span> <em>Search for documents about John Smith or John Doe using standard LuceneQuerySyntax</em>
+</p><pre>            
+               &lt;UserQuery&gt;"John Smith" OR "John Doe"&lt;/UserQuery&gt;
+           </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table  summary="&lt;UserQuery&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;UserQuery&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#UserQuery_boost'>boost</a></td><td></td><td>1.0</td></tr><tr><td><a href='#UserQuery_fieldName'>fieldName</a></td><td></td><td></td></tr></table></td></tr></table></blockquote>
+<a name='UserQuery_boost'></a>
+<br /><table class='attributeTitle' summary="boost"><tr><td class='leftAttributeTitle'>
+@boost</td><td class='rightAttributeTitle'>
+Attribute of <a href='#UserQuery'>UserQuery</a>
+</td></tr></table>
+<p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='UserQuery_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#UserQuery'>UserQuery</a>
+</td></tr></table>
+<p>fieldName can optionally be defined here to change the default field used in the QueryParser</p><a name='MatchAllDocsQuery'></a>
+<br /><table class='elementTitle' summary="MatchAllDocsQuery"><tr><td class='leftElementTitle'>
+&lt;MatchAllDocsQuery/&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>A query which is used to match all documents. This has a couple of uses:
+<ol>
+<li> as a Clause in a BooleanQuery who's only other clause
+is a "mustNot" match (Lucene requires at least one positive clause) and..</li>
+<li> in a FilteredQuery where a Filter tag is effectively being
+used to select content rather than its usual role of filtering the results of a query.</li>
+</ol></p><p><span class='inTextTitle'>Example:</span> <em>Effectively use a Filter as a query </em>
+</p><pre>            
+               &lt;FilteredQuery&gt;
+                 &lt;Query&gt;
+                    &lt;MatchAllDocsQuery/&gt;
+                 &lt;/Query&gt;
+                 &lt;Filter&gt;
+                     &lt;RangeFilter fieldName="date" lowerTerm="19870409" upperTerm="19870412"/&gt;
+                 &lt;/Filter&gt;  
+               &lt;/FilteredQuery&gt;           
+         </pre><p></p><p class='emptyTagNote'>This element is always empty.</p><a name='TermQuery'></a>
+<br /><table class='elementTitle' summary="TermQuery"><tr><td class='leftElementTitle'>
+&lt;TermQuery&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>a single term query - no analysis is done of the child text</p><p><span class='inTextTitle'>Example:</span> <em>Match on a primary key</em>
+</p><pre>            
+               &lt;TermQuery fieldName="primaryKey"&gt;13424&lt;/TermQuery&gt;
+         </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table  summary="&lt;TermQuery&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;TermQuery&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#TermQuery_boost'>boost</a></td><td></td><td>1.0</td></tr><tr><td><a href='#TermQuery_fieldName'>fieldName</a></td><td></td><td></td></tr></table></td></tr></table></blockquote>
+<a name='TermQuery_boost'></a>
+<br /><table class='attributeTitle' summary="boost"><tr><td class='leftAttributeTitle'>
+@boost</td><td class='rightAttributeTitle'>
+Attribute of <a href='#TermQuery'>TermQuery</a>
+</td></tr></table>
+<p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='TermQuery_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#TermQuery'>TermQuery</a>
+</td></tr></table>
+<p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><a name='BoostingTermQuery'></a>
+<br /><table class='elementTitle' summary="BoostingTermQuery"><tr><td class='leftElementTitle'>
+&lt;BoostingTermQuery&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Include'>Include</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#SpanOr'>SpanOr</a>, <a href='#SpanNear'>SpanNear</a>, <a href='#Exclude'>Exclude</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>A boosted term query - no analysis is done of the child text. Also a span member.</p><p>(Text below is copied from the javadocs of BoostingTermQuery)</p><p>The BoostingTermQuery is very similar to the {</p><a name='TermQuery_boost'></a>
+<br /><table class='attributeTitle' summary="boost"><tr><td class='leftAttributeTitle'>
+@boost</td><td class='rightAttributeTitle'>
+Attribute of <a href='#TermQuery'>TermQuery</a>
+</td></tr></table>
+<p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='TermQuery_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#TermQuery'>TermQuery</a>
+</td></tr></table>
+<p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><a name='TermsQuery'></a>
+<br /><table class='elementTitle' summary="TermsQuery"><tr><td class='leftElementTitle'>
+&lt;TermsQuery&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>The equivalent of a BooleanQuery with multiple optional TermQuery clauses.
+Child text is analyzed using a field-specific choice of Analyzer to produce a set of terms that are ORed together in Boolean logic.
+Unlike UserQuery element, this does not parse any special characters to control fuzzy/phrase/boolean logic and as such is incapable
+of producing a Query parse error given any user input</p><p><span class='inTextTitle'>Example:</span> <em>Match on text from a database description (which may contain characters that
+are illegal characters in the standard Lucene Query syntax used in the UserQuery tag</em>
+</p><pre>            
+               &lt;TermsQuery fieldName="description"&gt;Smith & Sons (Ltd) : incorporated 1982&lt;/TermsQuery&gt;
+         </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table  summary="&lt;TermsQuery&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;TermsQuery&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#TermsQuery_boost'>boost</a></td><td></td><td>1.0</td></tr><tr><td><a href='#TermsQuery_disableCoord'>disableCoord</a></td><td>true, false</td><td>false</td></tr><tr><td><a href='#TermsQuery_fieldName'>fieldName</a></td><td></td><td></td></tr><tr><td><a href='#TermsQuery_minimumNumberShouldMatch'>minimumNumberShouldMatch</a></td><td></td><td>0</td></tr></table></td></tr></table></blockquote>
+<a name='TermsQuery_boost'></a>
+<br /><table class='attributeTitle' summary="boost"><tr><td class='leftAttributeTitle'>
+@boost</td><td class='rightAttributeTitle'>
+Attribute of <a href='#TermsQuery'>TermsQuery</a>
+</td></tr></table>
+<p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='TermsQuery_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#TermsQuery'>TermsQuery</a>
+</td></tr></table>
+<p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><a name='TermsQuery_disableCoord'></a>
+<br /><table class='attributeTitle' summary="disableCoord"><tr><td class='leftAttributeTitle'>
+@disableCoord</td><td class='rightAttributeTitle'>
+Attribute of <a href='#TermsQuery'>TermsQuery</a>
+</td></tr></table>
+<p>The "Coordination factor" rewards documents that contain more of the terms in this list. This flag can be used to turn off this factor.</p><p><span class='inTextTitle'>Possible values</span>: true, false - <span class='inTextTitle'>Default value</span>: false</p><a name='TermsQuery_minimumNumberShouldMatch'></a>
+<br /><table class='attributeTitle' summary="minimumNumberShouldMatch"><tr><td class='leftAttributeTitle'>
+@minimumNumberShouldMatch</td><td class='rightAttributeTitle'>
+Attribute of <a href='#TermsQuery'>TermsQuery</a>
+</td></tr></table>
+<p>The minimum number of terms that should be present in any one document before it is considered to be a match.</p><p><span class='inTextTitle'>Default value</span>: 0</p><a name='FilteredQuery'></a>
+<br /><table class='elementTitle' summary="FilteredQuery"><tr><td class='leftElementTitle'>
+&lt;FilteredQuery&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>Runs a Query and filters results to only those query matches that also match the Filter element.</p><p><span class='inTextTitle'>Example:</span> <em>Find all documents about Lucene that have a status of "published"</em>
+</p><pre>            
+               &lt;FilteredQuery&gt;
+                 &lt;Query&gt;
+                    &lt;UserQuery&gt;Lucene&lt;/UserQuery&gt;
+                 &lt;/Query&gt;
+                 &lt;Filter&gt;
+                     &lt;TermsFilter fieldName="status"&gt;published&lt;/TermsFilter&gt;
+                 &lt;/Filter&gt;  
+               &lt;/FilteredQuery&gt;           
+         </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;FilteredQuery&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;FilteredQuery&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#Filter'>Filter</a></td><td>Only one</td></tr>
+<tr><td><a href='#Query'>Query</a></td><td>Only one</td></tr>
+</tbody></table></td><td class='construct'><table  summary="&lt;FilteredQuery&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;FilteredQuery&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#FilteredQuery_boost'>boost</a></td><td></td><td>1.0</td></tr></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#Query'>Query</a>, <a href='#Filter'>Filter</a>)</p><a name='FilteredQuery_boost'></a>
+<br /><table class='attributeTitle' summary="boost"><tr><td class='leftAttributeTitle'>
+@boost</td><td class='rightAttributeTitle'>
+Attribute of <a href='#FilteredQuery'>FilteredQuery</a>
+</td></tr></table>
+<p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='Query'></a>
+<br /><table class='elementTitle' summary="Query"><tr><td class='leftElementTitle'>
+&lt;Query&gt;</td><td class='rightElementTitle'>
+Child of <a href='#FilteredQuery'>FilteredQuery</a>, <a href='#BoostingQuery'>BoostingQuery</a>
+</td></tr></table>
+<p>Used to identify a nested Query element inside another container element. NOT a top-level query tag</p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;Query&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;Query&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#BooleanQuery'>BooleanQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#BoostingQuery'>BoostingQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#BoostingTermQuery'>BoostingTermQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#ConstantScoreQuery'>ConstantScoreQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#FilteredQuery'>FilteredQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#FuzzyLikeThisQuery'>FuzzyLikeThisQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#LikeThisQuery'>LikeThisQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#MatchAllDocsQuery'>MatchAllDocsQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#NumericRangeQuery'>NumericRangeQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanFirst'>SpanFirst</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNear'>SpanNear</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNot'>SpanNot</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOr'>SpanOr</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOrTerms'>SpanOrTerms</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanTerm'>SpanTerm</a></td><td>One or none</td></tr>
+<tr><td><a href='#TermQuery'>TermQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#TermsQuery'>TermsQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#UserQuery'>UserQuery</a></td><td>One or none</td></tr>
+</tbody></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#BooleanQuery'>BooleanQuery</a> | <a href='#UserQuery'>UserQuery</a> | <a href='#FilteredQuery'>FilteredQuery</a> | <a href='#TermQuery'>TermQuery</a> | <a href='#TermsQuery'>TermsQuery</a> | <a href='#MatchAllDocsQuery'>MatchAllDocsQuery</a> | <a href='#ConstantScoreQuery'>ConstantScoreQuery</a> | <a href='#BoostingTermQuery'>BoostingTermQuery</a> | <a href='#NumericRangeQuery'>NumericRangeQuery</a> | <a href='#SpanOr'>SpanOr</a> | <a href='#SpanNear'>SpanNear</a> | <a href='#SpanOrTerms'>SpanOrTerms</a> | <a href='#SpanFirst'>SpanFirst</a> | <a href='#SpanNot'>SpanNot</a> | <a href='#SpanTerm'>SpanTerm</a> | <a href='#BoostingTermQuery'>BoostingTermQuery</a> | <a href='#LikeThisQuery'>LikeThisQuery</a> | <a href='#BoostingQuery'>BoostingQuery</a> | <a href='#FuzzyLikeThisQuery'>FuzzyLikeThisQuery</a>)</p><a name='Filter'></a>
+<br /><table class='elementTitle' summary="Filter"><tr><td class='leftElementTitle'>
+&lt;Filter&gt;</td><td class='rightElementTitle'>
+Child of <a href='#FilteredQuery'>FilteredQuery</a>
+</td></tr></table>
+<p>The choice of Filter that MUST also be matched</p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;Filter&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;Filter&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#BooleanFilter'>BooleanFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#CachedFilter'>CachedFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#DuplicateFilter'>DuplicateFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#NumericRangeFilter'>NumericRangeFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#RangeFilter'>RangeFilter</a></td><td>One or none</td></tr>
+<tr><td><a href='#TermsFilter'>TermsFilter</a></td><td>One or none</td></tr>
+</tbody></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#RangeFilter'>RangeFilter</a> | <a href='#NumericRangeFilter'>NumericRangeFilter</a> | <a href='#CachedFilter'>CachedFilter</a> | <a href='#TermsFilter'>TermsFilter</a> | <a href='#BooleanFilter'>BooleanFilter</a> | <a href='#DuplicateFilter'>DuplicateFilter</a>)</p><a name='RangeFilter'></a>
+<br /><table class='elementTitle' summary="RangeFilter"><tr><td class='leftElementTitle'>
+&lt;RangeFilter/&gt;</td><td class='rightElementTitle'>
+Child of <a href='#Clause'>Clause</a>, <a href='#Filter'>Filter</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#ConstantScoreQuery'>ConstantScoreQuery</a>
+</td></tr></table>
+<p>Filter used to limit query results to documents matching a range of field values</p><p><span class='inTextTitle'>Example:</span> <em>Search for documents about banks from the last 10 years</em>
+</p><pre>            
+            &lt;FilteredQuery&gt;
+               &lt;Query&gt;
+                  &lt;UserQuery&gt;bank&lt;/UserQuery&gt;
+               &lt;/Query&gt;  
+               &lt;Filter&gt;
+                     &lt;RangeFilter fieldName="date" lowerTerm="19970101" upperTerm="20070101"/&gt;
+               &lt;/Filter&gt;  
+            &lt;/FilteredQuery&gt;
+           </pre><p></p><blockquote>
+<table  summary="&lt;RangeFilter&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;RangeFilter&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#RangeFilter_fieldName'>fieldName</a></td><td></td><td></td></tr><tr><td><a href='#RangeFilter_includeLower'>includeLower</a></td><td>true, false</td><td>true</td></tr><tr><td><a href='#RangeFilter_includeUpper'>includeUpper</a></td><td>true, false</td><td>true</td></tr><tr><td><a href='#RangeFilter_lowerTerm'>lowerTerm</a></td><td></td><td></td></tr><tr><td><a href='#RangeFilter_upperTerm'>upperTerm</a></td><td></td><td></td></tr></table></blockquote>
+<p class='emptyTagNote'>This element is always empty.</p><a name='RangeFilter_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#RangeFilter'>RangeFilter</a>
+</td></tr></table>
+<p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><a name='RangeFilter_lowerTerm'></a>
+<br /><table class='attributeTitle' summary="lowerTerm"><tr><td class='leftAttributeTitle'>
+@lowerTerm</td><td class='rightAttributeTitle'>
+Attribute of <a href='#RangeFilter'>RangeFilter</a>
+</td></tr></table>
+<p>The lower-most term value for this field (must be &lt;= upperTerm)</p><p><span class='inTextTitle'>Required</span></p><a name='RangeFilter_upperTerm'></a>
+<br /><table class='attributeTitle' summary="upperTerm"><tr><td class='leftAttributeTitle'>
+@upperTerm</td><td class='rightAttributeTitle'>
+Attribute of <a href='#RangeFilter'>RangeFilter</a>
+</td></tr></table>
+<p>The upper-most term value for this field (must be >= lowerTerm)</p><p><span class='inTextTitle'>Required</span></p><a name='RangeFilter_includeLower'></a>
+<br /><table class='attributeTitle' summary="includeLower"><tr><td class='leftAttributeTitle'>
+@includeLower</td><td class='rightAttributeTitle'>
+Attribute of <a href='#RangeFilter'>RangeFilter</a>
+</td></tr></table>
+<p>Controls if the lowerTerm in the range is part of the allowed set of values</p><p><span class='inTextTitle'>Possible values</span>: true, false - <span class='inTextTitle'>Default value</span>: true</p><a name='RangeFilter_includeUpper'></a>
+<br /><table class='attributeTitle' summary="includeUpper"><tr><td class='leftAttributeTitle'>
+@includeUpper</td><td class='rightAttributeTitle'>
+Attribute of <a href='#RangeFilter'>RangeFilter</a>
+</td></tr></table>
+<p>Controls if the upperTerm in the range is part of the allowed set of values</p><p><span class='inTextTitle'>Possible values</span>: true, false - <span class='inTextTitle'>Default value</span>: true</p><a name='NumericRangeQuery'></a>
+<br /><table class='elementTitle' summary="NumericRangeQuery"><tr><td class='leftElementTitle'>
+&lt;NumericRangeQuery/&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>A Query that matches numeric values within a specified range.</p><p><span class='inTextTitle'>Example:</span> <em>Search for documents about people who are aged 20-25</em>
+</p><pre>            
+            &lt;NumericRangeQuery fieldName="age" lowerTerm="20" upperTerm="25" /&gt;
+           </pre><p></p><blockquote>
+<table  summary="&lt;NumericRangeQuery&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;NumericRangeQuery&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#NumericRangeQuery_fieldName'>fieldName</a></td><td></td><td></td></tr><tr><td><a href='#NumericRangeQuery_includeLower'>includeLower</a></td><td>true, false</td><td>true</td></tr><tr><td><a href='#NumericRangeQuery_includeUpper'>includeUpper</a></td><td>true, false</td><td>true</td></tr><tr><td><a href='#NumericRangeQuery_lowerTerm'>lowerTerm</a></td><td></td><td></td></tr><tr><td><a href='#NumericRangeQuery_precisionStep'>precisionStep</a></td><td></td><td>4</td></tr><tr><td><a href='#NumericRangeQuery_type'>type</a></td><td>int, long, float, double</td><td>int</td></tr><tr><td><a href='#NumericRangeQuery_upperTerm'>upperTerm</a></td><td></td><td></td></tr></table></blockquote>
+<p class='emptyTagNote'>This element is always empty.</p><a name='NumericRangeQuery_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeQuery'>NumericRangeQuery</a>
+</td></tr></table>
+<p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><a name='NumericRangeQuery_lowerTerm'></a>
+<br /><table class='attributeTitle' summary="lowerTerm"><tr><td class='leftAttributeTitle'>
+@lowerTerm</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeQuery'>NumericRangeQuery</a>
+</td></tr></table>
+<p>The lower-most term value for this field (must be &lt;= upperTerm and a valid native java numeric type)</p><p><span class='inTextTitle'>Required</span></p><a name='NumericRangeQuery_upperTerm'></a>
+<br /><table class='attributeTitle' summary="upperTerm"><tr><td class='leftAttributeTitle'>
+@upperTerm</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeQuery'>NumericRangeQuery</a>
+</td></tr></table>
+<p>The upper-most term value for this field (must be >= lowerTerm and a valid native java numeric type)</p><p><span class='inTextTitle'>Required</span></p><a name='NumericRangeQuery_type'></a>
+<br /><table class='attributeTitle' summary="type"><tr><td class='leftAttributeTitle'>
+@type</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeQuery'>NumericRangeQuery</a>
+</td></tr></table>
+<p>The numeric type of this field</p><p><span class='inTextTitle'>Possible values</span>: int, long, float, double - <span class='inTextTitle'>Default value</span>: int</p><a name='NumericRangeQuery_includeLower'></a>
+<br /><table class='attributeTitle' summary="includeLower"><tr><td class='leftAttributeTitle'>
+@includeLower</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeQuery'>NumericRangeQuery</a>
+</td></tr></table>
+<p>Controls if the lowerTerm in the range is part of the allowed set of values</p><p><span class='inTextTitle'>Possible values</span>: true, false - <span class='inTextTitle'>Default value</span>: true</p><a name='NumericRangeQuery_includeUpper'></a>
+<br /><table class='attributeTitle' summary="includeUpper"><tr><td class='leftAttributeTitle'>
+@includeUpper</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeQuery'>NumericRangeQuery</a>
+</td></tr></table>
+<p>Controls if the upperTerm in the range is part of the allowed set of values</p><p><span class='inTextTitle'>Possible values</span>: true, false - <span class='inTextTitle'>Default value</span>: true</p><a name='NumericRangeQuery_precisionStep'></a>
+<br /><table class='attributeTitle' summary="precisionStep"><tr><td class='leftAttributeTitle'>
+@precisionStep</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeQuery'>NumericRangeQuery</a>
+</td></tr></table>
+<p>Lower step values mean more precisions and so more terms in index (and index gets larger). This value must be an integer</p><p><span class='inTextTitle'>Default value</span>: 4</p><a name='NumericRangeFilter'></a>
+<br /><table class='elementTitle' summary="NumericRangeFilter"><tr><td class='leftElementTitle'>
+&lt;NumericRangeFilter/&gt;</td><td class='rightElementTitle'>
+Child of <a href='#Clause'>Clause</a>, <a href='#Filter'>Filter</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#ConstantScoreQuery'>ConstantScoreQuery</a>
+</td></tr></table>
+<p>A Filter that only accepts numeric values within a specified range</p><p><span class='inTextTitle'>Example:</span> <em>Search for documents about people who are aged 20-25</em>
+</p><pre>            
+            &lt;FilteredQuery&gt;
+               &lt;Query&gt;
+                  &lt;UserQuery&gt;person&lt;/UserQuery&gt;
+               &lt;/Query&gt;  
+               &lt;Filter&gt;
+                     &lt;NumericRangeFilter fieldName="age" lowerTerm="20" upperTerm="25"/&gt;
+               &lt;/Filter&gt;  
+            &lt;/FilteredQuery&gt;
+           </pre><p></p><blockquote>
+<table  summary="&lt;NumericRangeFilter&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;NumericRangeFilter&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#NumericRangeFilter_fieldName'>fieldName</a></td><td></td><td></td></tr><tr><td><a href='#NumericRangeFilter_includeLower'>includeLower</a></td><td>true, false</td><td>true</td></tr><tr><td><a href='#NumericRangeFilter_includeUpper'>includeUpper</a></td><td>true, false</td><td>true</td></tr><tr><td><a href='#NumericRangeFilter_lowerTerm'>lowerTerm</a></td><td></td><td></td></tr><tr><td><a href='#NumericRangeFilter_precisionStep'>precisionStep</a></td><td></td><td>4</td></tr><tr><td><a href='#NumericRangeFilter_type'>type</a></td><td>int, long, float, double</td><td>int</td></tr><tr><td><a href='#NumericRangeFilter_upperTerm'>upperTerm</a></td><td></td><td></td></tr></table></blockquote>
+<p class='emptyTagNote'>This element is always empty.</p><a name='NumericRangeFilter_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeFilter'>NumericRangeFilter</a>
+</td></tr></table>
+<p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><a name='NumericRangeFilter_lowerTerm'></a>
+<br /><table class='attributeTitle' summary="lowerTerm"><tr><td class='leftAttributeTitle'>
+@lowerTerm</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeFilter'>NumericRangeFilter</a>
+</td></tr></table>
+<p>The lower-most term value for this field (must be &lt;= upperTerm and a valid native java numeric type)</p><p><span class='inTextTitle'>Required</span></p><a name='NumericRangeFilter_upperTerm'></a>
+<br /><table class='attributeTitle' summary="upperTerm"><tr><td class='leftAttributeTitle'>
+@upperTerm</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeFilter'>NumericRangeFilter</a>
+</td></tr></table>
+<p>The upper-most term value for this field (must be >= lowerTerm and a valid native java numeric type)</p><p><span class='inTextTitle'>Required</span></p><a name='NumericRangeFilter_type'></a>
+<br /><table class='attributeTitle' summary="type"><tr><td class='leftAttributeTitle'>
+@type</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeFilter'>NumericRangeFilter</a>
+</td></tr></table>
+<p>The numeric type of this field</p><p><span class='inTextTitle'>Possible values</span>: int, long, float, double - <span class='inTextTitle'>Default value</span>: int</p><a name='NumericRangeFilter_includeLower'></a>
+<br /><table class='attributeTitle' summary="includeLower"><tr><td class='leftAttributeTitle'>
+@includeLower</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeFilter'>NumericRangeFilter</a>
+</td></tr></table>
+<p>Controls if the lowerTerm in the range is part of the allowed set of values</p><p><span class='inTextTitle'>Possible values</span>: true, false - <span class='inTextTitle'>Default value</span>: true</p><a name='NumericRangeFilter_includeUpper'></a>
+<br /><table class='attributeTitle' summary="includeUpper"><tr><td class='leftAttributeTitle'>
+@includeUpper</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeFilter'>NumericRangeFilter</a>
+</td></tr></table>
+<p>Controls if the upperTerm in the range is part of the allowed set of values</p><p><span class='inTextTitle'>Possible values</span>: true, false - <span class='inTextTitle'>Default value</span>: true</p><a name='NumericRangeFilter_precisionStep'></a>
+<br /><table class='attributeTitle' summary="precisionStep"><tr><td class='leftAttributeTitle'>
+@precisionStep</td><td class='rightAttributeTitle'>
+Attribute of <a href='#NumericRangeFilter'>NumericRangeFilter</a>
+</td></tr></table>
+<p>Lower step values mean more precisions and so more terms in index (and index gets larger). This value must be an integer</p><p><span class='inTextTitle'>Default value</span>: 4</p><a name='SpanTerm'></a>
+<br /><table class='elementTitle' summary="SpanTerm"><tr><td class='leftElementTitle'>
+&lt;SpanTerm&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Include'>Include</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#SpanOr'>SpanOr</a>, <a href='#SpanNear'>SpanNear</a>, <a href='#Exclude'>Exclude</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>A single term used in a SpanQuery. These clauses are the building blocks for more complex "span" queries which test word proximity</p><p><span class='inTextTitle'>Example:</span> <em>Find documents using terms close to each other about mining and accidents</em>
+</p><pre>
+        &lt;SpanNear slop="8" inOrder="false" fieldName="text"&gt;    
+      &lt;SpanOr&gt;
+        &lt;SpanTerm&gt;killed&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;died&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;dead&lt;/SpanTerm&gt;
+      &lt;/SpanOr&gt;
+      &lt;SpanOr&gt;
+        &lt;SpanTerm&gt;miner&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;mining&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;miners&lt;/SpanTerm&gt;
+      &lt;/SpanOr&gt;
+        &lt;/SpanNear&gt;
+        </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table  summary="&lt;SpanTerm&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;SpanTerm&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#SpanTerm_fieldName'>fieldName</a></td><td></td><td></td></tr></table></td></tr></table></blockquote>
+<a name='SpanTerm_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#SpanTerm'>SpanTerm</a>
+</td></tr></table>
+<p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><p><span class='inTextTitle'>Required</span></p><a name='SpanOrTerms'></a>
+<br /><table class='elementTitle' summary="SpanOrTerms"><tr><td class='leftElementTitle'>
+&lt;SpanOrTerms&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Include'>Include</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#SpanOr'>SpanOr</a>, <a href='#SpanNear'>SpanNear</a>, <a href='#Exclude'>Exclude</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>A field-specific analyzer is used here to parse the child text provided in this tag. The SpanTerms produced are ORed in terms of Boolean logic</p><p><span class='inTextTitle'>Example:</span> <em>Use SpanOrTerms as a more convenient/succinct way of expressing multiple choices of SpanTerms. This example looks for reports
+using words describing a fatality near to references to miners</em>
+</p><pre>
+        &lt;SpanNear slop="8" inOrder="false" fieldName="text"&gt;    
+      &lt;SpanOrTerms&gt;killed died death dead deaths&lt;/SpanOrTerms&gt;
+      &lt;SpanOrTerms&gt;miner mining miners&lt;/SpanOrTerms&gt;
+        &lt;/SpanNear&gt;
+        </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table  summary="&lt;SpanOrTerms&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;SpanOrTerms&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#SpanOrTerms_fieldName'>fieldName</a></td><td></td><td></td></tr></table></td></tr></table></blockquote>
+<a name='SpanOrTerms_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#SpanOrTerms'>SpanOrTerms</a>
+</td></tr></table>
+<p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><p><span class='inTextTitle'>Required</span></p><a name='SpanOr'></a>
+<br /><table class='elementTitle' summary="SpanOr"><tr><td class='leftElementTitle'>
+&lt;SpanOr&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Include'>Include</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#SpanNear'>SpanNear</a>, <a href='#Exclude'>Exclude</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>Takes any number of child queries from the Span family</p><p><span class='inTextTitle'>Example:</span> <em>Find documents using terms close to each other about mining and accidents</em>
+</p><pre>
+        &lt;SpanNear slop="8" inOrder="false" fieldName="text"&gt;    
+      &lt;SpanOr&gt;
+        &lt;SpanTerm&gt;killed&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;died&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;dead&lt;/SpanTerm&gt;
+      &lt;/SpanOr&gt;
+      &lt;SpanOr&gt;
+        &lt;SpanTerm&gt;miner&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;mining&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;miners&lt;/SpanTerm&gt;
+      &lt;/SpanOr&gt;
+        &lt;/SpanNear&gt;
+        </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;SpanOr&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;SpanOr&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#BoostingTermQuery'>BoostingTermQuery</a></td><td>Any number</td></tr>
+<tr><td><a href='#SpanFirst'>SpanFirst</a></td><td>Any number</td></tr>
+<tr><td><a href='#SpanNear'>SpanNear</a></td><td>Any number</td></tr>
+<tr><td><a href='#SpanNot'>SpanNot</a></td><td>Any number</td></tr>
+<tr><td><a href='#SpanOr'>SpanOr</a></td><td>Any number</td></tr>
+<tr><td><a href='#SpanOrTerms'>SpanOrTerms</a></td><td>Any number</td></tr>
+<tr><td><a href='#SpanTerm'>SpanTerm</a></td><td>Any number</td></tr>
+</tbody></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#SpanOr'>SpanOr</a> | <a href='#SpanNear'>SpanNear</a> | <a href='#SpanOrTerms'>SpanOrTerms</a> | <a href='#SpanFirst'>SpanFirst</a> | <a href='#SpanNot'>SpanNot</a> | <a href='#SpanTerm'>SpanTerm</a> | <a href='#BoostingTermQuery'>BoostingTermQuery</a>)*</p><a name='SpanNear'></a>
+<br /><table class='elementTitle' summary="SpanNear"><tr><td class='leftElementTitle'>
+&lt;SpanNear&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Include'>Include</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#SpanOr'>SpanOr</a>, <a href='#Exclude'>Exclude</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>Takes any number of child queries from the Span family and tests for proximity</p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;SpanNear&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;SpanNear&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#BoostingTermQuery'>BoostingTermQuery</a></td><td>Any number</td></tr>
+<tr><td><a href='#SpanFirst'>SpanFirst</a></td><td>Any number</td></tr>
+<tr><td><a href='#SpanNear'>SpanNear</a></td><td>Any number</td></tr>
+<tr><td><a href='#SpanNot'>SpanNot</a></td><td>Any number</td></tr>
+<tr><td><a href='#SpanOr'>SpanOr</a></td><td>Any number</td></tr>
+<tr><td><a href='#SpanOrTerms'>SpanOrTerms</a></td><td>Any number</td></tr>
+<tr><td><a href='#SpanTerm'>SpanTerm</a></td><td>Any number</td></tr>
+</tbody></table></td><td class='construct'><table  summary="&lt;SpanNear&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;SpanNear&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#SpanNear_inOrder'>inOrder</a></td><td>true, false</td><td>true</td></tr><tr><td><a href='#SpanNear_slop'>slop</a></td><td></td><td></td></tr></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#SpanOr'>SpanOr</a> | <a href='#SpanNear'>SpanNear</a> | <a href='#SpanOrTerms'>SpanOrTerms</a> | <a href='#SpanFirst'>SpanFirst</a> | <a href='#SpanNot'>SpanNot</a> | <a href='#SpanTerm'>SpanTerm</a> | <a href='#BoostingTermQuery'>BoostingTermQuery</a>)*</p><a name='SpanNear_slop'></a>
+<br /><table class='attributeTitle' summary="slop"><tr><td class='leftAttributeTitle'>
+@slop</td><td class='rightAttributeTitle'>
+Attribute of <a href='#SpanNear'>SpanNear</a>
+</td></tr></table>
+<p>defines the maximum distance between Span elements where distance is expressed as word number, not byte offset</p><p><span class='inTextTitle'>Example:</span> <em>Find documents using terms within 8 words of each other talking about mining and accidents</em>
+</p><pre>
+        &lt;SpanNear slop="8" inOrder="false" fieldName="text"&gt;    
+      &lt;SpanOr&gt;
+        &lt;SpanTerm&gt;killed&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;died&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;dead&lt;/SpanTerm&gt;
+      &lt;/SpanOr&gt;
+      &lt;SpanOr&gt;
+        &lt;SpanTerm&gt;miner&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;mining&lt;/SpanTerm&gt;
+        &lt;SpanTerm&gt;miners&lt;/SpanTerm&gt;
+      &lt;/SpanOr&gt;
+        &lt;/SpanNear&gt;
+        </pre><p></p><p><span class='inTextTitle'>Required</span></p><a name='SpanNear_inOrder'></a>
+<br /><table class='attributeTitle' summary="inOrder"><tr><td class='leftAttributeTitle'>
+@inOrder</td><td class='rightAttributeTitle'>
+Attribute of <a href='#SpanNear'>SpanNear</a>
+</td></tr></table>
+<p>Controls if matching terms have to appear in the order listed or can be reversed</p><p><span class='inTextTitle'>Possible values</span>: true, false - <span class='inTextTitle'>Default value</span>: true</p><a name='SpanFirst'></a>
+<br /><table class='elementTitle' summary="SpanFirst"><tr><td class='leftElementTitle'>
+&lt;SpanFirst&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#Include'>Include</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#SpanOr'>SpanOr</a>, <a href='#SpanNear'>SpanNear</a>, <a href='#Exclude'>Exclude</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>Looks for a SpanQuery match occuring near the beginning of a document</p><p><span class='inTextTitle'>Example:</span> <em>Find letters where the first 50 words talk about a resignation:</em>
+</p><pre>            
+           &lt;SpanFirst end="50"&gt;
+                 &lt;SpanOrTerms fieldName="text"&gt;resigning resign leave&lt;/SpanOrTerms&gt;
+           &lt;/SpanFirst&gt;
+           </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;SpanFirst&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;SpanFirst&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#BoostingTermQuery'>BoostingTermQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanFirst'>SpanFirst</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNear'>SpanNear</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNot'>SpanNot</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOr'>SpanOr</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOrTerms'>SpanOrTerms</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanTerm'>SpanTerm</a></td><td>One or none</td></tr>
+</tbody></table></td><td class='construct'><table  summary="&lt;SpanFirst&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;SpanFirst&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#SpanFirst_boost'>boost</a></td><td></td><td>1.0</td></tr><tr><td><a href='#SpanFirst_end'>end</a></td><td></td><td></td></tr></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#SpanOr'>SpanOr</a> | <a href='#SpanNear'>SpanNear</a> | <a href='#SpanOrTerms'>SpanOrTerms</a> | <a href='#SpanFirst'>SpanFirst</a> | <a href='#SpanNot'>SpanNot</a> | <a href='#SpanTerm'>SpanTerm</a> | <a href='#BoostingTermQuery'>BoostingTermQuery</a>)</p><a name='SpanFirst_end'></a>
+<br /><table class='attributeTitle' summary="end"><tr><td class='leftAttributeTitle'>
+@end</td><td class='rightAttributeTitle'>
+Attribute of <a href='#SpanFirst'>SpanFirst</a>
+</td></tr></table>
+<p>Controls the end of the region considered in a document's field (expressed in word number, not byte offset)</p><p><span class='inTextTitle'>Required</span></p><a name='SpanFirst_boost'></a>
+<br /><table class='attributeTitle' summary="boost"><tr><td class='leftAttributeTitle'>
+@boost</td><td class='rightAttributeTitle'>
+Attribute of <a href='#SpanFirst'>SpanFirst</a>
+</td></tr></table>
+<p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='SpanNot'></a>
+<br /><table class='elementTitle' summary="SpanNot"><tr><td class='leftElementTitle'>
+&lt;SpanNot&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#SpanFirst'>SpanFirst</a>, <a href='#Include'>Include</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#SpanOr'>SpanOr</a>, <a href='#SpanNear'>SpanNear</a>, <a href='#Exclude'>Exclude</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>Finds documents matching a SpanQuery but not if matching another SpanQuery</p><p><span class='inTextTitle'>Example:</span> <em>Find documents talking about social services but not containing the word "public"</em>
+</p><pre>
+          &lt;SpanNot fieldName="text"&gt;
+             &lt;Include&gt;
+                &lt;SpanNear slop="2" inOrder="true"&gt;    
+                     &lt;SpanTerm&gt;social&lt;/SpanTerm&gt;
+                     &lt;SpanTerm&gt;services&lt;/SpanTerm&gt;
+                &lt;/SpanNear&gt;        
+             &lt;/Include&gt;
+             &lt;Exclude&gt;
+                &lt;SpanTerm&gt;public&lt;/SpanTerm&gt;
+             &lt;/Exclude&gt;
+          &lt;/SpanNot&gt;
+        </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;SpanNot&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;SpanNot&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#Exclude'>Exclude</a></td><td>Only one</td></tr>
+<tr><td><a href='#Include'>Include</a></td><td>Only one</td></tr>
+</tbody></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#Include'>Include</a>, <a href='#Exclude'>Exclude</a>)</p><a name='Include'></a>
+<br /><table class='elementTitle' summary="Include"><tr><td class='leftElementTitle'>
+&lt;Include&gt;</td><td class='rightElementTitle'>
+Child of <a href='#SpanNot'>SpanNot</a>
+</td></tr></table>
+<p>The SpanQuery to find</p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;Include&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;Include&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#BoostingTermQuery'>BoostingTermQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanFirst'>SpanFirst</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNear'>SpanNear</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNot'>SpanNot</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOr'>SpanOr</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOrTerms'>SpanOrTerms</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanTerm'>SpanTerm</a></td><td>One or none</td></tr>
+</tbody></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#SpanOr'>SpanOr</a> | <a href='#SpanNear'>SpanNear</a> | <a href='#SpanOrTerms'>SpanOrTerms</a> | <a href='#SpanFirst'>SpanFirst</a> | <a href='#SpanNot'>SpanNot</a> | <a href='#SpanTerm'>SpanTerm</a> | <a href='#BoostingTermQuery'>BoostingTermQuery</a>)</p><a name='Exclude'></a>
+<br /><table class='elementTitle' summary="Exclude"><tr><td class='leftElementTitle'>
+&lt;Exclude&gt;</td><td class='rightElementTitle'>
+Child of <a href='#SpanNot'>SpanNot</a>
+</td></tr></table>
+<p>The SpanQuery to be avoided</p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;Exclude&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;Exclude&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#BoostingTermQuery'>BoostingTermQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanFirst'>SpanFirst</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNear'>SpanNear</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNot'>SpanNot</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOr'>SpanOr</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOrTerms'>SpanOrTerms</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanTerm'>SpanTerm</a></td><td>One or none</td></tr>
+</tbody></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#SpanOr'>SpanOr</a> | <a href='#SpanNear'>SpanNear</a> | <a href='#SpanOrTerms'>SpanOrTerms</a> | <a href='#SpanFirst'>SpanFirst</a> | <a href='#SpanNot'>SpanNot</a> | <a href='#SpanTerm'>SpanTerm</a> | <a href='#BoostingTermQuery'>BoostingTermQuery</a>)</p><a name='ConstantScoreQuery'></a>
+<br /><table class='elementTitle' summary="ConstantScoreQuery"><tr><td class='leftElementTitle'>
+&lt;ConstantScoreQuery&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>a utility tag to wrap any filter as a query</p><p><span class='inTextTitle'>Example:</span> <em> Find all documents from the last 10 years </em>
+</p><pre>
+     &lt;ConstantScoreQuery&gt;
+           &lt;RangeFilter fieldName="date" lowerTerm="19970101" upperTerm="20070101"/&gt;
+     &lt;/ConstantScoreQuery&gt;  
+  </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;ConstantScoreQuery&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;ConstantScoreQuery&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#BooleanFilter'>BooleanFilter</a></td><td>Any number</td></tr>
+<tr><td><a href='#CachedFilter'>CachedFilter</a></td><td>Any number</td></tr>
+<tr><td><a href='#DuplicateFilter'>DuplicateFilter</a></td><td>Any number</td></tr>
+<tr><td><a href='#NumericRangeFilter'>NumericRangeFilter</a></td><td>Any number</td></tr>
+<tr><td><a href='#RangeFilter'>RangeFilter</a></td><td>Any number</td></tr>
+<tr><td><a href='#TermsFilter'>TermsFilter</a></td><td>Any number</td></tr>
+</tbody></table></td><td class='construct'><table  summary="&lt;ConstantScoreQuery&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;ConstantScoreQuery&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#ConstantScoreQuery_boost'>boost</a></td><td></td><td>1.0</td></tr></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#RangeFilter'>RangeFilter</a> | <a href='#NumericRangeFilter'>NumericRangeFilter</a> | <a href='#CachedFilter'>CachedFilter</a> | <a href='#TermsFilter'>TermsFilter</a> | <a href='#BooleanFilter'>BooleanFilter</a> | <a href='#DuplicateFilter'>DuplicateFilter</a>)*</p><a name='ConstantScoreQuery_boost'></a>
+<br /><table class='attributeTitle' summary="boost"><tr><td class='leftAttributeTitle'>
+@boost</td><td class='rightAttributeTitle'>
+Attribute of <a href='#ConstantScoreQuery'>ConstantScoreQuery</a>
+</td></tr></table>
+<p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='FuzzyLikeThisQuery'></a>
+<br /><table class='elementTitle' summary="FuzzyLikeThisQuery"><tr><td class='leftElementTitle'>
+&lt;FuzzyLikeThisQuery&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>Performs fuzzy matching on "significant" terms in fields. Improves on "LikeThisQuery" by allowing for fuzzy variations of supplied fields.
+Improves on FuzzyQuery by rewarding all fuzzy variants of a term with the same IDF rather than default fuzzy behaviour which ranks rarer
+variants (typically misspellings) more highly. This can be a useful default search mode for processing user input where the end user
+is not expected to know about the standard query operators for fuzzy, boolean or phrase logic found in UserQuery</p><p><span class='inTextTitle'>Example:</span> <em>Search for information about the Sumitomo bank, where the end user has mis-spelt the name</em>
+</p><pre>            
+            &lt;FuzzyLikeThisQuery&gt;
+                &lt;Field fieldName="contents"&gt;
+                 Sumitimo bank
+              &lt;/Field&gt;
+            &lt;/FuzzyLikeThisQuery&gt;
+           </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;FuzzyLikeThisQuery&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;FuzzyLikeThisQuery&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#Field'>Field</a></td><td>Any number</td></tr>
+</tbody></table></td><td class='construct'><table  summary="&lt;FuzzyLikeThisQuery&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;FuzzyLikeThisQuery&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#FuzzyLikeThisQuery_boost'>boost</a></td><td></td><td>1.0</td></tr><tr><td><a href='#FuzzyLikeThisQuery_ignoreTF'>ignoreTF</a></td><td>true, false</td><td>false</td></tr><tr><td><a href='#FuzzyLikeThisQuery_maxNumTerms'>maxNumTerms</a></td><td></td><td>50</td></tr></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#Field'>Field</a>)*</p><a name='FuzzyLikeThisQuery_boost'></a>
+<br /><table class='attributeTitle' summary="boost"><tr><td class='leftAttributeTitle'>
+@boost</td><td class='rightAttributeTitle'>
+Attribute of <a href='#FuzzyLikeThisQuery'>FuzzyLikeThisQuery</a>
+</td></tr></table>
+<p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='FuzzyLikeThisQuery_maxNumTerms'></a>
+<br /><table class='attributeTitle' summary="maxNumTerms"><tr><td class='leftAttributeTitle'>
+@maxNumTerms</td><td class='rightAttributeTitle'>
+Attribute of <a href='#FuzzyLikeThisQuery'>FuzzyLikeThisQuery</a>
+</td></tr></table>
+<p>Limits the total number of terms selected from the provided text plus the selected "fuzzy" variants</p><p><span class='inTextTitle'>Default value</span>: 50</p><a name='FuzzyLikeThisQuery_ignoreTF'></a>
+<br /><table class='attributeTitle' summary="ignoreTF"><tr><td class='leftAttributeTitle'>
+@ignoreTF</td><td class='rightAttributeTitle'>
+Attribute of <a href='#FuzzyLikeThisQuery'>FuzzyLikeThisQuery</a>
+</td></tr></table>
+<p>Ignore "Term Frequency" - a boost factor which rewards multiple occurences of the same term in a document</p><p><span class='inTextTitle'>Possible values</span>: true, false - <span class='inTextTitle'>Default value</span>: false</p><a name='Field'></a>
+<br /><table class='elementTitle' summary="Field"><tr><td class='leftElementTitle'>
+&lt;Field&gt;</td><td class='rightElementTitle'>
+Child of <a href='#FuzzyLikeThisQuery'>FuzzyLikeThisQuery</a>
+</td></tr></table>
+<p>A field used in a FuzzyLikeThisQuery</p><blockquote><table summary='element info'><tr>
+<td class='construct'><table  summary="&lt;Field&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;Field&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#Field_fieldName'>fieldName</a></td><td></td><td></td></tr><tr><td><a href='#Field_minSimilarity'>minSimilarity</a></td><td></td><td>0.5</td></tr><tr><td><a href='#Field_prefixLength'>prefixLength</a></td><td></td><td>1</td></tr></table></td></tr></table></blockquote>
+<a name='Field_minSimilarity'></a>
+<br /><table class='attributeTitle' summary="minSimilarity"><tr><td class='leftAttributeTitle'>
+@minSimilarity</td><td class='rightAttributeTitle'>
+Attribute of <a href='#Field'>Field</a>
+</td></tr></table>
+<p>Controls the level of similarity required for fuzzy variants where 1 is identical and 0.5 is that the variant contains
+half of the original's characters in the same order. Lower values produce more results but may take longer to execute due to
+additional IO required to read matching document ids</p><p><span class='inTextTitle'>Default value</span>: 0.5</p><a name='Field_prefixLength'></a>
+<br /><table class='attributeTitle' summary="prefixLength"><tr><td class='leftAttributeTitle'>
+@prefixLength</td><td class='rightAttributeTitle'>
+Attribute of <a href='#Field'>Field</a>
+</td></tr></table>
+<p>Controls the minimum number of characters at the start of fuzzy variant words that must exactly match the original.
+A value of zero will require no minimum and the search software will effectively scan ALL terms from a to z looking for variations.
+This can incur high CPU overhead and a prefix length of just "1" will reduce this overhead to 1/26th of the original cost (assuming
+an even distribution of letters used from the alphabet).</p><p><span class='inTextTitle'>Default value</span>: 1</p><a name='Field_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#Field'>Field</a>
+</td></tr></table>
+<p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><a name='LikeThisQuery'></a>
+<br /><table class='elementTitle' summary="LikeThisQuery"><tr><td class='leftElementTitle'>
+&lt;LikeThisQuery&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>Cherry-picks "significant" terms from the example child text and queries using these words. By only using significant (read: rare) terms the
+performance cost of the query is substantially reduced and large bodies of text can be used as example content.</p><p><span class='inTextTitle'>Example:</span> <em>Use a block of text as an example of the type of content to be found, ignoring the "Reuters" word which
+appears commonly in the index.</em>
+</p><pre>
+            &lt;LikeThisQuery percentTermsToMatch="5" stopWords="Reuters"&gt;
+                IRAQI TROOPS REPORTED PUSHING BACK IRANIANS Iraq said today its troops were pushing Iranian forces out of 
+                positions they had initially occupied when they launched a new offensive near the southern port of 
+                Basra early yesterday.     A High Command communique said Iraqi troops had won a significant victory 
+                and were continuing to advance.     Iraq said it had foiled a three-pronged thrust some 10 km 
+                (six miles) from Basra, but admitted the Iranians had occupied ground held by the Mohammed al-Qassem 
+                unit, one of three divisions attacked.     The communique said Iranian Revolutionary Guards were under 
+                assault from warplanes, helicopter gunships, heavy artillery and tanks.     "Our forces are continuing 
+                their advance until they purge the last foothold" occupied by the Iranians, it said.     
+                (Iran said its troops had killed or wounded more than 4,000 Iraqis and were stabilising their new positions.)     
+                The Baghdad communique said Iraqi planes also destroyed oil installations at Iran's southwestern Ahvaz field 
+                during a raid today. It denied an Iranian report that an Iraqi jet was shot down.     
+                Iraq also reported a naval battle at the northern tip of the Gulf. Iraqi naval units and forces defending an 
+                offshore terminal sank six Iranian out of 28 Iranian boats attempting to attack an offshore terminal, 
+                the communique said.      Reuters 3;
+            &lt;/LikeThisQuery&gt;           
+          </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table  summary="&lt;LikeThisQuery&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;LikeThisQuery&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#LikeThisQuery_boost'>boost</a></td><td></td><td>1.0</td></tr><tr><td><a href='#LikeThisQuery_fieldNames'>fieldNames</a></td><td></td><td></td></tr><tr><td><a href='#LikeThisQuery_maxQueryTerms'>maxQueryTerms</a></td><td></td><td>20</td></tr><tr><td><a href='#LikeThisQuery_minTermFrequency'>minTermFrequency</a></td><td></td><td>1</td></tr><tr><td><a href='#LikeThisQuery_percentTermsToMatch'>percentTermsToMatch</a></td><td></td><td>30</td></tr><tr><td><a href='#LikeThisQuery_stopWords'>stopWords</a></td><td></td><td></td></tr></table></td></tr></table></blockquote>
+<a name='LikeThisQuery_boost'></a>
+<br /><table class='attributeTitle' summary="boost"><tr><td class='leftAttributeTitle'>
+@boost</td><td class='rightAttributeTitle'>
+Attribute of <a href='#LikeThisQuery'>LikeThisQuery</a>
+</td></tr></table>
+<p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='LikeThisQuery_fieldNames'></a>
+<br /><table class='attributeTitle' summary="fieldNames"><tr><td class='leftAttributeTitle'>
+@fieldNames</td><td class='rightAttributeTitle'>
+Attribute of <a href='#LikeThisQuery'>LikeThisQuery</a>
+</td></tr></table>
+<p>Comma delimited list of field names</p><a name='LikeThisQuery_stopWords'></a>
+<br /><table class='attributeTitle' summary="stopWords"><tr><td class='leftAttributeTitle'>
+@stopWords</td><td class='rightAttributeTitle'>
+Attribute of <a href='#LikeThisQuery'>LikeThisQuery</a>
+</td></tr></table>
+<p>a list of stop words - analyzed to produce stop terms</p><a name='LikeThisQuery_maxQueryTerms'></a>
+<br /><table class='attributeTitle' summary="maxQueryTerms"><tr><td class='leftAttributeTitle'>
+@maxQueryTerms</td><td class='rightAttributeTitle'>
+Attribute of <a href='#LikeThisQuery'>LikeThisQuery</a>
+</td></tr></table>
+<p>controls the maximum number of words shortlisted for the query. The higher the number the slower the response due to more disk reads required</p><p><span class='inTextTitle'>Default value</span>: 20</p><a name='LikeThisQuery_minTermFrequency'></a>
+<br /><table class='attributeTitle' summary="minTermFrequency"><tr><td class='leftAttributeTitle'>
+@minTermFrequency</td><td class='rightAttributeTitle'>
+Attribute of <a href='#LikeThisQuery'>LikeThisQuery</a>
+</td></tr></table>
+<p>Controls how many times a term must appear in the example text before it is shortlisted for use in the query</p><p><span class='inTextTitle'>Default value</span>: 1</p><a name='LikeThisQuery_percentTermsToMatch'></a>
+<br /><table class='attributeTitle' summary="percentTermsToMatch"><tr><td class='leftAttributeTitle'>
+@percentTermsToMatch</td><td class='rightAttributeTitle'>
+Attribute of <a href='#LikeThisQuery'>LikeThisQuery</a>
+</td></tr></table>
+<p>A quality control that can be used to limit the number of results to those documents matching a certain percentage of the shortlisted query terms.
+Values must be between 1 and 100</p><p><span class='inTextTitle'>Default value</span>: 30</p><a name='BoostingQuery'></a>
+<br /><table class='elementTitle' summary="BoostingQuery"><tr><td class='leftElementTitle'>
+&lt;BoostingQuery&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostQuery'>BoostQuery</a>, <a href='#Clause'>Clause</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#Query'>Query</a>
+</td></tr></table>
+<p>Requires matches on the "Query" element and optionally boosts by any matches on the "BoostQuery".
+Unlike a regular BooleanQuery the boost can be less than 1 to produce a subtractive rather than additive result
+on the match score.</p><p><span class='inTextTitle'>Example:</span> <em>Find documents about banks, preferably related to mergers, and preferably not about "World bank"</em>
+</p><pre>
+  &lt;BoostingQuery&gt;
+      &lt;Query&gt;
+         &lt;BooleanQuery fieldName="contents"&gt;
+           &lt;Clause occurs="should"&gt;
+              &lt;TermQuery&gt;merger&lt;/TermQuery&gt;
+           &lt;/Clause&gt;
+           &lt;Clause occurs="must"&gt;
+              &lt;TermQuery&gt;bank&lt;/TermQuery&gt;
+           &lt;/Clause&gt;
+         &lt;/BooleanQuery&gt;  
+      &lt;/Query&gt;
+      &lt;BoostQuery boost="0.01"&gt;
+         &lt;UserQuery&gt;"world bank"&lt;/UserQuery&gt;
+      &lt;/BoostQuery&gt;
+    &lt;/BoostingQuery&gt;
+  </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;BoostingQuery&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;BoostingQuery&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#BoostQuery'>BoostQuery</a></td><td>Only one</td></tr>
+<tr><td><a href='#Query'>Query</a></td><td>Only one</td></tr>
+</tbody></table></td><td class='construct'><table  summary="&lt;BoostingQuery&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;BoostingQuery&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#BoostingQuery_boost'>boost</a></td><td></td><td>1.0</td></tr></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#Query'>Query</a>, <a href='#BoostQuery'>BoostQuery</a>)</p><a name='BoostingQuery_boost'></a>
+<br /><table class='attributeTitle' summary="boost"><tr><td class='leftAttributeTitle'>
+@boost</td><td class='rightAttributeTitle'>
+Attribute of <a href='#BoostingQuery'>BoostingQuery</a>
+</td></tr></table>
+<p>Optional boost for matches on this query. Values > 1</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='BoostQuery'></a>
+<br /><table class='elementTitle' summary="BoostQuery"><tr><td class='leftElementTitle'>
+&lt;BoostQuery&gt;</td><td class='rightElementTitle'>
+Child of <a href='#BoostingQuery'>BoostingQuery</a>
+</td></tr></table>
+<p>Child element of BoostingQuery used to contain the choice of Query which is used for boosting purposes</p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;BoostQuery&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;BoostQuery&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#BooleanQuery'>BooleanQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#BoostingQuery'>BoostingQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#BoostingTermQuery'>BoostingTermQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#ConstantScoreQuery'>ConstantScoreQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#FilteredQuery'>FilteredQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#FuzzyLikeThisQuery'>FuzzyLikeThisQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#LikeThisQuery'>LikeThisQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#MatchAllDocsQuery'>MatchAllDocsQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#NumericRangeQuery'>NumericRangeQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanFirst'>SpanFirst</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNear'>SpanNear</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanNot'>SpanNot</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOr'>SpanOr</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanOrTerms'>SpanOrTerms</a></td><td>One or none</td></tr>
+<tr><td><a href='#SpanTerm'>SpanTerm</a></td><td>One or none</td></tr>
+<tr><td><a href='#TermQuery'>TermQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#TermsQuery'>TermsQuery</a></td><td>One or none</td></tr>
+<tr><td><a href='#UserQuery'>UserQuery</a></td><td>One or none</td></tr>
+</tbody></table></td><td class='construct'><table  summary="&lt;BoostQuery&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;BoostQuery&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#BoostQuery_boost'>boost</a></td><td></td><td>1.0</td></tr></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#BooleanQuery'>BooleanQuery</a> | <a href='#UserQuery'>UserQuery</a> | <a href='#FilteredQuery'>FilteredQuery</a> | <a href='#TermQuery'>TermQuery</a> | <a href='#TermsQuery'>TermsQuery</a> | <a href='#MatchAllDocsQuery'>MatchAllDocsQuery</a> | <a href='#ConstantScoreQuery'>ConstantScoreQuery</a> | <a href='#BoostingTermQuery'>BoostingTermQuery</a> | <a href='#NumericRangeQuery'>NumericRangeQuery</a> | <a href='#SpanOr'>SpanOr</a> | <a href='#SpanNear'>SpanNear</a> | <a href='#SpanOrTerms'>SpanOrTerms</a> | <a href='#SpanFirst'>SpanFirst</a> | <a href='#SpanNot'>SpanNot</a> | <a href='#SpanTerm'>SpanTerm</a> | <a href='#BoostingTermQuery'>BoostingTermQuery</a> | <a href='#LikeThisQuery'>LikeThisQuery</a> | <a href='#BoostingQuery'>BoostingQuery</a> | <a href='#FuzzyLikeThisQuery'>FuzzyLikeThisQuery</a>)</p><a name='BoostQuery_boost'></a>
+<br /><table class='attributeTitle' summary="boost"><tr><td class='leftAttributeTitle'>
+@boost</td><td class='rightAttributeTitle'>
+Attribute of <a href='#BoostQuery'>BoostQuery</a>
+</td></tr></table>
+<p>Optional boost for matches on this query. A boost of >0 but &lt;1
+effectively demotes results from Query that match this BoostQuery.</p><p><span class='inTextTitle'>Default value</span>: 1.0</p><a name='DuplicateFilter'></a>
+<br /><table class='elementTitle' summary="DuplicateFilter"><tr><td class='leftElementTitle'>
+&lt;DuplicateFilter/&gt;</td><td class='rightElementTitle'>
+Child of <a href='#Clause'>Clause</a>, <a href='#Filter'>Filter</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#ConstantScoreQuery'>ConstantScoreQuery</a>
+</td></tr></table>
+<p>Removes duplicated documents from results where "duplicate" means documents share a value for a particular field such as a primary key</p><p><span class='inTextTitle'>Example:</span> <em>Find the latest version of each web page that mentions "Lucene"</em>
+</p><pre>
+    &lt;FilteredQuery&gt;
+      &lt;Query&gt;
+         &lt;TermQuery fieldName="text"&gt;lucene&lt;/TermQuery&gt;
+      &lt;/Query&gt;
+    &lt;Filter&gt;
+    &lt;DuplicateFilter fieldName="url" keepMode="last"/&gt;
+    &lt;/Filter&gt;  
+    &lt;/FilteredQuery&gt;  
+  </pre><p></p><blockquote>
+<table  summary="&lt;DuplicateFilter&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;DuplicateFilter&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#DuplicateFilter_fieldName'>fieldName</a></td><td></td><td></td></tr><tr><td><a href='#DuplicateFilter_keepMode'>keepMode</a></td><td>first, last</td><td>first</td></tr><tr><td><a href='#DuplicateFilter_processingMode'>processingMode</a></td><td>full, fast</td><td>full</td></tr></table></blockquote>
+<p class='emptyTagNote'>This element is always empty.</p><a name='DuplicateFilter_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#DuplicateFilter'>DuplicateFilter</a>
+</td></tr></table>
+<p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><a name='DuplicateFilter_keepMode'></a>
+<br /><table class='attributeTitle' summary="keepMode"><tr><td class='leftAttributeTitle'>
+@keepMode</td><td class='rightAttributeTitle'>
+Attribute of <a href='#DuplicateFilter'>DuplicateFilter</a>
+</td></tr></table>
+<p>Determines if the first or last document occurence is the one to return when presented with duplicated field values</p><p><span class='inTextTitle'>Possible values</span>: first, last - <span class='inTextTitle'>Default value</span>: first</p><a name='DuplicateFilter_processingMode'></a>
+<br /><table class='attributeTitle' summary="processingMode"><tr><td class='leftAttributeTitle'>
+@processingMode</td><td class='rightAttributeTitle'>
+Attribute of <a href='#DuplicateFilter'>DuplicateFilter</a>
+</td></tr></table>
+<p>Controls the choice of process used to produce the filter - "full" mode identifies only non-duplicate documents with the chosen field
+while "fast" mode may perform faster but will also mark documents <em>without</em> the field as valid. The former approach starts by
+assuming every document is a duplicate then finds the "master" documents to keep while the latter approach assumes all documents are
+unique and unmarks those documents that are a copy.</p><p><span class='inTextTitle'>Possible values</span>: full, fast - <span class='inTextTitle'>Default value</span>: full</p><a name='TermsFilter'></a>
+<br /><table class='elementTitle' summary="TermsFilter"><tr><td class='leftElementTitle'>
+&lt;TermsFilter&gt;</td><td class='rightElementTitle'>
+Child of <a href='#Clause'>Clause</a>, <a href='#Filter'>Filter</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#ConstantScoreQuery'>ConstantScoreQuery</a>
+</td></tr></table>
+<p>Processes child text using a field-specific choice of Analyzer to produce a set of terms that are then used as a filter.</p><p><span class='inTextTitle'>Example:</span> <em>Find documents talking about Lucene written on a Monday or a Friday</em>
+</p><pre>
+    &lt;FilteredQuery&gt;
+      &lt;Query&gt;
+         &lt;TermQuery fieldName="text"&gt;lucene&lt;/TermQuery&gt;
+      &lt;/Query&gt;
+  &lt;Filter&gt;
+    &lt;TermsFilter fieldName="dayOfWeek"&gt;monday friday&lt;/TermsFilter&gt; 
+  &lt;/Filter&gt;  
+    &lt;/FilteredQuery&gt;  
+  </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table  summary="&lt;TermsFilter&gt;'s attributes"><tr>
+<th class='title' colspan='3'>&lt;TermsFilter&gt;'s attributes</th>
+</tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr>
+<th class='subtitle'>Name</th><th class='subtitle'>Values</th><th class='subtitle'>Default</th></tr>
+<tr><th colspan='3' height='1' class='ruler'></th></tr>
+<tr><td><a href='#TermsFilter_fieldName'>fieldName</a></td><td></td><td></td></tr></table></td></tr></table></blockquote>
+<a name='TermsFilter_fieldName'></a>
+<br /><table class='attributeTitle' summary="fieldName"><tr><td class='leftAttributeTitle'>
+@fieldName</td><td class='rightAttributeTitle'>
+Attribute of <a href='#TermsFilter'>TermsFilter</a>
+</td></tr></table>
+<p>fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute</p><a name='BooleanFilter'></a>
+<br /><table class='elementTitle' summary="BooleanFilter"><tr><td class='leftElementTitle'>
+&lt;BooleanFilter&gt;</td><td class='rightElementTitle'>
+Child of <a href='#Clause'>Clause</a>, <a href='#Filter'>Filter</a>, <a href='#CachedFilter'>CachedFilter</a>, <a href='#ConstantScoreQuery'>ConstantScoreQuery</a>
+</td></tr></table>
+<p>A Filter equivalent to BooleanQuery that applies Boolean logic to Clauses containing Filters.
+Unlike BooleanQuery a BooleanFilter can contain a single "mustNot" clause.</p><p><span class='inTextTitle'>Example:</span> <em>Find documents from the first quarter of this year or last year that are not in "draft" status</em>
+</p><pre>
+     &lt;FilteredQuery&gt;
+       &lt;Query&gt;
+           &lt;MatchAllDocsQuery/&gt;
+       &lt;/Query&gt;
+       &lt;Filter&gt;
+        &lt;BooleanFilter&gt;
+          &lt;Clause occurs="should"&gt;
+             &lt;RangeFilter fieldName="date" lowerTerm="20070101" upperTerm="20070401"/&gt;
+          &lt;/Clause&gt;
+          &lt;Clause occurs="should"&gt;
+             &lt;RangeFilter fieldName="date" lowerTerm="20060101" upperTerm="20060401"/&gt;
+          &lt;/Clause&gt;
+          &lt;Clause occurs="mustNot"&gt;
+             &lt;TermsFilter fieldName="status"&gt;draft&lt;/TermsFilter&gt; 
+          &lt;/Clause&gt;
+        &lt;/BooleanFilter&gt;
+       &lt;/Filter&gt;
+    &lt;/FilteredQuery&gt;
+  </pre><p></p><blockquote><table summary='element info'><tr>
+<td class='construct'><table summary="&lt;BooleanFilter&gt;'s children">
+<thead>
+<tr><th class='title' colspan='2'>&lt;BooleanFilter&gt;'s children</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+<tr><th class='subtitle'>Name</th><th class='subtitle'>Cardinality</th></tr>
+<tr><th colspan='2' height='1' class='ruler'></th></tr>
+</thead>
+<tbody><tr><td><a href='#Clause'>Clause</a></td><td>At least one</td></tr>
+</tbody></table></td></tr></table></blockquote>
+<span class='inTextTitle'>Element's model:</span><p class='model'>(<a href='#Clause'>Clause</a>)+</p></body></html>

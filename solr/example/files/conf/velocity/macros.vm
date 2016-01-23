@@ -1,0 +1,16 @@
+#macro(lensFilterSortOnly)?#if($list.size($response.responseHeader.params.getAll("fq")) > 0)&#fqs($response.responseHeader.params.getAll("fq"))#end#sort($request.params.getParams('sort'))#end
+#macro(lensNoQ)#lensFilterSortOnly&type=#current_type#if("#current_locale"!="")&locale=#current_locale#end#end
+#macro(lensNoType)#lensFilterSortOnly#q#if("#current_locale"!="")&locale=#current_locale#end#end
+#macro(lensNoLocale)#lensFilterSortOnly#q&type=#current_type#end
+
+## lens modified for example/files - to use fq from responseHeader rather than request, and #debug removed too as it is built into browse params now, also added type to lens
+#macro(lens)#lensNoQ#q#end
+
+## Macros defined custom for the "files" example
+#macro(url_for_type $type)#url_for_home#lensNoType&type=$type#end
+#macro(current_type)#if($response.responseHeader.params.type)${response.responseHeader.params.type}#{else}all#end#end
+#macro(url_for_locale $locale)#url_for_home#lensNoLocale#if($locale!="")&locale=$locale#end&start=$page.start#end
+#macro(current_locale)$!{response.responseHeader.params.locale}#end
+
+## Usage: #label(resource_key[, default_value]) - resource_key is used as label if no default value specified and no resource exists
+#macro(label $key $default)#if($resource.get($key).exists)${resource.get($key)}#else#if($default)$default#else${key}#end#end#end

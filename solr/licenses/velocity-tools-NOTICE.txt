@@ -1,0 +1,12 @@
+Apache Velocity Tools
+
+Copyright (C) 2000-2007 The Apache Software Foundation
+
+This product includes software developed at
+The Apache Software Foundation (http://www.apache.org/).
+
+Support for using SSL with Struts is provided using
+the sslext library package, which is open source software
+under the Apache Software License 1.1 with copyright attributed
+to The Apache Software Foundation.
+This software is available from http://sslext.sourceforge.net/

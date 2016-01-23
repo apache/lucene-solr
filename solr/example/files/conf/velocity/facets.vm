@@ -1,0 +1,24 @@
+#if($response.facetFields.size() > 0)
+  #foreach($field in $response.facetFields)
+    #if($field.values.size() > 0)
+        #if($engine.resourceExists("facet_${field.name}.vm"))
+          #parse("facet_${field.name}.vm")
+        #else
+          <div id="facet_$field.name" class="facet_field">
+            <span class="facet-field">#label("facet.${field.name}",$field.name)</span><br/>
+
+            <ul>
+              #foreach($facet in $field.values)
+                <li><a href="#url_for_facet_filter($field.name, $facet.name)">#if($facet.name!=$null)#label("${field.name}.${facet.name}","${field.name}.${facet.name}")#else<em>missing</em>#end</a> ($facet.count)</li>
+              #end
+            </ul>
+          </div>
+        #end
+    #end
+  #end ## end if field.values > 0
+#end  ## end if facetFields > 0
+
+
+
+
+

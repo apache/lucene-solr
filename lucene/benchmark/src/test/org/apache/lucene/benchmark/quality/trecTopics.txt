@@ -1,0 +1,287 @@
+# -----------------------------------------------------------------------
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+# 
+#     http://www.apache.org/licenses/LICENSE-2.0
+# 
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# -----------------------------------------------------------------------
+
+# ------------------------------------------------------------
+# This file was created using utils.QualityQueriesFinder.
+# See also TrecQRels.txt.
+# ------------------------------------------------------------
+
+<top>
+<num> Number: 0
+
+<title> statement months  total 1987
+
+<desc> Description:
+Topic 0 Description Line 1
+Topic 0 Description Line 2
+
+<narr> Narrative:
+Topic 0 Narrative Line 1
+Topic 0 Narrative Line 2
+
+</top>
+
+<top>
+<num> Number: 1
+
+<title> agreed 15  against five
+
+<desc> Description:
+Topic 1 Description Line 1
+Topic 1 Description Line 2
+
+<narr> Narrative:
+Topic 1 Narrative Line 1
+Topic 1 Narrative Line 2
+
+</top>
+
+<top>
+<num> Number: 2
+
+<title> nine only  month international
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 3
+
+<title> finance any  10 government
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 4
+
+<title> issue next  years all
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 5
+
+<title> who major  ltd today
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 6
+
+<title> business revs  securities per
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 7
+
+<title> quarter time  note sales
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 8
+
+<title> february earlier  loss group
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 9
+
+<title> out end  made some
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 10
+
+<title> spokesman financial  30 expected
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 11
+
+<title> 1985 now  prices due
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 12
+
+<title> before board  record could
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 13
+
+<title> pay debt  because trade
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 14
+
+<title> meeting increase  four price
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 15
+
+<title> chairman rate  six interest
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 16
+
+<title> since current  between agreement
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 17
+
+<title> oil we  when president
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 18
+
+<title> capital through  foreign added
+
+<desc> Description:
+
+
+<narr> Narrative:
+
+
+</top>
+
+<top>
+<num> Number: 19
+
+<title> 20 while  common week
+
+<desc> Description:
+Topic 19 Description Line 1
+Topic 19 Description Line 2
+
+<narr> Narrative:
+Topic 19 Narrative Line 1
+Topic 19 Narrative Line 2
+
+</top>

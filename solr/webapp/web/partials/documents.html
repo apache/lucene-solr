@@ -1,0 +1,118 @@
+<!--
+/*
+* Licensed to the Apache Software Foundation (ASF) under one or more
+* contributor license agreements.  See the NOTICE file distributed with
+* this work for additional information regarding copyright ownership.
+* The ASF licenses this file to You under the Apache License, Version 2.0
+* (the "License"); you may not use this file except in compliance with
+* the License.  You may obtain a copy of the License at
+*
+*     http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+-->
+
+<div id="documents" class="clearfix">
+  <div id="form">
+    <form>
+      <label for="qt">
+        <a rel="help">Request-Handler (qt)</a>
+      </label>
+      <input ng-model="handler" type="text" id="qt" value="/update" title="Request handler in solrconfig.xml.">
+      <label for="document-type">
+        <a rel="help">Document Type</a>
+      </label>
+
+      <div><select ng-model="type" id="document-type" ng-change="changeDocumentType()" placeholder="The type of the document field">
+        <!-- TODO: support the Builder -->
+        <option value="csv">CSV</option>
+        <option value="wizard">Document Builder</option>
+        <option value="upload">File Upload</option>
+        <option value="json">JSON</option>
+        <option value="solr">Solr Command (raw XML or JSON)</option>
+        <option value="xml">XML</option>
+      </select>
+      </div>
+      <div id="document-container">
+        <div id="wizard" ng-show="type=='wizard'">
+          <div id="wizard-fields">
+            <div><span class="description">Field</span>: <select ng-model="fieldName" id="wiz-field-select" name="wiz-field-select"
+                     ng-options="field for field in fields"></select>
+            </div>
+            <div><span id="wiz-field-data"><span class="description">Field Data</span>:</span>
+                <textarea ng-model="fieldData"
+                          id="wizard-doc"
+                          name="wizard-doc"
+                          rows="10"
+                          cols="40"
+                          placeholder="Enter your field text here and then click 'Add Field' to add the field to the document.">
+                </textarea>
+            </div>
+          </div>
+          <div id="wizard-add"><a ng-click="addWizardField()" id="add-field-href"><img border="0" src="./img/ico/plus-button.png"/>Add
+            Field</a></div>
+        </div>
+        <label for="document">
+          <a rel="help">Document(s)</a>
+        </label>
+        <textarea ng-show="type!='upload'" ng-model="document" name="document" id="document" title="The Document" rows="10"
+                  cols="70" placeholder="{{placeholder}}"></textarea>
+
+        <div id="file-upload" ng-show="type=='upload'">
+          <input type="file" id="the-file" name="the-file" file-model="fileUpload"/>
+        </div>
+      </div>
+
+      <div id="advanced">
+        <!-- TODO: only show for JSON/XML-->
+        <div id="attribs">
+          <div id="upload-only" ng-show="type=='upload'">
+            <label for="erh-params"><!-- TODO: cleaner way to do this? -->
+              <a rel="help">Extracting Req. Handler Params</a>
+            </label>
+            <input ng-model="literalParams" type="text" id="erh-params" value="&literal.id=change.me"
+                   title="Extracting Request Handler Parameters" size="50">
+          </div>
+          <div id="general-attribs">
+            <label for="commitWithin">
+              <a rel="help">Commit Within</a>
+            </label>
+            <input type="text" ng-model="commitWithin" id="commitWithin" value="1000" title="Commit Within (ms)">
+            <label for="overwrite">
+              <a rel="help">Overwrite</a>
+            </label>
+            <input ng-model="overwrite" type="text" id="overwrite" value="true" title="Overwrite">
+          </div>
+          <!-- Boost is json only, since the XML has it embedded -->
+          <div id="json-only" ng-show="type=='json'">
+            <label for="boost">
+              <a rel="help">Boost</a>
+            </label>
+            <input ng-model="boost" type="text" id="boost" value="1.0" title="Document Boost">
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" ng-click="submit()" id="submit">Submit Document</button>
+    </form>
+  </div>
+  <div id="result">
+    <div id="response" ng-show="response">
+        <div>
+          <span class="description">Status: </span>{{ responseStatus }}
+        </div>
+        <div>
+          <span class="description">Response:</span>
+          <pre class="syntax language-json"><code ng-bind-html="response | highlight:'json' | unsafe"></code></pre>
+        </div>
+    </div>
+
+  </div>
+</div>
+
+

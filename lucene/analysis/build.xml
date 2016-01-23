@@ -1,0 +1,161 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="analyzers" default="default">
+
+  <description>
+    Additional Analyzers
+      - common: Additional Analyzers
+      - icu: Analyzers that use functionality from ICU
+      - kuromoji: Japanese Morphological Analyzer
+      - morfologik: Morfologik Stemmer
+      - smartcn: Smart Analyzer for Simplified Chinese Text
+      - stempel: Algorithmic Stemmer for Polish
+      - uima: UIMA Analysis module
+  </description>
+
+  <dirname file="${ant.file.analyzers}" property="analyzers.dir"/>
+
+  <macrodef name="forall-analyzers">
+    <attribute name="target" />
+    <sequential>
+      <subant target="@{target}" inheritall="false" failonerror="true">
+         <propertyset refid="uptodate.and.compiled.properties"/>
+        <fileset dir="${analyzers.dir}" includes="*/build.xml" />
+      </subant>
+    </sequential>
+  </macrodef>
+
+  <propertyset id="uptodate.and.compiled.properties" dynamic="true">
+    <propertyref regex=".*\.uptodate$$"/>
+    <propertyref regex=".*\.compiled$$"/>
+    <propertyref regex=".*\.loaded$$"/>
+    <propertyref name="tests.totals.tmpfile" />
+  </propertyset>
+
+  <target name="common">
+    <ant dir="common" />
+  </target>
+
+  <target name="icu">
+    <ant dir="icu" />
+  </target>
+
+  <target name="kuromoji">
+    <ant dir="kuromoji" />
+  </target>
+
+  <target name="morfologik">
+    <ant dir="morfologik" />
+  </target>
+
+  <target name="phonetic">
+    <ant dir="phonetic" />
+  </target>
+
+  <target name="smartcn">
+    <ant dir="smartcn" />
+  </target>
+
+  <target name="stempel">
+    <ant dir="stempel" />
+  </target>
+
+  <target name="uima">
+    <ant dir="uima" />
+  </target>
+
+  <target name="default" depends="compile"/>
+  <target name="compile" depends="common,icu,kuromoji,morfologik,phonetic,smartcn,stempel,uima" />
+
+  <target name="clean">
+    <forall-analyzers target="clean"/>
+  </target>
+  <target name="resolve">
+    <forall-analyzers target="resolve"/>
+  </target>
+  <target name="validate">
+    <forall-analyzers target="validate"/>
+  </target>
+  <target name="compile-core">
+    <forall-analyzers target="compile-core"/>
+  </target>
+  <target name="compile-test">
+    <forall-analyzers target="compile-test"/>
+  </target>
+  <target name="compile-tools">
+    <forall-analyzers target="compile-tools"/>
+  </target>
+  <target name="test">
+    <forall-analyzers target="test"/>
+  </target>
+  <target name="beast">
+    <fail message="The Beast only works inside of individual modules"/>
+  </target>
+  <target name="jar">
+    <forall-analyzers target="jar-core"/>
+  </target>
+  <target name="jar-src">
+    <forall-analyzers target="jar-src"/>
+  </target>
+  <target name="jar-core" depends="jar"/>
+
+  <target name="build-artifacts-and-tests" depends="default,compile-test" />
+
+  <target name="-dist-maven">
+    <forall-analyzers target="-dist-maven"/>
+  </target>
+
+  <target name="-validate-maven-dependencies">
+    <forall-analyzers target="-validate-maven-dependencies"/>
+  </target>
+
+  <target name="javadocs">
+    <forall-analyzers target="javadocs"/>
+  </target>
+
+  <target name="javadocs-index.html">
+    <forall-analyzers target="javadocs-index.html"/>
+  </target>
+
+  <target name="rat-sources">
+    <forall-analyzers target="rat-sources"/>
+  </target>
+
+  <target name="-ecj-javadoc-lint">
+    <forall-analyzers target="-ecj-javadoc-lint"/>
+  </target>
+
+  <target name="regenerate">
+    <forall-analyzers target="regenerate"/>
+  </target>
+  
+  <target name="-append-module-dependencies-properties">
+    <forall-analyzers target="-append-module-dependencies-properties"/>
+  </target>
+  
+  <target name="check-forbidden-apis">
+    <forall-analyzers target="check-forbidden-apis"/>
+  </target>
+
+  <target name="jacoco">
+    <forall-analyzers target="jacoco"/>
+  </target>
+
+</project>

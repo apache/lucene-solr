@@ -1,0 +1,664 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="module-build" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+  <!-- TODO: adjust build.dir/dist.dir appropriately when a module is run individually -->
+  <dirname file="${ant.file.module-build}" property="module-build.dir"/>
+  <property name="build.dir" location="${module-build.dir}/build/${ant.project.name}"/>
+  <property name="dist.dir" location="${module-build.dir}/dist/${ant.project.name}"/>
+  <property name="maven.dist.dir" location="${module-build.dir}/dist/maven"/>
+
+  <import file="common-build.xml"/>
+
+  <!-- if you extend the classpath refid in one contrib's build.xml (add JARs), use this as basis: -->
+  <path id="base.classpath">
+   <pathelement location="${common.dir}/build/core/classes/java"/>
+  </path>
+  
+  <!-- default classpath refid, can be overridden by contrib's build.xml (use the above base.classpath as basis): -->
+  <path id="classpath" refid="base.classpath"/>
+  
+  <path id="test.base.classpath">
+    <pathelement location="${common.dir}/build/test-framework/classes/java"/>
+    <pathelement location="${common.dir}/build/codecs/classes/java"/>
+    <path refid="classpath"/>
+    <path refid="junit-path"/>
+    <pathelement location="${build.dir}/classes/java"/>
+  </path>
+
+  <path id="test.classpath" refid="test.base.classpath"/>
+
+  <path id="junit.classpath">
+    <pathelement location="${build.dir}/classes/test"/>
+    <path refid="test.classpath"/>
+    <pathelement path="${java.class.path}"/>
+  </path>
+
+  <target name="init" depends="common.init,compile-lucene-core"/>
+  <target name="compile-test" depends="init" if="module.has.tests">
+    <antcall target="common.compile-test" inheritRefs="true" />
+  </target>
+  <target name="test" depends="init" if="module.has.tests">
+    <antcall target="common.test" inheritRefs="true" />
+  </target>
+  <target name="build-artifacts-and-tests" depends="jar, compile-test" />
+
+  <!-- TODO: why does this previous depend on compile-core? -->
+  <target name="javadocs" depends="compile-core,javadocs-lucene-core,check-javadocs-uptodate"
+                          unless="javadocs-uptodate-${name}">
+    <invoke-module-javadoc/>
+  </target>
+
+  <macrodef name="invoke-module-javadoc">
+    <!-- additional links for dependencies to other modules -->
+      <element name="links" optional="yes"/>
+    <!-- link source (don't do this unless it's example code) -->
+      <attribute name="linksource" default="no"/>
+    <sequential>
+      <mkdir dir="${javadoc.dir}/${name}"/>
+      <invoke-javadoc
+         destdir="${javadoc.dir}/${name}"
+         title="${Name} ${version} ${name} API"
+         linksource="@{linksource}">
+         <sources>
+           <link href="../core/"/>
+           <links/>
+           <link href=""/>
+           <packageset dir="${src.dir}"/>
+        </sources>
+      </invoke-javadoc>
+      <jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
+    </sequential>
+  </macrodef>
+
+  <property name="test-framework.jar" value="${common.dir}/build/test-framework/lucene-test-framework-${version}.jar"/>
+  <target name="check-test-framework-uptodate" unless="test-framework.uptodate">
+    <module-uptodate name="test-framework" jarfile="${test-framework.jar}" property="test-framework.uptodate"/>
+  </target>
+  <target name="jar-test-framework" unless="test-framework.uptodate" depends="check-test-framework-uptodate">
+    <ant dir="${common.dir}/test-framework" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="test-framework.uptodate" value="true"/>
+  </target>
+
+  <property name="test-framework-javadoc.jar" value="${common.dir}/build/test-framework/lucene-test-framework-${version}-javadoc.jar"/>
+  <target name="check-test-framework-javadocs-uptodate" unless="test-framework-javadocs.uptodate">
+    <module-uptodate name="test-framework" jarfile="${test-framework-javadoc.jar}" property="test-framework-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-test-framework" unless="test-framework-javadocs.uptodate" depends="check-test-framework-javadocs-uptodate">
+    <ant dir="${common.dir}/test-framework" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="test-framework-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="queryparser.jar" value="${common.dir}/build/queryparser/lucene-queryparser-${version}.jar"/>
+  <target name="check-queryparser-uptodate" unless="queryparser.uptodate">
+    <module-uptodate name="queryparser" jarfile="${queryparser.jar}" property="queryparser.uptodate"/>
+  </target>
+  <target name="jar-queryparser" unless="queryparser.uptodate" depends="check-queryparser-uptodate">
+    <ant dir="${common.dir}/queryparser" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="queryparser.uptodate" value="true"/>
+  </target>
+
+  <property name="queryparser-javadoc.jar" value="${common.dir}/build/queryparser/lucene-queryparser-${version}-javadoc.jar"/>
+  <target name="check-queryparser-javadocs-uptodate" unless="queryparser-javadocs.uptodate">
+    <module-uptodate name="queryparser" jarfile="${queryparser-javadoc.jar}" property="queryparser-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-queryparser" unless="queryparser-javadocs.uptodate" depends="check-queryparser-javadocs-uptodate">
+    <ant dir="${common.dir}/queryparser" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="queryparser-javadocs.uptodate" value="true"/>
+  </target>
+  
+  <property name="join.jar" value="${common.dir}/build/join/lucene-join-${version}.jar"/>
+  <target name="check-join-uptodate" unless="join.uptodate">
+    <module-uptodate name="join" jarfile="${join.jar}" property="join.uptodate"/>
+  </target>
+  <target name="jar-join" unless="join.uptodate" depends="check-join-uptodate">
+    <ant dir="${common.dir}/join" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="join.uptodate" value="true"/>
+  </target>  
+  
+  <property name="join-javadoc.jar" value="${common.dir}/build/join/lucene-join-${version}-javadoc.jar"/>
+  <target name="check-join-javadocs-uptodate" unless="join-javadocs.uptodate">
+    <module-uptodate name="join" jarfile="${join-javadoc.jar}" property="join-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-join" unless="join-javadocs.uptodate" depends="check-join-javadocs-uptodate">
+    <ant dir="${common.dir}/join" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="join-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-common.jar" value="${common.dir}/build/analysis/common/lucene-analyzers-common-${version}.jar"/>
+  <target name="check-analyzers-common-uptodate" unless="analyzers-common.uptodate">
+    <module-uptodate name="analysis/common" jarfile="${analyzers-common.jar}" property="analyzers-common.uptodate"/>
+  </target>
+  <target name="jar-analyzers-common" unless="analyzers-common.uptodate" depends="check-analyzers-common-uptodate">
+    <ant dir="${common.dir}/analysis/common" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-common.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-common-javadoc.jar" value="${common.dir}/build/analysis/common/lucene-analyzers-common-${version}-javadoc.jar"/>
+  <target name="check-analyzers-common-javadocs-uptodate" unless="analyzers-common-javadocs.uptodate">
+    <module-uptodate name="analysis/common" jarfile="${analyzers-common-javadoc.jar}" property="analyzers-common-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-common" unless="analyzers-common-javadocs.uptodate" depends="check-analyzers-common-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/common" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-common-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="queries.jar" value="${common.dir}/build/queries/lucene-queries-${version}.jar"/>
+  <target name="check-queries-uptodate" unless="queries.uptodate">
+    <module-uptodate name="queries" jarfile="${queries.jar}" property="queries.uptodate"/>
+  </target>
+  <target name="jar-queries" unless="queries.uptodate" depends="check-queries-uptodate">
+    <ant dir="${common.dir}/queries" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="queries.uptodate" value="true"/>
+  </target>
+
+  <property name="queries-javadoc.jar" value="${common.dir}/build/queries/lucene-queries-${version}-javadoc.jar"/>
+  <target name="check-queries-javadocs-uptodate" unless="queries-javadocs.uptodate">
+    <module-uptodate name="queries" jarfile="${queries-javadoc.jar}" property="queries-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-queries" unless="queries-javadocs.uptodate" depends="check-queries-javadocs-uptodate">
+    <ant dir="${common.dir}/queries" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="queries-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="classification.jar" value="${common.dir}/build/classification/lucene-classification-${version}.jar"/>
+  <target name="check-classification-uptodate" unless="classification.uptodate">
+    <module-uptodate name="classification" jarfile="${classification.jar}" property="classification.uptodate"/>
+  </target>
+  <target name="jar-classification" unless="classification.uptodate" depends="check-classification-uptodate">
+    <ant dir="${common.dir}/classification" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="classification.uptodate" value="true"/>
+  </target>
+
+  <property name="classification-javadoc.jar" value="${common.dir}/build/classification/lucene-classification-${version}-javadoc.jar"/>
+  <target name="check-classification-javadocs-uptodate" unless="classification-javadocs.uptodate">
+    <module-uptodate name="classification" jarfile="${classification-javadoc.jar}" property="classification-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-classification" unless="classification-javadocs.uptodate" depends="check-classification-javadocs-uptodate">
+    <ant dir="${common.dir}/classification" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="classification-javadocs.uptodate" value="true"/>
+  </target>
+  
+  <property name="facet.jar" value="${common.dir}/build/facet/lucene-facet-${version}.jar"/>
+  <target name="check-facet-uptodate" unless="facet.uptodate">
+    <module-uptodate name="facet" jarfile="${facet.jar}" property="facet.uptodate"/>
+  </target>
+  <target name="jar-facet" unless="facet.uptodate" depends="check-facet-uptodate">
+    <ant dir="${common.dir}/facet" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="facet.uptodate" value="true"/>
+  </target>
+
+  <property name="facet-javadoc.jar" value="${common.dir}/build/facet/lucene-facet-${version}-javadoc.jar"/>
+  <target name="check-facet-javadocs-uptodate" unless="facet-javadocs.uptodate">
+    <module-uptodate name="facet" jarfile="${facet-javadoc.jar}" property="facet-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-facet" unless="facet-javadocs.uptodate" depends="check-facet-javadocs-uptodate">
+    <ant dir="${common.dir}/facet" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="facet-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="replicator.jar" value="${common.dir}/build/replicator/lucene-replicator-${version}.jar"/>
+  <target name="check-replicator-uptodate" unless="replicator.uptodate">
+    <module-uptodate name="replicator" jarfile="${replicator.jar}" property="replicator.uptodate"/>
+  </target>
+  <target name="jar-replicator" unless="replicator.uptodate" depends="check-replicator-uptodate">
+    <ant dir="${common.dir}/replicator" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="replicator.uptodate" value="true"/>
+  </target>
+
+  <property name="replicator-javadoc.jar" value="${common.dir}/build/replicator/lucene-replicator-${version}-javadoc.jar"/>
+  <target name="check-replicator-javadocs-uptodate" unless="replicator-javadocs.uptodate">
+    <module-uptodate name="replicator" jarfile="${replicator-javadoc.jar}" property="replicator-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-replicator" unless="replicator-javadocs.uptodate" depends="check-replicator-javadocs-uptodate">
+    <ant dir="${common.dir}/replicator" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="replicator-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-icu.jar" value="${common.dir}/build/analysis/icu/lucene-analyzers-icu-${version}.jar"/>
+  <target name="check-analyzers-icu-uptodate" unless="analyzers-icu.uptodate">
+    <module-uptodate name="analysis/icu" jarfile="${analyzers-icu.jar}" property="analyzers-icu.uptodate"/>
+  </target>
+  <target name="jar-analyzers-icu" unless="analyzers-icu.uptodate" depends="check-analyzers-icu-uptodate">
+    <ant dir="${common.dir}/analysis/icu" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-icu.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-icu-javadoc.jar" value="${common.dir}/build/analysis/icu/lucene-analyzers-icu-${version}-javadoc.jar"/>
+  <target name="check-analyzers-icu-javadocs-uptodate" unless="analyzers-icu-javadocs.uptodate">
+    <module-uptodate name="analysis/icu" jarfile="${analyzers-icu-javadoc.jar}" property="analyzers-icu-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-icu" unless="analyzers-icu-javadocs.uptodate" depends="check-analyzers-icu-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/icu" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-icu-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-phonetic.jar" value="${common.dir}/build/analysis/phonetic/lucene-analyzers-phonetic-${version}.jar"/>
+  <target name="check-analyzers-phonetic-uptodate" unless="analyzers-phonetic.uptodate">
+    <module-uptodate name="analysis/phonetic" jarfile="${analyzers-phonetic.jar}" property="analyzers-phonetic.uptodate"/>
+  </target>
+  <target name="jar-analyzers-phonetic" unless="analyzers-phonetic.uptodate" depends="check-analyzers-phonetic-uptodate">
+    <ant dir="${common.dir}/analysis/phonetic" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <property name="analyzers-phonetic-javadoc.jar" value="${common.dir}/build/analysis/phonetic/lucene-analyzers-phonetic-${version}-javadoc.jar"/>
+  <target name="check-analyzers-phonetic-javadocs-uptodate" unless="analyzers-phonetic-javadocs.uptodate">
+    <module-uptodate name="analysis/phonetic" jarfile="${analyzers-phonetic-javadoc.jar}" property="analyzers-phonetic-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-phonetic" unless="analyzers-phonetic-javadocs.uptodate" depends="check-analyzers-phonetic-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/phonetic" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-phonetic-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-smartcn.jar" value="${common.dir}/build/analysis/smartcn/lucene-analyzers-smartcn-${version}.jar"/>
+  <target name="check-analyzers-smartcn-uptodate" unless="analyzers-smartcn.uptodate">
+    <module-uptodate name="analysis/smartcn" jarfile="${analyzers-smartcn.jar}" property="analyzers-smartcn.uptodate"/>
+  </target>
+  <target name="jar-analyzers-smartcn" unless="analyzers-smartcn.uptodate" depends="check-analyzers-smartcn-uptodate">
+    <ant dir="${common.dir}/analysis/smartcn" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-smartcn.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-smartcn-javadoc.jar" value="${common.dir}/build/analysis/smartcn/lucene-analyzers-smartcn-${version}-javadoc.jar"/>
+  <target name="check-analyzers-smartcn-javadocs-uptodate" unless="analyzers-smartcn-javadocs.uptodate">
+    <module-uptodate name="analysis/smartcn" jarfile="${analyzers-smartcn-javadoc.jar}" property="analyzers-smartcn-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-smartcn" unless="analyzers-smartcn-javadocs.uptodate" depends="check-analyzers-smartcn-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/smartcn" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-smartcn-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-stempel.jar" value="${common.dir}/build/analysis/stempel/lucene-analyzers-stempel-${version}.jar"/>
+  <target name="check-analyzers-stempel-uptodate" unless="analyzers-stempel.uptodate">
+    <module-uptodate name="analysis/stempel" jarfile="${analyzers-stempel.jar}" property="analyzers-stempel.uptodate"/>
+  </target>
+  <target name="jar-analyzers-stempel" unless="analyzers-stempel.uptodate" depends="check-analyzers-stempel-uptodate">
+    <ant dir="${common.dir}/analysis/stempel" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-stempel.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-stempel-javadoc.jar" value="${common.dir}/build/analysis/stempel/lucene-analyzers-stempel-${version}-javadoc.jar"/>
+  <target name="check-analyzers-stempel-javadocs-uptodate" unless="analyzers-stempel-javadocs.uptodate">
+    <module-uptodate name="analysis/stempel" jarfile="${analyzers-stempel-javadoc.jar}" property="analyzers-stempel-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-stempel" unless="analyzers-stempel-javadocs.uptodate" depends="check-analyzers-stempel-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/stempel" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-stempel-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-kuromoji.jar" value="${common.dir}/build/analysis/kuromoji/lucene-analyzers-kuromoji-${version}.jar"/>
+  <target name="check-analyzers-kuromoji-uptodate" unless="analyzers-kuromoji.uptodate">
+    <module-uptodate name="analysis/kuromoji" jarfile="${analyzers-kuromoji.jar}" property="analyzers-kuromoji.uptodate"/>
+  </target>
+  <target name="jar-analyzers-kuromoji" unless="analyzers-kuromoji.uptodate" depends="check-analyzers-kuromoji-uptodate">
+    <ant dir="${common.dir}/analysis/kuromoji" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-kuromoji.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-kuromoji-javadoc.jar" value="${common.dir}/build/analysis/kuromoji/lucene-analyzers-kuromoji-${version}-javadoc.jar"/>
+  <target name="check-analyzers-kuromoji-javadocs-uptodate" unless="analyzers-kuromoji-javadocs.uptodate">
+    <module-uptodate name="analysis/kuromoji" jarfile="${analyzers-kuromoji-javadoc.jar}" property="analyzers-kuromoji-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-kuromoji" unless="analyzers-kuromoji-javadocs.uptodate" depends="check-analyzers-kuromoji-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/kuromoji" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-kuromoji-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-uima.jar" value="${common.dir}/build/analysis/uima/lucene-analyzers-uima-${version}.jar"/>
+  <target name="check-analyzers-uima-uptodate" unless="analyzers-uima.uptodate">
+    <module-uptodate name="analysis/uima" jarfile="${analyzers-uima.jar}" property="analyzers-uima.uptodate"/>
+  </target>
+  <target name="jar-analyzers-uima" unless="analyzers-uima.uptodate" depends="check-analyzers-uima-uptodate">
+    <ant dir="${common.dir}/analysis/uima" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-uima.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-uima-javadoc.jar" value="${common.dir}/build/analysis/uima/lucene-analyzers-uima-${version}-javadoc.jar"/>
+  <target name="check-analyzers-uima-javadocs-uptodate" unless="analyzers-uima-javadocs.uptodate">
+    <module-uptodate name="analysis/uima" jarfile="${analyzers-uima-javadoc.jar}" property="analyzers-uima-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-uima" unless="analyzers-uima-javadocs.uptodate" depends="check-analyzers-uima-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/uima" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-uima-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-morfologik.jar" value="${common.dir}/build/analysis/morfologik/lucene-analyzers-morfologik-${version}.jar"/>
+  <fileset id="analyzers-morfologik.fileset" dir="${common.dir}">
+    <include name="build/analysis/morfologik/lucene-analyzers-morfologik-${version}.jar" />
+    <include name="analysis/morfologik/lib/morfologik-*.jar" />
+  </fileset>
+  <target name="check-analyzers-morfologik-uptodate" unless="analyzers-morfologik.uptodate">
+    <module-uptodate name="analysis/morfologik" jarfile="${analyzers-morfologik.jar}" property="analyzers-morfologik.uptodate"/>
+  </target>
+  <target name="jar-analyzers-morfologik" unless="analyzers-morfologik.uptodate" depends="check-analyzers-morfologik-uptodate">
+    <ant dir="${common.dir}/analysis/morfologik" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-morfologik.uptodate" value="true"/>
+  </target>
+
+  <property name="analyzers-morfologik-javadoc.jar" value="${common.dir}/build/analysis/morfologik/lucene-analyzers-morfologik-${version}-javadoc.jar"/>
+  <target name="check-analyzers-morfologik-javadocs-uptodate" unless="analyzers-morfologik-javadocs.uptodate">
+    <module-uptodate name="analysis/morfologik" jarfile="${analyzers-morfologik-javadoc.jar}" property="analyzers-morfologik-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-analyzers-morfologik" unless="analyzers-morfologik-javadocs.uptodate" depends="check-analyzers-morfologik-javadocs-uptodate">
+    <ant dir="${common.dir}/analysis/morfologik" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="analyzers-morfologik-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="codecs.jar" value="${common.dir}/build/codecs/lucene-codecs-${version}.jar"/>
+  <target name="check-codecs-uptodate" unless="codecs.uptodate">
+    <module-uptodate name="codecs" jarfile="${codecs.jar}" property="codecs.uptodate"/>
+  </target>
+  <target name="jar-codecs" unless="codecs.uptodate" depends="check-codecs-uptodate">
+    <ant dir="${common.dir}/codecs" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="codecs.uptodate" value="true"/>
+  </target>
+
+  <property name="codecs-javadoc.jar" value="${common.dir}/build/codecs/lucene-codecs-${version}-javadoc.jar"/>
+  <target name="check-codecs-javadocs-uptodate" unless="codecs-javadocs.uptodate">
+    <module-uptodate name="codecs" jarfile="${codecs-javadoc.jar}" property="codecs-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-codecs" unless="codecs-javadocs.uptodate" depends="check-codecs-javadocs-uptodate">
+    <ant dir="${common.dir}/codecs" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="codecs-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="backward-codecs.jar" value="${common.dir}/build/backward-codecs/lucene-backward-codecs-${version}.jar"/>
+  <target name="check-backward-codecs-uptodate" unless="backward-codecs.uptodate">
+    <module-uptodate name="backward-codecs" jarfile="${backward-codecs.jar}" property="backward-codecs.uptodate"/>
+  </target>
+  <target name="jar-backward-codecs" unless="backward-codecs.uptodate" depends="check-backward-codecs-uptodate">
+    <ant dir="${common.dir}/backward-codecs" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="backward-codecs.uptodate" value="true"/>
+  </target>
+
+  <property name="backward-codecs-javadoc.jar" value="${common.dir}/build/backward-codecs/lucene-backward-codecs-${version}-javadoc.jar"/>
+  <target name="check-backward-codecs-javadocs-uptodate" unless="backward-codecs-javadocs.uptodate">
+    <module-uptodate name="backward-codecs" jarfile="${backward-codecs-javadoc.jar}" property="backward-codecs-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-backward-codecs" unless="backward-codecs-javadocs.uptodate" depends="check-backward-codecs-javadocs-uptodate">
+    <ant dir="${common.dir}/backward-codecs" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="backward-codecs-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="expressions.jar" value="${common.dir}/build/expressions/lucene-expressions-${version}.jar"/>
+  <target name="check-expressions-uptodate" unless="expressions.uptodate">
+    <module-uptodate name="expressions" jarfile="${expressions.jar}" property="expressions.uptodate"/>
+  </target>
+  <target name="jar-expressions" unless="expressions.uptodate" depends="check-expressions-uptodate">
+    <ant dir="${common.dir}/expressions" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="expressions.uptodate" value="true"/>
+  </target>
+
+  <property name="expressions-javadoc.jar" value="${common.dir}/build/expressions/lucene-expressions-${version}-javadoc.jar"/>
+  <target name="check-expressions-javadocs-uptodate" unless="expressions-javadocs.uptodate">
+    <module-uptodate name="expressions" jarfile="${expressions-javadoc.jar}" property="expressions-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-expressions" unless="expressions-javadocs.uptodate" depends="check-expressions-javadocs-uptodate">
+    <ant dir="${common.dir}/expressions" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="expressions-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="grouping.jar" value="${common.dir}/build/grouping/lucene-grouping-${version}.jar"/>
+  <target name="check-grouping-uptodate" unless="grouping.uptodate">
+    <module-uptodate name="grouping" jarfile="${grouping.jar}" property="grouping.uptodate"/>
+  </target>
+  <target name="jar-grouping" unless="grouping.uptodate" depends="check-grouping-uptodate">
+    <ant dir="${common.dir}/grouping" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="grouping.uptodate" value="true"/>
+  </target>
+
+  <property name="grouping-javadoc.jar" value="${common.dir}/build/grouping/lucene-grouping-${version}-javadoc.jar"/>
+  <target name="check-grouping-javadocs-uptodate" unless="grouping-javadocs.uptodate">
+    <module-uptodate name="grouping" jarfile="${grouping-javadoc.jar}" property="grouping-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-grouping" unless="grouping-javadocs.uptodate" depends="check-grouping-javadocs-uptodate">
+    <ant dir="${common.dir}/grouping" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="grouping-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="highlighter.jar" value="${common.dir}/build/highlighter/lucene-highlighter-${version}.jar"/>
+  <target name="check-highlighter-uptodate" unless="highlighter.uptodate">
+    <module-uptodate name="highlighter" jarfile="${highlighter.jar}" property="highlighter.uptodate"/>
+  </target>
+  <target name="jar-highlighter" unless="highlighter.uptodate" depends="check-highlighter-uptodate">
+    <ant dir="${common.dir}/highlighter" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="highlighter.uptodate" value="true"/>
+  </target>
+
+  <property name="highlighter-javadoc.jar" value="${common.dir}/build/highlighter/lucene-highlighter-${version}-javadoc.jar"/>
+  <target name="check-highlighter-javadocs-uptodate" unless="highlighter-javadocs.uptodate">
+    <module-uptodate name="highlighter" jarfile="${highlighter-javadoc.jar}" property="highlighter-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-highlighter" unless="highlighter-javadocs.uptodate" depends="check-highlighter-javadocs-uptodate">
+    <ant dir="${common.dir}/highlighter" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="highlighter-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="memory.jar" value="${common.dir}/build/memory/lucene-memory-${version}.jar"/>
+  <target name="check-memory-uptodate" unless="memory.uptodate">
+    <module-uptodate name="memory" jarfile="${memory.jar}" property="memory.uptodate"/>
+  </target>
+  <target name="jar-memory" unless="memory.uptodate" depends="check-memory-uptodate">
+    <ant dir="${common.dir}/memory" target="jar-core" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="memory.uptodate" value="true"/>
+  </target>
+
+  <property name="memory-javadoc.jar" value="${common.dir}/build/memory/lucene-memory-${version}-javadoc.jar"/>
+  <target name="check-memory-javadocs-uptodate" unless="memory-javadocs.uptodate">
+    <module-uptodate name="memory" jarfile="${memory-javadoc.jar}" property="memory-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-memory" unless="memory-javadocs.uptodate" depends="check-memory-javadocs-uptodate">
+    <ant dir="${common.dir}/memory" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="memory-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="misc.jar" value="${common.dir}/build/misc/lucene-misc-${version}.jar"/>
+  <target name="check-misc-uptodate" unless="misc.uptodate">
+    <module-uptodate name="misc" jarfile="${misc.jar}" property="misc.uptodate"/>
+  </target>
+  <target name="jar-misc" unless="misc.uptodate" depends="check-misc-uptodate">
+    <ant dir="${common.dir}/misc" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="misc.uptodate" value="true"/>
+  </target>
+
+  <property name="misc-javadoc.jar" value="${common.dir}/build/misc/lucene-misc-${version}-javadoc.jar"/>
+  <target name="check-misc-javadocs-uptodate" unless="misc-javadocs.uptodate">
+    <module-uptodate name="misc" jarfile="${misc-javadoc.jar}" property="misc-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-misc" unless="misc-javadocs.uptodate" depends="check-misc-javadocs-uptodate">
+    <ant dir="${common.dir}/misc" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="misc-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="sandbox.jar" value="${common.dir}/build/sandbox/lucene-sandbox-${version}.jar"/>
+  <target name="check-sandbox-uptodate" unless="sandbox.uptodate">
+    <module-uptodate name="sandbox" jarfile="${sandbox.jar}" property="sandbox.uptodate"/>
+  </target>
+  <target name="jar-sandbox" unless="sandbox.uptodate" depends="check-sandbox-uptodate">
+    <ant dir="${common.dir}/sandbox" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="sandbox.uptodate" value="true"/>
+  </target>
+
+  <property name="sandbox-javadoc.jar" value="${common.dir}/build/sandbox/lucene-sandbox-${version}-javadoc.jar"/>
+  <target name="check-sandbox-javadocs-uptodate" unless="sandbox-javadocs.uptodate">
+    <module-uptodate name="sandbox" jarfile="${sandbox-javadoc.jar}" property="sandbox-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-sandbox" unless="sandbox-javadocs.uptodate" depends="check-sandbox-javadocs-uptodate">
+    <ant dir="${common.dir}/sandbox" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="sandbox-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="spatial3d.jar" value="${common.dir}/build/spatial3d/lucene-spatial3d-${version}.jar"/>
+  <target name="check-spatial3d-uptodate" unless="spatial3d.uptodate">
+    <module-uptodate name="spatial3d" jarfile="${spatial3d.jar}" property="spatial3d.uptodate"/>
+  </target>
+  <target name="jar-spatial3d" unless="spatial3d.uptodate" depends="check-spatial3d-uptodate">
+    <ant dir="${common.dir}/spatial3d" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="spatial3d.uptodate" value="true"/>
+  </target>
+
+  <property name="spatial3d-javadoc.jar" value="${common.dir}/build/spatial3d/lucene-spatial3d-${version}-javadoc.jar"/>
+  <target name="check-spatial3d-javadocs-uptodate" unless="spatial3d-javadocs.uptodate">
+    <module-uptodate name="spatial3d" jarfile="${spatial3d-javadoc.jar}" property="spatial3d-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-spatial3d" unless="spatial3d-javadocs.uptodate" depends="check-spatial3d-javadocs-uptodate">
+    <ant dir="${common.dir}/spatial3d" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="spatial3d-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="spatial.jar" value="${common.dir}/build/spatial/lucene-spatial-${version}.jar"/>
+  <target name="check-spatial-uptodate" unless="spatial.uptodate">
+    <module-uptodate name="spatial" jarfile="${spatial.jar}" property="spatial.uptodate"/>
+  </target>
+  <target name="jar-spatial" unless="spatial.uptodate" depends="check-spatial-uptodate">
+    <ant dir="${common.dir}/spatial" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="spatial.uptodate" value="true"/>
+  </target>
+
+  <property name="spatial-javadoc.jar" value="${common.dir}/build/spatial/lucene-spatial-${version}-javadoc.jar"/>
+  <target name="check-spatial-javadocs-uptodate" unless="spatial-javadocs.uptodate">
+    <module-uptodate name="spatial" jarfile="${spatial-javadoc.jar}" property="spatial-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-spatial" unless="spatial-javadocs.uptodate" depends="check-spatial-javadocs-uptodate">
+    <ant dir="${common.dir}/spatial" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="spatial-javadocs.uptodate" value="true"/>
+  </target>
+
+  <property name="suggest.jar" value="${common.dir}/build/suggest/lucene-suggest-${version}.jar"/>
+  <target name="check-suggest-uptodate" unless="suggest.uptodate">
+    <module-uptodate name="suggest" jarfile="${suggest.jar}" property="suggest.uptodate"/>
+  </target>
+  <target name="jar-suggest" unless="suggest.uptodate" depends="check-suggest-uptodate">
+    <ant dir="${common.dir}/suggest" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="suggest.uptodate" value="true"/>
+  </target>
+
+  <property name="suggest-javadoc.jar" value="${common.dir}/build/suggest/lucene-suggest-${version}-javadoc.jar"/>
+  <target name="check-suggest-javadocs-uptodate" unless="suggest-javadocs.uptodate">
+    <module-uptodate name="suggest" jarfile="${suggest-javadoc.jar}" property="suggest-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-suggest" unless="suggest-javadocs.uptodate" depends="check-suggest-javadocs-uptodate">
+    <ant dir="${common.dir}/suggest" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="suggest-javadocs.uptodate" value="true"/>
+  </target>
+</project>

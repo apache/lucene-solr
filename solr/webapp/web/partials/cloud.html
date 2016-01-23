@@ -1,0 +1,104 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<div id="cloud" class="clearfix">
+
+  <div id="frame">
+
+    <div id="tree-content" class="content clearfix" ng-show="showTree">
+    <jstree class="tree" on-select="showTreeLink(url)" id="tree" data="tree"></jstree>
+
+      <div id="file-content" class="clearfix">
+
+        <div id="prop" ng-show="znode.prop && showData">
+          <ul>
+            <li ng-class="{odd:$odd}" ng-repeat="(key, prop) in znode.prop">
+              <dl class="clearfix">
+                <dt>{{ key }}</dt>
+                <dd>{{ prop }}</dd>
+              </dl>
+            </li>
+          </ul>
+        </div>
+
+        <div id="data" ng-show="showData">
+          <em ng-show="!znode.data">Node "{{znode.path }}" has no utf8 Content</em>
+          <pre ng-show="znode.data" class="syntax language-{{lang}}"
+            ng-bind-html="znode.data | highlight:lang | unsafe">
+          </pre>
+        <a class="close" ng-click="hideData()"><span>&nbsp;</span></a>
+        </div>
+
+
+      </div>
+
+    </div>
+
+    <div graph data="graphData" leaf-count="leafCount" helper-data="helperData" is-radial="isRadial" id="graph-content" class="content clearfix" ng-show="showGraph">
+
+      <div id="canvas"></div>
+
+      <div id="legend">
+        <ul>
+          <li class="leader"><svg width="15" height="15"><g transform="translate(5,2)"><g transform="translate(0,5)"><circle r="4.5"></circle></g></g></svg> Leader</li>
+          <li class="active"><svg width="15" height="15"><g transform="translate(5,2)"><g transform="translate(0,5)"><circle r="4.5"></circle></g></g></svg> Active</li>
+          <li class="recovering"><svg width="15" height="15"><g transform="translate(5,2)"><g transform="translate(0,5)"><circle r="4.5"></circle></g></g></svg> Recovering</li>
+          <li class="down"><svg width="15" height="15"><g transform="translate(5,2)"><g transform="translate(0,5)"><circle r="4.5"></circle></g></g></svg> Down</li>
+          <li class="recovery_failed"><svg width="15" height="15"><g transform="translate(5,2)"><g transform="translate(0,5)"><circle r="4.5"></circle></g></g></svg> Recovery Failed</li>
+          <li class="gone"><svg width="15" height="15"><g transform="translate(5,2)"><g transform="translate(0,5)"><circle r="4.5"></circle></g></g></svg> Gone</li>
+        </ul>
+      </div>
+      <div style="width: 100%; text-align: center;" ng-show="showPaging">
+        <div id="cloudGraphPaging">
+         <button ng-show="prevEnabled" ng-click="previous()" id="cloudGraphPagingPrev">&lt; Previous</button>
+         <span ng-show="total==0">No collections found.</span>
+         <span ng-hide="total==0">Collections {{start}} - {{last}} of {{total}}.</span>&nbsp;
+
+         Filter by:&nbsp;<select ng-model="filterType" ng-change="initGraph()" id="cloudGraphPagingFilterType">
+           <option value="status">Status</option>
+           <option value="name">Name</option>
+         </select>&nbsp;T:{{filterType}}
+
+         <span ng-show="filterType=='status'">
+           <select ng-model="pagingStatusFilter" id="cloudGraphPagingStatusFilter" ng-change="resetGraph()">
+             <option value=""> - Any - </option>
+             <option value="healthy">Healthy</option>
+             <option value="degraded">Degraded</option>
+             <option value="downed_shard">Downed Shard</option>
+             <option value="recovering">Replica in Recovery</option>
+           </select>
+         </span>
+         <span ng-show="filterType=='name'">
+           <input ng-model="pagingFilter" type="text" size="10" name="filter" ng-change="resetGraph()"/>&nbsp;
+         </span>
+         Show <input ng-model="rows" ng-change="resetGraph()" type="text" size="2" name="rows" /> per page.
+         <button ng-show="nextEnabled" ng-click="next()">Next &gt;</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div id="debug" ng-show="showDebug">
+    <ul class="clearfix">
+      <li class="clipboard"><a href="#" data-copied="Copied to Clipboard!">Copy to Clipboard (BUGGY!)</a></li>
+      <li class="close"><a ng-click="closeDebug()">Close</a></li>
+    </ul>
+    <pre class="debug"></pre>
+  </div>
+
+</div>

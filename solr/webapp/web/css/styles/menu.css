@@ -1,0 +1,329 @@
+/*
+
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
+#menu-wrapper
+{
+  position: fixed;
+  top: 120px;
+  width: 150px;
+}
+
+.scroll #menu-wrapper
+{
+  position: absolute;
+  top: 90px;
+}
+
+.has-environment #menu-wrapper
+{
+  top: 160px;
+}
+
+#menu-wrapper a
+{
+  display: block;
+  padding: 4px 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#core-selector
+{
+  margin-top: 20px;
+  padding-right: 10px;
+}
+
+#core-selector a
+{
+  padding: 0;
+  padding-left: 8px;
+}
+
+#core-selector select
+{
+  width: 100%;
+}
+
+#core-selector #has-no-cores
+{
+  display: none;
+}
+
+#core-selector #has-no-cores a
+{
+  background-image: url( ../../img/ico/database--plus.png );
+}
+
+#core-selector #has-no-cores span
+{
+  color: #c0c0c0;
+  display: block;
+}
+
+#menu-wrapper .active p
+{
+  background-color: #fafafa;
+  border-color: #c0c0c0;
+}
+
+#menu-wrapper p a,
+#menu a
+{
+  background-position: 5px 50%;
+  padding-left: 26px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+#menu-wrapper p a:hover
+{
+  background-color: #f0f0f0;
+}
+
+#menu-wrapper .active p a
+{
+  background-color: #c0c0c0;
+  font-weight: bold;
+}
+
+#menu p.loader
+{
+  background-position: 5px 50%;
+  color: #c0c0c0;
+  margin-top: 5px;
+  padding-left: 26px;
+}
+
+#menu p a small
+{
+  color: #b5b5b5;
+  font-weight: normal;
+}
+
+#menu p a small span.txt
+{
+  display: none;
+}
+
+#menu p a small:hover span.txt
+{
+  display: inline;
+}
+
+#menu .busy
+{
+  border-right-color: #f6f5d9;
+}
+
+#menu .busy p a
+{
+  background-color: #f6f5d9;
+  background-image: url( ../../img/ico/status-away.png );
+}
+
+#menu .offline
+{
+  border-right-color: #eccfcf;
+}
+
+#menu .offline p a
+{
+  background-color: #eccfcf;
+  background-image: url( ../../img/ico/status-busy.png );
+}
+
+#menu .online
+{
+  border-right-color: #cfecd3;
+}
+
+#menu .online p a
+{
+  background-color: #cfecd3;
+  background-image: url( ../../img/ico/status.png );
+}
+
+#menu .ping small
+{
+  color: #000
+}
+
+#menu li
+{
+  border-bottom: 1px solid #f0f0f0;
+}
+
+#menu li:last-child
+{
+  border-bottom: 0;
+}
+
+#menu li.optional
+{
+  display: none;
+}
+
+#core-menu p
+{
+  border-top: 1px solid #f0f0f0;
+}
+
+#core-menu li:first-child p
+{
+  border-top: 0;
+}
+
+#core-menu p a
+{
+  background-image: url( ../../img/ico/status-offline.png );
+}
+
+#core-menu .active p a
+{
+  background-image: url( ../../img/ico/box.png );
+}
+
+#core-menu ul,
+#menu ul
+{
+  display: none;
+  padding-top: 5px;
+  padding-bottom: 10px;
+}
+
+#core-menu .active ul,
+#menu .active ul
+{
+  display: block;
+}
+
+#menu ul li
+{
+  border-bottom: 0;
+}
+
+#core-menu ul li a,
+#menu ul li a
+{
+  background-position: 7px 50%;
+  border-bottom: 1px solid #f0f0f0;
+  color: #bbb;
+  margin-left: 15px;
+  padding-left: 26px;
+}
+
+#core-menu ul li:last-child a,
+#menu ul li:last-child a
+{
+  border-bottom: 0;
+}
+
+#core-menu ul li a:hover,
+#menu ul li a:hover
+{
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+#core-menu ul li.active a,
+#menu ul li.active a
+{
+  background-color: #d0d0d0;
+  border-color: #d0d0d0;
+  color: #333;
+}
+
+#menu #index.global p a { background-image: url( ../../img/ico/dashboard.png ); }
+
+#menu #logging.global p a { background-image: url( ../../img/ico/inbox-document-text.png ); }
+#menu #logging.global .level a { background-image: url( ../../img/ico/gear.png ); }
+
+#menu #java-properties.global p a { background-image: url( ../../img/ico/jar.png ); }
+
+#menu #threads.global p a { background-image: url( ../../img/ico/ui-accordion.png ); }
+
+#menu #cores.global p a { background-image: url( ../../img/ico/databases.png ); }
+
+#menu #cloud.global p a { background-image: url( ../../img/ico/network-cloud.png ); }
+#menu #cloud.global .tree a { background-image: url( ../../img/ico/folder-tree.png ); }
+#menu #cloud.global .graph a { background-image: url( ../../img/ico/molecule.png ); }
+#menu #cloud.global .rgraph a { background-image: url( ../../img/ico/asterisk.png ); }
+#menu #cloud.global .dump a { background-image: url( ../../img/ico/download-cloud.png ); }
+
+#core-menu .ping.error a
+{
+  
+  background-color: #ffcccc;
+  background-image: url( ../../img/ico/system-monitor--exclamation.png );
+  border-color: #ffcccc;
+  cursor: help;
+}
+
+#core-menu .overview a { background-image: url( ../../img/ico/home.png ); }
+#core-menu .query a { background-image: url( ../../img/ico/magnifier.png ); }
+#core-menu .analysis a { background-image: url( ../../img/ico/funnel.png ); }
+#core-menu .documents a { background-image: url( ../../img/ico/documents-stack.png ); }
+#core-menu .files a { background-image: url( ../../img/ico/folder.png ); }
+#core-menu .schema-browser a { background-image: url( ../../img/ico/book-open-text.png ); }
+#core-menu .replication a { background-image: url( ../../img/ico/node.png ); }
+#core-menu .distribution a { background-image: url( ../../img/ico/node-select.png ); }
+#core-menu .ping a { background-image: url( ../../img/ico/system-monitor.png ); }
+#core-menu .logging a { background-image: url( ../../img/ico/inbox-document-text.png ); }
+#core-menu .plugins a { background-image: url( ../../img/ico/block.png ); }
+#core-menu .dataimport a { background-image: url( ../../img/ico/document-import.png ); }
+#core-menu .segments a { background-image: url( ../../img/ico/construction.png ); }
+
+
+#content #navigation
+{
+  border-right: 1px solid #e0e0e0;
+}
+
+#content #navigation a
+{
+  display: block;
+  padding: 4px 2px;
+}
+
+#content #navigation .current
+{
+  border-color: #e0e0e0;
+}
+
+#content #navigation a
+{
+  background-position: 5px 50%;
+  padding-left: 26px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#content #navigation a:hover
+{
+  background-color: #f0f0f0;
+}
+
+#content #navigation .current a
+{
+  background-color: #e0e0e0;
+  font-weight: bold;
+}

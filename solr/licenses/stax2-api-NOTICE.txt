@@ -1,0 +1,8 @@
+Stax2 API is an extension to basic Stax 1.0 API that adds significant
+new functionality, such as full-featured bi-direction validation
+interface and high-performance Typed Access API.
+
+(From http://repo1.maven.org/maven2/org/codehaus/woodstox/stax2-api/3.1.4/stax2-api-3.1.4.pom)
+Developer: Tatu Saloranta <tatu@fasterxml.com>
+License: The BSD License (http://www.opensource.org/licenses/bsd-license.php)
+Organization: fasterxml.com (http://fasterxml.com)

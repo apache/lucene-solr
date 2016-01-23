@@ -1,0 +1,23 @@
+BODY {font: 10pt Tahoma; color: #000000; background-color: #FFFFFF}
+P {font: 10pt Tahoma}
+BIG {font: 14pt Tahoma}
+#A { color: #FFFFFF;text-decoration: none underline}
+A { text-decoration: none underline}
+#A:hover {color: #ff33ff; text-decoration: none}
+A:hover {color: #9A00C0; text-decoration: none}
+
+
+.resultsHeader {font: bold 10pt Tahoma; color: #000000; background-color: #DCE2EE}
+.formHeader {font: bold 10pt Tahoma; text-align:right; color: #000000; }
+TD {font: 10pt Tahoma; color: #000000; }
+TR.resultsRow:hover {font: 10pt Tahoma; color: #000000; background-color: #ECF2FE}
+.resultNum {text-align:right}
+FORM {display: inline}
+H1 {font: bold 16pt Tahoma}
+H2 {font: bold 14pt Tahoma}
+H3 {font: bold 12pt Tahoma}
+SPAN.h1 {font: bold 22pt Tahoma}
+SPAN.h2 {font: bold 14pt Tahoma}
+
+SMALL {font: 8pt Tahoma}
+SELECT {font: 10pt Tahoma; }

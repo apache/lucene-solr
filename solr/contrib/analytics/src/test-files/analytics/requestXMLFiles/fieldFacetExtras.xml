@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<analyticsRequestEnvelope stats="true" olap="true">
+   <analyticsRequest>
+     <name>sort request</name>
+     
+     <statistic>
+       <expression>mean(int(int_id))</expression>
+       <name>mean</name>
+     </statistic>
+     <statistic>
+       <expression>median(int(int_id))</expression>
+       <name>median</name>
+     </statistic>
+     <statistic>
+       <expression>count(int(int_id))</expression>
+       <name>count</name>
+     </statistic>
+     <statistic>
+       <expression>perc(20,int(int_id))</expression>
+       <name>perc_20</name>
+     </statistic>
+     
+     <fieldFacet>
+       <field>long_ld</field>
+       <sortSpecification>
+         <statName>mean</statName>
+         <direction>asc</direction>
+       </sortSpecification>
+     </fieldFacet>
+     <fieldFacet>
+       <field>float_fd</field>
+       <sortSpecification>
+         <statName>median</statName>
+         <direction>desc</direction>
+       </sortSpecification>
+     </fieldFacet>
+     <fieldFacet>
+       <field>double_dd</field>
+       <sortSpecification>
+         <statName>count</statName>
+         <direction>asc</direction>
+       </sortSpecification>
+     </fieldFacet>
+     <fieldFacet>
+       <field>string_sd</field>
+       <sortSpecification>
+         <statName>perc_20</statName>
+         <direction>desc</direction>
+       </sortSpecification>
+     </fieldFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>limit request</name>
+     
+     <statistic>
+       <expression>mean(int(int_id))</expression>
+       <name>mean</name>
+     </statistic>
+     <statistic>
+       <expression>median(int(int_id))</expression>
+       <name>median</name>
+     </statistic>
+     <statistic>
+       <expression>count(int(int_id))</expression>
+       <name>count</name>
+     </statistic>
+     <statistic>
+       <expression>perc(20,int(int_id))</expression>
+       <name>perc_20</name>
+     </statistic>
+     
+     <fieldFacet limit="5">
+       <field>long_ld</field>
+       <sortSpecification>
+         <statName>mean</statName>
+         <direction>asc</direction>
+       </sortSpecification>
+     </fieldFacet>
+     <fieldFacet limit="3">
+       <field>float_fd</field>
+       <sortSpecification>
+         <statName>median</statName>
+         <direction>desc</direction>
+       </sortSpecification>
+     </fieldFacet>
+     <fieldFacet limit="7">
+       <field>double_dd</field>
+       <sortSpecification>
+         <statName>count</statName>
+         <direction>asc</direction>
+       </sortSpecification>
+     </fieldFacet>
+     <fieldFacet limit="1">
+       <field>string_sd</field>
+       <sortSpecification>
+         <statName>perc_20</statName>
+         <direction>desc</direction>
+       </sortSpecification>
+     </fieldFacet>
+   </analyticsRequest>
+</analyticsRequestEnvelope>

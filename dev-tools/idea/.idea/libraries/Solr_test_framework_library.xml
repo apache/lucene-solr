@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Solr test framework library">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/solr/test-framework/lib" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/solr/test-framework/lib" recursive="false" />
+  </library>
+</component>

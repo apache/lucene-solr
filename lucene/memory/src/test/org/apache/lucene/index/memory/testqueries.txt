@@ -1,0 +1,129 @@
+#
+# queries extracted from TestQueryParser.java
+#
+Apache
+Apach~ AND Copy*
+
+a AND b
+(a AND b)
+c OR (a AND b)
+a AND NOT b
+a AND -b
+a AND !b
+a && b
+a && ! b
+
+a OR b
+a || b
+a OR !b
+a OR ! b
+a OR -b
+
++term -term term
+foo:term AND field:anotherTerm
+term AND "phrase phrase"
+"hello there"
+
+germ term^2.0
+(term)^2.0
+(germ term)^2.0
+term^2.0
+term^2
+"germ term"^2.0
+"term germ"^2
+
+(foo OR bar) AND (baz OR boo)
+((a OR b) AND NOT c) OR d
++(apple "steve jobs") -(foo bar baz)
++title:(dog OR cat) -author:"bob dole"
+
+
+a&b
+a&&b
+.NET
+
+"term germ"~2
+"term germ"~2 flork
+"term"~2
+"~2 germ"
+"term germ"~2^2
+
+3
+term 1.0 1 2
+term term1 term2
+
+term*
+term*^2
+term~
+term~0.7
+term~^2
+term^2~
+term*germ
+term*germ^3
+
+
+term*
+Term*
+TERM*
+term*
+Term*
+TERM*
+
+// Then 'full' wildcard queries:
+te?m
+Te?m
+TE?M
+Te?m*gerM
+te?m
+Te?m
+TE?M
+Te?m*gerM
+
+term term term
+term +stop term
+term -stop term
+drop AND stop AND roll
+term phrase term
+term AND NOT phrase term
+stop
+
+
+[ a TO c]
+[ a TO c ]
+{ a TO c}
+{ a TO c }
+{ a TO c }^2.0
+[ a TO c] OR bar
+[ a TO c] AND bar
+( bar blar { a TO c}) 
+gack ( bar blar { a TO c}) 
+
+
++weltbank +worlbank
++weltbank\n+worlbank
+weltbank \n+worlbank
+weltbank \n +worlbank
++weltbank\r+worlbank
+weltbank \r+worlbank
+weltbank \r +worlbank
++weltbank\r\n+worlbank
+weltbank \r\n+worlbank
+weltbank \r\n +worlbank
+weltbank \r \n +worlbank
++weltbank\t+worlbank
+weltbank \t+worlbank
+weltbank \t +worlbank
+
+
+term term term
+term +term term
+term term +term
+term +term +term
+-term term term
+
+
+on^1.0
+"hello"^2.0
+hello^2.0
+"on"^1.0
+the^3

@@ -1,0 +1,261 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<div id="index" class="clearfix">
+
+  <div class="clearfix">
+
+    <div class="index-left">
+
+      <div class="block" id="instance">
+
+          <h2><span>Instance</span></h2>
+
+          <div class="content">
+
+            <ul class="data" ngShow="system">
+
+              <li class="start_time"><dl class="clearfix">
+                <dt><span>Start</span></dt>
+                  <dd class="timeago">{{system.jvm.jmx.startTime | timeago}}</dd>
+              </dl></li>
+
+<!--
+              <li class="host"><dl class="clearfix">
+                <dt><span>Host</span></dt>
+                  <dd></dd>
+              </dl></li>
+
+              <li class="dir dir_cwd"><dl class="clearfix">
+                <dt><span>CWD</span></dt>
+                <dd></dd>
+              </dl></li>
+
+              <li class="dir dir_instance"><dl class="clearfix">
+                <dt><span>Instance</span></dt>
+                <dd></dd>
+              </dl></li>
+
+              <li class="dir dir_data"><dl class="clearfix">
+                <dt><span>Data</span></dt>
+                <dd></dd>
+              </dl></li>
+
+              <li class="dir dir_index"><dl class="clearfix">
+                <dt><span>Index</span></dt>
+                <dd></dd>
+              </dl></li>
+-->
+            </ul>
+
+          </div>
+
+      </div>
+
+      <div class="block" id="versions">
+
+          <h2><span>Versions</span></h2>
+
+          <div class="content">
+
+            <ul class="data">
+
+              <li class="solr solr_spec_version"><dl class="clearfix">
+                <dt><span>solr-spec</span></dt>
+                  <dd>{{system.lucene["solr-spec-version"]}}</dd>
+              </dl></li>
+              
+              <li class="solr_impl_version"><dl class="clearfix">
+                <dt class=""><span>solr-impl</span></dt>
+                  <dd>{{system.lucene["solr-impl-version"]}}</dd>
+              </dl></li>
+              
+              <li class="lucene lucene_spec_version"><dl class="clearfix">
+                <dt><span>lucene-spec</span></dt>
+                  <dd>{{system.lucene["lucene-spec-version"]}}</dd>
+              </dl></li>
+
+              <li class="lucene_impl_version"><dl class="clearfix">            
+                <dt><span>lucene-impl</span></dt>
+                  <dd>{{system.lucene["lucene-impl-version"]}}</dd>
+              </dl></li>
+            
+            </ul>
+
+          </div>
+
+      </div>
+
+    </div>
+      
+    <div class="index-right">
+
+      <div class="block" id="system">
+
+          <h2><span>System</span>
+    <small class="bar-desc">{{load_average[0]}} {{load_average[1]}} {{load_average[2]}}</small>
+    </h2>
+          <a class="reload" ng-click="reload()"><span>reload</span></a>
+
+          <div class="content">
+
+            <div id="physical-memory-bar" ng-show="system.system.totalPhysicalMemorySize && system.system.freePhysicalMemorySize">
+
+              <p data-desc="physical-memory-bar">Physical Memory
+         <small class="bar-desc">{{memoryPercentage}}</small>
+        </p>
+              <div class="bar-holder bar-lvl-2">
+
+                <div class="bar-max bar">
+                  <span class="bar-max val">{{memoryMax}}</span>
+
+                  <div class="bar-total bar" ng-style="{width:memoryPercentage}">
+                    <span class="bar-total val" title="raw: {{memoryTotal}}B">{{memoryTotalDisplay}}</span>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <div id="swap-space-bar" ng-show="system.system.totalSwapSpaceSize && system.system.freeSwapSpaceSize">
+
+              <p data-desc="swap-space-bar">Swap Space
+          <small class="bar-desc">{{swapPercentage}}</small>
+        </p>
+              <div class="bar-holder bar-lvl-2">
+
+                <div class="bar-max bar">
+                  <span class="bar-max val">{{swapMax}}</span>
+
+                  <div class="bar-total bar" ng-style="{width:swapPercentage}">
+                    <span class="bar-total val" title="raw:{{swapTotal}}B">{{swapTotalDisplay}}</span>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          <div id="file-descriptor-bar" ng-show="system.system.maxFileDescriptorCount && system.system.openFileDescriptorCount">
+
+              <p data-desc="file-descriptor-bar">File Descriptor Count
+          <small class="bar-desc">{{fileDescriptorPercentage}}</small>
+        </p>
+              <div class="bar-holder bar-lvl-2">
+
+                <div class="bar-max bar">
+                  <span class="bar-max val">{{system.system.maxFileDescriptorCount}}</span>
+
+                  <div class="bar-total bar" ng-style="{width:fileDescriptorPercentage}">
+                    <span class="bar-total val">{{system.system.openFileDescriptorCount}}</span>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            <p class="no-info" ng-show="noInfo">Sorry, no information available</p>
+
+          </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="clearfix">
+
+    <div class="index-left">
+
+      <div class="block" id="jvm">
+
+          <h2><span>JVM</span></h2>
+
+          <div class="content clearfix">
+
+            <ul class="data">
+
+              <li class="jvm_version"><dl class="clearfix">            
+                <dt><span>Runtime</span></dt>
+                  <dd>{{system.jvm.name}} {{system.jvm.version}}</dd>
+              </dl></li>
+
+              <li class="processors"><dl class="clearfix">            
+                <dt><span>Processors</span></dt>
+                  <dd>{{system.jvm.processors}}</dd>
+              </dl></li>
+
+              <li class="command_line_args"><dl class="clearfix">
+                <dt><span>Args</span></dt>
+                <dd ng-repeat="arg in commandLineArgs" ng-class="{'odd':$odd}">{{arg}}</dd>
+              </dl></li>
+            
+            </ul>
+
+          </div>
+
+      </div>
+
+    </div>
+    <div class="index-right">
+
+      <div class="block" id="jvm-memory">
+
+          <h2><span data-desc="jvm-memory-bar">JVM-Memory
+       <small class="bar-desc">{{javaMemoryPercentage}}</small>
+    </span></h2>
+
+          <div class="content">
+
+            <div id="jvm-memory-bar">
+              <div class="bar-holder bar-lvl-3">
+
+                <div class="bar-max bar">
+                  <span class="bar-max val" title="raw: {{javaMemoryMax}}">{{javaMemoryMax}}</span>
+
+                  <div class="bar-total bar" ng-style="{width: javaMemoryTotalPercentage}">
+                    <span class="bar-total val" title="raw: {{javaMemoryTotal}}B">{{javaMemoryTotalDisplay}}</span>
+
+                    <div class="bar-used bar" ng-style="{width: javaMemoryUsedPercentage}">
+                      <span class="bar-used val" title="raw: {{javaMemoryUsed}}B">{{javaMemoryUsedDisplay}}</span>
+
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

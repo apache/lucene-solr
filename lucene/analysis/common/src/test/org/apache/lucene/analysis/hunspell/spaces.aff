@@ -1,0 +1,5 @@
+SET UTF-8
+TRY abcdefghijklmopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ
+
+SFX X Y 1
+SFX X 0 s . +PLUR

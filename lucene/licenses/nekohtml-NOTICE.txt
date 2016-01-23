@@ -1,0 +1,15 @@
+CyberNeko HTML Parser
+(C) Copyright 2002-2009, Andy Clark, Marc Guillemot. All rights reserved. 
+
+NekoHTML is a simple HTML scanner and tag balancer that enables 
+application programmers to parse HTML documents and access the 
+information using standard XML interfaces. The parser can scan HTML 
+files and "fix up" many common mistakes that human (and computer) 
+authors make in writing HTML documents. NekoHTML adds missing parent 
+elements; automatically closes elements with optional end tags; and can 
+handle mismatched inline element tags. 
+
+NekoHTML is written using the Xerces Native Interface (XNI) that is the 
+foundation of the Xerces2 implementation. This enables you to use the 
+NekoHTML parser with existing XNI tools without modification or 
+rewriting code. 

@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="solr-dataimporthandler-extras" default="default">
+
+  <description>
+    Data Import Handler Extras
+  </description>
+  
+  <import file="../contrib-build.xml"/>
+
+  <solr-contrib-uptodate name="dataimporthandler" 
+                         property="solr-dataimporthandler.uptodate" 
+                         classpath.property="solr-dataimporthandler.jar"/>
+
+  <target name="compile-solr-dataimporthandler" unless="solr-dataimporthandler.uptodate">
+    <ant dir="${common-solr.dir}/contrib/dataimporthandler" target="compile-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <!-- 
+       really sucks we do this always, without an up-to-date thing for tests
+       we should probably fix this, the same issue exists in modules
+   -->
+  <target name="compile-solr-dataimporthandler-tests">
+    <ant dir="${common-solr.dir}/contrib/dataimporthandler" target="compile-test" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <!-- we don't actually need to compile this thing, we just want its libs -->
+  <target name="resolve-extraction-libs">
+    <ant dir="${common-solr.dir}/contrib/extraction" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <path id="classpath">
+    <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/java"/>
+    <fileset dir="${common-solr.dir}/contrib/dataimporthandler-extras/lib" excludes="${common.classpath.excludes}"/>
+    <fileset dir="${common-solr.dir}/contrib/extraction/lib" excludes="${common.classpath.excludes}"/>
+    <path refid="solr.base.classpath"/>
+  </path>
+
+  <path id="test.classpath">
+    <path refid="solr.test.base.classpath"/>
+    <pathelement location="${common-solr.dir}/build/contrib/solr-dataimporthandler/classes/test"/>
+    <path refid="classpath"/>
+  </path>
+
+  <!-- TODO: make this nicer like lucene? -->
+  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs,javadocs-solr-core,javadocs-dataimporthandler,check-javadocs-uptodate" unless="javadocs-uptodate-${name}">
+        <sequential>
+      <mkdir dir="${javadoc.dir}/${name}"/>
+      <solr-invoke-javadoc>
+        <solrsources>
+          <packageset dir="${src.dir}"/>
+        </solrsources>
+        <links>
+          <link href="../solr-solrj"/>
+          <link href="../solr-core"/>
+          <link href="../solr-dataimporthandler"/>
+        </links>
+      </solr-invoke-javadoc>
+      <solr-jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
+     </sequential>
+  </target>
+
+  <target name="javadocs-dataimporthandler">
+    <ant dir="${common-solr.dir}/contrib/dataimporthandler" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="-ecj-javadoc-lint-tests" depends="compile-solr-dataimporthandler-tests,common.-ecj-javadoc-lint-tests"/>
+
+  <target name="compile-core" depends="compile-solr-dataimporthandler,resolve-extraction-libs,solr-contrib-build.compile-core"/>
+  <target name="compile-test" depends="compile-solr-dataimporthandler-tests, common-solr.compile-test"/>
+</project>

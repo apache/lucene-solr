@@ -1,0 +1,343 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<div id="collections" class="clearfix empty">
+
+  <div id="ui-block" style="display:none">&nbsp;</div><!-- @todo what is this for? -->
+
+  <div id="frame">
+
+    <div id="actions" class="actions clearfix">
+
+      <button id="add" class="action" ng-click="showAddCollection()"><span>Add Collection</span></button>
+
+      <button id="delete" class="warn requires-core" ng-click="showDeleteCollection()" ng-show="collection"><span>Delete</span></button>
+      <button id="reload" class="requires-core" ng-click="reloadCollection()" ng-show="collection"
+         ng-class="{success: reloadSuccess, warn: reloadFailure}"><span>Reload</span></button>
+      <button id="create-alias" class="action requires-core" ng-click="toggleCreateAlias()"><span>Create Alias</span></button>
+      <button id="delete-alias" class="action requires-core" ng-click="toggleDeleteAlias()"><span>Delete Alias</span></button>
+
+      <div class="action add" data-rel="add" ng-show="showAdd" style="left:0px">
+
+        <form>
+
+          <p class="clearfix"><label for="add_name">name:</label>
+          <input type="text" name="name" id="add_name" ng-model="newCollection.name" placeholder="new collection"></p>
+
+          <p class="clearfix"><label for="add_config">config set:</label>&nbsp;
+          <select chosen ng-options="config.name as config.name for config in configs" name="config_name" id="add_config" ng-model="newCollection.configName">
+          </select>
+          </p>
+
+          <p class="clearfix"><label for="add_numShards">numShards:</label>
+          <input type="text" name="numShards" id="add_numShards" ng-model="newCollection.numShards"></p>
+
+          <p class="clearfix"><label for="add_replicationFactor">replicationFactor:</label>
+          <input type="text" name="replicationFactor" id="add_replicationFactor" ng-model="newCollection.replicationFactor"></p>
+
+          <p class="clearfix"><a ng-click="showAdvanced=!showAdvanced">
+              <span id="add_advanced" ng-class="{open: showAdvanced}">Show advanced</span></a></p>
+          <div ng-show="showAdvanced">
+
+              <p>Advanced options: </p>
+              <p class="clearfix"><label for="add_router_name">router:</label>
+              <select name="routerName" id="add_router_name" ng-model="newCollection.routerName">
+                <option value="compositeId">Composite ID</option>
+                <option value="implicit">Implicit</option>
+              </select>
+              </p>
+
+              <p class="clearfix"><label for="add_maxShardsPerNode">maxShardsPerNode:</label>
+              <input type="text" name="replicationFactor" id="add_maxShardsPerNode" ng-model="newCollection.maxShardsPerNode"></p>
+
+              <p class="clearfix"><label for="add_shards">shards:</label>
+              <input type="text" name="shards" id="add_shards" ng-model="newCollection.shards"></p>
+
+              <p class="clearfix"><label for="add_routerField">routerField:</label>
+              <input type="text" name="routerField" id="add_routerField" ng-model="newCollection.routerField"></p>
+
+          </div>
+          <p class="clearfix note error" ng-show="addMessage">
+            <span>{{addMessage}}</span>
+          </p>
+
+          <p class="clearfix buttons">
+            <button type="submit" class="submit" ng-click="addCollection()"><span>Add Collection</span></button>
+            <button type="reset" class="reset" ng-click="cancelAddCollection()"><span>Cancel</span></button>
+          </p>
+
+        </form>
+
+      </div>
+
+      <div class="action delete" ng-show="showDelete">
+
+        <form>
+
+          <p>Please type collection name to confirm deletion:</p>
+          <p class="clearfix"><label for="collectiondeleteConfirm">Collection</label>
+          <input type="text" ng-model="collectionDeleteConfirm" id="collectionDeleteConfirm"></p>
+
+          <p class="clearfix note error" ng-show="deleteMessage">
+            <span>{{deleteMessage}}</span>
+          </p>
+
+          <p class="clearfix buttons">
+            <button class="submit" ng-click="deleteCollection()"><span>Delete</span></button>
+            <button type="reset" class="reset" ng-click="showDelete=false"><span>Cancel</span></button>
+          </p>
+        </form>
+
+      </div>
+
+      <div class="action create-alias" ng-show="showCreateAlias">
+
+        <form>
+
+          <input type="hidden" name="core" data-core="current">
+
+          <p class="clearfix"><label for="alias">Alias Name:</label>
+          <input type="text" name="alias" ng-model="aliasToCreate" id="alias"></p>
+
+          <p class="clearfix"><label for="aliasCollections">Collections:</label>
+          <select multiple id="aliasCollections" ng-model="aliasCollections" ng-options="collection.name for collection in collections" class="other">
+          </select></p>
+
+
+          <p class="clearfix note error" ng-show="renameMessage">
+            <span>{{renameMessage}}</span>
+          </p>
+
+          <p class="clearfix buttons">
+            <button class="submit" ng-click="createAlias()"><span>Create Alias</span></button>
+            <button type="reset" class="reset" ng-click="cancelCreateAlias()"><span>Cancel</span></button>
+          </p>
+        </form>
+
+      </div>
+
+      <div class="action delete-alias" ng-show="showDeleteAlias">
+
+        <form>
+          <span ng-show="aliases">
+          <p class="clearfix"><label for="deleteAlias">Alias:</label>
+          <select id="deleteAlias" ng-model="aliasToDelete" ng-options="alias as alias for (alias, collections) in aliases" class="other">
+          </select></p>
+
+          <p class="clearfix note error" ng-show="swapMessage">
+            <span>{{swapMessage}}</span>
+          </p>
+
+          <p class="clearfix buttons">
+            <button type="submit" class="submit" ng-click="deleteAlias()"><span>Delete Alias</span></button>
+            <button type="reset" class="reset" ng-click="cancelDeleteAlias()"><span>Cancel</span></button>
+          </p>
+          </span>
+          <span ng-hide="aliases">
+              <p>No aliases to delete.</p>
+          <p class="clearfix buttons">
+            <button type="reset" class="reset" ng-click="cancelDeleteAlias()"><span>Cancel</span></button>
+          </p>
+          </span>
+
+        </form>
+
+      </div>
+
+    </div>
+
+
+    <div class="requires-core" ng-hide="collection">
+      <h2>Please select a collection</h2>
+    </div>
+
+    <div id="data" class="requires-core clearfix" ng-show="collection">
+
+      <div class="block" id="collection-data">
+
+          <h2>Collection: {{collection.name}}</h2>
+
+          <div class="message-container">
+              <div class="message"></div>
+          </div>
+
+          <div class="content">
+
+          <ul>
+
+            <li>
+                <dl class="clearfix">
+                    <dt><span>Shard count:</span></dt>
+                    <dd>{{collection.shards.length}}</dd>
+                </dl>
+            </li>
+            <li><dl class="clearfix">
+              <dt><span>configName:</span></dt>
+                <dd>{{collection.configName}}</dd>
+            </dl></li>
+
+            <li><dl class="clearfix">
+              <dt><span>replicationFactor:</span></dt>
+                <dd>{{collection.replicationFactor}}</dd>
+            </dl></li>
+
+            <li><dl class="clearfix">
+              <dt><span>maxShardsPerNode:</span></dt>
+                <dd>{{collection.maxShardsPerNode}}</dd>
+            </dl></li>
+
+            <li><dl class="clearfix">
+              <dt><span>router:</span></dt>
+                <dd>{{collection.router.name}}</dd>
+            </dl></li>
+
+            <li><dl class="clearfix">
+              <dt><span>autoAddReplicas:</span></dt>
+                <dd>{{collection.autoAddReplicas}}</dd>
+            </dl></li>
+          </ul>
+
+        </div>
+      </div>
+
+      <div class="block" id="shard-data">
+        <div class="content shard" ng-repeat="shard in collection.shards">
+          <a ng-click="toggleShard(shard)"><h2><span ng-class="{open:shard.show}">Shard: {{shard.name}}</span></h2></a>
+          <ul ng-show="shard.show">
+              <li>
+                  <ul>
+                      <li>
+                          <dl class="clearfix">
+                            <dt><span>state:</span></dt>
+                            <dd>{{shard.state}}</dd>
+                          </dl>
+                      </li>
+                      <li>
+                      <dl class="clearfix">
+                        <dt><span>range:</span></dt>
+                        <dd>{{shard.range}}</dd>
+                      </dl>
+                          <br/>
+                      </li>
+                      <li>
+                        <ul class="replica" ng-repeat="replica in shard.replicas">
+                          <li>
+                                  <h2>
+                                    <a ng-click="toggleReplica(replica)">
+                                      <span class="openReplica" ng-class="{open:replica.show}">Replica: {{replica.name}}</span>
+                                    </a>
+                                    <div style="float:right"><a ng-click="toggleRemoveReplica(replica)"><span class="rem"></span></a></div>
+                                 </h2>
+                          </li>
+                          <li>
+                            <ul ng-show="replica.showRemove">
+                                <li>
+                                    <form class="delete-replica">
+
+                                      <p class="clearfix"><em>Are you sure you want to delete this replica?</em></p>
+
+                                      <p class="clearfix buttons">
+                                        <button class="submit" ng-class="{success: replica.deleted}" ng-click="deleteReplica(replica)"><span>Delete Replica</span></button>
+                                        <button type="reset" class="reset" ng-click="toggleRemoveReplica(replica)"><span>Cancel</span></button>
+                                      </p>
+                                    </form>
+                                </li>
+                            </ul>
+                            <ul ng-show="replica.show">
+                                <li>
+                                    <dl class="clearfix">
+                                        <dt><span>core:</span></dt>
+                                        <dd>{{replica.core}}</dd>
+                                    </dl>
+                                </li>
+
+                                <li>
+                                    <dl class="clearfix">
+                                        <dt><span>base URL:</span></dt>
+                                        <dd><a ng-href="{{replica.base_url}}{{rootUrl}}">{{replica.base_url}}</a></dd>
+                                    </dl>
+                                </li>
+
+                                <li>
+                                    <dl class="clearfix">
+                                        <dt><span>node name:</span></dt>
+                                        <dd>{{replica.node_name}}</dd>
+                                    </dl>
+                                </li>
+
+                                <li>
+                                    <dl class="clearfix">
+                                        <dt><span>state:</span></dt>
+                                        <dd>{{replica.state}}</dd>
+                                    </dl>
+                                </li>
+
+                                <li>
+                                    <dl class="clearfix">
+                                        <dt><span>leader:</span></dt>
+                                        <dd class="ico" ng-class="replica.leader ?'ico-1' : 'ico-0'"><span></span></dd>
+                                    </dl>
+                                </li>
+                            </ul>
+                          </li>
+
+                        </ul>
+                      </li>
+                      <li ng-hide="shard.showAdd">
+                          <span class="actions replica">
+                            <button class="action" id="add-replica" ng-click="toggleAddReplica(shard)"><span>add replica</span></button>
+                          </span>
+                      </li>
+                  </ul>
+                  <div class="action add-replica" ng-show="shard.showAdd">
+
+                    <form>
+
+                      <p id="node-name" class="clearfix"><label for="node-name">Node:</label>
+                      <select chosen ng-model="shard.replicaNodeName" ng-options="node for node in nodes" class="other">
+                          <option value="">No specified node</option>
+                      </select>
+                          node: {{shard.replicaNodeName}}
+                      </p>
+
+                      <p class="clearfix note error" ng-show="createReplicaMessage">
+                        <span>{{createReplicaMessage}}</span>
+                      </p>
+
+                      <p class="clearfix buttons">
+                        <button class="submit delete" ng-class="{success: shard.replicaAdded}" ng-click="addReplica(shard)"><span>Create Replica</span></button>
+                        <button type="reset" class="reset" ng-click="toggleAddReplica(shard)"><span>Cancel</span></button>
+                      </p>
+                        <p clas="clearfix">&nbsp;</p>
+                    </form>
+
+                  </div>
+              </li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div id="navigation" class="requires-core clearfix">
+    <ul>
+      <li ng-repeat="c in collections" ng-class="{current: collection.name == c.name}"><a href="#~collections/{{c.name}}">{{c.name}}</a></li>
+    </ul>
+  </div>
+
+</div>

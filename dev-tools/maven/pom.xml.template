@@ -1,0 +1,460 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <!--
+    Licensed to the Apache Software Foundation (ASF) under one
+    or more contributor license agreements.  See the NOTICE file
+    distributed with this work for additional information
+    regarding copyright ownership.  The ASF licenses this file
+    to you under the Apache License, Version 2.0 (the
+    "License"); you may not use this file except in compliance
+    with the License.  You may obtain a copy of the License at
+    
+    http://www.apache.org/licenses/LICENSE-2.0
+    
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an
+    "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+    KIND, either express or implied.  See the License for the
+    specific language governing permissions and limitations
+    under the License.
+  -->
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>org.apache</groupId>
+    <artifactId>apache</artifactId>
+    <version>13</version>
+    <relativePath/>
+  </parent>
+  <groupId>org.apache.lucene</groupId>
+  <artifactId>lucene-solr-grandparent</artifactId>
+  <version>@version@</version>
+  <packaging>pom</packaging>
+  <name>Grandparent POM for Apache Lucene Core and Apache Solr</name>
+  <description>Grandparent POM for Apache Lucene Core and Apache Solr</description>
+  <url>http://lucene.apache.org</url>
+  <modules>
+    <module>lucene</module>
+    <module>solr</module>
+  </modules>
+  <properties>
+    <vc-anonymous-base-url>http://svn.apache.org/repos/asf/lucene/dev/trunk</vc-anonymous-base-url>
+    <vc-dev-base-url>https://svn.apache.org/repos/asf/lucene/dev/trunk</vc-dev-base-url>
+    <vc-browse-base-url>http://svn.apache.org/viewvc/lucene/dev/trunk</vc-browse-base-url>
+    <specification.version>@spec.version@</specification.version>
+    <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
+    <java.compat.version>1.8</java.compat.version>
+    <jetty.version>8.1.10.v20130312</jetty.version>
+
+    <!-- RandomizedTesting library system properties -->
+    <tests.iters>1</tests.iters>
+    <tests.seed/>
+    <tests.nightly/>
+    <tests.weekly/>
+    <tests.awaitsfix/>
+    <tests.slow/>
+
+    <!-- Lucene/Solr-specific test system properties -->
+    <tests.codec>random</tests.codec>
+    <tests.directory>random</tests.directory>
+    <tests.locale>random</tests.locale>
+    <tests.luceneMatchVersion>@version.base@</tests.luceneMatchVersion>
+    <tests.multiplier>1</tests.multiplier>
+    <tests.nightly>false</tests.nightly>
+    <tests.postingsformat>random</tests.postingsformat>
+    <tests.timezone>random</tests.timezone>
+    <tests.verbose>false</tests.verbose>
+    <tests.infostream>${tests.verbose}</tests.infostream>
+  </properties>
+  <issueManagement>
+    <system>JIRA</system>
+    <url>https://issues.apache.org/jira/browse/LUCENE</url>
+  </issueManagement>
+  <ciManagement>
+    <system>Jenkins</system>
+    <url>https://builds.apache.org/computer/lucene/</url>
+  </ciManagement>
+  <mailingLists>
+    <mailingList>
+      <name>General List</name>
+      <subscribe>general-subscribe@lucene.apache.org</subscribe>
+      <unsubscribe>general-unsubscribe@lucene.apache.org</unsubscribe>
+      <archive>
+        http://mail-archives.apache.org/mod_mbox/lucene-general/
+      </archive>
+    </mailingList>
+    <mailingList>
+      <name>Java User List</name>
+      <subscribe>java-user-subscribe@lucene.apache.org</subscribe>
+      <unsubscribe>java-user-unsubscribe@lucene.apache.org</unsubscribe>
+      <archive>
+        http://mail-archives.apache.org/mod_mbox/lucene-java-user/
+      </archive>
+    </mailingList>
+    <mailingList>
+      <name>Java Developer List</name>
+      <subscribe>dev-subscribe@lucene.apache.org</subscribe>
+      <unsubscribe>dev-unsubscribe@lucene.apache.org</unsubscribe>
+      <archive>http://mail-archives.apache.org/mod_mbox/lucene-dev/</archive>
+    </mailingList>
+    <mailingList>
+      <name>Java Commits List</name>
+      <subscribe>commits-subscribe@lucene.apache.org</subscribe>
+      <unsubscribe>commits-unsubscribe@lucene.apache.org</unsubscribe>
+      <archive>
+        http://mail-archives.apache.org/mod_mbox/lucene-java-commits/
+      </archive>
+    </mailingList>
+  </mailingLists>
+  <inceptionYear>2000</inceptionYear>
+  <scm>
+    <connection>scm:svn:${vc-anonymous-base-url}</connection>
+    <developerConnection>scm:svn:${vc-dev-base-url}</developerConnection>
+    <url>${vc-browse-base-url}</url>
+  </scm>
+  <licenses>
+    <license>
+      <name>Apache 2</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+    </license>
+  </licenses>
+  <repositories>
+    <repository>
+      <id>apache.snapshots</id>
+      <name>Apache Snapshot Repository</name>
+      <url>http://repository.apache.org/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <!-- Disable the Apache snapshot repository, overriding declaration in parent Apache POM. -->
+        <enabled>false</enabled>
+        <updatePolicy>never</updatePolicy>
+      </snapshots>
+    </repository>
+  </repositories>
+  <dependencyManagement>
+    <dependencies>
+@lucene.solr.dependency.management@
+    </dependencies>
+  </dependencyManagement>
+  <prerequisites>
+    <maven>2.2.1</maven>
+  </prerequisites>
+  <dependencies>
+    <dependency> 
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.carrotsearch.randomizedtesting</groupId>
+      <artifactId>randomizedtesting-runner</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>de.thetaphi</groupId>
+          <artifactId>forbiddenapis</artifactId>
+          <version>2.0</version>
+          <configuration>
+            <!--
+              This is the default setting, we don't support too new Java versions.
+              The checker simply passes by default and only prints a warning.
+             -->
+            <failOnUnsupportedJava>false</failOnUnsupportedJava>
+            <targetVersion>${java.compat.version}</targetVersion>
+            <suppressAnnotations>
+              <suppressAnnotation>**.SuppressForbidden</suppressAnnotation>
+            </suppressAnnotations>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>1.7</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-clean-plugin</artifactId>
+          <version>2.5</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.1</version>
+          <configuration>
+            <source>${java.compat.version}</source>
+            <target>${java.compat.version}</target>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>2.8</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.7</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <version>1.3</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-install-plugin</artifactId>
+          <version>2.4</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>2.4</version>
+          <configuration>
+            <archive>
+              <manifest>
+                <addDefaultSpecificationEntries>false</addDefaultSpecificationEntries>
+                <addDefaultImplementationEntries>false</addDefaultImplementationEntries>
+              </manifest>
+            </archive>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <version>2.9.1</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <version>2.6</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.3</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.17</version>
+          <configuration>
+            <runOrder>random</runOrder>
+            <reportFormat>plain</reportFormat>
+            <workingDirectory>${project.build.directory}/test</workingDirectory>
+            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <argLine>-Xmx512M</argLine>
+            <systemPropertyVariables>
+              <tempDir>.</tempDir>
+              <java.awt.headless>true</java.awt.headless>
+
+              <!-- See <http://wiki.apache.org/lucene-java/RunningTests>
+                   for a description of the tests.* system properties. -->
+
+              <!-- RandomizedTesting library system properties -->
+              <tests.iters>${tests.iters}</tests.iters>
+              <tests.seed>${tests.seed}</tests.seed>
+              <tests.nightly>${tests.nightly}</tests.nightly>
+              <tests.weekly>${tests.weekly}</tests.weekly>
+              <tests.awaitsfix>${tests.awaitsfix}</tests.awaitsfix>
+              <tests.slow>${tests.slow}</tests.slow>
+
+              <!-- Lucene/Solr-specific test system properties -->
+              <jetty.testMode>1</jetty.testMode>
+              <tests.codec>${tests.codec}</tests.codec>
+              <tests.directory>${tests.directory}</tests.directory>
+              <tests.infostream>${tests.infostream}</tests.infostream>
+              <tests.locale>${tests.locale}</tests.locale>
+              <tests.luceneMatchVersion>${tests.luceneMatchVersion}</tests.luceneMatchVersion>
+              <tests.multiplier>${tests.multiplier}</tests.multiplier>
+              <tests.postingsformat>${tests.postingsformat}</tests.postingsformat>
+              <tests.timezone>${tests.timezone}</tests.timezone>
+              <tests.verbose>${tests.verbose}</tests.verbose>
+            </systemPropertyVariables>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-war-plugin</artifactId>
+          <version>2.3</version>
+          <configuration>
+            <archive>
+              <!-- This section should be *exactly* the same under -->
+              <!-- maven-bundle-plugin and maven-war-plugin.          -->
+              <!-- If you make changes here, make the same changes -->
+              <!-- in the other location as well.                  -->
+              <manifestEntries>
+                <Extension-Name>${project.groupId}</Extension-Name>
+                <Implementation-Title>${project.groupId}</Implementation-Title>
+                <Specification-Title>${project.name}</Specification-Title>
+                <Specification-Version>${specification.version}</Specification-Version>
+                <Specification-Vendor>The Apache Software Foundation</Specification-Vendor>
+                <!-- impl version can be any string -->
+                <Implementation-Version>${project.version} ${svn.revision} - ${user.name} - ${now.timestamp}</Implementation-Version>
+                <Implementation-Vendor>The Apache Software Foundation</Implementation-Vendor>
+                <Implementation-Vendor-Id>${project.groupId}</Implementation-Vendor-Id>
+                <X-Compile-Source-JDK>${java.compat.version}</X-Compile-Source-JDK>
+                <X-Compile-Target-JDK>${java.compat.version}</X-Compile-Target-JDK>
+              </manifestEntries>
+            </archive>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>1.8</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>buildnumber-maven-plugin</artifactId>
+          <version>1.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.mortbay.jetty</groupId>
+          <artifactId>jetty-maven-plugin</artifactId>
+          <version>${jetty.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.gmaven</groupId>
+          <artifactId>gmaven-plugin</artifactId>
+          <version>1.5</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.gmaven</groupId>
+        <artifactId>gmaven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>generate-timestamps-and-get-top-level-basedir</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>execute</goal>
+            </goals>
+            <configuration>
+              <source>
+                project.properties['now.timestamp'] = "${maven.build.timestamp}"
+                project.properties['now.version'] = ("${maven.build.timestamp}" =~ /[- :]/).replaceAll(".")
+                project.properties['now.year'] = "${maven.build.timestamp}".substring(0, 4)
+                project.properties['top-level'] = (project.basedir.getAbsolutePath() =~ /[\\\\\/]maven-build.*/).replaceAll("")
+              </source>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>buildnumber-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>validate</phase>
+            <goals>
+              <goal>create</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <doCheck>false</doCheck>
+          <doUpdate>false</doUpdate>
+          <getRevisionOnlyOnce>true</getRevisionOnlyOnce>
+          <revisionOnScmFailure>NO-REVISION-AVAILABLE</revisionOnScmFailure>
+          <buildNumberPropertyName>svn.revision</buildNumberPropertyName>
+          <scmDirectory>${top-level}</scmDirectory>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce-java-compat-version-and-maven-2.2.1</id>
+            <goals>
+              <goal>enforce</goal>
+            </goals>
+            <configuration>
+              <rules>
+                <requireJavaVersion>
+                  <message>Java ${java.compat.version}+ is required.</message>
+                  <version>[${java.compat.version},)</version>
+                </requireJavaVersion>
+                <requireMavenVersion>
+                  <message>Maven 2.2.1+ is required.</message>
+                  <version>[2.2.1,)</version>
+                </requireMavenVersion>
+                <requirePluginVersions/>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      
+      <!-- Adding OSGI metadata to the JAR without changing the packaging type. -->
+      <plugin>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <version>2.5.3</version>
+        <configuration>
+          <instructions>
+            <Export-Package>*;-split-package:=merge-first</Export-Package>
+            
+            <!-- This section should be *exactly* the same under -->
+            <!-- maven-bundle-plugin and maven-war-plugin.          -->
+            <!-- If you make changes here, make the same changes -->
+            <!-- in the other location as well.                  -->
+            <Extension-Name>${project.groupId}</Extension-Name>
+            <Implementation-Title>${project.groupId}</Implementation-Title>
+            <Specification-Title>${project.name}</Specification-Title>
+            <Specification-Version>${specification.version}</Specification-Version>
+            <Specification-Vendor>The Apache Software Foundation</Specification-Vendor>
+            <!-- impl version can be any string -->
+            <Implementation-Version>${project.version} ${svn.revision} - ${user.name} - ${now.timestamp}</Implementation-Version>
+            <Implementation-Vendor>The Apache Software Foundation</Implementation-Vendor>
+            <Implementation-Vendor-Id>${project.groupId}</Implementation-Vendor-Id>
+            <X-Compile-Source-JDK>${java.compat.version}</X-Compile-Source-JDK>
+            <X-Compile-Target-JDK>${java.compat.version}</X-Compile-Target-JDK>
+          </instructions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>bundle-manifest</id>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  <profiles>
+    <profile>
+      <!-- Although currently a no-op, this profile remains here to reserve
+           the ability to perform Maven build initialization tasks. -->
+      <id>bootstrap</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-install-plugin</artifactId>
+            <executions>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+</project>

@@ -1,0 +1,14 @@
+<h1>Request</h1>
+<ul>
+  <li>context.path = $request.context.path</li>
+  <li>params.qt = $!request.params.qt</li>
+</ul>
+
+<pre>
+  $esc.html($request)
+</pre>
+
+<h1>Response</h1>
+<pre>
+  $esc.html($response)
+</pre>

@@ -1,0 +1,376 @@
+/*
+
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
+#content #logging .loader
+{
+  background-position: 0 50%;
+  padding-left: 21px;
+}
+
+#content #logging .block h2
+{
+  background-image: url( ../../img/ico/document-text.png );
+  margin-bottom: 10px;
+}
+
+#content #logging .block h2 span span
+{
+  color: #c0c0c0;
+  font-weight: normal;
+  margin-left: 10px;
+}
+
+#content #logging #viewer
+{
+  position: relative;
+}
+
+#content #logging #viewer time
+{
+  white-space: pre;
+}
+
+#content #logging #viewer #footer
+{
+  margin-top: 20px;
+}
+
+#content #logging #viewer #state
+{
+  background-position: 0 50%;
+  float: left;
+  color: #c0c0c0;
+  padding-left: 21px;
+  width: 45%;
+}
+
+#content #logging #viewer #date-format
+{
+  float: right;
+}
+
+#content #logging #viewer #date-format a
+{
+  background-image: url( ../../img/ico/ui-check-box-uncheck.png );
+  background-position: 0 50%;
+  color: #c0c0c0;
+  display: block;
+  padding-left: 21px;
+}
+
+#content #logging #viewer #date-format a:hover
+{
+  color: #008;
+}
+
+#content #logging #viewer #date-format a.on
+{
+  background-image: url( ../../img/ico/ui-check-box.png );
+  color: #333;
+}
+
+#content #logging #viewer table
+{
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#content #logging #viewer th,
+#content #logging #viewer td a,
+#content #logging #viewer tbody .trace td
+{
+  padding: 3px 10px;
+}
+
+#content #logging #viewer td
+{
+  vertical-align: top;
+}
+
+#content #logging #viewer td a
+{
+  display: block;
+}
+
+#content #logging #viewer thead th
+{
+  font-weight: bold;
+  text-align: left;
+}
+
+#content #logging #viewer tbody td,
+#content #logging #viewer tfoot td
+{
+  border-top: 1px solid #f0f0f0;
+}
+
+#content #logging #viewer thead th.message
+{
+  width:100%;
+}
+
+#content #logging #viewer tbody td.span a
+{
+  padding-left: 0;
+  padding-right: 0;
+}
+
+#content #logging #viewer tbody span
+{
+  display: block;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+#content #logging #viewer tbody .level-info .level span { background-color: #ebf5eb; }
+#content #logging #viewer tbody .level-warning     span { background-color: #FFD930; }
+#content #logging #viewer tbody .level-severe     span  { background-color: #c43c35; color: #fff; }
+
+#content #logging #viewer tbody .level-debug  span  { background-color: #ebf5eb; }
+#content #logging #viewer tbody .level-warn   span  { background-color: #FFD930; }
+#content #logging #viewer tbody .level-error  span  { background-color: #FF6130; }
+#content #logging #viewer tbody .level-fatal  span  { background-color: #c43c35; }
+
+#content #logging #viewer tbody .has-trace a
+{
+  cursor: pointer;
+}
+
+#content #logging #viewer tbody .has-trace a:hover
+{
+  color: #008;
+}
+
+#content #logging #viewer tbody .has-trace .message a
+{
+  background-image: url( ../../img/ico/information.png );
+  background-position: 100% 50%;
+  display: block;
+  padding-right: 21px;
+}
+
+#content #logging #viewer tbody .has-trace.open .message a
+{
+  background-image: url( ../../img/ico/information-white.png );
+}
+
+#content #logging #viewer tbody .trace td
+{
+  border-top: 0;
+  color: #c0c0c0;
+}
+
+#content #logging #viewer .has-data tfoot
+{
+  display: none;
+}
+
+#content #logging #viewer tfoot td
+{
+  color: #c0c0c0;
+}
+
+#content #logging .jstree > li
+{
+  margin-left: 0;
+}
+
+#content #logging .jstree li
+{
+  position: relative;
+}
+
+#content #logging .jstree .level-finest  { background-color: #d5e5fc; }
+#content #logging .jstree .level-fine    { background-color: #d5fafc; }
+#content #logging .jstree .level-config  { background-color: #e6fded; }
+#content #logging .jstree .level-info    { background-color: #fafcd7; }
+#content #logging .jstree .level-warning { background-color: #fcecd5; }
+#content #logging .jstree .level-severe  { background-color: #fcdcda; }
+#content #logging .jstree .level-off     { background-color: #ffffff; }
+
+/* Log4j */
+#content #logging .jstree .level-all     { background-color: #9EDAFF; }
+#content #logging .jstree .level-trace   { background-color: #d5e5fc; }
+#content #logging .jstree .level-debug   { background-color: #d5fafc; }
+#content #logging .jstree .level-warn    { background-color: #e6fded; }
+#content #logging .jstree .level-error   { background-color: #fcecd5; }
+#content #logging .jstree .level-fatal   { background-color: #fcdcda; }
+
+
+#content #logging .jstree a
+{
+  height: 17px;
+  line-height: 17px;
+  padding: 0;
+  width: 90%;
+}
+
+#content #logging .jstree a:hover
+{
+  color: #008;
+}
+
+#content #logging .jstree a span.ns
+{
+  display: none;
+}
+
+#content #logging.ns .jstree a span.ns
+{
+  display: inline;
+}
+
+#content #logging .jstree a span.name
+{
+  background-position: 100% 50%;
+  cursor: pointer;
+  padding-right: 21px;
+}
+
+#content #logging .jstree a span.name em
+{
+  color: #f00;
+  font-style: normal;
+  text-transform: uppercase;
+}
+
+#content #logging .jstree a.trigger.set
+{
+  font-weight: bold;
+}
+
+#content #logging .jstree a:hover span.name
+{
+  background-image: url( ../../img/ico/pencil-small.png );
+}
+
+#content #logging .jstree .selector-holder
+{
+  position: absolute;
+  top: -2px;
+  z-index: 700;
+}
+
+#content #logging .jstree .selector-holder.open
+{
+  background-color: #fff;
+  margin-left: -19px;
+  z-index: 800;
+}
+
+#content #logging .jstree li .selector-holder { left: 440px; }
+#content #logging .jstree li li .selector-holder { left: 422px; }
+#content #logging .jstree li li li .selector-holder { left: 404px; }
+#content #logging .jstree li li li li .selector-holder { left: 386px; }
+#content #logging .jstree li li li li li .selector-holder { left: 368px; }
+#content #logging .jstree li li li li li li .selector-holder { left: 350px; }
+#content #logging .jstree li li li li li li li .selector-holder { left: 332px; }
+#content #logging .jstree li li li li li li li li .selector-holder { left: 314px; }
+
+#content #logging .jstree .selector
+{
+  border: 1px solid transparent;
+  position: relative;
+}
+
+#content #logging .jstree .open .selector
+{
+  border-color: #f0f0f0;
+  box-shadow: 5px 5px 10px #c0c0c0;
+  -moz-box-shadow: 5px 5px 10px #c0c0c0;
+  -webkit-box-shadow: 5px 5px 10px #c0c0c0;
+}
+
+#content #logging .jstree .selector a
+{
+  display: block;
+  padding: 2px;
+  width: auto;
+}
+
+#content #logging .jstree .open .selector .close
+{
+  background-image: url( ../../img/ico/cross-0.png );
+  background-position: 50% 50%;
+  display: block;
+  position: absolute;
+  right: -25px;
+  top: 0;
+  width: 20px;
+}
+
+#content #logging .jstree .open .selector .close:hover
+{
+  background-image: url( ../../img/ico/cross-1.png );
+}
+
+#content #logging .jstree .open .selector .close span
+{
+  display: none;
+}
+
+#content #logging .jstree .open .selector a.trigger
+{
+  display: none;
+}
+
+#content #logging .jstree .open .selector ul
+{
+  display: block;
+}
+
+#content #logging .jstree .selector ul li
+{
+  background: none;
+  margin-left: 0;
+}
+
+#content #logging .jstree .selector ul li a
+{
+  background-image: url( ../../img/ico/ui-radio-button-uncheck.png );
+  background-position: 2px 50%;
+  padding-left: 21px;
+}
+
+#content #logging .jstree .selector ul li a.level
+{
+  background-color: #f0f0f0;
+}
+
+#content #logging .jstree .selector ul li a:hover
+{
+  background-image: url( ../../img/ico/ui-radio-button.png );
+}
+
+#content #logging .jstree .selector li.unset
+{
+  border-top: 1px solid #f0f0f0;
+}
+
+#content #logging .jstree .selector li.unset a
+{
+  background-image: url( ../../img/ico/cross-0.png );
+  background-position: 4px 50%;
+}
+
+#content #logging .jstree .selector li.unset a:hover
+{
+  background-image: url( ../../img/ico/cross-1.png );
+  color: #800;
+}

@@ -1,0 +1,85 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<div id="dashboard">
+
+  <div class="clearfix">
+
+    <div id="collection" class="block fieldlist">
+
+      <h2><span>Collection: {{selectedCollection.name}}</span></h2>
+
+      <div class="content">
+
+        <dl>
+
+          <dt>Config name:</dt>
+            <dd class="value">{{selectedCollection.configName}}</dd>
+
+          <dt>Max shards per node:</dt>
+            <dd class="value">{{selectedCollection.maxShardsPerNode}}</dd>
+
+          <dt>Replication factor:</dt>
+            <dd class="value">{{selectedCollection.replicationFactor}}</dd>
+
+          <dt>Auto-add replicas:</dt>
+            <dd class="ico value" ng-class="selectedCollection.autoAddReplicas=='true' ? 'ico-1' : 'ico-0'"><span>yes</span></dd>
+
+          <dt>Router name:</dt>
+            <dd class="value">{{selectedCollection.router.name}}</dd>
+
+        </dl>
+
+      </div>
+    </div>
+
+    <div id="shards" class="block fieldlist">
+
+      <h2><span>Shards</span></h2>
+
+      <div>
+
+        <div class="shard" ng-repeat="(name, shard) in selectedCollection.shards">
+          <a ng-click="hideShard(shard)"><h3 class="shard-title">{{name}}</h3></a>
+          <dl class="shard-detail clearfix" ng-hide="shard.hide">
+            <dt>Range:</dt>
+            <dd class="value">{{ shard.range }}</dd>
+
+            <dt>Active:</dt>
+            <dd class="ico value" ng-class="shard.state='active' ? 'ico-1' : 'ico-0'"><span>yes</span></dd>
+
+            <dt>Replicas:</dt>
+            <dd>
+              <div class="replica clearfix {{$odd?'odd':''}}" ng-repeat="(name, replica) in shard.replicas">
+                <a ng-click="showReplica(replica)"><h3>{{replica.core}}</h3></a>
+                <dl ng-show="replica.show">
+                  <dt>Base URL: </dt><dd>{{replica.base_url}}</dd>
+                  <dt>Core: </dt><dd><a href="{{replica.base_url}}{{rootUrl}}#/{{replica.core}}">{{replica.core}}</a></dd>
+                  <dt>Active: </dt>
+                    <dd class="ico value" ng-class="replica.state == 'active' ? 'ico-1' : 'ico-0'"><span>yes</span></dd>
+                  <dt>Leader: </dt>
+                    <dd class="ico value" ng-class="replica.leader == 'true' ? 'ico-1' : 'ico-0'"><span>yes</span></dd>
+                </dl>
+              </div>
+
+            </dd>
+          </dl>
+      </div>
+    </div>
+
+  </div>
+
+</div>

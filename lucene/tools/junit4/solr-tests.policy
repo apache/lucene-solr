@@ -1,0 +1,91 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Policy file to prevent tests from writing outside the test sandbox directory
+// (must be given as a sysprop: tests.sandbox.dir)
+// This policy also disallows stuff like listening on network ports of interfaces
+// different than 127.0.0.1.
+
+// PLEASE NOTE: You may need to enable other permissions when new tests are added,
+// everything not allowed here is forbidden!
+
+grant {
+  // permissions for file access, write access only to sandbox:
+  permission java.io.FilePermission "<<ALL FILES>>", "read,execute";
+  permission java.io.FilePermission "${junit4.childvm.cwd}", "read,execute";
+  permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp", "read,execute,write,delete";
+  permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp${/}-", "read,execute,write,delete";
+  permission java.io.FilePermission "${junit4.childvm.cwd}${/}jacoco.db", "write";
+  permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,execute,write,delete";
+  permission java.io.FilePermission "${clover.db.dir}${/}-", "read,execute,write,delete";
+  
+  // all possibilities of accepting/binding connections on localhost with ports >=1024:
+  permission java.net.SocketPermission "localhost:1024-", "accept,listen";
+  permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen";
+  permission java.net.SocketPermission "[::1]:1024-", "accept,listen";
+  
+  // Allow connecting to the internet anywhere
+  permission java.net.SocketPermission "*", "connect,resolve";
+  
+  // Basic permissions needed for Lucene to work:
+  permission java.util.PropertyPermission "*", "read,write";
+  permission java.lang.reflect.ReflectPermission "*";
+  permission java.lang.RuntimePermission "*";
+
+  // These two *have* to be spelled out a separate
+  permission java.lang.management.ManagementPermission "control";
+  permission java.lang.management.ManagementPermission "monitor";
+
+  // Solr needs those:
+  permission java.net.NetPermission "*";
+  permission java.sql.SQLPermission "*";
+  permission java.util.logging.LoggingPermission "control";
+  permission javax.management.MBeanPermission "*", "*";
+  permission javax.management.MBeanServerPermission "*";
+  permission javax.management.MBeanTrustPermission "*";
+  permission javax.security.auth.AuthPermission "*";
+  permission javax.security.auth.PrivateCredentialPermission "org.apache.hadoop.security.Credentials * \"*\"", "read";
+  permission java.security.SecurityPermission "putProviderProperty.SaslPlainServer";
+  permission java.security.SecurityPermission "insertProvider.SaslPlainServer";
+  permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
+  
+  // TIKA uses BouncyCastle and that registers new provider for PDF parsing + MSOffice parsing. Maybe report as bug!
+  permission java.security.SecurityPermission "putProviderProperty.BC";
+  permission java.security.SecurityPermission "insertProvider.BC";
+
+  // Needed for some things in DNS caching in the JVM
+  permission java.security.SecurityPermission "getProperty.networkaddress.cache.ttl";
+  permission java.security.SecurityPermission "getProperty.networkaddress.cache.negative.ttl";
+
+  // SSL related properties for Solr tests
+  permission java.security.SecurityPermission "getProperty.ssl.*";
+
+  // SASL/Kerberos related properties for Solr tests
+  permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KerberosTicket * \"*\"", "read";
+  
+  // may only be necessary with Java 7?
+  permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KeyTab * \"*\"", "read";
+  permission javax.security.auth.PrivateCredentialPermission "sun.security.jgss.krb5.Krb5Util$KeysFromKeyTab * \"*\"", "read";
+  
+  permission javax.security.auth.kerberos.ServicePermission "krbtgt/EXAMPLE.COM@EXAMPLE.COM", "initiate";
+  permission javax.security.auth.kerberos.ServicePermission "zookeeper/127.0.0.1@EXAMPLE.COM", "initiate";
+  permission javax.security.auth.kerberos.ServicePermission "zookeeper/127.0.0.1@EXAMPLE.COM", "accept";
+  permission javax.security.auth.kerberos.ServicePermission "HTTP/127.0.0.1@EXAMPLE.COM", "initiate";
+  permission javax.security.auth.kerberos.ServicePermission "HTTP/127.0.0.1@EXAMPLE.COM", "accept";
+  permission javax.security.auth.kerberos.DelegationPermission "\"HTTP/127.0.0.1@EXAMPLE.COM\" \"krbtgt/EXAMPLE.COM@EXAMPLE.COM\"";
+
+};

@@ -1,0 +1,10 @@
+<attribute-sets default="overridden-attributes">
+  <attribute-set id="overridden-attributes">
+    <value-set>
+      <label>defaults</label>
+      <attribute key="MockClusteringAlgorithm.depth"><value value="1" /></attribute>
+      <attribute key="MockClusteringAlgorithm.labels"><value value="3" /></attribute>
+      <attribute key="MockClusteringAlgorithm.maxClusters"><value value="13" /></attribute>
+    </value-set>
+  </attribute-set>
+</attribute-sets>

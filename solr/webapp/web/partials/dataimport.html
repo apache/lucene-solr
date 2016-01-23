@@ -1,0 +1,209 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<div id="dataimport" class="clearfix">
+
+  <div ng-show="!hasHandlers">Sorry, no dataimport-handler defined!</div>
+  <div id="frame" ng-show="hasHandlers">
+
+    <div id="error" ng-show="error"></div>
+
+    <div id="current_state" class="{{status}}">
+
+      <p class="last_update">Last Update: <abbr title="{{lastUpdateUTC}}">{{lastUpdate}}</abbr></p>
+      <div class="info">
+
+        <strong>{{info.text}}<span ng-show="info.timeTaken"> (Duration: {{info.timeTaken | readableSeconds }})</span>
+        </strong>
+        <div class="details" ng-show="info.showDetails">
+          <div class="docs">
+              <span ng-repeat="doc in info.docs">
+                  <abbr style="display:inline" title="{{ doc.desc }}">{{ doc.name }}</abbr>: {{doc.value | number}}<!-- remove whitespace!
+                  -->&nbsp;<span style="display:inline" ng-show="doc.speed">{{ doc.speed | number}}/s</span><!-- remove whitespace!
+                  --><span style="display:inline" ng-show="!$last">, </span>
+              </span>
+          </div>
+          <div class="dates">
+              <span ng-repeat="date in info.dates">
+                  <abbr title="{{ date.desc }}">{{ date.name }}</abbr>:
+                  <abbr class="time">{{ date.value | timeago }}</abbr>
+              </span>
+          </div>
+        </div>
+
+        <button class="abort-import" ng-class="{warn:!isAborting, success: isAborting}" ng-click="abort()" ng-show="isRunning">
+            <span ng-show="isAborting">Aborting Import</span>
+            <span ng-show="!isAborting">Abort Import</span>
+        </button>
+
+      </div>
+    
+    </div>
+
+    <div class="block" id="raw_output" >
+
+      <h2>
+        <a class="toggle" ng-click="toggleRawStatus()"><span>Raw Status-Output</span></a>
+      </h2>
+        
+      <div class="message-container" ng-show="showRawStatus">
+          <div class="message"></div>
+      </div>
+
+      <div class="content" ng-show="showRawStatus">
+
+        <div id="raw_output_container"><pre class="syntax language-json"><code ng-bind-html="rawStatus | highlight:'json' | unsafe"></code></pre></div>
+
+      </div>
+    
+    </div>
+
+    <div class="block" id="config" ng-class="{debug_mode:isDebugMode}">
+
+      <h2 class="clearfix">
+        <a class="toggle" ng-click="toggleConfiguration()"><span>Configuration</span></a>
+        <a class="r reload_config" ng-class="{success:reloaded}" ng-click="reload()" title="Reload Configuration">Reload</a>
+        <a class="r debug_mode" ng-click="toggleDebug()">Debug-Mode</a>
+      </h2>
+        
+      <div class="message-container" ng-show="showConfiguration">
+          <div class="message"></div>
+      </div>
+
+      <div class="content" ng-show="showConfiguration">
+        <div id="dataimport_config">
+
+          <div class="formatted" ng-show="!isDebugMode">
+
+            <pre class="syntax language-xml"><code ng-bind-html="config | highlight:'xml'| unsafe"></code></pre>
+
+          </div>
+
+          <div class="editable" ng-show="isDebugMode">
+
+            <textarea>{{config}}</textarea>
+          
+          </div>
+
+        </div>
+
+      </div>
+    
+    </div>
+
+    <div class="block" id="debug_response" ng-show="form.showDebug">
+
+      <h2>
+        <a class="toggle" ng-click="toggleRawDebug()"><span>Raw Debug-Response</span></a>
+      </h2>
+        
+      <div class="message-container" ng-show="showRawDebug">
+          <div class="message"></div>
+      </div>
+
+      <div class="content" ng-show="showRawDebug">
+          <span ng-show="true">
+              <em>No Request executed</em>
+          </span>
+          <span ng-show="false">
+            <pre class="syntax language-json"><code ng-bind-html="rawResponse | highlight:'xml' | unsafe"></code></pre>
+          </span>
+      </div>
+    
+    </div>
+  
+  </div>
+
+  <div id="form" ng-show="hasHandlers">
+
+    <div id="navigation">
+
+      <ul>
+          <li ng-class="{current: currentHandler == handler}" ng-repeat="handler in handlers">
+              <a href="#/{{form.core}}/dataimport/{{handler}}">{{handler}}</a>
+          </li>
+      </ul>
+
+    </div>
+
+    <form action="#" method="get">
+
+      <label for="command">
+        <a rel="help">Command</a>
+      </label>
+      <select name="command" id="command" ng-model="form.command">
+        <option>full-import</option>
+        <option>delta-import</option>
+      </select>
+
+      <label for="verbose" class="checkbox">
+        <input type="checkbox" name="verbose" id="verbose" ng-model="form.verbose">
+        Verbose
+      </label>
+
+      <label for="clean" class="checkbox">
+        <input type="checkbox" name="clean" id="clean" ng-model="form.clean">
+        Clean
+      </label>
+
+      <label for="commit" class="checkbox">
+        <input type="checkbox" name="commit" id="commit" ng-model="form.commit">
+        Commit
+      </label>
+
+      <label for="optimize" class="checkbox">
+        <input type="checkbox" name="optimize" id="optimize" ng-model="form.optimize">
+        Optimize
+      </label>
+
+      <label for="debug" class="checkbox">
+        <input type="checkbox" name="debug" id="debug" ng-model="form.showDebug">
+        Debug
+      </label>
+
+      <label for="entity">
+        <a rel="help">Entity</a>
+      </label>
+      <select ng-model="form.entity" id="entity">
+        <option value=""></option>
+        <option ng-repeat="entity in entities">{{entity}}</option>
+      </select>
+
+      <label for="start">
+        <a rel="help">Start</a>,
+        <a rel="help">Rows</a>
+      </label>
+      <div class="clearfix">
+        <input type="text" id="start" placeholder="0" ng-model="form.start">
+        <input type="text" id="rows" placeholder="10" ng-model="form.rows">
+      </div>
+
+      <label for="custom_parameters">
+        <a rel="help">Custom Parameters</a>
+      </label>
+      <input type="text" id="custom_parameters" ng-model="form.custom" placeholder="key1=val1&amp;key2=val2">
+    </form>
+      <button class="execute" type="submit" ng-click="submit()">
+          <span ng-show="isDebugMode">Execute with this Configuration →</span>
+          <span ng-show="!isDebugMode">Execute</span>
+      </button>
+      <button class="refresh-status" ng-click="refreshStatus()" ng-class="{loader: isStatusLoading, success: statusUpdated}"><span>Refresh Status</span></button>
+
+    <p id="auto-refresh-status"><a ng-click="updateAutoRefresh()" ng-class="{on:autorefresh}">Auto-Refresh Status</a></p>
+  
+  </div>
+
+</div>

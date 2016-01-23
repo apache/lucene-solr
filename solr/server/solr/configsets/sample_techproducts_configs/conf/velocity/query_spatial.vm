@@ -1,0 +1,75 @@
+#**
+ *  Query logic for selecting location / Geospatial search
+ *#
+
+#set($queryOpts = $params.get("queryOpts"))
+
+#if($queryOpts == "spatial")
+
+  <div>
+
+    #set($loc = $request.params.get('pt'))
+    ## Normalize first trip through to "none" because
+    ## an empty string generates an error message later on
+    #if( ! $loc )
+      #set( $loc = "none" )
+    #end
+
+    #set($dist = $request.params.get('d', "10"))
+
+    ## Cities for The Select List
+    #set( $cities = {
+      "none": "No Filter",
+      "45.17614,-93.87341": "Buffalo, MN",
+      "37.7752,-100.0232": "Dodge City, KS",
+      "35.0752,-97.032": "Oklahoma City, OK",
+      "37.7752,-122.4232": "San Francisco CA"
+    })
+
+    <label #annTitle("Add the &pt parameter")>
+      Location Filter:
+      <select id="pt" name="pt">
+
+        ## Generate <option> tag for each city
+        #foreach( $city_lon_lat in $cities.keySet() )
+          #set( $city_name = $cities.get($city_lon_lat) )
+          <option value="$city_lon_lat"
+            #if($loc == $city_lon_lat)selected="true"#end
+          >
+            $city_name
+          </option>
+        #end
+
+      </select>
+
+    </label>
+
+    <span #annTitle("Add the &d parameter")>
+      Distance (KM):
+      <input id="d" name="d" type="text" size="6"
+        value="#if($dist != '')${dist}#{else}10#end"  ## TODO: isn't the default of 10 above sufficient?  no if/else needed?
+      />
+    </span>
+
+    <input type="hidden" name="sfield" value="store"/>
+    <input type="hidden" id="spatialFQ" name="fq" value=""/>
+    <input type="hidden" name="queryOpts" value="spatial"/>        
+
+  </div>
+
+  <script type="text/javascript">
+    $('#query-form').submit(function() {
+      if ($("#pt").val() != "none") {
+        $("#spatialFQ").val("{!bbox}");
+      }
+      $fqs = $("#allFQs").val();
+      $fqs = $fqs.replace("{!bbox}", "");
+      if ($fqs == ''){
+        $("#allFQs").remove();
+      }
+      $("#allFQs").val($fqs);
+      return true;
+    });
+  </script>
+
+#end

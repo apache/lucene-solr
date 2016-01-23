@@ -1,0 +1,10 @@
+SET UTF-8
+
+SFX X Y 1
+SFX X 0 scratcher .
+
+SFX A Y 1
+SFX A 0 s . +SG3
+
+SFX B Y 1
+SFX B 0 s . +PLUR

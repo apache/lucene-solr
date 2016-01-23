@@ -1,0 +1,3 @@
+Example text document
+
+This is a simple example for a plain text document, indexed to Solr

@@ -1,0 +1,110 @@
+#
+# Tests for Norwegian Nynorsk light stemmer
+# It should tackle nouns, adjectives, genitive and some general endings
+#
+# Nouns masculine
+gut	gut
+guten	gut
+gutar	gut
+gutane	gut
+gutens	gut
+gutanes	gut
+søknad	søknad
+søknaden	søknad
+søknadar	søknad
+søknadane	søknad
+søknadens	søknad
+søknadanes	søknad
+# Nouns feminine
+kjole	kjol
+kjola	kjol
+kjoler	kjol
+kjolene	kjol
+kjolas	kjol
+# Nouns neutral
+dyr	dyr
+dyret	dyr
+dyra	dyr
+dyras	dyr
+prospekt	prospekt
+prospektet	prospekt
+prospekta	prospekt
+prospektas	prospekt
+innhald	innhald
+innhaldet	innhald
+innhalda	innhald
+# General endings
+hemmeleg	hemmeleg
+hemmelegheit	hemmeleg
+hemmelegheita	hemmeleg
+hemmelegheiter	hemmeleg
+vanskeleg	vanskeleg
+vanskelegheit	vanskeleg
+vanskelegheita	vanskeleg
+vanskelegheiter	vanskeleg
+hevelse	hev
+heva	hev
+hevelsen	hev
+heve	hev
+ærleg	ærleg
+ærlegdom	ærleg
+ærlegdommen	ærlegdomm
+ærlegdommens	ærlegdomm
+alderdom	alder
+alderdommen	alderdomm
+alderdommens	alderdomm
+trygg	trygg
+tryggleik	trygg
+tryggleiken	trygg
+tryggleikens	trygg
+tryggleikar	trygg
+kjærleik	kjær
+kjærleiken	kjær
+kjærleikens	kjær
+kjærleikar	kjær
+verke	verk
+verksemd	verk
+hjelpe	hjelp
+hjelpsemd	hjelp
+# Adjectives
+billeg	billeg
+billegare	billeg
+billegast	billeg
+smal	smal
+smalare	smal
+smalast	smal
+farleg	farleg
+farlegare	farleg
+farlegast	farleg
+#########################################
+# Words that should not be stemmed
+#
+# Irregular masculine nouns (not supposed to be handled correctly)
+søner	søn
+sønene	søn
+brør	brør
+brørne	brørn
+# Irregular feminine nouns, not handled
+dotter	dott
+døtrer	døtr
+døtrene	døtr
+klo	klo
+klørne	klørn
+mor	mor
+mødrer	mødr
+mødrene	mødr
+# Irregular neutral nouns, not handled
+vedunder	vedund
+# Other words that should not be touched
+abc	abc
+123	123
+Jens	Jens
+# Irregular adjectives that should not be stemmed
+gammal	gammal
+eldre	eldr
+eldst	eldst
+# Verbs, should not be stemmed
+syngje	syngj
+syng	syng
+song	song
+sunge	sung

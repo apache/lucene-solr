@@ -1,0 +1,42 @@
+<html>
+<head>
+  #parse("head.vm")
+</head>
+  <body>
+    <div id="header">
+      <a href="#url_for_home"><img src="#{url_root}/img/solr.svg" id="logo" title="Solr"/></a> $resource.powered_file_search
+    </div>
+
+    <div id="header2" onclick="javascript:locale_select()">
+      <ul class="menu">
+
+        <li>
+          <a href="#"><img src="#{url_for_solr}/admin/file?file=/velocity/img/globe_256.png&contentType=image/png" id="locale_pic" title="locale_select" width="30px" height="27px"/></a>
+          <ul>
+            <li><a href="#url_for_locale('fr_FR')" #if("#current_locale"=="fr_FR")class="hidden"#end>
+              <img src="#{url_for_solr}/admin/file?file=/velocity/img/france_640.png&contentType=image/png" id="french_flag"  width="40px" height="40px"/>Fran&ccedil;ais</a></li>
+            <li><a href="#url_for_locale('de_DE')" #if("#current_locale"=="de_DE")class="hidden"#end>
+              <img src="#{url_for_solr}/admin/file?file=/velocity/img/germany_640.png&contentType=image/png" id="german_flag"  width="40px" height="40px"/>Deutsch</a></li>
+            <li><a href="#url_for_locale('')" #if("#current_locale"=="")class="hidden"#end>
+              <img src="#{url_for_solr}/admin/file?file=/velocity/img/english_640.png&contentType=image/png" id="english_flag"  width="40px" height="40px"/>English</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+
+    #if($response.response.error.code)
+      <div class="error">
+        <h1>ERROR $response.response.error.code</h1>
+        $response.response.error.msg
+      </div>
+    #else
+      <div id="content">
+        $content
+      </div>
+    #end
+
+    <div id="footer">
+      #parse("footer.vm")
+    </div>
+  </body>
+</html>

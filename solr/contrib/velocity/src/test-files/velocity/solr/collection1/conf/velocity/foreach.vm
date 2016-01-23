@@ -1,0 +1,1 @@
+#foreach($x in ["a","b"])$!foreach.index#end

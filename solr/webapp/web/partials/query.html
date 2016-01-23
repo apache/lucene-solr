@@ -1,0 +1,356 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<div id="query" class="clearfix">
+
+  <div id="form">
+    <form>
+      <label for="qt" title="Request handler in solrconfig.xml.">
+        <a rel="help">Request-Handler (qt)</a>
+      </label>
+      <input type="text" ng-model="qt" id="qt" value="/select" title="Request handler in solrconfig.xml.">
+
+      <fieldset class="common">
+        <legend>common</legend>
+        <div class="fieldset">
+
+        <label for="q" title="The query string.">
+          q
+        </label>
+        <textarea name="q" ng-model="query.q" id="q" title="The query string.">*:*</textarea>
+
+        <label for="fq" title="Filter query.">
+          <a rel="help">fq</a>
+        </label>
+        <div class="multiple">
+          <div class="row clearfix" ng-repeat="filter in filters">
+            <input type="text" ng-model="filter.fq" id="fq" name="fq" title="Filter query.">
+            <div class="buttons">
+              <a class="rem" ng-click="removeFilter($index)"><span></span></a>
+              <a class="add" ng-click="addFilter($index)"><span></span></a>
+            </div>
+          </div>
+        </div>
+
+        <label for="sort" title="Sort field or function with asc|desc.">
+          <a rel="help">sort</a>
+        </label>
+        <input type="text" ng-model="query.sort" id="sort" name="sort" title="Sort field or function with asc|desc.">
+
+        <label for="start" title="Number of leading documents to skip and number of documents to return after 'start'. (Integers)">
+          <a rel="help">start</a>,
+          <a rel="help">rows</a>
+        </label>
+        <div class="clearfix">
+          <input type="text" name="start" ng-model="query.start" id="start" placeholder="0" pattern="[0-9]+" title="Number of leading documents to skip. (Integer)">
+          <input type="text" name="rows" ng-model="query.rows" id="rows" placeholder="10" pattern="[0-9]+" title="Number of documents to return after 'start'. (Integer)">
+        </div>
+
+        <label for="fl" title="Field list, comma separated.">
+          <a rel="help">fl</a>
+        </label>
+        <input type="text" ng-model="query.fl" name="fl" id="fl" value="" title="Field list, comma separated.">
+
+        <label for="df" title="Default search field">
+          <a rel="help">df</a>
+        </label>
+        <input type="text" ng-model="query.df" name="df" id="df" value="" title="Default search field">
+
+        <label for="custom_parameters">
+          <a rel="help">Raw Query Parameters</a>
+        </label>
+        <input type="text" ng-model="rawParams" id="custom_parameters" value="" placeholder="key1=val1&amp;key2=val2">
+
+        <label for="wt" title="The writer type (response format).">
+          <a rel="help">wt</a>
+        </label>
+        <select name="wt" ng-model="query.wt" id="wt" title="The writer type (response format).">
+          <option>json</option>
+          <option>xml</option>
+          <option>python</option>
+          <option>ruby</option>
+          <option>php</option>
+          <option>csv</option>
+        </select>
+
+        <label for="indent" class="checkbox" title="Indent results.">
+          <input type="checkbox" ng-model="query.indent" name="indent" id="indent" title="Indent results." ng-true-value="'on'" ng-false-value="''">
+          indent
+        </label>
+
+        <label for="debugQuery" class="checkbox" title="Show timing and diagnostics.">
+          <input type="checkbox" ng-model="query.debugQuery" name="debugQuery" id="debugQuery" title="Show timing and diagnostics." ng-true-value="'on'" ng-false-value="''">
+          debugQuery
+        </label>
+
+        </div>
+      </fieldset>
+
+      <fieldset class="dismax optional">
+        <legend>
+          <label for="dismax" class="checkbox" title="Enable dismax.">
+            <input type="checkbox" ng-model="isDismax" name="defType" id="dismax" value="dismax">
+            dismax
+          </label>
+        </legend>
+        <div class="fieldset" ng-show="isDismax">
+
+        <label for="q_alt" title="Alternate query when 'q' is absent.">q.alt</label>
+        <input type="text" ng-model="dismax['q.alt']" name="q.alt" id="q_alt" title="Alternate query when 'q' is absent.">
+
+        <label for="qf" title="Query fields with optional boosts.">qf</label>
+        <input type="text" ng-model="dismax.qf" name="qf" id="qf" title="Query fields with optional boosts.">
+
+        <label for="mm" title="Min-should-match expression">mm</label>
+        <input type="text" ng-model="dismax.mm" name="mm" id="mm" title="Min-should-match expression.">
+
+        <label for="pf" title="Phrase boosted fields.">pf</label>
+        <input type="text" ng-model="dismax.pf" name="pf" id="pf" title="Phrase boosted fields.">
+
+        <label for="ps" title="Phrase boost slop.">ps</label>
+        <input type="text" ng-model="dismax.ps" name="ps" id="ps" title="Phrase boost slop.">
+
+        <label for="qs" title="Query string phrase slop.">qs</label>
+        <input type="text" ng-model="dismax.qs" name="qs" id="qs" title="Query string phrase slop.">
+
+        <label for="tie" title="Score tie-breaker. Try 0.1.">tie</label>
+        <input type="text" ng-model="dismax.tie" name="tie" id="tie" title="Score tie-breaker. Try 0.1.">
+
+        <label for="bq" title="Boost query.">bq</label>
+        <input type="text" ng-model="dismax.bq" name="bq" id="bq" title="Boost query.">
+
+        <label for="bf" title="Boost function (added).">bf</label>
+        <input type="text" ng-model="dismax.bf" name="bf" id="bf" title="Boost function (added).">
+
+        </div>
+      </fieldset>
+
+      <fieldset class="edismax optional">
+        <legend>
+          <label for="edismax" class="checkbox" title="Enable edismax.">
+            <input type="checkbox" ng-model="isEdismax" name="defType" id="edismax" value="edismax">
+            <strong>e</strong>dismax
+          </label>
+        </legend>
+        <div class="fieldset" ng-show="isEdismax">
+
+        <label for="edismax_q_alt" title="Alternate query when 'q' is absent.">q.alt</label>
+        <input type="text" ng-model="edismax['q.alt']" name="q.alt" id="edismax_q_alt"  title="Alternate query when 'q' is absent.">
+
+        <label for="edismax_qf" title="Query fields with optional boosts.">qf</label>
+        <input type="text" ng-model="edismax.qf" name="qf" id="edismax_qf" title="Query fields with optional boosts.">
+
+        <label for="edismax_mm" title="Min-should-match expression.">mm</label>
+        <input type="text" ng-model="edismax.mm" name="mm" id="edismax_mm" title="Min-should-match expression.">
+
+        <label for="edismax_pf" title="Phrase boosted fields.">pf</label>
+        <input type="text" ng-model="edismax.pf" name="pf" id="edismax_pf" title="Phrase boosted fields.">
+
+        <label for="edismax_ps" title="Phrase boost slop.">ps</label>
+        <input type="text" ng-model="edismax.ps" name="ps" id="edismax_ps" title="Phrase boost slop.">
+
+        <label for="edismax_qs" title="Query string phrase slop.">qs</label>
+        <input type="text" ng-model="edismax.qs" name="qs" id="edismax_qs" title="Query string phrase slop.">
+
+        <label for="edismax_tie" title="Score tie-breaker. Try 0.1.">tie</label>
+        <input type="text" ng-model="edismax.tie" name="tie" id="edismax_tie" title="Score tie-breaker. Try 0.1.">
+
+        <label for="edismax_bq" title="Boost query.">bq</label>
+        <input type="text" ng-model="edismax.bq" name="bq" id="edismax_bq" title="Boost query.">
+
+        <label for="edismax_bf" title="Boost function (added).">bf</label>
+        <input type="text" ng-model="edismax.bf" name="bf" id="edismax_bf" title="Boost function (added).">
+
+        <label for="edismax_uf" title="User Fields">uf</label>
+        <input type="text" ng-model="edismax.uf" name="uf" id="edismax_uf" title="User Fields">
+
+        <label for="edismax_pf2" title="bigram phrase boost fields">pf2</label>
+        <input type="text" ng-model="edismax.pf2" name="pf2" id="edismax_pf2" title="bigram phrase boost fields">
+
+        <label for="edismax_pf3" title="trigram phrase boost fields">pf3</label>
+        <input type="text" ng-model="edismax.pf3" name="pf3" id="edismax_pf3" title="trigram phrase boost fields">
+
+        <label for="edismax_ps2" title="phrase slop for bigram phrases">ps2</label>
+        <input type="text" ng-model="edismax.ps2" name="ps2" id="edismax_ps2" title="phrase slop for bigram phrases">
+
+        <label for="edismax_ps3" title="phrase slop for trigram phrases">ps3</label>
+        <input type="text" ng-model="edismax.ps3" name="ps3" id="edismax_ps3" title="phrase slop for trigram phrases">
+
+        <label for="edismax_boost" title="multiplicative boost function">boost</label>
+        <input type="text" ng-model="edismax.boost" name="boost" id="edismax_boost" title="multiplicative boost function">
+
+        <label for="edismax_stopwords" class="checkbox" title="remove stopwords from mandatory 'matching' component">
+          <input type="checkbox" ng-model="edismax.stopwords" name="stopwords" id="edismax_stopwords">
+          stopwords
+        </label>
+
+        <label for="edismax_lowercaseOperators" class="checkbox" title="Enable lower-case 'and' and 'or' as operators">
+          <input type="checkbox" ng-model="edismax.lowercaseOperators" name="lowercaseOperators" id="edismax_lowercaseOperators">
+          lowercaseOperators
+        </label>
+
+        </div>
+      </fieldset>
+
+      <fieldset class="hl optional">
+        <legend>
+          <label for="hl" class="checkbox" title="Enable highlighting.">
+            <input type="checkbox" ng-model="isHighlight" name="hl" id="hl" value="true">
+            hl
+          </label>
+        </legend>
+        <div class="fieldset" ng-show="isHighlight">
+
+        <label for="hl_fl" title="Fields to highlight on.">hl.fl</label>
+        <input type="text" ng-model="hl.fl" name="hl.fl" id="hl_fl" value="" title="Fields to highlight on.">
+
+        <label for="hl_simple_pre">hl.simple.pre</label>
+        <input type="text" ng-model="hl['simple.pre']" name="hl.simple.pre" id="hl_simple_pre" value="<em>">
+
+        <label for="hl_simple_post">hl.simple.post</label>
+        <input type="text" ng-model="hl['simple.post']"  name="hl.simple.post" id="hl_simple_post" value="</em>">
+
+        <label for="hl_requireFieldMatch" class="checkbox">
+          <input type="checkbox" ng-model="hl.requireFieldMatch" name="hl.requireFieldMatch" id="hl_requireFieldMatch" value="true">
+          hl.requireFieldMatch
+        </label>
+
+        <label for="hl_usePhraseHighlighter" class="checkbox">
+          <input type="checkbox" ng-model="hl.usePhraseHighLighter" name="hl.usePhraseHighlighter" id="hl_usePhraseHighlighter" value="true">
+          hl.usePhraseHighlighter
+        </label>
+
+        <label for="hl_highlightMultiTerm" class="checkbox">
+          <input type="checkbox" ng-model="hl.hightlightMultiTerm" name="hl.highlightMultiTerm" id="hl_highlightMultiTerm" value="true">
+          hl.highlightMultiTerm
+        </label>
+
+        </div>
+      </fieldset>
+
+      <fieldset class="facet optional">
+        <legend>
+          <label for="facet" class="checkbox" title="Enable faceting.">
+            <input type="checkbox" ng-model="isFacet" name="facet" id="facet">
+            facet
+          </label>
+        </legend>
+        <div class="fieldset" ng-show="isFacet">
+
+        <label for="facet_query">facet.query</label>
+        <textarea ng-model="facet['facet.query']" name="facet.query" id="facet_query"></textarea>
+
+        <label for="facet_field">facet.field</label>
+        <input type="text" ng-model="facet['facet.field']" name="facet.field" id="facet_field">
+
+        <label for="facet_prefix">facet.prefix</label>
+        <input type="text" ng-model="facet['facet.prefix']" name="facet.prefix" id="facet_prefix">
+
+        </div>
+      </fieldset>
+
+      <fieldset class="spatial optional">
+        <legend>
+          <label for="spatial" class="checkbox" title="Show spatial options">
+            <input type="checkbox" ng-model="isSpatial" name="spatial" id="spatial">
+            spatial
+          </label>
+        </legend>
+        <div class="fieldset" ng-show="isSpatial">
+
+        <label for="pt">pt</label>
+        <input type="text" ng-model="spatial.pt" name="pt" id="pt">
+
+        <label for="sfield">sfield</label>
+        <input type="text" ng-model="spatial.sfield" name="sfield" id="sfield">
+
+        <label for="d">d</label>
+        <input type="text" ng-model="spatial.d" name="d" id="d">
+
+        </div>
+      </fieldset>
+
+      <fieldset class="spellcheck optional">
+        <legend>
+          <label for="spellcheck" class="checkbox" title="Enable spellchecking.">
+            <input type="checkbox" ng-model="isSpellcheck" name="spellcheck" id="spellcheck">
+            spellcheck
+          </label>
+        </legend>
+        <div class="fieldset" ng-show="isSpellcheck">
+
+        <label for="spellcheck_build" class="checkbox">
+          <input type="checkbox" ng-model="spellcheck['spellcheck.build']" name="spellcheck.build" id="spellcheck_build" value="true">
+          spellcheck.build
+        </label>
+
+        <label for="spellcheck_reload" class="checkbox">
+          <input type="checkbox" ng-model="spellcheck['spellcheck.reload']" name="spellcheck.reload" id="spellcheck_reload" value="true">
+          spellcheck.reload
+        </label>
+
+        <label for="spellcheck_q">spellcheck.q</label>
+        <input type="text" ng-model="spellcheck['spellcheck.q']" name="spellcheck.q" id="spellcheck_q">
+
+        <label for="spellcheck_dictionary">spellcheck.dictionary</label>
+        <input type="text" ng-model="spellcheck['spellcheck.dictionary']" name="spellcheck.dictionary" id="spellcheck_dictionary">
+
+        <label for="spellcheck_count">spellcheck.count</label>
+        <input type="text" ng-model="spellcheck['spellcheck.count']" name="spellcheck.count" id="spellcheck_count">
+
+        <label for="spellcheck_onlyMorePopular" class="checkbox">
+          <input type="checkbox" ng-model="spellcheck['spellcheck.onlyMorePopular']" name="spellcheck.onlyMorePopular" id="spellcheck_onlyMorePopular" value="true">
+          spellcheck.onlyMorePopular
+        </label>
+
+        <label for="spellcheck_extendedResults" class="checkbox">
+          <input type="checkbox" ng-model="spellcheck['spellcheck.extendedResults']" name="spellcheck.extendedResults" id="spellcheck_extendedResults" value="true">
+          spellcheck.extendedResults
+        </label>
+
+        <label for="spellcheck_collate" class="checkbox">
+          <input type="checkbox" ng-model="spellcheck['spellcheck.collate']" name="spellcheck.collate" id="spellcheck_collate" value="true">
+          spellcheck.collate
+        </label>
+
+        <label for="spellcheck_maxCollations">spellcheck.maxCollations</label>
+        <input type="text" ng-model="spellcheck['spellcheck.maxCollations']" name="spellcheck.maxCollations" id="spellcheck_maxCollations">
+
+        <label for="spellcheck_maxCollationTries">spellcheck.maxCollationTries</label>
+        <input type="text" ng-model="spellcheck['spellcheck.maxCollationTries']" name="spellcheck.maxCollationTries" id="spellcheck_maxCollationTries">
+
+        <label for="spellcheck_accuracy">spellcheck.accuracy</label>
+        <input type="text" ng-model="spellcheck['spellcheck.accuracy']" name="spellcheck.accuracy" id="spellcheck_accuracy">
+       </div>
+
+      </fieldset>
+
+
+      <button type="submit" ng-click="doQuery()">Execute Query</button>
+    </form>
+  </div>
+
+  <div id="result">
+
+    <a ng-show="response.data" id="url" class="address-bar" ng-href="{{url}}">{{url}}</a>
+
+    <div id="response">
+      <pre class="syntax language-{{lang}}"><code ng-bind-html="response.data | highlight:lang | unsafe"></code></pre>
+    </div>
+
+  </div>
+
+</div>

@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- example of a snippet of xml for use with xml includes -->
+<fieldType name="ft-included" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>

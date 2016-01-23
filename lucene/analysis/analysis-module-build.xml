@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="analysis-module-build">
+
+  <!-- submodule build for analyzers.
+       ensures that each submodule is built under build/
+       consistent with its source structure so that
+       binary packaging makes sense -->
+
+  <basename property="submodule.project.name" file="${basedir}"/>
+  <dirname file="${ant.file.analysis-module-build}" property="analysis.dir"/>
+
+  <property name="build.dir" 
+        location="${analysis.dir}/../build/analysis/${submodule.project.name}"/>
+
+  <import file="../module-build.xml"/>
+
+  <target name="javadocs" depends="javadocs-analyzers-common, compile-core, check-javadocs-uptodate"
+          unless="javadocs-uptodate-${name}">
+    <invoke-module-javadoc>
+      <links>
+        <link href="../analyzers-common"/>
+      </links>
+    </invoke-module-javadoc>
+  </target>
+
+</project>

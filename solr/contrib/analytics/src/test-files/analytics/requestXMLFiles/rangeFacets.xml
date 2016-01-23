@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<analyticsRequestEnvelope stats="true" olap="true">
+   <analyticsRequest>
+     <name>regular int</name>
+     
+     <statistic>
+       <expression>mean(int(int_id))</expression>
+       <name>mean</name>
+     </statistic>
+     <statistic>
+       <expression>sum(int(int_id))</expression>
+       <name>sum</name>
+     </statistic>
+     <statistic>
+       <expression>median(int(int_id))</expression>
+       <name>median</name>
+     </statistic>
+     <statistic>
+       <expression>count(int(int_id))</expression>
+       <name>count</name>
+     </statistic>
+     <statistic>
+       <expression>sumofsquares(int(int_id))</expression>
+       <name>sumOfSquares</name>
+     </statistic>
+     
+     <rangeFacet hardend="false">
+       <field>long_ld</field>
+       <start>5</start>
+       <end>30</end>
+       <gap>5</gap>
+       <includeBoundary>lower</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+     <rangeFacet hardend="false">
+       <field>double_dd</field>
+       <start>3</start>
+       <end>39</end>
+       <gap>7</gap>
+       <includeBoundary>upper</includeBoundary>
+       <includeBoundary>outer</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+     <rangeFacet hardend="false">
+       <field>date_dtd</field>
+       <start>1007-01-01T23:59:59Z</start>
+       <end>1044-01-01T23:59:59Z</end>
+       <gap>+7YEARS</gap>
+       <includeBoundary>lower</includeBoundary>
+       <includeBoundary>edge</includeBoundary>
+       <includeBoundary>outer</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>regular float</name>
+     
+     <statistic>
+       <expression>mean(float(float_fd))</expression>
+       <name>mean</name>
+     </statistic>
+     <statistic>
+       <expression>sum(float(float_fd))</expression>
+       <name>sum</name>
+     </statistic>
+     <statistic>
+       <expression>median(float(float_fd))</expression>
+       <name>median</name>
+     </statistic>
+     <statistic>
+       <expression>count(float(float_fd))</expression>
+       <name>count</name>
+     </statistic>
+     <statistic>
+       <expression>sumofsquares(float(float_fd))</expression>
+       <name>sumOfSquares</name>
+     </statistic>
+     
+     <rangeFacet hardend="false">
+       <field>long_ld</field>
+       <start>0</start>
+       <end>29</end>
+       <gap>4</gap>
+       <includeBoundary>all</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+     <rangeFacet hardend="false">
+       <field>double_dd</field>
+       <start>4</start>
+       <end>47</end>
+       <gap>11</gap>
+       <includeBoundary>edge</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+     <rangeFacet hardend="false">
+       <field>date_dtd</field>
+       <start>1004-01-01T23:59:59Z</start>
+       <end>1046-01-01T23:59:59Z</end>
+       <gap>+5YEARS</gap>
+       <includeBoundary>upper</includeBoundary>
+       <includeBoundary>edge</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>hardend int</name>
+     
+     <statistic>
+       <expression>mean(int(int_id))</expression>
+       <name>mean</name>
+     </statistic>
+     <statistic>
+       <expression>sum(int(int_id))</expression>
+       <name>sum</name>
+     </statistic>
+     <statistic>
+       <expression>median(int(int_id))</expression>
+       <name>median</name>
+     </statistic>
+     <statistic>
+       <expression>count(int(int_id))</expression>
+       <name>count</name>
+     </statistic>
+     <statistic>
+       <expression>sumofsquares(int(int_id))</expression>
+       <name>sumOfSquares</name>
+     </statistic>
+     
+     <rangeFacet hardend="true">
+       <field>long_ld</field>
+       <start>5</start>
+       <end>30</end>
+       <gap>5</gap>
+       <includeBoundary>lower</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+     <rangeFacet hardend="true">
+       <field>double_dd</field>
+       <start>3</start>
+       <end>39</end>
+       <gap>7</gap>
+       <includeBoundary>upper</includeBoundary>
+       <includeBoundary>outer</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+     <rangeFacet hardend="true">
+       <field>date_dtd</field>
+       <start>1007-01-01T23:59:59Z</start>
+       <end>1044-01-01T23:59:59Z</end>
+       <gap>+7YEARS</gap>
+       <includeBoundary>lower</includeBoundary>
+       <includeBoundary>edge</includeBoundary>
+       <includeBoundary>outer</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>hardend float</name>
+     
+     <statistic>
+       <expression>mean(float(float_fd))</expression>
+       <name>mean</name>
+     </statistic>
+     <statistic>
+       <expression>sum(float(float_fd))</expression>
+       <name>sum</name>
+     </statistic>
+     <statistic>
+       <expression>median(float(float_fd))</expression>
+       <name>median</name>
+     </statistic>
+     <statistic>
+       <expression>count(float(float_fd))</expression>
+       <name>count</name>
+     </statistic>
+     <statistic>
+       <expression>sumofsquares(float(float_fd))</expression>
+       <name>sumOfSquares</name>
+     </statistic>
+     
+     <rangeFacet hardend="true">
+       <field>long_ld</field>
+       <start>0</start>
+       <end>29</end>
+       <gap>4</gap>
+       <includeBoundary>all</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+     <rangeFacet hardend="true">
+       <field>double_dd</field>
+       <start>4</start>
+       <end>47</end>
+       <gap>11</gap>
+       <includeBoundary>edge</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+     <rangeFacet hardend="true">
+       <field>date_dtd</field>
+       <start>1004-01-01T23:59:59Z</start>
+       <end>1046-01-01T23:59:59Z</end>
+       <gap>+5YEARS</gap>
+       <includeBoundary>upper</includeBoundary>
+       <includeBoundary>edge</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>multigap int</name>
+     
+     <statistic>
+       <expression>mean(int(int_id))</expression>
+       <name>mean</name>
+     </statistic>
+     <statistic>
+       <expression>sum(int(int_id))</expression>
+       <name>sum</name>
+     </statistic>
+     <statistic>
+       <expression>median(int(int_id))</expression>
+       <name>median</name>
+     </statistic>
+     <statistic>
+       <expression>count(int(int_id))</expression>
+       <name>count</name>
+     </statistic>
+     <statistic>
+       <expression>sumofsquares(int(int_id))</expression>
+       <name>sumOfSquares</name>
+     </statistic>
+     
+     <rangeFacet hardend="false">
+       <field>long_ld</field>
+       <start>5</start>
+       <end>30</end>
+       <gap>4</gap>
+       <gap>2</gap>
+       <gap>6</gap>
+       <gap>3</gap>
+       <includeBoundary>lower</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+     <rangeFacet hardend="false">
+       <field>double_dd</field>
+       <start>3</start>
+       <end>39</end>
+       <gap>3</gap>
+       <gap>1</gap>
+       <gap>7</gap>
+       <includeBoundary>upper</includeBoundary>
+       <includeBoundary>outer</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+     <rangeFacet hardend="false">
+       <field>date_dtd</field>
+       <start>1007-01-01T23:59:59Z</start>
+       <end>1044-01-01T23:59:59Z</end>
+       <gap>+2YEARS</gap>
+       <gap>+7YEARS</gap>
+       <includeBoundary>lower</includeBoundary>
+       <includeBoundary>edge</includeBoundary>
+       <includeBoundary>outer</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>multigap float</name>
+     
+     <statistic>
+       <expression>mean(float(float_fd))</expression>
+       <name>mean</name>
+     </statistic>
+     <statistic>
+       <expression>sum(float(float_fd))</expression>
+       <name>sum</name>
+     </statistic>
+     <statistic>
+       <expression>median(float(float_fd))</expression>
+       <name>median</name>
+     </statistic>
+     <statistic>
+       <expression>count(float(float_fd))</expression>
+       <name>count</name>
+     </statistic>
+     <statistic>
+       <expression>sumofsquares(float(float_fd))</expression>
+       <name>sumOfSquares</name>
+     </statistic>
+     
+     <rangeFacet hardend="false">
+       <field>long_ld</field>
+       <start>0</start>
+       <end>29</end>
+       <gap>1</gap>
+       <gap>4</gap>
+       <includeBoundary>all</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+     <rangeFacet hardend="false">
+       <field>double_dd</field>
+       <start>4</start>
+       <end>47</end>
+       <gap>2</gap>
+       <gap>3</gap>
+       <gap>11</gap>
+       <includeBoundary>edge</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+     <rangeFacet hardend="false">
+       <field>date_dtd</field>
+       <start>1004-01-01T23:59:59Z</start>
+       <end>1046-01-01T23:59:59Z</end>
+       <gap>+4YEARS</gap>
+       <gap>+5YEARS</gap>
+       <includeBoundary>upper</includeBoundary>
+       <includeBoundary>edge</includeBoundary>
+       <otherRange>all</otherRange>
+     </rangeFacet>
+   </analyticsRequest>
+</analyticsRequestEnvelope>

@@ -1,0 +1,41 @@
+<dataConfig>
+  <dataSource name="hsqldb" driver="org.hsqldb.jdbcDriver" url="jdbc:hsqldb:mem:." />
+  <document name="dih_end_to_end">
+    <entity 
+      name="People" 
+      processor="SqlEntityProcessor"
+      dataSource="hsqldb" 
+      query="SELECT ID, NAME, COUNTRY_CODES FROM PEOPLE"
+      transformer="RegexTransformer"
+    >
+      <field column="ID" name="id" />
+      <field column="COUNTRY_CODE" sourceColName="COUNTRY_CODES" splitBy="," />
+ 
+<!-- 
+ Instead of using 'cachePk'/'cacheLookup' as done below, we could have done:
+  where="CODE=People.COUNTRY_CODE"
+--> 
+      <entity 
+        name="Countries"
+        processor="SqlEntityProcessor"
+        dataSource="hsqldb" 
+        cacheImpl="SortedMapBackedCache"
+        cacheKey="CODE"
+        cacheLookup="People.COUNTRY_CODE"
+        
+        query="SELECT CODE, COUNTRY_NAME FROM COUNTRIES"
+      >
+        <field column="CODE" name="DO_NOT_INDEX" />
+      </entity>
+         
+      <entity 
+        name="Sports"
+        processor="SqlEntityProcessor"
+        dataSource="hsqldb"               
+        query="SELECT PERSON_ID, SPORT_NAME FROM PEOPLE_SPORTS WHERE PERSON_ID=${People.ID}"
+      />
+
+    </entity>
+  </document>
+</dataConfig>
+         

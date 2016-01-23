@@ -1,0 +1,99 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<div id="segments">  
+  <div class="clearfix">
+    
+    <div class="block fieldlist" id="statistics">
+      
+      <h2><span>Segments</span></h2>
+            <p id="auto-refresh"><a ng-click="toggleAutoRefresh()" ng-class="{on:autorefresh}">Auto-Refresh</a></p>
+      <a class="reload" ng-click="refresh()"><span>reload</span></a>
+      
+      <div class="message-container">
+            <div class="message"></div>
+          </div>
+  
+          <div class="content">            
+        
+          <div id="result">
+         
+            <div id="response">
+        
+              <div class="segments-holder">
+      
+                 <ul>
+                             <li>
+                                 <dl class="clearfix" style="width:100%;">
+                                     <dt>
+                                     <div>Size</div>
+                                     </dt>
+                                     <dd>
+                                         <div class="start">0</div>
+                                         <div class="w5" ng-repeat="x in xaxis">
+                                             <span ng-show="x&gt;0.001">{{x.value}}</span>
+                                             <span ng-hide="x&gt;0.001">&nbsp;</span>
+                                         </div>
+                                         <div class="end">{{segmentMB | number}} MB</div>
+                                     </dd>
+                                 </dl>
+                             </li>
+                             <li ng-repeat="segment in segments">
+                                 <dl class="clearfix" ng-style="{width: segment.totalSize+'%'}">
+                                     <dt>
+                                     <div>{{ segment.name }}</div>
+                                     </dt>
+                                     <dd>
+                                         <div class="live" ng-class="{'merge-candidate':segment.mergeCandidate}"
+                                              ng-style="{width: segment.aliveDocSize+'%'}">&nbsp;</div>
+                                         <div class="tooltip">
+                                             <div>Segment <b>{{segment.name}}</b>:</div>
+                                             <div class="label">#docs:</div>
+                                             <div>{{ segment.size | number }}</div>
+                                             <div class="label">#dels:</div>
+                                             <div>{{ segment.delCount | number }}</div>
+                                             <div class="label">size:</div>
+                                             <div>{{ segment.sizeInBytes | number }} bytes</div>
+                                             <div class="label">age:</div>
+                                             <div>{{ segment.age }}</div>
+                                             <div class="label">source:</div>
+                                             <div>{{ segment.source }}</div>
+                                         </div>
+                                         <div class="deleted" ng-show="segment.deletedDocSize"
+                                              style="width: {{ segment.deletedDocSize }}%; margin-left:{{ segment.aliveDocSize}}%;">
+                                             &nbsp;</div>
+                                     </dd>
+                                 </dl>
+                             </li>
+                             <li>
+                                 <dl>
+                                     <dt></dt>
+                                     <dd>Deletions: {{ deletionsPercentage }}%</dd>
+                                 </dl>
+                             </li>
+                         </ul>
+        
+               </div>
+            
+            </div>
+            
+        </div>
+          </div>
+    </div>
+    
+  </div>  
+
+</div>

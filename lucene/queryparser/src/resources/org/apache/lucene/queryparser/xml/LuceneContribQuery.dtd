@@ -1,0 +1,226 @@
+<!--	
+	This DTD builds on the <a href="LuceneCoreQuery.dtd.html">core Lucene XML syntax</a> and adds support for features found in the "contrib" section of the Lucene project.
+	
+	CorePlusExtensionsParser.java is the Java class that encapsulates this parser behaviour.
+
+	
+	The features added are:
+	<ul>
+	<li><a href="#LikeThisQuery">LikeThisQuery</a></li>
+	   Support for querying using large amounts of example text indicative of the users' general area of interest
+	<li><a href="#FuzzyLikeThisQuery">FuzzyLikeThisQuery</a></li>
+	   A style of fuzzy query which automatically looks for fuzzy variations on only the "interesting" terms 
+	<li><a href="#BooleanFilter">BooleanFilter</a></li>
+	   Is to Filters what core Lucene's BooleanQuery is to Queries - allows mixing of clauses using Boolean logic
+	<li><a href="#TermsFilter">TermsFilter</a></li>
+	   Constructs a filter from an arbitrary set of terms (unlike <a href="#RangeFilter">RangeFilter</a> which requires a contiguous range of terms)
+	<li><a href="#DuplicateFilter">DuplicateFilter</a></li>
+	   Removes duplicated documents from results where "duplicate" means documents share a value for a particular field (e.g. a primary key)
+	<li><a href="#BoostingQuery">BoostingQuery</a></li>
+	   Influence score of a query's matches in a subtle way which can't be achieved using BooleanQuery
+	</ul>
+	@title Contrib Lucene
+-->
+<!-- @hidden include the core DTD -->
+<!ENTITY % coreParserDTD SYSTEM "LuceneCoreQuery.dtd" >
+
+
+<!-- @hidden Allow for extensions -->
+<!ENTITY % extendedSpanQueries2 " " >
+<!ENTITY % extendedQueries2 " " >
+<!ENTITY % extendedFilters2 " " >
+
+
+<!ENTITY % extendedQueries1 "|LikeThisQuery|BoostingQuery|FuzzyLikeThisQuery%extendedQueries2;%extendedSpanQueries2;" >
+<!ENTITY % extendedFilters1 "|TermsFilter|BooleanFilter|DuplicateFilter%extendedFilters2;" >
+
+
+%coreParserDTD;
+
+<!--
+Performs fuzzy matching on "significant" terms in fields. Improves on "LikeThisQuery" by allowing for fuzzy variations of supplied fields.
+Improves on FuzzyQuery by rewarding all fuzzy variants of a term with the same IDF rather than default fuzzy behaviour which ranks rarer
+	variants (typically misspellings) more highly. This can be a useful default search mode for processing user input where the end user
+	is not expected to know about the standard query operators for fuzzy, boolean or phrase logic found in UserQuery
+	@example 
+	        <em>Search for information about the Sumitomo bank, where the end user has mis-spelt the name</em>
+	        %	          
+            <FuzzyLikeThisQuery>
+                <Field fieldName="contents">
+		             Sumitimo bank
+	            </Field>
+            </FuzzyLikeThisQuery>
+	         %	
+-->
+<!ELEMENT FuzzyLikeThisQuery (Field)*>
+<!-- Optional boost for matches on this query. Values > 1 -->
+<!ATTLIST FuzzyLikeThisQuery boost CDATA "1.0">
+<!-- Limits the total number of terms selected from the provided text plus the selected "fuzzy" variants -->
+<!ATTLIST FuzzyLikeThisQuery maxNumTerms CDATA "50">
+<!-- Ignore "Term Frequency" - a boost factor which rewards multiple occurences of the same term in a document -->
+<!ATTLIST FuzzyLikeThisQuery ignoreTF (true|false) "false">
+<!-- A field used in a FuzzyLikeThisQuery -->
+<!ELEMENT Field (#PCDATA)>
+<!-- Controls the level of similarity required for fuzzy variants where 1 is identical and 0.5 is that the variant contains 
+	half of the original's characters in the same order. Lower values produce more results but may take longer to execute due to
+	additional IO required to read matching document ids-->
+<!ATTLIST Field minSimilarity CDATA "2.0">
+<!-- Controls the minimum number of characters at the start of fuzzy variant words that must exactly match the original.
+ -->
+<!ATTLIST Field prefixLength CDATA "1">
+<!-- fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute -->	
+<!ATTLIST Field fieldName CDATA #IMPLIED>
+
+
+
+<!--
+	Cherry-picks "significant" terms from the example child text and queries using these words. By only using significant (read: rare) terms the
+	performance cost of the query is substantially reduced and large bodies of text can be used as example content.
+	@example 
+	        <em>Use a block of text as an example of the type of content to be found, ignoring the "Reuters" word which
+	       appears commonly in the index.</em>
+	        %
+            <LikeThisQuery percentTermsToMatch="5" stopWords="Reuters">
+                IRAQI TROOPS REPORTED PUSHING BACK IRANIANS Iraq said today its troops were pushing Iranian forces out of 
+                positions they had initially occupied when they launched a new offensive near the southern port of 
+                Basra early yesterday.     A High Command communique said Iraqi troops had won a significant victory 
+                and were continuing to advance.     Iraq said it had foiled a three-pronged thrust some 10 km 
+                (six miles) from Basra, but admitted the Iranians had occupied ground held by the Mohammed al-Qassem 
+                unit, one of three divisions attacked.     The communique said Iranian Revolutionary Guards were under 
+                assault from warplanes, helicopter gunships, heavy artillery and tanks.     "Our forces are continuing 
+                their advance until they purge the last foothold" occupied by the Iranians, it said.     
+                (Iran said its troops had killed or wounded more than 4,000 Iraqis and were stabilising their new positions.)     
+                The Baghdad communique said Iraqi planes also destroyed oil installations at Iran's southwestern Ahvaz field 
+                during a raid today. It denied an Iranian report that an Iraqi jet was shot down.     
+                Iraq also reported a naval battle at the northern tip of the Gulf. Iraqi naval units and forces defending an 
+                offshore terminal sank six Iranian out of 28 Iranian boats attempting to attack an offshore terminal, 
+                the communique said.      Reuters 3;
+            </LikeThisQuery>	         
+	        %	
+	-->
+<!ELEMENT LikeThisQuery (#PCDATA)>
+<!-- Optional boost for matches on this query. Values > 1 -->
+<!ATTLIST LikeThisQuery boost CDATA "1.0">
+<!-- Comma delimited list of field names -->
+<!ATTLIST LikeThisQuery fieldNames CDATA #IMPLIED>
+<!-- a list of stop words - analyzed to produce stop terms -->
+<!ATTLIST LikeThisQuery stopWords CDATA #IMPLIED>
+<!-- controls the maximum number of words shortlisted for the query. The higher the number the slower the response due to more disk reads required -->
+<!ATTLIST LikeThisQuery maxQueryTerms CDATA "20">
+<!-- Controls how many times a term must appear in the example text before it is shortlisted for use in the query -->
+<!ATTLIST LikeThisQuery minTermFrequency CDATA "1">
+<!-- A quality control that can be used to limit the number of results to those documents matching a certain percentage of the shortlisted query terms.
+	Values must be between 1 and 100-->
+<!ATTLIST LikeThisQuery percentTermsToMatch CDATA "30">
+
+<!--
+	Requires matches on the "Query" element and optionally boosts by any matches on the "BoostQuery".
+	Unlike a regular BooleanQuery the boost can be less than 1 to produce a subtractive rather than additive result
+	on the match score. 
+	@example <em>Find documents about banks, preferably related to mergers, and preferably not about "World bank"</em>
+    %
+	<BoostingQuery>
+      <Query>
+         <BooleanQuery fieldName="contents">
+           <Clause occurs="should">
+              <TermQuery>merger</TermQuery>
+           </Clause>
+           <Clause occurs="must">
+              <TermQuery>bank</TermQuery>
+           </Clause>
+         </BooleanQuery>	
+      </Query>
+      <BoostQuery boost="0.01">
+         <UserQuery>"world bank"</UserQuery>
+      </BoostQuery>
+    </BoostingQuery>
+	%
+	
+-->	
+<!ELEMENT BoostingQuery (Query,BoostQuery)>
+<!-- Optional boost for matches on this query. Values > 1 -->
+<!ATTLIST BoostingQuery boost CDATA "1.0">
+
+<!--
+	Child element of BoostingQuery used to contain the choice of Query which is used for boosting purposes
+-->	
+<!ELEMENT BoostQuery (%queries;)>
+<!-- Optional boost for matches on this query. A boost of >0 but <1 
+	effectively demotes results from Query that match this BoostQuery.  	
+	-->
+<!ATTLIST BoostQuery boost CDATA "1.0">
+
+
+
+<!-- Removes duplicated documents from results where "duplicate" means documents share a value for a particular field such as a primary key
+	@example <em>Find the latest version of each web page that mentions "Lucene"</em>
+	%
+    <FilteredQuery>
+      <Query>
+         <TermQuery fieldName="text">lucene</TermQuery>
+      </Query>
+	  <Filter>
+		<DuplicateFilter fieldName="url" keepMode="last"/>
+	  </Filter>	
+    </FilteredQuery>	
+	%	
+	-->
+<!ELEMENT DuplicateFilter EMPTY>
+<!-- fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute -->	
+<!ATTLIST DuplicateFilter fieldName CDATA #IMPLIED>
+<!-- Determines if the first or last document occurence is the one to return when presented with duplicated field values -->	
+<!ATTLIST DuplicateFilter keepMode (first | last) "first">
+<!-- Controls the choice of process used to produce the filter - "full" mode identifies only non-duplicate documents with the chosen field 
+	while "fast" mode may perform faster but will also mark documents <em>without</em> the field as valid. The former approach starts by 
+	assuming every document is a duplicate then finds the "master" documents to keep while the latter approach assumes all documents are 
+	unique and 	unmarks those documents that are a copy. 
+	-->	
+<!ATTLIST DuplicateFilter processingMode (full | fast) "full">
+
+
+
+
+<!-- Processes child text using a field-specific choice of Analyzer to produce a set of terms that are then used as a filter.
+	@example <em>Find documents talking about Lucene written on a Monday or a Friday</em>
+	%
+    <FilteredQuery>
+      <Query>
+         <TermQuery fieldName="text">lucene</TermQuery>
+      </Query>
+	<Filter>
+		<TermsFilter fieldName="dayOfWeek">monday friday</TermsFilter> 
+	</Filter>	
+    </FilteredQuery>	
+	%
+	
+	-->
+<!ELEMENT TermsFilter (#PCDATA)>
+<!-- fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute -->	
+<!ATTLIST TermsFilter fieldName CDATA #IMPLIED>
+<!--
+	A Filter equivalent to BooleanQuery that applies Boolean logic to Clauses containing Filters.
+	Unlike BooleanQuery a BooleanFilter can contain a single "mustNot" clause.
+	@example <em>Find documents from the first quarter of this year or last year that are not in "draft" status</em>
+	%
+     <FilteredQuery>
+       <Query>
+           <MatchAllDocsQuery/>
+       </Query>
+       <Filter>
+        <BooleanFilter>
+          <Clause occurs="should">
+             <RangeFilter fieldName="date" lowerTerm="20070101" upperTerm="20070401"/>
+          </Clause>
+          <Clause occurs="should">
+             <RangeFilter fieldName="date" lowerTerm="20060101" upperTerm="20060401"/>
+          </Clause>
+          <Clause occurs="mustNot">
+             <TermsFilter fieldName="status">draft</TermsFilter> 
+          </Clause>
+        </BooleanFilter>
+       </Filter>
+    </FilteredQuery>
+	%
+	-->
+<!ELEMENT BooleanFilter (Clause)+>
+

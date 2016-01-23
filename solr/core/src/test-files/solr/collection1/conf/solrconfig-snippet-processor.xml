@@ -1,0 +1,6 @@
+<!-- snippet file used via xml xinclude -->
+<processor class="solr.RegexReplaceProcessorFactory">
+  <str name="fieldName">field-included</str>
+  <str name="pattern">x</str>
+  <str name="replacement">x_x</str>
+</processor>

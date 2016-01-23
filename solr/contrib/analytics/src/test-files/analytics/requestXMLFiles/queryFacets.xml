@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<analyticsRequestEnvelope stats="true" olap="true">
+   <analyticsRequest>
+     <name>int request</name>
+     
+     <statistic>
+       <expression>sum(int(int_id))</expression>
+       <name>sum</name>
+     </statistic>
+     
+     <statistic>
+       <expression>mean(int(int_id))</expression>
+       <name>mean</name>
+     </statistic>
+     
+     <statistic>
+       <expression>median(int(int_id))</expression>
+       <name>median</name>
+     </statistic>
+     
+     <statistic>
+       <expression>perc(8,int(int_id))</expression>
+       <name>perc_8</name>
+     </statistic>
+     
+     <queryFacet>
+       <name>float1</name>
+       <query>float_fd:[* TO 50]</query>
+     </queryFacet>
+     <queryFacet>
+       <name>float2</name>
+       <query>float_fd:[* TO 30]</query>
+     </queryFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>long request</name>
+     
+     <statistic>
+       <expression>sum(long(long_ld))</expression>
+       <name>sum</name>
+     </statistic>
+     
+     <statistic>
+       <expression>mean(long(long_ld))</expression>
+       <name>mean</name>
+     </statistic>
+     
+     <statistic>
+       <expression>median(long(long_ld))</expression>
+       <name>median</name>
+     </statistic>
+     
+     <statistic>
+       <expression>perc(8,long(long_ld))</expression>
+       <name>perc_8</name>
+     </statistic>
+     
+     <queryFacet>
+       <name>string</name>
+       <query>string_sd:abc1</query>
+       <query>string_sd:abc2</query>
+     </queryFacet>
+   </analyticsRequest>
+   <analyticsRequest>
+     <name>float request</name>
+     
+     <statistic>
+       <expression>sum(float(float_fd))</expression>
+       <name>sum</name>
+     </statistic>
+     
+     <statistic>
+       <expression>mean(float(float_fd))</expression>
+       <name>mean</name>
+     </statistic>
+     
+     <statistic>
+       <expression>median(float(float_fd))</expression>
+       <name>median</name>
+     </statistic>
+     
+     <statistic>
+       <expression>perc(8,float(float_fd))</expression>
+       <name>perc_8</name>
+     </statistic>
+     
+     <queryFacet>
+       <name>long and double</name>
+       <query>long_ld:[20 TO *]</query>
+       <query>long_ld:[30 TO *]</query>
+       <query>double_dd:[* TO 50]</query>
+     </queryFacet>
+   </analyticsRequest>
+</analyticsRequestEnvelope>

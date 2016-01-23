@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="solr-contrib-build" xmlns:ivy="antlib:org.apache.ivy.ant">
+  <dirname file="${ant.file.solr-contrib-build}" property="solr-contrib.dir"/>
+  <property name="build.dir" location="${solr-contrib.dir}/../build/contrib/${ant.project.name}"/>
+
+  <property name="test.lib.dir" location="test-lib"/>
+
+  <import file="../common-build.xml"/>
+
+  <target name="compile-core" depends="compile-solr-core,compile-solrj,common-solr.compile-core"/>
+
+  <dirname file="${ant.file}" property="antfile.dir"/>
+
+  <available property="contrib.has.webapp" type="dir" file="${antfile.dir}/src/webapp" />
+  <target name="add-to-webapp" if="contrib.has.webapp">
+    <copy todir="${dest}/web" failonerror="false">
+      <fileset dir="${antfile.dir}/src/webapp"/>
+    </copy>
+  </target>
+
+  <available property="contrib.has.lucene-libs" type="dir" file="${build.dir}/lucene-libs"/>
+  <target name="add-lucene-libs-to-package" if="contrib.has.lucene-libs">
+    <pathconvert property="contrib.dir">
+      <path path="${antfile.dir}"/>
+      <flattenmapper/>
+    </pathconvert>
+    <copy todir="${dest}/contrib-lucene-libs-to-package/contrib/${contrib.dir}">
+      <fileset dir="${build.dir}" includes="lucene-libs/**"/>
+    </copy>
+  </target>
+
+  <target name="resolve" depends="ivy-availability-check,ivy-fail,ivy-configure">
+    <sequential>
+      <ivy:retrieve conf="compile" type="jar,bundle" sync="${ivy.sync}" log="download-only" symlink="${ivy.symlink}"/>
+      <ivy:retrieve conf="test" type="jar,bundle,test" sync="${ivy.sync}" log="download-only" symlink="${ivy.symlink}"
+                    pattern="${test.lib.dir}/[artifact]-[revision](-[classifier]).[ext]"/>
+    </sequential>
+  </target>
+</project>

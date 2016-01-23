@@ -1,0 +1,777 @@
+/*
+
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+*/
+
+*
+{
+  background-repeat: no-repeat;
+  margin: 0;
+  padding: 0;
+}
+
+body, h1, h2, h3, h4, h5, h6, a, button, input, select, option, textarea, th, td
+{
+  color: #333;
+  font: 12px/1.6em "Lucida Grande", "DejaVu Sans", "Bitstream Vera Sans", Verdana, Arial, sans-serif;
+}
+
+body
+{
+  padding: 30px;
+  text-align: center;
+}
+
+a, button
+{
+  cursor: pointer;
+}
+
+input, select, textarea
+{
+  border: 1px solid #c0c0c0;
+  padding: 2px;
+}
+
+input[readonly=readonly]
+{
+  border-color: #f0f0f0;
+}
+
+button
+{
+  background-color: #e6e6e6;
+  background-repeat: no-repeat;
+  background-image: -webkit-gradient( linear, 0 0, 0 100%, from( #ffffff ), color-stop( 25%, #ffffff ), to( #e6e6e6 ) );
+  background-image: -webkit-linear-gradient( #ffffff, #ffffff 25%, #e6e6e6 );
+  background-image: -moz-linear-gradient( top, #ffffff, #ffffff 25%, #e6e6e6 );
+  background-image: -ms-linear-gradient( #ffffff, #ffffff 25%, #e6e6e6 );
+  background-image: -o-linear-gradient( #ffffff, #ffffff 25%, #e6e6e6 );
+  background-image: linear-gradient( #ffffff, #ffffff 25%, #e6e6e6 );
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#e6e6e6', GradientType=0 );
+  border: 1px solid #ccc;
+  border-bottom-color: #bbb;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+  -khtml-border-radius: 4px;
+  border-radius: 4px;
+  -webkit-box-shadow: inset 0 1px 0 rgba( 255, 255, 255, 0.2 ), 0 1px 2px rgba( 0, 0, 0, 0.05 );
+  -moz-box-shadow: inset 0 1px 0 rgba( 255, 255, 255, 0.2 ), 0 1px 2px rgba( 0, 0, 0, 0.05 );
+  box-shadow: inset 0 1px 0 rgba( 255, 255, 255, 0.2 ), 0 1px 2px rgba( 0, 0, 0, 0.05 );
+  color: #333;
+  cursor: pointer;
+  display: inline-block;
+  padding: 4px 7px 5px;
+  overflow: visible;
+  text-shadow: 0 1px 1px rgba( 255, 255, 255, 0.75 );
+  -webkit-transition: 0.1s linear background-image;
+  -moz-transition: 0.1s linear background-image;
+  -ms-transition: 0.1s linear background-image;
+  -o-transition: 0.1s linear background-image;
+  transition: 0.1s linear background-image;
+}
+
+button span
+{
+  background-position: 0 50%;
+  display: block;
+  padding-left: 21px;
+}
+
+button[type=submit], button.primary
+{
+  background-color: #0064cd;
+  background-repeat: repeat-x;
+  background-image: -khtml-gradient( linear, left top, left bottom, from( #049cdb ), to( #0064cd ) );
+  background-image: -moz-linear-gradient( top, #049cdb, #0064cd );
+  background-image: -ms-linear-gradient( top, #049cdb, #0064cd );
+  background-image: -webkit-gradient( linear, left top, left bottom, color-stop( 0%, #049cdb ), color-stop( 100%, #0064cd ) );
+  background-image: -webkit-linear-gradient( top, #049cdb, #0064cd );
+  background-image: -o-linear-gradient( top, #049cdb, #0064cd );
+  background-image: linear-gradient( top, #049cdb, #0064cd );
+  border-color: #0064cd #0064cd #003f81;
+  border-color: rgba( 0, 0, 0, 0.1 ) rgba( 0, 0, 0, 0.1 ) rgba( 0, 0, 0, 0.25 );
+  color: #ffffff;
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#049cdb', endColorstr='#0064cd', GradientType=0 );
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+button.success
+{
+  background-color: #57a957;
+  background-repeat: repeat-x;
+  background-image: -khtml-gradient( linear, left top, left bottom, from( #62c462 ), to( #57a957 ) );
+  background-image: -moz-linear-gradient( top, #62c462, #57a957 );
+  background-image: -ms-linear-gradient( top, #62c462, #57a957 );
+  background-image: -webkit-gradient( linear, left top, left bottom, color-stop( 0%, #62c462 ), color-stop( 100%, #57a957 ) );
+  background-image: -webkit-linear-gradient( top, #62c462, #57a957 );
+  background-image: -o-linear-gradient( top, #62c462, #57a957 );
+  background-image: linear-gradient( top, #62c462, #57a957 );
+  border-color: #57a957 #57a957 #3d773d;
+  border-color: rgba( 0, 0, 0, 0.1 ) rgba( 0, 0, 0, 0.1 ) rgba( 0, 0, 0, 0.25 );
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#62c462', endColorstr='#57a957', GradientType=0 );
+  color: #ffffff;
+  text-shadow: 0 -1px 0 rgba( 0, 0, 0, 0.25 );
+}
+
+button.warn
+{
+  background-color: #c43c35;
+  background-repeat: repeat-x;
+  background-image: -khtml-gradient( linear, left top, left bottom, from( #ee5f5b ), to( #c43c35 ) );
+  background-image: -moz-linear-gradient( top, #ee5f5b, #c43c35 );
+  background-image: -ms-linear-gradient( top, #ee5f5b, #c43c35 );
+  background-image: -webkit-gradient( linear, left top, left bottom, color-stop( 0%, #ee5f5b ), color-stop( 100%, #c43c35 ) );
+  background-image: -webkit-linear-gradient( top, #ee5f5b, #c43c35 );
+  background-image: -o-linear-gradient( top, #ee5f5b, #c43c35 );
+  background-image: linear-gradient( top, #ee5f5b, #c43c35 );
+  border-color: #c43c35 #c43c35 #882a25;
+  border-color: rgba( 0, 0, 0, 0.1 ) rgba( 0, 0, 0, 0.1 ) rgba( 0, 0, 0, 0.25 );
+  color: #ffffff;
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ee5f5b', endColorstr='#c43c35', GradientType=0 );
+  text-shadow: 0 -1px 0 rgba( 0, 0, 0, 0.25 );
+}
+
+a
+{
+  text-decoration: none;
+}
+
+pre
+{
+  color: #333;
+  text-align: left;
+}
+
+abbr
+{
+  cursor: help;
+}
+
+ul
+{
+  list-style: none;
+}
+
+.clearfix:after { clear: both; content: "."; display: block; font-size: 0; height: 0; visibility: hidden; }
+.clearfix       { display: block; }
+
+.loader
+{
+  background-image: url( ../../img/loader.gif ) !important;
+}
+
+.loader-light
+{
+  background-image: url( ../../img/loader-light.gif ) !important;
+}
+
+.universal-loader {
+  position: absolute;
+  left: -16px;
+  top: 0px;
+  width: 16px;
+  height: 16px;
+}
+
+#wrapper
+{
+  position: relative;
+  margin: 0 auto;
+  margin-bottom: 30px;
+  text-align: left;
+}
+
+#header
+{
+  padding-bottom: 10px;
+  position: fixed;
+  z-index: 42;
+}
+
+.scroll #header
+{
+  position: absolute;
+}
+
+#header #solr
+{
+  background-image: url( ../../img/solr.svg );
+  background-size: 128px;
+  display: block;
+  height: 78px;
+  width: 150px;
+}
+
+#header #solr span
+{
+  display: none;
+}
+
+#main
+{
+  min-width: 750px;
+  position: relative;
+}
+
+#main.error
+{
+  border: 0;
+  min-height: 0;
+  padding-top: 20px;
+}
+
+#main.error .message
+{
+  background-color: #f00;
+  background-image: url( ../../img/ico/construction.png );
+  background-position: 10px 50%;
+  color: #fff;
+  font-weight: bold;
+  margin-left: 150px;
+  margin-bottom: 20px;
+  padding: 10px;
+  padding-left: 35px;
+}
+
+#main.error .code
+{
+  border: 1px solid #c0c0c0;
+  padding: 5px;
+}
+
+#meta
+{
+  position: absolute;
+  bottom: -26px;
+  right: 0;
+}
+
+#meta li
+{
+  float: left;
+}
+
+#meta li a
+{
+  background-position: 10px 50%;
+  display: block;
+  height: 25px;
+  line-height: 25px;
+  padding-left: 31px;
+  padding-right: 10px;
+}
+
+#meta li a:hover
+{
+  background-color: #f0f0f0;
+}
+
+#meta .documentation a { background-image: url( ../../img/ico/document-text.png ); }
+#meta .issues a { background-image: url( ../../img/ico/bug.png ); }
+#meta .irc a { background-image: url( ../../img/ico/users.png ); }
+#meta .mailinglist a { background-image: url( ../../img/ico/mail.png ); }
+#meta .wiki-query-syntax a { background-image: url( ../../img/ico/script-code.png ); }
+
+#environment
+{
+  background-image: url( ../../img/ico/box.png );
+  background-position: 5px 50%;
+  display: none;
+  font-weight: bold;
+  margin-top: 10px;
+  padding: 5px 10px;
+  padding-left: 26px;
+}
+
+.has-environment #environment
+{
+  display: block;
+}
+
+#environment.prod
+{
+  background-color: #c37f7f;
+  color: #fff;
+}
+
+#environment.test
+{
+  background-color: #f5f5b2;
+}
+
+#environment.dev
+{
+  background-color: #cce7cc;
+}
+
+.header-message
+{
+  border: 1px solid #f00;
+  margin-left: 150px;
+  margin-bottom: 20px;
+}
+
+.header-message h2,
+.header-message ul,
+.header-message p
+{
+  padding: 10px;
+}
+
+.header-message h2
+{
+  background-color: #f00;
+  color: #fff;
+  font-weight: bold;
+}
+
+.header-message p
+{
+  color: #c0c0c0;
+  padding-top: 0;
+}
+
+#loading
+#http-exception
+{
+  display: none;
+}
+
+.exception
+{
+  background-color: #f00;
+  background-image: url( ../../img/ico/construction.png );
+  background-position: 10px 50%;
+  color: #fff;
+  font-weight: bold;
+  margin-bottom: 20px;
+  padding: 10px;
+  padding-left: 35px;
+}
+
+#content-wrapper
+{
+  margin-left: 150px;
+  border: 1px solid #c0c0c0;
+  min-height: 500px;
+}
+
+#content
+{
+  padding: 10px;
+}
+
+#content > .loader
+{
+  background-position: 0 50%;
+  padding-left: 21px;
+}
+
+#content iframe
+{
+  border: 0;
+  display: block;
+  min-height: 400px;
+  width: 100%;
+}
+
+#content .block
+{
+  margin-bottom: 10px;
+}
+
+#content .block h2
+{
+  background-color: #fafafa;
+  background-position: 5px 50%;
+  border-bottom: 1px solid #f0f0f0;
+  font-weight: bold;
+  padding: 5px;
+  padding-left: 26px;
+}
+
+#content .block.disabled,
+#content .block.disabled h2
+{
+  color: #c0c0c0;
+}
+
+#content .block .message,
+#content .block .content
+{
+  padding: 5px;
+}
+
+/* syntax */
+
+pre.syntax
+{
+  overflow: auto;
+}
+
+pre.syntax code
+{
+  display: block;
+  color: #000;
+}
+
+pre.syntax .comment,
+pre.syntax .template_comment,
+pre.syntax .diff .header,
+pre.syntax .javadoc
+{
+  color: #998;
+  font-style: italic;
+}
+
+pre.syntax .keyword,
+pre.syntax .css .rule .keyword,
+pre.syntax .winutils,
+pre.syntax .javascript .title,
+pre.syntax .lisp .title,
+pre.syntax .subst
+{
+  color: #000;
+  font-weight: bold;
+}
+
+pre.syntax .number,
+pre.syntax .hexcolor
+{
+  color: #40a070;
+}
+
+pre.syntax.language-json .number
+{
+  color: blue;
+}
+
+pre.syntax.language-json .literal
+{
+  color: firebrick;
+}
+
+pre.syntax .string,
+pre.syntax .tag .value,
+pre.syntax .phpdoc,
+pre.syntax .tex .formula
+{
+  color: #d14;
+}
+
+pre.syntax.language-json .string
+{
+  color: green;
+}
+
+pre.syntax .title,
+pre.syntax .id
+{
+  color: #900;
+  font-weight: bold;
+}
+
+pre.syntax .javascript .title,
+pre.syntax .lisp .title,
+pre.syntax .subst
+{
+  font-weight: normal;
+}
+
+pre.syntax .class .title,
+pre.syntax .tex .command
+{
+  color: #458;
+  font-weight: bold;
+}
+
+pre.syntax .tag,
+pre.syntax .css .keyword,
+pre.syntax .html .keyword,
+pre.syntax .tag .title,
+pre.syntax .django .tag .keyword
+{
+  color: #000080;
+  font-weight: normal;
+}
+
+pre.syntax .attribute,
+pre.syntax .variable,
+pre.syntax .instancevar,
+pre.syntax .lisp .body
+{
+  color: #008080;
+}
+
+pre.syntax.language-json .attribute
+{
+  color: black;
+  font-weight: bold;
+}
+
+pre.syntax .regexp
+{
+  color: #009926;
+}
+
+pre.syntax .class
+{
+  color: #458;
+  font-weight: bold;
+}
+
+pre.syntax .symbol,
+pre.syntax .ruby .symbol .string,
+pre.syntax .ruby .symbol .keyword,
+pre.syntax .ruby .symbol .keymethods,
+pre.syntax .lisp .keyword,
+pre.syntax .tex .special
+{
+  color: #990073;
+}
+
+pre.syntax .builtin,
+pre.syntax .built_in,
+pre.syntax .lisp .title
+{
+  color: #0086b3;
+}
+
+pre.syntax .preprocessor,
+pre.syntax .pi,
+pre.syntax .doctype,
+pre.syntax .shebang,
+pre.syntax .cdata
+{
+  color: #999;
+  font-weight: bold;
+}
+
+pre.syntax .deletion
+{
+  background: #fdd;
+}
+
+pre.syntax .addition
+{
+  background: #dfd;
+}
+
+pre.syntax .diff .change
+{
+  background: #0086b3;
+}
+
+pre.syntax .chunk
+{
+  color: #aaa;
+}
+
+pre.syntax .tex .formula
+{
+  opacity: 0.5;
+}
+
+#content .tree li, 
+#content .tree ins
+{
+  background-color: transparent;
+  background-image: url( ../../img/tree.png );
+  background-repeat: no-repeat; 
+}
+
+#content .tree li
+{
+  background-position: -54px 0;
+  background-repeat: repeat-y;
+  line-height: 22px;
+}
+
+#content .tree li.jstree-last
+{
+  background:transparent;
+}
+
+#content .tree .jstree-open > ins
+{
+  background-position: -36px 0;
+}
+
+#content .tree .jstree-closed > ins
+{
+  background-position: -18px 0;
+}
+
+#content .tree .jstree-leaf > ins
+{
+  background-position: 0 0;
+}
+
+#content .tree .jstree-hovered
+{
+  background:#e7f4f9; border:1px solid #d8f0fa; padding:0 2px 0 1px;
+}
+
+#content .tree .jstree-clicked
+{
+  background:#beebff; border:1px solid #99defd; padding:0 2px 0 1px;
+}
+
+#content .tree a.active
+{
+  background-color: #f0f0f0;
+  color: #00f;
+}
+
+#content .tree a .jstree-icon
+{
+  background-image: url( ../../img/ico/folder.png );
+}
+
+#content .tree .jstree-leaf a .jstree-icon
+{
+  background-image: url( ../../img/ico/document-text.png );
+}
+
+#content .tree .jstree-search
+{
+  font-style:italic;
+}
+
+#content .tree a.jstree-search
+{
+  color:aqua;
+}
+
+#connection-box
+{
+  display: none;
+}
+
+#connection-status-modal
+{
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  background-color: #e6e6e6;
+  opacity: 0.5;
+  z-index: 100;
+}
+
+#connection-status-recovered:
+{
+  z-index:102;
+}
+
+.connection-status
+{
+  position: absolute;
+  left: 200px;
+  right: 200px;
+  top: 40%;
+  height: 75px;
+  border: 1px solid #f00;
+  padding: 30px;
+  background-color: #fff;
+  opacity: 1;
+  z-index: 101;
+}
+
+.connection-status p
+{
+  background-image: url( ../../img/ico/network-status-busy.png );
+  background-position: 0 50%;
+  color: #800;
+  padding-left: 26px;
+}
+
+#connection-status-recovered p
+{
+  color: #080;
+  background-image: url( ../../img/ico/network-status.png );
+}
+
+#content .address-bar
+{
+  margin-bottom: 10px;
+  background-image: url( ../../img/ico/ui-address-bar.png );
+  background-position: 5px 50%;
+  border: 1px solid #f0f0f0;
+  box-shadow: 1px 1px 0 #f0f0f0;
+  -moz-box-shadow: 1px 1px 0 #f0f0f0;
+  -webkit-box-shadow: 1px 1px 0 #f0f0f0;
+  color: #c0c0c0;
+  display: block;
+  overflow: hidden;
+  padding: 5px;
+  padding-left: 26px;
+  white-space: nowrap;
+}
+
+#content .address-bar:focus,
+#content .address-bar:hover
+{
+  border-color: #c0c0c0;
+  box-shadow: 1px 1px 0 #d8d8d8;
+  -moz-box-shadow: 1px 1px 0 #d8d8d8;
+  -webkit-box-shadow: 1px 1px 0 #d8d8d8;
+  color: #333;
+}
+
+.exception .show-exception {
+  margin-top: 4px;
+  display: block;
+  position: absolute;
+  right: 10px;
+  top: 7px;
+  color: #fff;
+}
+
+#exception .show-exception a:hover {
+  color: #333;
+}
+
+.other-ui-link {
+  margin: 0px;
+  position: absolute;
+  right: 0px;
+  top: -20px;
+}
+
+.other-ui-link span,
+.new-ui-warning span.help {
+  background-image: url( ../../img/ico/information-white.png );
+  right: 0px;
+  padding-left: 16px;
+}
+
+.new-ui-warning {
+  position: absolute;
+  left: 150px;
+  top: -20px;
+  align: center;
+  color: red;
+  font-weight: bold;
+}
+.new-ui-warning a.ul {
+  color: red;
+  font-weight: bold;
+  text-decoration: underline;
+}

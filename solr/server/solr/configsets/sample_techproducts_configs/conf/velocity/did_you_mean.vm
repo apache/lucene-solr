@@ -1,0 +1,11 @@
+#**
+ *  Hyperlinked spelling suggestions in results list
+ *#
+
+#set($collations = $response.response.spellcheck.collations.getAll("collation"))
+#if($collations.size() > 0)
+  Did you mean
+  #foreach($collation in $collations)
+    <a href="#{url_for_home}#{lensNoQ}&q=$esc.url($collation.collationQuery)">$esc.html($collation.collationQuery)</a> ($collation.hits)?
+  #end
+#end

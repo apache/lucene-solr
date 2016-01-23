@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+        http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="solr-map-reduce" default="default">
+
+  <description>
+    Solr map-reduce index construction.
+  </description>
+
+  <!-- <property name="name" value="MapReduceIndexerTool" /> -->
+
+  <import file="../contrib-build.xml"/>
+  
+  <solr-contrib-uptodate name="extraction"
+                         property="solr-extraction.uptodate" 
+                         classpath.property="solr-cell.jar"/>
+  
+  <target name="compile-solr-extraction" unless="solr-extraction.uptodate">
+   <ant dir="${common-solr.dir}/contrib/extraction" target="compile-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  
+  <solr-contrib-uptodate name="morphlines-core" 
+                         property="solr-morphlines-core.uptodate"/>
+  
+  <target name="compile-morphlines-core" unless="solr-morphlines-core.uptodate">
+   <ant dir="${common-solr.dir}/contrib/morphlines-core" target="compile-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  
+  <solr-contrib-uptodate name="morphlines-cell" 
+                         property="solr-morphlines-cell.uptodate"/>
+  
+  <target name="compile-morphlines-cell" unless="solr-morphlines-cell.uptodate">
+   <ant dir="${common-solr.dir}/contrib/morphlines-cell" target="compile-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  
+  <target name="resolve-extraction-libs">
+    <ant dir="${common-solr.dir}/contrib/extraction" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <target name="resolve-morphlines-core-libs">
+    <ant dir="${common-solr.dir}/contrib/morphlines-core" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  
+  <target name="resolve-morphlines-cell-libs">
+    <ant dir="${common-solr.dir}/contrib/morphlines-cell" target="resolve" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+
+  <path id="classpath.additions">
+    <pathelement location="${common-solr.dir}/build/contrib/solr-cell/classes/java"/>
+    <fileset dir="${common-solr.dir}/contrib/extraction/lib" excludes="${common.classpath.excludes}"/>
+    <pathelement location="${common-solr.dir}/build/contrib/solr-morphlines-core/classes/java"/>
+    <fileset dir="${common-solr.dir}/contrib/morphlines-core/lib" excludes="${common.classpath.excludes}"/>
+    <pathelement location="${common-solr.dir}/build/contrib/solr-morphlines-cell/classes/java"/>
+    <fileset dir="${common-solr.dir}/contrib/morphlines-cell/lib" excludes="${common.classpath.excludes}"/>
+  </path>
+
+  <path id="classpath">
+    <path refid="solr.base.classpath"/>
+    <path refid="classpath.additions"/>
+  </path>
+  
+  <path id="test.classpath">
+    <path refid="solr.test.base.classpath"/>
+    <path refid="classpath.additions"/>
+    <pathelement location="${common-solr.dir}/build/contrib/solr-morphlines-core/classes/test"/>
+    <pathelement location="${common-solr.dir}/contrib/morphlines-core/src/test-files"/>
+    <fileset dir="${common-solr.dir}/contrib/morphlines-core/test-lib" excludes="${common.classpath.excludes}"/>
+  </path>
+
+  <path id="javadoc.classpath">
+    <path refid="junit-path"/>
+    <path refid="classpath"/>
+    <pathelement location="${ant.home}/lib/ant.jar"/>
+    <fileset dir=".">
+      <exclude name="build/**/*.jar"/>
+      <include name="**/lib/*.jar"/> 
+    </fileset>
+  </path>
+  
+  <!-- TODO: make this nicer like lucene? -->
+  <target name="javadocs" depends="compile-core,define-lucene-javadoc-url,lucene-javadocs,javadocs-solr-core,javadocs-extraction,javadocs-morphlines-core,javadocs-morphlines-cell,check-javadocs-uptodate" unless="javadocs-uptodate-${name}">
+        <sequential>
+      <mkdir dir="${javadoc.dir}/${name}"/>
+      <solr-invoke-javadoc>
+        <solrsources>
+          <packageset dir="${src.dir}"/>
+        </solrsources>
+        <links>
+          <link href="../solr-solrj"/>
+          <link href="../solr-morphlines-core"/>
+          <link href="../solr-cell"/>
+        </links>
+      </solr-invoke-javadoc>
+      <solr-jarify basedir="${javadoc.dir}/${name}" destfile="${build.dir}/${final.name}-javadoc.jar"/>
+     </sequential>
+  </target>
+  
+  <target name="javadocs-extraction">
+    <ant dir="${common-solr.dir}/contrib/extraction" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  
+  <target name="javadocs-morphlines-core">
+    <ant dir="${common-solr.dir}/contrib/morphlines-core" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  
+  <target name="javadocs-morphlines-cell">
+    <ant dir="${common-solr.dir}/contrib/morphlines-cell" target="javadocs" inheritAll="false">
+     <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  
+  <target name="compile-core" depends="resolve-extraction-libs, resolve-morphlines-core-libs, resolve-morphlines-cell-libs, compile-solr-extraction, compile-morphlines-core, compile-morphlines-cell, solr-contrib-build.compile-core"/>
+
+  <property name="main.class" value="org.apache.solr.hadoop.MapReduceIndexerTool" />
+  <target name="jar-core" depends="compile-core">
+    <solr-jarify>
+      <solr-jarify-additional-manifest-attributes>
+        <attribute name="Main-Class" value="${main.class}"/>
+      </solr-jarify-additional-manifest-attributes>
+    </solr-jarify>
+  </target>
+
+  <target name="dist" depends="common-solr.dist"/>
+
+</project>

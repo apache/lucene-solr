@@ -1,0 +1,2 @@
+javax.servlet-*.jar is under the CDDL license, the original source
+code for this can be found at http://www.eclipse.org/jetty/downloads.php
