@@ -41,9 +41,9 @@
     <module-directory>solr</module-directory>
   </properties>
   <scm>
-    <connection>scm:svn:${vc-anonymous-base-url}/${module-directory}</connection>
-    <developerConnection>scm:svn:${vc-dev-base-url}/${module-directory}</developerConnection>
-    <url>${vc-browse-base-url}/${module-directory}</url>
+    <connection>scm:git:${vc-anonymous-base-url}</connection>
+    <developerConnection>scm:git:${vc-dev-base-url}</developerConnection>
+    <url>${vc-browse-base-url};f=${module-directory}</url>
   </scm>
   <issueManagement>
     <system>JIRA</system>
