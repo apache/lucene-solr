@@ -20,6 +20,8 @@
 <project name="lucene-solr" default="-projecthelp" basedir=".">
   <import file="lucene/common-build.xml"/>
 
+  <property name="jgit-version" value="4.2.0.201601211800-r"/>
+  
   <property name="tests.heap-dump-dir" location="heapdumps"/>
   
   <property name="maven-build-dir" value="maven-build"/>
@@ -551,8 +553,71 @@ File | Project Structure | Platform Settings | SDKs):
     <delete dir="${smokeTestRelease.tmp}"/>
   </target>
   
-  <target name="check-working-copy">
-    <echo>This task is currently disabled due to migration to GIT</echo>
+  <macrodef xmlns:ivy="antlib:org.apache.ivy.ant" name="wc-checker">
+    <attribute name="failonmodifications"/><!-- fail if modifications were found, otherwise it only fails on unversioned files -->
+    <sequential>
+      <local name="wc.unversioned.files"/>
+      <local name="wc.modified.files"/>
+      <ivy:cachepath xmlns:ivy="antlib:org.apache.ivy.ant"
+        organisation="org.eclipse.jgit" module="org.eclipse.jgit" revision="${jgit-version}"
+        inline="true" conf="default" transitive="true" pathid="jgit.classpath"/>
+      <groovy taskname="wc-checker" classpathref="jgit.classpath"><![CDATA[
+        import org.apache.tools.ant.BuildException;
+        import org.apache.tools.ant.Project;
+        import org.eclipse.jgit.api.Git;
+        import org.eclipse.jgit.api.Status;
+        import org.eclipse.jgit.lib.Repository;
+        import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+        import org.eclipse.jgit.errors.*;
+
+        def setProjectPropertyFromSet(prop, set) {
+          if (set) {
+            properties[prop] = '* ' + set.join(properties['line.separator'] + '* ');
+          }
+        };
+
+        try {
+          task.log('Initializing working copy...', Project.MSG_INFO);
+          final Repository repository = new FileRepositoryBuilder()
+            .setWorkTree(project.getBaseDir())
+            .setMustExist(true)
+            .build();
+
+          task.log('Checking working copy status...', Project.MSG_INFO);
+          final Status status = new Git(repository).status().call();
+          if (!status.isClean()) {
+            final SortedSet unversioned = new TreeSet(), modified = new TreeSet();
+            status.properties.each{ prop, val ->
+              if (val instanceof Set) {
+                if (prop in ['untracked', 'untrackedFolders', 'missing']) {
+                  unversioned.addAll(val);
+                } else if (prop != 'ignoredNotInIndex') {
+                  modified.addAll(val);
+                }
+              }
+            };
+            setProjectPropertyFromSet('wc.unversioned.files', unversioned);
+            setProjectPropertyFromSet('wc.modified.files', modified);
+          }
+        } catch (RepositoryNotFoundException | NoWorkTreeException | NotSupportedException e) {
+          task.log('WARNING: Development directory is not a valid GIT checkout! Disabling checks...', Project.MSG_WARN);
+        }
+      ]]></groovy>
+      <fail if="wc.unversioned.files"
+        message="Source checkout is dirty (unversioned/missing files) after running tests!!! Offending files:${line.separator}${wc.unversioned.files}"/>
+      <fail message="Source checkout is modified!!! Offending files:${line.separator}${wc.modified.files}">
+        <condition>
+          <and>
+             <istrue value="@{failonmodifications}"/>
+             <isset property="wc.modified.files"/>
+          </and>
+        </condition>
+      </fail>
+    </sequential>
+  </macrodef>
+  
+  <target name="check-working-copy" description="Checks working copy for unversioned changes" depends="resolve-groovy">
+    <wc-checker failonmodifications="${is.jenkins.build}"/>
   </target>
 
   <target name="run-clover" description="Runs all tests to measure coverage and generates report (pass &quot;ANT_OPTS=-Xmx1536M&quot; as environment)" depends="clean">
@@ -645,13 +710,13 @@ File | Project Structure | Platform Settings | SDKs):
   </target>
 
   <!-- should only be called by jenkins, not precommit! -->
-  <target name="-check-after-regeneration">
-    <!-- TODO -->
+  <target name="-check-after-regeneration" depends="resolve-groovy">
+    <wc-checker failonmodifications="true"/>
   </target>
 
   <!-- TODO: remove me when jenkins works -->
   <target name="regenerateAndCheck" depends="regenerate,-check-after-regeneration"/>
-
+  
   <target name="-append-all-modules-dependencies-properties">
     <delete file="lucene/build/module.dependencies.properties"/>
     <subant target="-append-module-dependencies-properties" inheritall="false" failonerror="true">
