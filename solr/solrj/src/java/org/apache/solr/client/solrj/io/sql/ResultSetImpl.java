@@ -48,6 +48,7 @@ class ResultSetImpl implements ResultSet {
   private Tuple tuple;
   private boolean done;
   private boolean closed;
+  private SQLWarning currentWarning;
 
   ResultSetImpl(StatementImpl statement) {
     this.statement = statement;
@@ -255,12 +256,20 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    throw new UnsupportedOperationException();
+    if(isClosed()) {
+      throw new SQLException("Statement is closed.");
+    }
+
+    return this.currentWarning;
   }
 
   @Override
   public void clearWarnings() throws SQLException {
-    throw new UnsupportedOperationException();
+    if(isClosed()) {
+      throw new SQLException("Statement is closed.");
+    }
+
+    this.currentWarning = null;
   }
 
   @Override

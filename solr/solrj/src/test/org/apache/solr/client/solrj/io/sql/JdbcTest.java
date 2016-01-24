@@ -320,8 +320,16 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
       assertEquals(connectionString, databaseMetaData.getURL());
 
+      assertNull(con.getWarnings());
+      con.clearWarnings();
+      assertNull(con.getWarnings());
+
       try (Statement statement = con.createStatement()) {
         assertEquals(con, statement.getConnection());
+
+        assertNull(statement.getWarnings());
+        statement.clearWarnings();
+        assertNull(statement.getWarnings());
 
         try (ResultSet rs = statement.executeQuery(sql)) {
           assertEquals(statement, rs.getStatement());
@@ -350,6 +358,10 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
   }
 
   private void checkResultSet(ResultSet rs) throws Exception {
+    assertNull(rs.getWarnings());
+    rs.clearWarnings();
+    assertNull(rs.getWarnings());
+
     assertTrue(rs.next());
     assertEquals(14, rs.getLong("a_i"));
     assertEquals("hello0", rs.getString("a_s"));

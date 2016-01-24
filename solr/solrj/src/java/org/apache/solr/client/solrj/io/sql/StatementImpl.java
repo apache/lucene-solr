@@ -47,6 +47,7 @@ class StatementImpl implements Statement {
   private boolean closed;
   private String currentSQL;
   private ResultSetImpl currentResultSet;
+  private SQLWarning currentWarning;
 
   StatementImpl(ConnectionImpl connection) {
     this.connection = connection;
@@ -178,12 +179,20 @@ class StatementImpl implements Statement {
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    throw new UnsupportedOperationException();
+    if(isClosed()) {
+      throw new SQLException("Statement is closed.");
+    }
+
+    return this.currentWarning;
   }
 
   @Override
   public void clearWarnings() throws SQLException {
-    throw new UnsupportedOperationException();
+    if(isClosed()) {
+      throw new SQLException("Statement is closed.");
+    }
+
+    this.currentWarning = null;
   }
 
   @Override
