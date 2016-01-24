@@ -355,6 +355,8 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     ResultSetMetaData resultSetMetaData = rs.getMetaData();
 
     assertNotNull(resultSetMetaData);
+
+    assertEquals(4, resultSetMetaData.getColumnCount());
   }
 
   private void checkResultSet(ResultSet rs) throws Exception {

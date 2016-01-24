@@ -17,6 +17,7 @@ package org.apache.solr.client.solrj.io.sql;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -45,6 +46,8 @@ import org.apache.solr.client.solrj.io.stream.SolrStream;
 class ResultSetImpl implements ResultSet {
   private final StatementImpl statement;
   private final SolrStream solrStream;
+  private final ResultSetMetaData resultSetMetaData;
+  private final Tuple metadataTuple;
   private Tuple tuple;
   private boolean done;
   private boolean closed;
@@ -53,6 +56,24 @@ class ResultSetImpl implements ResultSet {
   ResultSetImpl(StatementImpl statement) {
     this.statement = statement;
     this.solrStream = statement.getSolrStream();
+
+    // Read the first tuple so that metadata can be gathered
+    try {
+      this.metadataTuple = this.solrStream.read();
+
+      Object isMetadata = this.metadataTuple.get("isMetadata");
+      if(isMetadata == null || !isMetadata.equals(true)) {
+        throw new RuntimeException("First tuple is not a metadata tuple");
+      }
+    } catch (IOException e) {
+      throw new RuntimeException("Couldn't get metadata tuple");
+    }
+
+    this.resultSetMetaData = new ResultSetMetaDataImpl(this);
+  }
+
+  Tuple getMetadataTuple() {
+    return this.metadataTuple;
   }
 
   @Override
@@ -69,7 +90,7 @@ class ResultSetImpl implements ResultSet {
       } else {
         return true;
       }
-    } catch (Exception e) {
+    } catch (IOException e) {
       throw new SQLException(e);
     }
   }
@@ -279,7 +300,7 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSetMetaData getMetaData() throws SQLException {
-    return new ResultSetMetaDataImpl(this);
+    return this.resultSetMetaData;
   }
 
   @Override

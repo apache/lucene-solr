@@ -19,17 +19,26 @@ package org.apache.solr.client.solrj.io.sql;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.List;
+
+import org.apache.solr.client.solrj.io.Tuple;
 
 class ResultSetMetaDataImpl implements ResultSetMetaData {
   private final ResultSetImpl resultSet;
+  private final Tuple metadataTuple;
 
   ResultSetMetaDataImpl(ResultSetImpl resultSet) {
     this.resultSet = resultSet;
+    this.metadataTuple = this.resultSet.getMetadataTuple();
   }
 
   @Override
   public int getColumnCount() throws SQLException {
-    return 0;
+    List<String> fields = metadataTuple.getStrings("fields");
+    if(fields == null) {
+      throw new SQLException("Unable to determine fields for column count");
+    }
+    return fields.size();
   }
 
   @Override
