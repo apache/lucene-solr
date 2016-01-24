@@ -303,7 +303,7 @@ public class RandomIndexWriter implements Closeable {
 
   public DirectoryReader getReader() throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
-    return getReader(true);
+    return getReader(true, false);
   }
 
   private boolean doRandomForceMerge = true;
@@ -353,7 +353,7 @@ public class RandomIndexWriter implements Closeable {
     }
   }
 
-  public DirectoryReader getReader(boolean applyDeletions) throws IOException {
+  public DirectoryReader getReader(boolean applyDeletions, boolean writeAllDeletes) throws IOException {
     LuceneTestCase.maybeChangeLiveIndexWriterConfig(r, w.getConfig());
     getReaderCalled = true;
     if (r.nextInt(20) == 2) {
@@ -366,7 +366,7 @@ public class RandomIndexWriter implements Closeable {
       if (r.nextInt(5) == 1) {
         w.commit();
       }
-      return w.getReader(applyDeletions);
+      return w.getReader(applyDeletions, writeAllDeletes);
     } else {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: open new reader");
@@ -375,7 +375,7 @@ public class RandomIndexWriter implements Closeable {
       if (r.nextBoolean()) {
         return DirectoryReader.open(w.getDirectory());
       } else {
-        return w.getReader(applyDeletions);
+        return w.getReader(applyDeletions, writeAllDeletes);
       }
     }
   }

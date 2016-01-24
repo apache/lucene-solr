@@ -30,19 +30,21 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
 
-final class StandardDirectoryReader extends DirectoryReader {
+public final class StandardDirectoryReader extends DirectoryReader {
 
   final IndexWriter writer;
   final SegmentInfos segmentInfos;
   private final boolean applyAllDeletes;
+  private final boolean writeAllDeletes;
   
   /** called only from static open() methods */
   StandardDirectoryReader(Directory directory, LeafReader[] readers, IndexWriter writer,
-    SegmentInfos sis, boolean applyAllDeletes) throws IOException {
+                          SegmentInfos sis, boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
     super(directory, readers);
     this.writer = writer;
     this.segmentInfos = sis;
     this.applyAllDeletes = applyAllDeletes;
+    this.writeAllDeletes = writeAllDeletes;
   }
 
   /** called from DirectoryReader.open(...) methods */
@@ -60,7 +62,7 @@ final class StandardDirectoryReader extends DirectoryReader {
 
           // This may throw CorruptIndexException if there are too many docs, so
           // it must be inside try clause so we close readers in that case:
-          DirectoryReader reader = new StandardDirectoryReader(directory, readers, null, sis, false);
+          DirectoryReader reader = new StandardDirectoryReader(directory, readers, null, sis, false, false);
           success = true;
 
           return reader;
@@ -74,7 +76,7 @@ final class StandardDirectoryReader extends DirectoryReader {
   }
 
   /** Used by near real-time search */
-  static DirectoryReader open(IndexWriter writer, SegmentInfos infos, boolean applyAllDeletes) throws IOException {
+  static DirectoryReader open(IndexWriter writer, SegmentInfos infos, boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
     // IndexWriter synchronizes externally before calling
     // us, which ensures infos will not change; so there's
     // no need to process segments in reverse order
@@ -113,8 +115,8 @@ final class StandardDirectoryReader extends DirectoryReader {
       writer.incRefDeleter(segmentInfos);
       
       StandardDirectoryReader result = new StandardDirectoryReader(dir,
-          readers.toArray(new SegmentReader[readers.size()]), writer,
-          segmentInfos, applyAllDeletes);
+                                                                   readers.toArray(new SegmentReader[readers.size()]), writer,
+                                                                   segmentInfos, applyAllDeletes, writeAllDeletes);
       success = true;
       return result;
     } finally {
@@ -131,8 +133,10 @@ final class StandardDirectoryReader extends DirectoryReader {
     }
   }
 
-  /** This constructor is only used for {@link #doOpenIfChanged(SegmentInfos)} */
-  private static DirectoryReader open(Directory directory, SegmentInfos infos, List<? extends LeafReader> oldReaders) throws IOException {
+  /** This constructor is only used for {@link #doOpenIfChanged(SegmentInfos)}, as well as NRT replication.
+   *
+   *  @lucene.internal */
+  public static DirectoryReader open(Directory directory, SegmentInfos infos, List<? extends LeafReader> oldReaders) throws IOException {
 
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
@@ -210,7 +214,7 @@ final class StandardDirectoryReader extends DirectoryReader {
         }
       }
     }    
-    return new StandardDirectoryReader(directory, newReaders, null, infos, false);
+    return new StandardDirectoryReader(directory, newReaders, null, infos, false, false);
   }
 
   // TODO: move somewhere shared if it's useful elsewhere
@@ -270,7 +274,7 @@ final class StandardDirectoryReader extends DirectoryReader {
     if (writer == this.writer && applyAllDeletes == this.applyAllDeletes) {
       return doOpenFromWriter(null);
     } else {
-      return writer.getReader(applyAllDeletes);
+      return writer.getReader(applyAllDeletes, writeAllDeletes);
     }
   }
 
@@ -283,7 +287,7 @@ final class StandardDirectoryReader extends DirectoryReader {
       return null;
     }
 
-    DirectoryReader reader = writer.getReader(applyAllDeletes);
+    DirectoryReader reader = writer.getReader(applyAllDeletes, writeAllDeletes);
 
     // If in fact no changes took place, return null:
     if (reader.getVersion() == segmentInfos.getVersion()) {
@@ -330,6 +334,11 @@ final class StandardDirectoryReader extends DirectoryReader {
   public long getVersion() {
     ensureOpen();
     return segmentInfos.getVersion();
+  }
+
+  /** @lucene.internal */
+  public SegmentInfos getSegmentInfos() {
+    return segmentInfos;
   }
 
   @Override

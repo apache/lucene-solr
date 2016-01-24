@@ -169,7 +169,7 @@ public class TestIndexWriterOnVMError extends LuceneTestCase {
               if (random().nextBoolean()) {
                 DirectoryReader ir = null;
                 try {
-                  ir = DirectoryReader.open(iw, random().nextBoolean());
+                  ir = DirectoryReader.open(iw, random().nextBoolean(), false);
                   TestUtil.checkReader(ir);
                 } finally {
                   IOUtils.closeWhileHandlingException(ir);

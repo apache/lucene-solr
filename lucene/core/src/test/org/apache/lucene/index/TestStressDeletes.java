@@ -83,7 +83,7 @@ public class TestStressDeletes extends LuceneTestCase {
                   }
                 }
                 if (random().nextInt(500) == 2) {
-                  DirectoryReader.open(w, random().nextBoolean()).close();
+                  DirectoryReader.open(w, random().nextBoolean(), false).close();
                 }
                 if (random().nextInt(500) == 2) {
                   w.commit();

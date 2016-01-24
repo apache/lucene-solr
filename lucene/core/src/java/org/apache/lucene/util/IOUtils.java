@@ -107,6 +107,9 @@ public final class IOUtils {
    *          objects to call <tt>close()</tt> on
    */
   public static void closeWhileHandlingException(Closeable... objects) {
+    if (objects.length == 0) {
+      throw new IllegalArgumentException("pass at least one Closeable");
+    }
     closeWhileHandlingException(Arrays.asList(objects));
   }
   

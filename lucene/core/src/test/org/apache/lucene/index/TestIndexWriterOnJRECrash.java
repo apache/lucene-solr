@@ -196,29 +196,29 @@ public class TestIndexWriterOnJRECrash extends TestNRTThreads {
         vendor.startsWith("Sun") || 
         vendor.startsWith("Apple");
 
-      try {
-        if (supportsUnsafeNpeDereference) {
-          try {
-            Class<?> clazz = Class.forName("sun.misc.Unsafe");
-            Field field = clazz.getDeclaredField("theUnsafe");
-            field.setAccessible(true);
-            Object o = field.get(null);
-            Method m = clazz.getMethod("putAddress", long.class, long.class);
-            m.invoke(o, 0L, 0L);
-          } catch (Throwable e) {
-            System.out.println("Couldn't kill the JVM via Unsafe.");
-            e.printStackTrace(System.out); 
-          }
+    try {
+      if (supportsUnsafeNpeDereference) {
+        try {
+          Class<?> clazz = Class.forName("sun.misc.Unsafe");
+          Field field = clazz.getDeclaredField("theUnsafe");
+          field.setAccessible(true);
+          Object o = field.get(null);
+          Method m = clazz.getMethod("putAddress", long.class, long.class);
+          m.invoke(o, 0L, 0L);
+        } catch (Throwable e) {
+          System.out.println("Couldn't kill the JVM via Unsafe.");
+          e.printStackTrace(System.out); 
         }
-
-        // Fallback attempt to Runtime.halt();
-        Runtime.getRuntime().halt(-1);
-      } catch (Exception e) {
-        System.out.println("Couldn't kill the JVM.");
-        e.printStackTrace(System.out); 
       }
 
-      // We couldn't get the JVM to crash for some reason.
-      fail();
+      // Fallback attempt to Runtime.halt();
+      Runtime.getRuntime().halt(-1);
+    } catch (Exception e) {
+      System.out.println("Couldn't kill the JVM.");
+      e.printStackTrace(System.out); 
+    }
+
+    // We couldn't get the JVM to crash for some reason.
+    fail();
   }
 }

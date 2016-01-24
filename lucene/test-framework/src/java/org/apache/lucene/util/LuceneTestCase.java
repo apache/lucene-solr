@@ -1155,11 +1155,14 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     if (rarely(r)) {
-      // change warmer parameters
-      if (r.nextBoolean()) {
-        c.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(c.getInfoStream()));
-      } else {
-        c.setMergedSegmentWarmer(null);
+      IndexWriter.IndexReaderWarmer curWarmer = c.getMergedSegmentWarmer();
+      if (curWarmer == null || curWarmer instanceof SimpleMergedSegmentWarmer) {
+        // change warmer parameters
+        if (r.nextBoolean()) {
+          c.setMergedSegmentWarmer(new SimpleMergedSegmentWarmer(c.getInfoStream()));
+        } else {
+          c.setMergedSegmentWarmer(null);
+        }
       }
       didChange = true;
     }

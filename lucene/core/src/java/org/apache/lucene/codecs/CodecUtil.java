@@ -258,6 +258,36 @@ public final class CodecUtil {
     checkIndexHeaderSuffix(in, expectedSuffix);
     return version;
   }
+
+  /** Retrieves the full index header from the provided {@link IndexInput}.
+   *  This throws {@link CorruptIndexException} if this file does
+   * not appear to be an index file. */
+  public static byte[] readIndexHeader(IndexInput in) throws IOException {
+    in.seek(0);
+    final int actualHeader = in.readInt();
+    if (actualHeader != CODEC_MAGIC) {
+      throw new CorruptIndexException("codec header mismatch: actual header=" + actualHeader + " vs expected header=" + CODEC_MAGIC, in);
+    }
+    String codec = in.readString();
+    in.readInt();
+    in.seek(in.getFilePointer() + StringHelper.ID_LENGTH);
+    int suffixLength = in.readByte() & 0xFF;
+    byte[] bytes = new byte[headerLength(codec) + StringHelper.ID_LENGTH + 1 + suffixLength];
+    in.seek(0);
+    in.readBytes(bytes, 0, bytes.length);
+    return bytes;
+  }
+
+  /** Retrieves the full footer from the provided {@link IndexInput}.  This throws
+   *  {@link CorruptIndexException} if this file does not have a valid footer. */
+  public static byte[] readFooter(IndexInput in) throws IOException {
+    in.seek(in.length() - footerLength());
+    validateFooter(in);
+    in.seek(in.length() - footerLength());
+    byte[] bytes = new byte[footerLength()];
+    in.readBytes(bytes, 0, bytes.length);
+    return bytes;
+  }
   
   /** Expert: just reads and verifies the object ID of an index header */
   public static byte[] checkIndexHeaderID(DataInput in, byte[] expectedID) throws IOException {

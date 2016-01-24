@@ -76,7 +76,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * @lucene.experimental
    */
   public static DirectoryReader open(final IndexWriter writer) throws IOException {
-    return open(writer, true);
+    return open(writer, true, false);
   }
 
   /**
@@ -91,13 +91,16 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * future.  Applying deletes can be costly, so if your app
    * can tolerate deleted documents being returned you might
    * gain some performance by passing false.
+   * @param writeAllDeletes If true, new deletes will be written
+   * down to index files instead of carried over from writer to
+   * reader in heap
    *
    * @see #open(IndexWriter)
    *
    * @lucene.experimental
    */
-  public static DirectoryReader open(final IndexWriter writer, boolean applyAllDeletes) throws IOException {
-    return writer.getReader(applyAllDeletes);
+  public static DirectoryReader open(final IndexWriter writer, boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
+    return writer.getReader(applyAllDeletes, writeAllDeletes);
   }
 
   /** Expert: returns an IndexReader reading the index in the given

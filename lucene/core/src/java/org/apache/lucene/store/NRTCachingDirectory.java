@@ -174,8 +174,12 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
 
   @Override
   public void renameFile(String source, String dest) throws IOException {
-    // NOTE: uncache is unnecessary for lucene's usage, as we always sync() before renaming.
     unCache(source);
+    try {
+      cache.deleteFile(dest);
+    } catch (FileNotFoundException fnfe) {
+      // OK -- it may not exist
+    }
     in.renameFile(source, dest);
   }
 

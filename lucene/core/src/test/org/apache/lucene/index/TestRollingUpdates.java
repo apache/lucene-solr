@@ -124,7 +124,7 @@ public class TestRollingUpdates extends LuceneTestCase {
           System.out.println("TEST: reopen applyDeletions=" + applyDeletions);
         }
 
-        r = w.getReader(applyDeletions);
+        r = w.getReader(applyDeletions, false);
         if (applyDeletions) {
           s = newSearcher(r);
         } else {
