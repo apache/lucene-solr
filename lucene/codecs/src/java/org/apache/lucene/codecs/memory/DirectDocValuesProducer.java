@@ -278,7 +278,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
 
   @Override
   public void checkIntegrity() throws IOException {
-    CodecUtil.checksumEntireFile(data);
+    CodecUtil.checksumEntireFile(data.clone());
   }
 
   @Override
@@ -297,6 +297,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
   
   private NumericRawValues loadNumeric(NumericEntry entry) throws IOException {
     NumericRawValues ret = new NumericRawValues();
+    IndexInput data = this.data.clone();
     data.seek(entry.offset + entry.missingBytes);
     switch (entry.byteWidth) {
     case 1:
@@ -394,6 +395,7 @@ class DirectDocValuesProducer extends DocValuesProducer {
   }
   
   private BinaryRawValues loadBinary(BinaryEntry entry) throws IOException {
+    IndexInput data = this.data.clone();
     data.seek(entry.offset);
     final byte[] bytes = new byte[entry.numBytes];
     data.readBytes(bytes, 0, entry.numBytes);
