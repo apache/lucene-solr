@@ -68,7 +68,7 @@ public class Tuple implements Cloneable {
   }
 
   public String getString(Object key) {
-    return this.fields.get(key).toString();
+    return String.valueOf(this.fields.get(key));
   }
 
   public String getException(){ return (String)this.fields.get("EXCEPTION"); }

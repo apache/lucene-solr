@@ -363,14 +363,20 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     assertNull(rs.getWarnings());
 
     assertTrue(rs.next());
-    assertEquals(14, rs.getLong("a_i"));
+    assertEquals(14L, rs.getObject("a_i"));
+    assertEquals(14L, rs.getLong("a_i"));
+    assertEquals("hello0", rs.getObject("a_s"));
     assertEquals("hello0", rs.getString("a_s"));
-    assertEquals(10, rs.getDouble("a_f"), 0);
+    assertEquals(10D, rs.getObject("a_f"));
+    assertEquals(10D, rs.getDouble("a_f"), 0);
 
     assertTrue(rs.next());
-    assertEquals(13, rs.getLong("a_i"));
+    assertEquals(13L, rs.getObject("a_i"));
+    assertEquals(13L, rs.getLong("a_i"));
+    assertEquals("hello3", rs.getObject("a_s"));
     assertEquals("hello3", rs.getString("a_s"));
-    assertEquals(9, rs.getDouble("a_f"), 0);
+    assertEquals(9D, rs.getObject("a_f"));
+    assertEquals(9D, rs.getDouble("a_f"), 0);
 
     assertFalse(rs.next());
   }
