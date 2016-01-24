@@ -1,0 +1,15 @@
+language: java
+jdk:
+  - oraclejdk8
+git:
+  depth: 1
+env:
+ - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.client.solrj.io.stream.Stream*Test test"
+ - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.client.solrj.io.sql.* test"
+ - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.handler.TestSQLHandler test"
+matrix:
+  fast_finish: true
+script:
+  - ant ivy-bootstrap
+  - cd $DIR
+  - $COMMAND
