@@ -47,6 +47,7 @@ class ConnectionImpl implements Connection {
   private final String collection;
   private final Properties properties;
   private boolean closed;
+  private SQLWarning currentWarning;
 
   ConnectionImpl(String url, String zkHost, String collection, Properties properties) {
     this.url = url;
@@ -166,12 +167,20 @@ class ConnectionImpl implements Connection {
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    throw new UnsupportedOperationException();
+    if(isClosed()) {
+      throw new SQLException("Statement is closed.");
+    }
+
+    return this.currentWarning;
   }
 
   @Override
   public void clearWarnings() throws SQLException {
-    throw new UnsupportedOperationException();
+    if(isClosed()) {
+      throw new SQLException("Statement is closed.");
+    }
+
+    this.currentWarning = null;
   }
 
   @Override
