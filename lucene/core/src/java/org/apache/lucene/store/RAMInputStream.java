@@ -104,16 +104,16 @@ public class RAMInputStream extends IndexInput implements Cloneable {
     bufferPosition = (int) (pos % BUFFER_SIZE);
 
     // This is not >= because seeking to exact end of file is OK: this is where
-    // you'd also be if you did a readBytes of all bytes in the file)
+    // you'd also be if you did a readBytes of all bytes in the file
     if (getFilePointer() > length()) {
-      throw new EOFException("read past EOF: pos=" + getFilePointer() + " vs length=" + length() + ": " + this);
+      throw new EOFException("seek beyond EOF: pos=" + getFilePointer() + " vs length=" + length() + ": " + this);
     }
   }
 
   private void nextBuffer() throws IOException {
     // This is >= because we are called when there is at least 1 more byte to read:
     if (getFilePointer() >= length()) {
-      throw new EOFException("read past EOF: pos=" + getFilePointer() + " vs length=" + length() + ": " + this);
+      throw new EOFException("cannot read another byte at EOF: pos=" + getFilePointer() + " vs length=" + length() + ": " + this);
     }
     currentBufferIndex++;
     setCurrentBuffer();
@@ -133,11 +133,11 @@ public class RAMInputStream extends IndexInput implements Cloneable {
   }
 
   @Override
-  public IndexInput slice(String sliceDescription, final long offset, final long length) throws IOException {
-    if (offset < 0 || length < 0 || offset + length > this.length) {
+  public IndexInput slice(String sliceDescription, final long offset, final long sliceLength) throws IOException {
+    if (offset < 0 || sliceLength < 0 || offset + sliceLength > this.length) {
       throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: "  + this);
     }
-    return new RAMInputStream(getFullSliceDescription(sliceDescription), file, offset + length) {
+    return new RAMInputStream(getFullSliceDescription(sliceDescription), file, offset + sliceLength) {
       {
         seek(0L);
       }
@@ -157,7 +157,7 @@ public class RAMInputStream extends IndexInput implements Cloneable {
 
       @Override
       public long length() {
-        return super.length() - offset;
+        return sliceLength;
       }
 
       @Override
