@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
 
-import com.facebook.presto.sql.ExpressionFormatter;
 import com.facebook.presto.sql.tree.*;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
@@ -103,16 +102,22 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     String workerZkhost = params.get("workerZkhost",defaultZkhost);
     String mode = params.get("aggregationMode", "map_reduce");
     StreamContext context = new StreamContext();
+
+    // JDBC driver requires metadata from the SQLHandler. Default to false since this adds a new Metadata stream.
+    boolean includeMetadata = params.getBool("includeMetadata", false);
+
     try {
 
       if(sql == null) {
         throw new Exception("sql parameter cannot be null");
       }
 
-      TupleStream tupleStream = SQLTupleStreamParser.parse(sql, numWorkers, workerCollection, workerZkhost, AggregationMode.getMode(mode));
+      TupleStream tupleStream = SQLTupleStreamParser.parse(sql, numWorkers, workerCollection, workerZkhost,
+          AggregationMode.getMode(mode), includeMetadata);
       context.numWorkers = numWorkers;
       context.setSolrClientCache(StreamHandler.clientCache);
       tupleStream.setStreamContext(context);
+
       rsp.add("result-set", new StreamHandler.TimerStream(new ExceptionStream(tupleStream)));
     } catch(Exception e) {
       //Catch the SQL parsing and query transformation exceptions.
@@ -142,7 +147,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
                                     int numWorkers,
                                     String workerCollection,
                                     String workerZkhost,
-                                    AggregationMode aggregationMode) throws IOException {
+                                    AggregationMode aggregationMode,
+                                    boolean includeMetadata) throws IOException {
       SqlParser parser = new SqlParser();
       Statement statement = parser.createStatement(sql);
 
@@ -167,6 +173,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         }
       } else {
         sqlStream = doSelect(sqlVistor);
+      }
+
+      if(includeMetadata) {
+        sqlStream = new MetadataStream(sqlStream, sqlVistor);
       }
 
       return sqlStream;
@@ -1334,6 +1344,53 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
           return tuple;
         }
       }
+    }
+  }
+
+  private static class MetadataStream extends TupleStream {
+
+    private final TupleStream stream;
+    private final SQLVisitor sqlVisitor;
+    private boolean firstTuple = true;
+
+    public MetadataStream(TupleStream stream, SQLVisitor sqlVistor) {
+      this.stream = stream;
+      this.sqlVisitor = sqlVistor;
+    }
+
+    public List<TupleStream> children() {
+      return this.stream.children();
+    }
+
+    public void open() throws IOException {
+      this.stream.open();
+    }
+
+    // Return a metadata tuple as the first tuple and then pass through to the underlying stream.
+    public Tuple read() throws IOException {
+      if(firstTuple) {
+        firstTuple = false;
+
+        Map fields = new HashMap<>();
+        fields.put("isMetadata", true);
+        fields.put("fields", sqlVisitor.fields);
+        fields.put("aliases", sqlVisitor.columnAliases);
+        return new Tuple(fields);
+      }
+
+      return this.stream.read();
+    }
+
+    public StreamComparator getStreamSort() {
+      return this.stream.getStreamSort();
+    }
+
+    public void close() throws IOException {
+      this.stream.close();
+    }
+
+    public void setStreamContext(StreamContext context) {
+      this.stream.setStreamContext(context);
     }
   }
 

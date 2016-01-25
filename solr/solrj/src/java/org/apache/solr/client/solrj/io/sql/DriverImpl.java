@@ -67,6 +67,9 @@ public class DriverImpl implements Driver {
       props.setProperty("aggregationMode", "facet");
     }
 
+    // JDBC requires metadata like field names from the SQLHandler. Force this property to be true.
+    props.setProperty("includeMetadata", "true");
+
     String zkHost = uri.getAuthority() + uri.getPath();
 
     return new ConnectionImpl(url, zkHost, collection, props);
