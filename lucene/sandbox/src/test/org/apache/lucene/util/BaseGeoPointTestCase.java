@@ -324,6 +324,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   @Nightly
   public void testRandomBig() throws Exception {
+    assumeFalse("Direct codec can OOME on this test", TestUtil.getDocValuesFormat(FIELD_NAME).equals("Direct"));
+    assumeFalse("Memory codec can OOME on this test", TestUtil.getDocValuesFormat(FIELD_NAME).equals("Memory"));
     doTestRandom(200000);
   }
 
