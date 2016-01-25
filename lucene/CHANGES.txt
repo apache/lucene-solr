@@ -257,6 +257,9 @@ Other
   Locale#forLanguageTag() and Locale#toString() were placed on list
   of forbidden signatures.  (Uwe Schindler, Robert Muir)
 
+* LUCENE-6988: You can now add IndexableFields directly to a MemoryIndex,
+  and create a MemoryIndex from a lucene Document.  (Alan Woodward)
+
 ======================= Lucene 5.4.1 =======================
 
 Bug Fixes

@@ -33,46 +33,18 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.FieldInvertState;
-import org.apache.lucene.index.Fields;
-import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.OrdTermState;
-import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.index.TermState;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.ByteBlockPool;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefArray;
-import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.*;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
-import org.apache.lucene.util.BytesRefHash;
-import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IntBlockPool.SliceReader;
 import org.apache.lucene.util.IntBlockPool.SliceWriter;
-import org.apache.lucene.util.IntBlockPool;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.RecyclingByteBlockAllocator;
-import org.apache.lucene.util.RecyclingIntBlockAllocator;
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -289,6 +261,46 @@ public class MemoryIndex {
   }
 
   /**
+   * Builds a MemoryIndex from a lucene {@link Document} using an analyzer
+   *
+   * @param document the document to index
+   * @param analyzer the analyzer to use
+   * @return a MemoryIndex
+   */
+  public static MemoryIndex fromDocument(Document document, Analyzer analyzer) {
+    return fromDocument(document, analyzer, false, false, 0);
+  }
+
+  /**
+   * Builds a MemoryIndex from a lucene {@link Document} using an analyzer
+   * @param document the document to index
+   * @param analyzer the analyzer to use
+   * @param storeOffsets <code>true</code> if offsets should be stored
+   * @param storePayloads <code>true</code> if payloads should be stored
+   * @return a MemoryIndex
+   */
+  public static MemoryIndex fromDocument(Document document, Analyzer analyzer, boolean storeOffsets, boolean storePayloads) {
+    return fromDocument(document, analyzer, storeOffsets, storePayloads, 0);
+  }
+
+  /**
+   * Builds a MemoryIndex from a lucene {@link Document} using an analyzer
+   * @param document the document to index
+   * @param analyzer the analyzer to use
+   * @param storeOffsets <code>true</code> if offsets should be stored
+   * @param storePayloads <code>true</code> if payloads should be stored
+   * @param maxReusedBytes the number of bytes that should remain in the internal memory pools after {@link #reset()} is called
+   * @return a MemoryIndex
+   */
+  public static MemoryIndex fromDocument(Document document, Analyzer analyzer, boolean storeOffsets, boolean storePayloads, long maxReusedBytes) {
+    MemoryIndex mi = new MemoryIndex(storeOffsets, storePayloads, maxReusedBytes);
+    for (IndexableField field : document) {
+      mi.addField(field, analyzer);
+    }
+    return mi;
+  }
+
+  /**
    * Convenience method; Creates and returns a token stream that generates a
    * token for each keyword in the given collection, "as is", without any
    * transforming text analysis. The resulting token stream can be fed into
@@ -338,6 +350,39 @@ public class MemoryIndex {
    */
   public void addField(String fieldName, TokenStream stream) {
     addField(fieldName, stream, 1.0f);
+  }
+
+  /**
+   * Adds a lucene {@link IndexableField} to the MemoryIndex using the provided analyzer
+   * @param field the field to add
+   * @param analyzer the analyzer to use for term analysis
+   * @throws IllegalArgumentException if the field is a DocValues or Point field, as these
+   *                                  structures are not supported by MemoryIndex
+   */
+  public void addField(IndexableField field, Analyzer analyzer) {
+    addField(field, analyzer, 1.0f);
+  }
+
+  /**
+   * Adds a lucene {@link IndexableField} to the MemoryIndex using the provided analyzer
+   * @param field the field to add
+   * @param analyzer the analyzer to use for term analysis
+   * @param boost a field boost
+   * @throws IllegalArgumentException if the field is a DocValues or Point field, as these
+   *                                  structures are not supported by MemoryIndex
+   */
+  public void addField(IndexableField field, Analyzer analyzer, float boost) {
+    if (field.fieldType().docValuesType() != DocValuesType.NONE)
+      throw new IllegalArgumentException("MemoryIndex does not support DocValues fields");
+    if (field.fieldType().pointDimensionCount() != 0)
+      throw new IllegalArgumentException("MemoryIndex does not support Points");
+    if (analyzer == null) {
+      addField(field.name(), field.tokenStream(null, null), boost);
+    }
+    else {
+      addField(field.name(), field.tokenStream(analyzer, null), boost,
+          analyzer.getPositionIncrementGap(field.name()), analyzer.getOffsetGap(field.name()));
+    }
   }
   
   /**
