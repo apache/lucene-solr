@@ -164,6 +164,9 @@ API Changes
 * LUCENE-6932: IndexInput.seek implementations now throw EOFException
   if you seek beyond the end of the file (Adrien Grand, Mike McCandless)
 
+* LUCENE-6988: IndexableField.tokenStream() no longer throws IOException
+  (Alan Woodward)
+
 Optimizations
 
 * LUCENE-6951: Improve GeoPointInPolygonQuery using point orientation based

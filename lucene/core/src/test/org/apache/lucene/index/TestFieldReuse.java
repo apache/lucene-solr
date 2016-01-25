@@ -117,7 +117,7 @@ public class TestFieldReuse extends BaseTokenStreamTestCase {
     }
     
     @Override
-    public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException {
+    public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
       lastSeen = reuse;
       return lastReturned = new CannedTokenStream(new Token("unimportant", 0, 10));
     }

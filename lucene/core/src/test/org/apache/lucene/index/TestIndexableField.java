@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collections;
@@ -159,7 +158,7 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     @Override
-    public TokenStream tokenStream(Analyzer analyzer, TokenStream previous) throws IOException {
+    public TokenStream tokenStream(Analyzer analyzer, TokenStream previous) {
       return readerValue() != null ? analyzer.tokenStream(name(), readerValue()) :
         analyzer.tokenStream(name(), new StringReader(stringValue()));
     }
