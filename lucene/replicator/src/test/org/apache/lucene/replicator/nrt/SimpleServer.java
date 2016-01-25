@@ -127,13 +127,13 @@ public class SimpleServer extends LuceneTestCase {
 
         success = true;
       } catch (Throwable t) {
-        if (t instanceof SocketException == false) {
+        if (t instanceof SocketException == false && t instanceof NodeCommunicationException == false) {
           node.message("unexpected exception handling client connection:");
           t.printStackTrace(System.out);
           // Test should fail with this:
           throw new RuntimeException(t);
         } else {
-          node.message("SocketException " + t + " handling client connection; ignoring");
+          node.message("exception " + t + " handling client connection; ignoring");
         }
       } finally {
         if (success) {
