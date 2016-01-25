@@ -17,8 +17,6 @@ package org.apache.lucene.codecs.idversion;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -50,7 +48,7 @@ class StringAndPayloadField extends Field {
   }
 
   @Override
-  public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException {
+  public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
     SingleTokenWithPayloadTokenStream ts;
     if (reuse instanceof SingleTokenWithPayloadTokenStream) {
       ts = (SingleTokenWithPayloadTokenStream) reuse;
