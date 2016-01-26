@@ -83,7 +83,11 @@ class ResultSetMetaDataImpl implements ResultSetMetaData {
 
   @Override
   public String getColumnName(int column) throws SQLException {
-    return null;
+    List<String> columns = metadataTuple.getStrings("fields");
+    if(column < 1 || column > columns.size()) {
+      throw new SQLException("Column index " + column + " is not valid");
+    }
+    return columns.get(column - 1);
   }
 
   @Override

@@ -116,67 +116,67 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public String getString(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getString(this.resultSetMetaData.getColumnName(columnIndex));
   }
 
   @Override
   public boolean getBoolean(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getBoolean(this.resultSetMetaData.getColumnName(columnIndex));
   }
 
   @Override
   public byte getByte(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getByte(this.resultSetMetaData.getColumnName(columnIndex));
   }
 
   @Override
   public short getShort(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getShort(this.resultSetMetaData.getColumnName(columnIndex));
   }
 
   @Override
   public int getInt(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getInt(this.resultSetMetaData.getColumnName(columnIndex));
   }
 
   @Override
   public long getLong(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getLong(this.resultSetMetaData.getColumnName(columnIndex));
   }
 
   @Override
   public float getFloat(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getFloat(this.resultSetMetaData.getColumnName(columnIndex));
   }
 
   @Override
   public double getDouble(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getDouble(this.resultSetMetaData.getColumnName(columnIndex));
   }
 
   @Override
   public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getBigDecimal(this.resultSetMetaData.getColumnName(columnIndex), scale);
   }
 
   @Override
   public byte[] getBytes(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getBytes(this.resultSetMetaData.getColumnName(columnIndex));
   }
 
   @Override
   public Date getDate(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getDate(this.resultSetMetaData.getColumnName(columnIndex));
   }
 
   @Override
   public Time getTime(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getTime(this.resultSetMetaData.getColumnName(columnIndex));
   }
 
   @Override
   public Timestamp getTimestamp(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getTimestamp(this.resultSetMetaData.getColumnName(columnIndex));
   }
 
   @Override
@@ -211,6 +211,7 @@ class ResultSetImpl implements ResultSet {
   @Override
   public byte getByte(String columnLabel) throws SQLException {
     checkClosed();
+
     Number number = (Number)getObject(columnLabel);
     if(number == null) {
       return 0;
@@ -257,6 +258,7 @@ class ResultSetImpl implements ResultSet {
   @Override
   public float getFloat(String columnLabel) throws SQLException {
     checkClosed();
+
     Number number = (Number)getObject(columnLabel);
     if(number == null) {
       return 0.0F;
@@ -357,7 +359,7 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public Object getObject(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getObject(this.resultSetMetaData.getColumnName(columnIndex));
   }
 
   @Override

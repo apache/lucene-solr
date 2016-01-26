@@ -114,13 +114,19 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
     assert(rs.next());
     assert(rs.getLong("a_i") == 14);
+    assert(rs.getLong(2) == 14);
     assert(rs.getString("a_s").equals("hello0"));
+    assert(rs.getString(3).equals("hello0"));
     assert(rs.getDouble("a_f") == 10);
+    assert(rs.getDouble(4) == 10);
 
     assert(rs.next());
     assert(rs.getLong("a_i") == 13);
+    assert(rs.getLong(2) == 13);
     assert(rs.getString("a_s").equals("hello3"));
+    assert(rs.getString(3).equals("hello3"));
     assert(rs.getDouble("a_f") == 9);
+    assert(rs.getDouble(4) == 9);
     assert(!rs.next());
     stmt.close();
 
@@ -128,13 +134,19 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc limit 2");
     assert(rs.next());
     assert(rs.getLong("a_i") == 0);
+    assert(rs.getLong(2) == 0);
     assert(rs.getString("a_s").equals("hello0"));
+    assert(rs.getString(3).equals("hello0"));
     assert(rs.getDouble("a_f") == 1);
+    assert(rs.getDouble(4) == 1);
 
     assert(rs.next());
     assert(rs.getLong("a_i") == 1);
+    assert(rs.getLong(2) == 1);
     assert(rs.getString("a_s").equals("hello0"));
+    assert(rs.getString(3).equals("hello0"));
     assert(rs.getDouble("a_f") == 5);
+    assert(rs.getDouble(4) == 5);
     assert(!rs.next());
     stmt.close();
 
@@ -143,16 +155,20 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i desc limit 2");
     assert(rs.next());
     assert(rs.getLong("a_i") == 14);
+    assert(rs.getLong(2) == 14);
     assert(rs.next());
     assert(rs.getLong("a_i") == 13);
+    assert(rs.getLong(2) == 13);
     stmt.close();
 
     //Test statement reuse
     rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc limit 2");
     assert(rs.next());
     assert(rs.getLong("a_i") == 0);
+    assert(rs.getLong(2) == 0);
     assert(rs.next());
     assert(rs.getLong("a_i") == 1);
+    assert(rs.getLong(2) == 1);
     assert(!rs.next());
     stmt.close();
 
@@ -177,17 +193,23 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello3"));
+    assert(rs.getString(1).equals("hello3"));
     assert(rs.getDouble("sum(a_f)") == 26);
+    assert(rs.getDouble(2) == 26);
 
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello0"));
+    assert(rs.getString(1).equals("hello0"));
     assert(rs.getDouble("sum(a_f)") == 18);
+    assert(rs.getDouble(2) == 18);
 
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello4"));
+    assert(rs.getString(1).equals("hello4"));
     assert(rs.getDouble("sum(a_f)") == 11);
+    assert(rs.getDouble(2) == 11);
 
     stmt.close();
     con.close();
@@ -202,15 +224,21 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello3"));
+    assert(rs.getString(1).equals("hello3"));
     assert(rs.getDouble("sum(a_f)") == 26);
+    assert(rs.getDouble(2) == 26);
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello0"));
+    assert(rs.getString(1).equals("hello0"));
     assert(rs.getDouble("sum(a_f)") == 18);
+    assert(rs.getDouble(2) == 18);
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello4"));
+    assert(rs.getString(1).equals("hello4"));
     assert(rs.getDouble("sum(a_f)") == 11);
+    assert(rs.getDouble(2) == 11);
 
     stmt.close();
     con.close();
@@ -228,15 +256,21 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello3"));
+    assert(rs.getString(1).equals("hello3"));
     assert(rs.getDouble("sum(a_f)") == 26);
+    assert(rs.getDouble(2) == 26);
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello0"));
+    assert(rs.getString(1).equals("hello0"));
     assert(rs.getDouble("sum(a_f)") == 18);
+    assert(rs.getDouble(2) == 18);
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello4"));
+    assert(rs.getString(1).equals("hello4"));
     assert(rs.getDouble("sum(a_f)") == 11);
+    assert(rs.getDouble(2) == 11);
 
     stmt.close();
     con.close();
@@ -256,15 +290,21 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello3"));
+    assert(rs.getString(1).equals("hello3"));
     assert(rs.getDouble("sum(a_f)") == 26);
+    assert(rs.getDouble(2) == 26);
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello0"));
+    assert(rs.getString(1).equals("hello0"));
     assert(rs.getDouble("sum(a_f)") == 18);
+    assert(rs.getDouble(2) == 18);
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello4"));
+    assert(rs.getString(1).equals("hello4"));
     assert(rs.getDouble("sum(a_f)") == 11);
+    assert(rs.getDouble(2) == 11);
 
     stmt.close();
     con.close();
@@ -290,15 +330,21 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello3"));
+    assert(rs.getString(1).equals("hello3"));
     assert(rs.getDouble("sum(a_f)") == 26);
+    assert(rs.getDouble(2) == 26);
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello0"));
+    assert(rs.getString(1).equals("hello0"));
     assert(rs.getDouble("sum(a_f)") == 18);
+    assert(rs.getDouble(2) == 18);
 
     assert(rs.next());
     assert(rs.getString("a_s").equals("hello4"));
+    assert(rs.getString(1).equals("hello4"));
     assert(rs.getDouble("sum(a_f)") == 11);
+    assert(rs.getDouble(2) == 11);
 
     stmt.close();
     con.close();
@@ -365,23 +411,75 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     assertNull(rs.getWarnings());
 
     assertTrue(rs.next());
+
     assertEquals(14L, rs.getObject("a_i"));
+    assertEquals(14L, rs.getObject(2));
     assertEquals(14L, rs.getLong("a_i"));
+    assertEquals(14L, rs.getLong(2));
     assertEquals(14D, rs.getDouble("a_i"), 0);
+    assertEquals(14D, rs.getDouble(2), 0);
     assertEquals(14f, rs.getFloat("a_i"), 0);
+    assertEquals(14f, rs.getFloat(2), 0);
     assertEquals(14, rs.getShort("a_i"));
+    assertEquals(14, rs.getShort(2));
     assertEquals(14, rs.getByte("a_i"));
+    assertEquals(14, rs.getByte(2));
+
     assertEquals("hello0", rs.getObject("a_s"));
+    assertEquals("hello0", rs.getObject(3));
     assertEquals("hello0", rs.getString("a_s"));
+    assertEquals("hello0", rs.getString(3));
+
     assertEquals(10D, rs.getObject("a_f"));
+    assertEquals(10D, rs.getObject(4));
     assertEquals(10D, rs.getDouble("a_f"), 0);
+    assertEquals(10D, rs.getDouble(4), 0);
     assertEquals(10F, rs.getFloat("a_f"), 0);
+    assertEquals(10F, rs.getFloat(4), 0);
     assertEquals(10, rs.getInt("a_f"), 0);
+    assertEquals(10, rs.getInt(4), 0);
     assertEquals(10L, rs.getLong("a_f"), 0);
+    assertEquals(10L, rs.getLong(4), 0);
     assertEquals(10, rs.getShort("a_f"), 0);
+    assertEquals(10, rs.getShort(4), 0);
     assertEquals(10, rs.getByte("a_f"), 0);
-    
+    assertEquals(10, rs.getByte(4), 0);
+
     assertTrue(rs.next());
+
+    assertEquals(13L, rs.getObject("a_i"));
+    assertEquals(13L, rs.getObject(2));
+    assertEquals(13L, rs.getLong("a_i"));
+    assertEquals(13L, rs.getLong(2));
+    assertEquals(13D, rs.getDouble("a_i"), 0);
+    assertEquals(13D, rs.getDouble(2), 0);
+    assertEquals(13f, rs.getFloat("a_i"), 0);
+    assertEquals(13f, rs.getFloat(2), 0);
+    assertEquals(13, rs.getShort("a_i"));
+    assertEquals(13, rs.getShort(2));
+    assertEquals(13, rs.getByte("a_i"));
+    assertEquals(13, rs.getByte(2));
+
+    assertEquals("hello3", rs.getObject("a_s"));
+    assertEquals("hello3", rs.getObject(3));
+    assertEquals("hello3", rs.getString("a_s"));
+    assertEquals("hello3", rs.getString(3));
+
+    assertEquals(9D, rs.getObject("a_f"));
+    assertEquals(9D, rs.getObject(4));
+    assertEquals(9D, rs.getDouble("a_f"), 0);
+    assertEquals(9D, rs.getDouble(4), 0);
+    assertEquals(9F, rs.getFloat("a_f"), 0);
+    assertEquals(9F, rs.getFloat(4), 0);
+    assertEquals(9, rs.getInt("a_f"), 0);
+    assertEquals(9, rs.getInt(4), 0);
+    assertEquals(9L, rs.getLong("a_f"), 0);
+    assertEquals(9L, rs.getLong(4), 0);
+    assertEquals(9, rs.getShort("a_f"), 0);
+    assertEquals(9, rs.getShort(4), 0);
+    assertEquals(9, rs.getByte("a_f"), 0);
+    assertEquals(9, rs.getByte(4), 0);
+
     assertFalse(rs.next());
   }
 }
