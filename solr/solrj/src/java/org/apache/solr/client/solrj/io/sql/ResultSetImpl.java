@@ -76,8 +76,16 @@ class ResultSetImpl implements ResultSet {
     return this.metadataTuple;
   }
 
+  private void checkClosed() throws SQLException {
+    if(isClosed()) {
+      throw new SQLException("ResultSet is closed.");
+    }
+  }
+
   @Override
   public boolean next() throws SQLException {
+    checkClosed();
+
     try {
       if(done) {
         return false;
@@ -102,7 +110,8 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public boolean wasNull() throws SQLException {
-    throw new UnsupportedOperationException();
+    // TODO implement logic to check if last value was null
+    return false;
   }
 
   @Override
@@ -187,77 +196,118 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public String getString(String columnLabel) throws SQLException {
+    checkClosed();
+
     return tuple.getString(columnLabel);
   }
 
   @Override
   public boolean getBoolean(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return (boolean)getObject(columnLabel);
   }
 
   @Override
   public byte getByte(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+    Number number = (Number)getObject(columnLabel);
+    if(number == null) {
+      return 0;
+    } else {
+      return number.byteValue();
+    }
   }
 
   @Override
   public short getShort(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+    Number number = (Number)getObject(columnLabel);
+    if(number == null) {
+      return 0;
+    } else {
+      return number.shortValue();
+    }
   }
 
   @Override
   public int getInt(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    Number number = (Number)getObject(columnLabel);
+    if(number == null) {
+      return 0;
+    } else {
+      return number.intValue();
+    }
   }
 
   @Override
   public long getLong(String columnLabel) throws SQLException {
-    Long l =  tuple.getLong(columnLabel);
-    if(l == null) {
-      return 0;
+    checkClosed();
+
+    Number number = (Number)getObject(columnLabel);
+    if(number == null) {
+      return 0L;
     } else {
-      return l.longValue();
+      return number.longValue();
     }
   }
 
   @Override
   public float getFloat(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+    Number number = (Number)getObject(columnLabel);
+    if(number == null) {
+      return 0.0F;
+    } else {
+      return number.floatValue();
+    }
   }
 
   @Override
   public double getDouble(String columnLabel) throws SQLException {
-    Double d = tuple.getDouble(columnLabel);
-    if(d == null) {
+    checkClosed();
+
+    Number number = (Number)getObject(columnLabel);
+    if(number == null) {
       return 0.0D;
     } else {
-      return d.doubleValue();
+      return number.doubleValue();
     }
   }
 
   @Override
   public BigDecimal getBigDecimal(String columnLabel, int scale) throws SQLException {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public byte[] getBytes(String columnLabel) throws SQLException {
-    return new byte[0];
+    checkClosed();
+
+    return (byte[]) getObject(columnLabel);
   }
 
   @Override
   public Date getDate(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return (Date)getObject(columnLabel);
   }
 
   @Override
   public Time getTime(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return (Time)getObject(columnLabel);
   }
 
   @Override
   public Timestamp getTimestamp(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return (Timestamp)getObject(columnLabel);
   }
 
   @Override
@@ -300,6 +350,8 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSetMetaData getMetaData() throws SQLException {
+    checkClosed();
+
     return this.resultSetMetaData;
   }
 
@@ -310,7 +362,9 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public Object getObject(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return this.tuple.get(columnLabel);
   }
 
   @Override
@@ -335,7 +389,9 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return (BigDecimal)getObject(columnLabel);
   }
 
   @Override
