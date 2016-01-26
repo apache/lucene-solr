@@ -112,12 +112,29 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
     boolean small = random().nextBoolean();
     for(int iter=0;iter<iters;iter++) {
       double lat = randomLat(small);
-      double latQuantized = LatLonPoint.decodeLat(LatLonPoint.encodeLat(lat));
-      assertEquals(lat, latQuantized, LatLonPoint.TOLERANCE);
+      double latEnc = LatLonPoint.decodeLat(LatLonPoint.encodeLat(lat));
+      assertEquals("lat=" + lat + " latEnc=" + latEnc + " diff=" + (lat - latEnc), lat, latEnc, LatLonPoint.TOLERANCE);
 
       double lon = randomLon(small);
-      double lonQuantized = LatLonPoint.decodeLon(LatLonPoint.encodeLon(lon));
-      assertEquals(lon, lonQuantized, LatLonPoint.TOLERANCE);
+      double lonEnc = LatLonPoint.decodeLon(LatLonPoint.encodeLon(lon));
+      assertEquals("lon=" + lon + " lonEnc=" + lonEnc + " diff=" + (lon - lonEnc), lon, lonEnc, LatLonPoint.TOLERANCE);
+    }
+  }
+
+  public void testScaleUnscaleIsStable() throws Exception {
+    int iters = atLeast(1000);
+    boolean small = random().nextBoolean();
+    for(int iter=0;iter<iters;iter++) {
+      double lat = randomLat(small);
+      double lon = randomLon(small);
+
+      double latEnc = LatLonPoint.decodeLat(LatLonPoint.encodeLat(lat));
+      double lonEnc = LatLonPoint.decodeLon(LatLonPoint.encodeLon(lon));
+
+      double latEnc2 = LatLonPoint.decodeLat(LatLonPoint.encodeLat(latEnc));
+      double lonEnc2 = LatLonPoint.decodeLon(LatLonPoint.encodeLon(lonEnc));
+      assertEquals(latEnc, latEnc2, 0.0);
+      assertEquals(lonEnc, lonEnc2, 0.0);
     }
   }
 }

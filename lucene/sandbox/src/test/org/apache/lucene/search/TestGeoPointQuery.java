@@ -348,4 +348,39 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     assertEquals(180.0, GeoUtils.mortonUnhashLon(hash), 0);
     assertEquals(90.0, GeoUtils.mortonUnhashLat(hash), 0);
   }
+
+  public void testEncodeDecode() throws Exception {
+    int iters = atLeast(10000);
+    boolean small = random().nextBoolean();
+    for(int iter=0;iter<iters;iter++) {
+      double lat = randomLat(small);
+      double lon = randomLon(small);
+
+      long enc = GeoUtils.mortonHash(lon, lat);
+      double latEnc = GeoUtils.mortonUnhashLat(enc);
+      double lonEnc = GeoUtils.mortonUnhashLon(enc);
+
+      assertEquals("lat=" + lat + " latEnc=" + latEnc + " diff=" + (lat - latEnc), lat, latEnc, GeoUtils.TOLERANCE);
+      assertEquals("lon=" + lon + " lonEnc=" + lonEnc + " diff=" + (lon - lonEnc), lon, lonEnc, GeoUtils.TOLERANCE);
+    }
+  }
+
+  public void testScaleUnscaleIsStable() throws Exception {
+    int iters = atLeast(1000);
+    boolean small = random().nextBoolean();
+    for(int iter=0;iter<iters;iter++) {
+      double lat = randomLat(small);
+      double lon = randomLon(small);
+
+      long enc = GeoUtils.mortonHash(lon, lat);
+      double latEnc = GeoUtils.mortonUnhashLat(enc);
+      double lonEnc = GeoUtils.mortonUnhashLon(enc);
+
+      long enc2 = GeoUtils.mortonHash(lon, lat);
+      double latEnc2 = GeoUtils.mortonUnhashLat(enc2);
+      double lonEnc2 = GeoUtils.mortonUnhashLon(enc2);
+      assertEquals(latEnc, latEnc2, 0.0);
+      assertEquals(lonEnc, lonEnc2, 0.0);
+    }
+  }
 }

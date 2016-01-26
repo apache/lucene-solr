@@ -781,4 +781,3 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     return dir;
   }
 }
-
