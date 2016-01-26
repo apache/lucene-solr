@@ -28,8 +28,8 @@ import java.util.Map;
 import java.util.Random;
 
 import com.tdunning.math.stats.AVLTreeDigest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.util.hll.HLL;
-import org.apache.lucene.queryparser.flexible.standard.processors.NumericQueryNodeProcessor;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
@@ -1257,6 +1257,26 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   }
 
+
+  @Test
+  public void testErrors() throws Exception {
+    doTestErrors(Client.localClient());
+  }
+
+  public void doTestErrors(Client client) throws Exception {
+    ModifiableSolrParams p = params("rows", "0");
+    client.deleteByQuery("*:*", null);
+
+    try {
+      client.testJQ(params("ignore_exception", "true", "q", "*:*"
+          , "json.facet", "{f:{type:ignore_exception_aaa, field:bbbbbb}}"
+          )
+      );
+    } catch (SolrException e) {
+      assertTrue( e.getMessage().contains("ignore_exception_aaa") );
+    }
+
+  }
 
 
 
