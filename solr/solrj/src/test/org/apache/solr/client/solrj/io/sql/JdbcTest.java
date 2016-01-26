@@ -24,6 +24,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.Properties;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -403,6 +404,16 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     assertNotNull(resultSetMetaData);
 
     assertEquals(4, resultSetMetaData.getColumnCount());
+
+    assertEquals("Long", resultSetMetaData.getColumnTypeName(1));
+    assertEquals("Long", resultSetMetaData.getColumnTypeName(2));
+    assertEquals("String", resultSetMetaData.getColumnTypeName(3));
+    assertEquals("Double", resultSetMetaData.getColumnTypeName(4));
+
+    assertEquals(Types.DOUBLE, resultSetMetaData.getColumnType(1));
+    assertEquals(Types.DOUBLE, resultSetMetaData.getColumnType(2));
+    assertEquals(Types.VARCHAR, resultSetMetaData.getColumnType(3));
+    assertEquals(Types.DOUBLE, resultSetMetaData.getColumnType(4));
   }
 
   private void checkResultSet(ResultSet rs) throws Exception {

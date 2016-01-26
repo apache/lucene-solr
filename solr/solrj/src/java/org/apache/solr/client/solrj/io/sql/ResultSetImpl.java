@@ -41,13 +41,14 @@ import java.util.Calendar;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.SolrStream;
+import org.apache.solr.client.solrj.io.stream.PushBackStream;
 
 class ResultSetImpl implements ResultSet {
   private final StatementImpl statement;
-  private final SolrStream solrStream;
+  private final PushBackStream solrStream;
   private final ResultSetMetaData resultSetMetaData;
   private final Tuple metadataTuple;
+  private final Tuple firstTuple;
   private Tuple tuple;
   private boolean done;
   private boolean closed;
@@ -55,7 +56,7 @@ class ResultSetImpl implements ResultSet {
 
   ResultSetImpl(StatementImpl statement) {
     this.statement = statement;
-    this.solrStream = statement.getSolrStream();
+    this.solrStream = new PushBackStream(statement.getSolrStream());
 
     // Read the first tuple so that metadata can be gathered
     try {
@@ -69,11 +70,22 @@ class ResultSetImpl implements ResultSet {
       throw new RuntimeException("Couldn't get metadata tuple");
     }
 
+    try {
+      this.firstTuple = this.solrStream.read();
+      this.solrStream.pushBack(firstTuple);
+    } catch (IOException e) {
+      throw new RuntimeException("Couldn't get first tuple.");
+    }
+
     this.resultSetMetaData = new ResultSetMetaDataImpl(this);
   }
 
   Tuple getMetadataTuple() {
     return this.metadataTuple;
+  }
+
+  Tuple getFirstTuple() {
+    return this.firstTuple;
   }
 
   private void checkClosed() throws SQLException {

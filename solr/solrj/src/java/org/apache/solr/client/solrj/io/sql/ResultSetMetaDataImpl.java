@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.sql;
 
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -26,10 +27,21 @@ import org.apache.solr.client.solrj.io.Tuple;
 class ResultSetMetaDataImpl implements ResultSetMetaData {
   private final ResultSetImpl resultSet;
   private final Tuple metadataTuple;
+  private final Tuple firstTuple;
 
   ResultSetMetaDataImpl(ResultSetImpl resultSet) {
     this.resultSet = resultSet;
     this.metadataTuple = this.resultSet.getMetadataTuple();
+    this.firstTuple = this.resultSet.getFirstTuple();
+  }
+
+  private Class getColumnClass(int column) throws SQLException {
+    Object o = this.firstTuple.get(this.getColumnName(column));
+    if(o == null) {
+      return String.class; //Nulls will only be present with Strings.
+    } else {
+      return o.getClass();
+    }
   }
 
   @Override
@@ -117,12 +129,23 @@ class ResultSetMetaDataImpl implements ResultSetMetaData {
 
   @Override
   public int getColumnType(int column) throws SQLException {
-    return 0;
+    switch (getColumnTypeName(column)) {
+      case "String":
+        return Types.VARCHAR;
+      case "Integer":
+        return Types.INTEGER;
+      case "Long":
+        return Types.DOUBLE;
+      case "Double":
+        return Types.DOUBLE;
+      default:
+        return Types.JAVA_OBJECT;
+    }
   }
 
   @Override
   public String getColumnTypeName(int column) throws SQLException {
-    return null;
+    return this.getColumnClass(column).getSimpleName();
   }
 
   @Override
@@ -142,7 +165,7 @@ class ResultSetMetaDataImpl implements ResultSetMetaData {
 
   @Override
   public String getColumnClassName(int column) throws SQLException {
-    return null;
+    return this.getColumnClass(column).getTypeName();
   }
 
   @Override

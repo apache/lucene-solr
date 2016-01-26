@@ -59,7 +59,6 @@ class StatementImpl implements Statement {
 
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
-
     try {
       if(this.currentResultSet != null) {
         this.currentResultSet.close();
