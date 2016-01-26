@@ -772,4 +772,3 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     assertFalse(failed.get());
   }
 }
-
