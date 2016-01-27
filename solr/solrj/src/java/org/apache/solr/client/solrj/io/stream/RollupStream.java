@@ -184,7 +184,7 @@ public class RollupStream extends TupleStream implements Expressible {
           }
 
           for(int i=0; i<buckets.length; i++) {
-            map.put(buckets[i].toString(), currentKey.getParts()[i].toString());
+            map.put(buckets[i].toString(), currentKey.getParts()[i]);
           }
           Tuple t = new Tuple(map);
           tupleStream.pushBack(tuple);
@@ -195,7 +195,7 @@ public class RollupStream extends TupleStream implements Expressible {
         }
       }
 
-      String[] bucketValues = new String[buckets.length];
+      Object[] bucketValues = new Object[buckets.length];
       for(int i=0; i<buckets.length; i++) {
         bucketValues[i] = buckets[i].getBucketValue(tuple);
       }
@@ -215,7 +215,7 @@ public class RollupStream extends TupleStream implements Expressible {
           }
 
           for(int i=0; i<buckets.length; i++) {
-            map.put(buckets[i].toString(), currentKey.getParts()[i].toString());
+            map.put(buckets[i].toString(), currentKey.getParts()[i]);
           }
           t = new Tuple(map);
         }

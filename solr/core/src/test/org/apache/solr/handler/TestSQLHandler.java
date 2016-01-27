@@ -2274,6 +2274,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       tuple = tuples.get(0);
       assert(tuple.getLong("year_i") == 2015);
+      assert(tuple.get("year_i") instanceof Long);  // SOLR-8601, This tests that the bucket is actually a Long and not parsed from a String.
       assert(tuple.getDouble("sum(item_i)") == 66);
 
       tuple = tuples.get(1);
@@ -2296,6 +2297,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       tuple = tuples.get(0);
       assert(tuple.getLong("year_i") == 2015);
       assert(tuple.getLong("month_i") == 11);
+      assert(tuple.get("year_i") instanceof Long);
+      assert(tuple.get("month_i") instanceof Long);
       assert(tuple.getDouble("sum(item_i)") == 57);
 
       tuple = tuples.get(1);

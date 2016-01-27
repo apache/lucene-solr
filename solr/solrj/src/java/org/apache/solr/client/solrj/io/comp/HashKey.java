@@ -28,17 +28,10 @@ public class HashKey implements Serializable {
 
 
   public HashKey(String value) {
-    parts = (Object[])value.split("::");
+    parts = value.split("::");
   }
 
-  public HashKey(Tuple t, String[] keys) {
-    this.parts = new Object[keys.length];
-    for(int i=0; i<keys.length; i++) {
-      parts[i] = t.get(keys[i]);
-    }
-  }
-
-  public HashKey(String[] parts) {
+  public HashKey(Object[] parts) {
     this.parts = parts;
   }
 

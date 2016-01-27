@@ -38,8 +38,8 @@ public class Bucket implements Serializable {
     this.bucketKey = bucketKey;
   }
 
-  public String getBucketValue(Tuple tuple) {
-    return tuple.get(bucketKey).toString();
+  public Object getBucketValue(Tuple tuple) {
+    return tuple.get(bucketKey);
   }
 
   public String toString() {
