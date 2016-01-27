@@ -425,6 +425,10 @@ Bug Fixes
 
 * SOLR-8582 : memory leak in JsonRecordReader affecting /update/json/docs. Large payloads
   cause OOM (noble, shalin)
+
+* SOLR-8605: Regular expression queries starting with escaped forward slash caused
+  an exception. (Scott Blum, yonik)
+
   
 Optimizations
 ----------------------
