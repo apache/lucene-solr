@@ -48,6 +48,7 @@ import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -361,6 +362,9 @@ public class CommonTermsQueryTest extends LuceneTestCase {
 
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
+    // don't use a randomized similarity, e.g. stopwords for DFI can get scored as 0,
+    // so boosting them is kind of crazy
+    s.setSimilarity(new BM25Similarity());
     {
       CommonTermsQuery query = new CommonTermsQuery(Occur.SHOULD, Occur.SHOULD,
           random().nextBoolean() ? 2.0f : 0.5f);
