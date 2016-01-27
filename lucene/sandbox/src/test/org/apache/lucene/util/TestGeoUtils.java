@@ -29,6 +29,8 @@ import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
+import static org.apache.lucene.util.GeoDistanceUtils.DISTANCE_PCT_ERR;
+
 /**
  * Tests class for methods in GeoUtils
  *
@@ -272,7 +274,7 @@ public class TestGeoUtils extends LuceneTestCase {
     } else {
       result = -90 + 180.0 * random().nextDouble();
     }
-    return unscaleLat(scaleLat(result));
+    return result;
   }
 
   public double randomLon(boolean small) {
@@ -282,7 +284,7 @@ public class TestGeoUtils extends LuceneTestCase {
     } else {
       result = -180 + 360.0 * random().nextDouble();
     }
-    return unscaleLon(scaleLon(result));
+    return result;
   }
 
   private void findMatches(Set<Integer> hits, PrintWriter log, Cell root,
@@ -450,7 +452,8 @@ public class TestGeoUtils extends LuceneTestCase {
 
       double radiusMeters;
 
-      // TODO: GeoUtils APIs are still buggy for large distances:
+      // TODO: large exotic rectangles created by BKD may be inaccurate up to 2 times DISTANCE_PCT_ERR.
+      // restricting size until LUCENE-6994 can be addressed
       if (true || useSmallRanges) {
         // Approx 3 degrees lon at the equator:
         radiusMeters = random().nextDouble() * 333000;
@@ -514,14 +517,20 @@ public class TestGeoUtils extends LuceneTestCase {
       // Done matching, now verify:
       for(int docID=0;docID<numDocs;docID++) {
         double distanceMeters = GeoDistanceUtils.haversin(centerLat, centerLon, docLats[docID], docLons[docID]);
-        boolean expected = distanceMeters <= radiusMeters;
+        final Boolean expected;
+        final double percentError = Math.abs(distanceMeters - radiusMeters) / distanceMeters;
+        if (percentError <= DISTANCE_PCT_ERR) {
+          expected = null;
+        } else {
+          expected = distanceMeters <= radiusMeters;
+        }
 
         boolean actual = hits.contains(docID);
-        if (actual != expected) {
+        if (expected != null && actual != expected) {
           if (actual) {
-            log.println("doc=" + docID + " matched but should not on iteration " + iter);
+            log.println("doc=" + docID + " matched but should not with distance error " + percentError + " on iteration " + iter);
           } else {
-            log.println("doc=" + docID + " did not match but should on iteration " + iter);
+            log.println("doc=" + docID + " did not match but should with distance error " + percentError + " on iteration " + iter);
           }
           log.println("  lon=" + docLons[docID] + " lat=" + docLats[docID] + " distanceMeters=" + distanceMeters + " vs radiusMeters=" + radiusMeters);
           failCount++;

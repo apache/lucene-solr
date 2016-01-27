@@ -142,11 +142,11 @@ public class PointInPolygonQuery extends Query {
                              if (cellMinLat <= minLat && cellMaxLat >= maxLat && cellMinLon <= minLon && cellMaxLon >= maxLon) {
                                // Cell fully encloses the query
                                return Relation.CELL_CROSSES_QUERY;
-                             } else  if (GeoRelationUtils.rectWithinPoly(cellMinLon, cellMinLat, cellMaxLon, cellMaxLat,
+                             } else  if (GeoRelationUtils.rectWithinPolyPrecise(cellMinLon, cellMinLat, cellMaxLon, cellMaxLat,
                                                                  polyLons, polyLats,
                                                                  minLon, minLat, maxLon, maxLat)) {
                                return Relation.CELL_INSIDE_QUERY;
-                             } else if (GeoRelationUtils.rectCrossesPoly(cellMinLon, cellMinLat, cellMaxLon, cellMaxLat,
+                             } else if (GeoRelationUtils.rectCrossesPolyPrecise(cellMinLon, cellMinLat, cellMaxLon, cellMaxLat,
                                                                  polyLons, polyLats,
                                                                  minLon, minLat, maxLon, maxLat)) {
                                return Relation.CELL_CROSSES_QUERY;

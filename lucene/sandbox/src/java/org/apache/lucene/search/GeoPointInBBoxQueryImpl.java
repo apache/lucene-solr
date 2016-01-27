@@ -24,9 +24,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.GeoRelationUtils;
-import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
-import org.apache.lucene.util.ToStringUtils;
 
 /** Package private implementation for the public facing GeoPointInBBoxQuery delegate class.
  *
@@ -102,7 +100,7 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
 
     @Override
     protected boolean postFilter(final double lon, final double lat) {
-      return GeoRelationUtils.pointInRect(lon, lat, minLon, minLat, maxLon, maxLat);
+      return GeoRelationUtils.pointInRectPrecise(lon, lat, minLon, minLat, maxLon, maxLat);
     }
   }
 

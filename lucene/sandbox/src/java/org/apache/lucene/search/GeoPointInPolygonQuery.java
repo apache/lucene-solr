@@ -148,14 +148,14 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
 
     @Override
     protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectCrossesPoly(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
+      return GeoRelationUtils.rectCrossesPolyApprox(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
           GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
     }
 
     @Override
     protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectWithinPoly(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
-          GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat, true);
+      return GeoRelationUtils.rectWithinPolyApprox(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
+          GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
     }
 
     @Override

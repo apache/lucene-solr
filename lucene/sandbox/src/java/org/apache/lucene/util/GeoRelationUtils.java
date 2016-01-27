@@ -27,10 +27,9 @@ public class GeoRelationUtils {
    * NOTE: this is a basic method that does not handle dateline or pole crossing. Unwrapping must be done before
    * calling this method.
    */
-  public static boolean pointInRect(final double lon, final double lat, final double minLon,
-                                    final double minLat, final double maxLon, final double maxLat) {
-    return (GeoUtils.compare(lon, minLon) >= 0 && GeoUtils.compare(lon, maxLon) <= 0
-        && GeoUtils.compare(lat, minLat) >= 0 && GeoUtils.compare(lat, maxLat) <= 0);
+  public static boolean pointInRectPrecise(final double lon, final double lat, final double minLon,
+                                           final double minLat, final double maxLon, final double maxLat) {
+    return lon >= minLon && lon <= maxLon && lat >= minLat && lat <= maxLat;
   }
 
   /**
@@ -59,6 +58,10 @@ public class GeoRelationUtils {
     }
     return inPoly;
   }
+
+  /////////////////////////
+  // Rectangle relations
+  /////////////////////////
 
   public static boolean rectDisjoint(final double aMinX, final double aMinY, final double aMaxX, final double aMaxY,
                                      final double bMinX, final double bMinY, final double bMaxX, final double bMaxY) {
@@ -95,13 +98,32 @@ public class GeoRelationUtils {
     return !((aMaxX < bMinX || aMinX > bMaxX || aMaxY < bMinY || aMinY > bMaxY) );
   }
 
+  /////////////////////////
+  // Polygon relations
+  /////////////////////////
+
   /**
-   * Computes whether a rectangle crosses a shape. (touching not allowed)
+   * Convenience method for accurately computing whether a rectangle crosses a poly
    */
-  public static boolean rectCrossesPoly(final double rMinX, final double rMinY, final double rMaxX,
+  public static boolean rectCrossesPolyPrecise(final double rMinX, final double rMinY, final double rMaxX,
                                         final double rMaxY, final double[] shapeX, final double[] shapeY,
                                         final double sMinX, final double sMinY, final double sMaxX,
                                         final double sMaxY) {
+    // short-circuit: if the bounding boxes are disjoint then the shape does not cross
+    if (rectDisjoint(rMinX, rMinY, rMaxX, rMaxY, sMinX, sMinY, sMaxX, sMaxY)) {
+      return false;
+    }
+    return rectCrossesPoly(rMinX, rMinY, rMaxX, rMaxY, shapeX, shapeY);
+  }
+
+  /**
+   * Compute whether a rectangle crosses a shape. (touching not allowed) Includes a flag for approximating the
+   * relation.
+   */
+  public static boolean rectCrossesPolyApprox(final double rMinX, final double rMinY, final double rMaxX,
+                                              final double rMaxY, final double[] shapeX, final double[] shapeY,
+                                              final double sMinX, final double sMinY, final double sMaxX,
+                                              final double sMaxY) {
     // short-circuit: if the bounding boxes are disjoint then the shape does not cross
     if (rectDisjoint(rMinX, rMinY, rMaxX, rMaxY, sMinX, sMinY, sMaxX, sMaxY)) {
       return false;
@@ -116,11 +138,57 @@ public class GeoRelationUtils {
     return false;
   }
 
+  /**
+   * Accurately compute (within restrictions of cartesian decimal degrees) whether a rectangle crosses a polygon
+   */
+  private static boolean rectCrossesPoly(final double rMinX, final double rMinY, final double rMaxX,
+                                         final double rMaxY, final double[] shapeX, final double[] shapeY) {
+    final double[][] bbox = new double[][] { {rMinX, rMinY}, {rMaxX, rMinY}, {rMaxX, rMaxY}, {rMinX, rMaxY}, {rMinX, rMinY} };
+    final int polyLength = shapeX.length-1;
+    double d, s, t, a1, b1, c1, a2, b2, c2;
+    double x00, y00, x01, y01, x10, y10, x11, y11;
+
+    // computes the intersection point between each bbox edge and the polygon edge
+    for (short b=0; b<4; ++b) {
+      a1 = bbox[b+1][1]-bbox[b][1];
+      b1 = bbox[b][0]-bbox[b+1][0];
+      c1 = a1*bbox[b+1][0] + b1*bbox[b+1][1];
+      for (int p=0; p<polyLength; ++p) {
+        a2 = shapeY[p+1]-shapeY[p];
+        b2 = shapeX[p]-shapeX[p+1];
+        // compute determinant
+        d = a1*b2 - a2*b1;
+        if (d != 0) {
+          // lines are not parallel, check intersecting points
+          c2 = a2*shapeX[p+1] + b2*shapeY[p+1];
+          s = (1/d)*(b2*c1 - b1*c2);
+          t = (1/d)*(a1*c2 - a2*c1);
+          x00 = StrictMath.min(bbox[b][0], bbox[b+1][0]) - GeoUtils.TOLERANCE;
+          x01 = StrictMath.max(bbox[b][0], bbox[b+1][0]) + GeoUtils.TOLERANCE;
+          y00 = StrictMath.min(bbox[b][1], bbox[b+1][1]) - GeoUtils.TOLERANCE;
+          y01 = StrictMath.max(bbox[b][1], bbox[b+1][1]) + GeoUtils.TOLERANCE;
+          x10 = StrictMath.min(shapeX[p], shapeX[p+1]) - GeoUtils.TOLERANCE;
+          x11 = StrictMath.max(shapeX[p], shapeX[p+1]) + GeoUtils.TOLERANCE;
+          y10 = StrictMath.min(shapeY[p], shapeY[p+1]) - GeoUtils.TOLERANCE;
+          y11 = StrictMath.max(shapeY[p], shapeY[p+1]) + GeoUtils.TOLERANCE;
+          // check whether the intersection point is touching one of the line segments
+          boolean touching = ((x00 == s && y00 == t) || (x01 == s && y01 == t))
+              || ((x10 == s && y10 == t) || (x11 == s && y11 == t));
+          // if line segments are not touching and the intersection point is within the range of either segment
+          if (!(touching || x00 > s || x01 < s || y00 > t || y01 < t || x10 > s || x11 < s || y10 > t || y11 < t)) {
+            return true;
+          }
+        }
+      } // for each poly edge
+    } // for each bbox edge
+    return false;
+  }
+
   private static boolean lineCrossesRect(double aX1, double aY1, double aX2, double aY2,
                                          final double rMinX, final double rMinY, final double rMaxX, final double rMaxY) {
     // short-circuit: if one point inside rect, other outside
-    if (pointInRect(aX1, aY1, rMinX, rMinY, rMaxX, rMaxY) ?
-        !pointInRect(aX2, aY2, rMinX, rMinY, rMaxX, rMaxY) : pointInRect(aX2, aY2, rMinX, rMinY, rMaxX, rMaxY)) {
+    if (pointInRectPrecise(aX1, aY1, rMinX, rMinY, rMaxX, rMaxY) ?
+        !pointInRectPrecise(aX2, aY2, rMinX, rMinY, rMaxX, rMaxY) : pointInRectPrecise(aX2, aY2, rMinX, rMinY, rMaxX, rMaxY)) {
       return true;
     }
 
@@ -166,35 +234,37 @@ public class GeoRelationUtils {
     return false;
   }
 
-  public static boolean rectWithinPoly(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
+  public static boolean rectWithinPolyPrecise(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                        final double[] shapeX, final double[] shapeY, final double sMinX,
                                        final double sMinY, final double sMaxX, final double sMaxY) {
-    return rectWithinPoly(rMinX, rMinY, rMaxX, rMaxY, shapeX, shapeY, sMinX, sMinY, sMaxX, sMaxY, false);
+    // check if rectangle crosses poly (to handle concave/pacman polys), then check that all 4 corners
+    // are contained
+    return !(rectCrossesPolyPrecise(rMinX, rMinY, rMaxX, rMaxY, shapeX, shapeY, sMinX, sMinY, sMaxX, sMaxY) ||
+        !pointInPolygon(shapeX, shapeY, rMinY, rMinX) || !pointInPolygon(shapeX, shapeY, rMinY, rMaxX) ||
+        !pointInPolygon(shapeX, shapeY, rMaxY, rMaxX) || !pointInPolygon(shapeX, shapeY, rMaxY, rMinX));
   }
 
   /**
    * Computes whether a rectangle is within a given polygon (shared boundaries allowed)
    */
-  public static boolean rectWithinPoly(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
+  public static boolean rectWithinPolyApprox(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                        final double[] shapeX, final double[] shapeY, final double sMinX,
-                                       final double sMinY, final double sMaxX, final double sMaxY, boolean approx) {
+                                       final double sMinY, final double sMaxX, final double sMaxY) {
     // approximation: check if rectangle crosses poly (to handle concave/pacman polys), then check one of the corners
     // are contained
-    if (approx == true) {
-      // short-cut: if bounding boxes cross, rect is not within
-      if (rectCrosses(rMinX, rMinY, rMaxX, rMaxY, sMinX, sMinY, sMaxX, sMaxY) == true) {
-        return false;
-      }
 
-      return !(rectCrossesPoly(rMinX, rMinY, rMaxX, rMaxY, shapeX, shapeY, sMinX, sMinY, sMaxX, sMaxY) ||
-          !pointInPolygon(shapeX, shapeY, rMinY, rMinX));
-    }
-    // check if rectangle crosses poly (to handle concave/pacman polys), then check that all 4 corners
-    // are contained
-    return !(rectCrossesPoly(rMinX, rMinY, rMaxX, rMaxY, shapeX, shapeY, sMinX, sMinY, sMaxX, sMaxY) ||
-        !pointInPolygon(shapeX, shapeY, rMinY, rMinX) || !pointInPolygon(shapeX, shapeY, rMinY, rMaxX) ||
-        !pointInPolygon(shapeX, shapeY, rMaxY, rMaxX) || !pointInPolygon(shapeX, shapeY, rMaxY, rMinX));
+    // short-cut: if bounding boxes cross, rect is not within
+     if (rectCrosses(rMinX, rMinY, rMaxX, rMaxY, sMinX, sMinY, sMaxX, sMaxY) == true) {
+       return false;
+     }
+
+     return !(rectCrossesPolyApprox(rMinX, rMinY, rMaxX, rMaxY, shapeX, shapeY, sMinX, sMinY, sMaxX, sMaxY)
+         || !pointInPolygon(shapeX, shapeY, rMinY, rMinX));
   }
+
+  /////////////////////////
+  // Circle relations
+  /////////////////////////
 
   private static boolean rectAnyCornersInCircle(final double rMinX, final double rMinY, final double rMaxX,
                                                 final double rMaxY, final double centerLon, final double centerLat,
