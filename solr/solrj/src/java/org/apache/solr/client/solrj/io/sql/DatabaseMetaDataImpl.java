@@ -772,7 +772,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
 
   @Override
   public Connection getConnection() throws SQLException {
-    return null;
+    return this.connection;
   }
 
   @Override

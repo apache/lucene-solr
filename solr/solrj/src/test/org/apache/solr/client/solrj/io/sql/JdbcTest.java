@@ -360,11 +360,13 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     String sql = "select id, a_i, a_s, a_f as my_float_col from " + collection + " order by a_i desc limit 2";
 
     try (Connection con = DriverManager.getConnection(connectionString)) {
+      assertTrue(con.isValid(DEFAULT_CONNECTION_TIMEOUT));
       assertEquals(collection, con.getCatalog());
 
       DatabaseMetaData databaseMetaData = con.getMetaData();
       assertNotNull(databaseMetaData);
 
+      assertEquals(con, databaseMetaData.getConnection());
       assertEquals(connectionString, databaseMetaData.getURL());
 
       assertNull(con.getWarnings());

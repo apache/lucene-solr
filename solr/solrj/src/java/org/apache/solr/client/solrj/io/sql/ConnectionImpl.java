@@ -35,6 +35,8 @@ import java.sql.Struct;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -290,7 +292,16 @@ class ConnectionImpl implements Connection {
 
   @Override
   public boolean isValid(int timeout) throws SQLException {
-    throw new UnsupportedOperationException();
+    // check that the connection isn't close and able to connect within the timeout
+    try {
+      if(!isClosed()) {
+        this.client.connect(timeout, TimeUnit.SECONDS);
+        return true;
+      }
+    } catch (InterruptedException|TimeoutException ignore) {
+      // Ignore error since connection is not valid
+    }
+    return false;
   }
 
   @Override
