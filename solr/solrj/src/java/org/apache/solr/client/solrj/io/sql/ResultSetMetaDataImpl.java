@@ -21,6 +21,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
 
@@ -36,7 +37,7 @@ class ResultSetMetaDataImpl implements ResultSetMetaData {
   }
 
   private Class getColumnClass(int column) throws SQLException {
-    Object o = this.firstTuple.get(this.getColumnName(column));
+    Object o = this.firstTuple.get(this.getColumnLabel(column));
     if(o == null) {
       return String.class; //Nulls will only be present with Strings.
     } else {
@@ -85,12 +86,13 @@ class ResultSetMetaDataImpl implements ResultSetMetaData {
 
   @Override
   public int getColumnDisplaySize(int column) throws SQLException {
-    return 0;
+    return this.getColumnLabel(column).length();
   }
 
   @Override
   public String getColumnLabel(int column) throws SQLException {
-    return null;
+    Map<String, String> aliases = (Map<String, String>) metadataTuple.get("aliases");
+    return aliases.get(this.getColumnName(column));
   }
 
   @Override

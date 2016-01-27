@@ -357,7 +357,7 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     String collection = DEFAULT_COLLECTION;
     String connectionString = "jdbc:solr://" + zkServer.getZkAddress() + "?collection=" + collection +
         "&username=&password=&testKey1=testValue&testKey2";
-    String sql = "select id, a_i, a_s, a_f from " + collection + " order by a_i desc limit 2";
+    String sql = "select id, a_i, a_s, a_f as my_float_col from " + collection + " order by a_i desc limit 2";
 
     try (Connection con = DriverManager.getConnection(connectionString)) {
       assertEquals(collection, con.getCatalog());
@@ -405,6 +405,21 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
     assertEquals(4, resultSetMetaData.getColumnCount());
 
+    assertEquals("id", resultSetMetaData.getColumnName(1));
+    assertEquals("a_i", resultSetMetaData.getColumnName(2));
+    assertEquals("a_s", resultSetMetaData.getColumnName(3));
+    assertEquals("a_f", resultSetMetaData.getColumnName(4));
+
+    assertEquals("id", resultSetMetaData.getColumnLabel(1));
+    assertEquals("a_i", resultSetMetaData.getColumnLabel(2));
+    assertEquals("a_s", resultSetMetaData.getColumnLabel(3));
+    assertEquals("my_float_col", resultSetMetaData.getColumnLabel(4));
+
+    assertEquals("id".length(), resultSetMetaData.getColumnDisplaySize(1));
+    assertEquals("a_i".length(), resultSetMetaData.getColumnDisplaySize(2));
+    assertEquals("a_s".length(), resultSetMetaData.getColumnDisplaySize(3));
+    assertEquals("my_float_col".length(), resultSetMetaData.getColumnDisplaySize(4));
+
     assertEquals("Long", resultSetMetaData.getColumnTypeName(1));
     assertEquals("Long", resultSetMetaData.getColumnTypeName(2));
     assertEquals("String", resultSetMetaData.getColumnTypeName(3));
@@ -441,19 +456,19 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     assertEquals("hello0", rs.getString("a_s"));
     assertEquals("hello0", rs.getString(3));
 
-    assertEquals(10D, rs.getObject("a_f"));
+    assertEquals(10D, rs.getObject("my_float_col"));
     assertEquals(10D, rs.getObject(4));
-    assertEquals(10D, rs.getDouble("a_f"), 0);
+    assertEquals(10D, rs.getDouble("my_float_col"), 0);
     assertEquals(10D, rs.getDouble(4), 0);
-    assertEquals(10F, rs.getFloat("a_f"), 0);
+    assertEquals(10F, rs.getFloat("my_float_col"), 0);
     assertEquals(10F, rs.getFloat(4), 0);
-    assertEquals(10, rs.getInt("a_f"), 0);
+    assertEquals(10, rs.getInt("my_float_col"), 0);
     assertEquals(10, rs.getInt(4), 0);
-    assertEquals(10L, rs.getLong("a_f"), 0);
+    assertEquals(10L, rs.getLong("my_float_col"), 0);
     assertEquals(10L, rs.getLong(4), 0);
-    assertEquals(10, rs.getShort("a_f"), 0);
+    assertEquals(10, rs.getShort("my_float_col"), 0);
     assertEquals(10, rs.getShort(4), 0);
-    assertEquals(10, rs.getByte("a_f"), 0);
+    assertEquals(10, rs.getByte("my_float_col"), 0);
     assertEquals(10, rs.getByte(4), 0);
 
     assertTrue(rs.next());
@@ -476,19 +491,19 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     assertEquals("hello3", rs.getString("a_s"));
     assertEquals("hello3", rs.getString(3));
 
-    assertEquals(9D, rs.getObject("a_f"));
+    assertEquals(9D, rs.getObject("my_float_col"));
     assertEquals(9D, rs.getObject(4));
-    assertEquals(9D, rs.getDouble("a_f"), 0);
+    assertEquals(9D, rs.getDouble("my_float_col"), 0);
     assertEquals(9D, rs.getDouble(4), 0);
-    assertEquals(9F, rs.getFloat("a_f"), 0);
+    assertEquals(9F, rs.getFloat("my_float_col"), 0);
     assertEquals(9F, rs.getFloat(4), 0);
-    assertEquals(9, rs.getInt("a_f"), 0);
+    assertEquals(9, rs.getInt("my_float_col"), 0);
     assertEquals(9, rs.getInt(4), 0);
-    assertEquals(9L, rs.getLong("a_f"), 0);
+    assertEquals(9L, rs.getLong("my_float_col"), 0);
     assertEquals(9L, rs.getLong(4), 0);
-    assertEquals(9, rs.getShort("a_f"), 0);
+    assertEquals(9, rs.getShort("my_float_col"), 0);
     assertEquals(9, rs.getShort(4), 0);
-    assertEquals(9, rs.getByte("a_f"), 0);
+    assertEquals(9, rs.getByte("my_float_col"), 0);
     assertEquals(9, rs.getByte(4), 0);
 
     assertFalse(rs.next());
