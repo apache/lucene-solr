@@ -160,8 +160,6 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
       }
     };
     
-    concurrentClient.setParser(new BinaryResponseParser());
-    concurrentClient.setRequestWriter(new BinaryRequestWriter());
     concurrentClient.setPollQueueTime(0);
     
     // ensure it doesn't block where there's nothing to do yet

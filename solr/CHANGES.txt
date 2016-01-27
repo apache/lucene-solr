@@ -570,6 +570,8 @@ Other Changes
 
 * SOLR-8565: add & use CommonParams.(ROWS|START)_DEFAULT constants (Christine Poerschke)
 
+* SOLR-8595: Use BinaryRequestWriter by default in HttpSolrClient and ConcurrentUpdateSolrClient. (shalin)
+
 ==================  5.4.1 ==================
 
 Bug Fixes

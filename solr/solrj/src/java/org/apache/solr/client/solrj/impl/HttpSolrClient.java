@@ -140,7 +140,7 @@ public class HttpSolrClient extends SolrClient {
    * 
    * @see org.apache.solr.client.solrj.request.RequestWriter
    */
-  protected volatile RequestWriter requestWriter = new RequestWriter();
+  protected volatile RequestWriter requestWriter = new BinaryRequestWriter();
   
   private final HttpClient httpClient;
   
