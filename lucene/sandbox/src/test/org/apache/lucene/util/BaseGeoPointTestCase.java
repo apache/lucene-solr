@@ -401,22 +401,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     verify(small, lats, lons);
   }
 
-  public long scaleLon(final double val) {
-    return (long) ((val-GeoUtils.MIN_LON_INCL) * LON_SCALE);
-  }
-
-  public long scaleLat(final double val) {
-    return (long) ((val-GeoUtils.MIN_LAT_INCL) * LAT_SCALE);
-  }
-
-  public double unscaleLon(final long val) {
-    return (val / LON_SCALE) + GeoUtils.MIN_LON_INCL;
-  }
-
-  public double unscaleLat(final long val) {
-    return (val / LAT_SCALE) + GeoUtils.MIN_LAT_INCL;
-  }
-
   public double randomLat(boolean small) {
     double result;
     if (small) {
