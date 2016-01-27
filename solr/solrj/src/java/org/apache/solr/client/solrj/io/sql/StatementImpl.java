@@ -229,7 +229,13 @@ class StatementImpl implements Statement {
 
   @Override
   public boolean getMoreResults() throws SQLException {
-    throw new UnsupportedOperationException();
+    if(isClosed()) {
+      throw new SQLException("Statement is closed");
+    }
+
+    // Currently multiple result sets are not possible yet
+    this.currentResultSet.close();
+    return false;
   }
 
   @Override

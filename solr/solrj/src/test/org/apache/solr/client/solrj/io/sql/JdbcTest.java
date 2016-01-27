@@ -396,6 +396,8 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
           checkResultSetMetadata(rs);
           checkResultSet(rs);
         }
+
+        assertFalse(statement.getMoreResults());
       }
     }
   }
