@@ -23,30 +23,14 @@ package org.apache.lucene.replicator.nrt;
  *  flushed segment sizes, not merged segments. */
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentReader;
-import org.apache.lucene.replicator.nrt.CopyJob.OnceDone;
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.OutputStreamDataOutput;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.ThreadInterruptedException;
 
 // TODO: or ... replica node can do merging locally?  tricky to keep things in sync, when one node merges more slowly than others...
 
@@ -70,8 +54,6 @@ class PreCopyMergedSegmentWarmer extends IndexReaderWarmer {
       assert filesMetaData.containsKey(fileName) == false;
       filesMetaData.put(fileName, metaData);
     }
-
-    // nocommit if one replica is very slow then it dos's all other replicas?
 
     primary.preCopyMergedSegmentFiles(info, filesMetaData);
     primary.message(String.format(Locale.ROOT, "top: done warm merge " + info + ": took %.3f sec, %.1f MB", (System.nanoTime()-startNS)/1000000000., info.sizeInBytes()/1024/1024.));

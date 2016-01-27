@@ -43,17 +43,16 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.SegmentCommitInfo;
-import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.DataInput;
@@ -61,8 +60,6 @@ import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -74,12 +71,18 @@ class SimplePrimaryNode extends PrimaryNode {
 
   final int tcpPort;
 
+  final Random random;
+
   // These are updated by parent test process whenever replicas change:
   int[] replicaTCPPorts;
   int[] replicaIDs;
 
   // So we only flip a bit once per file name:
   final Set<String> bitFlipped = Collections.synchronizedSet(new HashSet<>());
+
+  final List<MergePreCopy> warmingSegments = Collections.synchronizedList(new ArrayList<>());
+
+  final boolean doFlipBitsDuringCopy;
 
   static class MergePreCopy {
     final List<Connection> connections = Collections.synchronizedList(new ArrayList<>());
@@ -109,11 +112,12 @@ class SimplePrimaryNode extends PrimaryNode {
     }
   }
 
-  final List<MergePreCopy> warmingSegments = Collections.synchronizedList(new ArrayList<>());
-
-  public SimplePrimaryNode(Random random, Path indexPath, int id, int tcpPort, long primaryGen, long forcePrimaryVersion, SearcherFactory searcherFactory) throws IOException {
+  public SimplePrimaryNode(Random random, Path indexPath, int id, int tcpPort, long primaryGen, long forcePrimaryVersion, SearcherFactory searcherFactory,
+                           boolean doFlipBitsDuringCopy) throws IOException {
     super(initWriter(id, random, indexPath), id, primaryGen, forcePrimaryVersion, searcherFactory);
     this.tcpPort = tcpPort;
+    this.random = new Random(random.nextLong());
+    this.doFlipBitsDuringCopy = doFlipBitsDuringCopy;
   }
 
   /** Records currently alive replicas. */
@@ -187,7 +191,7 @@ class SimplePrimaryNode extends PrimaryNode {
       long startNS = System.nanoTime();
       long lastWarnNS = startNS;
 
-      // TODO: maybe ... place some sort of time limit on how long we are willing to wait for slow replicas to finish copying?
+      // TODO: maybe ... place some sort of time limit on how long we are willing to wait for slow replica(s) to finish copying?
       while (preCopy.finished() == false) {
         try {
           Thread.sleep(10);
@@ -241,7 +245,16 @@ class SimplePrimaryNode extends PrimaryNode {
                 message("top: warning: replica socket=" + c.s + " for segment=" + info + " seems to be dead; closing files=" + files.keySet());
                 IOUtils.closeWhileHandlingException(c);
                 it.remove();
+                done = true;
               }
+
+              if (done == false && random.nextInt(1000) == 17) {
+                message("top: warning: now randomly dropping replica from merge warming; files=" + files.keySet());
+                IOUtils.closeWhileHandlingException(c);
+                it.remove();
+                done = true;
+              }
+
             } catch (Throwable t) {
               message("top: ignore exception trying to read byte during warm for segment=" + info + " to replica socket=" + c.s + ": " + t + " files=" + files.keySet());
               IOUtils.closeWhileHandlingException(c);
@@ -368,7 +381,7 @@ class SimplePrimaryNode extends PrimaryNode {
           while (upto < len) {
             int chunk = (int) Math.min(buffer.length, (len-upto));
             in.readBytes(buffer, 0, chunk);
-            if (TestNRTReplication.DO_BIT_FLIPS_DURING_COPY) {
+            if (doFlipBitsDuringCopy) {
               if (random.nextInt(3000) == 17 && bitFlipped.contains(fileName) == false) {
                 bitFlipped.add(fileName);
                 message("file " + fileName + " to R" + replicaID + ": now randomly flipping a bit at byte=" + upto);
@@ -433,6 +446,10 @@ class SimplePrimaryNode extends PrimaryNode {
         bos.flush();
       } else if (cmd == CMD_DELETE_DOC) {
         handleDeleteDocument(in, out);
+        out.writeByte((byte) 1);
+        bos.flush();
+      } else if (cmd == CMD_DELETE_ALL_DOCS) {
+        writer.deleteAll();
         out.writeByte((byte) 1);
         bos.flush();
       } else if (cmd == CMD_INDEXING_DONE) {
@@ -508,6 +525,7 @@ class SimplePrimaryNode extends PrimaryNode {
   static final byte CMD_MARKER_SEARCH = 3;
   static final byte CMD_COMMIT = 4;
   static final byte CMD_CLOSE = 5;
+  static final byte CMD_SEARCH_ALL = 21;
 
   // Send (to primary) the list of currently running replicas:
   static final byte CMD_SET_REPLICAS = 16;
@@ -518,6 +536,7 @@ class SimplePrimaryNode extends PrimaryNode {
   static final byte CMD_UPDATE_DOC = 7;
   static final byte CMD_DELETE_DOC = 8;
   static final byte CMD_INDEXING_DONE = 19;
+  static final byte CMD_DELETE_ALL_DOCS = 22;
 
   // Sent by replica to primary when replica first starts up, so primary can add it to any warming merges:
   static final byte CMD_NEW_REPLICA = 20;
@@ -570,6 +589,22 @@ class SimplePrimaryNode extends PrimaryNode {
           try {
             long version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
             int hitCount = searcher.search(new TermQuery(new Term("body", "the")), 1).totalHits;
+            //message("version=" + version + " searcher=" + searcher);
+            out.writeVLong(version);
+            out.writeVInt(hitCount);
+          } finally {
+            mgr.release(searcher);
+          }
+        }
+        continue outer;
+
+      case CMD_SEARCH_ALL:
+        {
+          Thread.currentThread().setName("search all");
+          IndexSearcher searcher = mgr.acquire();
+          try {
+            long version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
+            int hitCount = searcher.search(new MatchAllDocsQuery(), 1).totalHits;
             //message("version=" + version + " searcher=" + searcher);
             out.writeVLong(version);
             out.writeVInt(hitCount);

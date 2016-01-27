@@ -19,18 +19,9 @@ package org.apache.lucene.replicator.nrt;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.OutputStreamDataOutput;
 
 /** Parent JVM hold this "wrapper" to refer to each child JVM.  This is roughly equivalent e.g. to a client-side "sugar" API. */
 class NodeProcess implements Closeable {
@@ -231,6 +222,15 @@ class NodeProcess implements Closeable {
     }
     c.out.writeByte(SimplePrimaryNode.CMD_DELETE_DOC);
     c.out.writeString(docid);
+    c.flush();
+    c.in.readByte();
+  }
+
+  public void deleteAllDocuments(Connection c) throws IOException {
+    if (isPrimary == false) {
+      throw new IllegalStateException("only primary can index");
+    }
+    c.out.writeByte(SimplePrimaryNode.CMD_DELETE_ALL_DOCS);
     c.flush();
     c.in.readByte();
   }

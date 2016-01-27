@@ -24,19 +24,16 @@ import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.DataInput;
@@ -45,7 +42,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.RateLimitedIndexOutput;
 import org.apache.lucene.store.RateLimiter;
 import org.apache.lucene.util.LuceneTestCase;
@@ -182,7 +178,7 @@ class SimpleReplicaNode extends ReplicaNode {
         break;
 
       case SimplePrimaryNode.CMD_GET_SEARCHING_VERSION:
-        // nocommit this is hacky:
+        // This is called when primary has crashed and we need to elect a new primary from all the still running replicas:
 
         // Tricky: if a sync is just finishing up, i.e. managed to finish copying all files just before we crashed primary, and is now
         // in the process of opening a new reader, we need to wait for it, to be sure we really pick the most current replica:
@@ -190,7 +186,7 @@ class SimpleReplicaNode extends ReplicaNode {
           message("top: getSearchingVersion: now wait for finish sync");
           // TODO: use immediate concurrency instead of polling:
           while (isCopying() && stop.get() == false) {
-            Thread.sleep(50);
+            Thread.sleep(10);
             message("top: curNRTCopy=" + curNRTCopy);
           }
           message("top: getSearchingVersion: done wait for finish sync");
@@ -212,6 +208,24 @@ class SimpleReplicaNode extends ReplicaNode {
             //node.message("version=" + version + " searcher=" + searcher);
             out.writeVLong(version);
             out.writeVInt(hitCount);
+            bos.flush();
+          } finally {
+            mgr.release(searcher);
+          }
+        }
+        continue outer;
+
+      case SimplePrimaryNode.CMD_SEARCH_ALL:
+        {
+          Thread.currentThread().setName("search all");
+          IndexSearcher searcher = mgr.acquire();
+          try {
+            long version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
+            int hitCount = searcher.search(new MatchAllDocsQuery(), 1).totalHits;
+            //node.message("version=" + version + " searcher=" + searcher);
+            out.writeVLong(version);
+            out.writeVInt(hitCount);
+            bos.flush();
           } finally {
             mgr.release(searcher);
           }
@@ -227,6 +241,7 @@ class SimpleReplicaNode extends ReplicaNode {
             int hitCount = searcher.search(new TermQuery(new Term("marker", "marker")), 1).totalHits;
             out.writeVLong(version);
             out.writeVInt(hitCount);
+            bos.flush();
           } finally {
             mgr.release(searcher);
           }
@@ -290,6 +305,7 @@ class SimpleReplicaNode extends ReplicaNode {
       default:
         throw new IllegalArgumentException("unrecognized cmd=" + cmd);
       }
+      System.out.println("NOW FLUSH");
       bos.flush();
 
       break;
