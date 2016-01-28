@@ -35,10 +35,6 @@ public class NestedQParserPlugin extends QParserPlugin {
   public static final String NAME = "query";
 
   @Override
-  public void init(NamedList args) {
-  }
-
-  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
       QParser baseParser;

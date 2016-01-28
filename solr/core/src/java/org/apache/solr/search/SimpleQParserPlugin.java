@@ -91,11 +91,6 @@ public class SimpleQParserPlugin extends QParserPlugin {
     OPERATORS.put(SimpleParams.NEAR_OPERATOR,        SimpleQueryParser.NEAR_OPERATOR);
   }
 
-  /** No initialization is necessary so this method is empty. */
-  @Override
-  public void init(NamedList args) {
-  }
-
   /** Returns a QParser that will create a query by using Lucene's SimpleQueryParser. */
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {

@@ -32,10 +32,6 @@ public class GraphQParserPlugin extends QParserPlugin {
   public static final String NAME = "graph";
   
   @Override
-  public void init(NamedList args) {
-  }
-  
-  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     // return the graph query parser for this request.
     return new GraphQueryParser(qstr, localParams, params, req);

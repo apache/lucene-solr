@@ -83,6 +83,10 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
   public abstract QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req);
 
   @Override
+  public void init( NamedList args ) {
+  }
+
+  @Override
   public String getName() {
     // TODO: ideally use the NAME property that each qparser plugin has
 

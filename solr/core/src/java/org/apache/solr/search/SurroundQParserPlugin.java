@@ -49,10 +49,6 @@ public class SurroundQParserPlugin extends QParserPlugin {
   public static final String NAME = "surround";
 
   @Override
-  public void init(NamedList args) {
-  }
-
-  @Override
   public QParser createParser(String qstr, SolrParams localParams,
       SolrParams params, SolrQueryRequest req) {
     return new SurroundQParser(qstr, localParams, params, req);

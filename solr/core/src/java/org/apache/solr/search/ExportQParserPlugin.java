@@ -34,9 +34,6 @@ public class ExportQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "xport";
 
-  public void init(NamedList namedList) {
-  }
-  
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
     return new ExportQParser(qstr, localParams, params, request);
   }

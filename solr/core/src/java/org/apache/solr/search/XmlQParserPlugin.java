@@ -58,10 +58,6 @@ public class XmlQParserPlugin extends QParserPlugin {
 
   }
 
-  @Override
-  public void init(NamedList args) {
-  }
-
   public QParser createParser(String qstr, SolrParams localParams,
       SolrParams params, SolrQueryRequest req) {
     return new XmlQParser(qstr, localParams, params, req);
