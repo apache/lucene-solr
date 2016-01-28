@@ -197,9 +197,13 @@ class SimpleTextPointWriter extends PointWriter {
   }
 
   @Override
+  public void finish() throws IOException {
+    SimpleTextUtil.writeChecksum(dataOut, scratch);
+  }
+
+  @Override
   public void close() throws IOException {
     if (dataOut != null) {
-      SimpleTextUtil.writeChecksum(dataOut, scratch);
       dataOut.close();
       dataOut = null;
 

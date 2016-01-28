@@ -80,6 +80,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
         Document d = new Document();
         d.add(new StringField("id", Integer.toString(i), Field.Store.YES));
         d.add(new TextField("contents", English.intToEnglish(i+10*count), Field.Store.NO));
+        d.add(new IntPoint("doc", i));
         writer.updateDocument(new Term("id", Integer.toString(i)), d);
       }
     }

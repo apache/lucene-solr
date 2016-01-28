@@ -152,6 +152,9 @@ final class DefaultIndexingChain extends DocConsumer {
           perField = perField.next;
         }
       }
+      if (pointWriter != null) {
+        pointWriter.finish();
+      }
       success = true;
     } finally {
       if (success) {

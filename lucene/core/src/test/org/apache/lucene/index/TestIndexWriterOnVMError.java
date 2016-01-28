@@ -31,6 +31,7 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -124,6 +125,7 @@ public class TestIndexWriterOnVMError extends LuceneTestCase {
           FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
           ft.setStoreTermVectors(true);
           doc.add(newField("text_vectors", TestUtil.randomAnalysisString(random(), 6, true), ft));
+          doc.add(new IntPoint("point", random().nextInt()));
           
           if (random().nextInt(10) > 0) {
             // single doc
