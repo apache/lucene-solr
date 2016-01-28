@@ -211,6 +211,9 @@ Bug Fixes
 * LUCENE-6984: SpanMultiTermQueryWrapper no longer modifies its wrapped query.
   (Alan Woodward, Adrien Grand)
 
+* LUCENE-6998: Fix a couple places to better detect truncated index files
+  as corruption.  (Robert Muir, Mike McCandless)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)

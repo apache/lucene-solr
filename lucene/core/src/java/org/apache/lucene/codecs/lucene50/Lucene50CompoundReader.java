@@ -68,6 +68,13 @@ final class Lucene50CompoundReader extends Directory {
     String entriesFileName = IndexFileNames.segmentFileName(segmentName, "", Lucene50CompoundFormat.ENTRIES_EXTENSION);
     this.entries = readEntries(si.getId(), directory, entriesFileName);
     boolean success = false;
+
+    long expectedLength = CodecUtil.indexHeaderLength(Lucene50CompoundFormat.DATA_CODEC, "");
+    for(Map.Entry<String,FileEntry> ent : entries.entrySet()) {
+      expectedLength += ent.getValue().length;
+    }
+    expectedLength += CodecUtil.footerLength(); 
+
     handle = directory.openInput(dataFileName, context);
     try {
       CodecUtil.checkIndexHeader(handle, Lucene50CompoundFormat.DATA_CODEC, version, version, si.getId(), "");
@@ -77,6 +84,13 @@ final class Lucene50CompoundReader extends Directory {
       // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
       // such as file truncation.
       CodecUtil.retrieveChecksum(handle);
+
+      // We also validate length, because e.g. if you strip 16 bytes off the .cfs we otherwise
+      // would not detect it:
+      if (handle.length() != expectedLength) {
+        throw new CorruptIndexException("length should be " + expectedLength + " bytes, but is " + handle.length() + " instead", handle);
+      }
+
       success = true;
     } finally {
       if (!success) {

@@ -73,7 +73,8 @@ import org.apache.lucene.index.SegmentWriteState;
 
 public final class Lucene60PointFormat extends PointFormat {
 
-  static final String CODEC_NAME = "Lucene60PointFormat";
+  static final String DATA_CODEC_NAME = "Lucene60PointFormatData";
+  static final String META_CODEC_NAME = "Lucene60PointFormatMeta";
 
   /**
    * Filename extension for the leaf blocks

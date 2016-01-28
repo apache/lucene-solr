@@ -27,12 +27,12 @@ import java.util.Map;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.PointWriter;
-import org.apache.lucene.index.PointValues.IntersectVisitor;
-import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
@@ -62,7 +62,7 @@ public class Lucene60PointWriter extends PointWriter implements Closeable {
     boolean success = false;
     try {
       CodecUtil.writeIndexHeader(dataOut,
-                                 Lucene60PointFormat.CODEC_NAME,
+                                 Lucene60PointFormat.DATA_CODEC_NAME,
                                  Lucene60PointFormat.DATA_VERSION_CURRENT,
                                  writeState.segmentInfo.getId(),
                                  writeState.segmentSuffix);
@@ -184,7 +184,7 @@ public class Lucene60PointWriter extends PointWriter implements Closeable {
       // Write index file
       try (IndexOutput indexOut = writeState.directory.createOutput(indexFileName, writeState.context)) {
         CodecUtil.writeIndexHeader(indexOut,
-                                   Lucene60PointFormat.CODEC_NAME,
+                                   Lucene60PointFormat.META_CODEC_NAME,
                                    Lucene60PointFormat.INDEX_VERSION_CURRENT,
                                    writeState.segmentInfo.getId(),
                                    writeState.segmentSuffix);
