@@ -30,12 +30,14 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
  * Test that a plain default detects index file truncation early (on opening a reader).
  */
+@SuppressFileSystems("ExtrasFS")
 public class TestAllFilesDetectTruncation extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();
