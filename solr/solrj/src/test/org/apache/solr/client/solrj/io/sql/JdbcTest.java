@@ -92,16 +92,16 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
     waitForRecoveriesToFinish(false);
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
-    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
-    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
-    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
-    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
-    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
-    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1", "testnull_i", null);
+    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2", "testnull_i", "2");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "testnull_i", null);
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "testnull_i", "4");
+    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5", "testnull_i", null);
+    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6", "testnull_i", "6");
+    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7", "testnull_i", null);
+    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8", "testnull_i", "8");
+    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9", "testnull_i", null);
+    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10", "testnull_i", "10");
 
     commit();
 
@@ -355,11 +355,28 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
   private void testDriverMetadata() throws Exception {
     String collection = DEFAULT_COLLECTION;
-    String connectionString = "jdbc:solr://" + zkServer.getZkAddress() + "?collection=" + collection +
-        "&username=&password=&testKey1=testValue&testKey2";
-    String sql = "select id, a_i, a_s, a_f as my_float_col from " + collection + " order by a_i desc limit 2";
 
-    try (Connection con = DriverManager.getConnection(connectionString)) {
+    String connectionString1 = "jdbc:solr://" + zkServer.getZkAddress() + "?collection=" + collection +
+        "&username=&password=&testKey1=testValue&testKey2";
+    Properties properties1 = new Properties();
+
+    String sql = "select id, a_i, a_s, a_f as my_float_col, testnull_i from " + collection +
+        " order by a_i desc";
+
+    String connectionString2 = "jdbc:solr://" + zkServer.getZkAddress() + "?collection=" + collection +
+        "&aggregationMode=map_reduce&numWorkers=2&username=&password=&testKey1=testValue&testKey2";
+    Properties properties2 = new Properties();
+
+    String sql2 = sql + " limit 2";
+
+    //testJDBCMethods(collection, connectionString1, properties1, sql);
+    //testJDBCMethods(collection, connectionString2, properties2, sql);
+    testJDBCMethods(collection, connectionString1, properties1, sql2);
+    testJDBCMethods(collection, connectionString2, properties2, sql2);
+  }
+
+  private void testJDBCMethods(String collection, String connectionString, Properties properties, String sql) throws Exception {
+    try (Connection con = DriverManager.getConnection(connectionString, properties)) {
       assertTrue(con.isValid(DEFAULT_CONNECTION_TIMEOUT));
       assertEquals(collection, con.getCatalog());
 
@@ -407,32 +424,37 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
     assertNotNull(resultSetMetaData);
 
-    assertEquals(4, resultSetMetaData.getColumnCount());
+    assertEquals(5, resultSetMetaData.getColumnCount());
 
     assertEquals("id", resultSetMetaData.getColumnName(1));
     assertEquals("a_i", resultSetMetaData.getColumnName(2));
     assertEquals("a_s", resultSetMetaData.getColumnName(3));
     assertEquals("a_f", resultSetMetaData.getColumnName(4));
+    assertEquals("testnull_i", resultSetMetaData.getColumnName(5));
 
     assertEquals("id", resultSetMetaData.getColumnLabel(1));
     assertEquals("a_i", resultSetMetaData.getColumnLabel(2));
     assertEquals("a_s", resultSetMetaData.getColumnLabel(3));
     assertEquals("my_float_col", resultSetMetaData.getColumnLabel(4));
+    assertEquals("testnull_i", resultSetMetaData.getColumnLabel(5));
 
     assertEquals("id".length(), resultSetMetaData.getColumnDisplaySize(1));
     assertEquals("a_i".length(), resultSetMetaData.getColumnDisplaySize(2));
     assertEquals("a_s".length(), resultSetMetaData.getColumnDisplaySize(3));
     assertEquals("my_float_col".length(), resultSetMetaData.getColumnDisplaySize(4));
+    assertEquals("testnull_i".length(), resultSetMetaData.getColumnDisplaySize(5));
 
     assertEquals("Long", resultSetMetaData.getColumnTypeName(1));
     assertEquals("Long", resultSetMetaData.getColumnTypeName(2));
     assertEquals("String", resultSetMetaData.getColumnTypeName(3));
     assertEquals("Double", resultSetMetaData.getColumnTypeName(4));
+    assertEquals("Long", resultSetMetaData.getColumnTypeName(5));
 
     assertEquals(Types.DOUBLE, resultSetMetaData.getColumnType(1));
     assertEquals(Types.DOUBLE, resultSetMetaData.getColumnType(2));
     assertEquals(Types.VARCHAR, resultSetMetaData.getColumnType(3));
     assertEquals(Types.DOUBLE, resultSetMetaData.getColumnType(4));
+    assertEquals(Types.DOUBLE, resultSetMetaData.getColumnType(5));
   }
 
   private void checkResultSet(ResultSet rs) throws Exception {
@@ -443,72 +465,199 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     assertTrue(rs.next());
 
     assertEquals(14L, rs.getObject("a_i"));
+    assertFalse(rs.wasNull());
     assertEquals(14L, rs.getObject(2));
+    assertFalse(rs.wasNull());
     assertEquals(14L, rs.getLong("a_i"));
+    assertFalse(rs.wasNull());
     assertEquals(14L, rs.getLong(2));
+    assertFalse(rs.wasNull());
     assertEquals(14D, rs.getDouble("a_i"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(14D, rs.getDouble(2), 0);
+    assertFalse(rs.wasNull());
     assertEquals(14f, rs.getFloat("a_i"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(14f, rs.getFloat(2), 0);
+    assertFalse(rs.wasNull());
     assertEquals(14, rs.getShort("a_i"));
+    assertFalse(rs.wasNull());
     assertEquals(14, rs.getShort(2));
+    assertFalse(rs.wasNull());
     assertEquals(14, rs.getByte("a_i"));
+    assertFalse(rs.wasNull());
     assertEquals(14, rs.getByte(2));
+    assertFalse(rs.wasNull());
 
     assertEquals("hello0", rs.getObject("a_s"));
+    assertFalse(rs.wasNull());
     assertEquals("hello0", rs.getObject(3));
+    assertFalse(rs.wasNull());
     assertEquals("hello0", rs.getString("a_s"));
+    assertFalse(rs.wasNull());
     assertEquals("hello0", rs.getString(3));
+    assertFalse(rs.wasNull());
 
     assertEquals(10D, rs.getObject("my_float_col"));
+    assertFalse(rs.wasNull());
     assertEquals(10D, rs.getObject(4));
+    assertFalse(rs.wasNull());
     assertEquals(10D, rs.getDouble("my_float_col"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(10D, rs.getDouble(4), 0);
+    assertFalse(rs.wasNull());
     assertEquals(10F, rs.getFloat("my_float_col"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(10F, rs.getFloat(4), 0);
+    assertFalse(rs.wasNull());
     assertEquals(10, rs.getInt("my_float_col"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(10, rs.getInt(4), 0);
+    assertFalse(rs.wasNull());
     assertEquals(10L, rs.getLong("my_float_col"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(10L, rs.getLong(4), 0);
+    assertFalse(rs.wasNull());
     assertEquals(10, rs.getShort("my_float_col"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(10, rs.getShort(4), 0);
+    assertFalse(rs.wasNull());
     assertEquals(10, rs.getByte("my_float_col"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(10, rs.getByte(4), 0);
+    assertFalse(rs.wasNull());
+
+    assertEquals(10L, rs.getObject("testnull_i"));
+    assertFalse(rs.wasNull());
+    assertEquals(10L, rs.getObject(5));
+    assertFalse(rs.wasNull());
+    assertEquals("10", rs.getString("testnull_i"));
+    assertFalse(rs.wasNull());
+    assertEquals("10", rs.getString(5));
+    assertFalse(rs.wasNull());
+    assertEquals(10D, rs.getDouble("testnull_i"), 0);
+    assertFalse(rs.wasNull());
+    assertEquals(10D, rs.getDouble(5), 0);
+    assertFalse(rs.wasNull());
+    assertEquals(10F, rs.getFloat("testnull_i"), 0);
+    assertFalse(rs.wasNull());
+    assertEquals(10F, rs.getFloat(5), 0);
+    assertFalse(rs.wasNull());
+    assertEquals(10, rs.getInt("testnull_i"), 0);
+    assertFalse(rs.wasNull());
+    assertEquals(10, rs.getInt(5), 0);
+    assertFalse(rs.wasNull());
+    assertEquals(10L, rs.getLong("testnull_i"), 0);
+    assertFalse(rs.wasNull());
+    assertEquals(10L, rs.getLong(5), 0);
+    assertFalse(rs.wasNull());
+    assertEquals(10, rs.getShort("testnull_i"), 0);
+    assertFalse(rs.wasNull());
+    assertEquals(10, rs.getShort(5), 0);
+    assertFalse(rs.wasNull());
+    assertEquals(10, rs.getByte("testnull_i"), 0);
+    assertFalse(rs.wasNull());
+    assertEquals(10, rs.getByte(5), 0);
+    assertFalse(rs.wasNull());
+
 
     assertTrue(rs.next());
 
     assertEquals(13L, rs.getObject("a_i"));
+    assertFalse(rs.wasNull());
     assertEquals(13L, rs.getObject(2));
+    assertFalse(rs.wasNull());
     assertEquals(13L, rs.getLong("a_i"));
+    assertFalse(rs.wasNull());
     assertEquals(13L, rs.getLong(2));
+    assertFalse(rs.wasNull());
     assertEquals(13D, rs.getDouble("a_i"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(13D, rs.getDouble(2), 0);
+    assertFalse(rs.wasNull());
     assertEquals(13f, rs.getFloat("a_i"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(13f, rs.getFloat(2), 0);
+    assertFalse(rs.wasNull());
     assertEquals(13, rs.getShort("a_i"));
+    assertFalse(rs.wasNull());
     assertEquals(13, rs.getShort(2));
+    assertFalse(rs.wasNull());
     assertEquals(13, rs.getByte("a_i"));
+    assertFalse(rs.wasNull());
     assertEquals(13, rs.getByte(2));
+    assertFalse(rs.wasNull());
 
     assertEquals("hello3", rs.getObject("a_s"));
+    assertFalse(rs.wasNull());
     assertEquals("hello3", rs.getObject(3));
+    assertFalse(rs.wasNull());
     assertEquals("hello3", rs.getString("a_s"));
+    assertFalse(rs.wasNull());
     assertEquals("hello3", rs.getString(3));
+    assertFalse(rs.wasNull());
 
     assertEquals(9D, rs.getObject("my_float_col"));
+    assertFalse(rs.wasNull());
     assertEquals(9D, rs.getObject(4));
+    assertFalse(rs.wasNull());
     assertEquals(9D, rs.getDouble("my_float_col"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(9D, rs.getDouble(4), 0);
+    assertFalse(rs.wasNull());
     assertEquals(9F, rs.getFloat("my_float_col"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(9F, rs.getFloat(4), 0);
+    assertFalse(rs.wasNull());
     assertEquals(9, rs.getInt("my_float_col"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(9, rs.getInt(4), 0);
+    assertFalse(rs.wasNull());
     assertEquals(9L, rs.getLong("my_float_col"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(9L, rs.getLong(4), 0);
+    assertFalse(rs.wasNull());
     assertEquals(9, rs.getShort("my_float_col"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(9, rs.getShort(4), 0);
+    assertFalse(rs.wasNull());
     assertEquals(9, rs.getByte("my_float_col"), 0);
+    assertFalse(rs.wasNull());
     assertEquals(9, rs.getByte(4), 0);
+    assertFalse(rs.wasNull());
+
+    assertEquals(null, rs.getObject("testnull_i"));
+    assertTrue(rs.wasNull());
+    assertEquals(null, rs.getObject(5));
+    assertTrue(rs.wasNull());
+    assertEquals(null, rs.getString("testnull_i"));
+    assertTrue(rs.wasNull());
+    assertEquals(null, rs.getString(5));
+    assertTrue(rs.wasNull());
+    assertEquals(0D, rs.getDouble("testnull_i"), 0);
+    assertTrue(rs.wasNull());
+    assertEquals(0D, rs.getDouble(5), 0);
+    assertTrue(rs.wasNull());
+    assertEquals(0F, rs.getFloat("testnull_i"), 0);
+    assertTrue(rs.wasNull());
+    assertEquals(0F, rs.getFloat(5), 0);
+    assertTrue(rs.wasNull());
+    assertEquals(0, rs.getInt("testnull_i"));
+    assertTrue(rs.wasNull());
+    assertEquals(0, rs.getInt(5));
+    assertTrue(rs.wasNull());
+    assertEquals(0L, rs.getLong("testnull_i"));
+    assertTrue(rs.wasNull());
+    assertEquals(0L, rs.getLong(5));
+    assertTrue(rs.wasNull());
+    assertEquals(0, rs.getShort("testnull_i"));
+    assertTrue(rs.wasNull());
+    assertEquals(0, rs.getShort(5));
+    assertTrue(rs.wasNull());
+    assertEquals(0, rs.getByte("testnull_i"));
+    assertTrue(rs.wasNull());
+    assertEquals(0, rs.getByte(5));
+    assertTrue(rs.wasNull());
 
     assertFalse(rs.next());
   }
