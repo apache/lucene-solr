@@ -576,6 +576,8 @@ Other Changes
 
 * SOLR-8595: Use BinaryRequestWriter by default in HttpSolrClient and ConcurrentUpdateSolrClient. (shalin)
 
+* SOLR-8597: add default, no-op QParserPlugin.init(NamedList) method (Christine Poerschke)
+
 ==================  5.4.1 ==================
 
 Bug Fixes
