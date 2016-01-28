@@ -18,6 +18,9 @@ Bug Fixes
   EOFException in some cases (Stéphane Campinas, Adrien Grand via Mike
   McCandless)
 
+* LUCENE-6998: Fix a couple places to better detect truncated index files
+  as corruption.  (Robert Muir, Mike McCandless)
+
 ======================= Lucene 5.4.1 =======================
 
 Bug Fixes
