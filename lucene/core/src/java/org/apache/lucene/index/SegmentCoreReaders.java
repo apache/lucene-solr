@@ -166,7 +166,7 @@ final class SegmentCoreReaders {
     }
   }
   
-  private void notifyCoreClosedListeners(Throwable th) {
+  private void notifyCoreClosedListeners(Throwable th) throws IOException {
     synchronized(coreClosedListeners) {
       for (CoreClosedListener listener : coreClosedListeners) {
         // SegmentReader uses our instance as its
@@ -181,7 +181,7 @@ final class SegmentCoreReaders {
           }
         }
       }
-      IOUtils.reThrowUnchecked(th);
+      IOUtils.reThrow(th);
     }
   }
 
