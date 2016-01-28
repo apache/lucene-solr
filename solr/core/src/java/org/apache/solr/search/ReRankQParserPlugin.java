@@ -64,9 +64,6 @@ public class ReRankQParserPlugin extends QParserPlugin {
   public static final String NAME = "rerank";
   private static Query defaultQuery = new MatchAllDocsQuery();
 
-  public void init(NamedList args) {
-  }
-
   public QParser createParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new ReRankQParser(query, localParams, params, req);
   }

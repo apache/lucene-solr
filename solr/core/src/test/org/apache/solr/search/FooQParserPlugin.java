@@ -30,10 +30,6 @@ public class FooQParserPlugin extends QParserPlugin {
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new FooQParser(qstr, localParams, params, req);
   }
-
-  @Override
-  public void init(NamedList args) {
-  }
 }
 
 class FooQParser extends QParser {

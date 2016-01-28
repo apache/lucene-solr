@@ -29,10 +29,6 @@ public class OldLuceneQParserPlugin extends QParserPlugin {
   public static final String NAME = "lucenePlusSort";
 
   @Override
-  public void init(NamedList args) {
-  }
-
-  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new OldLuceneQParser(qstr, localParams, params, req);
   }

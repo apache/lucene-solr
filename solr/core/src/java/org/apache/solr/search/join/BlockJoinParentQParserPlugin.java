@@ -41,9 +41,5 @@ public class BlockJoinParentQParserPlugin extends QParserPlugin {
   protected QParser createBJQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new BlockJoinParentQParser(qstr, localParams, params, req);
   }
-
-  @Override
-  public void init(NamedList args) {
-  }
 }
 

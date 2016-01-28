@@ -72,10 +72,6 @@ import org.junit.Ignore;
 public class TestRankQueryPlugin extends QParserPlugin {
 
 
-  public void init(NamedList params) {
-
-  }
-
   public QParser createParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new TestRankQueryParser(query, localParams, params, req);
   }

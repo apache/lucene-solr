@@ -40,6 +40,7 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
 
   @Override
   public void init(NamedList args) {
+    super.init(args);
     if (args != null) {
       Object val = args.get("inOrder");
       if (val != null) {
