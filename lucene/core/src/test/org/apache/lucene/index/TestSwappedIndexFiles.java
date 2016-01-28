@@ -29,12 +29,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
  * Test that the same file name, but from a different index, is detected as foreign.
  */
+@SuppressFileSystems("ExtrasFS")
 public class TestSwappedIndexFiles extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir1 = newDirectory();
