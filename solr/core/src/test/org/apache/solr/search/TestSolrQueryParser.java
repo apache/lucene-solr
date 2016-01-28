@@ -47,7 +47,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(adoc("id","10", "qqq_s","X"));
     assertU(adoc("id","11", "www_s","X"));
     assertU(adoc("id","12", "eee_s","X"));
-    assertU(adoc("id","13", "eee_s","'balance'"));
+    assertU(adoc("id","13", "eee_s","'balance'", "rrr_s", "/leading_slash"));
 
     assertU(commit());
   }
@@ -308,6 +308,16 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
     assertJQ(req("q","+filter(*:*)^=10 +filter(id:1)", "fl","id,score", "sort","id asc")
         ,"/response/docs/[0]/score==1.0"  // normalization reduces to 1
+    );
+
+  }
+
+
+  @Test
+  public void testRegex() throws Exception {
+    // leading slash in a regex fixed by SOLR-8605
+    assertJQ(req("q", "rrr_s:/\\/lead.*/", "fl","id")
+        , "/response/docs==[{id:'13'}]"
     );
 
   }
