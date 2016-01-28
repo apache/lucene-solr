@@ -17,7 +17,6 @@ package org.apache.lucene.codecs;
  * limitations under the License.
  */
 
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -397,6 +396,9 @@ public final class CodecUtil {
    * @throws IOException if the footer is invalid
    */
   public static long retrieveChecksum(IndexInput in) throws IOException {
+    if (in.length() < footerLength()) {
+      throw new CorruptIndexException("misplaced codec footer (file truncated?): length=" + in.length() + " but footerLength==" + footerLength(), in);
+    }
     in.seek(in.length() - footerLength());
     validateFooter(in);
     return readCRC(in);
