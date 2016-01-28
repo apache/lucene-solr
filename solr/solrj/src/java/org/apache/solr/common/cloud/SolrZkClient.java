@@ -45,6 +45,7 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -702,32 +703,22 @@ public class SolrZkClient implements Closeable {
 
   // yeah, it's recursive :(
   public void clean(String path) throws InterruptedException, KeeperException {
-    List<String> children;
-    try {
-      children = getChildren(path, null, true);
-    } catch (NoNodeException r) {
-      return;
-    }
-    for (String string : children) {
-      // we can't clean the built-in zookeeper node
-      if (path.equals("/") && string.equals("zookeeper")) continue;
-      if (path.equals("/")) {
-        clean(path + string);
-      } else {
-        clean(path + "/" + string);
-      }
-    }
-    try {
-      if (!path.equals("/")) {
+    traverseZkTree(path, new ZkVisitor() {
+      @Override
+      public void visit(String znode) throws InterruptedException, KeeperException {
         try {
-          delete(path, -1, true);
-        } catch (NotEmptyException e) {
-          clean(path);
+          if (!znode.equals("/")) {
+            try {
+              delete(znode, -1, true);
+            } catch (NotEmptyException e) {
+              clean(znode);
+            }
+          }
+        } catch (NoNodeException r) {
+          return;
         }
       }
-    } catch (NoNodeException r) {
-      return;
-    }
+    });
   }
   
   /**
@@ -757,5 +748,78 @@ public class SolrZkClient implements Closeable {
 
   public ZkACLProvider getZkACLProvider() {
     return zkACLProvider;
+  }
+
+  /**
+   * Set the ACL on a single node in ZooKeeper. This will replace all existing ACL on that node.
+   *
+   * @param path path to set ACL on e.g. /solr/conf/solrconfig.xml
+   * @param acls a list of {@link ACL} to be applied
+   * @param retryOnConnLoss true if the command should be retried on connection loss
+   */
+  public Stat setACL(final String path, final List<ACL> acls, boolean retryOnConnLoss) throws InterruptedException, KeeperException  {
+    if (retryOnConnLoss) {
+      return zkCmdExecutor.retryOperation(new ZkOperation() {
+        @Override
+        public Stat execute() throws KeeperException, InterruptedException {
+          return keeper.setACL(path, acls, -1);
+        }
+      });
+    } else {
+      return keeper.setACL(path, acls, -1);
+    }
+  }
+
+  /**
+   * Update all ACLs for a zk tree based on our configured {@link ZkACLProvider}.
+   * @param root the root node to recursively update
+   */
+  public void updateACLs(final String root) throws KeeperException, InterruptedException {
+    traverseZkTree(root, new ZkVisitor() {
+      @Override
+      public void visit(String path) throws InterruptedException, KeeperException {
+        try {
+          setACL(path, getZkACLProvider().getACLsToAdd(path), true);
+          log.info("Updated ACL on " + path);
+        } catch (NoNodeException e) {
+          // If a node was deleted, don't bother trying to set ACLs on it.
+          return;
+        }
+      }
+    });
+  }
+
+  private interface ZkVisitor {
+    /**
+     * Visit the target path
+     * @param path the path to visit
+     */
+    void visit(String path) throws InterruptedException, KeeperException;
+  }
+
+  /**
+   * Recursively visit a zk tree rooted at path and apply the given visitor to each path. Exists as a separate method
+   * because some of the logic can get nuanced.
+   *
+   * @param path the path to start from
+   * @param visitor the operation to perform on each path
+   */
+  private void traverseZkTree(final String path, final ZkVisitor visitor) throws InterruptedException, KeeperException {
+    List<String> children;
+    try {
+      children = getChildren(path, null, true);
+    } catch (NoNodeException r) {
+      return;
+    }
+    for (String string : children) {
+      // we can't do anything to the built-in zookeeper node
+      if (path.equals("/") && string.equals("zookeeper")) continue;
+      if (path.equals("/")) {
+        traverseZkTree(path + string, visitor);
+      } else {
+        traverseZkTree(path + "/" + string, visitor);
+      }
+    }
+    visitor.visit(path);
   }
 }

@@ -73,6 +73,7 @@ public class ZkCLI {
   private static final String LIST = "list";
   private static final String CMD = "cmd";
   private static final String CLUSTERPROP = "clusterprop";
+  private static final String UPDATEACLS = "updateacls";
   
   /**
    * Allows you to perform a variety of zookeeper related tasks, such as:
@@ -100,7 +101,8 @@ public class ZkCLI {
         .withDescription(
             "cmd to run: " + BOOTSTRAP + ", " + UPCONFIG + ", " + DOWNCONFIG
                 + ", " + LINKCONFIG + ", " + MAKEPATH + ", " + PUT + ", " + PUT_FILE + ","
-                + GET + "," + GET_FILE + ", " + LIST + ", " + CLEAR).create(CMD));
+                + GET + "," + GET_FILE + ", " + LIST + ", " + CLEAR
+                + ", " + UPDATEACLS).create(CMD));
 
     Option zkHostOption = new Option("z", ZKHOST, true,
         "ZooKeeper host address");
@@ -152,6 +154,7 @@ public class ZkCLI {
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLEAR + " /solr");
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + LIST);
         System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + CLUSTERPROP + " -" + NAME + " urlScheme -" + VALUE_LONG + " https" );
+        System.out.println("zkcli.sh -zkhost localhost:9983 -cmd " + UPDATEACLS + " /solr");
         return;
       }
       
@@ -301,6 +304,13 @@ public class ZkCLI {
           }
           byte [] data = zkClient.getData(arglist.get(0).toString(), null, null, true);
           FileUtils.writeByteArrayToFile(new File(arglist.get(1).toString()), data);
+        } else if (line.getOptionValue(CMD).equals(UPDATEACLS)) {
+          List arglist = line.getArgList();
+          if (arglist.size() != 1) {
+            System.out.println("-" + UPDATEACLS + " requires one arg - the path to update");
+            System.exit(1);
+          }
+          zkClient.updateACLs(arglist.get(0).toString());
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(CLUSTERPROP)) {
           if(!line.hasOption(NAME)) {
             System.out.println("-" + NAME + " is required for " + CLUSTERPROP);
