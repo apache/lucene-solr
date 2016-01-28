@@ -79,7 +79,7 @@ public class ConnectionReuseTest extends AbstractFullDistribZkTestBase {
     
     SolrClient client;
     HttpClient httpClient = HttpClientUtil.createClient(null);
-    int rndClient = 0;//random().nextInt(3);
+    int rndClient = random().nextInt(3);
     if (rndClient == 0) {
       client = new ConcurrentUpdateSolrClient(url.toString(), httpClient, 6, 1); // currently only testing with 1 thread
     } else if (rndClient == 1)  {
