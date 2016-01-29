@@ -135,8 +135,8 @@ public class GraphQuery extends Query {
     SolrIndexSearcher fromSearcher;
     private float queryNorm = 1.0F;
     private float queryWeight = 1.0F; 
-    int frontierSize = 0;
-    public int currentDepth = 0;
+    private int frontierSize = 0;
+    private int currentDepth = -1;
     private Filter filter;
     private DocSet resultSet;
     
@@ -177,67 +177,80 @@ public class GraphQuery extends Query {
      * @throws IOException - if a sub search fails... maybe other cases too! :)
      */
     private DocSet getDocSet() throws IOException {
-      DocSet fromSet = null;
-      FixedBitSet seedResultBits = null;
       // Size that the bit set needs to be.
       int capacity = fromSearcher.getRawReader().maxDoc();
       // The bit set to contain the results that match the query.
       FixedBitSet resultBits = new FixedBitSet(capacity);
-      // The measure of how deep in the graph we have gone.
-      currentDepth = 0;
+      // this holds the result at each level
+      BitDocSet fromSet = null;
+      // the root docs if we return root is false
+      FixedBitSet rootBits = null;
       // the initial query for the frontier for the first query
       Query frontierQuery = q;
       // Find all documents in this graph that are leaf nodes to speed traversal
-      // TODO: speed this up in the future with HAS_FIELD type queries
-      BooleanQuery.Builder leafNodeQuery = new BooleanQuery.Builder();
-      WildcardQuery edgeQuery = new WildcardQuery(new Term(toField, "*"));
-      leafNodeQuery.add(edgeQuery, Occur.MUST_NOT);
-      DocSet leafNodes = fromSearcher.getDocSet(leafNodeQuery.build());
+      DocSet leafNodes = resolveLeafNodes(toField);
       // Start the breadth first graph traversal.
+      
       do {
-        // Create the graph result collector for this level
-        GraphTermsCollector graphResultCollector = new GraphTermsCollector(toField,capacity, resultBits, leafNodes);
-        // traverse the level!
-        fromSearcher.search(frontierQuery, graphResultCollector);
-        // All edge ids on the frontier.
-        BytesRefHash collectorTerms = graphResultCollector.getCollectorTerms();
-        frontierSize = collectorTerms.size();
-        // The resulting doc set from the frontier.
-        fromSet = graphResultCollector.getDocSet();
-        if (seedResultBits == null) {
-          // grab a copy of the seed bits  (these are the "rootNodes")
-          seedResultBits = ((BitDocSet)fromSet).getBits().clone();
-        }
-        Integer fs = new Integer(frontierSize);
-        FrontierQuery fq = buildFrontierQuery(collectorTerms, fs);
-        if (fq == null) {
-          // in case we get null back, make sure we know we're done at this level.
-          fq = new FrontierQuery(null, 0);
-        }
-        frontierQuery = fq.getQuery();
-        frontierSize = fq.getFrontierSize();
-        // Add the bits from this level to the result set.
-        resultBits.or(((BitDocSet)fromSet).getBits());
         // Increment how far we have gone in the frontier.
         currentDepth++;
-        // Break out if we have reached our max depth
-        if (currentDepth >= maxDepth && maxDepth != -1) {
+        // if we are at the max level we don't need the graph terms collector.
+        // TODO validate that the join case works properly.
+        if (maxDepth != -1 && currentDepth >= maxDepth) {
+          // if we've reached the max depth, don't worry about collecting edges.
+          fromSet = fromSearcher.getDocSetBits(frontierQuery);
+          // explicitly the frontier size is zero now so we can break
+          frontierSize = 0;
+        } else {
+          // when we're not at the max depth level, we need to collect edges          
+          // Create the graph result collector for this level
+          GraphTermsCollector graphResultCollector = new GraphTermsCollector(toField,capacity, resultBits, leafNodes);
+          fromSearcher.search(frontierQuery, graphResultCollector);
+          fromSet = graphResultCollector.getDocSet();
+          // All edge ids on the frontier.
+          BytesRefHash collectorTerms = graphResultCollector.getCollectorTerms();
+          frontierSize = collectorTerms.size();
+          // The resulting doc set from the frontier.
+          FrontierQuery fq = buildFrontierQuery(collectorTerms, frontierSize);
+          if (fq == null) {
+            // in case we get null back, make sure we know we're done at this level.
+            frontierSize = 0;
+          } else {
+            frontierQuery = fq.getQuery();
+            frontierSize = fq.getFrontierSize();
+          }
+        }
+        if (currentDepth == 0 && !returnRoot) {
+          // grab a copy of the root bits but only if we need it.
+          rootBits = fromSet.getBits();
+        }
+        // Add the bits from this level to the result set.
+        resultBits.or(fromSet.getBits());
+        // test if we discovered any new edges, if not , we're done.
+        if ((maxDepth != -1 && currentDepth >= maxDepth)) {
           break;
         }
-        // test if we discovered any new edges, if not , we're done.
       } while (frontierSize > 0);
       // helper bit set operations on the final result set
       if (!returnRoot) {
-        resultBits.andNot(seedResultBits);
+        resultBits.andNot(rootBits);
       }
+      // this is the final resulting filter.
       BitDocSet resultSet = new BitDocSet(resultBits);
       // If we only want to return leaf nodes do that here.
       if (onlyLeafNodes) {
         return resultSet.intersection(leafNodes);
       } else {
-        // create a doc set off the bits that we found.
         return resultSet;
       }
+    }
+    
+    private DocSet resolveLeafNodes(String field) throws IOException {
+      BooleanQuery.Builder leafNodeQuery = new BooleanQuery.Builder();
+      WildcardQuery edgeQuery = new WildcardQuery(new Term(field, "*"));
+      leafNodeQuery.add(edgeQuery, Occur.MUST_NOT);
+      DocSet leafNodes = fromSearcher.getDocSet(leafNodeQuery.build());
+      return leafNodes;
     }
     
     /** Build an automaton to represent the frontier query */

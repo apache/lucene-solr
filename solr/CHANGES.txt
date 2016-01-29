@@ -172,6 +172,9 @@ Optimizations
   count. Also includes change to move to the next non-zero term value when selecting a segment
   position. (Keith Laban, Steve Bower, Dennis Gove)
 
+* SOLR-8532: Optimize GraphQuery when maxDepth is set by not collecting edges at the maxDepth level.
+  (Kevin Watters via yonik)
+
 Other Changes
 ----------------------
 

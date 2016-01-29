@@ -108,7 +108,7 @@ class GraphTermsCollector extends SimpleCollector implements Collector {
     numHits++;
   }
   
-  public DocSet getDocSet() {
+  public BitDocSet getDocSet() {
     if (bits == null) {
       // TODO: this shouldn't happen
       bits = new FixedBitSet(maxDoc);
