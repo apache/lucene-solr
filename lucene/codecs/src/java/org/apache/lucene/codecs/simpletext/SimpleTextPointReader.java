@@ -33,6 +33,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.bkd.BKDReader;
 
@@ -59,8 +60,10 @@ class SimpleTextPointReader extends PointReader {
 
   public SimpleTextPointReader(SegmentReadState readState) throws IOException {
     // Initialize readers now:
-    String fileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextPointFormat.POINT_EXTENSION);
-    dataIn = readState.directory.openInput(fileName, IOContext.DEFAULT);
+
+    // Read index:
+    Map<String,Long> fieldToFileOffset = new HashMap<>();
+
     String indexFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextPointFormat.POINT_INDEX_EXTENSION);
     try (ChecksumIndexInput in = readState.directory.openChecksumInput(indexFileName, IOContext.DEFAULT)) {
       readLine(in);
@@ -70,10 +73,25 @@ class SimpleTextPointReader extends PointReader {
         String fieldName = stripPrefix(FIELD_FP_NAME);
         readLine(in);
         long fp = parseLong(FIELD_FP);
-        readers.put(fieldName, initReader(fp));
+        fieldToFileOffset.put(fieldName, fp);
       }
       SimpleTextUtil.checkFooter(in);
     }
+
+    boolean success = false;
+    String fileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextPointFormat.POINT_EXTENSION);
+    dataIn = readState.directory.openInput(fileName, IOContext.DEFAULT);
+    try {
+      for(Map.Entry<String,Long> ent : fieldToFileOffset.entrySet()) {
+        readers.put(ent.getKey(), initReader(ent.getValue()));
+      }
+      success = true;
+    } finally {
+      if (success == false) {
+        IOUtils.closeWhileHandlingException(this);
+      }
+    }
+        
     this.readState = readState;
   }
 
