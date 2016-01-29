@@ -141,11 +141,17 @@ public class Lucene60PointWriter extends PointWriter implements Closeable {
             for(int i=0;i<mergeState.pointReaders.length;i++) {
               PointReader reader = mergeState.pointReaders[i];
 
-              Lucene60PointReader reader60 = (Lucene60PointReader) reader;
-              if (reader60 != null) {
-                // TODO: I could just use the merged fieldInfo.number instead of resolving to this
-                // reader's FieldInfo, right?  Field numbers are always consistent across segments,
-                // since when?
+              if (reader != null) {
+
+                // we confirmed this up above
+                assert reader instanceof Lucene60PointReader;
+                Lucene60PointReader reader60 = (Lucene60PointReader) reader;
+
+                // NOTE: we cannot just use the merged fieldInfo.number (instead of resolving to this
+                // reader's FieldInfo as we do below) because field numbers can easily be different
+                // when addIndexes(Directory...) copies over segments from another index:
+
+
                 FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
                 FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
                 if (readerFieldInfo != null) {

@@ -18,10 +18,11 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.BinaryPoint;
-import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -385,6 +386,52 @@ public class TestPointValues extends LuceneTestCase {
     doc = new Document();
     doc.add(new IntPoint("dim", 17));
     w.addDocument(doc);
+    w.close();
+    dir.close();
+  }
+
+  // Write point values, one segment with Lucene60, another with SimpleText, then forceMerge with SimpleText
+  public void testDifferentCodecs1() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setCodec(Codec.forName("Lucene60"));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new IntPoint("int", 1));
+    w.addDocument(doc);
+    w.close();
+    
+    iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setCodec(Codec.forName("SimpleText"));
+    w = new IndexWriter(dir, iwc);
+    doc = new Document();
+    doc.add(new IntPoint("int", 1));
+    w.addDocument(doc);
+
+    w.forceMerge(1);
+    w.close();
+    dir.close();
+  }
+
+  // Write point values, one segment with Lucene60, another with SimpleText, then forceMerge with Lucene60
+  public void testDifferentCodecs2() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setCodec(Codec.forName("SimpleText"));
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new IntPoint("int", 1));
+    w.addDocument(doc);
+    w.close();
+    
+    iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setCodec(Codec.forName("Lucene60"));
+    w = new IndexWriter(dir, iwc);
+    doc = new Document();
+    doc.add(new IntPoint("int", 1));
+    w.addDocument(doc);
+
+    w.forceMerge(1);
     w.close();
     dir.close();
   }
