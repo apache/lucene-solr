@@ -41,7 +41,7 @@ public class TestLucene60PointFormat extends BasePointFormatTestCase {
     if (random().nextBoolean()) {
       // randomize parameters
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);
-      double maxMBSortInHeap = 0.1 + (3*random().nextDouble());
+      double maxMBSortInHeap = 3.0 + (3*random().nextDouble());
       if (VERBOSE) {
         System.out.println("TEST: using Lucene60PointFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
