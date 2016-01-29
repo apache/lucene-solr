@@ -138,7 +138,7 @@ public abstract class IndexReader implements Closeable {
     parentReaders.add(reader);
   }
 
-  private void notifyReaderClosedListeners(Throwable th) {
+  private void notifyReaderClosedListeners(Throwable th) throws IOException {
     synchronized(readerClosedListeners) {
       for(ReaderClosedListener listener : readerClosedListeners) {
         try {
@@ -151,7 +151,7 @@ public abstract class IndexReader implements Closeable {
           }
         }
       }
-      IOUtils.reThrowUnchecked(th);
+      IOUtils.reThrow(th);
     }
   }
 
