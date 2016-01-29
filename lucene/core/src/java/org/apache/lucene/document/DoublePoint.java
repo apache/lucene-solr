@@ -42,6 +42,9 @@ public final class DoublePoint extends Field {
 
   /** Change the values of this field */
   public void setDoubleValues(double... point) {
+    if (type.pointDimensionCount() != point.length) {
+      throw new IllegalArgumentException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot change to (incoming) " + point.length + " dimensions");
+    }
     fieldsData = pack(point);
   }
 
@@ -52,6 +55,9 @@ public final class DoublePoint extends Field {
 
   @Override
   public Number numericValue() {
+    if (type.pointDimensionCount() != 1) {
+      throw new IllegalStateException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot convert to a single numeric value");
+    }
     BytesRef bytes = (BytesRef) fieldsData;
     assert bytes.length == RamUsageEstimator.NUM_BYTES_LONG;
     return NumericUtils.sortableLongToDouble(NumericUtils.bytesToLongDirect(bytes.bytes, bytes.offset));

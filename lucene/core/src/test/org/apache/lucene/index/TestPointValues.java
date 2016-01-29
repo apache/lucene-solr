@@ -21,8 +21,11 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -434,5 +437,73 @@ public class TestPointValues extends LuceneTestCase {
     w.forceMerge(1);
     w.close();
     dir.close();
+  }
+
+  public void testInvalidIntPointUsage() throws Exception {
+    IntPoint field = new IntPoint("field", 17, 42);
+    try {
+      field.setIntValue(14);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+
+    try {
+      field.numericValue();
+      fail("did not hit exception");
+    } catch (IllegalStateException ise) {
+      // good
+    }
+  }
+
+  public void testInvalidLongPointUsage() throws Exception {
+    LongPoint field = new LongPoint("field", 17, 42);
+    try {
+      field.setLongValue(14);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+
+    try {
+      field.numericValue();
+      fail("did not hit exception");
+    } catch (IllegalStateException ise) {
+      // good
+    }
+  }
+
+  public void testInvalidFloatPointUsage() throws Exception {
+    FloatPoint field = new FloatPoint("field", 17, 42);
+    try {
+      field.setFloatValue(14);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+
+    try {
+      field.numericValue();
+      fail("did not hit exception");
+    } catch (IllegalStateException ise) {
+      // good
+    }
+  }
+
+  public void testInvalidDoublePointUsage() throws Exception {
+    DoublePoint field = new DoublePoint("field", 17, 42);
+    try {
+      field.setDoubleValue(14);
+      fail("did not hit exception");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+
+    try {
+      field.numericValue();
+      fail("did not hit exception");
+    } catch (IllegalStateException ise) {
+      // good
+    }
   }
 }
