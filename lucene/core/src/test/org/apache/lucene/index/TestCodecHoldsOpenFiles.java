@@ -38,6 +38,7 @@ public class TestCodecHoldsOpenFiles extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newField("foo", "bar", TextField.TYPE_NOT_STORED));
       doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
       doc.add(new NumericDocValuesField("dv", i));
       w.addDocument(doc);
     }

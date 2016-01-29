@@ -172,6 +172,7 @@ public class TestAddIndexes extends LuceneTestCase {
       doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
       doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
       doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
       doc.add(new NumericDocValuesField("dv", i));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
@@ -207,6 +208,7 @@ public class TestAddIndexes extends LuceneTestCase {
       doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
       doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
       doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
       doc.add(new NumericDocValuesField("dv", i));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
@@ -245,6 +247,7 @@ public class TestAddIndexes extends LuceneTestCase {
       doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
       doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
       doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
       doc.add(new NumericDocValuesField("dv", i));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
@@ -519,6 +522,7 @@ public class TestAddIndexes extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newTextField("content", "aaa", Field.Store.NO));
       doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
       doc.add(new NumericDocValuesField("dv", i));
       writer.addDocument(doc);
     }
@@ -529,6 +533,7 @@ public class TestAddIndexes extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newTextField("content", "bbb", Field.Store.NO));
       doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
       doc.add(new NumericDocValuesField("dv", i));
       writer.addDocument(doc);
     }
@@ -1014,6 +1019,7 @@ public class TestAddIndexes extends LuceneTestCase {
       doc.add(newTextField("content", "aaa", Field.Store.NO));
       doc.add(newTextField("id", "" + (docStart + i), Field.Store.YES));
       doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
       doc.add(new NumericDocValuesField("dv", i));
       writer.addDocument(doc);
     }

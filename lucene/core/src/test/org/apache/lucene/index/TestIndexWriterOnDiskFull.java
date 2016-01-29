@@ -574,6 +574,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     doc.add(newTextField("content", "aaa", Field.Store.NO));
     doc.add(new NumericDocValuesField("numericdv", 1));
     doc.add(new IntPoint("point", 1));
+    doc.add(new IntPoint("point2d", 1, 1));
     writer.addDocument(doc);
   }
   
@@ -583,6 +584,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     doc.add(newTextField("id", "" + index, Field.Store.NO));
     doc.add(new NumericDocValuesField("numericdv", 1));
     doc.add(new IntPoint("point", 1));
+    doc.add(new IntPoint("point2d", 1, 1));
     writer.addDocument(doc);
   }
 }

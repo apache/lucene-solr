@@ -127,6 +127,7 @@ public class TestIndexWriterExceptions2 extends LuceneTestCase {
         ft.setStoreTermVectors(true);
         doc.add(newField("text_vectors", TestUtil.randomAnalysisString(random(), 6, true), ft));
         doc.add(new IntPoint("point", random().nextInt()));
+        doc.add(new IntPoint("point2d", random().nextInt(), random().nextInt()));
         
         if (random().nextInt(10) > 0) {
           // single doc
