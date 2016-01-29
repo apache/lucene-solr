@@ -919,10 +919,4 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
     //dir = FSDirectory.open(createTempDir());
     return dir;
   }
-  
-  @Override
-  public void testMergeStability() {
-    // suppress this test from base class: merges for BKD trees are not stable because the tree created by merge will have a different
-    // structure than the tree created by adding points separately
-  }
 }
