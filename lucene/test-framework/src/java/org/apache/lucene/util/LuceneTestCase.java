@@ -1888,6 +1888,7 @@ public abstract class LuceneTestCase extends Assert {
     assertDocValuesEquals(info, leftReader, rightReader);
     assertDeletedDocsEquals(info, leftReader, rightReader);
     assertFieldInfosEquals(info, leftReader, rightReader);
+    assertPointsEquals(info, leftReader, rightReader);
   }
 
   /** 
@@ -2531,6 +2532,69 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     assertEquals(info, left, right);
+  }
+
+  // naive silly memory heavy uninversion!!  maps docID -> packed values (a Set because a given doc can be multi-valued)
+  private Map<Integer,Set<BytesRef>> uninvert(String fieldName, PointValues points) throws IOException {
+    final Map<Integer,Set<BytesRef>> docValues = new HashMap<>();
+    points.intersect(fieldName, new PointValues.IntersectVisitor() {
+        @Override
+        public void visit(int docID) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void visit(int docID, byte[] packedValue) throws IOException {
+          if (docValues.containsKey(docID) == false) {
+            docValues.put(docID, new HashSet<BytesRef>());
+          }
+          docValues.get(docID).add(new BytesRef(packedValue.clone()));
+        }
+
+        @Override
+        public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+          // We pretend our query shape is so hairy that it crosses every single cell:
+          return PointValues.Relation.CELL_CROSSES_QUERY;
+        }
+      });
+    return docValues;
+  }
+
+  public void assertPointsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
+    assertPointsEquals(info,
+                       MultiFields.getMergedFieldInfos(leftReader),
+                       MultiPointValues.get(leftReader),
+                       MultiFields.getMergedFieldInfos(rightReader),
+                       MultiPointValues.get(rightReader));
+  }
+
+  public void assertPointsEquals(String info, FieldInfos fieldInfos1, PointValues points1, FieldInfos fieldInfos2, PointValues points2) throws IOException {
+    for(FieldInfo fieldInfo1 : fieldInfos1) {
+      if (fieldInfo1.getPointDimensionCount() != 0) {
+        FieldInfo fieldInfo2 = fieldInfos2.fieldInfo(fieldInfo1.name);
+        // same dimension count?
+        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo2.getPointDimensionCount());
+        // same bytes per dimension?
+        assertEquals(info, fieldInfo2.getPointNumBytes(), fieldInfo2.getPointNumBytes());
+
+        assertEquals(info + " field=" + fieldInfo1.name,
+                     uninvert(fieldInfo1.name, points1),
+                     uninvert(fieldInfo1.name, points2));
+      }
+    }
+
+    // make sure FieldInfos2 doesn't have any point fields that FieldInfo1 didn't have
+    for(FieldInfo fieldInfo2 : fieldInfos2) {
+      if (fieldInfo2.getPointDimensionCount() != 0) {
+        FieldInfo fieldInfo1 = fieldInfos1.fieldInfo(fieldInfo2.name);
+        // same dimension count?
+        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo1.getPointDimensionCount());
+        // same bytes per dimension?
+        assertEquals(info, fieldInfo2.getPointNumBytes(), fieldInfo1.getPointNumBytes());
+
+        // we don't need to uninvert and compare here ... we did that in the first loop above
+      }
+    }
   }
 
   /** Returns true if the file exists (can be opened), false
