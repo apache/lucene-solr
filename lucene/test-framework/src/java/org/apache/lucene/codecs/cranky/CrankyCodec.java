@@ -26,6 +26,7 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.PointFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
@@ -89,6 +90,11 @@ public class CrankyCodec extends FilterCodec {
   @Override
   public CompoundFormat compoundFormat() {
     return new CrankyCompoundFormat(delegate.compoundFormat(), random);
+  }
+
+  @Override
+  public PointFormat pointFormat() {
+    return new CrankyPointFormat(delegate.pointFormat(), random);
   }
 
   @Override

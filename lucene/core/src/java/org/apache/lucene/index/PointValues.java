@@ -1,9 +1,5 @@
 package org.apache.lucene.index;
 
-import java.io.IOException;
-
-import org.apache.lucene.util.bkd.BKDWriter;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,6 +16,10 @@ import org.apache.lucene.util.bkd.BKDWriter;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import java.io.IOException;
+
+import org.apache.lucene.util.bkd.BKDWriter;
 
 /** Allows recursively visiting point values indexed with {@link org.apache.lucene.document.IntPoint},
  *  {@link org.apache.lucene.document.FloatPoint}, {@link org.apache.lucene.document.LongPoint}, {@link org.apache.lucene.document.DoublePoint}

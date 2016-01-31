@@ -58,10 +58,6 @@ public class TermsQParserPlugin extends QParserPlugin {
   /** Choose the internal algorithm */
   private static final String METHOD = "method";
 
-  @Override
-  public void init(NamedList args) {
-  }
-
   private static enum Method {
     termsFilter {
       @Override

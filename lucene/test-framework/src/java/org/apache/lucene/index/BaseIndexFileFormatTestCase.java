@@ -195,6 +195,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
   /** The purpose of this test is to make sure that bulk merge doesn't accumulate useless data over runs. */
   public void testMergeStability() throws Exception {
+    assumeTrue("merge is not stable", mergeIsStable());
     Directory dir = newDirectory();
     if (dir instanceof MockDirectoryWrapper) {
       // Else, the virus checker may prevent deletion of files and cause
@@ -238,6 +239,10 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     reader.close();
     dir.close();
     dir2.close();
+  }
+
+  protected boolean mergeIsStable() {
+    return true;
   }
 
   /** Test the accuracy of the ramBytesUsed estimations. */

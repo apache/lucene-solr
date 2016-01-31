@@ -112,11 +112,15 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         throw new Exception("sql parameter cannot be null");
       }
 
-      TupleStream tupleStream = SQLTupleStreamParser.parse(sql, numWorkers, workerCollection, workerZkhost,
-          AggregationMode.getMode(mode), includeMetadata);
-      context.numWorkers = numWorkers;
       context.setSolrClientCache(StreamHandler.clientCache);
-      tupleStream.setStreamContext(context);
+
+      TupleStream tupleStream = SQLTupleStreamParser.parse(sql,
+                                                           numWorkers,
+                                                           workerCollection,
+                                                           workerZkhost,
+                                                           AggregationMode.getMode(mode),
+                                                           includeMetadata,
+                                                           context);
 
       rsp.add("result-set", new StreamHandler.TimerStream(new ExceptionStream(tupleStream)));
     } catch(Exception e) {
@@ -148,7 +152,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
                                     String workerCollection,
                                     String workerZkhost,
                                     AggregationMode aggregationMode,
-                                    boolean includeMetadata) throws IOException {
+                                    boolean includeMetadata,
+                                    StreamContext context) throws IOException {
       SqlParser parser = new SqlParser();
       Statement statement = parser.createStatement(sql);
 
@@ -163,12 +168,14 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         if(aggregationMode == AggregationMode.FACET) {
           sqlStream = doGroupByWithAggregatesFacets(sqlVistor);
         } else {
+          context.numWorkers = numWorkers;
           sqlStream = doGroupByWithAggregates(sqlVistor, numWorkers, workerCollection, workerZkhost);
         }
       } else if(sqlVistor.isDistinct) {
         if(aggregationMode == AggregationMode.FACET) {
           sqlStream = doSelectDistinctFacets(sqlVistor);
         } else {
+          context.numWorkers = numWorkers;
           sqlStream = doSelectDistinct(sqlVistor, numWorkers, workerCollection, workerZkhost);
         }
       } else {
@@ -179,6 +186,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         sqlStream = new MetadataStream(sqlStream, sqlVistor);
       }
 
+      sqlStream.setStreamContext(context);
       return sqlStream;
     }
   }

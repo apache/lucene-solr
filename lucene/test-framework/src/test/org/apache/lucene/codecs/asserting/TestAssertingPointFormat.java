@@ -1,3 +1,5 @@
+package org.apache.lucene.codecs.asserting;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,20 +17,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.search;
+import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.index.BasePointFormatTestCase;
 
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
-
-public class SpatialBoxQParserPlugin extends SpatialFilterQParserPlugin {
-  public static final String NAME = "bbox";
+/** Test AssertingPointFormat directly */
+public class TestAssertingPointFormat extends BasePointFormatTestCase {
+  private final Codec codec = new AssertingCodec();
 
   @Override
-  public QParser createParser(String qstr, SolrParams localParams,
-                              SolrParams params, SolrQueryRequest req) {
-
-    return new SpatialFilterQParser(qstr, localParams, params, req, true);
+  protected Codec getCodec() {
+    return codec;
   }
-
 }

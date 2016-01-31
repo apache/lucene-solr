@@ -172,6 +172,9 @@ Optimizations
   count. Also includes change to move to the next non-zero term value when selecting a segment
   position. (Keith Laban, Steve Bower, Dennis Gove)
 
+* SOLR-8532: Optimize GraphQuery when maxDepth is set by not collecting edges at the maxDepth level.
+  (Kevin Watters via yonik)
+
 Other Changes
 ----------------------
 
@@ -575,6 +578,8 @@ Other Changes
 * SOLR-8565: add & use CommonParams.(ROWS|START)_DEFAULT constants (Christine Poerschke)
 
 * SOLR-8595: Use BinaryRequestWriter by default in HttpSolrClient and ConcurrentUpdateSolrClient. (shalin)
+
+* SOLR-8597: add default, no-op QParserPlugin.init(NamedList) method (Christine Poerschke)
 
 ==================  5.4.1 ==================
 

@@ -27,12 +27,12 @@ import java.util.Map;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.PointWriter;
-import org.apache.lucene.index.PointValues.IntersectVisitor;
-import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
@@ -47,7 +47,7 @@ public class Lucene60PointWriter extends PointWriter implements Closeable {
   final SegmentWriteState writeState;
   final int maxPointsInLeafNode;
   final double maxMBSortInHeap;
-  private boolean closed;
+  private boolean finished;
 
   /** Full constructor */
   public Lucene60PointWriter(SegmentWriteState writeState, int maxPointsInLeafNode, double maxMBSortInHeap) throws IOException {
@@ -62,7 +62,7 @@ public class Lucene60PointWriter extends PointWriter implements Closeable {
     boolean success = false;
     try {
       CodecUtil.writeIndexHeader(dataOut,
-                                 Lucene60PointFormat.CODEC_NAME,
+                                 Lucene60PointFormat.DATA_CODEC_NAME,
                                  Lucene60PointFormat.DATA_VERSION_CURRENT,
                                  writeState.segmentInfo.getId(),
                                  writeState.segmentSuffix);
@@ -141,11 +141,17 @@ public class Lucene60PointWriter extends PointWriter implements Closeable {
             for(int i=0;i<mergeState.pointReaders.length;i++) {
               PointReader reader = mergeState.pointReaders[i];
 
-              Lucene60PointReader reader60 = (Lucene60PointReader) reader;
-              if (reader60 != null) {
-                // TODO: I could just use the merged fieldInfo.number instead of resolving to this
-                // reader's FieldInfo, right?  Field numbers are always consistent across segments,
-                // since when?
+              if (reader != null) {
+
+                // we confirmed this up above
+                assert reader instanceof Lucene60PointReader;
+                Lucene60PointReader reader60 = (Lucene60PointReader) reader;
+
+                // NOTE: we cannot just use the merged fieldInfo.number (instead of resolving to this
+                // reader's FieldInfo as we do below) because field numbers can easily be different
+                // when addIndexes(Directory...) copies over segments from another index:
+
+
                 FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
                 FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
                 if (readerFieldInfo != null) {
@@ -168,38 +174,45 @@ public class Lucene60PointWriter extends PointWriter implements Closeable {
           mergeOneField(mergeState, fieldInfo);
         }
       }
-    } 
-  }  
+    }
+
+    finish();
+  }
+
+  @Override
+  public void finish() throws IOException {
+    if (finished) {
+      throw new IllegalStateException("already finished");
+    }
+    finished = true;
+    CodecUtil.writeFooter(dataOut);
+
+    String indexFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
+                                                          writeState.segmentSuffix,
+                                                          Lucene60PointFormat.INDEX_EXTENSION);
+    // Write index file
+    try (IndexOutput indexOut = writeState.directory.createOutput(indexFileName, writeState.context)) {
+      CodecUtil.writeIndexHeader(indexOut,
+                                 Lucene60PointFormat.META_CODEC_NAME,
+                                 Lucene60PointFormat.INDEX_VERSION_CURRENT,
+                                 writeState.segmentInfo.getId(),
+                                 writeState.segmentSuffix);
+      int count = indexFPs.size();
+      indexOut.writeVInt(count);
+      for(Map.Entry<String,Long> ent : indexFPs.entrySet()) {
+        FieldInfo fieldInfo = writeState.fieldInfos.fieldInfo(ent.getKey());
+        if (fieldInfo == null) {
+          throw new IllegalStateException("wrote field=\"" + ent.getKey() + "\" but that field doesn't exist in FieldInfos");
+        }
+        indexOut.writeVInt(fieldInfo.number);
+        indexOut.writeVLong(ent.getValue());
+      }
+      CodecUtil.writeFooter(indexOut);
+    }
+  }
 
   @Override
   public void close() throws IOException {
-    if (closed == false) {
-      CodecUtil.writeFooter(dataOut);
-      dataOut.close();
-      closed = true;
-
-      String indexFileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name,
-                                                            writeState.segmentSuffix,
-                                                            Lucene60PointFormat.INDEX_EXTENSION);
-      // Write index file
-      try (IndexOutput indexOut = writeState.directory.createOutput(indexFileName, writeState.context)) {
-        CodecUtil.writeIndexHeader(indexOut,
-                                   Lucene60PointFormat.CODEC_NAME,
-                                   Lucene60PointFormat.INDEX_VERSION_CURRENT,
-                                   writeState.segmentInfo.getId(),
-                                   writeState.segmentSuffix);
-        int count = indexFPs.size();
-        indexOut.writeVInt(count);
-        for(Map.Entry<String,Long> ent : indexFPs.entrySet()) {
-          FieldInfo fieldInfo = writeState.fieldInfos.fieldInfo(ent.getKey());
-          if (fieldInfo == null) {
-            throw new IllegalStateException("wrote field=\"" + ent.getKey() + "\" but that field doesn't exist in FieldInfos");
-          }
-          indexOut.writeVInt(fieldInfo.number);
-          indexOut.writeVLong(ent.getValue());
-        }
-        CodecUtil.writeFooter(indexOut);
-      }
-    }
+    dataOut.close();
   }
 }

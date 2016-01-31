@@ -29,11 +29,6 @@ public class MLTQParserPlugin extends QParserPlugin {
   public static final String NAME = "mlt";
   
   @Override
-  public void init(NamedList args) {
-    
-  }
-  
-  @Override
   public QParser createParser(String qstr, SolrParams localParams,
       SolrParams params, SolrQueryRequest req) {
     if (req.getCore().getCoreDescriptor().getCloudDescriptor() != null) {

@@ -141,6 +141,11 @@ public final class AssertingPointFormat extends PointFormat {
     }
 
     @Override
+    public void finish() throws IOException {
+      in.finish();
+    }
+
+    @Override
     public void close() throws IOException {
       in.close();
       in.close(); // close again

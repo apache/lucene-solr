@@ -32,6 +32,8 @@ import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -169,6 +171,9 @@ public class TestAddIndexes extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
       doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
+      doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
+      doc.add(new NumericDocValuesField("dv", i));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
     // Deletes one of the 10 added docs, leaving 9:
@@ -202,6 +207,9 @@ public class TestAddIndexes extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
       doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
+      doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
+      doc.add(new NumericDocValuesField("dv", i));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
     
@@ -238,6 +246,9 @@ public class TestAddIndexes extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
       doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
+      doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
+      doc.add(new NumericDocValuesField("dv", i));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
 
@@ -510,6 +521,9 @@ public class TestAddIndexes extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(newTextField("content", "aaa", Field.Store.NO));
+      doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
+      doc.add(new NumericDocValuesField("dv", i));
       writer.addDocument(doc);
     }
   }
@@ -518,6 +532,9 @@ public class TestAddIndexes extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(newTextField("content", "bbb", Field.Store.NO));
+      doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
+      doc.add(new NumericDocValuesField("dv", i));
       writer.addDocument(doc);
     }
   }
@@ -1001,6 +1018,9 @@ public class TestAddIndexes extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newTextField("content", "aaa", Field.Store.NO));
       doc.add(newTextField("id", "" + (docStart + i), Field.Store.YES));
+      doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
+      doc.add(new NumericDocValuesField("dv", i));
       writer.addDocument(doc);
     }
   }

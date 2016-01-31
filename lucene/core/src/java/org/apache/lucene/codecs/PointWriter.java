@@ -126,5 +126,9 @@ public abstract class PointWriter implements Closeable {
         mergeOneField(mergeState, fieldInfo);
       }
     }
+    finish();
   }
+
+  /** Called once at the end before close */
+  public abstract void finish() throws IOException;
 }

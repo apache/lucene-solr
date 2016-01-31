@@ -53,6 +53,7 @@ class ResultSetImpl implements ResultSet {
   private boolean done;
   private boolean closed;
   private SQLWarning currentWarning;
+  private boolean wasLastValueNull;
 
   ResultSetImpl(StatementImpl statement) {
     this.statement = statement;
@@ -66,15 +67,11 @@ class ResultSetImpl implements ResultSet {
       if(isMetadata == null || !isMetadata.equals(true)) {
         throw new RuntimeException("First tuple is not a metadata tuple");
       }
-    } catch (IOException e) {
-      throw new RuntimeException("Couldn't get metadata tuple");
-    }
 
-    try {
       this.firstTuple = this.solrStream.read();
       this.solrStream.pushBack(firstTuple);
     } catch (IOException e) {
-      throw new RuntimeException("Couldn't get first tuple.");
+      throw new RuntimeException("Couldn't read first tuple", e);
     }
 
     this.resultSetMetaData = new ResultSetMetaDataImpl(this);
@@ -122,8 +119,7 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public boolean wasNull() throws SQLException {
-    // TODO implement logic to check if last value was null
-    return false;
+    return this.wasLastValueNull;
   }
 
   @Override
@@ -208,24 +204,38 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public String getString(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
 
-    return tuple.getString(columnLabel);
+    String value = tuple.getString(columnLabel);
+    if(value.equals(String.valueOf((Object)null))) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return value;
   }
 
   @Override
   public boolean getBoolean(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
 
-    return (boolean)getObject(columnLabel);
+    Object value = getObject(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return false;
+    }
+    return (boolean)value;
   }
 
   @Override
   public byte getByte(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
 
     Number number = (Number)getObject(columnLabel);
     if(number == null) {
+      this.wasLastValueNull = true;
       return 0;
     } else {
       return number.byteValue();
@@ -234,9 +244,12 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public short getShort(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
+
     Number number = (Number)getObject(columnLabel);
     if(number == null) {
+      this.wasLastValueNull = true;
       return 0;
     } else {
       return number.shortValue();
@@ -245,10 +258,12 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public int getInt(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
 
     Number number = (Number)getObject(columnLabel);
     if(number == null) {
+      this.wasLastValueNull = true;
       return 0;
     } else {
       return number.intValue();
@@ -257,10 +272,12 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public long getLong(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
 
     Number number = (Number)getObject(columnLabel);
     if(number == null) {
+      this.wasLastValueNull = true;
       return 0L;
     } else {
       return number.longValue();
@@ -269,10 +286,12 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public float getFloat(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
 
     Number number = (Number)getObject(columnLabel);
     if(number == null) {
+      this.wasLastValueNull = true;
       return 0.0F;
     } else {
       return number.floatValue();
@@ -281,10 +300,12 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public double getDouble(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
 
     Number number = (Number)getObject(columnLabel);
     if(number == null) {
+      this.wasLastValueNull = true;
       return 0.0D;
     } else {
       return number.doubleValue();
@@ -298,30 +319,54 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public byte[] getBytes(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
 
-    return (byte[]) getObject(columnLabel);
+    Object value = getObject(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return (byte[])value;
   }
 
   @Override
   public Date getDate(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
 
-    return (Date)getObject(columnLabel);
+    Object value = getObject(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return (Date)value;
   }
 
   @Override
   public Time getTime(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
 
-    return (Time)getObject(columnLabel);
+    Object value = getObject(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return (Time)value;
   }
 
   @Override
   public Timestamp getTimestamp(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
 
-    return (Timestamp)getObject(columnLabel);
+    Object value = getObject(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return (Timestamp)value;
   }
 
   @Override
@@ -376,9 +421,15 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public Object getObject(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
 
-    return this.tuple.get(columnLabel);
+    Object value = this.tuple.get(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return value;
   }
 
   @Override
@@ -403,9 +454,15 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
+    this.wasLastValueNull = false;
     checkClosed();
 
-    return (BigDecimal)getObject(columnLabel);
+    Object value = this.getObject(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return (BigDecimal)value;
   }
 
   @Override
