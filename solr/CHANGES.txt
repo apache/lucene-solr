@@ -142,6 +142,8 @@ New Features
 
 * SOLR-8550: Add asynchronous DaemonStreams to the Streaming API (Joel Bernstein)
 
+* SOLR-8285: Ensure the /export handler works with NULL field values (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 * SOLR-8386: Add field option in the new admin UI schema page loads up even when no schemaFactory has been
