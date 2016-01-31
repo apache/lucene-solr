@@ -342,8 +342,8 @@ public class JdbcDataSource extends
     }
 
 
-    protected Iterator<Map<String,Object>> createIterator(Statement stmt, ResultSet resultSet, boolean convertType,
-        List<String> colNames, Map<String,Integer> fieldNameVsType) {
+    protected Iterator<Map<String,Object>> createIterator(final Statement stmt, final ResultSet resultSet, final boolean convertType,
+        final List<String> colNames, final Map<String,Integer> fieldNameVsType) {
       return new Iterator<Map<String,Object>>() {
         @Override
         public boolean hasNext() {
