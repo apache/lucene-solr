@@ -63,6 +63,7 @@ import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -453,13 +454,14 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       assertEquals(1, DebugServlet.parameters.get(CommonParams.VERSION).length);
       assertEquals(client.getParser().getVersion(), DebugServlet.parameters.get(CommonParams.VERSION)[0]);
       //content type
-      assertEquals("application/xml; charset=UTF-8", DebugServlet.headers.get("Content-Type"));
+      assertEquals("application/javabin", DebugServlet.headers.get("Content-Type"));
       //parameter encoding
       assertEquals(1, DebugServlet.parameters.get("a").length);
       assertEquals("\u1234", DebugServlet.parameters.get("a")[0]);
 
-      //XML response
+      //XML response and writer
       client.setParser(new XMLResponseParser());
+      client.setRequestWriter(new RequestWriter());
       try {
         client.request(req);
       } catch (ParseException ignored) {}

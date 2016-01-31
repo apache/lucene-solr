@@ -497,7 +497,7 @@ public class Field implements IndexableField {
   }
 
   @Override
-  public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException {
+  public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
     if (fieldType().indexOptions() == IndexOptions.NONE) {
       // Not indexed
       return null;

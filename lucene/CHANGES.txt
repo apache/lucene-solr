@@ -58,6 +58,9 @@ API Changes
 * LUCENE-6932: IndexInput.seek implementations now throw EOFException
   if you seek beyond the end of the file (Adrien Grand, Mike McCandless)
 
+* LUCENE-6988: IndexableField.tokenStream() no longer throws IOException
+  (Alan Woodward)
+
 Optimizations
 
 * LUCENE-6951: Improve GeoPointInPolygonQuery using point orientation based
@@ -84,6 +87,8 @@ Optimizations
 * LUCENE-6940: MUST_NOT clauses execute faster, especially when they are sparse.
   (Adrien Grand)
 
+* LUCENE-6470: Improve efficiency of TermsQuery constructors. (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-6976: BytesRefTermAttributeImpl.copyTo NPE'ed if BytesRef was null.
@@ -99,6 +104,9 @@ Bug Fixes
 
 * LUCENE-6984: SpanMultiTermQueryWrapper no longer modifies its wrapped query.
   (Alan Woodward, Adrien Grand)
+
+* LUCENE-6998: Fix a couple places to better detect truncated index files
+  as corruption.  (Robert Muir, Mike McCandless)
 
 Other
 
@@ -145,6 +153,9 @@ Other
   now also prints locales on failing tests this way.
   Locale#forLanguageTag() and Locale#toString() were placed on list
   of forbidden signatures.  (Uwe Schindler, Robert Muir)
+
+* LUCENE-6988: You can now add IndexableFields directly to a MemoryIndex,
+  and create a MemoryIndex from a lucene Document.  (Alan Woodward)
 
 ======================= Lucene 5.4.1 =======================
 

@@ -324,6 +324,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   @Nightly
   public void testRandomBig() throws Exception {
+    assumeFalse("Direct codec can OOME on this test", TestUtil.getDocValuesFormat(FIELD_NAME).equals("Direct"));
+    assumeFalse("Memory codec can OOME on this test", TestUtil.getDocValuesFormat(FIELD_NAME).equals("Memory"));
     doTestRandom(200000);
   }
 
@@ -399,22 +401,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     verify(small, lats, lons);
   }
 
-  public long scaleLon(final double val) {
-    return (long) ((val-GeoUtils.MIN_LON_INCL) * LON_SCALE);
-  }
-
-  public long scaleLat(final double val) {
-    return (long) ((val-GeoUtils.MIN_LAT_INCL) * LAT_SCALE);
-  }
-
-  public double unscaleLon(final long val) {
-    return (val / LON_SCALE) + GeoUtils.MIN_LON_INCL;
-  }
-
-  public double unscaleLat(final long val) {
-    return (val / LAT_SCALE) + GeoUtils.MIN_LAT_INCL;
-  }
-
   public double randomLat(boolean small) {
     double result;
     if (small) {
@@ -422,8 +408,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     } else {
       result = -90 + 180.0 * random().nextDouble();
     }
-    // TODO: we should not do this here!  it weakens the test, and users don't pre-quantize the lat/lons they send us:
-    return unscaleLat(scaleLat(result));
+    return result;
   }
 
   public double randomLon(boolean small) {
@@ -433,8 +418,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     } else {
       result = -180 + 360.0 * random().nextDouble();
     }
-    // TODO: we should not do this here!  it weakens the test, and users don't pre-quantize the lat/lons they send us:
-    return unscaleLon(scaleLon(result));
+    return result;
   }
 
   protected GeoRect randomRect(boolean small, boolean canCrossDateLine) {
@@ -770,4 +754,3 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     assertFalse(failed.get());
   }
 }
-

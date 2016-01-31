@@ -35,6 +35,8 @@ import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
+import static org.apache.lucene.util.GeoDistanceUtils.DISTANCE_PCT_ERR;
+
 /**
  * Unit testing for basic GeoPoint query logic
  *
@@ -46,9 +48,6 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   private static Directory directory = null;
   private static IndexReader reader = null;
   private static IndexSearcher searcher = null;
-
-  // error threshold for point-distance queries (in percent) NOTE: Guideline from USGS
-  private static final double DISTANCE_PCT_ERR = 0.005;
 
   @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
@@ -166,11 +165,11 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     }
 
     if (rect.minLon < rect.maxLon) {
-      return GeoRelationUtils.pointInRect(pointLon, pointLat, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
+      return GeoRelationUtils.pointInRectPrecise(pointLon, pointLat, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
     } else {
       // Rect crosses dateline:
-      return GeoRelationUtils.pointInRect(pointLon, pointLat, -180.0, rect.minLat, rect.maxLon, rect.maxLat)
-          || GeoRelationUtils.pointInRect(pointLon, pointLat, rect.minLon, rect.minLat, 180.0, rect.maxLat);
+      return GeoRelationUtils.pointInRectPrecise(pointLon, pointLat, -180.0, rect.minLat, rect.maxLon, rect.maxLat)
+          || GeoRelationUtils.pointInRectPrecise(pointLon, pointLat, rect.minLon, rect.minLat, 180.0, rect.maxLat);
     }
   }
 
@@ -256,9 +255,9 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     double yMax = 1;//5;
 
     // test cell crossing poly
-    assertTrue(GeoRelationUtils.rectCrossesPoly(xMin, yMin, xMax, yMax, px, py, xMinA, yMinA, xMaxA, yMaxA));
-    assertFalse(GeoRelationUtils.rectCrossesPoly(-5, 0,  0.000001, 5, px, py, xMin, yMin, xMax, yMax));
-    assertTrue(GeoRelationUtils.rectWithinPoly(-5, 0, -2, 5, px, py, xMin, yMin, xMax, yMax));
+    assertTrue(GeoRelationUtils.rectCrossesPolyApprox(xMin, yMin, xMax, yMax, px, py, xMinA, yMinA, xMaxA, yMaxA));
+    assertFalse(GeoRelationUtils.rectCrossesPolyApprox(-5, 0,  0.000001, 5, px, py, xMin, yMin, xMax, yMax));
+    assertTrue(GeoRelationUtils.rectWithinPolyApprox(-5, 0, -2, 5, px, py, xMin, yMin, xMax, yMax));
   }
 
   public void testBBoxCrossDateline() throws Exception {
@@ -341,5 +340,40 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     long hash = GeoUtils.mortonHash(180, 90);
     assertEquals(180.0, GeoUtils.mortonUnhashLon(hash), 0);
     assertEquals(90.0, GeoUtils.mortonUnhashLat(hash), 0);
+  }
+
+  public void testEncodeDecode() throws Exception {
+    int iters = atLeast(10000);
+    boolean small = random().nextBoolean();
+    for(int iter=0;iter<iters;iter++) {
+      double lat = randomLat(small);
+      double lon = randomLon(small);
+
+      long enc = GeoUtils.mortonHash(lon, lat);
+      double latEnc = GeoUtils.mortonUnhashLat(enc);
+      double lonEnc = GeoUtils.mortonUnhashLon(enc);
+
+      assertEquals("lat=" + lat + " latEnc=" + latEnc + " diff=" + (lat - latEnc), lat, latEnc, GeoUtils.TOLERANCE);
+      assertEquals("lon=" + lon + " lonEnc=" + lonEnc + " diff=" + (lon - lonEnc), lon, lonEnc, GeoUtils.TOLERANCE);
+    }
+  }
+
+  public void testScaleUnscaleIsStable() throws Exception {
+    int iters = atLeast(1000);
+    boolean small = random().nextBoolean();
+    for(int iter=0;iter<iters;iter++) {
+      double lat = randomLat(small);
+      double lon = randomLon(small);
+
+      long enc = GeoUtils.mortonHash(lon, lat);
+      double latEnc = GeoUtils.mortonUnhashLat(enc);
+      double lonEnc = GeoUtils.mortonUnhashLon(enc);
+
+      long enc2 = GeoUtils.mortonHash(lon, lat);
+      double latEnc2 = GeoUtils.mortonUnhashLat(enc2);
+      double lonEnc2 = GeoUtils.mortonUnhashLon(enc2);
+      assertEquals(latEnc, latEnc2, 0.0);
+      assertEquals(lonEnc, lonEnc2, 0.0);
+    }
   }
 }

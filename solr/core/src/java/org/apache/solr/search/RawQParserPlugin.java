@@ -37,10 +37,6 @@ public class RawQParserPlugin extends QParserPlugin {
   public static final String NAME = "raw";
 
   @Override
-  public void init(NamedList args) {
-  }
-
-  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
       @Override

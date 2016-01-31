@@ -152,10 +152,6 @@ public class SwitchQParserPlugin extends QParserPlugin {
   public static String SWITCH_DEFAULT = "default";
 
   @Override
-  public void init(NamedList args) {
-  }
-
-  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
       QParser subParser;

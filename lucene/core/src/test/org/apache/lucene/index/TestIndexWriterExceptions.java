@@ -1787,7 +1787,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
 
         @Override
-        public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException {
+        public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
           return null;
         }
       });

@@ -25,6 +25,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -316,6 +317,31 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     } finally {
       reader.close();
     }
+  }
+  
+  @Test
+  public void testUpdateAcls() throws Exception {
+    try {
+      System.setProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME, VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());
+      System.setProperty(VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME, "user");
+      System.setProperty(VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME, "pass");
+
+      String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd", "updateacls", "/"};
+      ZkCLI.main(args);
+    } finally {
+      // Need to clear these before we open the next SolrZkClient
+      System.clearProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
+      System.clearProperty(VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME);
+      System.clearProperty(VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME);
+    }
+    
+    boolean excepted = false;
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(), AbstractDistribZkTestBase.DEFAULT_CONNECTION_TIMEOUT)) {
+      zkClient.getData("/", null, null, true);
+    } catch (KeeperException.NoAuthException e) {
+      excepted = true;
+    }
+    assertTrue("Did not fail to read.", excepted);
   }
 
   @Override

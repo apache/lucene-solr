@@ -35,10 +35,6 @@ import java.io.IOException;
 public class TestAnalyticsQParserPlugin extends QParserPlugin {
 
 
-  public void init(NamedList params) {
-
-  }
-
   public QParser createParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new TestAnalyticsQueryParser(query, localParams, params, req);
   }

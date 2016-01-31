@@ -32,8 +32,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.GeoRelationUtils;
-import org.apache.lucene.util.GeoUtils;
-import org.apache.lucene.util.ToStringUtils;
 
 /** Finds all previously indexed points that fall within the specified polygon.
  *
@@ -137,11 +135,11 @@ public class BKDPointInPolygonQuery extends Query {
 
                                            @Override
                                            public BKDTreeReader.Relation compare(double cellLatMin, double cellLatMax, double cellLonMin, double cellLonMax) {
-                                             if (GeoRelationUtils.rectWithinPoly(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
+                                             if (GeoRelationUtils.rectWithinPolyPrecise(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
                                                                          polyLons, polyLats,
                                                                          minLon, minLat, maxLon, maxLat)) {
                                                return BKDTreeReader.Relation.CELL_INSIDE_SHAPE;
-                                             } else if (GeoRelationUtils.rectCrossesPoly(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
+                                             } else if (GeoRelationUtils.rectCrossesPolyPrecise(cellLonMin, cellLatMin, cellLonMax, cellLatMax,
                                                                                  polyLons, polyLats,
                                                                                  minLon, minLat, maxLon, maxLat)) {
                                                return BKDTreeReader.Relation.SHAPE_CROSSES_CELL;

@@ -111,7 +111,7 @@ TOKEN_MGR_DECLS : {
  | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
  | <PREFIXTERM:  ("*") | ( <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" ) >
  | <WILDTERM:  (<_TERM_START_CHAR> | [ "*", "?" ]) (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
- | <REGEXPTERM: "/" (~["*","/"]) (~[ "/" ] | "\\/" )* "/" >
+ | <REGEXPTERM: "/" (~["*","/"] | "\\/" ) (~[ "/" ] | "\\/" )* "/" >
  | <RANGEIN_START: "[" > : Range
  | <RANGEEX_START: "{" > : Range
 // TODO: consider using token states instead of inlining SQUOTED

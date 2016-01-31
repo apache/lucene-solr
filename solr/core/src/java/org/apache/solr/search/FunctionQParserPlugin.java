@@ -29,10 +29,6 @@ public class FunctionQParserPlugin extends QParserPlugin {
   public static final String NAME = "func";
 
   @Override
-  public void init(NamedList args) {
-  }
-
-  @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new FunctionQParser(qstr, localParams, params, req);
   }
