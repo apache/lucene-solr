@@ -232,7 +232,7 @@ public class QueryComponent extends SearchComponent
     }
   }
 
-  private void prepareGrouping(ResponseBuilder rb) throws IOException {
+  protected void prepareGrouping(ResponseBuilder rb) throws IOException {
 
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
@@ -674,7 +674,7 @@ public class QueryComponent extends SearchComponent
     }
   }
 
-  private int groupedDistributedProcess(ResponseBuilder rb) {
+  protected int groupedDistributedProcess(ResponseBuilder rb) {
     int nextStage = ResponseBuilder.STAGE_DONE;
     ShardRequestFactory shardRequestFactory = null;
 
@@ -708,7 +708,7 @@ public class QueryComponent extends SearchComponent
     return nextStage;
   }
 
-  private int regularDistributedProcess(ResponseBuilder rb) {
+  protected int regularDistributedProcess(ResponseBuilder rb) {
     if (rb.stage < ResponseBuilder.STAGE_PARSE_QUERY)
       return ResponseBuilder.STAGE_PARSE_QUERY;
     if (rb.stage == ResponseBuilder.STAGE_PARSE_QUERY) {
@@ -737,7 +737,7 @@ public class QueryComponent extends SearchComponent
     }
   }
 
-  private void handleGroupedResponses(ResponseBuilder rb, ShardRequest sreq) {
+  protected void handleGroupedResponses(ResponseBuilder rb, ShardRequest sreq) {
     ShardResponseProcessor responseProcessor = null;
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_GROUPS) != 0) {
       responseProcessor = new SearchGroupShardResponseProcessor();
@@ -752,7 +752,7 @@ public class QueryComponent extends SearchComponent
     }
   }
 
-  private void handleRegularResponses(ResponseBuilder rb, ShardRequest sreq) {
+  protected void handleRegularResponses(ResponseBuilder rb, ShardRequest sreq) {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
       mergeIds(rb, sreq);
     }
@@ -778,11 +778,11 @@ public class QueryComponent extends SearchComponent
     }
   }
 
-  private static final EndResultTransformer MAIN_END_RESULT_TRANSFORMER = new MainEndResultTransformer();
-  private static final EndResultTransformer SIMPLE_END_RESULT_TRANSFORMER = new SimpleEndResultTransformer();
+  protected static final EndResultTransformer MAIN_END_RESULT_TRANSFORMER = new MainEndResultTransformer();
+  protected static final EndResultTransformer SIMPLE_END_RESULT_TRANSFORMER = new SimpleEndResultTransformer();
 
   @SuppressWarnings("unchecked")
-  private void groupedFinishStage(final ResponseBuilder rb) {
+  protected void groupedFinishStage(final ResponseBuilder rb) {
     // To have same response as non-distributed request.
     GroupingSpecification groupSpec = rb.getGroupingSpec();
     if (rb.mergedTopGroups.isEmpty()) {
@@ -817,24 +817,24 @@ public class QueryComponent extends SearchComponent
     endResultTransformer.transform(combinedMap, rb, solrDocumentSource);
   }
 
-  private void regularFinishStage(ResponseBuilder rb) {
+  protected void regularFinishStage(ResponseBuilder rb) {
     // We may not have been able to retrieve all the docs due to an
     // index change.  Remove any null documents.
-    for (Iterator<SolrDocument> iter = rb._responseDocs.iterator(); iter.hasNext();) {
+    for (Iterator<SolrDocument> iter = rb.getResponseDocs().iterator(); iter.hasNext();) {
       if (iter.next() == null) {
         iter.remove();
-        rb._responseDocs.setNumFound(rb._responseDocs.getNumFound()-1);
+        rb.getResponseDocs().setNumFound(rb.getResponseDocs().getNumFound()-1);
       }
     }
 
-    rb.rsp.addResponse(rb._responseDocs);
+    rb.rsp.addResponse(rb.getResponseDocs());
     if (null != rb.getNextCursorMark()) {
       rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT,
                  rb.getNextCursorMark().getSerializedTotem());
     }
   }
 
-  private void createDistributedStats(ResponseBuilder rb) {
+  protected void createDistributedStats(ResponseBuilder rb) {
     StatsCache cache = rb.req.getCore().getStatsCache();
     if ( (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
       ShardRequest sreq = cache.retrieveStatsRequest(rb);
@@ -844,12 +844,12 @@ public class QueryComponent extends SearchComponent
     }
   }
 
-  private void updateStats(ResponseBuilder rb, ShardRequest sreq) {
+  protected void updateStats(ResponseBuilder rb, ShardRequest sreq) {
     StatsCache cache = rb.req.getCore().getStatsCache();
     cache.mergeToGlobalStats(rb.req, sreq.responses);
   }
 
-  private void createMainQuery(ResponseBuilder rb) {
+  protected void createMainQuery(ResponseBuilder rb) {
     ShardRequest sreq = new ShardRequest();
     sreq.purpose = ShardRequest.PURPOSE_GET_TOP_IDS;
 
@@ -934,13 +934,13 @@ public class QueryComponent extends SearchComponent
     rb.addRequest(this, sreq);
   }
   
-  private boolean addFL(StringBuilder fl, String field, boolean additionalAdded) {
+  protected boolean addFL(StringBuilder fl, String field, boolean additionalAdded) {
     if (additionalAdded) fl.append(",");
     fl.append(field);
     return true;
   }
 
-  private void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
+  protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
       List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
       if(mergeStrategies != null) {
         Collections.sort(mergeStrategies, MergeStrategy.MERGE_COMP);
@@ -1113,7 +1113,7 @@ public class QueryComponent extends SearchComponent
       // again when retrieving stored fields.
       // TODO: use ResponseBuilder (w/ comments) or the request context?
       rb.resultIds = resultIds;
-      rb._responseDocs = responseDocs;
+      rb.setResponseDocs(responseDocs);
 
       populateNextCursorMarkFromMergedShards(rb);
 
@@ -1133,7 +1133,7 @@ public class QueryComponent extends SearchComponent
    *           <code>ShardDocs</code> in <code>resultIds</code>, may or may not be 
    *           part of a Cursor based request (method will NOOP if not needed)
    */
-  private void populateNextCursorMarkFromMergedShards(ResponseBuilder rb) {
+  protected void populateNextCursorMarkFromMergedShards(ResponseBuilder rb) {
 
     final CursorMark lastCursorMark = rb.getCursorMark();
     if (null == lastCursorMark) {
@@ -1175,7 +1175,7 @@ public class QueryComponent extends SearchComponent
     rb.setNextCursorMark(nextCursorMark);
   }
 
-  private NamedList unmarshalSortValues(SortSpec sortSpec, 
+  protected NamedList unmarshalSortValues(SortSpec sortSpec, 
                                         NamedList sortFieldValues, 
                                         IndexSchema schema) {
     NamedList unmarshalledSortValsPerField = new NamedList();
@@ -1216,7 +1216,7 @@ public class QueryComponent extends SearchComponent
     return unmarshalledSortValsPerField;
   }
 
-  private void createRetrieveDocs(ResponseBuilder rb) {
+  protected void createRetrieveDocs(ResponseBuilder rb) {
 
     // TODO: in a system with nTiers > 2, we could be passed "ids" here
     // unless those requests always go to the final destination shard
@@ -1270,7 +1270,7 @@ public class QueryComponent extends SearchComponent
   }
 
 
-  private void returnFields(ResponseBuilder rb, ShardRequest sreq) {
+  protected void returnFields(ResponseBuilder rb, ShardRequest sreq) {
     // Keep in mind that this could also be a shard in a multi-tiered system.
     // TODO: if a multi-tiered system, it seems like some requests
     // could/should bypass middlemen (like retrieving stored fields)
@@ -1321,7 +1321,7 @@ public class QueryComponent extends SearchComponent
             if (removeKeyField) {
               doc.removeFields(keyFieldName);
             }
-            rb._responseDocs.set(sdoc.positionInResponse, doc);
+            rb.getResponseDocs().set(sdoc.positionInResponse, doc);
           }
         }
       }
@@ -1347,7 +1347,7 @@ public class QueryComponent extends SearchComponent
    *
    * TODO: when SOLR-5595 is fixed, this wont be needed, as we dont need to recompute sort values here from the comparator
    */
-  private static class FakeScorer extends Scorer {
+  protected static class FakeScorer extends Scorer {
     final int docid;
     final float score;
 
