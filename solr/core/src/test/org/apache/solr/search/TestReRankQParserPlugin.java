@@ -45,6 +45,19 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testReRankQParserPluginConstants() throws Exception {
+    assertEquals(ReRankQParserPlugin.NAME, "rerank");
+
+    assertEquals(ReRankQParserPlugin.RERANK_QUERY, "reRankQuery");
+
+    assertEquals(ReRankQParserPlugin.RERANK_DOCS, "reRankDocs");
+    assertEquals(ReRankQParserPlugin.RERANK_DOCS_DEFAULT, 200);
+
+    assertEquals(ReRankQParserPlugin.RERANK_WEIGHT, "reRankWeight");
+    assertEquals(ReRankQParserPlugin.RERANK_WEIGHT_DEFAULT, 2.0d, 0.0d);
+  }
+
+  @Test
   public void testReRankQueries() throws Exception {
 
     assertU(delQ("*:*"));
@@ -73,7 +86,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=200}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=200}");
     params.add("q", "term_s:YYYY");
     params.add("rqq", "{!edismax bf=$bff}*:*");
     params.add("bff", "field(test_ti)");
@@ -89,7 +102,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     );
 
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "{!edismax bq=$bqq2}*:*");
@@ -109,7 +122,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test with sort by score.
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "{!edismax bq=$bqq2}*:*");
@@ -130,7 +143,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test with compound sort.
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "{!edismax bq=$bqq2}*:*");
@@ -152,7 +165,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test with elevation
 
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6 reRankWeight=50}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6 "+ReRankQParserPlugin.RERANK_WEIGHT+"=50}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "{!edismax bq=$bqq2}*:*");
@@ -175,7 +188,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test TermQuery rqq
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "test_ti:50^1000");
@@ -195,7 +208,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test Elevation
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "test_ti:50^1000");
@@ -217,7 +230,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test Elevation swapped
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "test_ti:50^1000");
@@ -240,7 +253,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
 
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=4 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=4 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "test_ti:50^1000");
@@ -261,7 +274,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test Elevation with start beyond the rerank docs
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=3 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=3 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "test_ti:50^1000");
@@ -278,7 +291,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test Elevation with zero results
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=3 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=3 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "{!edismax bq=$bqq1}nada");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "test_ti:50^1000");
@@ -294,7 +307,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Pass in reRankDocs lower then the length being collected.
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=1 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=1 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "test_ti:50^1000");
@@ -312,7 +325,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     );
 
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=0 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=0 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "test_ti:50^1000");
@@ -330,7 +343,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     );
 
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=2 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=2 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "test_ti:4^1000");
@@ -349,7 +362,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test reRankWeight of 0, reranking will have no effect.
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6 reRankWeight=0}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6 "+ReRankQParserPlugin.RERANK_WEIGHT+"=0}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "test_ti:50^1000");
@@ -374,7 +387,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test range query
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6}");
     params.add("q", "test_ti:[0 TO 2000]");
     params.add("rqq", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("fl", "id,score");
@@ -400,7 +413,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Run same query and see if it was cached. This tests the query result cache hit with rewritten queries
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6}");
     params.add("q", "test_ti:[0 TO 2000]");
     params.add("rqq", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("fl", "id,score");
@@ -424,7 +437,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test range query embedded in larger query
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6}");
     params.add("q", "*:* OR test_ti:[0 TO 2000]");
     params.add("rqq", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("fl", "id,score");
@@ -443,7 +456,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test with start beyond reRankDocs
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=3 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=3 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60");
     params.add("rqq", "id:1^1000");
     params.add("fl", "id,score");
@@ -459,7 +472,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     //Test ReRankDocs > docs returned
 
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=6 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=6 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50");
     params.add("rqq", "id:1^1000");
     params.add("fl", "id,score");
@@ -474,7 +487,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test with zero results
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=3 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=3 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "term_s:NNNN");
     params.add("rqq", "id:1^1000");
     params.add("fl", "id,score");
@@ -528,7 +541,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
 
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=11 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=11 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60 id:7^70 id:8^80 id:9^90 id:10^100 id:11^110");
     params.add("rqq", "test_ti:50^1000");
@@ -543,7 +556,7 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     //Test Elevation
     params = new ModifiableSolrParams();
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=11 reRankWeight=2}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=11 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
     params.add("q", "{!edismax bq=$bqq1}*:*");
     params.add("bqq1", "id:1^10 id:2^20 id:3^30 id:4^40 id:5^50 id:6^60 id:7^70 id:8^80 id:9^90 id:10^100 id:11^110");
     params.add("rqq", "test_ti:50^1000");
@@ -573,14 +586,14 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
 
-    params.add("rq", "{!rerank reRankQuery=$rqq reRankDocs=200}");
+    params.add("rq", "{!"+ReRankQParserPlugin.NAME+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=200}");
     params.add("q", "term_s:YYYY");
     params.add("start", "0");
     params.add("rows", "2");
 
     try {
       h.query(req(params));
-      fail("A syntax error should be thrown when reRankQuery parameter is not specified");
+      fail("A syntax error should be thrown when "+ReRankQParserPlugin.RERANK_QUERY+" parameter is not specified");
     } catch (SolrException e) {
       assertTrue(e.code() == SolrException.ErrorCode.BAD_REQUEST.code);
     }
