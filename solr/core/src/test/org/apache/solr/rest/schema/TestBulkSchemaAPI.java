@@ -164,6 +164,89 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertEquals("5.0.0", String.valueOf(analyzer.get("luceneMatchVersion")));
   }
 
+  public void testAddFieldMatchingExistingDynamicField() throws Exception {
+    RestTestHarness harness = restTestHarness;
+
+    String newFieldName = "attr_non_dynamic";
+
+    Map map = getObj(harness, newFieldName, "fields");
+    assertNull("Field '" + newFieldName + "' already exists in the schema", map);
+
+    map = getObj(harness, "attr_*", "dynamicFields");
+    assertNotNull("'attr_*' dynamic field does not exist in the schema", map);
+
+    map = getObj(harness, "boolean", "fieldTypes");
+    assertNotNull("'boolean' field type does not exist in the schema", map);
+
+    String payload = "{\n" +
+        "    'add-field' : {\n" +
+        "                 'name':'" + newFieldName + "',\n" +
+        "                 'type':'boolean',\n" +
+        "                 'stored':true,\n" +
+        "                 'indexed':true\n" +
+        "                 }\n" +
+        "    }";
+
+    String response = harness.post("/schema?wt=json", json(payload));
+
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(response, map.get("errors"));
+
+    map = getObj(harness, newFieldName, "fields");
+    assertNotNull("Field '" + newFieldName + "' is not in the schema", map);
+  }
+
+  public void testAddFieldWithExistingCatchallDynamicField() throws Exception {
+    RestTestHarness harness = restTestHarness;
+
+    String newFieldName = "NewField1";
+
+    Map map = getObj(harness, newFieldName, "fields");
+    assertNull("Field '" + newFieldName + "' already exists in the schema", map);
+
+    map = getObj(harness, "*", "dynamicFields");
+    assertNull("'*' dynamic field already exists in the schema", map);
+
+    map = getObj(harness, "string", "fieldTypes");
+    assertNotNull("'boolean' field type does not exist in the schema", map);
+
+    map = getObj(harness, "boolean", "fieldTypes");
+    assertNotNull("'boolean' field type does not exist in the schema", map);
+
+    String payload = "{\n" +
+        "    'add-dynamic-field' : {\n" +
+        "         'name':'*',\n" +
+        "         'type':'string',\n" +
+        "         'stored':true,\n" +
+        "         'indexed':true\n" +
+        "    }\n" +
+        "}";
+
+    String response = harness.post("/schema?wt=json", json(payload));
+
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(response, map.get("errors"));
+
+    map = getObj(harness, "*", "dynamicFields");
+    assertNotNull("Dynamic field '*' is not in the schema", map);
+
+    payload = "{\n" +
+        "    'add-field' : {\n" +
+        "                 'name':'" + newFieldName + "',\n" +
+        "                 'type':'boolean',\n" +
+        "                 'stored':true,\n" +
+        "                 'indexed':true\n" +
+        "                 }\n" +
+        "    }";
+
+    response = harness.post("/schema?wt=json", json(payload));
+
+    map = (Map)ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    assertNull(response, map.get("errors"));
+
+    map = getObj(harness, newFieldName, "fields");
+    assertNotNull("Field '" + newFieldName + "' is not in the schema", map);
+  }
 
   public void testMultipleCommands() throws Exception{
     RestTestHarness harness = restTestHarness;
