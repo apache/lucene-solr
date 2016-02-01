@@ -124,6 +124,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testReRankQuery() throws Exception {
+    final String defType = ReRankQParserPlugin.NAME;
     SolrQueryRequest req = req("q", "*:*",
                                "rqq", "{!edismax}hello",
                                "rdocs", "20",
@@ -131,9 +132,9 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
                                "rows", "10",
                                "start", "0");
     try {
-      assertQueryEquals("rerank", req,
-          "{!rerank reRankQuery=$rqq reRankDocs=$rdocs reRankWeight=$rweight}",
-          "{!rerank reRankQuery=$rqq reRankDocs=20 reRankWeight=2}");
+      assertQueryEquals(defType, req,
+          "{!"+defType+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=$rdocs "+ReRankQParserPlugin.RERANK_WEIGHT+"=$rweight}",
+          "{!"+defType+" "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=20 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
 
     } finally {
       req.close();
@@ -147,9 +148,9 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         "rows", "100",
         "start", "50");
     try {
-      assertQueryEquals("rerank", req,
-          "{!rerank mainQuery=$qq reRankQuery=$rqq reRankDocs=$rdocs reRankWeight=$rweight}",
-          "{!rerank mainQuery=$qq reRankQuery=$rqq reRankDocs=20 reRankWeight=2}");
+      assertQueryEquals(defType, req,
+          "{!"+defType+" mainQuery=$qq "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=$rdocs "+ReRankQParserPlugin.RERANK_WEIGHT+"=$rweight}",
+          "{!"+defType+" mainQuery=$qq "+ReRankQParserPlugin.RERANK_QUERY+"=$rqq "+ReRankQParserPlugin.RERANK_DOCS+"=20 "+ReRankQParserPlugin.RERANK_WEIGHT+"=2}");
 
     } finally {
       req.close();

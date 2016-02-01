@@ -585,6 +585,9 @@ Other Changes
 
 * SOLR-7968: Make QueryComponent more extensible. (Markus Jelsma via David Smiley)
 
+* SOLR-8600: add & use ReRankQParserPlugin parameter [default] constants,
+  changed ReRankQuery.toString to use StringBuilder. (Christine Poerschke)
+
 ==================  5.4.1 ==================
 
 Bug Fixes

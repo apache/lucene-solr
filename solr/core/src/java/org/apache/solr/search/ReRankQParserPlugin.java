@@ -64,6 +64,14 @@ public class ReRankQParserPlugin extends QParserPlugin {
   public static final String NAME = "rerank";
   private static Query defaultQuery = new MatchAllDocsQuery();
 
+  public static final String RERANK_QUERY = "reRankQuery";
+
+  public static final String RERANK_DOCS = "reRankDocs";
+  public static final int RERANK_DOCS_DEFAULT = 200;
+
+  public static final String RERANK_WEIGHT = "reRankWeight";
+  public static final double RERANK_WEIGHT_DEFAULT = 2.0d;
+
   public QParser createParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new ReRankQParser(query, localParams, params, req);
   }
@@ -75,17 +83,17 @@ public class ReRankQParserPlugin extends QParserPlugin {
     }
 
     public Query parse() throws SyntaxError {
-      String reRankQueryString = localParams.get("reRankQuery");
+      String reRankQueryString = localParams.get(RERANK_QUERY);
       if (reRankQueryString == null || reRankQueryString.trim().length() == 0)  {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "reRankQuery parameter is mandatory");
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, RERANK_QUERY+" parameter is mandatory");
       }
       QParser reRankParser = QParser.getParser(reRankQueryString, null, req);
       Query reRankQuery = reRankParser.parse();
 
-      int reRankDocs  = localParams.getInt("reRankDocs", 200);
+      int reRankDocs  = localParams.getInt(RERANK_DOCS, RERANK_DOCS_DEFAULT);
       reRankDocs = Math.max(1, reRankDocs); //
 
-      double reRankWeight = localParams.getDouble("reRankWeight",2.0d);
+      double reRankWeight = localParams.getDouble(RERANK_WEIGHT, RERANK_WEIGHT_DEFAULT);
 
       int start = params.getInt(CommonParams.START,CommonParams.START_DEFAULT);
       int rows = params.getInt(CommonParams.ROWS,CommonParams.ROWS_DEFAULT);
@@ -150,10 +158,13 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
     @Override
     public String toString(String s) {
-      return "{!rerank mainQuery='"+mainQuery.toString()+
-             "' reRankQuery='"+reRankQuery.toString()+
-             "' reRankDocs="+reRankDocs+
-             " reRankWeight="+reRankWeight+"}";
+      final StringBuilder sb = new StringBuilder(100); // default initialCapacity of 16 won't be enough
+      sb.append("{!").append(NAME);
+      sb.append(" mainQuery='").append(mainQuery.toString()).append("' ");
+      sb.append(RERANK_QUERY).append("='").append(reRankQuery.toString()).append("' ");
+      sb.append(RERANK_DOCS).append('=').append(reRankDocs).append(' ');
+      sb.append(RERANK_WEIGHT).append('=').append(reRankWeight).append('}');
+      return sb.toString();
     }
 
     public Query rewrite(IndexReader reader) throws IOException {
