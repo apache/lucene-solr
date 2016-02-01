@@ -263,6 +263,9 @@ Other
 * LUCENE-6988: You can now add IndexableFields directly to a MemoryIndex,
   and create a MemoryIndex from a lucene Document.  (Alan Woodward)
 
+* LUCENE-7005: TieredMergePolicy tweaks (>= vs. >, @see get vs. set)
+  (Christine Poerschke)
+
 ======================= Lucene 5.4.1 =======================
 
 Bug Fixes
