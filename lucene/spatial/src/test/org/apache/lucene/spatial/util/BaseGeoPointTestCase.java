@@ -58,8 +58,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected static final String FIELD_NAME = "point";
 
-  private static final double LON_SCALE = (0x1L<<GeoUtils.BITS)/360.0D;
-  private static final double LAT_SCALE = (0x1L<<GeoUtils.BITS)/180.0D;
+  private static final double LON_SCALE = (0x1L<< GeoEncodingUtils.BITS)/360.0D;
+  private static final double LAT_SCALE = (0x1L<< GeoEncodingUtils.BITS)/180.0D;
 
   private static double originLat;
   private static double originLon;

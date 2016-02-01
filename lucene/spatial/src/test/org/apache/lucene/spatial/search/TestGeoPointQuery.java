@@ -27,7 +27,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.spatial.util.GeoEncodingUtils;
 import org.apache.lucene.spatial.document.GeoPointField;
+import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
 import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
@@ -50,6 +52,8 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   private static Directory directory = null;
   private static IndexReader reader = null;
   private static IndexSearcher searcher = null;
+  private static TermEncoding termEncoding = null;
+  private static FieldType fieldType = null;
 
   @Override
   protected boolean forceSmall() {
@@ -58,58 +62,58 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
 
   @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
-    doc.add(new GeoPointField(field, lon, lat, Field.Store.NO));
+    doc.add(new GeoPointField(field, lon, lat, fieldType));
   }
 
   @Override
   protected Query newRectQuery(String field, GeoRect rect) {
-    return new GeoPointInBBoxQuery(field, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
+    return new GeoPointInBBoxQuery(field, termEncoding, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
   }
 
   @Override
   protected Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters) {
-    return new GeoPointDistanceQuery(field, centerLon, centerLat, radiusMeters);
+    return new GeoPointDistanceQuery(field, termEncoding, centerLon, centerLat, radiusMeters);
   }
 
   @Override
   protected Query newDistanceRangeQuery(String field, double centerLat, double centerLon, double minRadiusMeters, double radiusMeters) {
-    return new GeoPointDistanceRangeQuery(field, centerLon, centerLat, minRadiusMeters, radiusMeters);
+    return new GeoPointDistanceRangeQuery(field, termEncoding, centerLon, centerLat, minRadiusMeters, radiusMeters);
   }
 
   @Override
   protected Query newPolygonQuery(String field, double[] lats, double[] lons) {
-    return new GeoPointInPolygonQuery(field, lons, lats);
+    return new GeoPointInPolygonQuery(field, termEncoding, lons, lats);
   }
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
+    termEncoding = TermEncoding.PREFIX;// randomTermEncoding();
+    fieldType = randomFieldType();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
             newIndexWriterConfig(new MockAnalyzer(random()))
                     .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
                     .setMergePolicy(newLogMergePolicy()));
 
-    // create some simple geo points
-    final FieldType storedPoint = new FieldType(GeoPointField.TYPE_STORED);
     // this is a simple systematic test
     GeoPointField[] pts = new GeoPointField[] {
-         new GeoPointField(FIELD_NAME, -96.774, 32.763420, storedPoint),
-         new GeoPointField(FIELD_NAME, -96.7759895324707, 32.7559529921407, storedPoint),
-         new GeoPointField(FIELD_NAME, -96.77701950073242, 32.77866942010977, storedPoint),
-         new GeoPointField(FIELD_NAME, -96.7706036567688, 32.7756745755423, storedPoint),
-         new GeoPointField(FIELD_NAME, -139.73458170890808, 27.703618681345585, storedPoint),
-         new GeoPointField(FIELD_NAME, -96.4538113027811, 32.94823588839368, storedPoint),
-         new GeoPointField(FIELD_NAME, -96.65084838867188, 33.06047141970814, storedPoint),
-         new GeoPointField(FIELD_NAME, -96.7772, 32.778650, storedPoint),
-         new GeoPointField(FIELD_NAME, -177.23537676036358, -88.56029371730983, storedPoint),
-         new GeoPointField(FIELD_NAME, -26.779373834241003, 33.541429799076354, storedPoint),
-         new GeoPointField(FIELD_NAME, -77.35379276106497, 26.774024500421728, storedPoint),
-         new GeoPointField(FIELD_NAME, -14.796283808944777, -90.0, storedPoint),
-         new GeoPointField(FIELD_NAME, -178.8538113027811, 32.94823588839368, storedPoint),
-         new GeoPointField(FIELD_NAME, 178.8538113027811, 32.94823588839368, storedPoint),
-         new GeoPointField(FIELD_NAME, -73.998776, 40.720611, storedPoint),
-         new GeoPointField(FIELD_NAME, -179.5, -44.5, storedPoint)};
+        new GeoPointField(FIELD_NAME, -96.774, 32.763420, fieldType),
+        new GeoPointField(FIELD_NAME, -96.7759895324707, 32.7559529921407, fieldType),
+        new GeoPointField(FIELD_NAME, -96.77701950073242, 32.77866942010977, fieldType),
+        new GeoPointField(FIELD_NAME, -96.7706036567688, 32.7756745755423, fieldType),
+        new GeoPointField(FIELD_NAME, -139.73458170890808, 27.703618681345585, fieldType),
+        new GeoPointField(FIELD_NAME, -96.4538113027811, 32.94823588839368, fieldType),
+        new GeoPointField(FIELD_NAME, -96.65084838867188, 33.06047141970814, fieldType),
+        new GeoPointField(FIELD_NAME, -96.7772, 32.778650, fieldType),
+        new GeoPointField(FIELD_NAME, -177.23537676036358, -88.56029371730983, fieldType),
+        new GeoPointField(FIELD_NAME, -26.779373834241003, 33.541429799076354, fieldType),
+        new GeoPointField(FIELD_NAME, -77.35379276106497, 26.774024500421728, fieldType),
+        new GeoPointField(FIELD_NAME, -14.796283808944777, -90.0, fieldType),
+        new GeoPointField(FIELD_NAME, -178.8538113027811, 32.94823588839368, fieldType),
+        new GeoPointField(FIELD_NAME, 178.8538113027811, 32.94823588839368, fieldType),
+        new GeoPointField(FIELD_NAME, -73.998776, 40.720611, fieldType),
+        new GeoPointField(FIELD_NAME, -179.5, -44.5, fieldType)};
 
     for (GeoPointField p : pts) {
         Document doc = new Document();
@@ -146,27 +150,38 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     directory = null;
   }
 
+  private static TermEncoding randomTermEncoding() {
+    return random().nextBoolean() ? TermEncoding.NUMERIC : TermEncoding.PREFIX;
+  }
+
+  private static FieldType randomFieldType() {
+    if (termEncoding == TermEncoding.PREFIX) {
+      return GeoPointField.PREFIX_TYPE_NOT_STORED;
+    }
+    return GeoPointField.NUMERIC_TYPE_NOT_STORED;
+  }
+
   private TopDocs bboxQuery(double minLon, double minLat, double maxLon, double maxLat, int limit) throws Exception {
-    GeoPointInBBoxQuery q = new GeoPointInBBoxQuery(FIELD_NAME, minLon, minLat, maxLon, maxLat);
+    GeoPointInBBoxQuery q = new GeoPointInBBoxQuery(FIELD_NAME, termEncoding, minLon, minLat, maxLon, maxLat);
     return searcher.search(q, limit);
   }
 
   private TopDocs polygonQuery(double[] lon, double[] lat, int limit) throws Exception {
-    GeoPointInPolygonQuery q = new GeoPointInPolygonQuery(FIELD_NAME, lon, lat);
+    GeoPointInPolygonQuery q = new GeoPointInPolygonQuery(FIELD_NAME, termEncoding, lon, lat);
     return searcher.search(q, limit);
   }
 
   private TopDocs geoDistanceQuery(double lon, double lat, double radius, int limit) throws Exception {
-    GeoPointDistanceQuery q = new GeoPointDistanceQuery(FIELD_NAME, lon, lat, radius);
+    GeoPointDistanceQuery q = new GeoPointDistanceQuery(FIELD_NAME, termEncoding, lon, lat, radius);
     return searcher.search(q, limit);
   }
 
   @Override
   protected Boolean rectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
-    if (GeoUtils.compare(pointLon, rect.minLon) == 0.0 ||
-        GeoUtils.compare(pointLon, rect.maxLon) == 0.0 ||
-        GeoUtils.compare(pointLat, rect.minLat) == 0.0 ||
-        GeoUtils.compare(pointLat, rect.maxLat) == 0.0) {
+    if (GeoEncodingUtils.compare(pointLon, rect.minLon) == 0.0 ||
+        GeoEncodingUtils.compare(pointLon, rect.maxLon) == 0.0 ||
+        GeoEncodingUtils.compare(pointLat, rect.minLat) == 0.0 ||
+        GeoEncodingUtils.compare(pointLat, rect.maxLat) == 0.0) {
       // Point is very close to rect boundary
       return null;
     }
@@ -207,12 +222,12 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
 
   private static boolean radiusQueryCanBeWrong(double centerLat, double centerLon, double ptLon, double ptLat,
                                                final double radius) {
-    final long hashedCntr = GeoUtils.mortonHash(centerLon, centerLat);
-    centerLon = GeoUtils.mortonUnhashLon(hashedCntr);
-    centerLat = GeoUtils.mortonUnhashLat(hashedCntr);
-    final long hashedPt = GeoUtils.mortonHash(ptLon, ptLat);
-    ptLon = GeoUtils.mortonUnhashLon(hashedPt);
-    ptLat = GeoUtils.mortonUnhashLat(hashedPt);
+    final long hashedCntr = GeoEncodingUtils.mortonHash(centerLon, centerLat);
+    centerLon = GeoEncodingUtils.mortonUnhashLon(hashedCntr);
+    centerLat = GeoEncodingUtils.mortonUnhashLat(hashedCntr);
+    final long hashedPt = GeoEncodingUtils.mortonHash(ptLon, ptLat);
+    ptLon = GeoEncodingUtils.mortonUnhashLon(hashedPt);
+    ptLat = GeoEncodingUtils.mortonUnhashLat(hashedPt);
 
     double ptDistance = SloppyMath.haversin(centerLat, centerLon, ptLat, ptLon)*1000.0;
     double delta = StrictMath.abs(ptDistance - radius);
@@ -227,7 +242,7 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
 
   private TopDocs geoDistanceRangeQuery(double lon, double lat, double minRadius, double maxRadius, int limit)
       throws Exception {
-    GeoPointDistanceRangeQuery q = new GeoPointDistanceRangeQuery(FIELD_NAME, lon, lat, minRadius, maxRadius);
+    GeoPointDistanceRangeQuery q = new GeoPointDistanceRangeQuery(FIELD_NAME, termEncoding, lon, lat, minRadius, maxRadius);
     return searcher.search(q, limit);
   }
 
@@ -347,9 +362,9 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   }
 
   public void testMortonEncoding() throws Exception {
-    long hash = GeoUtils.mortonHash(180, 90);
-    assertEquals(180.0, GeoUtils.mortonUnhashLon(hash), 0);
-    assertEquals(90.0, GeoUtils.mortonUnhashLat(hash), 0);
+    long hash = GeoEncodingUtils.mortonHash(180, 90);
+    assertEquals(180.0, GeoEncodingUtils.mortonUnhashLon(hash), 0);
+    assertEquals(90.0, GeoEncodingUtils.mortonUnhashLat(hash), 0);
   }
 
   public void testEncodeDecode() throws Exception {
@@ -359,12 +374,12 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
       double lat = randomLat(small);
       double lon = randomLon(small);
 
-      long enc = GeoUtils.mortonHash(lon, lat);
-      double latEnc = GeoUtils.mortonUnhashLat(enc);
-      double lonEnc = GeoUtils.mortonUnhashLon(enc);
+      long enc = GeoEncodingUtils.mortonHash(lon, lat);
+      double latEnc = GeoEncodingUtils.mortonUnhashLat(enc);
+      double lonEnc = GeoEncodingUtils.mortonUnhashLon(enc);
 
-      assertEquals("lat=" + lat + " latEnc=" + latEnc + " diff=" + (lat - latEnc), lat, latEnc, GeoUtils.TOLERANCE);
-      assertEquals("lon=" + lon + " lonEnc=" + lonEnc + " diff=" + (lon - lonEnc), lon, lonEnc, GeoUtils.TOLERANCE);
+      assertEquals("lat=" + lat + " latEnc=" + latEnc + " diff=" + (lat - latEnc), lat, latEnc, GeoEncodingUtils.TOLERANCE);
+      assertEquals("lon=" + lon + " lonEnc=" + lonEnc + " diff=" + (lon - lonEnc), lon, lonEnc, GeoEncodingUtils.TOLERANCE);
     }
   }
 
@@ -375,13 +390,13 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
       double lat = randomLat(small);
       double lon = randomLon(small);
 
-      long enc = GeoUtils.mortonHash(lon, lat);
-      double latEnc = GeoUtils.mortonUnhashLat(enc);
-      double lonEnc = GeoUtils.mortonUnhashLon(enc);
+      long enc = GeoEncodingUtils.mortonHash(lon, lat);
+      double latEnc = GeoEncodingUtils.mortonUnhashLat(enc);
+      double lonEnc = GeoEncodingUtils.mortonUnhashLon(enc);
 
-      long enc2 = GeoUtils.mortonHash(lon, lat);
-      double latEnc2 = GeoUtils.mortonUnhashLat(enc2);
-      double lonEnc2 = GeoUtils.mortonUnhashLon(enc2);
+      long enc2 = GeoEncodingUtils.mortonHash(lon, lat);
+      double latEnc2 = GeoEncodingUtils.mortonUnhashLat(enc2);
+      double lonEnc2 = GeoEncodingUtils.mortonUnhashLon(enc2);
       assertEquals(latEnc, latEnc2, 0.0);
       assertEquals(lonEnc, lonEnc2, 0.0);
     }

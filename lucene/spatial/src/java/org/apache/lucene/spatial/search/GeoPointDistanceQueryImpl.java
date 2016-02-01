@@ -16,13 +16,8 @@
  */
 package org.apache.lucene.spatial.search;
 
-import java.io.IOException;
-
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.spatial.document.GeoPointField;
+import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
 import org.apache.lucene.util.SloppyMath;
@@ -32,19 +27,14 @@ import org.apache.lucene.util.SloppyMath;
  *    @lucene.experimental
  */
 final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
-  private final GeoPointDistanceQuery query;
+  private final GeoPointDistanceQuery distanceQuery;
   private final double centerLon;
 
-  GeoPointDistanceQueryImpl(final String field, final GeoPointDistanceQuery q, final double centerLonUnwrapped,
-                            final GeoRect bbox) {
-    super(field, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
-    query = q;
+  GeoPointDistanceQueryImpl(final String field, final TermEncoding termEncoding, final GeoPointDistanceQuery q,
+                            final double centerLonUnwrapped, final GeoRect bbox) {
+    super(field, termEncoding, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
+    distanceQuery = q;
     centerLon = centerLonUnwrapped;
-  }
-
-  @Override @SuppressWarnings("unchecked")
-  protected TermsEnum getTermsEnum(final Terms terms, AttributeSource atts) throws IOException {
-    return new GeoPointRadiusTermsEnum(terms.iterator(), this.minLon, this.minLat, this.maxLon, this.maxLat);
   }
 
   @Override
@@ -52,45 +42,31 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
     throw new UnsupportedOperationException("cannot change rewrite method");
   }
 
-  private final class GeoPointRadiusTermsEnum extends GeoPointTermsEnum {
-    GeoPointRadiusTermsEnum(final TermsEnum tenum, final double minLon, final double minLat,
-                            final double maxLon, final double maxLat) {
-      super(tenum, minLon, minLat, maxLon, maxLat);
-    }
+  @Override
+  protected CellComparator newCellComparator() {
+    return new GeoPointRadiusCellComparator(this);
+  }
 
-    /**
-     * Computes the maximum shift for the given pointDistanceQuery. This prevents unnecessary depth traversal
-     * given the size of the distance query.
-     */
-    @Override
-    protected short computeMaxShift() {
-      final short shiftFactor;
-
-      if (query.radiusMeters > 1000000) {
-        shiftFactor = 5;
-      } else {
-        shiftFactor = 4;
-      }
-
-      return (short)(GeoPointField.PRECISION_STEP * shiftFactor);
+  private final class GeoPointRadiusCellComparator extends CellComparator {
+    GeoPointRadiusCellComparator(GeoPointDistanceQueryImpl query) {
+      super(query);
     }
 
     @Override
     protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
       return GeoRelationUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLat,
-          centerLon, query.centerLat, query.radiusMeters, true);
+          centerLon, distanceQuery.centerLat, distanceQuery.radiusMeters, true);
     }
 
     @Override
     protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
       return GeoRelationUtils.rectWithinCircle(minLon, minLat, maxLon, maxLat,
-          centerLon, query.centerLat, query.radiusMeters, true);
+          centerLon, distanceQuery.centerLat, distanceQuery.radiusMeters, true);
     }
 
     @Override
     protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return (cellContains(minLon, minLat, maxLon, maxLat)
-          || cellWithin(minLon, minLat, maxLon, maxLat) || cellCrosses(minLon, minLat, maxLon, maxLat));
+      return cellCrosses(minLon, minLat, maxLon, maxLat);
     }
 
     /**
@@ -101,7 +77,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
      */
     @Override
     protected boolean postFilter(final double lon, final double lat) {
-      return (SloppyMath.haversin(query.centerLat, centerLon, lat, lon) * 1000.0 <= query.radiusMeters);
+      return (SloppyMath.haversin(distanceQuery.centerLat, centerLon, lat, lon) * 1000.0 <= distanceQuery.radiusMeters);
     }
   }
 
@@ -113,7 +89,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
 
     GeoPointDistanceQueryImpl that = (GeoPointDistanceQueryImpl) o;
 
-    if (!query.equals(that.query)) return false;
+    if (!distanceQuery.equals(that.distanceQuery)) return false;
 
     return true;
   }
@@ -121,11 +97,11 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + query.hashCode();
+    result = 31 * result + distanceQuery.hashCode();
     return result;
   }
 
   public double getRadiusMeters() {
-    return query.getRadiusMeters();
+    return distanceQuery.getRadiusMeters();
   }
 }

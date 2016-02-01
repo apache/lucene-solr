@@ -22,6 +22,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldValueQuery;
 import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoUtils;
 
 /** Implements a simple bounding box query on a GeoPoint field. This is inspired by
@@ -49,17 +50,23 @@ public class GeoPointInBBoxQuery extends Query {
   protected final double minLat;
   protected final double maxLon;
   protected final double maxLat;
+  protected final TermEncoding termEncoding;
 
   /**
    * Constructs a query for all {@link org.apache.lucene.spatial.document.GeoPointField} types that fall within a
    * defined bounding box
    */
   public GeoPointInBBoxQuery(final String field, final double minLon, final double minLat, final double maxLon, final double maxLat) {
+    this(field, TermEncoding.PREFIX, minLon, minLat, maxLon, maxLat);
+  }
+
+  public GeoPointInBBoxQuery(final String field, final TermEncoding termEncoding, final double minLon, final double minLat, final double maxLon, final double maxLat) {
     this.field = field;
     this.minLon = minLon;
     this.minLat = minLat;
     this.maxLon = maxLon;
     this.maxLat = maxLat;
+    this.termEncoding = termEncoding;
   }
 
   @Override
@@ -74,13 +81,13 @@ public class GeoPointInBBoxQuery extends Query {
     if (maxLon < minLon) {
       BooleanQuery.Builder bqb = new BooleanQuery.Builder();
 
-      GeoPointInBBoxQueryImpl left = new GeoPointInBBoxQueryImpl(field, -180.0D, minLat, maxLon, maxLat);
+      GeoPointInBBoxQueryImpl left = new GeoPointInBBoxQueryImpl(field, termEncoding, -180.0D, minLat, maxLon, maxLat);
       bqb.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
-      GeoPointInBBoxQueryImpl right = new GeoPointInBBoxQueryImpl(field, minLon, minLat, 180.0D, maxLat);
+      GeoPointInBBoxQueryImpl right = new GeoPointInBBoxQueryImpl(field, termEncoding, minLon, minLat, 180.0D, maxLat);
       bqb.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
       return bqb.build();
     }
-    return new GeoPointInBBoxQueryImpl(field, minLon, minLat, maxLon, maxLat);
+    return new GeoPointInBBoxQueryImpl(field, termEncoding, minLon, minLat, maxLon, maxLat);
   }
 
   @Override
