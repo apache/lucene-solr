@@ -174,14 +174,14 @@ public class GeoRelationUtils {
           c2 = a2*shapeX[p+1] + b2*shapeY[p+1];
           s = (1/d)*(b2*c1 - b1*c2);
           t = (1/d)*(a1*c2 - a2*c1);
-          x00 = StrictMath.min(bbox[b][0], bbox[b+1][0]) - GeoUtils.TOLERANCE;
-          x01 = StrictMath.max(bbox[b][0], bbox[b+1][0]) + GeoUtils.TOLERANCE;
-          y00 = StrictMath.min(bbox[b][1], bbox[b+1][1]) - GeoUtils.TOLERANCE;
-          y01 = StrictMath.max(bbox[b][1], bbox[b+1][1]) + GeoUtils.TOLERANCE;
-          x10 = StrictMath.min(shapeX[p], shapeX[p+1]) - GeoUtils.TOLERANCE;
-          x11 = StrictMath.max(shapeX[p], shapeX[p+1]) + GeoUtils.TOLERANCE;
-          y10 = StrictMath.min(shapeY[p], shapeY[p+1]) - GeoUtils.TOLERANCE;
-          y11 = StrictMath.max(shapeY[p], shapeY[p+1]) + GeoUtils.TOLERANCE;
+          x00 = StrictMath.min(bbox[b][0], bbox[b+1][0]) - GeoEncodingUtils.TOLERANCE;
+          x01 = StrictMath.max(bbox[b][0], bbox[b+1][0]) + GeoEncodingUtils.TOLERANCE;
+          y00 = StrictMath.min(bbox[b][1], bbox[b+1][1]) - GeoEncodingUtils.TOLERANCE;
+          y01 = StrictMath.max(bbox[b][1], bbox[b+1][1]) + GeoEncodingUtils.TOLERANCE;
+          x10 = StrictMath.min(shapeX[p], shapeX[p+1]) - GeoEncodingUtils.TOLERANCE;
+          x11 = StrictMath.max(shapeX[p], shapeX[p+1]) + GeoEncodingUtils.TOLERANCE;
+          y10 = StrictMath.min(shapeY[p], shapeY[p+1]) - GeoEncodingUtils.TOLERANCE;
+          y11 = StrictMath.max(shapeY[p], shapeY[p+1]) + GeoEncodingUtils.TOLERANCE;
           // check whether the intersection point is touching one of the line segments
           boolean touching = ((x00 == s && y00 == t) || (x01 == s && y01 == t))
               || ((x10 == s && y10 == t) || (x11 == s && y11 == t));

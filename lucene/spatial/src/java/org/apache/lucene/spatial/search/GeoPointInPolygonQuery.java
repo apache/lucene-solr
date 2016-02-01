@@ -22,6 +22,8 @@ import java.util.Arrays;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
+import org.apache.lucene.spatial.util.GeoEncodingUtils;
 import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
 import org.apache.lucene.spatial.util.GeoUtils;
@@ -34,7 +36,11 @@ import org.apache.lucene.spatial.util.GeoUtils;
  * to a secondary filter that verifies whether the decoded lat/lon point falls within
  * (or on the boundary) of the bounding box query. Finally, the remaining candidate
  * term is passed to the final point in polygon check. All value comparisons are subject
+<<<<<<< HEAD:lucene/spatial/src/java/org/apache/lucene/spatial/search/GeoPointInPolygonQuery.java
  * to the same precision tolerance defined in {@value org.apache.lucene.spatial.util.GeoUtils#TOLERANCE}
+=======
+ * to the same precision tolerance defined in {@value GeoEncodingUtils#TOLERANCE}
+>>>>>>> LUCENE-6930: Decouples GeoPointField from NumericType by using a custom GeoPointTokenStream and TermEnum designed for GeoPoint prefix terms:lucene/sandbox/src/java/org/apache/lucene/search/GeoPointInPolygonQuery.java
  *
  * <p>NOTES:
  *    1.  The polygon coordinates need to be in either clockwise or counter-clockwise order.
@@ -51,17 +57,21 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
   private final double[] x;
   private final double[] y;
 
+  public GeoPointInPolygonQuery(final String field, final double[] polyLons, final double[] polyLats) {
+    this(field, TermEncoding.PREFIX, GeoUtils.polyToBBox(polyLons, polyLats), polyLons, polyLats);
+  }
+
   /**
    * Constructs a new GeoPolygonQuery that will match encoded {@link org.apache.lucene.spatial.document.GeoPointField} terms
    * that fall within or on the boundary of the polygon defined by the input parameters.
    */
-  public GeoPointInPolygonQuery(final String field, final double[] polyLons, final double[] polyLats) {
-    this(field, GeoUtils.polyToBBox(polyLons, polyLats), polyLons, polyLats);
+  public GeoPointInPolygonQuery(final String field, final TermEncoding termEncoding, final double[] polyLons, final double[] polyLats) {
+    this(field, termEncoding, GeoUtils.polyToBBox(polyLons, polyLats), polyLons, polyLats);
   }
 
   /** Common constructor, used only internally. */
-  private GeoPointInPolygonQuery(final String field, GeoRect bbox, final double[] polyLons, final double[] polyLats) {
-    super(field, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
+  private GeoPointInPolygonQuery(final String field, TermEncoding termEncoding, GeoRect bbox, final double[] polyLons, final double[] polyLats) {
+    super(field, termEncoding, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
     if (polyLats.length != polyLons.length) {
       throw new IllegalArgumentException("polyLats and polyLons must be equal length");
     }
@@ -79,15 +89,55 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
     this.y = polyLats;
   }
 
-  @Override @SuppressWarnings("unchecked")
-  protected TermsEnum getTermsEnum(final Terms terms, AttributeSource atts) throws IOException {
-    return new GeoPolygonTermsEnum(terms.iterator(), this.minLon, this.minLat, this.maxLon, this.maxLat);
-  }
-
   /** throw exception if trying to change rewrite method */
   @Override
   public void setRewriteMethod(RewriteMethod method) {
     throw new UnsupportedOperationException("cannot change rewrite method");
+  }
+
+  @Override
+  protected CellComparator newCellComparator() {
+    return new GeoPolygonCellComparator(this);
+  }
+
+  /**
+   * Custom {@link org.apache.lucene.index.TermsEnum} that computes morton hash ranges based on the defined edges of
+   * the provided polygon.
+   */
+  private final class GeoPolygonCellComparator extends CellComparator {
+    GeoPolygonCellComparator(GeoPointMultiTermQuery query) {
+      super(query);
+    }
+
+    @Override
+    protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+      return GeoRelationUtils.rectCrossesPolyApprox(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
+          GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
+    }
+
+    @Override
+    protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+      return GeoRelationUtils.rectWithinPolyApprox(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
+          GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
+    }
+
+    @Override
+    protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
+      return cellContains(minLon, minLat, maxLon, maxLat) || cellWithin(minLon, minLat, maxLon, maxLat)
+          || cellCrosses(minLon, minLat, maxLon, maxLat);
+    }
+
+    /**
+     * The two-phase query approach. The parent
+     * {@link org.apache.lucene.spatial.search.GeoPointTermsEnum#accept} method is called to match
+     * encoded terms that fall within the bounding box of the polygon. Those documents that pass the initial
+     * bounding box filter are then compared to the provided polygon using the
+     * {@link org.apache.lucene.spatial.util.GeoRelationUtils#pointInPolygon} method.
+     */
+    @Override
+    protected boolean postFilter(final double lon, final double lat) {
+      return GeoRelationUtils.pointInPolygon(x, y, lat, lon);
+    }
   }
 
   @Override
@@ -128,54 +178,13 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
     sb.append(" Points: ");
     for (int i=0; i<x.length; ++i) {
       sb.append("[")
-        .append(x[i])
-        .append(", ")
-        .append(y[i])
-        .append("] ");
+          .append(x[i])
+          .append(", ")
+          .append(y[i])
+          .append("] ");
     }
 
     return sb.toString();
-  }
-
-  /**
-   * Custom {@link org.apache.lucene.index.TermsEnum} that computes morton hash ranges based on the defined edges of
-   * the provided polygon.
-   */
-  private final class GeoPolygonTermsEnum extends GeoPointTermsEnum {
-    GeoPolygonTermsEnum(final TermsEnum tenum, final double minLon, final double minLat,
-                        final double maxLon, final double maxLat) {
-      super(tenum, minLon, minLat, maxLon, maxLat);
-    }
-
-    @Override
-    protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectCrossesPolyApprox(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
-          GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
-    }
-
-    @Override
-    protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectWithinPolyApprox(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
-          GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
-    }
-
-    @Override
-    protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return cellContains(minLon, minLat, maxLon, maxLat) || cellWithin(minLon, minLat, maxLon, maxLat)
-          || cellCrosses(minLon, minLat, maxLon, maxLat);
-    }
-
-    /**
-     * The two-phase query approach. The parent
-     * {@link GeoPointTermsEnum#accept} method is called to match
-     * encoded terms that fall within the bounding box of the polygon. Those documents that pass the initial
-     * bounding box filter are then compared to the provided polygon using the
-     * {@link org.apache.lucene.spatial.util.GeoRelationUtils#pointInPolygon} method.
-     */
-    @Override
-    protected boolean postFilter(final double lon, final double lat) {
-      return GeoRelationUtils.pointInPolygon(x, y, lat, lon);
-    }
   }
 
   /**

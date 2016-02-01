@@ -16,173 +16,60 @@
  */
 package org.apache.lucene.spatial.search;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.apache.lucene.spatial.document.GeoPointField;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.spatial.util.GeoRelationUtils;
-import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
+import org.apache.lucene.spatial.search.GeoPointMultiTermQuery.CellComparator;
 
 /**
- * computes all ranges along a space-filling curve that represents
- * the given bounding box and enumerates all terms contained within those ranges
+ * Base class for {@link GeoPointNumericTermsEnum} and {@link GeoPointPrefixTermsEnum} which compares
+ * candidate GeoPointField encoded terms against terms matching the defined query criteria.
  *
  *  @lucene.experimental
  */
 abstract class GeoPointTermsEnum extends FilteredTermsEnum {
-  protected final double minLon;
-  protected final double minLat;
-  protected final double maxLon;
-  protected final double maxLat;
+  protected final short maxShift;
 
-  protected Range currentRange;
-  private final BytesRefBuilder currentCell = new BytesRefBuilder();
-  private final BytesRefBuilder nextSubRange = new BytesRefBuilder();
+  protected BaseRange currentRange;
+  protected BytesRef currentCell;
+  protected final BytesRefBuilder currentCellBRB = new BytesRefBuilder();
+  protected final BytesRefBuilder nextSubRangeBRB = new BytesRefBuilder();
 
-  private final List<Range> rangeBounds = new LinkedList<>();
+  protected final CellComparator relationImpl;
 
-  // detail level should be a factor of PRECISION_STEP limiting the depth of recursion (and number of ranges)
-  protected final short DETAIL_LEVEL;
-
-  GeoPointTermsEnum(final TermsEnum tenum, final double minLon, final double minLat,
-                    final double maxLon, final double maxLat) {
+  GeoPointTermsEnum(final TermsEnum tenum, final GeoPointMultiTermQuery query) {
     super(tenum);
-    final long rectMinHash = GeoUtils.mortonHash(minLon, minLat);
-    final long rectMaxHash = GeoUtils.mortonHash(maxLon, maxLat);
-    this.minLon = GeoUtils.mortonUnhashLon(rectMinHash);
-    this.minLat = GeoUtils.mortonUnhashLat(rectMinHash);
-    this.maxLon = GeoUtils.mortonUnhashLon(rectMaxHash);
-    this.maxLat = GeoUtils.mortonUnhashLat(rectMaxHash);
-    DETAIL_LEVEL = (short)(((GeoUtils.BITS<<1)-computeMaxShift())/2);
-
-    computeRange(0L, (short) ((GeoUtils.BITS << 1) - 1));
-    assert rangeBounds.isEmpty() == false;
-    Collections.sort(rangeBounds);
+    this.maxShift = query.maxShift;
+    this.relationImpl = query.cellComparator;
   }
 
-  /**
-   * entry point for recursively computing ranges
-   */
-  private final void computeRange(long term, final short shift) {
-    final long split = term | (0x1L<<shift);
-    assert shift < 64;
-    final long upperMax;
-    if (shift < 63) {
-      upperMax = term | ((1L << (shift+1))-1);
-    } else {
-      upperMax = 0xffffffffffffffffL;
+  static GeoPointTermsEnum newInstance(final TermsEnum terms, final GeoPointMultiTermQuery query) {
+    if (query.termEncoding == TermEncoding.PREFIX) {
+      return new GeoPointPrefixTermsEnum(terms, query);
+    } else if (query.termEncoding == TermEncoding.NUMERIC) {
+      return new GeoPointNumericTermsEnum(terms, query);
     }
-    final long lowerMax = split-1;
-
-    relateAndRecurse(term, lowerMax, shift);
-    relateAndRecurse(split, upperMax, shift);
-  }
-
-  /**
-   * recurse to higher level precision cells to find ranges along the space-filling curve that fall within the
-   * query box
-   *
-   * @param start starting value on the space-filling curve for a cell at a given res
-   * @param end ending value on the space-filling curve for a cell at a given res
-   * @param res spatial res represented as a bit shift (MSB is lower res)
-   */
-  private void relateAndRecurse(final long start, final long end, final short res) {
-    final double minLon = GeoUtils.mortonUnhashLon(start);
-    final double minLat = GeoUtils.mortonUnhashLat(start);
-    final double maxLon = GeoUtils.mortonUnhashLon(end);
-    final double maxLat = GeoUtils.mortonUnhashLat(end);
-
-    final short level = (short)((GeoUtils.BITS<<1)-res>>>1);
-
-    // if cell is within and a factor of the precision step, or it crosses the edge of the shape add the range
-    final boolean within = res % GeoPointField.PRECISION_STEP == 0 && cellWithin(minLon, minLat, maxLon, maxLat);
-    if (within || (level == DETAIL_LEVEL && cellIntersectsShape(minLon, minLat, maxLon, maxLat))) {
-      final short nextRes = (short)(res-1);
-      if (nextRes % GeoPointField.PRECISION_STEP == 0) {
-        rangeBounds.add(new Range(start, nextRes, !within));
-        rangeBounds.add(new Range(start|(1L<<nextRes), nextRes, !within));
-      } else {
-        rangeBounds.add(new Range(start, res, !within));
-      }
-    } else if (level < DETAIL_LEVEL && cellIntersectsMBR(minLon, minLat, maxLon, maxLat)) {
-      computeRange(start, (short) (res - 1));
-    }
-  }
-
-  protected short computeMaxShift() {
-    // in this case a factor of 4 brings the detail level to ~0.002/0.001 degrees lon/lat respectively (or ~222m/111m)
-    return GeoPointField.PRECISION_STEP * 4;
-  }
-
-  /**
-   * Determine whether the quad-cell crosses the shape
-   */
-  protected abstract boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat);
-
-  /**
-   * Determine whether quad-cell is within the shape
-   */
-  protected abstract boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat);
-
-  /**
-   * Default shape is a rectangle, so this returns the same as {@code cellIntersectsMBR}
-   */
-  protected abstract boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat);
-
-  /**
-   * Primary driver for cells intersecting shape boundaries
-   */
-  protected boolean cellIntersectsMBR(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return GeoRelationUtils.rectIntersects(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
-  }
-
-  /**
-   * Return whether quad-cell contains the bounding box of this shape
-   */
-  protected boolean cellContains(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return GeoRelationUtils.rectWithin(this.minLon, this.minLat, this.maxLon, this.maxLat, minLon, minLat, maxLon, maxLat);
+    throw new IllegalArgumentException("Invalid GeoPoint TermEncoding " + query.termEncoding);
   }
 
   public boolean boundaryTerm() {
-    if (currentRange == null) {
+    if (currentCell == null) {
       throw new IllegalStateException("GeoPointTermsEnum empty or not initialized");
     }
     return currentRange.boundary;
   }
 
-  private void nextRange() {
-    currentRange = rangeBounds.remove(0);
-    currentRange.fillBytesRef(currentCell);
+  protected BytesRef peek() {
+    return nextSubRangeBRB.get();
   }
 
-  @Override
-  protected final BytesRef nextSeekTerm(BytesRef term) {
-    while (!rangeBounds.isEmpty()) {
-      if (currentRange == null) {
-        nextRange();
-      }
+  abstract protected boolean hasNext();
 
-      // if the new upper bound is before the term parameter, the sub-range is never a hit
-      if (term != null && term.compareTo(currentCell.get()) > 0) {
-        nextRange();
-        if (!rangeBounds.isEmpty()) {
-          continue;
-        }
-      }
-      // never seek backwards, so use current term if lower bound is smaller
-      return (term != null && term.compareTo(currentCell.get()) > 0) ?
-          term : currentCell.get();
-    }
-
-    // no more sub-range enums available
-    assert rangeBounds.isEmpty();
-    return null;
+  protected void nextRange() {
+    currentRange.fillBytesRef(currentCellBRB);
+    currentCell = currentCellBRB.get();
   }
 
   /**
@@ -196,13 +83,12 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
   @Override
   protected AcceptStatus accept(BytesRef term) {
     // validate value is in range
-    while (currentCell == null || term.compareTo(currentCell.get()) > 0) {
-      if (rangeBounds.isEmpty()) {
+    while (currentCell == null || term.compareTo(currentCell) > 0) {
+      if (hasNext() == false) {
         return AcceptStatus.END;
       }
       // peek next sub-range, only seek if the current term is smaller than next lower bound
-      rangeBounds.get(0).fillBytesRef(this.nextSubRange);
-      if (term.compareTo(this.nextSubRange.get()) < 0) {
+      if (term.compareTo(peek()) < 0) {
         return AcceptStatus.NO_AND_SEEK;
       }
       // step forward to next range without seeking, as next range is less or equal current term
@@ -212,17 +98,19 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
     return AcceptStatus.YES;
   }
 
-  protected abstract boolean postFilter(final double lon, final double lat);
+  protected boolean postFilter(final double lon, final double lat) {
+    return relationImpl.postFilter(lon, lat);
+  }
 
   /**
    * Internal class to represent a range along the space filling curve
    */
-  protected final class Range implements Comparable<Range> {
-    final short shift;
-    final long start;
-    final boolean boundary;
+  abstract class BaseRange implements Comparable<BaseRange> {
+    protected short shift;
+    protected long start;
+    protected boolean boundary;
 
-    Range(final long lower, final short shift, boolean boundary) {
+    BaseRange(final long lower, final short shift, boolean boundary) {
       this.boundary = boundary;
       this.start = lower;
       this.shift = shift;
@@ -232,18 +120,21 @@ abstract class GeoPointTermsEnum extends FilteredTermsEnum {
      * Encode as a BytesRef using a reusable object. This allows us to lazily create the BytesRef (which is
      * quite expensive), only when we need it.
      */
-    private void fillBytesRef(BytesRefBuilder result) {
-      assert result != null;
-      NumericUtils.longToPrefixCoded(start, shift, result);
-    }
+    abstract protected void fillBytesRef(BytesRefBuilder result);
 
     @Override
-    public int compareTo(Range other) {
+    public int compareTo(BaseRange other) {
       final int result = Short.compare(this.shift, other.shift);
       if (result == 0) {
         return Long.compare(this.start, other.start);
       }
       return result;
+    }
+
+    protected void set(BaseRange other) {
+      this.start = other.start;
+      this.shift = other.shift;
+      this.boundary = other.boundary;
     }
   }
 }

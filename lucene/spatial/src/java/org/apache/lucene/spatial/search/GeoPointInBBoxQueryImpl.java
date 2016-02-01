@@ -16,21 +16,17 @@
  */
 package org.apache.lucene.spatial.search;
 
-import java.io.IOException;
-
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.spatial.document.GeoPointField;
+import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
 
 /** Package private implementation for the public facing GeoPointInBBoxQuery delegate class.
  *
  *    @lucene.experimental
  */
-class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
+class GeoPointInBBoxQueryImpl extends GeoPointMultiTermQuery {
   /**
    * Constructs a new GeoBBoxQuery that will match encoded GeoPoint terms that fall within or on the boundary
    * of the bounding box defined by the input parameters
@@ -40,13 +36,8 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
    * @param maxLon upper longitude (x) value of the bounding box
    * @param maxLat upper latitude (y) value of the bounding box
    */
-  GeoPointInBBoxQueryImpl(final String field, final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    super(field, minLon, minLat, maxLon, maxLat);
-  }
-
-  @Override @SuppressWarnings("unchecked")
-  protected TermsEnum getTermsEnum(final Terms terms, AttributeSource atts) throws IOException {
-    return new GeoPointInBBoxTermsEnum(terms.iterator(), minLon, minLat, maxLon, maxLat);
+  GeoPointInBBoxQueryImpl(final String field, final TermEncoding termEncoding, final double minLon, final double minLat, final double maxLon, final double maxLat) {
+    super(field, termEncoding, minLon, minLat, maxLon, maxLat);
   }
 
   @Override
@@ -54,27 +45,31 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
     throw new UnsupportedOperationException("cannot change rewrite method");
   }
 
-  protected class GeoPointInBBoxTermsEnum extends GeoPointTermsEnum {
-    protected GeoPointInBBoxTermsEnum(final TermsEnum tenum, final double minLon, final double minLat,
-                            final double maxLon, final double maxLat) {
-      super(tenum, minLon, minLat, maxLon, maxLat);
+  @Override
+  protected short computeMaxShift() {
+    final short shiftFactor;
+
+    // compute diagonal radius
+    double midLon = (minLon + maxLon) * 0.5;
+    double midLat = (minLat + maxLat) * 0.5;
+
+    if (SloppyMath.haversin(minLat, minLon, midLat, midLon)*1000 > 1000000) {
+      shiftFactor = 5;
+    } else {
+      shiftFactor = 4;
     }
 
-    @Override
-    protected short computeMaxShift() {
-      final short shiftFactor;
+    return (short)(GeoPointField.PRECISION_STEP * shiftFactor);
+  }
 
-      // compute diagonal radius
-      double midLon = (minLon + maxLon) * 0.5;
-      double midLat = (minLat + maxLat) * 0.5;
+  @Override
+  protected CellComparator newCellComparator() {
+    return new GeoPointInBBoxCellComparator(this);
+  }
 
-      if (SloppyMath.haversin(minLat, minLon, midLat, midLon)*1000 > 1000000) {
-        shiftFactor = 5;
-      } else {
-        shiftFactor = 4;
-      }
-
-      return (short)(GeoPointField.PRECISION_STEP * shiftFactor);
+  private final class GeoPointInBBoxCellComparator extends CellComparator {
+    GeoPointInBBoxCellComparator(GeoPointMultiTermQuery query) {
+      super(query);
     }
 
     /**
@@ -82,16 +77,16 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
      */
     @Override
     protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectCrosses(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
-    }
+      return GeoRelationUtils.rectCrosses(minLon, minLat, maxLon, maxLat, GeoPointInBBoxQueryImpl.this.minLon,
+          GeoPointInBBoxQueryImpl.this.minLat, GeoPointInBBoxQueryImpl.this.maxLon, GeoPointInBBoxQueryImpl.this.maxLat);    }
 
     /**
      * Determine whether quad-cell is within the shape
      */
     @Override
     protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectWithin(minLon, minLat, maxLon, maxLat, this.minLon, this.minLat, this.maxLon, this.maxLat);
-    }
+      return GeoRelationUtils.rectWithin(minLon, minLat, maxLon, maxLat, GeoPointInBBoxQueryImpl.this.minLon,
+          GeoPointInBBoxQueryImpl.this.minLat, GeoPointInBBoxQueryImpl.this.maxLon, GeoPointInBBoxQueryImpl.this.maxLat);    }
 
     @Override
     protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
