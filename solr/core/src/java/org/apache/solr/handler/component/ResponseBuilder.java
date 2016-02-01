@@ -263,6 +263,10 @@ public class ResponseBuilder
   public void setResponseDocs(SolrDocumentList _responseDocs) {
     this._responseDocs = _responseDocs;
   }
+  
+  public SolrDocumentList getResponseDocs() {
+    return this._responseDocs;
+  }
 
   public boolean isDebugTrack() {
     return debugTrack;

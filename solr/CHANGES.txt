@@ -583,6 +583,8 @@ Other Changes
 
 * SOLR-8597: add default, no-op QParserPlugin.init(NamedList) method (Christine Poerschke)
 
+* SOLR-7968: Make QueryComponent more extensible. (Markus Jelsma via David Smiley)
+
 ==================  5.4.1 ==================
 
 Bug Fixes
