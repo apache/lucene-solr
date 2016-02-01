@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
@@ -70,7 +71,7 @@ public class TestSwappedIndexFiles extends LuceneTestCase {
 
   private void indexOneDoc(long seed, Directory dir, Document doc, boolean useCFS) throws IOException {
     Random random = new Random(seed);
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random));
+    IndexWriterConfig conf = newIndexWriterConfig(random, new MockAnalyzer(random));
     conf.setCodec(TestUtil.getDefaultCodec());
 
     if (useCFS == false) {
@@ -87,6 +88,10 @@ public class TestSwappedIndexFiles extends LuceneTestCase {
   }
   
   private void swapFiles(Directory dir1, Directory dir2) throws IOException {
+    if (VERBOSE) {
+      System.out.println("TEST: dir1 files: " + Arrays.toString(dir1.listAll()));
+      System.out.println("TEST: dir2 files: " + Arrays.toString(dir2.listAll()));
+    }
     for(String name : dir1.listAll()) {
       if (name.equals(IndexWriter.WRITE_LOCK_NAME)) {
         continue;
@@ -94,8 +99,11 @@ public class TestSwappedIndexFiles extends LuceneTestCase {
       swapOneFile(dir1, dir2, name);
     }
   }
-  
+
   private void swapOneFile(Directory dir1, Directory dir2, String victim) throws IOException {
+    if (VERBOSE) {
+      System.out.println("TEST: swap file " + victim);
+    }
     try (BaseDirectoryWrapper dirCopy = newDirectory()) {
       dirCopy.setCheckIndexOnClose(false);
 
