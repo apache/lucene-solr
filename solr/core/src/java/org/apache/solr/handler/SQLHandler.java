@@ -109,7 +109,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     try {
 
       if(sql == null) {
-        throw new Exception("sql parameter cannot be null");
+        throw new Exception("stmt parameter cannot be null");
       }
 
       context.setSolrClientCache(StreamHandler.clientCache);
