@@ -434,6 +434,8 @@ Bug Fixes
 * SOLR-8605: Regular expression queries starting with escaped forward slash caused
   an exception. (Scott Blum, yonik)
 
+* SOLR-8607: The Schema API refuses to add new fields that match existing dynamic fields.
+  (Jan Høydahl, Steve Rowe)
   
 Optimizations
 ----------------------

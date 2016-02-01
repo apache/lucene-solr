@@ -395,7 +395,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema = shallowCopy(true);
 
       for (SchemaField newField : newFields) {
-        if (null != newSchema.getFieldOrNull(newField.getName())) {
+        if (null != newSchema.fields.get(newField.getName())) {
           String msg = "Field '" + newField.getName() + "' already exists.";
           throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
         }
@@ -1195,7 +1195,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           String msg = "Can't add dynamic field '" + fieldName + "'.";
           throw new SolrException(ErrorCode.BAD_REQUEST, msg);
         }
-        SchemaField existingFieldWithTheSameName = getFieldOrNull(fieldName);
+        SchemaField existingFieldWithTheSameName = fields.get(fieldName);
         if (null != existingFieldWithTheSameName) {
           String msg = "Field '" + fieldName + "' already exists.";
           throw new SolrException(ErrorCode.BAD_REQUEST, msg);
