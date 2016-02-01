@@ -164,7 +164,13 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
       TupleStream sqlStream = null;
 
-      if(sqlVistor.groupByQuery) {
+      if(sqlVistor.table.toUpperCase(Locale.getDefault()).contains("_CATALOGS_")) {
+        if (!sqlVistor.fields.contains("TABLE_CAT")) {
+          throw new IOException("When querying _CATALOGS_, fields must contain column TABLE_CAT");
+        }
+
+        sqlStream = new CatalogsStream(defaultZkhost);
+      } else if(sqlVistor.groupByQuery) {
         if(aggregationMode == AggregationMode.FACET) {
           sqlStream = doGroupByWithAggregatesFacets(sqlVistor);
         } else {
@@ -549,6 +555,11 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       throw new IOException("Select columns must be specified.");
     }
 
+    TableSpec tableSpec = new TableSpec(sqlVisitor.table, defaultZkhost);
+
+    String zkHost = tableSpec.zkHost;
+    String collection = tableSpec.collection;
+
     boolean score = false;
 
     for (String field : fields) {
@@ -594,7 +605,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       }
     } else {
       if(sqlVisitor.limit < 0) {
-       throw new IOException("order by is required for unlimited select statements.");
+        throw new IOException("order by is required for unlimited select statements.");
       } else {
         siBuf.append("score desc");
         if(!score) {
@@ -603,12 +614,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       }
     }
 
-    TableSpec tableSpec = new TableSpec(sqlVisitor.table, defaultZkhost);
-
-    String zkHost = tableSpec.zkHost;
-    String collection = tableSpec.collection;
     Map<String, String> params = new HashMap();
-
     params.put("fl", fl.toString());
     params.put("q", sqlVisitor.query);
 
@@ -616,7 +622,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       params.put("sort", siBuf.toString());
     }
 
-    TupleStream tupleStream = null;
+    TupleStream tupleStream;
 
     if(sqlVisitor.limit > -1) {
       params.put("rows", Integer.toString(sqlVisitor.limit));
@@ -1352,6 +1358,49 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
           return tuple;
         }
       }
+    }
+  }
+
+  private static class CatalogsStream extends TupleStream {
+    private final String zkHost;
+    private StreamContext context;
+    private int currentIndex = 0;
+    private List<String> catalogs;
+
+    public CatalogsStream(String zkHost) {
+      this.zkHost = zkHost;
+    }
+
+    public List<TupleStream> children() {
+      return new ArrayList<>();
+    }
+
+    public void open() throws IOException {
+      this.catalogs = new ArrayList<>();
+      this.catalogs.add(this.zkHost);
+    }
+
+    public Tuple read() throws IOException {
+      Map fields = new HashMap<>();
+      if (this.currentIndex < this.catalogs.size()) {
+        this.currentIndex += 1;
+        fields.put("TABLE_CAT", this.zkHost);
+      } else {
+        fields.put("EOF", "true");
+      }
+      return new Tuple(fields);
+    }
+
+    public StreamComparator getStreamSort() {
+      return null;
+    }
+
+    public void close() throws IOException {
+
+    }
+
+    public void setStreamContext(StreamContext context) {
+      this.context = context;
     }
   }
 

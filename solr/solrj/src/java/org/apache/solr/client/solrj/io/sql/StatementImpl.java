@@ -32,7 +32,6 @@ import java.util.HashMap;
 import java.util.Random;
 
 import org.apache.solr.client.solrj.io.stream.SolrStream;
-import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -43,7 +42,6 @@ import org.apache.solr.common.params.CommonParams;
 class StatementImpl implements Statement {
 
   private final ConnectionImpl connection;
-  private SolrStream solrStream;
   private boolean closed;
   private String currentSQL;
   private ResultSetImpl currentResultSet;
@@ -53,26 +51,16 @@ class StatementImpl implements Statement {
     this.connection = connection;
   }
 
-  public SolrStream getSolrStream() {
-    return this.solrStream;
-  }
-
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
     try {
       if(this.currentResultSet != null) {
         this.currentResultSet.close();
         this.currentResultSet = null;
-        this.solrStream.close();
       }
 
       closed = false;  // If closed reopen so Statement can be reused.
-      this.solrStream = constructStream(sql);
-      StreamContext context = new StreamContext();
-      context.setSolrClientCache(this.connection.getSolrClientCache());
-      this.solrStream.setStreamContext(context);
-      this.solrStream.open();
-      this.currentResultSet = new ResultSetImpl(this);
+      this.currentResultSet = new ResultSetImpl(this, constructStream(sql));
       return this.currentResultSet;
     } catch(Exception e) {
       throw new SQLException(e);
@@ -83,10 +71,10 @@ class StatementImpl implements Statement {
     try {
       ZkStateReader zkStateReader = this.connection.getClient().getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
-      Collection<Slice> slices = clusterState.getActiveSlices(this.connection.getCatalog());
+      Collection<Slice> slices = clusterState.getActiveSlices(this.connection.getSchema());
 
       if(slices == null) {
-        throw new Exception("Collection not found:"+this.connection.getCatalog());
+        throw new Exception("Collection not found:"+this.connection.getSchema());
       }
 
       List<Replica> shuffler = new ArrayList<>();
@@ -126,13 +114,10 @@ class StatementImpl implements Statement {
       return;
     }
 
-    try {
-      if(this.solrStream != null) {
-        this.solrStream.close();
-      }
-      this.closed = true;
-    } catch (Exception e) {
-      throw new SQLException(e);
+    this.closed = true;
+
+    if(this.currentResultSet != null) {
+      this.currentResultSet.close();
     }
   }
 

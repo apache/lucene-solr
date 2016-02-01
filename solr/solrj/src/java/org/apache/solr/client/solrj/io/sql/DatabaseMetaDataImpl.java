@@ -22,12 +22,15 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 class DatabaseMetaDataImpl implements DatabaseMetaData {
   private final ConnectionImpl connection;
+  private final Statement connectionStatement;
 
-  DatabaseMetaDataImpl(ConnectionImpl connection) {
+  public DatabaseMetaDataImpl(ConnectionImpl connection, Statement connectionStatement) {
     this.connection = connection;
+    this.connectionStatement = connectionStatement;
   }
 
   @Override
@@ -642,7 +645,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
 
   @Override
   public ResultSet getCatalogs() throws SQLException {
-    return null;
+    return this.connectionStatement.executeQuery("select TABLE_CAT from _CATALOGS_");
   }
 
   @Override

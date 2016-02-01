@@ -48,14 +48,18 @@ class ConnectionImpl implements Connection {
   private final CloudSolrClient client;
   private final String collection;
   private final Properties properties;
+  private final DatabaseMetaData databaseMetaData;
+  private final Statement connectionStatement;
   private boolean closed;
   private SQLWarning currentWarning;
 
-  ConnectionImpl(String url, String zkHost, String collection, Properties properties) {
+  ConnectionImpl(String url, String zkHost, String collection, Properties properties) throws SQLException {
     this.url = url;
     this.client = solrClientCache.getCloudSolrClient(zkHost);
     this.collection = collection;
     this.properties = properties;
+    this.connectionStatement = createStatement();
+    this.databaseMetaData = new DatabaseMetaDataImpl(this, this.connectionStatement);
   }
 
   String getUrl() {
@@ -119,11 +123,17 @@ class ConnectionImpl implements Connection {
     if(closed) {
       return;
     }
+
+    this.closed = true;
+
     try {
-      this.solrClientCache.close();
-      this.closed = true;
-    } catch (Exception e) {
-      throw new SQLException(e);
+      if(this.connectionStatement != null) {
+        this.connectionStatement.close();
+      }
+    } finally {
+      if (this.solrClientCache != null) {
+        this.solrClientCache.close();
+      }
     }
   }
 
@@ -134,7 +144,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public DatabaseMetaData getMetaData() throws SQLException {
-    return new DatabaseMetaDataImpl(this);
+    return this.databaseMetaData;
   }
 
   @Override
@@ -154,7 +164,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public String getCatalog() throws SQLException {
-    return this.collection;
+    return this.client.getZkHost();
   }
 
   @Override
@@ -170,7 +180,7 @@ class ConnectionImpl implements Connection {
   @Override
   public SQLWarning getWarnings() throws SQLException {
     if(isClosed()) {
-      throw new SQLException("Statement is closed.");
+      throw new SQLException("Connection is closed.");
     }
 
     return this.currentWarning;
@@ -179,7 +189,7 @@ class ConnectionImpl implements Connection {
   @Override
   public void clearWarnings() throws SQLException {
     if(isClosed()) {
-      throw new SQLException("Statement is closed.");
+      throw new SQLException("Connection is closed.");
     }
 
     this.currentWarning = null;
@@ -341,7 +351,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public String getSchema() throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.collection;
   }
 
   @Override

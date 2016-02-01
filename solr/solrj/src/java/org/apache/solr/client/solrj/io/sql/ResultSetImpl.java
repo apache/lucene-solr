@@ -42,6 +42,8 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.PushBackStream;
+import org.apache.solr.client.solrj.io.stream.SolrStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
 
 class ResultSetImpl implements ResultSet {
   private final StatementImpl statement;
@@ -55,12 +57,18 @@ class ResultSetImpl implements ResultSet {
   private SQLWarning currentWarning;
   private boolean wasLastValueNull;
 
-  ResultSetImpl(StatementImpl statement) {
+  ResultSetImpl(StatementImpl statement, SolrStream solrStream) throws SQLException {
     this.statement = statement;
-    this.solrStream = new PushBackStream(statement.getSolrStream());
 
-    // Read the first tuple so that metadata can be gathered
     try {
+      this.solrStream = new PushBackStream(solrStream);
+
+      StreamContext context = new StreamContext();
+      context.setSolrClientCache(((ConnectionImpl)this.statement.getConnection()).getSolrClientCache());
+      this.solrStream.setStreamContext(context);
+
+      this.solrStream.open();
+
       this.metadataTuple = this.solrStream.read();
 
       Object isMetadata = this.metadataTuple.get("isMetadata");
@@ -71,7 +79,7 @@ class ResultSetImpl implements ResultSet {
       this.firstTuple = this.solrStream.read();
       this.solrStream.pushBack(firstTuple);
     } catch (IOException e) {
-      throw new RuntimeException("Couldn't read first tuple", e);
+      throw new SQLException("Couldn't read first tuple", e);
     }
 
     this.resultSetMetaData = new ResultSetMetaDataImpl(this);
@@ -115,6 +123,12 @@ class ResultSetImpl implements ResultSet {
   @Override
   public void close() throws SQLException {
     this.done = this.closed = true;
+
+    try {
+      this.solrStream.close();
+    } catch (IOException e) {
+      throw new SQLException(e);
+    }
   }
 
   @Override

@@ -378,13 +378,20 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
   private void testJDBCMethods(String collection, String connectionString, Properties properties, String sql) throws Exception {
     try (Connection con = DriverManager.getConnection(connectionString, properties)) {
       assertTrue(con.isValid(DEFAULT_CONNECTION_TIMEOUT));
-      assertEquals(collection, con.getCatalog());
+      assertEquals(zkServer.getZkAddress(), con.getCatalog());
+      assertEquals(collection, con.getSchema());
 
       DatabaseMetaData databaseMetaData = con.getMetaData();
       assertNotNull(databaseMetaData);
 
       assertEquals(con, databaseMetaData.getConnection());
       assertEquals(connectionString, databaseMetaData.getURL());
+
+      try(ResultSet rs = databaseMetaData.getCatalogs()) {
+        assertTrue(rs.next());
+        assertEquals(zkServer.getZkAddress(), rs.getString("TABLE_CAT"));
+        assertFalse(rs.next());
+      }
 
       assertNull(con.getWarnings());
       con.clearWarnings();
