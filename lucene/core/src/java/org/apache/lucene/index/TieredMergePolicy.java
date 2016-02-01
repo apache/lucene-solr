@@ -148,7 +148,7 @@ public class TieredMergePolicy extends MergePolicy {
 
   /** Returns the current maxMergedSegmentMB setting.
    *
-   * @see #getMaxMergedSegmentMB */
+   * @see #setMaxMergedSegmentMB */
   public double getMaxMergedSegmentMB() {
     return maxMergedSegmentBytes/1024/1024.;
   }
@@ -180,7 +180,7 @@ public class TieredMergePolicy extends MergePolicy {
    *  Default is 2 MB. */
   public TieredMergePolicy setFloorSegmentMB(double v) {
     if (v <= 0.0) {
-      throw new IllegalArgumentException("floorSegmentMB must be >= 0.0 (got " + v + ")");
+      throw new IllegalArgumentException("floorSegmentMB must be > 0.0 (got " + v + ")");
     }
     v *= 1024 * 1024;
     floorSegmentBytes = v > Long.MAX_VALUE ? Long.MAX_VALUE : (long) v;
