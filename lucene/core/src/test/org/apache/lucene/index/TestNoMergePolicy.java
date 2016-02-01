@@ -25,11 +25,15 @@ import java.util.Arrays;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class TestNoMergePolicy extends LuceneTestCase {
+public class TestNoMergePolicy extends BaseMergePolicyTestCase {
+
+  public MergePolicy mergePolicy() {
+    return NoMergePolicy.INSTANCE;
+  }
 
   @Test
   public void testNoMergePolicy() throws Exception {
-    MergePolicy mp = NoMergePolicy.INSTANCE;
+    MergePolicy mp = mergePolicy();
     assertNull(mp.findMerges(null, (SegmentInfos)null, null));
     assertNull(mp.findForcedMerges(null, 0, null, null));
     assertNull(mp.findForcedDeletesMerges(null, null));

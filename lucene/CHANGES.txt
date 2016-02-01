@@ -266,6 +266,10 @@ Other
 * LUCENE-7005: TieredMergePolicy tweaks (>= vs. >, @see get vs. set)
   (Christine Poerschke)
 
+* LUCENE-7006: increase BaseMergePolicyTestCase use (TestNoMergePolicy and
+  TestSortingMergePolicy now extend it, TestUpgradeIndexMergePolicy added)
+  (Christine Poerschke)
+
 ======================= Lucene 5.4.1 =======================
 
 Bug Fixes

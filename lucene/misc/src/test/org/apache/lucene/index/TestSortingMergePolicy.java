@@ -50,7 +50,7 @@ import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
-public class TestSortingMergePolicy extends LuceneTestCase {
+public class TestSortingMergePolicy extends BaseMergePolicyTestCase {
 
   private List<String> terms;
   private Directory dir1, dir2;
@@ -76,6 +76,10 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     doc.add(new NumericDocValuesField("ndv", random().nextLong()));
     doc.add(new StringField("s", RandomPicks.randomFrom(random(), terms), Store.YES));
     return doc;
+  }
+
+  public MergePolicy mergePolicy() {
+    return newSortingMergePolicy(sort);
   }
 
   public static SortingMergePolicy newSortingMergePolicy(Sort sort) {
@@ -113,7 +117,7 @@ public class TestSortingMergePolicy extends LuceneTestCase {
     final long seed = random().nextLong();
     final IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(new Random(seed)));
     final IndexWriterConfig iwc2 = newIndexWriterConfig(new MockAnalyzer(new Random(seed)));
-    iwc2.setMergePolicy(newSortingMergePolicy(sort));
+    iwc2.setMergePolicy(mergePolicy());
     final RandomIndexWriter iw1 = new RandomIndexWriter(new Random(seed), dir1, iwc1);
     final RandomIndexWriter iw2 = new RandomIndexWriter(new Random(seed), dir2, iwc2);
     for (int i = 0; i < numDocs; ++i) {
