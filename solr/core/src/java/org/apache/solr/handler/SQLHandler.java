@@ -20,6 +20,7 @@ package org.apache.solr.handler;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Locale;
@@ -29,6 +30,7 @@ import com.facebook.presto.sql.tree.*;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -170,6 +172,12 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
         }
 
         sqlStream = new CatalogsStream(defaultZkhost);
+      } else if(sqlVistor.table.toUpperCase(Locale.getDefault()).contains("_SCHEMAS_")) {
+        if (!sqlVistor.fields.contains("TABLE_SCHEM") || !sqlVistor.fields.contains("TABLE_CATALOG")) {
+          throw new IOException("When querying _SCHEMAS_, fields must contain both TABLE_SCHEM and TABLE_CATALOG");
+        }
+
+        sqlStream = new SchemasStream(defaultZkhost);
       } else if(sqlVistor.groupByQuery) {
         if(aggregationMode == AggregationMode.FACET) {
           sqlStream = doGroupByWithAggregatesFacets(sqlVistor);
@@ -1383,8 +1391,55 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
     public Tuple read() throws IOException {
       Map fields = new HashMap<>();
       if (this.currentIndex < this.catalogs.size()) {
+        fields.put("TABLE_CAT", this.catalogs.get(this.currentIndex));
         this.currentIndex += 1;
-        fields.put("TABLE_CAT", this.zkHost);
+      } else {
+        fields.put("EOF", "true");
+      }
+      return new Tuple(fields);
+    }
+
+    public StreamComparator getStreamSort() {
+      return null;
+    }
+
+    public void close() throws IOException {
+
+    }
+
+    public void setStreamContext(StreamContext context) {
+      this.context = context;
+    }
+  }
+
+  private static class SchemasStream extends TupleStream {
+    private final String zkHost;
+    private StreamContext context;
+    private int currentIndex = 0;
+    private List<String> schemas;
+
+    public SchemasStream(String zkHost) {
+      this.zkHost = zkHost;
+    }
+
+    public List<TupleStream> children() {
+      return new ArrayList<>();
+    }
+
+    public void open() throws IOException {
+      this.schemas = new ArrayList<>();
+
+      CloudSolrClient cloudSolrClient = this.context.getSolrClientCache().getCloudSolrClient(this.zkHost);
+      this.schemas.addAll(cloudSolrClient.getZkStateReader().getClusterState().getCollections());
+      Collections.sort(this.schemas);
+    }
+
+    public Tuple read() throws IOException {
+      Map fields = new HashMap<>();
+      if (this.currentIndex < this.schemas.size()) {
+        fields.put("TABLE_SCHEM", this.schemas.get(this.currentIndex));
+        fields.put("TABLE_CATALOG", this.zkHost);
+        this.currentIndex += 1;
       } else {
         fields.put("EOF", "true");
       }

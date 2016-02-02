@@ -25,7 +25,11 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -390,6 +394,18 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
       try(ResultSet rs = databaseMetaData.getCatalogs()) {
         assertTrue(rs.next());
         assertEquals(zkServer.getZkAddress(), rs.getString("TABLE_CAT"));
+        assertFalse(rs.next());
+      }
+
+      List<String> collections = new ArrayList<>();
+      collections.addAll(cloudClient.getZkStateReader().getClusterState().getCollections());
+      Collections.sort(collections);
+      try(ResultSet rs = databaseMetaData.getSchemas()) {
+        for(String acollection : collections) {
+          assertTrue(rs.next());
+          assertEquals(acollection, rs.getString("TABLE_SCHEM"));
+          assertEquals(zkServer.getZkAddress(), rs.getString("TABLE_CATALOG"));
+        }
         assertFalse(rs.next());
       }
 
