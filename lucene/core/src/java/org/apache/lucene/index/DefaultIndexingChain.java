@@ -91,16 +91,35 @@ final class DefaultIndexingChain extends DocConsumer {
     // aborting on any exception from this method
 
     int maxDoc = state.segmentInfo.maxDoc();
+    long t0 = System.nanoTime();
     writeNorms(state);
+    if (docState.infoStream.isEnabled("IW")) {
+      docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write norms");
+    }
+    
+    t0 = System.nanoTime();
     writeDocValues(state);
+    if (docState.infoStream.isEnabled("IW")) {
+      docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write docValues");
+    }
+
+    t0 = System.nanoTime();
     writePoints(state);
+    if (docState.infoStream.isEnabled("IW")) {
+      docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write points");
+    }
     
     // it's possible all docs hit non-aborting exceptions...
+    t0 = System.nanoTime();
     initStoredFieldsWriter();
     fillStoredFields(maxDoc);
     storedFieldsWriter.finish(state.fieldInfos, maxDoc);
     storedFieldsWriter.close();
+    if (docState.infoStream.isEnabled("IW")) {
+      docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to finish stored fields");
+    }
 
+    t0 = System.nanoTime();
     Map<String,TermsHashPerField> fieldsToFlush = new HashMap<>();
     for (int i=0;i<fieldHash.length;i++) {
       PerField perField = fieldHash[i];
@@ -113,12 +132,19 @@ final class DefaultIndexingChain extends DocConsumer {
     }
 
     termsHash.flush(fieldsToFlush, state);
+    if (docState.infoStream.isEnabled("IW")) {
+      docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write postings and finish vectors");
+    }
 
     // Important to save after asking consumer to flush so
     // consumer can alter the FieldInfo* if necessary.  EG,
     // FreqProxTermsWriter does this with
     // FieldInfo.storePayload.
+    t0 = System.nanoTime();
     docWriter.codec.fieldInfosFormat().write(state.directory, state.segmentInfo, "", state.fieldInfos, IOContext.DEFAULT);
+    if (docState.infoStream.isEnabled("IW")) {
+      docState.infoStream.message("IW", ((System.nanoTime()-t0)/1000000) + " msec to write fieldInfos");
+    }
   }
 
   /** Writes all buffered points. */

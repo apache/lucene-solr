@@ -71,7 +71,7 @@ public class RAMOutputStream extends IndexOutput implements Accountable {
     }
   }
 
-  /** Copy the current contents of this buffer to the named output. */
+  /** Copy the current contents of this buffer to the provided {@link DataOutput}. */
   public void writeTo(DataOutput out) throws IOException {
     flush();
     final long end = file.length;
