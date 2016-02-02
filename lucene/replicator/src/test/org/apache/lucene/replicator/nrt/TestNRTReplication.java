@@ -231,8 +231,8 @@ public class TestNRTReplication extends LuceneTestCase {
       replicaC.flush();
       version2 = replicaC.in.readVLong();
       hitCount = replicaC.in.readVInt();
-      if (hitCount == 10) {
-        assertTrue(version2 > version1);
+      if (version2 == primaryVersion1) {
+        assertEquals(10, hitCount);
         // good!
         break;
       }
@@ -269,8 +269,9 @@ public class TestNRTReplication extends LuceneTestCase {
       replicaC.flush();
       version4 = replicaC.in.readVLong();
       hitCount = replicaC.in.readVInt();
-      if (hitCount == 0) {
+      if (version4 == primaryVersion2) {
         assertTrue(version4 > version3);
+        assertEquals(0, hitCount);
         // good!
         break;
       }
@@ -293,8 +294,85 @@ public class TestNRTReplication extends LuceneTestCase {
       replicaC.flush();
       long version5 = replicaC.in.readVLong();
       hitCount = replicaC.in.readVInt();
-      if (hitCount == 10) {
+      if (version5 == primaryVersion3) {
+        assertEquals(10, hitCount);
         assertTrue(version5 > version4);
+        // good!
+        break;
+      }
+      Thread.sleep(10);
+    }
+
+    replicaC.close();
+    primaryC.close();
+
+    replica.close();
+    primary.close();
+  }
+
+  public void testReplicateForceMerge() throws Exception {
+
+    Node.globalStartNS = System.nanoTime();
+    childTempDir = createTempDir("child");
+
+    message("change thread name from " + Thread.currentThread().getName());
+    Thread.currentThread().setName("main");
+    
+    Path primaryPath = createTempDir("primary");
+    NodeProcess primary = startNode(-1, 0, primaryPath, true, -1);
+
+    Path replicaPath = createTempDir("replica");
+    NodeProcess replica = startNode(primary.tcpPort, 1, replicaPath, false, -1);
+
+    // Tell primary current replicas:
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_SET_REPLICAS);
+      c.out.writeVInt(1);
+      c.out.writeVInt(replica.id);
+      c.out.writeVInt(replica.tcpPort);
+      c.flush();
+      c.in.readByte();
+    }
+
+    // Index 10 docs into primary:
+    LineFileDocs docs = new LineFileDocs(random());
+    Connection primaryC = new Connection(primary.tcpPort);
+    primaryC.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+    for(int i=0;i<10;i++) {
+      Document doc = docs.nextDoc();
+      primary.addOrUpdateDocument(primaryC, doc, false);
+    }
+
+    // Refresh primary, which also pushes to replica:
+    long primaryVersion1 = primary.flush();
+    assertTrue(primaryVersion1 > 0);
+
+    // Index 10 more docs into primary:
+    for(int i=0;i<10;i++) {
+      Document doc = docs.nextDoc();
+      primary.addOrUpdateDocument(primaryC, doc, false);
+    }
+
+    // Refresh primary, which also pushes to replica:
+    long primaryVersion2 = primary.flush();
+    assertTrue(primaryVersion2 > primaryVersion1);
+
+    primary.forceMerge(primaryC);
+
+    // Refresh primary, which also pushes to replica:
+    long primaryVersion3 = primary.flush();
+    assertTrue(primaryVersion3 > primaryVersion2);
+
+    Connection replicaC = new Connection(replica.tcpPort);
+
+    // Wait for replica to show the change
+    while (true) {
+      replicaC.out.writeByte(SimplePrimaryNode.CMD_SEARCH_ALL);
+      replicaC.flush();
+      long version = replicaC.in.readVLong();
+      int hitCount = replicaC.in.readVInt();
+      if (version == primaryVersion3) {
+        assertEquals(20, hitCount);
         // good!
         break;
       }

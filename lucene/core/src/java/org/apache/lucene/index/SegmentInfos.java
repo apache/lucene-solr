@@ -879,7 +879,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
    *  segments. */
   public void changed() {
     version++;
-    System.out.println(Thread.currentThread().getName() + ": SIS.change to version=" + version);
+    //System.out.println(Thread.currentThread().getName() + ": SIS.change to version=" + version);
     //new Throwable().printStackTrace(System.out);
   }
   

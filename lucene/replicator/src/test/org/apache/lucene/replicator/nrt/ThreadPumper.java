@@ -21,11 +21,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Writer;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
 
 /** A pipe thread. It'd be nice to reuse guava's implementation for this... */
 class ThreadPumper {
-  public static Thread start(final Runnable onExit, final BufferedReader from, final PrintStream to, final Writer toFile) {
+  public static Thread start(final Runnable onExit, final BufferedReader from, final PrintStream to, final Writer toFile, final AtomicBoolean nodeClosing) {
     Thread t = new Thread() {
         @Override
         public void run() {
@@ -42,6 +43,9 @@ class ThreadPumper {
                 System.out.println(line);
               } else {
                 TestNRTReplication.message(line);
+              }
+              if (line.contains("now force close server socket after")) {
+                nodeClosing.set(true);
               }
             }
             // Sub-process finished

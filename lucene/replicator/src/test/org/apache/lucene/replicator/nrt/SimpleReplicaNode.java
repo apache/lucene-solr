@@ -24,18 +24,24 @@ import java.io.InputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
@@ -148,6 +154,7 @@ class SimpleReplicaNode extends ReplicaNode {
 
   /** Handles incoming request to the naive TCP server wrapping this node */
   void handleOneConnection(ServerSocket ss, AtomicBoolean stop, InputStream is, Socket socket, DataInput in, DataOutput out, BufferedOutputStream bos) throws IOException, InterruptedException {
+    //message("one connection: " + socket);
     outer:
     while (true) {
       byte cmd;
@@ -173,6 +180,7 @@ class SimpleReplicaNode extends ReplicaNode {
           long version = in.readVLong();
           Thread.currentThread().setName("recv-" + version);
           curPrimaryTCPPort = in.readInt();
+          message("newNRTPoint primaryTCPPort=" + curPrimaryTCPPort);
           newNRTPoint(version);
         }
         break;
@@ -235,10 +243,26 @@ class SimpleReplicaNode extends ReplicaNode {
       case SimplePrimaryNode.CMD_MARKER_SEARCH:
         {
           Thread.currentThread().setName("msearch");
+          int expectedAtLeastCount = in.readVInt();
           IndexSearcher searcher = mgr.acquire();
           try {
             long version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
-            int hitCount = searcher.search(new TermQuery(new Term("marker", "marker")), 1).totalHits;
+            int hitCount = searcher.count(new TermQuery(new Term("marker", "marker")));
+            if (hitCount < expectedAtLeastCount) {
+              message("marker search: expectedAtLeastCount=" + expectedAtLeastCount + " but hitCount=" + hitCount);
+              TopDocs hits = searcher.search(new TermQuery(new Term("marker", "marker")), expectedAtLeastCount);
+              List<Integer> seen = new ArrayList<>();
+              for(ScoreDoc hit : hits.scoreDocs) {
+                Document doc = searcher.doc(hit.doc);
+                seen.add(Integer.parseInt(doc.get("docid").substring(1)));
+              }
+              Collections.sort(seen);
+              message("saw markers:");
+              for(int marker : seen) {
+                message("saw m" + marker);
+              }
+            }
+
             out.writeVLong(version);
             out.writeVInt(hitCount);
             bos.flush();
@@ -305,7 +329,6 @@ class SimpleReplicaNode extends ReplicaNode {
       default:
         throw new IllegalArgumentException("unrecognized cmd=" + cmd);
       }
-      System.out.println("NOW FLUSH");
       bos.flush();
 
       break;

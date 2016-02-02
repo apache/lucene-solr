@@ -58,10 +58,21 @@ import org.apache.lucene.util.ThreadInterruptedException;
 
 import com.carrotsearch.randomizedtesting.SeedUtils;
 
+// nocommit why so many "hit SocketException during commit with R0"?
+
+// nocommit why so much time when so many nodes are down
+
+// nocommit indexing is too fast?  (xlog replay fails to finish before primary crashes itself)
+
+// nocommit why all these NodeCommunicationExcs?
+
+// nocommit the sockets are a pita on jvm crashing ...
+
 /*
   TODO
     - fangs
       - sometimes have one replica be really slow at copying / have random pauses (fake GC) / etc.
+      - graceful primary close
     - why do we do the "rename temp to actual" all at the end...?  what really does that buy us?
     - replica should also track maxSegmentName its seen, and tap into inflateGens if it's later promoted to primary?
     - test should not print scary exceptions and then succeed!
@@ -137,10 +148,11 @@ public class TestStressNRTReplication extends LuceneTestCase {
   /** Randomly gracefully close a replica; it will later be restarted and sync itself. */
   static final boolean DO_CLOSE_REPLICA = true;
 
+  /** Randomly gracefully close the primary; it will later be restarted and sync itself. */
+  static final boolean DO_CLOSE_PRIMARY = true;
+
   /** If false, all child + parent output is interleaved into single stdout/err */
   static final boolean SEPARATE_CHILD_OUTPUT = false;
-
-  // nocommit DO_CLOSE_PRIMARY?
 
   /** Randomly crash whole cluster and then restart it */
   static final boolean DO_FULL_CLUSTER_CRASH = true;
@@ -150,8 +162,6 @@ public class TestStressNRTReplication extends LuceneTestCase {
 
   /** Set to a non-null value to force exactly that many nodes; else, it's random. */
   static final Integer NUM_NODES = null;
-
-  static final boolean DO_RANDOM_XLOG_REPLAY = false;
 
   final AtomicBoolean failed = new AtomicBoolean();
 
@@ -174,6 +184,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
   Path transLogPath;
   SimpleTransLog transLog;
   final AtomicInteger markerUpto = new AtomicInteger();
+  final AtomicInteger markerID = new AtomicInteger();
 
   /** Maps searcher version to how many hits the query body:the matched. */
   final Map<Long,Integer> hitCounts = new ConcurrentHashMap<>();
@@ -201,7 +212,11 @@ public class TestStressNRTReplication extends LuceneTestCase {
 
     // Silly bootstrapping:
     versionToTransLogLocation.put(0L, 0L);
-    versionToTransLogLocation.put(1L, 0L);
+
+    // nocommit why also 1?
+    //versionToTransLogLocation.put(1L, 0L);
+
+    versionToMarker.put(0L, 0);
 
     int numNodes;
 
@@ -268,23 +283,24 @@ public class TestStressNRTReplication extends LuceneTestCase {
       // Wait a bit:
       Thread.sleep(TestUtil.nextInt(random(), Math.min(runTimeSec*4, 200), runTimeSec*4));
       if (primary != null && random().nextBoolean()) {
-        message("top: now flush primary");
         NodeProcess curPrimary = primary;
         if (curPrimary != null) {
 
           // Save these before we start flush:
           long nextTransLogLoc = transLog.getNextLocation();
           int markerUptoSav = markerUpto.get();
+          message("top: now flush primary; at least marker count=" + markerUptoSav);
 
           long result;
           try {
-            result = primary.flush();
+            result = primary.flush(markerUptoSav);
           } catch (Throwable t) {
             message("top: flush failed; skipping: " + t.getMessage());
             result = -1;
           }
           if (result > 0) {
             // There were changes
+            message("top: flush finished with changed; new primary version=" + result);
             lastPrimaryVersion = result;
             addTransLogLoc(lastPrimaryVersion, nextTransLogLoc);
             addVersionMarker(lastPrimaryVersion, markerUptoSav);
@@ -316,7 +332,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
 
       {
         NodeProcess node = nodes[random().nextInt(nodes.length)];
-        if (node != null) {
+        if (node != null && node.nodeIsClosing.get() == false) {
           // TODO: if this node is primary, it means we committed a "partial" version (not exposed as an NRT point)... not sure it matters.
           // maybe we somehow allow IW to commit a specific sis (the one we just flushed)?
           message("top: now commit node=" + node);
@@ -452,27 +468,33 @@ public class TestStressNRTReplication extends LuceneTestCase {
     addVersionMarker(newPrimary.initInfosVersion, markerCount);
 
     assert newPrimary.initInfosVersion >= lastPrimaryVersion;
-    message("top: now change lastPrimaryVersion from " + lastPrimaryVersion + " to " + newPrimary.initInfosVersion);
+    message("top: now change lastPrimaryVersion from " + lastPrimaryVersion + " to " + newPrimary.initInfosVersion + "; startup marker count " + markerCount);
     lastPrimaryVersion = newPrimary.initInfosVersion;
 
-    // Publish new primary, before replaying xlog.  This means other indexing ops can come in at the same time as we catch up indexing
-    // previous ops.  Effectively, we have "forked" the indexing ops, by rolling back in time a bit, and replaying old indexing ops (from
-    // translog) concurrently with new incoming ops.
+    long nextTransLogLoc = transLog.getNextLocation();
+    long t0 = System.nanoTime();
+    message("top: start translog replay " + startTransLogLoc + " (version=" + newPrimary.initCommitVersion + ") to " + nextTransLogLoc + " (translog end)");
+    try {
+      transLog.replay(newPrimary, startTransLogLoc, nextTransLogLoc);
+    } catch (IOException ioe) {
+      // nocommit what if primary node is still running here, and we failed for some other reason?
+      message("top: replay xlog failed; abort");
+      return;
+    }
+
+    long t1 = System.nanoTime();
+    message("top: done translog replay; took " + ((t1 - t0)/1000000.0) + " msec; now publish primary");
+
+    // Publish new primary only after translog has succeeded in replaying; this is important, for this test anyway, so we keep a "linear"
+    // history so enforcing marker counts is correct.  E.g., if we publish first and replay translog concurrently with incoming ops, then
+    // a primary commit that happens while translog is still replaying will incorrectly record the translog loc into the commit user data
+    // when in fact that commit did NOT reflect all prior ops.  So if we crash and start up again from that commit point, we are missing
+    // ops.
     nodes[id] = newPrimary;
     primary = newPrimary;
 
     sendReplicasToPrimary();
 
-    long nextTransLogLoc = transLog.getNextLocation();
-    int nextMarkerUpto = markerUpto.get();
-    message("top: replay trans log " + startTransLogLoc + " (version=" + newPrimary.initCommitVersion + ") to " + nextTransLogLoc + " (translog end)");
-    try {
-      transLog.replay(newPrimary, startTransLogLoc, nextTransLogLoc);
-    } catch (IOException ioe) {
-      message("top: replay xlog failed; abort");
-      return;
-    }
-    message("top: done replay trans log");
   }
 
   /** Launches a child "server" (separate JVM), which is either primary or replica node */
@@ -505,6 +527,9 @@ public class TestStressNRTReplication extends LuceneTestCase {
       cmd.add("-Dtests.nrtreplication.forcePrimaryVersion=" + forcePrimaryVersion);
       if (DO_CRASH_PRIMARY) {
         cmd.add("-Dtests.nrtreplication.doRandomCrash=true");
+      }
+      if (DO_CLOSE_PRIMARY) {
+        cmd.add("-Dtests.nrtreplication.doRandomClose=true");
       }
     } else {
       if (DO_CRASH_REPLICA) {
@@ -544,7 +569,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
       childLog = null;
     }
 
-    message("child process command: " + cmd);
+    //message("child process command: " + cmd);
     ProcessBuilder pb = new ProcessBuilder(cmd);
     pb.redirectErrorStream(true);
 
@@ -577,6 +602,10 @@ public class TestStressNRTReplication extends LuceneTestCase {
           throw new RuntimeException(ie);
         }
         message("exit value=" + p.exitValue());
+        if (p.exitValue() == 0) {
+          message("zero exit status; assuming failed to remove segments_N; skipping");
+          return null;
+        }
 
         // Hackity hack, in case primary crashed/closed and we haven't noticed (reaped the process) yet:
         if (isPrimary == false) {
@@ -586,8 +615,9 @@ public class TestStressNRTReplication extends LuceneTestCase {
             message("failed to remove segments_N; skipping");
             return null;
           }
-          for(int i=0;i<10;i++) {
-            if (primaryGen != myPrimaryGen || primary == null) {
+          for(int i=0;i<100;i++) {
+            NodeProcess primary2 = primary;
+            if (primaryGen != myPrimaryGen || primary2 == null || primary2.nodeIsClosing.get()) {
               // OK: primary crashed while we were trying to start, so it's expected/allowed that we could not start the replica:
               message("primary crashed/closed while replica R" + id + " tried to start; skipping");
               return null;
@@ -634,6 +664,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
     }
 
     final boolean finalWillCrash = willCrash;
+    final AtomicBoolean nodeIsClosing = new AtomicBoolean();
 
     // Baby sits the child process, pulling its stdout and printing to our stdout, calling nodeClosed once it exits:
     Thread pumper = ThreadPumper.start(
@@ -669,11 +700,11 @@ public class TestStressNRTReplication extends LuceneTestCase {
                                            }
                                            nodeClosed(id);
                                          }
-                                       }, r, System.out, childLog);
+                                       }, r, System.out, childLog, nodeIsClosing);
     pumper.setName("pump" + id);
 
     message("top: node=" + id + " started at tcpPort=" + tcpPort + " initCommitVersion=" + initCommitVersion + " initInfosVersion=" + initInfosVersion);
-    return new NodeProcess(p, id, tcpPort, pumper, isPrimary, initCommitVersion, initInfosVersion);
+    return new NodeProcess(p, id, tcpPort, pumper, isPrimary, initCommitVersion, initInfosVersion, nodeIsClosing);
   }
 
   private void nodeClosed(int id) {
@@ -754,7 +785,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
           message("top: restarter cycle");
 
           // Randomly crash full cluster:
-          if (DO_FULL_CLUSTER_CRASH && random().nextInt(50) == 17) {
+          if (DO_FULL_CLUSTER_CRASH && random().nextInt(500) == 17) {
             message("top: full cluster crash");
             for(int i=0;i<nodes.length;i++) {
               if (starting[i]) {
@@ -954,12 +985,15 @@ public class TestStressNRTReplication extends LuceneTestCase {
             continue;
           }
 
+          // nocommit not anymore?
           // This can be null if we got the new primary after crash and that primary is still catching up (replaying xlog):
           Integer expectedAtLeastHitCount = versionToMarker.get(version);
+          assertNotNull("version=" + version, expectedAtLeastHitCount);
 
           if (expectedAtLeastHitCount != null && expectedAtLeastHitCount > 0 && random().nextInt(10) == 7) {
             try {
               c.out.writeByte(SimplePrimaryNode.CMD_MARKER_SEARCH);
+              c.out.writeVInt(expectedAtLeastHitCount);
               c.flush();
               while (c.sockIn.available() == 0) {
                 if (stop.get()) {
@@ -1064,13 +1098,15 @@ public class TestStressNRTReplication extends LuceneTestCase {
             if (random().nextInt(10) == 7) {
               // We use the marker docs to check for data loss in search thread:
               Document doc = new Document();
-              int id = markerUpto.getAndIncrement();
+              int id = markerID.getAndIncrement();
               String idString = "m"+id;
               doc.add(newStringField("docid", idString, Field.Store.YES));
               doc.add(newStringField("marker", "marker", Field.Store.YES));
               curPrimary.addOrUpdateDocument(c, doc, false);
               transLog.addDocument(idString, doc);
-              message("index marker=" + idString + "; translog is " + Node.bytesToString(Files.size(transLogPath)));
+              // Only increment after primary replies:
+              markerUpto.getAndIncrement();
+              //message("index marker=" + idString + "; translog is " + Node.bytesToString(Files.size(transLogPath)));
             }
 
             if (docCount > 0 && random().nextDouble() < updatePct) {
@@ -1094,14 +1130,6 @@ public class TestStressNRTReplication extends LuceneTestCase {
               ((Field) doc.getField("docid")).setStringValue(idString);
               curPrimary.addOrUpdateDocument(c, doc, false);
               transLog.addDocument(idString, doc);
-
-              if (DO_RANDOM_XLOG_REPLAY && random().nextInt(10) == 7) {
-                long curLoc = transLog.getNextLocation();
-                // randomly replay chunks of translog just to test replay:
-                message("now randomly replay translog from " + lastTransLogLoc + " to " + curLoc);
-                transLog.replay(curPrimary, lastTransLogLoc, curLoc);
-                lastTransLogLoc = curLoc;
-              }
             }
           } catch (IOException se) {
             // Assume primary crashed
@@ -1115,12 +1143,13 @@ public class TestStressNRTReplication extends LuceneTestCase {
           }
 
           if (random().nextInt(sleepChance) == 0) {
-            Thread.sleep(1);
+            Thread.sleep(10);
           }
 
           if (random().nextInt(100) == 17) {
-            System.out.println("Indexer: now pause for a bit...");
-            Thread.sleep(TestUtil.nextInt(random(), 500, 2000));
+            int pauseMS = TestUtil.nextInt(random(), 500, 2000);
+            System.out.println("Indexer: now pause for " + pauseMS + " msec...");
+            Thread.sleep(pauseMS);
             System.out.println("Indexer: done pause for a bit...");
           }
         }

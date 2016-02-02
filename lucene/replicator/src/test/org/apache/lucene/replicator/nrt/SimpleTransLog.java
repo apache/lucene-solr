@@ -197,7 +197,7 @@ class SimpleTransLog implements Closeable {
     }
     String marker = readNullableString(in);
     if (marker != null) {
-      //System.out.println("xlog: replay marker=" + id);
+      //TestStressNRTReplication.message("xlog: replay marker=" + id);
       doc.add(new StringField("marker", marker, Field.Store.YES));
     }
 

@@ -104,7 +104,8 @@ public abstract class PrimaryNode extends Node {
 
       IndexSearcher s = mgr.acquire();
       try {
-        message("init: marker hit count: " + s.search(new TermQuery(new Term("marker", "marker")), 1).totalHits);
+        // TODO: this is test code specific!!
+        message("init: marker count: " + s.count(new TermQuery(new Term("marker", "marker"))));
       } finally {
         mgr.release(s);
       }
@@ -135,7 +136,7 @@ public abstract class PrimaryNode extends Node {
     if (result) {
       message("top: opened NRT reader version=" + curInfos.getVersion());
       finishedMergedFiles.removeAll(completedMergeFiles);
-      message("flushAndRefresh:  version=" + curInfos.getVersion() + " completedMergeFiles=" + completedMergeFiles + " finishedMergedFiles=" + finishedMergedFiles);
+      message("flushAndRefresh: version=" + curInfos.getVersion() + " completedMergeFiles=" + completedMergeFiles + " finishedMergedFiles=" + finishedMergedFiles);
     } else {
       message("top: no changes in flushAndRefresh; still version=" + curInfos.getVersion());
     }
@@ -208,6 +209,8 @@ public abstract class PrimaryNode extends Node {
     try {
       searcher = mgr.acquire();
       infos = ((StandardDirectoryReader) searcher.getIndexReader()).getSegmentInfos();
+      // TODO: this is test code specific!!
+      message("setCurrentInfos: marker count: " + searcher.count(new TermQuery(new Term("marker", "marker"))) + " version=" + infos.getVersion() + " searcher=" + searcher);
     } finally {
       if (searcher != null) {
         mgr.release(searcher);

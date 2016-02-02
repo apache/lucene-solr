@@ -53,8 +53,10 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.Directory;
@@ -272,6 +274,8 @@ class SimplePrimaryNode extends PrimaryNode {
   private void handleFlush(DataInput topIn, DataOutput topOut, BufferedOutputStream bos) throws IOException {
     Thread.currentThread().setName("flush");
 
+    int atLeastMarkerCount = topIn.readVInt();
+
     int[] replicaTCPPorts;
     int[] replicaIDs;
     synchronized (this) {
@@ -284,6 +288,8 @@ class SimplePrimaryNode extends PrimaryNode {
     if (flushAndRefresh()) {
       // Something did get flushed (there were indexing ops since the last flush):
 
+      verifyAtLeastMarkerCount(atLeastMarkerCount, null);
+
       // Tell caller the version before pushing to replicas, so that even if we crash after this, caller will know what version we
       // (possibly) pushed to some replicas.  Alternatively we could make this 2 separate ops?
       long version = getCopyStateVersion();
@@ -295,6 +301,7 @@ class SimplePrimaryNode extends PrimaryNode {
       for(int i=0;i<replicaIDs.length;i++) {
         int replicaID = replicaIDs[i];
         try (Connection c = new Connection(replicaTCPPorts[i])) {
+          message("send NEW_NRT_POINT to R" + replicaID + " at tcpPort=" + replicaTCPPorts[i]);
           c.out.writeByte(SimpleReplicaNode.CMD_NEW_NRT_POINT);
           c.out.writeVLong(version);
           c.out.writeInt(tcpPort);
@@ -452,6 +459,10 @@ class SimplePrimaryNode extends PrimaryNode {
         writer.deleteAll();
         out.writeByte((byte) 1);
         bos.flush();
+      } else if (cmd == CMD_FORCE_MERGE) {
+        writer.forceMerge(1);
+        out.writeByte((byte) 1);
+        bos.flush();
       } else if (cmd == CMD_INDEXING_DONE) {
         out.writeByte((byte) 1);
         bos.flush();
@@ -480,7 +491,6 @@ class SimplePrimaryNode extends PrimaryNode {
         throw new IllegalArgumentException("unhandled field name " + name);
       }
     }
-
     writer.addDocument(doc);
   }
 
@@ -537,6 +547,7 @@ class SimplePrimaryNode extends PrimaryNode {
   static final byte CMD_DELETE_DOC = 8;
   static final byte CMD_INDEXING_DONE = 19;
   static final byte CMD_DELETE_ALL_DOCS = 22;
+  static final byte CMD_FORCE_MERGE = 23;
 
   // Sent by replica to primary when replica first starts up, so primary can add it to any warming merges:
   static final byte CMD_NEW_REPLICA = 20;
@@ -617,15 +628,8 @@ class SimplePrimaryNode extends PrimaryNode {
       case CMD_MARKER_SEARCH:
         {
           Thread.currentThread().setName("msearch");
-          IndexSearcher searcher = mgr.acquire();
-          try {
-            long version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
-            int hitCount = searcher.search(new TermQuery(new Term("marker", "marker")), 1).totalHits;
-            out.writeVLong(version);
-            out.writeVInt(hitCount);
-          } finally {
-            mgr.release(searcher);
-          }
+          int expectedAtLeastCount = in.readVInt();
+          verifyAtLeastMarkerCount(expectedAtLeastCount, out);
         }
         continue outer;
 
@@ -704,6 +708,37 @@ class SimplePrimaryNode extends PrimaryNode {
       }
       bos.flush();
       break;
+    }
+  }
+
+  private void verifyAtLeastMarkerCount(int expectedAtLeastCount, DataOutput out) throws IOException {
+    IndexSearcher searcher = mgr.acquire();
+    try {
+      long version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
+      int hitCount = searcher.count(new TermQuery(new Term("marker", "marker")));
+
+      if (hitCount < expectedAtLeastCount) {
+        message("marker search: expectedAtLeastCount=" + expectedAtLeastCount + " but hitCount=" + hitCount);
+        TopDocs hits = searcher.search(new TermQuery(new Term("marker", "marker")), expectedAtLeastCount);
+        List<Integer> seen = new ArrayList<>();
+        for(ScoreDoc hit : hits.scoreDocs) {
+          Document doc = searcher.doc(hit.doc);
+          seen.add(Integer.parseInt(doc.get("docid").substring(1)));
+        }
+        Collections.sort(seen);
+        message("saw markers:");
+        for(int marker : seen) {
+          message("saw m" + marker);
+        }
+        throw new IllegalStateException("at flush: marker count " + hitCount + " but expected at least " + expectedAtLeastCount + " version=" + version);
+      }
+
+      if (out != null) {
+        out.writeVLong(version);
+        out.writeVInt(hitCount);
+      }
+    } finally {
+      mgr.release(searcher);
     }
   }
 }

@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SegmentInfos;
@@ -151,8 +152,6 @@ abstract class ReplicaNode extends Node {
       message("top: delete unknown files on init: all files=" + Arrays.toString(dir.listAll()));
       deleter.deleteUnknownFiles(segmentsFileName);
       message("top: done delete unknown files on init: all files=" + Arrays.toString(dir.listAll()));
-
-      // nocommit make test where index has all docs deleted (all segments dropped, so 0 segments) and is then replicated
 
       String s = infos.getUserData().get(PRIMARY_GEN_KEY);
       long myPrimaryGen;
@@ -277,6 +276,15 @@ abstract class ReplicaNode extends Node {
       // Finally, we are open for business, since our index now "agrees" with the primary:
       mgr = new SegmentInfosSearcherManager(dir, this, infos, searcherFactory);
 
+      IndexSearcher searcher = mgr.acquire();
+      try {
+        // TODO: this is test specific:
+        int hitCount = searcher.count(new TermQuery(new Term("marker", "marker")));
+        message("top: marker count=" + hitCount + " version=" + ((DirectoryReader) searcher.getIndexReader()).getVersion());
+      } finally {
+        mgr.release(searcher);
+      }
+
       // Must commit after init mgr:
       if (doCommit) {
         // Very important to commit what we just sync'd over, because we removed the pre-existing commit point above if we had to
@@ -287,9 +295,13 @@ abstract class ReplicaNode extends Node {
       message("top: done start");
       state = "idle";
     } catch (Throwable t) {
-      message("exc on start:");
-      t.printStackTrace(System.out);
-      throw new RuntimeException(t);
+      if (t.getMessage().startsWith("replica cannot start") == false) {
+        message("exc on start:");
+        t.printStackTrace(System.out);
+      } else {
+        dir.close();
+      }
+      IOUtils.reThrow(t);
     }
   }
   
@@ -418,7 +430,7 @@ abstract class ReplicaNode extends Node {
     int markerCount;
     IndexSearcher s = mgr.acquire();
     try {
-      markerCount = s.search(new TermQuery(new Term("marker", "marker")), 1).totalHits;
+      markerCount = s.count(new TermQuery(new Term("marker", "marker")));
     } finally {
       mgr.release(s);
     }
@@ -496,7 +508,7 @@ abstract class ReplicaNode extends Node {
     } catch (NodeCommunicationException nce) {
       // E.g. primary could crash/close when we are asking it for the copy state:
       message("top: ignoring communication exception creating CopyJob: " + nce);
-      nce.printStackTrace(System.out);
+      //nce.printStackTrace(System.out);
       if (state.equals("syncing")) {
         state = "idle";
       }

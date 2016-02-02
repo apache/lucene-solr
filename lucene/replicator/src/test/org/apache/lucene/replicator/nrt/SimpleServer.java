@@ -22,6 +22,7 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -42,9 +43,9 @@ import org.apache.lucene.store.InputStreamDataInput;
 import org.apache.lucene.store.OutputStreamDataOutput;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /** Child process with silly naive TCP socket server to handle
@@ -99,8 +100,9 @@ public class SimpleServer extends LuceneTestCase {
         success = true;
       } catch (Throwable t) {
         if (t instanceof SocketException == false && t instanceof NodeCommunicationException == false) {
-          node.message("unexpected exception handling client connection:");
+          node.message("unexpected exception handling client connection; now failing test:");
           t.printStackTrace(System.out);
+          IOUtils.closeWhileHandlingException(ss);
           // Test should fail with this:
           throw new RuntimeException(t);
         } else {
@@ -218,7 +220,7 @@ public class SimpleServer extends LuceneTestCase {
   public void test() throws Exception {
 
     int id = Integer.parseInt(System.getProperty("tests.nrtreplication.nodeid"));
-    Thread.currentThread().setName("init child " + id);
+    Thread.currentThread().setName("main child " + id);
     Path indexPath = Paths.get(System.getProperty("tests.nrtreplication.indexpath"));
     boolean isPrimary = System.getProperty("tests.nrtreplication.isPrimary") != null;
     int primaryTCPPort;
@@ -238,7 +240,7 @@ public class SimpleServer extends LuceneTestCase {
     boolean doFlipBitsDuringCopy = "true".equals(System.getProperty("tests.nrtreplication.doFlipBitsDuringCopy"));
 
     // Create server socket that we listen for incoming requests on:
-    try (final ServerSocket ss = new ServerSocket(0)) {
+    try (final ServerSocket ss = new ServerSocket(0, 0, InetAddress.getLoopbackAddress())) {
 
       int tcpPort = ((InetSocketAddress) ss.getLocalSocketAddress()).getPort();
       System.out.println("\nPORT: " + tcpPort);
@@ -247,7 +249,15 @@ public class SimpleServer extends LuceneTestCase {
         node = new SimplePrimaryNode(random(), indexPath, id, tcpPort, primaryGen, forcePrimaryVersion, null, doFlipBitsDuringCopy);
         System.out.println("\nCOMMIT VERSION: " + ((PrimaryNode) node).getLastCommitVersion());
       } else {
-        node = new SimpleReplicaNode(random(), id, tcpPort, indexPath, primaryGen, primaryTCPPort, null);
+        try {
+          node = new SimpleReplicaNode(random(), id, tcpPort, indexPath, primaryGen, primaryTCPPort, null);
+        } catch (RuntimeException re) {
+          if (re.getMessage().startsWith("replica cannot start")) {
+            // this is "OK": it means MDW's refusal to delete a segments_N commit point means we cannot start:
+            assumeTrue(re.getMessage(), false);
+          }
+          throw re;
+        }
       }
       System.out.println("\nINFOS VERSION: " + node.getCurrentSearchingVersion());
 

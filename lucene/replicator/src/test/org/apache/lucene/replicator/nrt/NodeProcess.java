@@ -19,6 +19,7 @@ package org.apache.lucene.replicator.nrt;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.document.Document;
@@ -47,7 +48,9 @@ class NodeProcess implements Closeable {
 
   volatile boolean isOpen = true;
 
-  public NodeProcess(Process p, int id, int tcpPort, Thread pumper, boolean isPrimary, long initCommitVersion, long initInfosVersion) {
+  final AtomicBoolean nodeIsClosing;
+
+  public NodeProcess(Process p, int id, int tcpPort, Thread pumper, boolean isPrimary, long initCommitVersion, long initInfosVersion, AtomicBoolean nodeIsClosing) {
     this.p = p;
     this.id = id;
     this.tcpPort = tcpPort;
@@ -55,6 +58,7 @@ class NodeProcess implements Closeable {
     this.isPrimary = isPrimary;
     this.initCommitVersion = initCommitVersion;
     this.initInfosVersion = initInfosVersion;
+    this.nodeIsClosing = nodeIsClosing;
     assert initInfosVersion >= initCommitVersion: "initInfosVersion=" + initInfosVersion + " initCommitVersion=" + initCommitVersion;
     lock = new ReentrantLock();
   }
@@ -122,10 +126,11 @@ class NodeProcess implements Closeable {
 
   /** Ask the primary node process to flush.  We send it all currently up replicas so it can notify them about the new NRT point.  Returns the newly
    *  flushed version, or a negative (current) version if there were no changes. */
-  public synchronized long flush() throws IOException {
+  public synchronized long flush(int atLeastMarkerCount) throws IOException {
     assert isPrimary;
     try (Connection c = new Connection(tcpPort)) {
       c.out.writeByte(SimplePrimaryNode.CMD_FLUSH);
+      c.out.writeVInt(atLeastMarkerCount);
       c.flush();
       c.s.shutdownOutput();
       return c.in.readLong();
@@ -218,7 +223,7 @@ class NodeProcess implements Closeable {
 
   public void deleteDocument(Connection c, String docid) throws IOException {
     if (isPrimary == false) {
-      throw new IllegalStateException("only primary can index");
+      throw new IllegalStateException("only primary can delete documents");
     }
     c.out.writeByte(SimplePrimaryNode.CMD_DELETE_DOC);
     c.out.writeString(docid);
@@ -228,9 +233,18 @@ class NodeProcess implements Closeable {
 
   public void deleteAllDocuments(Connection c) throws IOException {
     if (isPrimary == false) {
-      throw new IllegalStateException("only primary can index");
+      throw new IllegalStateException("only primary can delete documents");
     }
     c.out.writeByte(SimplePrimaryNode.CMD_DELETE_ALL_DOCS);
+    c.flush();
+    c.in.readByte();
+  }
+
+  public void forceMerge(Connection c) throws IOException {
+    if (isPrimary == false) {
+      throw new IllegalStateException("only primary can force merge");
+    }
+    c.out.writeByte(SimplePrimaryNode.CMD_FORCE_MERGE);
     c.flush();
     c.in.readByte();
   }
