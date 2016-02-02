@@ -700,7 +700,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
 
   @Override
   public ResultSet getTypeInfo() throws SQLException {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
