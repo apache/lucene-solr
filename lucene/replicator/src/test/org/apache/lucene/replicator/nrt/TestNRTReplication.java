@@ -17,6 +17,15 @@ package org.apache.lucene.replicator.nrt;
  * limitations under the License.
  */
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.util.LuceneTestCase;
+
+import com.carrotsearch.randomizedtesting.SeedUtils;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -25,17 +34,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-
-import com.carrotsearch.randomizedtesting.SeedUtils;
 
 // MockRandom's .sd file has no index header/footer:
 @SuppressCodecs({"MockRandom", "Memory", "Direct", "SimpleText"})
@@ -151,6 +152,7 @@ public class TestNRTReplication extends LuceneTestCase {
     final boolean finalWillCrash = willCrash;
 
     // Baby sits the child process, pulling its stdout and printing to our stdout:
+    AtomicBoolean nodeClosing = new AtomicBoolean();
     Thread pumper = ThreadPumper.start(
                                        new Runnable() {
                                          @Override
@@ -170,11 +172,11 @@ public class TestNRTReplication extends LuceneTestCase {
                                              throw new RuntimeException("node " + id + " process had unexpected non-zero exit status=" + exitValue);
                                            }
                                          }
-                                       }, r, System.out, null);
+                                       }, r, System.out, null, nodeClosing);
     pumper.setName("pump" + id);
 
     message("top: node=" + id + " started at tcpPort=" + tcpPort + " initCommitVersion=" + initCommitVersion + " initInfosVersion=" + initInfosVersion);
-    return new NodeProcess(p, id, tcpPort, pumper, isPrimary, initCommitVersion, initInfosVersion);
+    return new NodeProcess(p, id, tcpPort, pumper, isPrimary, initCommitVersion, initInfosVersion, nodeClosing);
   }
 
   public void testReplicateDeleteAllDocuments() throws Exception {
@@ -220,7 +222,7 @@ public class TestNRTReplication extends LuceneTestCase {
     assertEquals(0, hitCount);
 
     // Refresh primary, which also pushes to replica:
-    long primaryVersion1 = primary.flush();
+    long primaryVersion1 = primary.flush(0);
     assertTrue(primaryVersion1 > 0);
 
     long version2;
@@ -259,7 +261,7 @@ public class TestNRTReplication extends LuceneTestCase {
     assertEquals(10, hitCount);
     
     // Refresh primary, which also pushes to replica:
-    long primaryVersion2 = primary.flush();
+    long primaryVersion2 = primary.flush(0);
     assertTrue(primaryVersion2 > primaryVersion1);
 
     // Wait for replica to show the change
@@ -285,7 +287,7 @@ public class TestNRTReplication extends LuceneTestCase {
     }
 
     // Refresh primary, which also pushes to replica:
-    long primaryVersion3 = primary.flush();
+    long primaryVersion3 = primary.flush(0);
     assertTrue(primaryVersion3 > primaryVersion2);
 
     // Wait for replica to show the change
@@ -344,7 +346,7 @@ public class TestNRTReplication extends LuceneTestCase {
     }
 
     // Refresh primary, which also pushes to replica:
-    long primaryVersion1 = primary.flush();
+    long primaryVersion1 = primary.flush(0);
     assertTrue(primaryVersion1 > 0);
 
     // Index 10 more docs into primary:
@@ -354,13 +356,13 @@ public class TestNRTReplication extends LuceneTestCase {
     }
 
     // Refresh primary, which also pushes to replica:
-    long primaryVersion2 = primary.flush();
+    long primaryVersion2 = primary.flush(0);
     assertTrue(primaryVersion2 > primaryVersion1);
 
     primary.forceMerge(primaryC);
 
     // Refresh primary, which also pushes to replica:
-    long primaryVersion3 = primary.flush();
+    long primaryVersion3 = primary.flush(0);
     assertTrue(primaryVersion3 > primaryVersion2);
 
     Connection replicaC = new Connection(replica.tcpPort);
