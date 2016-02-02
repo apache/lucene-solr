@@ -472,7 +472,10 @@ void assertTermDocsCount(String msg,
   public void testOpenReaderAfterDelete() throws IOException {
     Path dirFile = createTempDir("deletetest");
     Directory dir = newFSDirectory(dirFile);
-    assumeFalse("test deletes files directly", TestUtil.hasVirusChecker(dir));
+    if (TestUtil.hasVirusChecker(dir)) {
+      dir.close();
+      assumeTrue("test deletes files directly", false);
+    }
     if (dir instanceof BaseDirectoryWrapper) {
       ((BaseDirectoryWrapper)dir).setCheckIndexOnClose(false); // we will hit NoSuchFileException in MDW since we nuked it!
     }
@@ -1055,7 +1058,6 @@ void assertTermDocsCount(String msg,
 
   public void testIndexExistsOnNonExistentDirectory() throws Exception {
     Path tempDir = createTempDir("testIndexExistsOnNonExistentDirectory");
-    IOUtils.rm(tempDir);
     Directory dir = newFSDirectory(tempDir);
     assertFalse(DirectoryReader.indexExists(dir));
     dir.close();

@@ -229,22 +229,20 @@ public abstract class FSDirectory extends BaseDirectory {
     return listAll(directory, pendingDeletes);
   }
 
-  /** Returns the length in bytes of a file in the directory. */
   @Override
   public long fileLength(String name) throws IOException {
     ensureOpen();
     return Files.size(directory.resolve(name));
   }
 
-  /** Removes an existing file in the directory. */
   @Override
   public void deleteFiles(Collection<String> names) throws IOException {
     ensureOpen();
+    // nocommit isn't it an error if they were already pending delete?
     pendingDeletes.addAll(names);
     deletePendingFiles();
   }
 
-  /** Creates an IndexOutput for the file with the given name. */
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
@@ -277,7 +275,7 @@ public abstract class FSDirectory extends BaseDirectory {
   protected void ensureCanRead(String name) throws IOException {
     deletePendingFiles();
     if (pendingDeletes.contains(name)) {
-      throw new NoSuchFileException("file \"" + name + "\" is pending delete and cannot be overwritten");
+      throw new NoSuchFileException("file \"" + name + "\" is pending delete and cannot be opened for read");
     }
   }
 
@@ -299,7 +297,6 @@ public abstract class FSDirectory extends BaseDirectory {
     IOUtils.fsync(directory, true);
   }
 
-  /** Closes the store to future operations. */
   @Override
   public synchronized void close() throws IOException {
     isOpen = false;
@@ -312,7 +309,6 @@ public abstract class FSDirectory extends BaseDirectory {
     return directory;
   }
 
-  /** For debug output. */
   @Override
   public String toString() {
     return this.getClass().getSimpleName() + "@" + directory + " lockFactory=" + lockFactory;
@@ -324,14 +320,13 @@ public abstract class FSDirectory extends BaseDirectory {
   }
 
   /** Returns true if the file was successfully removed. */
-  private boolean deleteFile(String name) throws IOException {  
+  private synchronized boolean deleteFile(String name) throws IOException {  
+    pendingDeletes.remove(name);
     try {
       Files.delete(directory.resolve(name));
-      pendingDeletes.remove(name);
       return true;
     } catch (NoSuchFileException | FileNotFoundException e) {
       // We were asked to delete a non-existent file:
-      pendingDeletes.remove(name);
       throw e;
     } catch (IOException ioe) {
       // On windows, a file delete can fail because there's still an open
@@ -358,21 +353,36 @@ public abstract class FSDirectory extends BaseDirectory {
   }
 
   /** Try to delete any pending files that we had previously tried to delete but failed
-   *  because we are on Windows and the files were still
-   *  held open. */
-  public void deletePendingFiles() throws IOException {
+   *  because we are on Windows and the files were still held open. */
+  public synchronized void deletePendingFiles() throws IOException {
     // TODO: we could fix IndexInputs from FSDirectory subclasses to call this when they are closed?
 
     // Clone the set because it will change as we iterate:
     List<String> toDelete = new ArrayList<>(pendingDeletes);
+    System.out.println("del pending: " + pendingDeletes);
 
     // First pass: delete any segments_N files.  We do these first to be certain stale commit points are removed
     // before we remove any files they reference.  If any delete of segments_N fails, we leave all other files
     // undeleted so index is never in a corrupt state:
+    Throwable firstException = null;
     for (String fileName : toDelete) {
       if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
-        if (deleteFile(fileName) == false) {
-          return;
+        try {
+          if (deleteFile(fileName) == false) {
+            // nocommit
+            System.out.println("  false on " + fileName + "; skipping the rest");
+            return;
+          }
+        } catch (Throwable t) {
+          if (firstException == null) {
+            firstException = t;
+          } else {
+            firstException.addSuppressed(t);
+          }
+          // nocommit
+          System.out.println("  fail on " + fileName + ":");
+          t.printStackTrace(System.out);
+          throw t;
         }
       }
     }
@@ -381,9 +391,24 @@ public abstract class FSDirectory extends BaseDirectory {
     // leave a corrupt commit in the index even in the presense of virus checkers:
     for(String fileName : toDelete) {
       if (fileName.startsWith(IndexFileNames.SEGMENTS) == false) {
-        deleteFile(fileName);
+        try {
+          deleteFile(fileName);
+        } catch (Throwable t) {
+          if (firstException == null) {
+            firstException = t;
+          } else {
+            firstException.addSuppressed(t);
+          }
+          // nocommit
+          System.out.println("  fail on " + fileName + ":");
+          t.printStackTrace(System.out);
+          throw t;
+        }
       }
     }
+
+    // Does nothing if firstException is null:
+    IOUtils.reThrow(firstException);
   }
 
   final class FSIndexOutput extends OutputStreamIndexOutput {
