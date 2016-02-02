@@ -58,8 +58,8 @@ public class FilterDirectory extends Directory {
   }
 
   @Override
-  public void deleteFile(String name) throws IOException {
-    in.deleteFile(name);
+  public void deleteFiles(Collection<String> names) throws IOException {
+    in.deleteFiles(names);
   }
 
   @Override

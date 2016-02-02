@@ -34,6 +34,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -46,8 +47,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     Directory dir = newDirectory();
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
-      // ensure we actually delete files
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
     }
 
     MergePolicy mergePolicy = newLogMergePolicy(true, 10);
@@ -222,7 +221,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   public void testVirusScannerDoesntCorruptIndex() throws IOException {
     MockDirectoryWrapper dir = newMockDirectory();
     dir.setPreventDoubleWrite(false); // we arent trying to test this
-    dir.setEnableVirusScanner(false); // we have our own to make test reproduce always
     
     // add empty commit
     new IndexWriter(dir, new IndexWriterConfig(null)).close();

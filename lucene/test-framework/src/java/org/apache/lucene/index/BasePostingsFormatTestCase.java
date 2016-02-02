@@ -145,7 +145,6 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       fieldsProducer = null;
 
       dir.close();
-      IOUtils.rm(path);
     }
   }
 
@@ -172,7 +171,6 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
     fieldsProducer.close();
     dir.close();
-    IOUtils.rm(path);
   }
 
   protected static void checkReuse(TermsEnum termsEnum, int firstFlags, int secondFlags, boolean shouldReuse) throws IOException {

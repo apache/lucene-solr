@@ -72,6 +72,7 @@ public class SimpleFSDirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
+    ensureCanRead(name);
     Path path = directory.resolve(name);
     SeekableByteChannel channel = Files.newByteChannel(path, StandardOpenOption.READ);
     return new SimpleFSIndexInput("SimpleFSIndexInput(path=\"" + path + "\")", channel, context);

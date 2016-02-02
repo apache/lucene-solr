@@ -384,7 +384,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
             final Directory dir = openDirectory(leafIndex);
 
-            if (Files.exists(leafIndex.resolve("done")) == false) {
+            if (slowFileExists(dir, "done") == false) {
               if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: build segment index for " + leaf + " " + segIDGen + " (source: " + info.getDiagnostics().get("source") + ") dir=" + leafIndex);
 
               if (dir.listAll().length != 0) {
@@ -895,7 +895,9 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     AtomicLong currentSchemaGen = new AtomicLong();
 
     // TODO: separate refresh thread, search threads, indexing threads
-    ReindexingReader reindexer = getReindexerNewDVFields(createTempDir(), currentSchemaGen);
+    Path root = createTempDir();
+    assumeFalse("we directly delete files", TestUtil.hasVirusChecker(root));
+    ReindexingReader reindexer = getReindexerNewDVFields(root, currentSchemaGen);
     reindexer.commit();
 
     Document doc = new Document();
@@ -965,6 +967,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
     int maxID = 0;
     Path root = createTempDir();
+    assumeFalse("we directly delete files", TestUtil.hasVirusChecker(root));
     int refreshEveryNumDocs = 100;
     int commitCloseNumDocs = 1000;
     for(int i=0;i<numDocs;i++) {
@@ -1050,6 +1053,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     int numDocs = atLeast(TEST_NIGHTLY ? 20000 : 1000);
     int maxID = 0;
     Path root = createTempDir();
+    assumeFalse("we directly delete files", TestUtil.hasVirusChecker(root));
     int refreshEveryNumDocs = 100;
     int commitCloseNumDocs = 1000;
 
@@ -1151,7 +1155,9 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
   }
 
   public void testBasic() throws Exception {
-    ReindexingReader reindexer = getReindexer(createTempDir());
+    Path tempPath = createTempDir();
+    assumeFalse("we directly delete files", TestUtil.hasVirusChecker(tempPath));
+    ReindexingReader reindexer = getReindexer(tempPath);
 
     // Start with initial empty commit:
     reindexer.commit();
@@ -1220,6 +1226,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
   public void testRandom() throws Exception {
     Path root = createTempDir();
+    assumeFalse("we directly delete files", TestUtil.hasVirusChecker(root));
     ReindexingReader reindexer = null;
 
     // TODO: separate refresh thread, search threads, indexing threads

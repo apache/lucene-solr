@@ -19,6 +19,7 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
 
 import org.apache.lucene.store.IOContext;
@@ -68,7 +69,7 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
         success = true;
       } finally {
         if (success) {
-          sorter.getDirectory().deleteFile(input.getName());
+          sorter.getDirectory().deleteFiles(Collections.singleton(input.getName()));
         } else {
           IOUtils.deleteFilesIgnoringExceptions(sorter.getDirectory(), input.getName());
         }

@@ -43,15 +43,6 @@ public class TestSwappedIndexFiles extends LuceneTestCase {
     Directory dir1 = newDirectory();
     Directory dir2 = newDirectory();
 
-    if (dir1 instanceof MockDirectoryWrapper) {
-      // otherwise we can have unref'd files left in the index that won't be visited when opening a reader and lead to scary looking false failures:
-      ((MockDirectoryWrapper) dir1).setEnableVirusScanner(false);
-    }
-    if (dir2 instanceof MockDirectoryWrapper) {
-      // otherwise we can have unref'd files left in the index that won't be visited when opening a reader and lead to scary looking false failures:
-      ((MockDirectoryWrapper) dir2).setEnableVirusScanner(false);
-    }
-
     // Disable CFS 80% of the time so we can truncate individual files, but the other 20% of the time we test truncation of .cfs/.cfe too:
     boolean useCFS = random().nextInt(5) == 1;
 

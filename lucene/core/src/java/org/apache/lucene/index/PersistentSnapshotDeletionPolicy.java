@@ -212,7 +212,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
   private synchronized void clearPriorSnapshots() throws IOException {
     for(String file : dir.listAll()) {
       if (file.startsWith(SNAPSHOTS_PREFIX)) {
-        dir.deleteFile(file);
+        dir.deleteFiles(Collections.singleton(file));
       }
     }
   }

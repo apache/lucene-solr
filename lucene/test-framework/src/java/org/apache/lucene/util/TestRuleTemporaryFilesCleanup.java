@@ -39,6 +39,7 @@ import org.apache.lucene.mockfile.HandleLimitFS;
 import org.apache.lucene.mockfile.LeakFS;
 import org.apache.lucene.mockfile.ShuffleFS;
 import org.apache.lucene.mockfile.VerboseFS;
+import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase.SuppressFsync;
@@ -73,6 +74,11 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
    * Per-test filesystem
    */
   private FileSystem fileSystem;
+
+  /**
+   * Only set if the file system chain includes the VirusCheckingFS
+   */
+  private VirusCheckingFS virusCheckingFS;
 
   /**
    * Suite failure marker.
@@ -174,10 +180,17 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
       if (allowed(avoid, ExtrasFS.class)) {
         fs = new ExtrasFS(fs, random.nextInt(4) == 0, random.nextBoolean()).getFileSystem(null);
       }
+      // nocommit true:
+      if (allowed(avoid, VirusCheckingFS.class) && (true || random.nextInt(10) == 1)) {
+        // 10% of the time we swap in virus checking (acts-like-windows) FS:    
+        virusCheckingFS = new VirusCheckingFS(fs, random);
+        fs = virusCheckingFS.getFileSystem(null);
+      }
     }
     if (LuceneTestCase.VERBOSE) {
       System.out.println("filesystem: " + fs.provider());
     }
+
     return fs.provider().getFileSystem(URI.create("file:///"));
   }
 
@@ -211,6 +224,12 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     // was successful. Otherwise just report the path of temporary files
     // and leave them there.
     if (failureMarker.wasSuccessful()) {
+
+      if (virusCheckingFS != null) {
+        // Otherwise our IOUtils.rm below can fail:
+        virusCheckingFS.disable();
+      }
+
       try {
         IOUtils.rm(everything);
       } catch (IOException e) {

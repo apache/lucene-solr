@@ -21,10 +21,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 public class TestDirectory extends LuceneTestCase {
 
@@ -32,6 +34,7 @@ public class TestDirectory extends LuceneTestCase {
   // path, can read, write, and lock files.
   public void testDirectInstantiation() throws Exception {
     final Path path = createTempDir("testDirectInstantiation");
+    assumeFalse("test deletes files through different FSDir instances", TestUtil.hasVirusChecker(path));
     
     final byte[] largeBuffer = new byte[random().nextInt(256*1024)], largeReadBuffer = new byte[largeBuffer.length];
     for (int i = 0; i < largeBuffer.length; i++) {
@@ -79,7 +82,7 @@ public class TestDirectory extends LuceneTestCase {
       }
 
       // delete with a different dir
-      dirs[(i+1)%dirs.length].deleteFile(fname);
+      dirs[(i+1)%dirs.length].deleteFiles(Collections.singleton(fname));
 
       for (int j=0; j<dirs.length; j++) {
         FSDirectory d2 = dirs[j];
@@ -110,23 +113,17 @@ public class TestDirectory extends LuceneTestCase {
       dir.close();
       assertFalse(dir.isOpen);
     }
-    
-    IOUtils.rm(path);
   }
 
   // LUCENE-1468
   @SuppressWarnings("resource")
   public void testCopySubdir() throws Throwable {
     Path path = createTempDir("testsubdir");
-    try {
-      Files.createDirectory(path.resolve("subdir"));
-      FSDirectory fsDir = new SimpleFSDirectory(path);
-      RAMDirectory ramDir = new RAMDirectory(fsDir, newIOContext(random()));
-      List<String> files = Arrays.asList(ramDir.listAll());
-      assertFalse(files.contains("subdir"));
-    } finally {
-      IOUtils.rm(path);
-    }
+    Files.createDirectory(path.resolve("subdir"));
+    FSDirectory fsDir = new SimpleFSDirectory(path);
+    RAMDirectory ramDir = new RAMDirectory(fsDir, newIOContext(random()));
+    List<String> files = Arrays.asList(ramDir.listAll());
+    assertFalse(files.contains("subdir"));
   }
 
   // LUCENE-1468
@@ -145,7 +142,6 @@ public class TestDirectory extends LuceneTestCase {
       }
     } finally {
       fsDir.close();
-      IOUtils.rm(path);
     }
   }
 }

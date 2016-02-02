@@ -51,6 +51,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FlushInfo;
 import org.apache.lucene.store.IOContext;
@@ -753,6 +754,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *           IO error
    */
   public IndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
+    if (d instanceof FSDirectory && ((FSDirectory) d).checkPendingDeletions()) {
+      throw new IllegalArgumentException("Directory still has pending deleted files");
+    }
+
     conf.setIndexWriter(this); // prevent reuse by other instances
     config = conf;
     infoStream = config.getInfoStream();
@@ -3569,8 +3574,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     }
 
-    deleter.deletePendingFiles();
-
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "after commitMerge: " + segString());
     }
@@ -4616,14 +4619,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    */
   public synchronized void deleteUnusedFiles() throws IOException {
     ensureOpen(false);
-    deleter.deletePendingFiles();
     deleter.revisitPolicy();
   }
 
-  private synchronized void deletePendingFiles() throws IOException {
-    deleter.deletePendingFiles();
-  }
-  
   /**
    * NOTE: this method creates a compound file for all files returned by
    * info.files(). While, generally, this may include separate norms and

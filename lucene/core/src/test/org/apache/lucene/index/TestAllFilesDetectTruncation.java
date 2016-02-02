@@ -42,11 +42,6 @@ public class TestAllFilesDetectTruncation extends LuceneTestCase {
   public void test() throws Exception {
     Directory dir = newDirectory();
 
-    if (dir instanceof MockDirectoryWrapper) {
-      // otherwise we can have unref'd files left in the index that won't be visited when opening a reader and lead to scary looking false failures:
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
     conf.setCodec(TestUtil.getDefaultCodec());
 

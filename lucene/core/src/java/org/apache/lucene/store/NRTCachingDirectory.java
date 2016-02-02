@@ -112,14 +112,23 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
   }
 
   @Override
-  public synchronized void deleteFile(String name) throws IOException {
+  public synchronized void deleteFiles(Collection<String> names) throws IOException {
     if (VERBOSE) {
-      System.out.println("nrtdir.deleteFile name=" + name);
+      System.out.println("nrtdir.deleteFiles names=" + names);
     }
-    if (cache.fileNameExists(name)) {
-      cache.deleteFile(name);
-    } else {
-      in.deleteFile(name);
+    Set<String> cacheToDelete = new HashSet<>();
+    Set<String> toDelete = new HashSet<>();
+    for(String name : names) {
+      if (cache.fileNameExists(name)) {
+        cacheToDelete.add(name);
+      } else {
+        toDelete.add(name);
+      }
+    }
+    try {
+      cache.deleteFiles(cacheToDelete);
+    } finally {
+      in.deleteFiles(toDelete);
     }
   }
 
@@ -146,14 +155,14 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
         System.out.println("  to cache");
       }
       try {
-        in.deleteFile(name);
+        in.deleteFiles(Collections.singleton(name));
       } catch (IOException ioe) {
         // This is fine: file may not exist
       }
       return cache.createOutput(name, context);
     } else {
       try {
-        cache.deleteFile(name);
+        cache.deleteFiles(Collections.singleton(name));
       } catch (IOException ioe) {
         // This is fine: file may not exist
       }
@@ -323,7 +332,7 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
       synchronized(this) {
         // Must sync here because other sync methods have
         // if (cache.fileNameExists(name)) { ... } else { ... }:
-        cache.deleteFile(fileName);
+        cache.deleteFiles(Collections.singleton(fileName));
       }
     }
   }

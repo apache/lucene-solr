@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -33,9 +34,11 @@ public final class TrackingDirectoryWrapper extends FilterDirectory {
   }
 
   @Override
-  public void deleteFile(String name) throws IOException {
-    in.deleteFile(name);
-    createdFileNames.remove(name);
+  public void deleteFiles(Collection<String> names) throws IOException {
+    in.deleteFiles(names);
+    for(String name : names) {
+      createdFileNames.remove(name);
+    }
   }
 
   @Override

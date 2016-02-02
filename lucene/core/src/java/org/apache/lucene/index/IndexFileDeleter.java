@@ -79,11 +79,6 @@ import org.apache.lucene.util.InfoStream;
 
 final class IndexFileDeleter implements Closeable {
 
-  /* Files that we tried to delete but failed (likely
-   * because they are open and we are running on Windows),
-   * so we will retry them again later: */
-  private final Set<String> deletable = new HashSet<>();
-
   /* Reference count for all files in the index.
    * Counts how many existing commits reference a file.
    **/
@@ -220,6 +215,7 @@ final class IndexFileDeleter implements Closeable {
     // Now delete anything with ref count at 0.  These are
     // presumably abandoned files eg due to crash of
     // IndexWriter.
+    Set<String> toDelete = new HashSet<>();
     for(Map.Entry<String, RefCount> entry : refCounts.entrySet() ) {
       RefCount rc = entry.getValue();
       final String fileName = entry.getKey();
@@ -231,9 +227,11 @@ final class IndexFileDeleter implements Closeable {
         if (infoStream.isEnabled("IFD")) {
           infoStream.message("IFD", "init: removing unreferenced file \"" + fileName + "\"");
         }
-        deleteFile(fileName);
+        toDelete.add(fileName);
       }
     }
+
+    deleteFiles(toDelete);
 
     // Finally, give policy a chance to remove things on
     // startup:
@@ -425,7 +423,7 @@ final class IndexFileDeleter implements Closeable {
    */
   void refresh() throws IOException {
     assert locked();
-    deletable.clear();
+    Set<String> toDelete = new HashSet<>();
 
     String[] files = directory.listAll();
 
@@ -445,15 +443,15 @@ final class IndexFileDeleter implements Closeable {
         if (infoStream.isEnabled("IFD")) {
           infoStream.message("IFD", "refresh: removing newly created unreferenced file \"" + fileName + "\"");
         }
-        deletable.add(fileName);
+        toDelete.add(fileName);
       }
     }
 
-    deletePendingFiles();
+    deleteFiles(toDelete);
   }
 
   @Override
-  public void close() {
+  public void close() throws IOException {
     // DecRef old files from the last checkpoint, if any:
     assert locked();
 
@@ -464,8 +462,6 @@ final class IndexFileDeleter implements Closeable {
         lastFiles.clear();
       }
     }
-
-    deletePendingFiles();
   }
 
   /**
@@ -486,39 +482,6 @@ final class IndexFileDeleter implements Closeable {
     if (commits.size() > 0) {
       policy.onCommit(commits);
       deleteCommits();
-    }
-  }
-
-  public void deletePendingFiles() {
-    assert locked();
-
-    // Clone the set because it will change as we iterate:
-    List<String> toDelete = new ArrayList<>(deletable);
-    
-    // First pass: delete any segments_N files.  We do these first to be certain stale commit points are removed
-    // before we remove any files they reference.  If any delete of segments_N fails, we leave all other files
-    // undeleted so index is never in a corrupt state:
-    for (String fileName : toDelete) {
-      RefCount rc = refCounts.get(fileName);
-      if (rc != null && rc.count > 0) {
-        // LUCENE-5904: should never happen!  This means we are about to pending-delete a referenced index file
-        throw new IllegalStateException("file \"" + fileName + "\" is in pending delete set but has non-zero refCount=" + rc.count);
-      } else if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
-        if (deleteFile(fileName) == false) {
-          if (infoStream.isEnabled("IFD")) {
-            infoStream.message("IFD", "failed to remove commit point \"" + fileName + "\"; skipping deletion of all other pending files");
-          }
-          return;
-        }
-      }
-    }
-
-    // Only delete other files if we were able to remove the segments_N files; this way we never
-    // leave a corrupt commit in the index even in the presense of virus checkers:
-    for(String fileName : toDelete) {
-      if (fileName.startsWith(IndexFileNames.SEGMENTS) == false) {
-        deleteFile(fileName);
-      }
     }
   }
 
@@ -610,12 +573,15 @@ final class IndexFileDeleter implements Closeable {
   }
 
   /** Decrefs all provided files, even on exception; throws first exception hit, if any. */
-  void decRef(Collection<String> files) {
+  void decRef(Collection<String> files) throws IOException {
     assert locked();
+    Set<String> toDelete = new HashSet<>();
     Throwable firstThrowable = null;
     for(final String file : files) {
       try {
-        decRef(file);
+        if (decRef(file)) {
+          toDelete.add(file);
+        }
       } catch (Throwable t) {
         if (firstThrowable == null) {
           // Save first exception and throw it in the end, but be sure to finish decRef all files
@@ -625,7 +591,7 @@ final class IndexFileDeleter implements Closeable {
     }
 
     try {
-      deletePendingFiles();
+      deleteFiles(toDelete);
     } catch (Throwable t) {
       if (firstThrowable == null) {
         // Save first exception and throw it in the end, but be sure to finish decRef all files
@@ -634,27 +600,31 @@ final class IndexFileDeleter implements Closeable {
     }
 
     // NOTE: does nothing if firstThrowable is null
-    IOUtils.reThrowUnchecked(firstThrowable);
+    IOUtils.reThrow(firstThrowable);
   }
 
   /** Decrefs all provided files, ignoring any exceptions hit; call this if
    *  you are already handling an exception. */
   void decRefWhileHandlingException(Collection<String> files) {
     assert locked();
+    Set<String> toDelete = new HashSet<>();
     for(final String file : files) {
       try {
-        decRef(file);
+        if (decRef(file)) {
+          toDelete.add(file);
+        }
       } catch (Throwable t) {
       }
     }
 
     try {
-      deletePendingFiles();
+      deleteFiles(toDelete);
     } catch (Throwable t) {
     }
   }
 
-  private void decRef(String fileName) {
+  /** Returns true if the file should now be deleted. */
+  private boolean decRef(String fileName) {
     assert locked();
     RefCount rc = getRefCount(fileName);
     if (infoStream.isEnabled("IFD")) {
@@ -662,14 +632,13 @@ final class IndexFileDeleter implements Closeable {
         infoStream.message("IFD", "  DecRef \"" + fileName + "\": pre-decr count is " + rc.count);
       }
     }
-    if (0 == rc.DecRef()) {
+    if (rc.DecRef() == 0) {
       // This file is no longer referenced by any past
       // commit points nor by the in-memory SegmentInfos:
-      try {
-        deletable.add(fileName);
-      } finally {
-        refCounts.remove(fileName);
-      }
+      refCounts.remove(fileName);
+      return true;
+    } else {
+      return false;
     }
   }
 
@@ -692,8 +661,6 @@ final class IndexFileDeleter implements Closeable {
     RefCount rc;
     if (!refCounts.containsKey(fileName)) {
       rc = new RefCount(fileName);
-      // We should never incRef a file we are already wanting to delete:
-      assert deletable.contains(fileName) == false: "file \"" + fileName + "\" cannot be incRef'd: it's already pending delete";
       refCounts.put(fileName, rc);
     } else {
       rc = refCounts.get(fileName);
@@ -705,6 +672,7 @@ final class IndexFileDeleter implements Closeable {
    *  (have not yet been incref'd). */
   void deleteNewFiles(Collection<String> files) throws IOException {
     assert locked();
+    Set<String> toDelete = new HashSet<>();
     for (final String fileName: files) {
       // NOTE: it's very unusual yet possible for the
       // refCount to be present and 0: it can happen if you
@@ -716,45 +684,31 @@ final class IndexFileDeleter implements Closeable {
         if (infoStream.isEnabled("IFD")) {
           infoStream.message("IFD", "will delete new file \"" + fileName + "\"");
         }
-        deletable.add(fileName);
+        toDelete.add(fileName);
       }
     }
 
-    deletePendingFiles();
+    deleteFiles(toDelete);
   }
 
-  /** Returns true if the delete succeeded. Otherwise, the fileName is
-   *  added to the deletable set so we will retry the delete later, and
-   *  we return false. */
-  private boolean deleteFile(String fileName) {
+  private void deleteFiles(Collection<String> names) throws IOException {
     assert locked();
     ensureOpen();
+    if (names.isEmpty()) {
+      return;
+    }
     try {
       if (infoStream.isEnabled("IFD")) {
-        infoStream.message("IFD", "delete \"" + fileName + "\"");
+        infoStream.message("IFD", "delete \"" + names + "\"");
       }
-      directory.deleteFile(fileName);
-      deletable.remove(fileName);
-      return true;
-    } catch (IOException e) {  // if delete fails
-
+      directory.deleteFiles(names);
+    } catch (NoSuchFileException | FileNotFoundException e) {  // if delete fails
       // IndexWriter should only ask us to delete files it knows it wrote, so if we hit this, something is wrong!
-      // LUCENE-6684: we suppress this assert for Windows, since a file could be in a confusing "pending delete" state:
-      assert Constants.WINDOWS || e instanceof NoSuchFileException == false: "hit unexpected NoSuchFileException: file=" + fileName;
-      assert Constants.WINDOWS || e instanceof FileNotFoundException == false: "hit unexpected FileNotFoundException: file=" + fileName;
-
-      // Some operating systems (e.g. Windows) don't
-      // permit a file to be deleted while it is opened
-      // for read (e.g. by another process or thread). So
-      // we assume that when a delete fails it is because
-      // the file is open in another process, and queue
-      // the file for subsequent deletion.
-
-      if (infoStream.isEnabled("IFD")) {
-        infoStream.message("IFD", "unable to remove file \"" + fileName + "\": " + e.toString() + "; Will re-try later.");
+      if (Constants.WINDOWS) {
+        // LUCENE-6684: we suppress this assert for Windows, since a file could be in a confusing "pending delete" state:
+      } else {
+        throw e;
       }
-      deletable.add(fileName);
-      return false;
     }
   }
 

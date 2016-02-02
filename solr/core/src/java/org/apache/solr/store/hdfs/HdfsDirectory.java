@@ -144,10 +144,12 @@ public class HdfsDirectory extends BaseDirectory {
   }
   
   @Override
-  public void deleteFile(String name) throws IOException {
-    Path path = new Path(hdfsDirPath, name);
-    LOG.debug("Deleting {}", path);
-    getFileSystem().delete(path, false);
+  public void deleteFiles(Collection<String> names) throws IOException {
+    for(String name : names) {
+      Path path = new Path(hdfsDirPath, name);
+      LOG.debug("Deleting {}", path);
+      getFileSystem().delete(path, false);
+    }
   }
   
   @Override

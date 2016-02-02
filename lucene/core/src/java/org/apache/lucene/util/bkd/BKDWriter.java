@@ -22,6 +22,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -39,8 +40,8 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
+import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
@@ -820,7 +821,7 @@ public class BKDWriter implements Closeable {
       //System.out.println("sort time: " + ((t1-t0)/1000000.0) + " msec");
 
       if (tempInput != null) {
-        tempDir.deleteFile(tempInput.getName());
+        tempDir.deleteFiles(Collections.singleton(tempInput.getName()));
         tempInput = null;
       } else {
         assert heapPointWriter != null;
@@ -913,7 +914,7 @@ public class BKDWriter implements Closeable {
       try {
         tempInput.close();
       } finally {
-        tempDir.deleteFile(tempInput.getName());
+        tempDir.deleteFiles(Collections.singleton(tempInput.getName()));
         tempInput = null;
       }
     }

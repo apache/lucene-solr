@@ -19,8 +19,10 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.TestUtil;
 
 /** Simple tests for SimpleFSLockFactory */
 public class TestSimpleFSLockFactory extends BaseLockFactoryTestCase {
@@ -34,11 +36,12 @@ public class TestSimpleFSLockFactory extends BaseLockFactoryTestCase {
   public void testDeleteLockFile() throws IOException {
     Directory dir = getDirectory(createTempDir());
     try {
+      assumeFalse("test directly deletes lock files", TestUtil.hasVirusChecker(dir));
       Lock lock = dir.obtainLock("test.lock");
       lock.ensureValid();
     
       try {
-        dir.deleteFile("test.lock");
+        dir.deleteFiles(Collections.singleton("test.lock"));
       } catch (Exception e) {
         // we can't delete a file for some reason, just clean up and assume the test.
         IOUtils.closeWhileHandlingException(lock);

@@ -197,11 +197,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
   public void testMergeStability() throws Exception {
     assumeTrue("merge is not stable", mergeIsStable());
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // Else, the virus checker may prevent deletion of files and cause
-      // us to see too many bytes used by extension in the end:
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
+
     // do not use newMergePolicy that might return a MockMergePolicy that ignores the no-CFS ratio
     // do not use RIW which will change things up!
     MergePolicy mp = newTieredMergePolicy();
@@ -220,11 +216,6 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     DirectoryReader reader = DirectoryReader.open(dir);
 
     Directory dir2 = newDirectory();
-    if (dir2 instanceof MockDirectoryWrapper) {
-      // Else, the virus checker may prevent deletion of files and cause
-      // us to see too many bytes used by extension in the end:
-      ((MockDirectoryWrapper) dir2).setEnableVirusScanner(false);
-    }
     mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
     cfg = new IndexWriterConfig(new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);

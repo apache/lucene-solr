@@ -61,11 +61,7 @@ public class PersistenceTest extends LuceneTestCase {
   }
 
   private Directory getDirectory() {     
-    Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
+    return newDirectory();
   }
 
   private void runTest(Class<? extends Lookup> lookupClass, boolean supportsExactWeights) throws Exception {

@@ -1103,7 +1103,6 @@ public class TestAddIndexes extends LuceneTestCase {
     }
   }
 
-
   // LUCENE-2790: tests that the non CFS files were deleted by addIndexes
   public void testNonCFSLeftovers() throws Exception {
     Directory[] dirs = new Directory[2];
@@ -1121,7 +1120,6 @@ public class TestAddIndexes extends LuceneTestCase {
     DirectoryReader[] readers = new DirectoryReader[] { DirectoryReader.open(dirs[0]), DirectoryReader.open(dirs[1]) };
     
     MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
-    dir.setEnableVirusScanner(false); // we check for specific list of files
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy(true));
     MergePolicy lmp = conf.getMergePolicy();
     // Force creation of CFS:

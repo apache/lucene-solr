@@ -1271,6 +1271,5 @@ public class RandomPostingsTester {
 
     fieldsProducer.close();
     dir.close();
-    IOUtils.rm(path);
   }
 }

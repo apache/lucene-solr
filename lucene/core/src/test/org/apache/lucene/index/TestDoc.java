@@ -48,6 +48,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
 /** JUnit adaptation of an older test case DocTest. */
@@ -120,8 +121,6 @@ public class TestDoc extends LuceneTestCase {
       // We create unreferenced files (we don't even write
       // a segments file):
       ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
-      // this test itself deletes files (has no retry mechanism)
-      ((MockDirectoryWrapper) directory).setEnableVirusScanner(false);
     }
 
     IndexWriter writer = new IndexWriter(
@@ -164,8 +163,6 @@ public class TestDoc extends LuceneTestCase {
       // We create unreferenced files (we don't even write
       // a segments file):
       ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
-      // this test itself deletes files (has no retry mechanism)
-      ((MockDirectoryWrapper) directory).setEnableVirusScanner(false);
     }
 
     writer = new IndexWriter(
@@ -237,9 +234,7 @@ public class TestDoc extends LuceneTestCase {
       Collection<String> filesToDelete = si.files();
       codec.compoundFormat().write(dir, si, context);
       si.setUseCompoundFile(true);
-      for (final String fileToDelete : filesToDelete) {
-        si1.info.dir.deleteFile(fileToDelete);
-      }
+      si1.info.dir.deleteFiles(filesToDelete);
     }
 
     return new SegmentCommitInfo(si, 0, -1L, -1L, -1L);

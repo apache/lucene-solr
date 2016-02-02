@@ -18,7 +18,7 @@ package org.apache.lucene.util.bkd;
  */
 
 import java.io.IOException;
-
+import java.util.Collections;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -75,7 +75,7 @@ final class OfflinePointWriter implements PointWriter {
 
   @Override
   public void destroy() throws IOException {
-    tempDir.deleteFile(out.getName());
+    tempDir.deleteFiles(Collections.singleton(out.getName()));
   }
 
   @Override

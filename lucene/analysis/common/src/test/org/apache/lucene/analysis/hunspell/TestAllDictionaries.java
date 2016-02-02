@@ -215,10 +215,6 @@ public class TestAllDictionaries extends LuceneTestCase {
   }
 
   private Directory getDirectory() {
-    Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
+    return newDirectory();
   }
 }

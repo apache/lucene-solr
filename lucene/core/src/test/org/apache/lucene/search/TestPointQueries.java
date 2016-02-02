@@ -175,7 +175,7 @@ public class TestPointQueries extends LuceneTestCase {
     iwc.setCodec(getCodec());
     Directory dir;
     if (values.length > 100000) {
-      dir = noVirusChecker(newFSDirectory(createTempDir("TestRangeTree")));
+      dir = newFSDirectory(createTempDir("TestRangeTree"));
     } else {
       dir = getDirectory();
     }
@@ -439,7 +439,7 @@ public class TestPointQueries extends LuceneTestCase {
 
     Directory dir;
     if (docValues.length > 100000) {
-      dir = noVirusChecker(newFSDirectory(createTempDir("TestPointRangeQuery")));
+      dir = newFSDirectory(createTempDir("TestPointQueries"));
     } else {
       dir = getDirectory();
     }
@@ -1018,15 +1018,8 @@ public class TestPointQueries extends LuceneTestCase {
     IOUtils.close(w, dir);
   }
 
-  private static Directory noVirusChecker(Directory dir) {
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
-  }
-
   private static Directory getDirectory() {     
-    return noVirusChecker(newDirectory());
+    return newDirectory();
   }
 
   private static Codec getCodec() {

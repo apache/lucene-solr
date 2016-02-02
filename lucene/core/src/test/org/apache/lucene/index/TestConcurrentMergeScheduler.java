@@ -184,10 +184,6 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
   public void testNoExtraFiles() throws IOException {
     Directory directory = newDirectory();
-    if (directory instanceof MockDirectoryWrapper) {
-      // test uses IW unref'ed helper which is unaware of retries
-      ((MockDirectoryWrapper)directory).setEnableVirusScanner(false);
-    }
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random()))
                                                       .setMaxBufferedDocs(2));
 

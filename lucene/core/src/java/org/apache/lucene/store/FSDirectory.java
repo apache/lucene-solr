@@ -17,19 +17,25 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -120,6 +126,12 @@ public abstract class FSDirectory extends BaseDirectory {
 
   protected final Path directory; // The underlying filesystem directory
 
+
+  /** Files we previously tried to delete, but hit exception (on Windows) last time we tried.
+   *  These files are in "pending delete" state, where we refuse to openInput or createOutput
+   *  them, nor include them in .listAll. */
+  protected final Set<String> pendingDeletes = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
+
   /** Used to generate temp file names in {@link #createTempOutput}. */
   private final AtomicLong nextTempFileCounter = new AtomicLong();
 
@@ -193,11 +205,18 @@ public abstract class FSDirectory extends BaseDirectory {
    *
    *  @throws IOException if there was an I/O error during listing */
   public static String[] listAll(Path dir) throws IOException {
+    return listAll(dir, Collections.emptySet());
+  }
+
+  private static String[] listAll(Path dir, Set<String> skipNames) throws IOException {
     List<String> entries = new ArrayList<>();
     
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
       for (Path path : stream) {
-        entries.add(path.getFileName().toString());
+        String name = path.getFileName().toString();
+        if (skipNames.contains(name) == false) {
+          entries.add(name);
+        }
       }
     }
     
@@ -207,7 +226,7 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public String[] listAll() throws IOException {
     ensureOpen();
-    return listAll(directory);
+    return listAll(directory, pendingDeletes);
   }
 
   /** Returns the length in bytes of a file in the directory. */
@@ -219,9 +238,10 @@ public abstract class FSDirectory extends BaseDirectory {
 
   /** Removes an existing file in the directory. */
   @Override
-  public void deleteFile(String name) throws IOException {
+  public void deleteFiles(Collection<String> names) throws IOException {
     ensureOpen();
-    Files.delete(directory.resolve(name));
+    pendingDeletes.addAll(names);
+    deletePendingFiles();
   }
 
   /** Creates an IndexOutput for the file with the given name. */
@@ -247,7 +267,18 @@ public abstract class FSDirectory extends BaseDirectory {
   }
 
   protected void ensureCanWrite(String name) throws IOException {
+    deletePendingFiles();
+    if (pendingDeletes.contains(name)) {
+      throw new IOException("file \"" + name + "\" is pending delete and cannot be overwritten");
+    }
     Files.deleteIfExists(directory.resolve(name)); // delete existing, if any
+  }
+
+  protected void ensureCanRead(String name) throws IOException {
+    deletePendingFiles();
+    if (pendingDeletes.contains(name)) {
+      throw new NoSuchFileException("file \"" + name + "\" is pending delete and cannot be overwritten");
+    }
   }
 
   @Override
@@ -270,8 +301,9 @@ public abstract class FSDirectory extends BaseDirectory {
 
   /** Closes the store to future operations. */
   @Override
-  public synchronized void close() {
+  public synchronized void close() throws IOException {
     isOpen = false;
+    deletePendingFiles();
   }
 
   /** @return the underlying filesystem directory */
@@ -284,6 +316,74 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public String toString() {
     return this.getClass().getSimpleName() + "@" + directory + " lockFactory=" + lockFactory;
+  }
+
+  protected void fsync(String name) throws IOException {
+    deletePendingFiles();
+    IOUtils.fsync(directory.resolve(name), false);
+  }
+
+  /** Returns true if the file was successfully removed. */
+  private boolean deleteFile(String name) throws IOException {  
+    try {
+      Files.delete(directory.resolve(name));
+      pendingDeletes.remove(name);
+      return true;
+    } catch (NoSuchFileException | FileNotFoundException e) {
+      // We were asked to delete a non-existent file:
+      pendingDeletes.remove(name);
+      throw e;
+    } catch (IOException ioe) {
+      // On windows, a file delete can fail because there's still an open
+      // file handle against it.  We record this in pendingDeletes and
+      // try again later.
+
+      // TODO: this is hacky/lenient (we don't know which IOException this is), and
+      // it should only happen on filesystems that can do this, so really we should
+      // move this logic to WindowsDirectory or something
+
+      // TODO: can/should we do if (Constants.WINDOWS) here, else throw the exc?
+      // but what about a Linux box with a CIFS mount?
+      //System.out.println("FS.deleteFile failed (" + ioe + "): will retry later");
+      pendingDeletes.add(name);
+      return false;
+    }
+  }
+
+  /** Tries to delete any pending deleted files, and returns true if
+   *  there are still files that could not be deleted. */
+  public boolean checkPendingDeletions() throws IOException {
+    deletePendingFiles();
+    return pendingDeletes.isEmpty() == false;
+  }
+
+  /** Try to delete any pending files that we had previously tried to delete but failed
+   *  because we are on Windows and the files were still
+   *  held open. */
+  public void deletePendingFiles() throws IOException {
+    // TODO: we could fix IndexInputs from FSDirectory subclasses to call this when they are closed?
+
+    // Clone the set because it will change as we iterate:
+    List<String> toDelete = new ArrayList<>(pendingDeletes);
+
+    // First pass: delete any segments_N files.  We do these first to be certain stale commit points are removed
+    // before we remove any files they reference.  If any delete of segments_N fails, we leave all other files
+    // undeleted so index is never in a corrupt state:
+    for (String fileName : toDelete) {
+      if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
+        if (deleteFile(fileName) == false) {
+          return;
+        }
+      }
+    }
+
+    // Only delete other files if we were able to remove the segments_N files; this way we never
+    // leave a corrupt commit in the index even in the presense of virus checkers:
+    for(String fileName : toDelete) {
+      if (fileName.startsWith(IndexFileNames.SEGMENTS) == false) {
+        deleteFile(fileName);
+      }
+    }
   }
 
   final class FSIndexOutput extends OutputStreamIndexOutput {
@@ -311,9 +411,5 @@ public abstract class FSDirectory extends BaseDirectory {
         }
       }, CHUNK_SIZE);
     }
-  }
-
-  protected void fsync(String name) throws IOException {
-    IOUtils.fsync(directory.resolve(name), false);
   }
 }

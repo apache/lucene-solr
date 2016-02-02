@@ -18,6 +18,7 @@ package org.apache.lucene.util.fst;
  */
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Random;
 
 import org.apache.lucene.store.Directory;
@@ -31,6 +32,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.packed.PackedInts;
 import org.junit.Ignore;
+
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @Ignore("Requires tons of heap to run (30 GB hits OOME but 35 GB passes after ~4.5 hours)")
@@ -126,7 +128,7 @@ public class Test2BFST extends LuceneTestCase {
             fst = new FST<>(in, outputs);
             in.close();
           } else {
-            dir.deleteFile("fst");
+            dir.deleteFiles(Collections.singleton("fst"));
           }
         }
       }
@@ -203,7 +205,7 @@ public class Test2BFST extends LuceneTestCase {
             fst = new FST<>(in, outputs);
             in.close();
           } else {
-            dir.deleteFile("fst");
+            dir.deleteFiles(Collections.singleton("fst"));
           }
         }
       }
@@ -287,7 +289,7 @@ public class Test2BFST extends LuceneTestCase {
             fst = new FST<>(in, outputs);
             in.close();
           } else {
-            dir.deleteFile("fst");
+            dir.deleteFiles(Collections.singleton("fst"));
           }
         }
       }

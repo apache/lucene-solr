@@ -40,6 +40,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 
 public class TestOmitTf extends LuceneTestCase {
@@ -219,10 +220,6 @@ public class TestOmitTf extends LuceneTestCase {
   // Verifies no *.prx exists when all fields omit term freq:
   public void testNoPrxFile() throws Throwable {
     Directory ram = newDirectory();
-    if (ram instanceof MockDirectoryWrapper) {
-      // we verify some files get deleted
-      ((MockDirectoryWrapper)ram).setEnableVirusScanner(false);
-    }
     Analyzer analyzer = new MockAnalyzer(random());
     IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(analyzer)
                                                 .setMaxBufferedDocs(3)
