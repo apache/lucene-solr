@@ -78,12 +78,6 @@ public class TestSortingMergePolicy extends BaseMergePolicyTestCase {
     return doc;
   }
 
-  @Override
-  public void testForceMergeNotNeeded() throws IOException {
-    // This is a no-op until we figure out why the (super class) test fails.
-    // https://issues.apache.org/jira/browse/LUCENE-7008
-  }
-
   public MergePolicy mergePolicy() {
     return newSortingMergePolicy(sort);
   }
@@ -201,17 +195,6 @@ public class TestSortingMergePolicy extends BaseMergePolicyTestCase {
       fail("Didn't get expected exception");
     } catch (IllegalArgumentException e) {
       assertEquals("Cannot sort an index with a Sort that refers to the relevance score", e.getMessage());
-    }
-  }
-
-  public void testMethodsOverridden() throws Exception {
-    for (Method m : MergePolicy.class.getDeclaredMethods()) {
-      if (Modifier.isFinal(m.getModifiers())) continue;
-      try {
-        SortingMergePolicy.class.getDeclaredMethod(m.getName(),  m.getParameterTypes());
-      } catch (NoSuchMethodException e) {
-        fail("SortingMergePolicy needs to override '"+m+"'");
-      }
     }
   }
 

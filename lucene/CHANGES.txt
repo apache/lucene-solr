@@ -137,6 +137,9 @@ New Features
 
 * SOLR-4619: Added removeAllAttributes() to AttributeSource, which removes
   all previously added attributes.
+  
+* LUCENE-7010: Added MergePolicyWrapper to allow easy wrapping of other policies.
+  (Shai Erera)
 
 API Changes
 
