@@ -110,6 +110,12 @@ Changes in Runtime Behavior
   and codec components are no longer allowed to use this extension
   (Robert Muir, Mike McCandless)
 
+Tests
+
+* LUCENE-7009: Add expectThrows utility to LuceneTestCase. This uses a lambda
+  expression to encapsulate a statement that is expected to throw an exception.
+  (Ryan Ernst)
+
 ======================= Lucene 5.5.0 =======================
 
 New Features

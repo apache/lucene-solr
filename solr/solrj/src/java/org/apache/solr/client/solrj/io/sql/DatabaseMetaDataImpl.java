@@ -640,7 +640,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
 
   @Override
   public ResultSet getSchemas() throws SQLException {
-    return null;
+    return this.connectionStatement.executeQuery("select TABLE_SCHEM, TABLE_CATALOG from _SCHEMAS_");
   }
 
   @Override
@@ -700,7 +700,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
 
   @Override
   public ResultSet getTypeInfo() throws SQLException {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override

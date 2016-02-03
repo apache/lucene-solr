@@ -67,7 +67,7 @@ class SimpleTextPointWriter extends PointWriter {
   public void writeField(FieldInfo fieldInfo, PointReader values) throws IOException {
 
     // We use the normal BKDWriter, but subclass to customize how it writes the index and blocks to disk:
-    BKDWriter writer = new BKDWriter(writeState.directory,
+    try (BKDWriter writer = new BKDWriter(writeState.directory,
                                      writeState.segmentInfo.name,
                                      fieldInfo.getPointDimensionCount(),
                                      fieldInfo.getPointNumBytes(),
@@ -152,27 +152,28 @@ class SimpleTextPointWriter extends PointWriter {
           write(out, new BytesRef(bytes, 0, bytes.length).toString());
           newline(out);
         }          
-      };
+      }) {
 
-    values.intersect(fieldInfo.name, new IntersectVisitor() {
-        @Override
-        public void visit(int docID) {
-          throw new IllegalStateException();
-        }
+      values.intersect(fieldInfo.name, new IntersectVisitor() {
+          @Override
+          public void visit(int docID) {
+            throw new IllegalStateException();
+          }
 
-        public void visit(int docID, byte[] packedValue) throws IOException {
-          writer.add(packedValue, docID);
-        }
+          public void visit(int docID, byte[] packedValue) throws IOException {
+            writer.add(packedValue, docID);
+          }
 
-        @Override
-        public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-          return Relation.CELL_CROSSES_QUERY;
-        }
-      });
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            return Relation.CELL_CROSSES_QUERY;
+          }
+        });
 
-    // We could have 0 points on merge since all docs with points may be deleted:
-    if (writer.getPointCount() > 0) {
-      indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+      // We could have 0 points on merge since all docs with points may be deleted:
+      if (writer.getPointCount() > 0) {
+        indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+      }
     }
   }
 

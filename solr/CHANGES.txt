@@ -590,6 +590,9 @@ Other Changes
 * SOLR-8600: add & use ReRankQParserPlugin parameter [default] constants,
   changed ReRankQuery.toString to use StringBuilder. (Christine Poerschke)
 
+* SOLR-8308: Core gets inaccessible after RENAME operation with special characters
+  (Erik Hatcher, Erick Erickson)
+
 ==================  5.4.1 ==================
 
 Bug Fixes

@@ -270,7 +270,6 @@ public abstract class FSDirectory extends BaseDirectory {
   }
 
   protected void ensureCanRead(String name) throws IOException {
-    maybeDeletePendingFiles();
     if (pendingDeletes.contains(name)) {
       throw new NoSuchFileException("file \"" + name + "\" is pending delete and cannot be opened for read");
     }
