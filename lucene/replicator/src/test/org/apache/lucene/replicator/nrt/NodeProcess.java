@@ -157,9 +157,7 @@ class NodeProcess implements Closeable {
             throw new RuntimeException("shutdown failed");
           }
         } catch (Throwable t) {
-          System.out.println("top: shutdown failed; skipping");
-          t.printStackTrace(System.out);
-          return false;
+          System.out.println("top: shutdown failed; ignoring");
         }
         try {
           p.waitFor();
