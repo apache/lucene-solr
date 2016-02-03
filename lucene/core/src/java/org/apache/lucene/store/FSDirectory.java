@@ -228,7 +228,6 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
-    ensureCanWrite(name);
     return new FSIndexOutput(name);
   }
 
@@ -244,10 +243,6 @@ public abstract class FSDirectory extends BaseDirectory {
         // Retry with next random name
       }
     }
-  }
-
-  protected void ensureCanWrite(String name) throws IOException {
-    Files.deleteIfExists(directory.resolve(name)); // delete existing, if any
   }
 
   @Override
