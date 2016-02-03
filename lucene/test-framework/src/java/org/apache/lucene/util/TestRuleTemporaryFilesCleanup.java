@@ -180,8 +180,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
       if (allowed(avoid, ExtrasFS.class)) {
         fs = new ExtrasFS(fs, random.nextInt(4) == 0, random.nextBoolean()).getFileSystem(null);
       }
-      // nocommit true:
-      if (allowed(avoid, VirusCheckingFS.class) && (true || random.nextInt(10) == 1)) {
+      if (allowed(avoid, VirusCheckingFS.class) && random.nextInt(10) == 1) {
         // 10% of the time we swap in virus checking (acts-like-windows) FS:    
         virusCheckingFS = new VirusCheckingFS(fs, random.nextLong());
         fs = virusCheckingFS.getFileSystem(null);
