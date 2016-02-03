@@ -22,7 +22,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.PointValues.IntersectVisitor;
@@ -818,9 +817,9 @@ public class TestBKD extends LuceneTestCase {
         }
       }
       in.close();
-      dir.deleteFiles(Collections.singleton("bkd"));
+      dir.deleteFile("bkd");
       if (toMerge != null) {
-        dir.deleteFiles(Collections.singleton("bkd2"));
+        dir.deleteFile("bkd2");
       }
       success = true;
     } finally {

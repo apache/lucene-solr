@@ -43,7 +43,7 @@ public class TestTrackingDirectoryWrapper extends BaseDirectoryTestCase {
     TrackingDirectoryWrapper dir = new TrackingDirectoryWrapper(new RAMDirectory());
     dir.createOutput("foo", newIOContext(random())).close();
     assertEquals(asSet("foo"), dir.getCreatedFiles());
-    dir.deleteFiles(Collections.singleton("foo"));
+    dir.deleteFile("foo");
     assertEquals(Collections.emptySet(), dir.getCreatedFiles());
   }
   

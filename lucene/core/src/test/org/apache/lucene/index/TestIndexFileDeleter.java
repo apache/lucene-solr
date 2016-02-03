@@ -18,6 +18,9 @@ package org.apache.lucene.index;
  */
 
 import java.io.*;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,6 +29,8 @@ import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.mockfile.FilterPath;
+import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -219,8 +224,14 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   }
   
   public void testVirusScannerDoesntCorruptIndex() throws IOException {
-    MockDirectoryWrapper dir = newMockDirectory();
-    dir.setPreventDoubleWrite(false); // we arent trying to test this
+    Path path = createTempDir();
+    VirusCheckingFS fs = new VirusCheckingFS(path.getFileSystem(), random());
+    FileSystem filesystem = fs.getFileSystem(URI.create("file:///"));
+    fs.disable();
+
+    Path path2 = new FilterPath(path, filesystem);
+
+    Directory dir = newFSDirectory(path2);
     
     // add empty commit
     new IndexWriter(dir, new IndexWriterConfig(null)).close();
@@ -228,25 +239,12 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     dir.createOutput("_0.si", IOContext.DEFAULT).close();
 
     // start virus scanner
-    final AtomicBoolean stopScanning = new AtomicBoolean();
-    dir.failOn(new MockDirectoryWrapper.Failure() {
-      @Override
-      public void eval(MockDirectoryWrapper dir) throws IOException {
-        if (stopScanning.get()) {
-          return;
-        }
-        for (StackTraceElement f : new Exception().getStackTrace()) {
-          if ("deleteFile".equals(f.getMethodName())) {
-            throw new IOException("temporarily cannot delete file");
-          }
-        }
-      }
-    });
+    fs.enable();
     
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
     iw.addDocument(new Document());
     // stop virus scanner
-    stopScanning.set(true);
+    fs.disable();
     iw.commit();
     iw.close();
     dir.close();

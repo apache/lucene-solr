@@ -126,10 +126,8 @@ public abstract class FSDirectory extends BaseDirectory {
 
   protected final Path directory; // The underlying filesystem directory
 
-
-  /** Files we previously tried to delete, but hit exception (on Windows) last time we tried.
-   *  These files are in "pending delete" state, where we refuse to openInput or createOutput
-   *  them, nor include them in .listAll. */
+  /** Maps files that we are trying to delete (or we tried already but failed)
+   *  before attempting to delete that key. */
   protected final Set<String> pendingDeletes = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
 
   /** Used to generate temp file names in {@link #createTempOutput}. */
@@ -200,12 +198,11 @@ public abstract class FSDirectory extends BaseDirectory {
     }
   }
 
-  /** Lists all files (including subdirectories) in the
-   *  directory.
+  /** Lists all files (including subdirectories) in the directory.
    *
    *  @throws IOException if there was an I/O error during listing */
   public static String[] listAll(Path dir) throws IOException {
-    return listAll(dir, Collections.emptySet());
+    return listAll(dir, null);
   }
 
   private static String[] listAll(Path dir, Set<String> skipNames) throws IOException {
@@ -214,7 +211,7 @@ public abstract class FSDirectory extends BaseDirectory {
     try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
       for (Path path : stream) {
         String name = path.getFileName().toString();
-        if (skipNames.contains(name) == false) {
+        if (skipNames != null && skipNames.contains(name) == false) {
           entries.add(name);
         }
       }
@@ -236,17 +233,10 @@ public abstract class FSDirectory extends BaseDirectory {
   }
 
   @Override
-  public void deleteFiles(Collection<String> names) throws IOException {
-    ensureOpen();
-    // nocommit isn't it an error if they were already pending delete?
-    pendingDeletes.addAll(names);
-    deletePendingFiles();
-  }
-
-  @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
-    ensureCanWrite(name);
+    // nocommit do we need to check pending deletes?
+    deletePendingFiles();
     return new FSIndexOutput(name);
   }
 
@@ -262,14 +252,6 @@ public abstract class FSDirectory extends BaseDirectory {
         // Retry with next random name
       }
     }
-  }
-
-  protected void ensureCanWrite(String name) throws IOException {
-    deletePendingFiles();
-    if (pendingDeletes.contains(name)) {
-      throw new IOException("file \"" + name + "\" is pending delete and cannot be overwritten");
-    }
-    Files.deleteIfExists(directory.resolve(name)); // delete existing, if any
   }
 
   protected void ensureCanRead(String name) throws IOException {
@@ -319,12 +301,11 @@ public abstract class FSDirectory extends BaseDirectory {
     IOUtils.fsync(directory.resolve(name), false);
   }
 
-  /** Returns true if the file was successfully removed. */
-  private synchronized boolean deleteFile(String name) throws IOException {  
+  @Override
+  public void deleteFile(String name) throws IOException {  
     pendingDeletes.remove(name);
     try {
       Files.delete(directory.resolve(name));
-      return true;
     } catch (NoSuchFileException | FileNotFoundException e) {
       // We were asked to delete a non-existent file:
       throw e;
@@ -339,9 +320,7 @@ public abstract class FSDirectory extends BaseDirectory {
 
       // TODO: can/should we do if (Constants.WINDOWS) here, else throw the exc?
       // but what about a Linux box with a CIFS mount?
-      //System.out.println("FS.deleteFile failed (" + ioe + "): will retry later");
       pendingDeletes.add(name);
-      return false;
     }
   }
 
@@ -354,61 +333,17 @@ public abstract class FSDirectory extends BaseDirectory {
 
   /** Try to delete any pending files that we had previously tried to delete but failed
    *  because we are on Windows and the files were still held open. */
-  public synchronized void deletePendingFiles() throws IOException {
+  public void deletePendingFiles() throws IOException {
+    // nocommit do we need exponential backoff here for windows?
+
     // TODO: we could fix IndexInputs from FSDirectory subclasses to call this when they are closed?
 
-    // Clone the set because it will change as we iterate:
-    List<String> toDelete = new ArrayList<>(pendingDeletes);
-    System.out.println("del pending: " + pendingDeletes);
+    Set<String> toDelete = new HashSet<>(pendingDeletes);
 
-    // First pass: delete any segments_N files.  We do these first to be certain stale commit points are removed
-    // before we remove any files they reference.  If any delete of segments_N fails, we leave all other files
-    // undeleted so index is never in a corrupt state:
-    Throwable firstException = null;
-    for (String fileName : toDelete) {
-      if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
-        try {
-          if (deleteFile(fileName) == false) {
-            // nocommit
-            System.out.println("  false on " + fileName + "; skipping the rest");
-            return;
-          }
-        } catch (Throwable t) {
-          if (firstException == null) {
-            firstException = t;
-          } else {
-            firstException.addSuppressed(t);
-          }
-          // nocommit
-          System.out.println("  fail on " + fileName + ":");
-          t.printStackTrace(System.out);
-          throw t;
-        }
-      }
+    // nocommit heroic exceptions here or not?
+    for(String name : toDelete) {
+      deleteFile(name);
     }
-
-    // Only delete other files if we were able to remove the segments_N files; this way we never
-    // leave a corrupt commit in the index even in the presense of virus checkers:
-    for(String fileName : toDelete) {
-      if (fileName.startsWith(IndexFileNames.SEGMENTS) == false) {
-        try {
-          deleteFile(fileName);
-        } catch (Throwable t) {
-          if (firstException == null) {
-            firstException = t;
-          } else {
-            firstException.addSuppressed(t);
-          }
-          // nocommit
-          System.out.println("  fail on " + fileName + ":");
-          t.printStackTrace(System.out);
-          throw t;
-        }
-      }
-    }
-
-    // Does nothing if firstException is null:
-    IOUtils.reThrow(firstException);
   }
 
   final class FSIndexOutput extends OutputStreamIndexOutput {

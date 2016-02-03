@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,9 +34,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
@@ -297,7 +295,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         break;
       }
       
-      dir.deleteFiles(Collections.singleton(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen)));
+      dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen));
       gen--;
     }
 
@@ -375,7 +373,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       while(gen > 0) {
         IndexReader reader = DirectoryReader.open(dir);
         reader.close();
-        dir.deleteFiles(Collections.singleton(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen)));
+        dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen));
         gen--;
 
         if (gen > 0) {
@@ -602,7 +600,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           }
         }
         if (i < N) {
-          dir.deleteFiles(Collections.singleton(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen)));
+          dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen));
         }
         gen--;
       }
@@ -716,7 +714,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           }
         }
         if (i < N) {
-          dir.deleteFiles(Collections.singleton(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen)));
+          dir.deleteFile(IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", gen));
         }
         gen--;
       }

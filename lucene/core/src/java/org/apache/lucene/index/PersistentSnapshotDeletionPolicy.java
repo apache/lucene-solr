@@ -22,8 +22,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -212,7 +212,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
   private synchronized void clearPriorSnapshots() throws IOException {
     for(String file : dir.listAll()) {
       if (file.startsWith(SNAPSHOTS_PREFIX)) {
-        dir.deleteFiles(Collections.singleton(file));
+        dir.deleteFile(file);
       }
     }
   }

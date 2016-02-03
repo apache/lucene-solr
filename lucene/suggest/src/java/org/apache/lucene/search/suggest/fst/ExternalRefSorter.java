@@ -69,7 +69,7 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
         success = true;
       } finally {
         if (success) {
-          sorter.getDirectory().deleteFiles(Collections.singleton(input.getName()));
+          sorter.getDirectory().deleteFile(input.getName());
         } else {
           IOUtils.deleteFilesIgnoringExceptions(sorter.getDirectory(), input.getName());
         }

@@ -161,7 +161,7 @@ final class Lucene50CompoundReader extends Directory {
   /** Not implemented
    * @throws UnsupportedOperationException always: not supported by CFS */
   @Override
-  public void deleteFiles(Collection<String> name) {
+  public void deleteFile(String name) {
     throw new UnsupportedOperationException();
   }
   

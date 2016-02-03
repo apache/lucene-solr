@@ -694,20 +694,24 @@ final class IndexFileDeleter implements Closeable {
   private void deleteFiles(Collection<String> names) throws IOException {
     assert locked();
     ensureOpen();
-    if (names.isEmpty()) {
-      return;
+
+    if (infoStream.isEnabled("IFD")) {
+      infoStream.message("IFD", "delete \"" + names + "\"");
     }
-    try {
-      if (infoStream.isEnabled("IFD")) {
-        infoStream.message("IFD", "delete \"" + names + "\"");
-      }
-      directory.deleteFiles(names);
-    } catch (NoSuchFileException | FileNotFoundException e) {  // if delete fails
-      // IndexWriter should only ask us to delete files it knows it wrote, so if we hit this, something is wrong!
-      if (Constants.WINDOWS) {
-        // LUCENE-6684: we suppress this assert for Windows, since a file could be in a confusing "pending delete" state:
-      } else {
-        throw e;
+
+    // nocommit put annoying windows-specific segments_N heroics back?
+
+    for(String name : names) {
+      try {
+        directory.deleteFile(name);
+      } catch (NoSuchFileException | FileNotFoundException e) {
+        // IndexWriter should only ask us to delete files it knows it wrote, so if we hit this, something is wrong!
+        if (Constants.WINDOWS) {
+          // LUCENE-6684: we suppress this assert for Windows, since a file could be in a confusing "pending delete" state, and falsely
+          // return NSFE/FNFE
+        } else {
+          throw e;
+        }
       }
     }
   }

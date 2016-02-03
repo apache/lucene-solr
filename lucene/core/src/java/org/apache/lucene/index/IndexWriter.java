@@ -4617,6 +4617,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  commits are no longer needed. Otherwise, those commits will
    *  be deleted the next time commit() is called.
    */
+  // nocommit remove this
   public synchronized void deleteUnusedFiles() throws IOException {
     ensureOpen(false);
     deleter.revisitPolicy();

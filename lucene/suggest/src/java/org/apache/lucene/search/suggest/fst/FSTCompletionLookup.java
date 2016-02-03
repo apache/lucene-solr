@@ -204,7 +204,7 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
       // We don't know the distribution of scores and we need to bucket them, so we'll sort
       // and divide into equal buckets.
       tempSortedFileName = sorter.sort(tempInput.getName());
-      tempDir.deleteFiles(Collections.singleton(tempInput.getName()));
+      tempDir.deleteFile(tempInput.getName());
 
       FSTCompletionBuilder builder = new FSTCompletionBuilder(
           buckets, externalSorter, sharedTailLength);

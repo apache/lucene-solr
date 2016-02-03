@@ -17,9 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.IOException;
-import java.util.Arrays;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -48,7 +45,9 @@ public class TestCodecHoldsOpenFiles extends LuceneTestCase {
     w.commit();
     w.close();
 
-    d.deleteFiles(Arrays.asList(d.listAll()));
+    for (String name : d.listAll()) {
+      d.deleteFile(name);
+    }
 
     for(LeafReaderContext cxt : r.leaves()) {
       TestUtil.checkReader(cxt.reader());

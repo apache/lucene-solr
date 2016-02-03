@@ -48,7 +48,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
 /** JUnit adaptation of an older test case DocTest. */
@@ -234,7 +233,9 @@ public class TestDoc extends LuceneTestCase {
       Collection<String> filesToDelete = si.files();
       codec.compoundFormat().write(dir, si, context);
       si.setUseCompoundFile(true);
-      si1.info.dir.deleteFiles(filesToDelete);
+      for(String name : filesToDelete) {
+        si1.info.dir.deleteFile(name);
+      }
     }
 
     return new SegmentCommitInfo(si, 0, -1L, -1L, -1L);

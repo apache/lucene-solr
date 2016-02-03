@@ -18,7 +18,6 @@ package org.apache.lucene.util.fst;
  */
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Random;
 
 import org.apache.lucene.store.Directory;
@@ -128,7 +127,7 @@ public class Test2BFST extends LuceneTestCase {
             fst = new FST<>(in, outputs);
             in.close();
           } else {
-            dir.deleteFiles(Collections.singleton("fst"));
+            dir.deleteFile("fst");
           }
         }
       }
@@ -205,7 +204,7 @@ public class Test2BFST extends LuceneTestCase {
             fst = new FST<>(in, outputs);
             in.close();
           } else {
-            dir.deleteFiles(Collections.singleton("fst"));
+            dir.deleteFile("fst");
           }
         }
       }
@@ -289,7 +288,7 @@ public class Test2BFST extends LuceneTestCase {
             fst = new FST<>(in, outputs);
             in.close();
           } else {
-            dir.deleteFiles(Collections.singleton("fst"));
+            dir.deleteFile("fst");
           }
         }
       }

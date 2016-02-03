@@ -57,14 +57,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 
 @SuppressCodecs("SimpleText") // too slow here
@@ -916,7 +916,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
           isCommit = true;
         }
-        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "deleteFiles".equals(trace[i].getMethodName())) {
+        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "deleteFile".equals(trace[i].getMethodName())) {
           isDelete = true;
         }
         if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && "writeGlobalFieldMap".equals(trace[i].getMethodName())) {
@@ -1205,7 +1205,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       }
       in.close();
       out.close();
-      dir.deleteFiles(Collections.singleton(fileNameIn));
+      dir.deleteFile(fileNameIn);
 
       IndexReader reader = null;
       try {
@@ -1255,7 +1255,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       assertTrue(si.info.getUseCompoundFile());
       List<String> victims = new ArrayList<String>(si.info.files());
       Collections.shuffle(victims, random());
-      dir.deleteFiles(Collections.singleton(victims.get(0)));
+      dir.deleteFile(victims.get(0));
       corrupted = true;
       break;
     }

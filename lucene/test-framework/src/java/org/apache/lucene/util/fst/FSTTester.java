@@ -317,7 +317,7 @@ public class FSTTester<T> {
         fst = new FST<>(in, outputs);
       } finally {
         in.close();
-        dir.deleteFiles(Collections.singleton("fst.bin"));
+        dir.deleteFile("fst.bin");
       }
     }
 

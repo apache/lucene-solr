@@ -148,7 +148,7 @@ public class SimpleTextCompoundFormat extends CompoundFormat {
       public void sync(Collection<String> names) { throw new UnsupportedOperationException(); }
       
       @Override
-      public void deleteFiles(Collection<String> name) { throw new UnsupportedOperationException(); }
+      public void deleteFile(String name) { throw new UnsupportedOperationException(); }
       
       @Override
       public void renameFile(String source, String dest) { throw new UnsupportedOperationException(); }

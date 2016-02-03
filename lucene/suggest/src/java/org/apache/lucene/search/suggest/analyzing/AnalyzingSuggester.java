@@ -487,7 +487,7 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
       tempSortedFileName = sorter.sort(tempInput.getName());
 
       // Free disk space:
-      tempDir.deleteFiles(Collections.singleton(tempInput.getName()));
+      tempDir.deleteFile(tempInput.getName());
 
       reader = new OfflineSorter.ByteSequencesReader(tempDir.openInput(tempSortedFileName, IOContext.READONCE));
      

@@ -38,10 +38,8 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -193,10 +191,12 @@ public final class IOUtils {
    * Note that the files should not be null.
    */
   public static void deleteFilesIgnoringExceptions(Directory dir, Collection<String> files) {
-    try {
-      dir.deleteFiles(files);
-    } catch (Throwable ignored) {
-      // ignore
+    for(String name : files) {
+      try {
+        dir.deleteFile(name);
+      } catch (Throwable ignored) {
+        // ignore
+      }
     }
   }
 
@@ -215,15 +215,21 @@ public final class IOUtils {
    * @param names file names to delete
    */
   public static void deleteFiles(Directory dir, Collection<String> names) throws IOException {
-    Set<String> nonNullNames = new HashSet<>();
-    for(String name : names) {
+    Throwable th = null;
+    for (String name : names) {
       if (name != null) {
-        nonNullNames.add(name);
+        try {
+          dir.deleteFile(name);
+        } catch (Throwable t) {
+          addSuppressed(th, t);
+          if (th == null) {
+            th = t;
+          }
+        }
       }
     }
-    if (names.isEmpty() == false) {
-      dir.deleteFiles(names);
-    }
+
+    reThrow(th);
   }
 
   public static void deleteFiles(Directory dir, String... files) throws IOException {

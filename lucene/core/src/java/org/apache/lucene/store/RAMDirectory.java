@@ -157,16 +157,14 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
   }
   
   @Override
-  public void deleteFiles(Collection<String> names) throws IOException {
+  public void deleteFile(String name) throws IOException {
     ensureOpen();
-    for(String name : names) {
-      RAMFile file = fileMap.remove(name);
-      if (file != null) {
-        file.directory = null;
-        sizeInBytes.addAndGet(-file.sizeInBytes);
-      } else {
-        throw new FileNotFoundException(name);
-      }
+    RAMFile file = fileMap.remove(name);
+    if (file != null) {
+      file.directory = null;
+      sizeInBytes.addAndGet(-file.sizeInBytes);
+    } else {
+      throw new FileNotFoundException(name);
     }
   }
 

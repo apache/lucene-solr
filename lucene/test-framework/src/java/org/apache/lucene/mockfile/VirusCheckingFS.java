@@ -46,6 +46,10 @@ public class VirusCheckingFS extends FilterFileSystemProvider {
     this.random = new Random(random.nextLong());
   }
 
+  public void enable() {
+    enabled = true;
+  }
+
   public void disable() {
     enabled = false;
   }
@@ -57,7 +61,7 @@ public class VirusCheckingFS extends FilterFileSystemProvider {
         && Files.exists(path) // important that we NOT delay a NoSuchFileException until later
         && path.getFileName().toString().equals(IndexWriter.WRITE_LOCK_NAME) == false // life is particularly difficult if the virus checker hits our lock file
         && random.nextInt(5) == 1) {
-      if (true || LuceneTestCase.VERBOSE) {
+      if (LuceneTestCase.VERBOSE) {
         System.out.println("NOTE: VirusCheckingFS now refusing to delete " + path);
       }
       throw new AccessDeniedException("VirusCheckingFS is randomly refusing to delete file \"" + path + "\"");

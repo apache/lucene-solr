@@ -140,20 +140,11 @@ public class FileSwitchDirectory extends Directory {
   }
 
   @Override
-  public void deleteFiles(Collection<String> names) throws IOException {
-    Set<String> primaryToDelete = new HashSet<>();
-    Set<String> secondaryToDelete = new HashSet<>();
-    for(String name : names) {
-      if (getDirectory(name) == primaryDir) {
-        primaryToDelete.add(name);
-      } else {
-        secondaryToDelete.add(name);
-      }
-    }
-    try {
-      primaryDir.deleteFiles(primaryToDelete);
-    } finally {
-      secondaryDir.deleteFiles(secondaryToDelete);
+  public void deleteFile(String name) throws IOException {
+    if (getDirectory(name) == primaryDir) {
+      primaryDir.deleteFile(name);
+    } else {
+      secondaryDir.deleteFile(name);
     }
   }
 

@@ -43,7 +43,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NoDeletionPolicy;
-import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -279,7 +278,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
       if (damage == 0) {
         action = "deleted";
-        deleteFiles(Collections.singleton(name));
+        deleteFile(name);
       } else if (damage == 1) {
         action = "zeroed";
         // Zero out file entirely
@@ -313,7 +312,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         ii.close();
 
         // Delete original and copy bytes back:
-        deleteFiles(Collections.singleton(name));
+        deleteFile(name);
         
         try(IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
           ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState));
@@ -328,14 +327,14 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
             throw ioe;
           }
         }
-        deleteFiles(Collections.singleton(tempFileName));
+        deleteFile(tempFileName);
       } else if (damage == 3) {
         // The file survived intact:
         action = "didn't change";
       } else {
         action = "fully truncated";
         // Totally truncate the file to zero bytes
-        deleteFiles(Collections.singleton(name));
+        deleteFile(name);
         try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
         } catch (IOException ioe) {
           // VirusCheckingFS may have blocked the delete, at which point FSDir cannot overwrite here
@@ -449,7 +448,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   @Override
-  public synchronized void deleteFiles(Collection<String> names) throws IOException {
+  public synchronized void deleteFile(String name) throws IOException {
     maybeYield();
 
     maybeThrowDeterministicException();
@@ -458,19 +457,17 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw new IOException("cannot delete after crash");
     }
 
-    for(String name : names) {
-      if (openFiles.containsKey(name)) {
-        openFilesDeleted.add(name);
-        if (assertNoDeleteOpenFile) {
-          throw (IOException) fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot delete"), name, true);
-        }
-      } else {
-        openFilesDeleted.remove(name);
+    if (openFiles.containsKey(name)) {
+      openFilesDeleted.add(name);
+      if (assertNoDeleteOpenFile) {
+        throw (IOException) fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot delete"), name, true);
       }
+    } else {
+      openFilesDeleted.remove(name);
     }
 
-    unSyncedFiles.removeAll(names);
-    in.deleteFiles(names);
+    unSyncedFiles.remove(name);
+    in.deleteFile(name);
   }
 
   // sets the cause of the incoming ioe to be the stack

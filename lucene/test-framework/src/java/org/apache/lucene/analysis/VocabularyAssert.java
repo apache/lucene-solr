@@ -76,7 +76,7 @@ public class VocabularyAssert {
   
   /** Run a vocabulary test against a tab-separated data file inside a zip file */
   public static void assertVocabulary(Analyzer a, Path zipFile, String vocOut) throws IOException {
-    Path tmp = LuceneTestCase.createTempDir();
+    Path tmp = LuceneTestCase.createTempDir().resolve("unzipped");
     try (InputStream in = Files.newInputStream(zipFile)) {
       TestUtil.unzip(in, tmp);
     }
