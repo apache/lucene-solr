@@ -148,7 +148,6 @@ public class NativeUnixDirectory extends FSDirectory {
     if (context.context != Context.MERGE || context.mergeInfo.estimatedMergeBytes < minBytesDirect) {
       return delegate.createOutput(name, context);
     } else {
-      ensureCanWrite(name);
       return new NativeUnixIndexOutput(getDirectory().resolve(name), mergeBufferSize);
     }
   }

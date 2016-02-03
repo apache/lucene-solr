@@ -19,11 +19,12 @@ package org.apache.lucene.store;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
+import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.channels.ClosedChannelException; // javadoc @link
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -220,13 +221,7 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
-
-    ensureCanWrite(name);
     return new FSIndexOutput(name);
-  }
-
-  protected void ensureCanWrite(String name) throws IOException {
-    Files.deleteIfExists(directory.resolve(name)); // delete existing, if any
   }
 
   @Override
@@ -273,7 +268,8 @@ public abstract class FSDirectory extends BaseDirectory {
     static final int CHUNK_SIZE = 8192;
     
     public FSIndexOutput(String name) throws IOException {
-      super("FSIndexOutput(path=\"" + directory.resolve(name) + "\")", new FilterOutputStream(Files.newOutputStream(directory.resolve(name))) {
+      super("FSIndexOutput(path=\"" + directory.resolve(name) + "\")", new FilterOutputStream(Files.newOutputStream(directory.resolve(name),
+                                                                                                                    StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.WRITE)) {
         // This implementation ensures, that we never write more than CHUNK_SIZE bytes:
         @Override
         public void write(byte[] b, int offset, int length) throws IOException {
