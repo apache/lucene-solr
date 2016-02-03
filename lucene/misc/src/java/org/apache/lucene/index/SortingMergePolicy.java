@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.analysis.Analyzer; // javadocs
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
@@ -55,7 +54,7 @@ import org.apache.lucene.util.packed.PackedLongValues;
  *  the order of documents in a segment depend on the number of times the segment 
  *  has been merged.
  *  @lucene.experimental */
-public final class SortingMergePolicy extends MergePolicy {
+public final class SortingMergePolicy extends MergePolicyWrapper {
 
   /**
    * Put in the {@link SegmentInfo#getDiagnostics() diagnostics} to denote that
@@ -221,13 +220,12 @@ public final class SortingMergePolicy extends MergePolicy {
     return sortingSpec;
   }
 
-  final MergePolicy in;
   final Sorter sorter;
   final Sort sort;
 
   /** Create a new {@code MergePolicy} that sorts documents with the given {@code sort}. */
   public SortingMergePolicy(MergePolicy in, Sort sort) {
-    this.in = in;
+    super(in);
     this.sorter = new Sorter(sort);
     this.sort = sort;
   }
@@ -254,17 +252,6 @@ public final class SortingMergePolicy extends MergePolicy {
   public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer)
       throws IOException {
     return sortedMergeSpecification(in.findForcedDeletesMerges(segmentInfos, writer), writer.infoStream);
-  }
-
-  @Override
-  public boolean useCompoundFile(SegmentInfos segments,
-      SegmentCommitInfo newSegment, IndexWriter writer) throws IOException {
-    return in.useCompoundFile(segments, newSegment, writer);
-  }
-
-  @Override
-  protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
-    return in.size(info, writer);
   }
 
   @Override

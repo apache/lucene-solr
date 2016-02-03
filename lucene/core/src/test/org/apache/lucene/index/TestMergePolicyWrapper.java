@@ -1,10 +1,3 @@
-package org.apache.solr.util;
-
-import java.io.IOException;
-
-import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.SegmentInfos;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,16 +14,24 @@ import org.apache.lucene.index.SegmentInfos;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
 
-public class TestRandomForceMergePolicy extends TestRandomMergePolicy {
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
-  /**
-   * Ensure it finds no merges
-   */
-  public void testFindMerges() throws IOException {
-    MergePolicy mp = new RandomForceMergePolicy();
-    assertNull(mp.findMerges(null, (SegmentInfos)null, null));
+import org.apache.lucene.util.LuceneTestCase;
+
+public class TestMergePolicyWrapper extends LuceneTestCase {
+
+  public void testMethodsOverridden() throws Exception {
+    for (Method m : MergePolicy.class.getDeclaredMethods()) {
+      if (Modifier.isFinal(m.getModifiers())) continue;
+      try {
+        MergePolicyWrapper.class.getDeclaredMethod(m.getName(),  m.getParameterTypes());
+      } catch (NoSuchMethodException e) {
+        fail("MergePolicyWrapper needs to override '" + m + "'");
+      }
+    }
   }
 
 }
-

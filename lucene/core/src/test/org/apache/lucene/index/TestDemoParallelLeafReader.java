@@ -505,7 +505,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     }
 
     /** Just replaces the sub-readers with parallel readers, so reindexed fields are merged into new segments. */
-    private class ReindexingMergePolicy extends MergePolicy {
+    private class ReindexingMergePolicy extends MergePolicyWrapper {
 
       class ReindexingOneMerge extends OneMerge {
 
@@ -596,11 +596,9 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         return wrapped;
       }
 
-      final MergePolicy in;
-
       /** Create a new {@code MergePolicy} that sorts documents with the given {@code sort}. */
       public ReindexingMergePolicy(MergePolicy in) {
-        this.in = in;
+        super(in);
       }
 
       @Override
