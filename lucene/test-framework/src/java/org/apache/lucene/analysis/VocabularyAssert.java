@@ -25,8 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.Assert;
@@ -76,7 +74,7 @@ public class VocabularyAssert {
   
   /** Run a vocabulary test against a tab-separated data file inside a zip file */
   public static void assertVocabulary(Analyzer a, Path zipFile, String vocOut) throws IOException {
-    Path tmp = LuceneTestCase.createTempDir().resolve("unzipped");
+    Path tmp = LuceneTestCase.createTempDir();
     try (InputStream in = Files.newInputStream(zipFile)) {
       TestUtil.unzip(in, tmp);
     }

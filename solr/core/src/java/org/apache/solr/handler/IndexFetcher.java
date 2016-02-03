@@ -1206,7 +1206,7 @@ public class IndexFetcher {
         }
       }
       try {
-        dir.deleteFiles(Collections.singleton(IndexFetcher.INDEX_PROPERTIES));
+        dir.deleteFile(IndexFetcher.INDEX_PROPERTIES);
       } catch (IOException e) {
         // no problem
       }
@@ -1651,7 +1651,7 @@ public class IndexFetcher {
     }
 
     public void delete() throws Exception {
-      copy2Dir.deleteFiles(Collections.singleton(saveAs));
+      copy2Dir.deleteFile(saveAs);
     }
   }
 

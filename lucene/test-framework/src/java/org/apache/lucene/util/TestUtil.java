@@ -108,7 +108,6 @@ import org.junit.Assert;
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
-
 /**
  * General utility methods for Lucene unit tests. 
  */
@@ -118,14 +117,12 @@ public final class TestUtil {
   }
 
   /** 
-   * Convenience method unzipping zipName into destDir, cleaning up 
-   * destDir first.
+   * Convenience method unzipping zipName into destDir. You must pass it a clean destDir.
+   *
    * Closes the given InputStream after extracting! 
    */
   public static void unzip(InputStream in, Path destDir) throws IOException {
     in = new BufferedInputStream(in);
-    IOUtils.rm(destDir);
-    Files.createDirectory(destDir);
 
     try (ZipInputStream zipInput = new ZipInputStream(in)) {
       ZipEntry entry;

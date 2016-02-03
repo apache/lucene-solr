@@ -17,11 +17,9 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -112,7 +110,7 @@ public class RestoreCore implements Callable<Boolean> {
         try {
           dir = core.getDirectoryFactory().get(core.getDataDir(), DirectoryFactory.DirContext.META_DATA,
               core.getSolrConfig().indexConfig.lockType);
-          dir.deleteFiles(Collections.singleton(IndexFetcher.INDEX_PROPERTIES));
+          dir.deleteFile(IndexFetcher.INDEX_PROPERTIES);
         } finally {
           if (dir != null) {
             core.getDirectoryFactory().release(dir);

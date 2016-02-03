@@ -47,7 +47,6 @@ public abstract class Directory implements Closeable {
    * 
    * @throws IOException in case of IO error
    */
-  // nocommit should this sort?
   public abstract String[] listAll() throws IOException;
 
   /** Removes an existing file in the directory. */

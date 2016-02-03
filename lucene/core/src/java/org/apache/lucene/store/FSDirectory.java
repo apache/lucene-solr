@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -217,7 +218,12 @@ public abstract class FSDirectory extends BaseDirectory {
       }
     }
     
-    return entries.toArray(new String[entries.size()]);
+    String[] array = entries.toArray(new String[entries.size()]);
+
+    // Don't let filesystem specifics leak out of this abstraction:
+    Arrays.sort(array);
+
+    return array;
   }
 
   @Override
@@ -249,7 +255,7 @@ public abstract class FSDirectory extends BaseDirectory {
         return new FSIndexOutput(name,
                                  StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
       } catch (FileAlreadyExistsException faee) {
-        // Retry with next random name
+        // Retry with next incremented name
       }
     }
   }
@@ -303,11 +309,12 @@ public abstract class FSDirectory extends BaseDirectory {
 
   @Override
   public void deleteFile(String name) throws IOException {  
-    pendingDeletes.remove(name);
     try {
       Files.delete(directory.resolve(name));
+      pendingDeletes.remove(name);
     } catch (NoSuchFileException | FileNotFoundException e) {
       // We were asked to delete a non-existent file:
+      pendingDeletes.remove(name);
       throw e;
     } catch (IOException ioe) {
       // On windows, a file delete can fail because there's still an open

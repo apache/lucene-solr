@@ -1,19 +1,5 @@
 package org.apache.lucene.facet.taxonomy.directory;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.DiskOrdinalMap;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.TestUtil;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -31,6 +17,21 @@ import org.apache.lucene.util.TestUtil;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.lucene.facet.FacetTestCase;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.DiskOrdinalMap;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.MemoryOrdinalMap;
+import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter.OrdinalMap;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.TestUtil;
+
+//@SuppressFileSystems("VirusCheckingFS")
 public class TestAddTaxonomy extends FacetTestCase {
 
   private void dotest(int ncats, final int range) throws Exception {

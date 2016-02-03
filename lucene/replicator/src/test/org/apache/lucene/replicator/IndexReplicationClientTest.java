@@ -33,12 +33,14 @@ import org.apache.lucene.replicator.ReplicationClient.SourceDirectoryFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+@SuppressFileSystems("VirusCheckingFS")
 public class IndexReplicationClientTest extends ReplicatorTestCase {
   
   private static class IndexReadyCallback implements Callable<Boolean>, Closeable {

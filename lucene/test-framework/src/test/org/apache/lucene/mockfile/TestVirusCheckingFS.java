@@ -30,7 +30,7 @@ public class TestVirusCheckingFS extends MockFileSystemTestCase {
   
   @Override
   protected Path wrap(Path path) {
-    FileSystem fs = new VirusCheckingFS(path.getFileSystem(), random()).getFileSystem(URI.create("file:///"));
+    FileSystem fs = new VirusCheckingFS(path.getFileSystem(), random().nextLong()).getFileSystem(URI.create("file:///"));
     return new FilterPath(path, fs);
   }
   

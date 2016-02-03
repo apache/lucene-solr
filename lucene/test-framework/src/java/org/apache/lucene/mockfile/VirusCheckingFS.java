@@ -22,7 +22,7 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.LuceneTestCase;
@@ -33,17 +33,16 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class VirusCheckingFS extends FilterFileSystemProvider {
 
-  // nocommit cannot use random here
-  final Random random;
-
   private boolean enabled = true;
+
+  private final AtomicLong state;
 
   /** 
    * Create a new instance, wrapping {@code delegate}.
    */
-  public VirusCheckingFS(FileSystem delegate, Random random) {
+  public VirusCheckingFS(FileSystem delegate, long salt) {
     super("viruschecking://", delegate);
-    this.random = new Random(random.nextLong());
+    this.state = new AtomicLong(salt);
   }
 
   public void enable() {
@@ -56,11 +55,14 @@ public class VirusCheckingFS extends FilterFileSystemProvider {
 
   @Override
   public void delete(Path path) throws IOException {
+
+    // Fake but deterministic and hopefully portable like-randomness:
+    long hash = state.incrementAndGet() * path.getFileName().hashCode();
     
-    if (enabled // test infra disables when it's "really" time to delete after test is done
+    if (enabled // test infra disables when it's "really" time to delete after test is done, so it can reclaim temp dirs
         && Files.exists(path) // important that we NOT delay a NoSuchFileException until later
         && path.getFileName().toString().equals(IndexWriter.WRITE_LOCK_NAME) == false // life is particularly difficult if the virus checker hits our lock file
-        && random.nextInt(5) == 1) {
+        && (hash % 5) == 1) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("NOTE: VirusCheckingFS now refusing to delete " + path);
       }

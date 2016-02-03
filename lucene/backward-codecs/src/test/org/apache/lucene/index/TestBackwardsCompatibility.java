@@ -60,7 +60,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
@@ -584,7 +583,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       checker.close();
 
       dir.close();
-      IOUtils.rm(oldIndexDir);
     }
   }
   

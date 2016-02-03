@@ -36,17 +36,14 @@ import org.apache.lucene.replicator.Replicator;
 import org.apache.lucene.replicator.ReplicatorTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-
+@SuppressFileSystems("VirusCheckingFS")
 public class HttpReplicatorTest extends ReplicatorTestCase {
   private Path clientWorkDir;
   private Replicator serverReplicator;
