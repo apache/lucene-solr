@@ -75,15 +75,18 @@ import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
@@ -2703,26 +2706,43 @@ public class TestIndexWriter extends LuceneTestCase {
     IOUtils.close(r, r2, w, dir);
   }
 
-  // nocommit turn test on once we have VirusCheckingFS
-  /*
   public void testWithPendingDeletions() throws Exception {
-    try (FSDirectory dir = FSDirectory.open(createTempDir())) {
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
+
+    Path path = createTempDir();
+
+    // Use WindowsFS to prevent open files from being deleted:
+    FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path root = new FilterPath(path, fs);
+
+    // MMapDirectory doesn't work because it closes its file handles after mapping!
+    try (FSDirectory dir = new SimpleFSDirectory(root)) {
       IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
       IndexWriter w = new IndexWriter(dir, iwc);
       w.commit();
-      IndexInput in = dir.openInput("segments_0", IOContext.DEFAULT);
+      IndexInput in = dir.openInput("segments_1", IOContext.DEFAULT);
       w.addDocument(new Document());
       w.close();
       assertTrue(dir.checkPendingDeletions());
+
+      // make sure we get NFSF if we try to delete and already-pending-delete file:
+      try {
+        dir.deleteFile("segments_1");
+        fail("didn't hit exception");
+      } catch (NoSuchFileException nfse) {
+        // expected
+      }
+
       iwc = new IndexWriterConfig(new MockAnalyzer(random()));
       try {
         w = new IndexWriter(dir, iwc);
       } catch (IllegalArgumentException iae) {
         assertEquals("Directory still has pending deleted files", iae.getMessage());
       }
+      in.close();
     }
   }
-  */
 
   public void testLeftoverTempFiles() throws Exception {
     Directory dir = newDirectory();

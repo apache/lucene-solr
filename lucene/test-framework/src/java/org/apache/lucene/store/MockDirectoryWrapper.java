@@ -742,7 +742,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
             System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
           } 
 
-          // nocommit: we should also confirm all prior segments_N are not corrupt?
           TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true);
           
           // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles

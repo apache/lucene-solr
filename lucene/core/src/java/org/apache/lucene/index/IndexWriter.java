@@ -4617,8 +4617,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  commits are no longer needed. Otherwise, those commits will
    *  be deleted the next time commit() is called.
    */
-  // nocommit remove this
   public synchronized void deleteUnusedFiles() throws IOException {
+    // TODO: should we remove this method now that it's the Directory's job to retry deletions?  Except, for the super expert IDP use case
+    // it's still needed?
     ensureOpen(false);
     deleter.revisitPolicy();
   }

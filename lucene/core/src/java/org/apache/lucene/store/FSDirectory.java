@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
@@ -129,7 +130,9 @@ public abstract class FSDirectory extends BaseDirectory {
 
   /** Maps files that we are trying to delete (or we tried already but failed)
    *  before attempting to delete that key. */
-  protected final Set<String> pendingDeletes = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
+  private final Set<String> pendingDeletes = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
+
+  private final AtomicInteger opsSinceLastDelete = new AtomicInteger();
 
   /** Used to generate temp file names in {@link #createTempOutput}. */
   private final AtomicLong nextTempFileCounter = new AtomicLong();
@@ -241,17 +244,23 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public IndexOutput createOutput(String name, IOContext context) throws IOException {
     ensureOpen();
-    // nocommit do we need to check pending deletes?
-    deletePendingFiles();
+
+    // If this file was pending delete, we are now bringing it back to life:
+    pendingDeletes.remove(name);
+    maybeDeletePendingFiles();
     return new FSIndexOutput(name);
   }
 
   @Override
   public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
     ensureOpen();
+    maybeDeletePendingFiles();
     while (true) {
       try {
         String name = IndexFileNames.segmentFileName(prefix, suffix + "_" + Long.toString(nextTempFileCounter.getAndIncrement(), Character.MAX_RADIX), "tmp");
+        if (pendingDeletes.contains(name)) {
+          continue;
+        }
         return new FSIndexOutput(name,
                                  StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW);
       } catch (FileAlreadyExistsException faee) {
@@ -261,7 +270,7 @@ public abstract class FSDirectory extends BaseDirectory {
   }
 
   protected void ensureCanRead(String name) throws IOException {
-    deletePendingFiles();
+    maybeDeletePendingFiles();
     if (pendingDeletes.contains(name)) {
       throw new NoSuchFileException("file \"" + name + "\" is pending delete and cannot be opened for read");
     }
@@ -270,6 +279,7 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public void sync(Collection<String> names) throws IOException {
     ensureOpen();
+    maybeDeletePendingFiles();
 
     for (String name : names) {
       fsync(name);
@@ -279,6 +289,7 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public void renameFile(String source, String dest) throws IOException {
     ensureOpen();
+    maybeDeletePendingFiles();
     Files.move(directory.resolve(source), directory.resolve(dest), StandardCopyOption.ATOMIC_MOVE);
     // TODO: should we move directory fsync to a separate 'syncMetadata' method?
     // for example, to improve listCommits(), IndexFileDeleter could also call that after deleting segments_Ns
@@ -288,7 +299,7 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public synchronized void close() throws IOException {
     isOpen = false;
-    deletePendingFiles();
+    maybeDeletePendingFiles();
   }
 
   /** @return the underlying filesystem directory */
@@ -303,12 +314,48 @@ public abstract class FSDirectory extends BaseDirectory {
   }
 
   protected void fsync(String name) throws IOException {
-    deletePendingFiles();
     IOUtils.fsync(directory.resolve(name), false);
   }
 
   @Override
   public void deleteFile(String name) throws IOException {  
+    if (pendingDeletes.contains(name)) {
+      throw new NoSuchFileException("file \"" + name + "\" is already pending delete");
+    }
+    privateDeleteFile(name);
+  }
+
+  /** Tries to delete any pending deleted files, and returns true if
+   *  there are still files that could not be deleted. */
+  public boolean checkPendingDeletions() throws IOException {
+    deletePendingFiles();
+    return pendingDeletes.isEmpty() == false;
+  }
+
+  /** Try to delete any pending files that we had previously tried to delete but failed
+   *  because we are on Windows and the files were still held open. */
+  public void deletePendingFiles() throws IOException {
+
+    // TODO: we could fix IndexInputs from FSDirectory subclasses to call this when they are closed?
+
+    // Clone the set since we mutate it in privateDeleteFile:
+    for(String name : new HashSet<>(pendingDeletes)) {
+      privateDeleteFile(name);
+    }
+  }
+
+  private void maybeDeletePendingFiles() throws IOException {
+    if (pendingDeletes.isEmpty() == false) {
+      // This is a silly heuristic to try to avoid O(N^2), where N = number of files pending deletion, behavior:
+      int count = opsSinceLastDelete.incrementAndGet();
+      if (count >= pendingDeletes.size()) {
+        opsSinceLastDelete.addAndGet(-count);
+        deletePendingFiles();
+      }
+    }
+  }
+
+  private void privateDeleteFile(String name) throws IOException {
     try {
       Files.delete(directory.resolve(name));
       pendingDeletes.remove(name);
@@ -328,28 +375,6 @@ public abstract class FSDirectory extends BaseDirectory {
       // TODO: can/should we do if (Constants.WINDOWS) here, else throw the exc?
       // but what about a Linux box with a CIFS mount?
       pendingDeletes.add(name);
-    }
-  }
-
-  /** Tries to delete any pending deleted files, and returns true if
-   *  there are still files that could not be deleted. */
-  public boolean checkPendingDeletions() throws IOException {
-    deletePendingFiles();
-    return pendingDeletes.isEmpty() == false;
-  }
-
-  /** Try to delete any pending files that we had previously tried to delete but failed
-   *  because we are on Windows and the files were still held open. */
-  public void deletePendingFiles() throws IOException {
-    // nocommit do we need exponential backoff here for windows?
-
-    // TODO: we could fix IndexInputs from FSDirectory subclasses to call this when they are closed?
-
-    Set<String> toDelete = new HashSet<>(pendingDeletes);
-
-    // nocommit heroic exceptions here or not?
-    for(String name : toDelete) {
-      deleteFile(name);
     }
   }
 
