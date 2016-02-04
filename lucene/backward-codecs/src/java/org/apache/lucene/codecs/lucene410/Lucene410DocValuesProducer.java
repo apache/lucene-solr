@@ -1,5 +1,3 @@
-package org.apache.lucene.codecs.lucene410;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.codecs.lucene410;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.lucene410;
 
 import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.BINARY_FIXED_UNCOMPRESSED;
 import static org.apache.lucene.codecs.lucene410.Lucene410DocValuesConsumer.BINARY_PREFIX_COMPRESSED;

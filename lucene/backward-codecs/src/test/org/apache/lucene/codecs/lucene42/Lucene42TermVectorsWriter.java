@@ -1,5 +1,3 @@
-package org.apache.lucene.codecs.lucene42;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.codecs.lucene42;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.lucene42;
 
 import static org.apache.lucene.codecs.lucene42.Lucene42TermVectorsReader.BLOCK_SIZE;
 import static org.apache.lucene.codecs.lucene42.Lucene42TermVectorsReader.CODEC_SFX_DAT;

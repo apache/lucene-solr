@@ -1,18 +1,3 @@
-package org.apache.lucene.codecs.lucene41;
-
-import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.FieldInfosFormat;
-import org.apache.lucene.codecs.NormsFormat;
-import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.SegmentInfoFormat;
-import org.apache.lucene.codecs.StoredFieldsFormat;
-import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40RWDocValuesFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40RWFieldInfosFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40RWNormsFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40RWSegmentInfoFormat;
-import org.apache.lucene.codecs.lucene40.Lucene40RWTermVectorsFormat;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -29,6 +14,20 @@ import org.apache.lucene.codecs.lucene40.Lucene40RWTermVectorsFormat;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.lucene41;
+
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
+import org.apache.lucene.codecs.StoredFieldsFormat;
+import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40RWDocValuesFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40RWFieldInfosFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40RWNormsFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40RWSegmentInfoFormat;
+import org.apache.lucene.codecs.lucene40.Lucene40RWTermVectorsFormat;
 
 /**
  * Read-write version of 4.1 codec for testing

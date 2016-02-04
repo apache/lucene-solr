@@ -1,19 +1,4 @@
 /*
- * Created on 25-Jan-2006
- */
-package org.apache.lucene.queryparser.xml.builders;
-
-import org.apache.lucene.queryparser.xml.*;
-import org.apache.lucene.search.CachingWrapperQuery;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.QueryCache;
-import org.apache.lucene.search.QueryWrapperFilter;
-import org.w3c.dom.Element;
-
-import java.util.Map;
-/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -29,6 +14,18 @@ import java.util.Map;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.queryparser.xml.builders;
+
+import org.apache.lucene.queryparser.xml.*;
+import org.apache.lucene.search.CachingWrapperQuery;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryCache;
+import org.apache.lucene.search.QueryWrapperFilter;
+import org.w3c.dom.Element;
+
+import java.util.Map;
 
 /**
  * Filters are cached in an LRU Cache keyed on the contained query or filter object. Using this will

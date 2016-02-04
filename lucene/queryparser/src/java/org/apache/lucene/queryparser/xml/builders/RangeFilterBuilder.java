@@ -1,15 +1,4 @@
 /*
- * Created on 25-Jan-2006
- */
-package org.apache.lucene.queryparser.xml.builders;
-
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.TermRangeFilter;
-import org.apache.lucene.queryparser.xml.DOMUtils;
-import org.apache.lucene.queryparser.xml.FilterBuilder;
-import org.apache.lucene.queryparser.xml.ParserException;
-import org.w3c.dom.Element;
-/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -25,7 +14,14 @@ import org.w3c.dom.Element;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.queryparser.xml.builders;
 
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.TermRangeFilter;
+import org.apache.lucene.queryparser.xml.DOMUtils;
+import org.apache.lucene.queryparser.xml.FilterBuilder;
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.w3c.dom.Element;
 
 /**
  * Builder for {@link TermRangeFilter}

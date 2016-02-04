@@ -1,11 +1,4 @@
 /*
- * Created on 25-Jan-2006
- */
-package org.apache.lucene.queryparser.xml;
-
-import org.apache.lucene.search.Filter;
-import org.w3c.dom.Element;
-/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -21,6 +14,11 @@ import org.w3c.dom.Element;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.queryparser.xml;
+
+import org.apache.lucene.search.Filter;
+import org.w3c.dom.Element;
+
 /**
  * Interface for building {@link Filter}s
  */
