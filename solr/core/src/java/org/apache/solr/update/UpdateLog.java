@@ -505,7 +505,9 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
-  /** Opens a new realtime searcher and clears the id caches */
+  /** Opens a new realtime searcher and clears the id caches.
+   * This may also be called when we updates are being buffered (from PeerSync/IndexFingerprint)
+   */
   public void openRealtimeSearcher() {
     synchronized (this) {
       // We must cause a new IndexReader to be opened before anything looks at these caches again
