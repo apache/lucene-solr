@@ -36,8 +36,6 @@ import javax.mail.search.*;
 
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 import com.sun.mail.gimap.GmailFolder;
