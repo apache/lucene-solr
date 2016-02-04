@@ -252,6 +252,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           updateRequest.setCommitWithin(getCommitWithin());
           updateRequest.setParams(params);
           updateRequest.setPath(getPath());
+          updateRequest.setBasicAuthCredentials(getBasicAuthUser(), getBasicAuthPassword());
           request = new LBHttpSolrClient.Req(updateRequest, urls);
           routes.put(leaderUrl, request);
         }

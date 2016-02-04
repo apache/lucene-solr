@@ -214,6 +214,8 @@ Bug Fixes
 * SOLR-8607: The Schema API refuses to add new fields that match existing dynamic fields.
   (Jan Høydahl, Steve Rowe)
 
+* SOLR-8640: CloudSolrClient does not send credentials for update request (noble, hoss)
+
 Optimizations
 ----------------------
 
