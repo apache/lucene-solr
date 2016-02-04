@@ -33,7 +33,8 @@
   <dependencies>
     <dependency org="javax.activation" name="activation" rev="${/javax.activation/activation}" conf="compile"/>
     <dependency org="com.sun.mail" name="javax.mail" rev="${/com.sun.mail/javax.mail}" conf="compile"/>
-    <dependency org="com.sun.mail" name="gimap" rev="${/com.sun.mail/gimap}" conf="compile"/>  
+    <dependency org="com.sun.mail" name="gimap" rev="${/com.sun.mail/gimap}" conf="compile"/>
+    <dependency org="joda-time" name="joda-time" rev="${/joda-time/joda-time}" conf="compile"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>

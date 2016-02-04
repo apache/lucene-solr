@@ -22,6 +22,8 @@ import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
 import org.apache.solr.util.RTimer;
 import org.apache.tika.Tika;
 import org.apache.tika.metadata.Metadata;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +53,12 @@ import com.sun.mail.gimap.GmailRawSearchTerm;
  * @since solr 1.4
  */
 public class MailEntityProcessor extends EntityProcessorBase {
-  
-  private static final SimpleDateFormat sinceDateParser = 
-      new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
-  private static final SimpleDateFormat afterFmt = 
-      new SimpleDateFormat("yyyy/MM/dd", Locale.ROOT);
+
+  private static final DateTimeFormatter sinceDateParser =
+          DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").withLocale(Locale.ROOT);
+  private static final DateTimeFormatter afterFmt =
+          DateTimeFormat.forPattern("yyyy/MM/dd").withLocale(Locale.ROOT);
+
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static interface CustomFilter {
@@ -119,13 +122,13 @@ public class MailEntityProcessor extends EntityProcessorBase {
       // initial value, in which case means we should use fetchMailsSince instead
       Date tmp = null;
       try {
-        tmp = sinceDateParser.parse((String)varValue);
+        tmp = sinceDateParser.parseDateTime((String)varValue).toDate();
         if (tmp.getTime() == 0) {
           LOG.info("Ignoring initial value "+varValue+" for "+varName+
               " in favor of fetchMailsSince config parameter");
           tmp = null; // don't use this value
         }
-      } catch (ParseException e) {
+      } catch (IllegalArgumentException e) {
         // probably ok to ignore this since we have other options below
         // as we're just trying to figure out if the date is 0
         LOG.warn("Failed to parse "+varValue+" from "+varName+" due to: "+e);
@@ -160,9 +163,9 @@ public class MailEntityProcessor extends EntityProcessorBase {
     this.fetchMailsSince = null;
     if (lastIndexTime != null && lastIndexTime.length() > 0) {
       try {
-        fetchMailsSince = sinceDateParser.parse(lastIndexTime);
+        fetchMailsSince = sinceDateParser.parseDateTime(lastIndexTime).toDate();
         LOG.info("Parsed fetchMailsSince=" + lastIndexTime);
-      } catch (ParseException e) {
+      } catch (IllegalArgumentException e) {
         throw new DataImportHandlerException(DataImportHandlerException.SEVERE,
             "Invalid value for fetchMailSince: " + lastIndexTime, e);
       }
@@ -639,7 +642,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
           // granularity only but the local filters are also applied
                     
           if (folder instanceof GmailFolder && fetchMailsSince != null) {
-            String afterCrit = "after:" + afterFmt.format(fetchMailsSince);
+            String afterCrit = "after:" + afterFmt.print(fetchMailsSince.getTime());
             LOG.info("Added server-side gmail filter: " + afterCrit);
             Message[] afterMessages = folder.search(new GmailRawSearchTerm(
                 afterCrit));
@@ -740,7 +743,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
     @SuppressWarnings("serial")
     public SearchTerm getCustomSearch(final Folder folder) {
       LOG.info("Building mail filter for messages in " + folder.getName()
-          + " that occur after " + sinceDateParser.format(since));
+          + " that occur after " + sinceDateParser.print(since.getTime()));
       return new DateTerm(ComparisonTerm.GE, since) {
         private int matched = 0;
         private int seen = 0;
@@ -757,8 +760,8 @@ public class MailEntityProcessor extends EntityProcessorBase {
               ++matched;
               isMatch = true;
             } else {
-              String msgDateStr = (msgDate != null) ? sinceDateParser.format(msgDate) : "null";
-              String sinceDateStr = (since != null) ? sinceDateParser.format(since) : "null";
+              String msgDateStr = (msgDate != null) ? sinceDateParser.print(msgDate.getTime()) : "null";
+              String sinceDateStr = (since != null) ? sinceDateParser.print(since.getTime()) : "null";
               LOG.debug("Message " + msg.getSubject() + " was received at [" + msgDateStr
                   + "], since filter is [" + sinceDateStr + "]");
             }
@@ -768,7 +771,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
           
           if (seen % 100 == 0) {
             LOG.info("Matched " + matched + " of " + seen + " messages since: "
-                + sinceDateParser.format(since));
+                + sinceDateParser.print(since.getTime()));
           }
           
           return isMatch;
