@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/** 
- * Various spatial utilities.
+
+/**
+ * Geospatial Utility Classes For Core Lucene
  */
 package org.apache.lucene.spatial.util;

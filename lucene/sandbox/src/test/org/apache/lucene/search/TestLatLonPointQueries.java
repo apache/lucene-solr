@@ -18,9 +18,9 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.util.BaseGeoPointTestCase;
-import org.apache.lucene.util.GeoDistanceUtils;
-import org.apache.lucene.util.GeoRect;
+import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
+import org.apache.lucene.spatial.util.GeoBoundingBox;
+import org.apache.lucene.spatial.util.GeoDistanceUtils;
 
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   // todo deconflict GeoPoint and BKD encoding methods and error tolerance
@@ -32,7 +32,7 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Query newRectQuery(String field, GeoRect rect) {
+  protected Query newRectQuery(String field, GeoBoundingBox rect) {
     return new PointInRectQuery(field, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
   }
 
@@ -53,7 +53,7 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Boolean rectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
+  protected Boolean rectContainsPoint(GeoBoundingBox rect, double pointLat, double pointLon) {
 
     assert Double.isNaN(pointLat) == false;
 
@@ -94,7 +94,7 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Boolean polyRectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
+  protected Boolean polyRectContainsPoint(GeoBoundingBox rect, double pointLat, double pointLon) {
     // TODO write better random polygon tests
     return rectContainsPoint(rect, pointLat, pointLon);
   }

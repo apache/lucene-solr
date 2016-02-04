@@ -17,7 +17,7 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.GeoUtils;
+import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.util.NumericUtils;
 
 /** Add this to a document to index lat/lon point dimensionally */

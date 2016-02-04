@@ -180,15 +180,15 @@ public class SloppyMath {
   }
 
   // haversin
-  static final double TO_RADIANS = Math.PI / 180D;
-  static final double TO_DEGREES = 180D / Math.PI;
+  public static final double TO_RADIANS = Math.PI / 180D;
+  public static final double TO_DEGREES = 180D / Math.PI;
   
   // cos/asin
   private static final double ONE_DIV_F2 = 1/2.0;
   private static final double ONE_DIV_F3 = 1/6.0;
   private static final double ONE_DIV_F4 = 1/24.0;
 
-  static final double PIO2 = Math.PI / 2D;
+  public static final double PIO2 = Math.PI / 2D;
   private static final double PIO2_HI = Double.longBitsToDouble(0x3FF921FB54400000L); // 1.57079632673412561417e+00 first 33 bits of pi/2
   private static final double PIO2_LO = Double.longBitsToDouble(0x3DD0B4611A626331L); // 6.07710050650619224932e-11 pi/2 - PIO2_HI
   private static final double TWOPI_HI = 4*PIO2_HI;
