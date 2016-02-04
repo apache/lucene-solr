@@ -168,6 +168,29 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     assertSync(client1, numVersions, true, shardsArr[0]);
     client0.commit(); client1.commit(); queryAndCompare(params("q", "*:*", "sort","_version_ desc"), client0, client1);
+
+    // now lets check fingerprinting causes appropriate fails
+    v = 4000;
+    add(client0, seenLeader, sdoc("id",Integer.toString((int)v),"_version_",v));
+    toAdd = numVersions+10;
+    for (int i=0; i<toAdd; i++) {
+      add(client0, seenLeader, sdoc("id",Integer.toString((int)v+i+1),"_version_",v+i+1));
+      add(client1, seenLeader, sdoc("id",Integer.toString((int)v+i+1),"_version_",v+i+1));
+    }
+
+    // client0 now has an additional add beyond our window and the fingerprint should cause this to fail
+    assertSync(client1, numVersions, false, shardsArr[0]);
+
+    // lets add the missing document and verify that order doesn't matter
+    add(client1, seenLeader, sdoc("id",Integer.toString((int)v),"_version_",v));
+    assertSync(client1, numVersions, true, shardsArr[0]);
+
+    // lets do some overwrites to ensure that repeated updates and maxDoc don't matter
+    for (int i=0; i<10; i++) {
+      add(client0, seenLeader, sdoc("id", Integer.toString((int) v + i + 1), "_version_", v + i + 1));
+    }
+    assertSync(client1, numVersions, true, shardsArr[0]);
+
   }
 
 
