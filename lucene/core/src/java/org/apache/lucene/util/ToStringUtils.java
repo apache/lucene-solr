@@ -1,7 +1,3 @@
-package org.apache.lucene.util;
-
-import org.apache.lucene.search.BoostQuery;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +14,9 @@ import org.apache.lucene.search.BoostQuery;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
+
+import org.apache.lucene.search.BoostQuery;
 
 /**
  * Helper methods to ease implementing {@link Object#toString()}.

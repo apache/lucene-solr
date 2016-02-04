@@ -1,4 +1,3 @@
-package org.apache.lucene.search.highlight;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,8 +14,7 @@ package org.apache.lucene.search.highlight;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
+package org.apache.lucene.search.highlight;
 /**
  * Low-level class used to record information about a section of a document 
  * with a score.

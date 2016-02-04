@@ -1,12 +1,3 @@
-package org.apache.lucene.queryparser.xml;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.queryparser.xml.builders.TermsFilterBuilder;
-import org.apache.lucene.queryparser.xml.builders.BooleanFilterBuilder;
-import org.apache.lucene.queryparser.xml.builders.LikeThisQueryBuilder;
-import org.apache.lucene.queryparser.xml.builders.BoostingQueryBuilder;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,6 +14,14 @@ import org.apache.lucene.queryparser.xml.builders.BoostingQueryBuilder;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.queryparser.xml;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.queryparser.xml.builders.BooleanFilterBuilder;
+import org.apache.lucene.queryparser.xml.builders.BoostingQueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.LikeThisQueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.TermsFilterBuilder;
 
 /**
  * Assembles a QueryBuilder which uses Query objects from

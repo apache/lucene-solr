@@ -1,9 +1,3 @@
-package org.apache.solr.handler.clustering.carrot2;
-
-import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,7 +14,11 @@ import com.google.common.collect.ImmutableSet;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.handler.clustering.carrot2;
 
+import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
 
 /**
  * Carrot2 parameter mapping (recognized and mapped if passed via Solr configuration).

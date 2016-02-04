@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 /** 
  * The logical representation of a {@link org.apache.lucene.document.Document} for indexing and searching.
  * <p>The document package provides the user level logical representation of content to be indexed and searched.  The

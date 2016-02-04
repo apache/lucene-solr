@@ -1,7 +1,3 @@
-package org.apache.lucene.queryparser.flexible.core.util;
-
-import java.util.Locale;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +14,9 @@ import java.util.Locale;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.queryparser.flexible.core.util;
+
+import java.util.Locale;
 
 /**
  * CharsSequence with escaped chars information.

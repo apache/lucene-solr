@@ -1,4 +1,3 @@
-package org.apache.lucene.expressions;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,6 +14,7 @@ package org.apache.lucene.expressions;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.expressions;
 
 import org.apache.lucene.expressions.js.JavascriptCompiler; // javadocs
 import org.apache.lucene.queries.function.FunctionValues;

@@ -1,16 +1,3 @@
-package org.apache.lucene.queryparser.xml.builders;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.queryparser.xml.DOMUtils;
-import org.apache.lucene.queryparser.xml.ParserException;
-import org.apache.lucene.queryparser.xml.QueryBuilder;
-import org.apache.lucene.sandbox.queries.FuzzyLikeThisQuery;
-import org.apache.lucene.sandbox.queries.SlowFuzzyQuery;
-import org.apache.lucene.search.BoostQuery;
-import org.apache.lucene.search.Query;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,6 +14,18 @@ import org.w3c.dom.NodeList;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.queryparser.xml.builders;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.queryparser.xml.DOMUtils;
+import org.apache.lucene.queryparser.xml.ParserException;
+import org.apache.lucene.queryparser.xml.QueryBuilder;
+import org.apache.lucene.sandbox.queries.FuzzyLikeThisQuery;
+import org.apache.lucene.sandbox.queries.SlowFuzzyQuery;
+import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.Query;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 /**
  * Builder for {@link FuzzyLikeThisQuery}

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.response.transform;
 
-
 /**
  *
  * @since solr 4.0

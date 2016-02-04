@@ -14,9 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-
-
 /**
  * Expression language for the Streaming Aggregation API
  **/

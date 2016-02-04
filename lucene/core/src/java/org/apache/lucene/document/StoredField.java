@@ -1,9 +1,3 @@
-package org.apache.lucene.document;
-
-import org.apache.lucene.index.IndexReader; // javadocs
-import org.apache.lucene.search.IndexSearcher; // javadocs
-import org.apache.lucene.util.BytesRef;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,6 +14,11 @@ import org.apache.lucene.util.BytesRef;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.document;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.util.BytesRef;
 
 /** A field whose value is stored so that {@link
  *  IndexSearcher#doc} and {@link IndexReader#document} will

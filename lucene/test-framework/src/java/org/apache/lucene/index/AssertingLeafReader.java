@@ -1,14 +1,3 @@
-package org.apache.lucene.index;
-
-import java.io.IOException;
-import java.util.Iterator;
-
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.VirtualMethod;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,6 +14,16 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
+import java.io.IOException;
+import java.util.Iterator;
+
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.VirtualMethod;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * A {@link FilterLeafReader} that can be used to apply

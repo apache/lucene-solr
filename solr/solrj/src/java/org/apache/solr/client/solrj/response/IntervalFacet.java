@@ -1,7 +1,3 @@
-package org.apache.solr.client.solrj.response;
-
-import java.util.List;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +14,10 @@ import java.util.List;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj.response;
+
+import java.util.List;
+
 /**
  * Objects of this class will contain the result of all the intervals defined
  * for a specific field. 

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 /** 
  * APIs and classes for {@linkplain org.apache.solr.search.QParserPlugin parsing} and {@linkplain org.apache.solr.search.SolrIndexSearcher processing} search requests
  */

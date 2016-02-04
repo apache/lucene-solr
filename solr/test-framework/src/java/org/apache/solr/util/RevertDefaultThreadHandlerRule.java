@@ -1,15 +1,3 @@
-package org.apache.solr.util;
-
-import java.lang.Thread.UncaughtExceptionHandler;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.apache.zookeeper.server.NIOServerCnxnFactory;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
-import com.carrotsearch.randomizedtesting.rules.StatementAdapter;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,6 +14,17 @@ import com.carrotsearch.randomizedtesting.rules.StatementAdapter;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.util;
+
+import java.lang.Thread.UncaughtExceptionHandler;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.apache.zookeeper.server.NIOServerCnxnFactory;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+
+import com.carrotsearch.randomizedtesting.rules.StatementAdapter;
 
 public final class RevertDefaultThreadHandlerRule implements TestRule {
   private final static AtomicBoolean applied = new AtomicBoolean();

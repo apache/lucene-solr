@@ -1,8 +1,3 @@
-package org.apache.lucene.util;
-
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +14,11 @@ import java.util.NoSuchElementException;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
+
+import java.util.Iterator;
+import java.util.NoSuchElementException;
+
 
 /**
  * A PriorityQueue maintains a partial ordering of its elements such that the

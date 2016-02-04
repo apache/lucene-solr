@@ -1,12 +1,3 @@
-package org.apache.solr.uima.processor.an;
-
-import org.apache.solr.uima.ts.EntityAnnotation;
-import org.apache.uima.TokenAnnotation;
-import org.apache.uima.analysis_component.JCasAnnotator_ImplBase;
-import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
-import org.apache.uima.jcas.JCas;
-import org.apache.uima.jcas.tcas.Annotation;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,6 +14,14 @@ import org.apache.uima.jcas.tcas.Annotation;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.uima.processor.an;
+
+import org.apache.solr.uima.ts.EntityAnnotation;
+import org.apache.uima.TokenAnnotation;
+import org.apache.uima.analysis_component.JCasAnnotator_ImplBase;
+import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
+import org.apache.uima.jcas.JCas;
+import org.apache.uima.jcas.tcas.Annotation;
 
 public class DummyEntityAnnotator extends JCasAnnotator_ImplBase{
 

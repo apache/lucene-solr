@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 /** 
  * This package is about SpatialPrefixTree and any supporting classes.
  * A SpatialPrefixTree supports spatial indexing by index-time tokens

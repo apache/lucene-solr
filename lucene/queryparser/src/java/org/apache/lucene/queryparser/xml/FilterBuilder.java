@@ -21,7 +21,6 @@ import org.w3c.dom.Element;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 /**
  * Interface for building {@link Filter}s
  */

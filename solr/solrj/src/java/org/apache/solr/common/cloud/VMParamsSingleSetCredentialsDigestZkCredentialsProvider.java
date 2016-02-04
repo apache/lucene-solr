@@ -1,12 +1,3 @@
-package org.apache.solr.common.cloud;
-
-import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import org.apache.solr.common.StringUtils;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,6 +14,14 @@ import org.apache.solr.common.StringUtils;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.common.cloud;
+
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import org.apache.solr.common.StringUtils;
 
 public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider extends DefaultZkCredentialsProvider {
   

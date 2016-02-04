@@ -1,14 +1,3 @@
-package org.apache.lucene.search.join;
-
-import java.io.IOException;
-import java.util.Locale;
-
-import org.apache.lucene.document.FieldType.NumericType;
-import org.apache.lucene.document.IntField;
-import org.apache.lucene.document.LongField;
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.DocValuesType;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,10 +14,16 @@ import org.apache.lucene.index.DocValuesType;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search.join;
 
 import java.io.IOException;
 import java.util.Locale;
 
+import org.apache.lucene.document.FieldType.NumericType;
+import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiDocValues;

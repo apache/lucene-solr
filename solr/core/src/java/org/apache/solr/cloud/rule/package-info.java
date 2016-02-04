@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 /** 
  * Classes for managing Replica placement strategy when operating in <a href="http://wiki.apache.org/solr/SolrCloud">SolrCloud</a> mode.
  */

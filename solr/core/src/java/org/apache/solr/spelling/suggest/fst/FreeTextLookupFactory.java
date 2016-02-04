@@ -1,15 +1,3 @@
-package org.apache.solr.spelling.suggest.fst;
-
-import java.nio.charset.StandardCharsets;
-
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.search.suggest.Lookup;
-import org.apache.lucene.search.suggest.analyzing.FreeTextSuggester;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.spelling.suggest.LookupFactory;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,6 +14,17 @@ import org.apache.solr.spelling.suggest.LookupFactory;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.spelling.suggest.fst;
+
+import java.nio.charset.StandardCharsets;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.analyzing.FreeTextSuggester;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.spelling.suggest.LookupFactory;
 
 /** 
  * LookupFactory implementation for {@link FreeTextSuggester}

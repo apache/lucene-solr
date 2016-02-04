@@ -1,8 +1,3 @@
-package org.apache.lucene.search;
-
-import org.apache.lucene.index.IndexReader; // javadocs
-import org.apache.lucene.index.Terms;       // javadocs
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +14,11 @@ import org.apache.lucene.index.Terms;       // javadocs
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search;
+
+import org.apache.lucene.index.IndexReader; // javadocs
+import org.apache.lucene.index.Terms;       // javadocs
+
 
 /**
  * Contains statistics for a collection (field)

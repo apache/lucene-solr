@@ -1,12 +1,3 @@
-package org.apache.lucene.facet.taxonomy;
-
-import java.io.Closeable;
-import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.lucene.store.AlreadyClosedException;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,6 +14,14 @@ import org.apache.lucene.store.AlreadyClosedException;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.facet.taxonomy;
+
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.lucene.store.AlreadyClosedException;
 
 /**
  * TaxonomyReader is the read-only interface with which the faceted-search

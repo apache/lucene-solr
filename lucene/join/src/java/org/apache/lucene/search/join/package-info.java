@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 /**
  * Support for index-time and query-time joins.
  * <h2>Index-time joins</h2>

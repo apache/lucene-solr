@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 /** 
  * Factories for {@linkplain org.apache.lucene.search.suggest.tst TST} based {@link org.apache.solr.spelling.suggest.Suggester}s
  */

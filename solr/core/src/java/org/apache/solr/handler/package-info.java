@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 /** 
  * Concrete implementations of {@link org.apache.solr.request.SolrRequestHandler}
  */

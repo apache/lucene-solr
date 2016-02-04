@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 /** 
  * {@link org.apache.solr.handler.extraction.ExtractingRequestHandler} and related code.
  */

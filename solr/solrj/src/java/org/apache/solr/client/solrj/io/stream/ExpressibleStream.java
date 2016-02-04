@@ -1,10 +1,3 @@
-package org.apache.solr.client.solrj.io.stream;
-
-import java.io.IOException;
-
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,6 +14,12 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj.io.stream;
+
+import java.io.IOException;
+
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
  * Defines a stream that can be expressed in an expression

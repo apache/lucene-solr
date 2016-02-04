@@ -1,5 +1,3 @@
-package org.apache.solr.search.similarities;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,13 +14,13 @@ package org.apache.solr.search.similarities;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.search.similarities;
+
 import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.common.params.SolrParams;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * @deprecated This class has been renamed to <code>ClassicSimilarityFactory</code> to reflect the renaming of the underlying Similarity returned.

@@ -1,7 +1,3 @@
-package org.apache.lucene.index;
-
-import java.io.IOException;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +14,10 @@ import java.io.IOException;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
+import java.io.IOException;
+
 
 /** This is a {@link LogMergePolicy} that measures size of a
  *  segment as the number of documents (not taking deletions

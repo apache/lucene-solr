@@ -1,5 +1,3 @@
-package org.apache.lucene.dependencies;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.dependencies;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.dependencies;
 
 import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.Project;

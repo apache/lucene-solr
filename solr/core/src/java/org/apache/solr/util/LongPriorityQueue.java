@@ -1,7 +1,3 @@
-package org.apache.solr.util;
-
-import java.util.Arrays;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +14,9 @@ import java.util.Arrays;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.util;
+
+import java.util.Arrays;
 
 /** A native long priority queue.
  * 

@@ -1,4 +1,3 @@
-package org.apache.solr.handler.clustering;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +14,7 @@ package org.apache.solr.handler.clustering;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+package org.apache.solr.handler.clustering;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;

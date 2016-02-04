@@ -1,20 +1,3 @@
-package org.apache.solr.client.solrj.impl;
-
-import java.util.Collection;
-
-import org.apache.http.cookie.ClientCookie;
-import org.apache.http.cookie.Cookie;
-import org.apache.http.cookie.CookieOrigin;
-import org.apache.http.cookie.CookieSpec;
-import org.apache.http.cookie.CookieSpecFactory;
-import org.apache.http.cookie.CookieSpecProvider;
-import org.apache.http.cookie.MalformedCookieException;
-import org.apache.http.cookie.params.CookieSpecPNames;
-import org.apache.http.impl.cookie.NetscapeDomainHandler;
-import org.apache.http.impl.cookie.NetscapeDraftSpec;
-import org.apache.http.params.HttpParams;
-import org.apache.http.protocol.HttpContext;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -31,6 +14,22 @@ import org.apache.http.protocol.HttpContext;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj.impl;
+
+import java.util.Collection;
+
+import org.apache.http.cookie.ClientCookie;
+import org.apache.http.cookie.Cookie;
+import org.apache.http.cookie.CookieOrigin;
+import org.apache.http.cookie.CookieSpec;
+import org.apache.http.cookie.CookieSpecFactory;
+import org.apache.http.cookie.CookieSpecProvider;
+import org.apache.http.cookie.MalformedCookieException;
+import org.apache.http.cookie.params.CookieSpecPNames;
+import org.apache.http.impl.cookie.NetscapeDomainHandler;
+import org.apache.http.impl.cookie.NetscapeDraftSpec;
+import org.apache.http.params.HttpParams;
+import org.apache.http.protocol.HttpContext;
 
 @SuppressWarnings("deprecation")
 public class SolrPortAwareCookieSpecFactory implements CookieSpecFactory, CookieSpecProvider {

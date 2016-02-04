@@ -1,13 +1,3 @@
-package org.apache.solr.util;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
-import com.google.common.collect.ImmutableMap;
-import com.spatial4j.core.distance.DistanceUtils;
-import org.apache.solr.schema.AbstractSpatialFieldType;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,6 +14,15 @@ import org.apache.solr.schema.AbstractSpatialFieldType;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.util;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableMap;
+import com.spatial4j.core.distance.DistanceUtils;
+import org.apache.solr.schema.AbstractSpatialFieldType;
 
 /**
  * Used with a spatial field type for all distance measurements.
