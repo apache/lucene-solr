@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -38,8 +37,8 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
-import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
@@ -165,7 +164,14 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     
     // parameters
     for(Entry<String,String> param : params.entrySet()){
-      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), param.getValue()));
+      String value = param.getValue();
+      
+      // SOLR-8409: This is a special case where the params contain a " character
+      // Do note that in any other BASE streams with parameters where a " might come into play
+      // that this same replacement needs to take place.
+      value = value.replace("\"", "\\\"");
+      
+      expression.addParameter(new StreamExpressionNamedParameter(param.getKey(), value));
     }
     
     // zkHost

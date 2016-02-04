@@ -1,7 +1,5 @@
 package org.apache.solr.client.solrj.io.stream.expr;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

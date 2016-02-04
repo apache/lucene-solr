@@ -158,6 +158,8 @@ Bug Fixes
   values settings when copying a FieldInfo (Ishan Chattopadhyaya via
   Mike McCandless)
 
+* SOLR-8409: Ensures that quotes in solr params (eg. q param) are properly handled (Dennis Gove)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been

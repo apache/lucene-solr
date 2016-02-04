@@ -308,6 +308,25 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
   }
   
   @Test
+  public void testCloudSolrStreamWithEscapedQuote() throws Exception {
+
+    // The purpose of this test is to ensure that a parameter with a contained " character is properly
+    // escaped when it is turned back into an expression. This is important when an expression is passed
+    // to a worker (parallel stream) or even for other reasons when an expression is string-ified.
+    
+    // Basic test
+    String originalExpressionString = "search(collection1,fl=\"id,first\",sort=\"first asc\",q=\"presentTitles:\\\"chief, executive officer\\\" AND age:[36 TO *]\")";
+    CloudSolrStream firstStream = new CloudSolrStream(StreamExpressionParser.parse(originalExpressionString), factory);
+    String firstExpressionString = firstStream.toExpression(factory).toString();
+    
+    CloudSolrStream secondStream = new CloudSolrStream(StreamExpressionParser.parse(firstExpressionString), factory);
+    String secondExpressionString = secondStream.toExpression(factory).toString();
+    
+    assertTrue(firstExpressionString.contains("q=\"presentTitles:\\\"chief, executive officer\\\" AND age:[36 TO *]\""));
+    assertTrue(secondExpressionString.contains("q=\"presentTitles:\\\"chief, executive officer\\\" AND age:[36 TO *]\""));
+  }
+  
+  @Test
   public void testCountMetric() throws Exception {
 
     Metric metric;

@@ -105,6 +105,15 @@ public class StreamExpressionParser {
           throw new IllegalArgumentException(String.format(Locale.ROOT,"'%s' is not a proper named parameter clause", working));
         }
       }
+      
+      // if contain \" replace with "
+      if(parameter.contains("\\\"")){
+        parameter = parameter.replace("\\\"", "\"");
+        if(0 == parameter.length()){
+          throw new IllegalArgumentException(String.format(Locale.ROOT,"'%s' is not a proper named parameter clause", working));
+        }
+      }
+      
       namedParameter.setParameter(new StreamExpressionValue(parameter));
     }
     
