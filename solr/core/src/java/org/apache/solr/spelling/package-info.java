@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
 /** 
  * APIs and classes used by the {@link org.apache.solr.handler.component.SpellCheckComponent}
  * <p>

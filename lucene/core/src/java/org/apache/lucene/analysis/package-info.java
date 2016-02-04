@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * Text analysis. 
  * <p>API and code to convert text into indexable/searchable tokens.  Covers {@link org.apache.lucene.analysis.Analyzer} and related classes.</p>

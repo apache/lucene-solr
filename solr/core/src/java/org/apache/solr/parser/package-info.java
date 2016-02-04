@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
 /** 
  * Solr native variant of the {@linkplain org.apache.lucene.queryparser.classic.QueryParser Lucene Classic QueryParser}
  */

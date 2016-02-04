@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
 /** 
  * Grouping related {@link org.apache.lucene.search.Collector}s
  */

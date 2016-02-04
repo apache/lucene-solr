@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/**
- * Metrics package
- **/
+ 
+/** 
+ * Regular expression Query.
+ */
 package org.apache.lucene.sandbox.queries.regex;
 

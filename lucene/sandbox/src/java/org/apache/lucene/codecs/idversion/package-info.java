@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
 /** 
  * A primary-key postings format that associates a version (long) with each term and
  * can provide fail-fast lookups by ID and version.

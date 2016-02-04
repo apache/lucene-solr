@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * Term dictionary, DocValues or Postings formats that are read 
  * entirely into memory.

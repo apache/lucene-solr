@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * An experimental postings format that automatically indexes appropriate
  * prefix terms for fast range and prefix queries.

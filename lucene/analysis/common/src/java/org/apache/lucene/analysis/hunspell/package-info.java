@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * Stemming TokenFilter using a Java implementation of the 
  * <a href="http://www.ldc.upenn.edu/Catalog/docs/LDC2008T01/acta04.pdf">Hunspell stemming algorithm.</a>

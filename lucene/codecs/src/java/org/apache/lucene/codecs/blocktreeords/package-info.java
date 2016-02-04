@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * Same postings format as Lucene50, except the terms dictionary also
  * supports ords, i.e. returning which ord the enum is seeked to, and

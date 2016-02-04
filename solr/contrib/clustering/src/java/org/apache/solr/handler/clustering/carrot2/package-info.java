@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
 /** 
  * {@link org.apache.solr.handler.clustering.carrot2.CarrotClusteringEngine} and related classes for use in the {@link org.apache.solr.handler.clustering.ClusteringComponent}.
  */

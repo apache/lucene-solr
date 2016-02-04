@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * Fast "indexed point inside geo3d shape" query implementation.
  *
