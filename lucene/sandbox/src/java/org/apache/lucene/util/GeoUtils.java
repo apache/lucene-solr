@@ -218,7 +218,8 @@ public final class GeoUtils {
       maxLat = Math.max(polyLats[i], maxLat);
     }
     // expand bounding box by TOLERANCE factor to handle round-off error
-    return new GeoRect(minLon - TOLERANCE, maxLon + TOLERANCE, minLat - TOLERANCE, maxLat + TOLERANCE);
+    return new GeoRect(Math.max(minLon - TOLERANCE, MIN_LON_INCL), Math.min(maxLon + TOLERANCE, MAX_LON_INCL),
+        Math.max(minLat - TOLERANCE, MIN_LAT_INCL), Math.min(maxLat + TOLERANCE, MAX_LAT_INCL));
   }
 
   /**

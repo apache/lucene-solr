@@ -268,6 +268,9 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   public void testWholeMap() throws Exception {
     TopDocs td = bboxQuery(GeoUtils.MIN_LON_INCL, GeoUtils.MIN_LAT_INCL, GeoUtils.MAX_LON_INCL, GeoUtils.MAX_LAT_INCL, 20);
     assertEquals("testWholeMap failed", 24, td.totalHits);
+    td = polygonQuery(new double[] {GeoUtils.MIN_LON_INCL, GeoUtils.MIN_LON_INCL, GeoUtils.MAX_LON_INCL, GeoUtils.MAX_LON_INCL, GeoUtils.MIN_LON_INCL},
+        new double[] {GeoUtils.MIN_LAT_INCL, GeoUtils.MAX_LAT_INCL, GeoUtils.MAX_LAT_INCL, GeoUtils.MIN_LAT_INCL, GeoUtils.MIN_LAT_INCL}, 20);
+    assertEquals("testWholeMap failed", 24, td.totalHits);
   }
 
   public void smallTest() throws Exception {
