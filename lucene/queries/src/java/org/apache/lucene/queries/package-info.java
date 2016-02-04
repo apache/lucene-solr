@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * Filters and Queries that add to core Lucene.
  */

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
 /** 
  * Utility classes to used with the Query Parser.
  * <h2>Utility classes to used with the Query Parser</h2>

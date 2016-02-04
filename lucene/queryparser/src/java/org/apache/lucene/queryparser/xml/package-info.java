@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
 /** 
  * Parser that produces Lucene Query objects from XML streams.
  */

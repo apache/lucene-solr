@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
 /** 
  * Implementation of the {@linkplain org.apache.lucene.queryparser.classic Lucene classic query parser} using the flexible query parser frameworks
  * 

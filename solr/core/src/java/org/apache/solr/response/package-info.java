@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
 /** 
  * API and implementations of {@link org.apache.solr.response.QueryResponseWriter} for formating Solr request responses
  */

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * This package contains the various ranking models that can be used in Lucene. The
  * abstract class {@link org.apache.lucene.search.similarities.Similarity} serves

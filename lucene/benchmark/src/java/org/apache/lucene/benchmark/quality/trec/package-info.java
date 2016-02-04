@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * Utilities for Trec related quality benchmarking, feeding from Trec Topics and QRels inputs.
  */

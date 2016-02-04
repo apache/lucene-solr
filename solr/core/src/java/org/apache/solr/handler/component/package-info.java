@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+ 
 /** 
  * {@link org.apache.solr.handler.component.SearchComponent} implementations for 
  * use in {@link org.apache.solr.handler.component.SearchHandler}

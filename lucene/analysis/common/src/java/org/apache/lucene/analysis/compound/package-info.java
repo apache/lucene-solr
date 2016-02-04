@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * A filter that decomposes compound words you find in many Germanic
  * languages into the word parts. This example shows what it does:
