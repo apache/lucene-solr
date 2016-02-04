@@ -1,15 +1,3 @@
-package org.apache.solr.spelling;
-
-import java.io.IOException;
-
-import org.apache.lucene.search.spell.LevensteinDistance;
-import org.apache.lucene.search.spell.NGramDistance;
-import org.apache.lucene.search.spell.StringDistance;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.junit.Test;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -26,6 +14,17 @@ import org.junit.Test;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.spelling;
+
+import java.io.IOException;
+
+import org.apache.lucene.search.spell.LevensteinDistance;
+import org.apache.lucene.search.spell.NGramDistance;
+import org.apache.lucene.search.spell.StringDistance;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.junit.Test;
 
 public class ConjunctionSolrSpellCheckerTest extends LuceneTestCase {
   

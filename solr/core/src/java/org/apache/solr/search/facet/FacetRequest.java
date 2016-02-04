@@ -1,5 +1,3 @@
-package org.apache.solr.search.facet;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.solr.search.facet;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.search.facet;
 
 import java.util.EnumSet;
 import java.util.LinkedHashMap;

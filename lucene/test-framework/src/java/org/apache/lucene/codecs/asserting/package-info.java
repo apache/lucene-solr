@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 /**
  * Codec for testing that asserts various contracts of the codec apis.
  */

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 /**
  * Primary APIs for communicating with a Solr Server from a Java client.
  **/

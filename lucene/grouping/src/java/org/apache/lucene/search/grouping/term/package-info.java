@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 /**
  * Support for grouping by indexed terms via {@link org.apache.lucene.index.DocValues}.
  */

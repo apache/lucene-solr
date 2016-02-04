@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 /**
  * Fast, general-purpose grammar-based tokenizers.
  * <p>The <code>org.apache.lucene.analysis.standard</code> package contains three

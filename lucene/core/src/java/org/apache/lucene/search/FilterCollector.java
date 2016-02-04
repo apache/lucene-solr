@@ -1,9 +1,3 @@
-package org.apache.lucene.search;
-
-import java.io.IOException;
-
-import org.apache.lucene.index.LeafReaderContext;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,6 +14,12 @@ import org.apache.lucene.index.LeafReaderContext;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search;
+
+import java.io.IOException;
+
+import org.apache.lucene.index.LeafReaderContext;
+
 
 /**
  * {@link Collector} delegator.

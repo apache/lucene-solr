@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 /** 
  * Codec that unreasonably tries to use as little RAM as possible.
  * For testing, benchmarking, API purposes only!

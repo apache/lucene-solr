@@ -1,11 +1,3 @@
-package org.apache.lucene.util;
-
-import org.apache.lucene.codecs.Codec;
-import org.junit.Assert;
-import org.junit.Test;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Result;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,6 +14,13 @@ import org.junit.runner.Result;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
+
+import org.apache.lucene.codecs.Codec;
+import org.junit.Assert;
+import org.junit.Test;
+import org.junit.runner.JUnitCore;
+import org.junit.runner.Result;
 
 public class TestCodecReported extends WithNestedTests {
   public TestCodecReported() {

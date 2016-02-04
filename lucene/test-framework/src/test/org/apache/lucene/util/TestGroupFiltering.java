@@ -1,14 +1,3 @@
-package org.apache.lucene.util;
-
-import java.lang.annotation.Documented;
-import java.lang.annotation.Inherited;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-
-import org.apache.lucene.util.LuceneTestCase;
-
-import com.carrotsearch.randomizedtesting.annotations.TestGroup;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,6 +14,16 @@ import com.carrotsearch.randomizedtesting.annotations.TestGroup;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+
+import org.apache.lucene.util.LuceneTestCase;
+
+import com.carrotsearch.randomizedtesting.annotations.TestGroup;
 
 public class TestGroupFiltering extends LuceneTestCase {
   @Documented

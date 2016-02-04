@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 /** 
  * Factories and classes specific to text analysis and the creation of {@link org.apache.lucene.analysis.TokenStream}s
  * <p>

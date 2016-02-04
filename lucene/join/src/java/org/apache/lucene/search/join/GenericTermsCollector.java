@@ -1,19 +1,3 @@
-package org.apache.lucene.search.join;
-
-import java.io.IOException;
-import java.io.PrintStream;
-
-import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.join.DocValuesTermsCollector.Function;
-import org.apache.lucene.search.join.TermsWithScoreCollector.MV;
-import org.apache.lucene.search.join.TermsWithScoreCollector.SV;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefHash;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -30,6 +14,21 @@ import org.apache.lucene.util.BytesRefHash;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search.join;
+
+import java.io.IOException;
+import java.io.PrintStream;
+
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.SortedSetDocValues;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.join.DocValuesTermsCollector.Function;
+import org.apache.lucene.search.join.TermsWithScoreCollector.MV;
+import org.apache.lucene.search.join.TermsWithScoreCollector.SV;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefHash;
 
 interface GenericTermsCollector extends Collector {
   

@@ -1,10 +1,3 @@
-package org.apache.solr.core;
-
-import java.net.URL;
-
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrInfoMBean.Category;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,6 +14,12 @@ import org.apache.solr.core.SolrInfoMBean.Category;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.core;
+
+import java.net.URL;
+
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrInfoMBean.Category;
 
 class MockInfoMBean implements SolrInfoMBean {
   @Override

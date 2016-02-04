@@ -1,5 +1,3 @@
-package runtimecode;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,13 +14,13 @@ package runtimecode;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package runtimecode;
 
 import java.io.IOException;
 
 import org.apache.solr.handler.DumpRequestHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-
 
 public class RuntimeLibReqHandler extends DumpRequestHandler {
   @Override

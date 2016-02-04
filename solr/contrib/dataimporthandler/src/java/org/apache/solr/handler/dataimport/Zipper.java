@@ -1,17 +1,3 @@
-package org.apache.solr.handler.dataimport;
-
-import java.lang.invoke.MethodHandles;
-import java.util.Iterator;
-import java.util.Map;
-
-import org.apache.solr.handler.dataimport.DIHCacheSupport.Relation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Supplier;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -28,6 +14,19 @@ import com.google.common.collect.PeekingIterator;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.handler.dataimport;
+
+import java.lang.invoke.MethodHandles;
+import java.util.Iterator;
+import java.util.Map;
+
+import org.apache.solr.handler.dataimport.DIHCacheSupport.Relation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.common.base.Supplier;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
 
 class Zipper {
   

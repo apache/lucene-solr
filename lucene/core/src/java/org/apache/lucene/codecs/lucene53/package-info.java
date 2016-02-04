@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 /**
  * Components from the Lucene 5.3 index format
  * See {@link org.apache.lucene.codecs.lucene54} for an overview

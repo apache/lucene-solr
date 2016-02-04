@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 /** 
  * Solr implementations of {@link org.apache.lucene.queries.function.ValueSource} for function queries.
 

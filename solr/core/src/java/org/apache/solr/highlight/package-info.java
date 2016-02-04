@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 /** 
  * {@link org.apache.solr.highlight.SolrHighlighter} API and related implementaions and utilities
  * <p>

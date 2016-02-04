@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
 /** 
  * Statistics collectors reduce a list of Objects to a single value. Most implementations reduce a list to a statistic on that list.
  */
