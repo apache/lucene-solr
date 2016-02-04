@@ -50,8 +50,8 @@ public class GeoRelationUtils {
      * TODO convert coordinates to cylindrical projection (e.g. mercator)
      */
     for (int i = 1; i < x.length; i++) {
-      if (x[i] < lon && x[i-1] >= lon || x[i-1] < lon && x[i] >= lon) {
-        if (y[i] + (lon - x[i]) / (x[i-1] - x[i]) * (y[i-1] - y[i]) < lat) {
+      if (x[i] <= lon && x[i-1] >= lon || x[i-1] <= lon && x[i] >= lon) {
+        if (y[i] + (lon - x[i]) / (x[i-1] - x[i]) * (y[i-1] - y[i]) <= lat) {
           inPoly = !inPoly;
         }
       }
