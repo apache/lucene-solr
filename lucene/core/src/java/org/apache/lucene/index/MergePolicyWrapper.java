@@ -30,6 +30,8 @@ public class MergePolicyWrapper extends MergePolicy {
 
   /**
    * Creates a new merge policy instance.
+   *
+   * @param in the wrapped {@link MergePolicy}
    */
   public MergePolicyWrapper(MergePolicy in) {
     this.in = in;
