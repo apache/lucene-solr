@@ -699,14 +699,15 @@ final class IndexFileDeleter implements Closeable {
       infoStream.message("IFD", "delete \"" + names + "\"");
     }
 
-    // nocommit put annoying windows-specific segments_N heroics back?
-
     for(String name : names) {
       try {
         directory.deleteFile(name);
       } catch (NoSuchFileException | FileNotFoundException e) {
         // IndexWriter should only ask us to delete files it knows it wrote, so if we hit this, something is wrong!
+
         if (Constants.WINDOWS) {
+          // TODO: can we remove this OS-specific hacky logic?  If windows deleteFile is buggy, we should instead contain this workaround in
+          // a WindowsFSDirectory ...
           // LUCENE-6684: we suppress this assert for Windows, since a file could be in a confusing "pending delete" state, and falsely
           // return NSFE/FNFE
         } else {

@@ -754,8 +754,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *           IO error
    */
   public IndexWriter(Directory d, IndexWriterConfig conf) throws IOException {
-    if (d instanceof FSDirectory && ((FSDirectory) d).checkPendingDeletions()) {
-      throw new IllegalArgumentException("Directory still has pending deleted files");
+    Directory unwrapped = FilterDirectory.unwrap(d);
+    if (unwrapped instanceof FSDirectory && ((FSDirectory) unwrapped).checkPendingDeletions()) {
+      throw new IllegalArgumentException("Directory still has pending deleted files; cannot initialize IndexWriter");
     }
 
     conf.setIndexWriter(this); // prevent reuse by other instances
