@@ -26,6 +26,7 @@ import java.util.Map;
  */
 public class MergePolicyWrapper extends MergePolicy {
 
+  /** The wrapped {@link MergePolicy}. */
   protected final MergePolicy in;
 
   /**
