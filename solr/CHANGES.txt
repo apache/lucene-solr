@@ -160,6 +160,8 @@ Bug Fixes
 
 * SOLR-8409: Ensures that quotes in solr params (eg. q param) are properly handled (Dennis Gove)
 
+* SOLR-8640: CloudSolrClient does not send credentials for update request (noble, hoss)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
