@@ -280,11 +280,11 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public void sync(Collection<String> names) throws IOException {
     ensureOpen();
-    maybeDeletePendingFiles();
 
     for (String name : names) {
       fsync(name);
     }
+    maybeDeletePendingFiles();
   }
 
   @Override
@@ -293,11 +293,12 @@ public abstract class FSDirectory extends BaseDirectory {
     if (pendingDeletes.contains(source)) {
       throw new NoSuchFileException("file \"" + source + "\" is pending delete and cannot be moved");
     }
-    maybeDeletePendingFiles();
+    pendingDeletes.remove(dest);
     Files.move(directory.resolve(source), directory.resolve(dest), StandardCopyOption.ATOMIC_MOVE);
     // TODO: should we move directory fsync to a separate 'syncMetadata' method?
     // for example, to improve listCommits(), IndexFileDeleter could also call that after deleting segments_Ns
     IOUtils.fsync(directory, true);
+    maybeDeletePendingFiles();
   }
 
   @Override
@@ -327,6 +328,7 @@ public abstract class FSDirectory extends BaseDirectory {
       throw new NoSuchFileException("file \"" + name + "\" is already pending delete");
     }
     privateDeleteFile(name);
+    maybeDeletePendingFiles();
   }
 
   /** Tries to delete any pending deleted files, and returns true if

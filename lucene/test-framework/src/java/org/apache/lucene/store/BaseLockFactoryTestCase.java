@@ -160,6 +160,8 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
   // no unexpected exceptions are raised:
   public void testStressLocks() throws Exception {
     Path tempPath = createTempDir();
+    assumeFalse("cannot handle buggy Files.delete", TestUtil.hasWindowsFS(tempPath));
+
     Directory dir = getDirectory(tempPath);
 
     // First create a 1 doc index:

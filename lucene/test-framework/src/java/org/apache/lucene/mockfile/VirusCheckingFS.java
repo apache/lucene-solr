@@ -28,8 +28,9 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** 
- * Acts like Windows, where random programs may open the files you just wrote in an unfriendly
- * way preventing deletion (e.g. not passing FILE_SHARE_DELETE) or renaming or overwriting etc.
+ * Acts like a virus checker on Windows, where random programs may open the files you just wrote in an unfriendly
+ * way preventing deletion (e.g. not passing FILE_SHARE_DELETE) or renaming or overwriting etc.  This is more evil
+ * than WindowsFS which just prevents deletion of files you still old open.
  */
 public class VirusCheckingFS extends FilterFileSystemProvider {
 
@@ -75,5 +76,5 @@ public class VirusCheckingFS extends FilterFileSystemProvider {
     super.delete(path);
   }
 
-  // TODO: rename?  createOutput?  deleteIfExists?
+  // TODO: we could be more evil here, e.g. rename, createOutput, deleteIfExists
 }

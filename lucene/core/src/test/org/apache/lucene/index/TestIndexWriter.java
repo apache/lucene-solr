@@ -2737,7 +2737,7 @@ public class TestIndexWriter extends LuceneTestCase {
       try {
         w = new IndexWriter(dir, iwc);
       } catch (IllegalArgumentException iae) {
-        assertEquals("Directory still has pending deleted files; cannot initialize IndexWriter", iae.getMessage());
+        assertTrue(iae.getMessage().contains("still has pending deleted files; cannot initialize IndexWriter"));
       }
       in.close();
     }

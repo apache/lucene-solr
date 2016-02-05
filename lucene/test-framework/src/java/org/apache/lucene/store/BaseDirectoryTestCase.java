@@ -1282,8 +1282,15 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
         // expected
       }
 
-      // write the file again
-      try (IndexOutput out = dir.createOutput(fileName, IOContext.DEFAULT)) {
+      if (random().nextBoolean()) {
+        try (IndexOutput out = fsDir.createOutput(fileName + "z", IOContext.DEFAULT)) {
+        }
+        // Make sure we can rename onto the deleted file:
+        fsDir.renameFile(fileName + "z", fileName);
+      } else {
+        // write the file again
+        try (IndexOutput out = dir.createOutput(fileName, IOContext.DEFAULT)) {
+        }
       }
       assertEquals(0, fsDir.fileLength(fileName));
       assertTrue(Arrays.asList(fsDir.listAll()).contains(fileName));
