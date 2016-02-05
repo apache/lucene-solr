@@ -143,6 +143,9 @@ New Features
 
 API Changes
 
+* LUCENE-6997: refactor sandboxed GeoPointField and query classes to lucene-spatial 
+  module (Nick Knize)
+
 * LUCENE-6908: GeoUtils static relational methods have been refactored to new 
   GeoRelationUtils and now correctly handle large irregular rectangles, and
   pole crossing distance queries. (Nick Knize)
