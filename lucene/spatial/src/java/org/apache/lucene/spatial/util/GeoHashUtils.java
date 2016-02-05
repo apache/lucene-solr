@@ -14,10 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.util;
+package org.apache.lucene.spatial.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+
+import org.apache.lucene.util.BitUtil;
 
 /**
  * Utilities for converting to/from the GeoHash standard
@@ -30,14 +32,19 @@ import java.util.Collection;
  * @lucene.experimental
  */
 public class GeoHashUtils {
-  public static final char[] BASE_32 = {'0', '1', '2', '3', '4', '5', '6',
+  private static final char[] BASE_32 = {'0', '1', '2', '3', '4', '5', '6',
       '7', '8', '9', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'm', 'n',
       'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'};
 
-  public static final String BASE_32_STRING = new String(BASE_32);
+  private static final String BASE_32_STRING = new String(BASE_32);
 
+  /** maximum precision for geohash strings */
   public static final int PRECISION = 12;
   private static final short MORTON_OFFSET = (GeoUtils.BITS<<1) - (PRECISION*5);
+
+  // No instance:
+  private GeoHashUtils() {
+  }
 
   /**
    * Encode lon/lat to the geohash based long format (lon/lat interleaved, 4 least significant bits = level)
@@ -75,6 +82,9 @@ public class GeoHashUtils {
     return ((geohash >>> 4) << (((level - precision) * 5) + 4) | level);
   }
 
+  /**
+   * Convert from a morton encoded long from a geohash encoded long
+   */
   public static long fromMorton(long morton, int level) {
     long mFlipped = BitUtil.flipFlop(morton);
     mFlipped >>>= (((GeoHashUtils.PRECISION - level) * 5) + MORTON_OFFSET);

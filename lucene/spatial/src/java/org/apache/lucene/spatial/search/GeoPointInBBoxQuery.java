@@ -14,13 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.spatial.search;
 
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FieldValueQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.spatial.util.GeoUtils;
 
 /** Implements a simple bounding box query on a GeoPoint field. This is inspired by
  * {@link org.apache.lucene.search.NumericRangeQuery} and is implemented using a
@@ -29,7 +33,7 @@ import org.apache.lucene.util.ToStringUtils;
  * passing this initial filter are passed to a final check that verifies whether
  * the decoded lat/lon falls within (or on the boundary) of the query bounding box.
  * The value comparisons are subject to a precision tolerance defined in
- * {@value org.apache.lucene.util.GeoUtils#TOLERANCE}
+ * {@value org.apache.lucene.spatial.util.GeoUtils#TOLERANCE}
  *
  * NOTES:
  *    1.  All latitude/longitude values must be in decimal degrees.
@@ -48,6 +52,10 @@ public class GeoPointInBBoxQuery extends Query {
   protected final double maxLon;
   protected final double maxLat;
 
+  /**
+   * Constructs a query for all {@link org.apache.lucene.spatial.document.GeoPointField} types that fall within a
+   * defined bounding box
+   */
   public GeoPointInBBoxQuery(final String field, final double minLon, final double minLat, final double maxLon, final double maxLat) {
     this.field = field;
     this.minLon = minLon;
@@ -138,22 +146,27 @@ public class GeoPointInBBoxQuery extends Query {
     return result;
   }
 
+  /** getter method for retrieving the field name */
   public final String getField() {
     return this.field;
   }
 
+  /** getter method for retrieving the minimum longitude (in degrees) */
   public final double getMinLon() {
     return this.minLon;
   }
 
+  /** getter method for retrieving the minimum latitude (in degrees) */
   public final double getMinLat() {
     return this.minLat;
   }
 
+  /** getter method for retrieving the maximum longitude (in degrees) */
   public final double getMaxLon() {
     return this.maxLon;
   }
 
+  /** getter method for retrieving the maximum latitude (in degrees) */
   public final double getMaxLat() {
     return this.maxLat;
   }

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.spatial.search;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -22,9 +22,9 @@ import java.util.Arrays;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.GeoRect;
-import org.apache.lucene.util.GeoRelationUtils;
-import org.apache.lucene.util.GeoUtils;
+import org.apache.lucene.spatial.util.GeoRect;
+import org.apache.lucene.spatial.util.GeoRelationUtils;
+import org.apache.lucene.spatial.util.GeoUtils;
 
 /** Implements a simple point in polygon query on a GeoPoint field. This is based on
  * {@code GeoPointInBBoxQueryImpl} and is implemented using a
@@ -34,7 +34,7 @@ import org.apache.lucene.util.GeoUtils;
  * to a secondary filter that verifies whether the decoded lat/lon point falls within
  * (or on the boundary) of the bounding box query. Finally, the remaining candidate
  * term is passed to the final point in polygon check. All value comparisons are subject
- * to the same precision tolerance defined in {@value org.apache.lucene.util.GeoUtils#TOLERANCE}
+ * to the same precision tolerance defined in {@value org.apache.lucene.spatial.util.GeoUtils#TOLERANCE}
  *
  * <p>NOTES:
  *    1.  The polygon coordinates need to be in either clockwise or counter-clockwise order.
@@ -52,7 +52,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
   private final double[] y;
 
   /**
-   * Constructs a new GeoPolygonQuery that will match encoded {@link org.apache.lucene.document.GeoPointField} terms
+   * Constructs a new GeoPolygonQuery that will match encoded {@link org.apache.lucene.spatial.document.GeoPointField} terms
    * that fall within or on the boundary of the polygon defined by the input parameters.
    */
   public GeoPointInPolygonQuery(final String field, final double[] polyLons, final double[] polyLats) {
@@ -84,6 +84,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
     return new GeoPolygonTermsEnum(terms.iterator(), this.minLon, this.minLat, this.maxLon, this.maxLat);
   }
 
+  /** throw exception if trying to change rewrite method */
   @Override
   public void setRewriteMethod(RewriteMethod method) {
     throw new UnsupportedOperationException("cannot change rewrite method");
@@ -111,6 +112,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
     return result;
   }
 
+  /** print out this polygon query */
   @Override
   public String toString(String field) {
     assert x.length == y.length;
@@ -165,10 +167,10 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
 
     /**
      * The two-phase query approach. The parent
-     * {@link org.apache.lucene.search.GeoPointTermsEnum#accept} method is called to match
+     * {@link GeoPointTermsEnum#accept} method is called to match
      * encoded terms that fall within the bounding box of the polygon. Those documents that pass the initial
      * bounding box filter are then compared to the provided polygon using the
-     * {@link org.apache.lucene.util.GeoRelationUtils#pointInPolygon} method.
+     * {@link org.apache.lucene.spatial.util.GeoRelationUtils#pointInPolygon} method.
      */
     @Override
     protected boolean postFilter(final double lon, final double lat) {

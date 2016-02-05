@@ -14,27 +14,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.spatial.search;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.GeoPointField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BaseGeoPointTestCase;
-import org.apache.lucene.util.GeoRect;
-import org.apache.lucene.util.GeoRelationUtils;
-import org.apache.lucene.util.GeoUtils;
+import org.apache.lucene.spatial.document.GeoPointField;
+import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
+import org.apache.lucene.spatial.util.GeoRect;
+import org.apache.lucene.spatial.util.GeoRelationUtils;
+import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import static org.apache.lucene.util.GeoDistanceUtils.DISTANCE_PCT_ERR;
+import static org.apache.lucene.spatial.util.GeoDistanceUtils.DISTANCE_PCT_ERR;
 
 /**
  * Unit testing for basic GeoPoint query logic

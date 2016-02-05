@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.util;
+package org.apache.lucene.spatial.util;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -24,11 +24,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
-import static org.apache.lucene.util.GeoDistanceUtils.DISTANCE_PCT_ERR;
+import static org.apache.lucene.spatial.util.GeoDistanceUtils.DISTANCE_PCT_ERR;
 
 /**
  * Tests class for methods in GeoUtils

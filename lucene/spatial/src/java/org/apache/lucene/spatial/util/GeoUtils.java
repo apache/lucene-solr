@@ -14,12 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.util;
+package org.apache.lucene.spatial.util;
 
 import java.util.ArrayList;
 
+import org.apache.lucene.util.BitUtil;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.lang.Math.PI;
+import static java.lang.Math.abs;
+
+import static org.apache.lucene.util.SloppyMath.asin;
+import static org.apache.lucene.util.SloppyMath.cos;
+import static org.apache.lucene.util.SloppyMath.sin;
 import static org.apache.lucene.util.SloppyMath.TO_DEGREES;
 import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
+import static org.apache.lucene.spatial.util.GeoProjectionUtils.MAX_LAT_RADIANS;
+import static org.apache.lucene.spatial.util.GeoProjectionUtils.MAX_LON_RADIANS;
+import static org.apache.lucene.spatial.util.GeoProjectionUtils.MIN_LAT_RADIANS;
+import static org.apache.lucene.spatial.util.GeoProjectionUtils.MIN_LON_RADIANS;
+import static org.apache.lucene.spatial.util.GeoProjectionUtils.pointFromLonLatBearingGreatCircle;
+import static org.apache.lucene.spatial.util.GeoProjectionUtils.SEMIMAJOR_AXIS;
 
 /**
  * Basic reusable geo-spatial utility methods
@@ -27,9 +43,11 @@ import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
  * @lucene.experimental
  */
 public final class GeoUtils {
+  /** number of bits used for quantizing latitude and longitude values */
   public static final short BITS = 31;
   private static final double LON_SCALE = (0x1L<<BITS)/360.0D;
   private static final double LAT_SCALE = (0x1L<<BITS)/180.0D;
+  /** rounding error for quantized latitude and longitude values */
   public static final double TOLERANCE = 1E-6;
 
   /** Minimum longitude value. */
@@ -48,14 +66,20 @@ public final class GeoUtils {
   private GeoUtils() {
   }
 
+  /**
+   * encode longitude, latitude geopoint values using morton encoding method
+   * https://en.wikipedia.org/wiki/Z-order_curve
+   */
   public static final Long mortonHash(final double lon, final double lat) {
     return BitUtil.interleave(scaleLon(lon), scaleLat(lat));
   }
 
+  /** decode longitude value from morton encoded geo point */
   public static final double mortonUnhashLon(final long hash) {
     return unscaleLon(BitUtil.deinterleave(hash));
   }
 
+  /** decode latitude value from morton encoded geo point */
   public static final double mortonUnhashLat(final long hash) {
     return unscaleLat(BitUtil.deinterleave(hash >>> 1));
   }
@@ -76,17 +100,13 @@ public final class GeoUtils {
     return (val / LAT_SCALE) + MIN_LAT_INCL;
   }
 
-  /**
-   * Compare two position values within a {@link org.apache.lucene.util.GeoUtils#TOLERANCE} factor
-   */
+  /** Compare two position values within a {@link GeoUtils#TOLERANCE} factor */
   public static double compare(final double v1, final double v2) {
     final double delta = v1-v2;
-    return Math.abs(delta) <= TOLERANCE ? 0 : delta;
+    return abs(delta) <= TOLERANCE ? 0 : delta;
   }
 
-  /**
-   * Puts longitude in range of -180 to +180.
-   */
+  /** Puts longitude in range of -180 to +180. */
   public static double normalizeLon(double lon_deg) {
     if (lon_deg >= -180 && lon_deg <= 180) {
       return lon_deg; //common case, and avoids slight double precision shifting
@@ -101,17 +121,16 @@ public final class GeoUtils {
     }
   }
 
-  /**
-   * Puts latitude in range of -90 to 90.
-   */
+  /** Puts latitude in range of -90 to 90. */
   public static double normalizeLat(double lat_deg) {
     if (lat_deg >= -90 && lat_deg <= 90) {
       return lat_deg; //common case, and avoids slight double precision shifting
     }
-    double off = Math.abs((lat_deg + 90) % 360);
+    double off = abs((lat_deg + 90) % 360);
     return (off <= 180 ? off : 360-off) - 90;
   }
 
+  /** Converts long value to bit string (useful for debugging) */
   public static String geoTermToString(long term) {
     StringBuilder s = new StringBuilder(64);
     final int numberOfLeadingZeros = Long.numberOfLeadingZeros(term);
@@ -145,7 +164,7 @@ public final class GeoUtils {
     final int sidesLen = sides-1;
     for (int i=0; i<sidesLen; ++i) {
       angle = (i*360/sides);
-      pt = GeoProjectionUtils.pointFromLonLatBearingGreatCircle(lon, lat, angle, radiusMeters, pt);
+      pt = pointFromLonLatBearingGreatCircle(lon, lat, angle, radiusMeters, pt);
       lons[i] = pt[0];
       lats[i] = pt[1];
     }
@@ -158,42 +177,38 @@ public final class GeoUtils {
     return geometry;
   }
 
-  /**
-   * Compute Bounding Box for a circle using WGS-84 parameters
-   */
+  /** Compute Bounding Box for a circle using WGS-84 parameters */
   public static GeoRect circleToBBox(final double centerLon, final double centerLat, final double radiusMeters) {
     final double radLat = TO_RADIANS * centerLat;
     final double radLon = TO_RADIANS * centerLon;
-    double radDistance = radiusMeters / GeoProjectionUtils.SEMIMAJOR_AXIS;
+    double radDistance = radiusMeters / SEMIMAJOR_AXIS;
     double minLat = radLat - radDistance;
     double maxLat = radLat + radDistance;
     double minLon;
     double maxLon;
 
-    if (minLat > GeoProjectionUtils.MIN_LAT_RADIANS && maxLat < GeoProjectionUtils.MAX_LAT_RADIANS) {
-      double deltaLon = SloppyMath.asin(SloppyMath.sin(radDistance) / SloppyMath.cos(radLat));
+    if (minLat > MIN_LAT_RADIANS && maxLat < MAX_LAT_RADIANS) {
+      double deltaLon = asin(sin(radDistance) / cos(radLat));
       minLon = radLon - deltaLon;
-      if (minLon < GeoProjectionUtils.MIN_LON_RADIANS) {
-        minLon += 2d * StrictMath.PI;
+      if (minLon < MIN_LON_RADIANS) {
+        minLon += 2d * PI;
       }
       maxLon = radLon + deltaLon;
-      if (maxLon > GeoProjectionUtils.MAX_LON_RADIANS) {
-        maxLon -= 2d * StrictMath.PI;
+      if (maxLon > MAX_LON_RADIANS) {
+        maxLon -= 2d * PI;
       }
     } else {
       // a pole is within the distance
-      minLat = StrictMath.max(minLat, GeoProjectionUtils.MIN_LAT_RADIANS);
-      maxLat = StrictMath.min(maxLat, GeoProjectionUtils.MAX_LAT_RADIANS);
-      minLon = GeoProjectionUtils.MIN_LON_RADIANS;
-      maxLon = GeoProjectionUtils.MAX_LON_RADIANS;
+      minLat = max(minLat, MIN_LAT_RADIANS);
+      maxLat = min(maxLat, MAX_LAT_RADIANS);
+      minLon = MIN_LON_RADIANS;
+      maxLon = MAX_LON_RADIANS;
     }
 
     return new GeoRect(TO_DEGREES * minLon, TO_DEGREES * maxLon, TO_DEGREES * minLat, TO_DEGREES * maxLat);
   }
 
-  /**
-   * Compute Bounding Box for a polygon using WGS-84 parameters
-   */
+  /** Compute Bounding Box for a polygon using WGS-84 parameters */
   public static GeoRect polyToBBox(double[] polyLons, double[] polyLats) {
     if (polyLons.length != polyLats.length) {
       throw new IllegalArgumentException("polyLons and polyLats must be equal length");
@@ -211,26 +226,22 @@ public final class GeoUtils {
       if (GeoUtils.isValidLat(polyLats[i]) == false) {
         throw new IllegalArgumentException("invalid polyLats[" + i + "]=" + polyLats[i]);
       }
-      minLon = Math.min(polyLons[i], minLon);
-      maxLon = Math.max(polyLons[i], maxLon);
-      minLat = Math.min(polyLats[i], minLat);
-      maxLat = Math.max(polyLats[i], maxLat);
+      minLon = min(polyLons[i], minLon);
+      maxLon = max(polyLons[i], maxLon);
+      minLat = min(polyLats[i], minLat);
+      maxLat = max(polyLats[i], maxLat);
     }
     // expand bounding box by TOLERANCE factor to handle round-off error
-    return new GeoRect(Math.max(minLon - TOLERANCE, MIN_LON_INCL), Math.min(maxLon + TOLERANCE, MAX_LON_INCL),
-        Math.max(minLat - TOLERANCE, MIN_LAT_INCL), Math.min(maxLat + TOLERANCE, MAX_LAT_INCL));
+    return new GeoRect(max(minLon - TOLERANCE, MIN_LON_INCL), min(maxLon + TOLERANCE, MAX_LON_INCL),
+        max(minLat - TOLERANCE, MIN_LAT_INCL), min(maxLat + TOLERANCE, MAX_LAT_INCL));
   }
 
-  /**
-   * validates latitude value is within standard +/-90 coordinate bounds
-   */
+  /** validates latitude value is within standard +/-90 coordinate bounds */
   public static boolean isValidLat(double lat) {
     return Double.isNaN(lat) == false && lat >= MIN_LAT_INCL && lat <= MAX_LAT_INCL;
   }
 
-  /**
-   * validates longitude value is within standard +/-180 coordinate bounds
-   */
+  /** validates longitude value is within standard +/-180 coordinate bounds */
   public static boolean isValidLon(double lon) {
     return Double.isNaN(lon) == false && lon >= MIN_LON_INCL && lon <= MAX_LON_INCL;
   }

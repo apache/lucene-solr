@@ -30,11 +30,11 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
-import org.apache.lucene.util.BaseGeoPointTestCase;
-import org.apache.lucene.util.GeoRect;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
+import org.apache.lucene.spatial.util.GeoRect;
 
 // TODO: can test framework assert we don't leak temp files?
 

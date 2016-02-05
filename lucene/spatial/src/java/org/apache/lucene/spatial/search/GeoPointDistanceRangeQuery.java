@@ -14,14 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.spatial.search;
 
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
 
 /** Implements a point distance range query on a GeoPoint field. This is based on
- * {@code org.apache.lucene.search.GeoPointDistanceQuery} and is implemented using a
+ * {@code org.apache.lucene.spatial.search.GeoPointDistanceQuery} and is implemented using a
  * {@code org.apache.lucene.search.BooleanClause.MUST_NOT} clause to exclude any points that fall within
  * minRadiusMeters from the provided point.
  *
@@ -30,6 +33,10 @@ import org.apache.lucene.index.IndexReader;
 public final class GeoPointDistanceRangeQuery extends GeoPointDistanceQuery {
   protected final double minRadiusMeters;
 
+  /**
+   * Constructs a query for all {@link org.apache.lucene.spatial.document.GeoPointField} types within a minimum / maximum
+   * distance (in meters) range from a given point
+   */
   public GeoPointDistanceRangeQuery(final String field, final double centerLon, final double centerLat,
                                     final double minRadiusMeters, final double maxRadius) {
     super(field, centerLon, centerLat, maxRadius);
@@ -91,10 +98,12 @@ public final class GeoPointDistanceRangeQuery extends GeoPointDistanceQuery {
         .toString();
   }
 
+  /** getter method for minimum distance */
   public double getMinRadiusMeters() {
     return this.minRadiusMeters;
   }
 
+  /** getter method for maximum distance */
   public double getMaxRadiusMeters() {
     return this.radiusMeters;
   }
