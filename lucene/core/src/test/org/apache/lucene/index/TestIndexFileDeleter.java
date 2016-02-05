@@ -39,6 +39,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -224,13 +225,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   
   public void testVirusScannerDoesntCorruptIndex() throws IOException {
     Path path = createTempDir();
-    VirusCheckingFS fs = new VirusCheckingFS(path.getFileSystem(), random().nextLong());
-    FileSystem filesystem = fs.getFileSystem(URI.create("file:///"));
-    fs.disable();
-
-    Path path2 = new FilterPath(path, filesystem);
-
-    Directory dir = newFSDirectory(path2);
+    Directory dir = newFSDirectory(addVirusChecker(path));
+    TestUtil.disableVirusChecker(dir);
     
     // add empty commit
     new IndexWriter(dir, new IndexWriterConfig(null)).close();
@@ -238,12 +234,12 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     dir.createOutput("_0.si", IOContext.DEFAULT).close();
 
     // start virus scanner
-    fs.enable();
+    TestUtil.enableVirusChecker(dir);
     
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
     iw.addDocument(new Document());
     // stop virus scanner
-    fs.disable();
+    TestUtil.disableVirusChecker(dir);
     iw.commit();
     iw.close();
     dir.close();

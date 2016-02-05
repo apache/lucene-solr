@@ -35,7 +35,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
@@ -43,7 +42,6 @@ import org.apache.lucene.util.Version;
   Verify we can read the pre-2.1 file format, do searches
   against it, and add documents to it.
 */
-@SuppressFileSystems("VirusCheckingFS")
 public class TestDeletionPolicy extends LuceneTestCase {
   
   private void verifyCommitOrder(List<? extends IndexCommit> commits) {

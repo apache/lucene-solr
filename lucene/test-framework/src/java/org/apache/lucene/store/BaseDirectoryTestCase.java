@@ -668,7 +668,6 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   // LUCENE-3382 -- make sure we get exception if the directory really does not exist.
   public void testNoDir() throws Throwable {
     Path tempDir = createTempDir("doesnotexist");
-    assumeFalse("test directly deletes files", TestUtil.hasVirusChecker(tempDir));
     IOUtils.rm(tempDir);
     Directory dir = getDirectory(tempDir);
     try {
@@ -827,7 +826,6 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   // TODO: somehow change this test to 
   public void testFsyncDoesntCreateNewFiles() throws Exception {
     Path path = createTempDir("nocreate");
-    assumeFalse("we directly delete files", TestUtil.hasVirusChecker(path));
     Directory fsdir = getDirectory(path);
     
     // this test backdoors the directory via the filesystem. so it must be an FSDir (for now)
@@ -1225,6 +1223,70 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
           // expected
         }
       }
+    }
+  }
+
+  // Make sure the FSDirectory impl properly "emulates" deletions on filesystems (Windows) with buggy deleteFile:
+  public void testPendingDeletions() throws IOException {
+    try (Directory dir = getDirectory(addVirusChecker(createTempDir()))) {
+      assumeTrue("we can only install VirusCheckingFS on an FSDirectory", dir instanceof FSDirectory);
+      FSDirectory fsDir = (FSDirectory) dir;
+
+      // Keep trying until virus checker refuses to delete:
+      String fileName;
+      while (true) {
+        fileName = TestUtil.randomSimpleString(random());
+        if (fileName.length() == 0) {
+          continue;
+        }
+        try (IndexOutput out = dir.createOutput(fileName, IOContext.DEFAULT)) {
+        }
+        fsDir.deleteFile(fileName);
+        if (fsDir.checkPendingDeletions()) {
+          // good: virus checker struck and prevented deletion of fileName
+          break;
+        }
+      }
+
+      // Make sure listAll does NOT include the file:
+      assertFalse(Arrays.asList(fsDir.listAll()).contains(fileName));
+
+      // Make sure fileLength claims it's deleted:
+      try {
+        fsDir.fileLength(fileName);
+        fail("did not hit exception");
+      } catch (NoSuchFileException nsfe) {
+        // expected
+      }
+
+      // Make sure rename fails:
+      try {
+        fsDir.renameFile(fileName, "file2");
+        fail("did not hit exception");
+      } catch (NoSuchFileException nsfe) {
+        // expected
+      }
+
+      // Make sure delete fails:
+      try {
+        fsDir.deleteFile(fileName);
+        fail("did not hit exception");
+      } catch (NoSuchFileException nsfe) {
+        // expected
+      }
+
+      try {
+        fsDir.openInput(fileName, IOContext.DEFAULT);
+        fail("did not hit exception");
+      } catch (NoSuchFileException nsfe) {
+        // expected
+      }
+
+      // write the file again
+      try (IndexOutput out = dir.createOutput(fileName, IOContext.DEFAULT)) {
+      }
+      assertEquals(0, fsDir.fileLength(fileName));
+      assertTrue(Arrays.asList(fsDir.listAll()).contains(fileName));
     }
   }
 }

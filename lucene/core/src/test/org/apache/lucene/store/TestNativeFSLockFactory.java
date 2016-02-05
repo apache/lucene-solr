@@ -82,7 +82,6 @@ public class TestNativeFSLockFactory extends BaseLockFactoryTestCase {
   public void testDeleteLockFile() throws IOException {
     try (Directory dir = getDirectory(createTempDir())) {
       assumeFalse("we must be able to delete an open file", TestUtil.hasWindowsFS(dir));
-      assumeFalse("we must be able to delete an open file", TestUtil.hasVirusChecker(dir));
 
       Lock lock = dir.obtainLock("test.lock");
       lock.ensureValid();

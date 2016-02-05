@@ -32,7 +32,6 @@ public class TestDirectory extends LuceneTestCase {
   // path, can read, write, and lock files.
   public void testDirectInstantiation() throws Exception {
     final Path path = createTempDir("testDirectInstantiation");
-    assumeFalse("test deletes files through different FSDir instances", TestUtil.hasVirusChecker(path));
     
     final byte[] largeBuffer = new byte[random().nextInt(256*1024)], largeReadBuffer = new byte[largeBuffer.length];
     for (int i = 0; i < largeBuffer.length; i++) {

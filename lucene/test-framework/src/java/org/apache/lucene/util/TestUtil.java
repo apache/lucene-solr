@@ -1303,6 +1303,19 @@ public final class TestUtil {
     return false;
   }
 
+  public static boolean hasWindowsFS(Path path) {
+    FileSystem fs = path.getFileSystem();
+    while (fs instanceof FilterFileSystem) {
+      FilterFileSystem ffs = (FilterFileSystem) fs;
+      if (ffs.getParent() instanceof WindowsFS) {
+        return true;
+      }
+      fs = ffs.getDelegate();
+    }
+
+    return false;
+  }
+
   public static boolean hasVirusChecker(Directory dir) {
     dir = FilterDirectory.unwrap(dir);
     if (dir instanceof FSDirectory) {
@@ -1323,5 +1336,43 @@ public final class TestUtil {
     }
 
     return false;
+  }
+
+  /** Returns true if VirusCheckingFS is in use and was in fact already enabled */
+  public static boolean disableVirusChecker(Directory in) {
+    Directory dir = FilterDirectory.unwrap(in);
+    if (dir instanceof FSDirectory) {
+
+      FileSystem fs = ((FSDirectory) dir).getDirectory().getFileSystem();
+      while (fs instanceof FilterFileSystem) {
+        FilterFileSystem ffs = (FilterFileSystem) fs;
+        if (ffs.getParent() instanceof VirusCheckingFS) {
+          VirusCheckingFS vfs = (VirusCheckingFS) ffs.getParent();
+          boolean isEnabled = vfs.isEnabled();
+          vfs.disable();
+          return isEnabled;
+        }
+        fs = ffs.getDelegate();
+      }
+    }
+
+    return false;
+  }
+
+  public static void enableVirusChecker(Directory in) {
+    Directory dir = FilterDirectory.unwrap(in);
+    if (dir instanceof FSDirectory) {
+
+      FileSystem fs = ((FSDirectory) dir).getDirectory().getFileSystem();
+      while (fs instanceof FilterFileSystem) {
+        FilterFileSystem ffs = (FilterFileSystem) fs;
+        if (ffs.getParent() instanceof VirusCheckingFS) {
+          VirusCheckingFS vfs = (VirusCheckingFS) ffs.getParent();
+          vfs.enable();
+          return;
+        }
+        fs = ffs.getDelegate();
+      }
+    }
   }
 }

@@ -440,8 +440,6 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     IndexReader ir = DirectoryReader.open(benchmark.getRunData().getDirectory());
     assertEquals(numLines + " lines were created but " + ir.numDocs() + " docs are in the index", numLines, ir.numDocs());
     ir.close();
-
-    Files.delete(lineFile);
   }
   
   /**

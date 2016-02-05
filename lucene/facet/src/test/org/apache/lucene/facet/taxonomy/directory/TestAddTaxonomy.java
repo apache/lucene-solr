@@ -31,7 +31,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
-//@SuppressFileSystems("VirusCheckingFS")
 public class TestAddTaxonomy extends FacetTestCase {
 
   private void dotest(int ncats, final int range) throws Exception {

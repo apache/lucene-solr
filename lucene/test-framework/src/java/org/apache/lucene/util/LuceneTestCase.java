@@ -30,6 +30,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.nio.file.FileSystem;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -64,7 +66,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
-import junit.framework.AssertionFailedError;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -77,6 +78,8 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.mockfile.FilterPath;
+import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -137,6 +140,8 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
 import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
 import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
+
+import junit.framework.AssertionFailedError;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
@@ -1266,6 +1271,16 @@ public abstract class LuceneTestCase extends Assert {
   public static BaseDirectoryWrapper newDirectory() {
     return newDirectory(random());
   }
+
+  /** Like {@link newDirectory} except randomly the {@link VirusCheckingFS} may be installed */
+  public static BaseDirectoryWrapper newMaybeVirusCheckingDirectory() {
+    if (random().nextInt(5) == 4) {
+      Path path = addVirusChecker(createTempDir());
+      return newFSDirectory(path);
+    } else {
+      return newDirectory(random());
+    }
+  }
   
   /**
    * Returns a new Directory instance, using the specified random.
@@ -1303,6 +1318,15 @@ public abstract class LuceneTestCase extends Assert {
     return (MockDirectoryWrapper) newFSDirectory(f, lf, false);
   }
 
+  public static Path addVirusChecker(Path path) {
+    if (TestUtil.hasVirusChecker(path) == false) {
+      VirusCheckingFS fs = new VirusCheckingFS(path.getFileSystem(), random().nextLong());
+      FileSystem filesystem = fs.getFileSystem(URI.create("file:///"));
+      path = new FilterPath(path, filesystem);
+    }
+    return path;
+  }
+
   /**
    * Returns a new Directory instance, with contents copied from the
    * provided directory. See {@link #newDirectory()} for more
@@ -1314,6 +1338,14 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
   public static BaseDirectoryWrapper newFSDirectory(Path f) {
+    return newFSDirectory(f, FSLockFactory.getDefault());
+  }
+
+  /** Like {@link newFSDirectory(Path)}, but randomly insert {@link VirusCheckingFS} */
+  public static BaseDirectoryWrapper newMaybeVirusCheckingFSDirectory(Path f) {
+    if (random().nextInt(5) == 4) {
+      f = addVirusChecker(f);
+    }
     return newFSDirectory(f, FSLockFactory.getDefault());
   }
 

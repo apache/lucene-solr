@@ -222,10 +222,9 @@ public abstract class FSDirectory extends BaseDirectory {
     }
     
     String[] array = entries.toArray(new String[entries.size()]);
-
-    // Don't let filesystem specifics leak out of this abstraction:
+    // Directory.listAll javadocs state that we sort the results here, so we don't let filesystem
+    // specifics leak out of this abstraction:
     Arrays.sort(array);
-
     return array;
   }
 
@@ -238,6 +237,9 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public long fileLength(String name) throws IOException {
     ensureOpen();
+    if (pendingDeletes.contains(name)) {
+      throw new NoSuchFileException("file \"" + name + "\" is pending delete");
+    }
     return Files.size(directory.resolve(name));
   }
 
@@ -284,10 +286,13 @@ public abstract class FSDirectory extends BaseDirectory {
       fsync(name);
     }
   }
-  
+
   @Override
   public void renameFile(String source, String dest) throws IOException {
     ensureOpen();
+    if (pendingDeletes.contains(source)) {
+      throw new NoSuchFileException("file \"" + source + "\" is pending delete and cannot be moved");
+    }
     maybeDeletePendingFiles();
     Files.move(directory.resolve(source), directory.resolve(dest), StandardCopyOption.ATOMIC_MOVE);
     // TODO: should we move directory fsync to a separate 'syncMetadata' method?
@@ -298,7 +303,7 @@ public abstract class FSDirectory extends BaseDirectory {
   @Override
   public synchronized void close() throws IOException {
     isOpen = false;
-    maybeDeletePendingFiles();
+    deletePendingFiles();
   }
 
   /** @return the underlying filesystem directory */
@@ -333,19 +338,21 @@ public abstract class FSDirectory extends BaseDirectory {
 
   /** Try to delete any pending files that we had previously tried to delete but failed
    *  because we are on Windows and the files were still held open. */
-  public void deletePendingFiles() throws IOException {
+  public synchronized void deletePendingFiles() throws IOException {
+    if (pendingDeletes.isEmpty() == false) {
 
-    // TODO: we could fix IndexInputs from FSDirectory subclasses to call this when they are closed?
+      // TODO: we could fix IndexInputs from FSDirectory subclasses to call this when they are closed?
 
-    // Clone the set since we mutate it in privateDeleteFile:
-    for(String name : new HashSet<>(pendingDeletes)) {
-      privateDeleteFile(name);
+      // Clone the set since we mutate it in privateDeleteFile:
+      for(String name : new HashSet<>(pendingDeletes)) {
+        privateDeleteFile(name);
+      }
     }
   }
 
   private void maybeDeletePendingFiles() throws IOException {
     if (pendingDeletes.isEmpty() == false) {
-      // This is a silly heuristic to try to avoid O(N^2), where N = number of files pending deletion, behavior:
+      // This is a silly heuristic to try to avoid O(N^2), where N = number of files pending deletion, behaviour on Windows:
       int count = opsSinceLastDelete.incrementAndGet();
       if (count >= pendingDeletes.size()) {
         opsSinceLastDelete.addAndGet(-count);

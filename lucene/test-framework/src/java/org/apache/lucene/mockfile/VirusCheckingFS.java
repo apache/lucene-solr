@@ -33,7 +33,7 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class VirusCheckingFS extends FilterFileSystemProvider {
 
-  private boolean enabled = true;
+  private volatile boolean enabled = true;
 
   private final AtomicLong state;
 
@@ -47,6 +47,10 @@ public class VirusCheckingFS extends FilterFileSystemProvider {
 
   public void enable() {
     enabled = true;
+  }
+
+  public boolean isEnabled() {
+    return enabled;
   }
 
   public void disable() {

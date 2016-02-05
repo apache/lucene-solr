@@ -56,7 +56,6 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
   /** Test obtaining and releasing locks, checking validity */
   public void testBasics() throws IOException {
     Path tempPath = createTempDir();
-    assumeFalse("test works with lock files", TestUtil.hasVirusChecker(tempPath));
     Directory dir = getDirectory(tempPath);
     
     Lock l = dir.obtainLock("commit");
@@ -76,7 +75,6 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
   /** Test closing locks twice */
   public void testDoubleClose() throws IOException {
     Path tempPath = createTempDir();
-    assumeFalse("test works with lock files", TestUtil.hasVirusChecker(tempPath));
     Directory dir = getDirectory(tempPath);
     
     Lock l = dir.obtainLock("commit");
@@ -89,7 +87,6 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
   /** Test ensureValid returns true after acquire */
   public void testValidAfterAcquire() throws IOException {
     Path tempPath = createTempDir();
-    assumeFalse("test works with lock files", TestUtil.hasVirusChecker(tempPath));
     Directory dir = getDirectory(tempPath);
     Lock l = dir.obtainLock("commit");
     l.ensureValid(); // no exception
@@ -100,7 +97,6 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
   /** Test ensureValid throws exception after close */
   public void testInvalidAfterClose() throws IOException {
     Path tempPath = createTempDir();
-    assumeFalse("test works with lock files", TestUtil.hasVirusChecker(tempPath));
     Directory dir = getDirectory(tempPath);
     
     Lock l = dir.obtainLock("commit");
@@ -115,7 +111,6 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
   
   public void testObtainConcurrently() throws InterruptedException, IOException {
     Path tempPath = createTempDir();
-    assumeFalse("test works with lock files", TestUtil.hasVirusChecker(tempPath));
     final Directory directory = getDirectory(tempPath);
     final AtomicBoolean running = new AtomicBoolean(true);
     final AtomicInteger atomicCounter = new AtomicInteger(0);
@@ -165,7 +160,6 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
   // no unexpected exceptions are raised:
   public void testStressLocks() throws Exception {
     Path tempPath = createTempDir();
-    assumeFalse("test works with lock files", TestUtil.hasVirusChecker(tempPath));
     Directory dir = getDirectory(tempPath);
 
     // First create a 1 doc index:

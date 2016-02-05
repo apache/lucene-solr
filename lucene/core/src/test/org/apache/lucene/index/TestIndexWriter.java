@@ -1265,7 +1265,6 @@ public class TestIndexWriter extends LuceneTestCase {
     for(int iter=0;iter<2;iter++) {
       // relies on windows semantics
       Path path = createTempDir();
-      assumeFalse("test directly deletes files", TestUtil.hasVirusChecker(path));
       FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
       Path indexPath = new FilterPath(path, fs);
 

@@ -29,10 +29,8 @@ import java.util.Random;
 
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
-import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.junit.Test;
 
-@SuppressFileSystems("VirusCheckingFS")
 public class TestCompactLabelToOrdinal extends FacetTestCase {
 
   @Test

@@ -30,7 +30,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.OfflineSorter.BufferSize;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
 import org.apache.lucene.util.OfflineSorter.SortInfo;
@@ -38,7 +37,6 @@ import org.apache.lucene.util.OfflineSorter.SortInfo;
 /**
  * Tests for on-disk merge sorting.
  */
-@SuppressFileSystems("VirusCheckingFS")
 public class TestOfflineSorter extends LuceneTestCase {
   private Path tempDir;
 

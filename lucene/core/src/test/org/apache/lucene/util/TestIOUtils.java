@@ -38,11 +38,9 @@ import java.util.UUID;
 import org.apache.lucene.mockfile.FilterFileSystem;
 import org.apache.lucene.mockfile.FilterFileSystemProvider;
 import org.apache.lucene.mockfile.FilterPath;
-import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 
 /** Simple test methods for IOUtils */
-@SuppressFileSystems("VirusCheckingFS")
 public class TestIOUtils extends LuceneTestCase {
   
   public void testDeleteFileIgnoringExceptions() throws Exception {

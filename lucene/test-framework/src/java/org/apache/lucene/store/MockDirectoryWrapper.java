@@ -20,6 +20,7 @@ package org.apache.lucene.store;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.FileSystem;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,6 +44,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NoDeletionPolicy;
+import org.apache.lucene.mockfile.FilterFileSystem;
+import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -270,7 +273,10 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         f.close();
       } catch (Exception ignored) {}
     }
-    
+
+    // Maybe disable virus checker so it doesn't interfere with our efforts to corrupt files below:
+    boolean virusCheckerWasEnabled = TestUtil.disableVirusChecker(in);
+
     while(it.hasNext()) {
       String name = it.next();
       int damage = randomState.nextInt(5);
@@ -318,14 +324,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState));
           out.copyBytes(ii, ii.length());
           ii.close();
-        } catch (IOException ioe) {
-          // VirusCheckingFS may have blocked the delete, at which point FSDir cannot overwrite here
-          if (ioe.getMessage().equals("file \"" + name + "\" is pending delete and cannot be overwritten")) {
-            // OK
-            action = "deleted";
-          } else {
-            throw ioe;
-          }
         }
         deleteFile(tempFileName);
       } else if (damage == 3) {
@@ -336,15 +334,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         // Totally truncate the file to zero bytes
         deleteFile(name);
         try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
-        } catch (IOException ioe) {
-          // VirusCheckingFS may have blocked the delete, at which point FSDir cannot overwrite here
-          if (ioe.getMessage().equals("file \"" + name + "\" is pending delete and cannot be overwritten")) {
-            // OK
-            action = "deleted";
-          } else {
-            throw ioe;
-          }
         }
+      }
+      // Re-enable
+      if (virusCheckerWasEnabled) {
+        TestUtil.enableVirusChecker(in);
       }
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockDirectoryWrapper: " + action + " unsynced file: " + name);
@@ -746,11 +740,16 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           
           // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
           if (assertNoUnreferencedFilesOnClose) {
+
             // now look for unreferenced files: discount ones that we tried to delete but could not
             Set<String> allFiles = new HashSet<>(Arrays.asList(listAll()));
             String[] startFiles = allFiles.toArray(new String[0]);
             IndexWriterConfig iwc = new IndexWriterConfig(null);
             iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
+
+            // We must do this before opening writer otherwise writer will be angry if there are pending deletions:
+            TestUtil.disableVirusChecker(in);
+
             new IndexWriter(in, iwc).rollback();
             String[] endFiles = in.listAll();
             

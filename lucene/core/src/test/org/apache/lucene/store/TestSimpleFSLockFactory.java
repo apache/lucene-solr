@@ -35,7 +35,6 @@ public class TestSimpleFSLockFactory extends BaseLockFactoryTestCase {
   public void testDeleteLockFile() throws IOException {
     Directory dir = getDirectory(createTempDir());
     try {
-      assumeFalse("test directly deletes lock files", TestUtil.hasVirusChecker(dir));
       Lock lock = dir.obtainLock("test.lock");
       lock.ensureValid();
     
