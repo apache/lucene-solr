@@ -97,7 +97,7 @@ public final class GeoPointField extends Field {
    *  @param lon longitude double value [-180.0 : 180.0]
    *  @param lat latitude double value [-90.0 : 90.0]
    *  @param type customized field type: must have {@link FieldType#numericType()}
-   *         of {@link FieldType.NumericType#LONG}.
+   *         of {@link org.apache.lucene.document.FieldType.NumericType#LONG}.
    *  @throws IllegalArgumentException if the field name or type is null, or
    *          if the field type does not have a LONG numericType()
    */
