@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Map;
@@ -28,52 +27,23 @@ import org.apache.lucene.index.SegmentInfos;
 
 /**
  * A {@link MergePolicy} that only returns forced merges.
- * <p><b>NOTE</b>: Use this policy if you wish to disallow background
- * merges but wish to run optimize/forceMerge segment merges.
+ * <p>
+ * <b>NOTE</b>: Use this policy if you wish to disallow background merges but wish to run optimize/forceMerge segment
+ * merges.
  *
- *  @lucene.experimental
+ * @lucene.experimental
  */
-public final class ForceMergePolicy extends MergePolicy {
-
-  final MergePolicy in;
+public final class ForceMergePolicy extends MergePolicyWrapper {
 
   /** Create a new {@code ForceMergePolicy} around the given {@code MergePolicy} */
   public ForceMergePolicy(MergePolicy in) {
-    this.in = in;
+    super(in);
   }
 
   @Override
-  public MergeSpecification findMerges(MergeTrigger mergeTrigger,
-      SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
+  public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer)
+      throws IOException {
     return null;
   }
 
-  @Override
-  public MergeSpecification findForcedMerges(SegmentInfos segmentInfos,
-      int maxSegmentCount, Map<SegmentCommitInfo,Boolean> segmentsToMerge, IndexWriter writer)
-      throws IOException {
-    return in.findForcedMerges(segmentInfos, maxSegmentCount, segmentsToMerge, writer);
-  }
-
-  @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer)
-      throws IOException {
-    return in.findForcedDeletesMerges(segmentInfos, writer);
-  }
-
-  @Override
-  public boolean useCompoundFile(SegmentInfos segments,
-      SegmentCommitInfo newSegment, IndexWriter writer) throws IOException {
-    return in.useCompoundFile(segments, newSegment, writer);
-  }
-
-  @Override
-  protected long size(SegmentCommitInfo info, IndexWriter writer) throws IOException {
-    return in.size(info, writer);
-  }
-
-  @Override
-  public String toString() {
-    return "ForceMergePolicy(" + in + ")";
-  }
 }

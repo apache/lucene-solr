@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -468,7 +468,7 @@ public abstract class MergePolicy {
   /** Returns current {@code noCFSRatio}.
    *
    *  @see #setNoCFSRatio */
-  public final double getNoCFSRatio() {
+  public double getNoCFSRatio() {
     return noCFSRatio;
   }
 
@@ -477,7 +477,7 @@ public abstract class MergePolicy {
    *  non-compound file even if compound file is enabled.
    *  Set to 1.0 to always use CFS regardless of merge
    *  size. */
-  public final void setNoCFSRatio(double noCFSRatio) {
+  public void setNoCFSRatio(double noCFSRatio) {
     if (noCFSRatio < 0.0 || noCFSRatio > 1.0) {
       throw new IllegalArgumentException("noCFSRatio must be 0.0 to 1.0 inclusive; got " + noCFSRatio);
     }
@@ -494,7 +494,7 @@ public abstract class MergePolicy {
    *  non-compound file even if compound file is enabled.
    *  Set this to Double.POSITIVE_INFINITY (default) and noCFSRatio to 1.0
    *  to always use CFS regardless of merge size. */
-  public final void setMaxCFSSegmentSizeMB(double v) {
+  public void setMaxCFSSegmentSizeMB(double v) {
     if (v < 0.0) {
       throw new IllegalArgumentException("maxCFSSegmentSizeMB must be >=0 (got " + v + ")");
     }

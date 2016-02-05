@@ -1,12 +1,3 @@
-package org.apache.lucene.util;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,6 +14,14 @@ import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import com.carrotsearch.randomizedtesting.rules.TestRuleAdapter;
 
 /**
  * Restore a given set of system properties to a snapshot taken at the beginning

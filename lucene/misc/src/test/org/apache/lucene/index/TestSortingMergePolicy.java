@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -76,12 +75,6 @@ public class TestSortingMergePolicy extends BaseMergePolicyTestCase {
     doc.add(new NumericDocValuesField("ndv", random().nextLong()));
     doc.add(new StringField("s", RandomPicks.randomFrom(random(), terms), Store.YES));
     return doc;
-  }
-
-  @Override
-  public void testForceMergeNotNeeded() throws IOException {
-    // This is a no-op until we figure out why the (super class) test fails.
-    // https://issues.apache.org/jira/browse/LUCENE-7008
   }
 
   public MergePolicy mergePolicy() {
@@ -201,17 +194,6 @@ public class TestSortingMergePolicy extends BaseMergePolicyTestCase {
       fail("Didn't get expected exception");
     } catch (IllegalArgumentException e) {
       assertEquals("Cannot sort an index with a Sort that refers to the relevance score", e.getMessage());
-    }
-  }
-
-  public void testMethodsOverridden() throws Exception {
-    for (Method m : MergePolicy.class.getDeclaredMethods()) {
-      if (Modifier.isFinal(m.getModifiers())) continue;
-      try {
-        SortingMergePolicy.class.getDeclaredMethod(m.getName(),  m.getParameterTypes());
-      } catch (NoSuchMethodException e) {
-        fail("SortingMergePolicy needs to override '"+m+"'");
-      }
     }
   }
 

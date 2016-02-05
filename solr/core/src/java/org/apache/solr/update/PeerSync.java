@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.update;
 
 import java.io.IOException;
@@ -69,6 +68,7 @@ public class PeerSync  {
   private UpdateLog ulog;
   private HttpShardHandlerFactory shardHandlerFactory;
   private ShardHandler shardHandler;
+  private List<SyncShardRequest> requests = new ArrayList<>();
 
   private List<Long> startingVersions;
 
@@ -77,8 +77,10 @@ public class PeerSync  {
   private Set<Long> requestedUpdateSet;
   private long ourLowThreshold;  // 20th percentile
   private long ourHighThreshold; // 80th percentile
+  private long ourHighest;  // currently just used for logging/debugging purposes
   private final boolean cantReachIsSuccess;
   private final boolean getNoVersionsIsSuccess;
+  private final boolean doFingerprint;
   private final HttpClient client;
   private final boolean onlyIfActive;
   private SolrCore core;
@@ -117,6 +119,8 @@ public class PeerSync  {
 
   private static class SyncShardRequest extends ShardRequest {
     List<Long> reportedVersions;
+    IndexFingerprint fingerprint;
+    boolean doFingerprintComparison;
     List<Long> requestedUpdates;
     Exception updateException;
   }
@@ -126,16 +130,17 @@ public class PeerSync  {
   }
   
   public PeerSync(SolrCore core, List<String> replicas, int nUpdates, boolean cantReachIsSuccess, boolean getNoVersionsIsSuccess) {
-    this(core, replicas, nUpdates, cantReachIsSuccess, getNoVersionsIsSuccess, false);
+    this(core, replicas, nUpdates, cantReachIsSuccess, getNoVersionsIsSuccess, false, true);
   }
   
-  public PeerSync(SolrCore core, List<String> replicas, int nUpdates, boolean cantReachIsSuccess, boolean getNoVersionsIsSuccess, boolean onlyIfActive) {
+  public PeerSync(SolrCore core, List<String> replicas, int nUpdates, boolean cantReachIsSuccess, boolean getNoVersionsIsSuccess, boolean onlyIfActive, boolean doFingerprint) {
     this.core = core;
     this.replicas = replicas;
     this.nUpdates = nUpdates;
     this.maxUpdates = nUpdates;
     this.cantReachIsSuccess = cantReachIsSuccess;
     this.getNoVersionsIsSuccess = getNoVersionsIsSuccess;
+    this.doFingerprint = doFingerprint;
     this.client = core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getHttpClient();
     this.onlyIfActive = onlyIfActive;
     
@@ -170,9 +175,8 @@ public class PeerSync  {
     return "PeerSync: core="+uhandler.core.getName()+ " url="+myURL +" ";
   }
 
-  /** Returns true if peer sync was successful, meaning that this core may not be considered to have the latest updates
-   *  when considering the last N updates between it and its peers.
-   *  A commit is not performed.
+  /** Returns true if peer sync was successful, meaning that this core may be considered to have the latest updates.
+   * It does not mean that the remote replica is in sync with us.
    */
   public boolean sync() {
     if (ulog == null) {
@@ -211,7 +215,7 @@ public class PeerSync  {
         
         ourLowThreshold = percentile(startingVersions, 0.8f);
         ourHighThreshold = percentile(startingVersions, 0.2f);
-        
+
         // now make sure that the starting updates overlap our updates
         // there shouldn't be reorders, so any overlap will do.
         
@@ -232,6 +236,7 @@ public class PeerSync  {
         }
         
         ourUpdates = newList;
+        Collections.sort(ourUpdates, absComparator);
       } else {
         
         if (ourUpdates.size() > 0) {
@@ -244,9 +249,10 @@ public class PeerSync  {
           return false;
         }
       }
-      
+
+      ourHighest = ourUpdates.get(0);
       ourUpdateSet = new HashSet<>(ourUpdates);
-      requestedUpdateSet = new HashSet<>(ourUpdates);
+      requestedUpdateSet = new HashSet<>();
       
       for (;;) {
         ShardResponse srsp = shardHandler.takeCompletedOrError();
@@ -258,9 +264,18 @@ public class PeerSync  {
           return false;
         }
       }
-      
-      log.info(msg() + "DONE. sync succeeded");
-      return true;
+
+      // finish up any comparisons with other shards that we deferred
+      boolean success = true;
+      for (SyncShardRequest sreq : requests) {
+        if (sreq.doFingerprintComparison) {
+          success = compareFingerprint(sreq);
+          if (!success) break;
+        }
+      }
+
+      log.info(msg() + "DONE. sync " + (success ? "succeeded" : "failed"));
+      return success;
     } finally {
       MDCLoggingContext.clear();
     }
@@ -268,6 +283,7 @@ public class PeerSync  {
   
   private void requestVersions(String replica) {
     SyncShardRequest sreq = new SyncShardRequest();
+    requests.add(sreq);
     sreq.purpose = 1;
     sreq.shards = new String[]{replica};
     sreq.actualShards = sreq.shards;
@@ -275,6 +291,7 @@ public class PeerSync  {
     sreq.params.set("qt","/get");
     sreq.params.set("distrib",false);
     sreq.params.set("getVersions",nUpdates);
+    sreq.params.set("fingerprint",doFingerprint);
     shardHandler.submit(sreq, replica, sreq.params);
   }
 
@@ -356,7 +373,12 @@ public class PeerSync  {
     SyncShardRequest sreq = (SyncShardRequest) srsp.getShardRequest();
     sreq.reportedVersions =  otherVersions;
 
-    log.info(msg() + " Received " + otherVersions.size() + " versions from " + sreq.shards[0] );
+    Object fingerprint = srsp.getSolrResponse().getResponse().get("fingerprint");
+
+    log.info(msg() + " Received " + otherVersions.size() + " versions from " + sreq.shards[0] + " fingerprint:" + fingerprint );
+    if (fingerprint != null) {
+      sreq.fingerprint = IndexFingerprint.fromObject(fingerprint);
+    }
 
     if (otherVersions.size() == 0) {
       return getNoVersionsIsSuccess; 
@@ -372,13 +394,14 @@ public class PeerSync  {
     
     long otherHigh = percentile(otherVersions, .2f);
     long otherLow = percentile(otherVersions, .8f);
+    long otherHighest = otherVersions.get(0);
 
     if (ourHighThreshold < otherLow) {
       // Small overlap between version windows and ours is older
       // This means that we might miss updates if we attempted to use this method.
       // Since there exists just one replica that is so much newer, we must
       // fail the sync.
-      log.info(msg() + " Our versions are too old. ourHighThreshold="+ourHighThreshold + " otherLowThreshold="+otherLow);
+      log.info(msg() + " Our versions are too old. ourHighThreshold="+ourHighThreshold + " otherLowThreshold="+otherLow + " ourHighest=" + ourHighest + " otherHighest=" + otherHighest);
       return false;
     }
 
@@ -386,7 +409,10 @@ public class PeerSync  {
       // Small overlap between windows and ours is newer.
       // Using this list to sync would result in requesting/replaying results we don't need
       // and possibly bringing deleted docs back to life.
-      log.info(msg() + " Our versions are newer. ourLowThreshold="+ourLowThreshold + " otherHigh="+otherHigh);
+      log.info(msg() + " Our versions are newer. ourLowThreshold="+ourLowThreshold + " otherHigh="+otherHigh+ " ourHighest=" + ourHighest + " otherHighest=" + otherHighest);
+
+      // Because our versions are newer, IndexFingerprint with the remote would not match us.
+      // We return true on our side, but the remote peersync with us should fail.
       return true;
     }
     
@@ -409,9 +435,15 @@ public class PeerSync  {
     sreq.requestedUpdates = toRequest;
     
     if (toRequest.isEmpty()) {
-      log.info(msg() + " Our versions are newer. ourLowThreshold="+ourLowThreshold + " otherHigh="+otherHigh);
+      log.info(msg() + " No additional versions requested. ourLowThreshold="+ourLowThreshold + " otherHigh="+otherHigh+ " ourHighest=" + ourHighest + " otherHighest=" + otherHighest);
 
       // we had (or already requested) all the updates referenced by the replica
+
+      // If we requested updates from another replica, we can't compare fingerprints yet with this replica, we need to defer
+      if (doFingerprint) {
+        sreq.doFingerprintComparison = true;
+      }
+
       return true;
     }
     
@@ -421,6 +453,19 @@ public class PeerSync  {
     }
 
     return requestUpdates(srsp, toRequest);
+  }
+
+  private boolean compareFingerprint(SyncShardRequest sreq) {
+    if (sreq.fingerprint == null) return true;
+    try {
+      IndexFingerprint ourFingerprint = IndexFingerprint.getFingerprint(core, Long.MAX_VALUE);
+      int cmp = IndexFingerprint.compare(ourFingerprint, sreq.fingerprint);
+      log.info("Fingerprint comparison: " + cmp);
+      return cmp == 0;  // currently, we only check for equality...
+    } catch(IOException e){
+      log.error(msg() + "Error getting index fingerprint", e);
+      return false;
+    }
   }
 
   private boolean requestUpdates(ShardResponse srsp, List<Long> toRequest) {
@@ -557,7 +602,7 @@ public class PeerSync  {
       }
     }
 
-    return true;
+    return compareFingerprint(sreq);
   }
 
 

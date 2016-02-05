@@ -1,13 +1,3 @@
-package org.apache.lucene.analysis.cz;
-
-import java.io.IOException;
-
-import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter; // for javadoc
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,6 +14,16 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.analysis.cz;
+
+import java.io.IOException;
+
+import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter; // for javadoc
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+
 
 /**
  * A {@link TokenFilter} that applies {@link CzechStemmer} to stem Czech words.

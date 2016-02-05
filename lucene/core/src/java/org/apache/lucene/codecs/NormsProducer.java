@@ -1,12 +1,3 @@
-package org.apache.lucene.codecs;
-
-import java.io.Closeable;
-import java.io.IOException;
-
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.util.Accountable;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,6 +14,15 @@ import org.apache.lucene.util.Accountable;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs;
+
+import java.io.Closeable;
+import java.io.IOException;
+
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.util.Accountable;
+
 
 /** Abstract API that produces field normalization values
  *

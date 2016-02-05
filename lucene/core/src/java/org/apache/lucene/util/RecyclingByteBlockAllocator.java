@@ -1,7 +1,3 @@
-package org.apache.lucene.util;
-
-import org.apache.lucene.util.ByteBlockPool.Allocator;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +14,10 @@ import org.apache.lucene.util.ByteBlockPool.Allocator;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
+
+import org.apache.lucene.util.ByteBlockPool.Allocator;
+
 
 /**
  * A {@link ByteBlockPool.Allocator} implementation that recycles unused byte

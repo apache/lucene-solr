@@ -1,6 +1,3 @@
-package org.apache.lucene.analysis.de;
-// This file is encoded in UTF-8
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,6 +14,9 @@ package org.apache.lucene.analysis.de;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.analysis.de;
+// This file is encoded in UTF-8
+
 
 import java.io.IOException;
 import java.io.Reader;

@@ -1,5 +1,3 @@
-package org.apache.lucene.queries.payloads;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,7 +14,7 @@ package org.apache.lucene.queries.payloads;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+package org.apache.lucene.queries.payloads;
 
 /**
  * Returns the maximum payload score seen, else 1 if there are no payloads on the doc.

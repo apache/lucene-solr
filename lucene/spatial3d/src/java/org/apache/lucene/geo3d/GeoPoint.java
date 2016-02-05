@@ -1,5 +1,3 @@
-package org.apache.lucene.geo3d;
-    
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,7 +14,8 @@ package org.apache.lucene.geo3d;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+package org.apache.lucene.geo3d;
+    
 /**
  * This class represents a point on the surface of a sphere or ellipsoid.
  *

@@ -1,7 +1,3 @@
-package org.apache.solr.client.solrj;
-
-import java.io.BufferedOutputStream;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +14,9 @@ import java.io.BufferedOutputStream;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj;
+
+import java.io.BufferedOutputStream;
 
 import java.io.IOException;
 import java.io.InputStream;

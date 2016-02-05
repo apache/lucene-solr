@@ -1,5 +1,3 @@
-package org.apache.solr.handler.component;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.solr.handler.component;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.handler.component;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -67,6 +66,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.update.DocumentBuilder;
+import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.PeerSync;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RefCounted;
@@ -597,6 +597,8 @@ public class RealTimeGetComponent extends SearchComponent
     int nVersions = params.getInt("getVersions", -1);
     if (nVersions == -1) return;
 
+    boolean doFingerprint = params.getBool("fingerprint", false);
+
     String sync = params.get("sync");
     if (sync != null) {
       processSync(rb, nVersions, sync);
@@ -608,6 +610,11 @@ public class RealTimeGetComponent extends SearchComponent
 
     try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
       rb.rsp.add("versions", recentUpdates.getVersions(nVersions));
+    }
+
+    if (doFingerprint) {
+      IndexFingerprint fingerprint = IndexFingerprint.getFingerprint(req.getCore(), Long.MAX_VALUE);
+      rb.rsp.add("fingerprint", fingerprint.toObject());
     }
   }
 

@@ -21,7 +21,7 @@
 import math
 import os
 import sys
-#sys.path.insert(0, 'moman/finenight/python')
+# sys.path.insert(0, 'moman/finenight/python')
 sys.path.insert(0, '../../../../../../../../build/core/moman/finenight/python')
 try:
   from possibleStates import genTransitions
@@ -31,8 +31,8 @@ except ImportError:
 MODE = 'array'
 PACKED = True
 WORD = 64
-LOG2_WORD = int(math.log(WORD)/math.log(2))
-#MODE = 'switch'
+LOG2_WORD = int(math.log(WORD) / math.log(2))
+# MODE = 'switch'
 
 class LineOutput:
 
@@ -47,7 +47,7 @@ class LineOutput:
       self._indent = self._indent[:-2]
 
     if indent != 0:
-      indent0 = '  ' * (len(self._indent)/2+indent)
+      indent0 = '  ' * (len(self._indent) / 2 + indent)
     else:
       indent0 = self._indent
 
@@ -79,7 +79,7 @@ class LineOutput:
   def outdent(self):
     assert self._indent != self.startIndent
     self._indent = self._indent[:-2]
-    
+
 def charVarNumber(charVar):
   """
   Maps binary number (eg [1, 0, 1]) to its decimal value (5).
@@ -87,7 +87,7 @@ def charVarNumber(charVar):
 
   p = 1
   sum = 0
-  downTo = len(charVar)-1
+  downTo = len(charVar) - 1
   while downTo >= 0:
     sum += p * int(charVar[downTo])
     p *= 2
@@ -120,8 +120,6 @@ def main():
 
   w = LineOutput()
 
-  w('package org.apache.lucene.util.automaton;')
-  w('')
   w('/*')
   w(' * Licensed to the Apache Software Foundation (ASF) under one or more')
   w(' * contributor license agreements.  See the NOTICE file distributed with')
@@ -138,6 +136,7 @@ def main():
   w(' * See the License for the specific language governing permissions and')
   w(' * limitations under the License.')
   w(' */')
+  w('package org.apache.lucene.util.automaton;')
   w('')
   w('// The following code was generated with the moman/finenight pkg')
   w('// This package is available under the MIT License, see NOTICE.txt')
@@ -167,14 +166,14 @@ def main():
   w('  int state = absState/(w+1);')
   w('  int offset = absState%(w+1);')
   w('  assert offset >= 0;')
-  w('')  
+  w('')
 
   machines = []
-  
+
   for i, map in enumerate(tables):
     if i == 0:
       w('if (position == w) {')
-    elif i == len(tables)-1:
+    elif i == len(tables) - 1:
       w('} else {')
     else:
       w('} else if (position == w-%d) {' % i)
@@ -200,7 +199,7 @@ def main():
       if i != 0 and MODE == 'switch':
         w('case %s: // <%s>' % (charVarNumber(charVar), ','.join([str(x) for x in charVar])))
         w.indent()
-        
+
       l = states.items()
 
       byFromState = {}
@@ -209,17 +208,17 @@ def main():
       byAction = {}
       for s, (toS, offset) in l:
         state = str(s)
-        
+
         toState = str(toS)
         if state not in stateMap:
-          stateMap[state] = len(stateMap)-1
+          stateMap[state] = len(stateMap) - 1
         if toState not in stateMap:
-          stateMap[toState] = len(stateMap)-1
+          stateMap[toState] = len(stateMap) - 1
 
-        byFromState[stateMap[state]] = (1+stateMap[toState], offset)
+        byFromState[stateMap[state]] = (1 + stateMap[toState], offset)
 
-        fromStateDesc = s[1:len(s)-1]
-        toStateDesc = ', '.join([str(x) for x in toS])   
+        fromStateDesc = s[1:len(s) - 1]
+        toStateDesc = ', '.join([str(x) for x in toS])
 
         tup = (stateMap[toState], toStateDesc, offset)
         if tup not in byAction:
@@ -298,7 +297,7 @@ def main():
       w('')
       w.outdent()
       w('// %d vectors; %d states per vector; array length = %d' % \
-        (numVectors, numCasesPerVector, numVectors*numCasesPerVector))
+        (numVectors, numCasesPerVector, numVectors * numCasesPerVector))
       w.indent()
       if PACKED:
         # pack in python
@@ -317,26 +316,26 @@ def main():
         w('  private final static int[] offsetIncrs%d = new int[] %s;' % \
           (i, renderList([str(x) for x in toStateArray])))
     w.outdent()
-  
-  stateMap2 = dict([[v,k] for k,v in stateMap.items()])
+
+  stateMap2 = dict([[v, k] for k, v in stateMap.items()])
   w('')
   w('// state map')
   sum = 0
   minErrors = []
-  for i in xrange(len(stateMap2)-1):
+  for i in xrange(len(stateMap2) - 1):
     w('//   %s -> %s' % (i, stateMap2[i]))
     # we replace t-notation as it's not relevant here
     st = stateMap2[i].replace('t', '')
-    
+
     v = eval(st)
-    minError = min([-i+e for i, e in v])
+    minError = min([-i + e for i, e in v])
     c = len(v)
     sum += c
     minErrors.append(minError)
   w('')
 
   w.indent()
-  #w('private final static int[] minErrors = new int[] {%s};' % ','.join([str(x) for x in minErrors]))
+  # w('private final static int[] minErrors = new int[] {%s};' % ','.join([str(x) for x in minErrors]))
 
   w.outdent()
 
@@ -349,7 +348,7 @@ def main():
     w('')
     w('@Override')
     w('public int size() { // this can now move up?')
-    w('  return %d*(w+1);' % (len(stateMap2)-1))
+    w('  return %d*(w+1);' % (len(stateMap2) - 1))
     w('}')
 
     w('')
@@ -381,7 +380,7 @@ def main():
       v = 2
       l = []
       for i in range(63):
-        l.append(hex(v-1))
+        l.append(hex(v - 1))
         v *= 2
 
       w('private final static long[] MASKS = new long[] {%s};' % ','.join(l), indent=1)
@@ -391,7 +390,7 @@ def main():
       w('private int unpack(long[] data, int index, int bitsPerValue) {')
       w('  final long bitLoc = bitsPerValue * index;')
       w('  final int dataLoc = (int) (bitLoc >> %d);' % LOG2_WORD)
-      w('  final int bitStart = (int) (bitLoc & %d);' % (WORD-1))
+      w('  final int bitStart = (int) (bitLoc & %d);' % (WORD - 1))
       w('  //System.out.println("index=" + index + " dataLoc=" + dataLoc + " bitStart=" + bitStart + " bitsPerV=" + bitsPerValue);')
       w('  if (bitStart + bitsPerValue <= %d) {' % WORD)
       w('    // not split')
@@ -403,7 +402,7 @@ def main():
       w('      ((data[1+dataLoc] & MASKS[bitsPerValue-part-1]) << part));', indent=1)
       w('  }')
       w('}')
-  
+
   # class
   w('}')
   w('')
@@ -417,7 +416,7 @@ def main():
   open(fileOut, 'wb').write(s)
 
   print 'Wrote %s [%d lines; %.1f KB]' % \
-        (fileOut, len(w.l), os.path.getsize(fileOut)/1024.)
+        (fileOut, len(w.l), os.path.getsize(fileOut) / 1024.)
 
 def renderList(l):
   lx = ['    ']
@@ -432,13 +431,13 @@ def renderList(l):
 MASKS = []
 v = 2
 for i in xrange(63):
-  MASKS.append(v-1)
+  MASKS.append(v - 1)
   v *= 2
 
 # packs into longs; returns long[], numBits
 def pack(l):
   maxV = max(l)
-  bitsPerValue = max(1, int(math.ceil(math.log(maxV+1)/math.log(2.0))))
+  bitsPerValue = max(1, int(math.ceil(math.log(maxV + 1) / math.log(2.0))))
 
   bitsLeft = WORD
   pendingValue = 0
@@ -447,11 +446,11 @@ def pack(l):
   for i in xrange(len(l)):
     v = l[i]
     if pendingValue > 0:
-      bitsUsed = math.ceil(math.log(pendingValue)/math.log(2.0))
-      assert bitsUsed <= (WORD-bitsLeft), 'bitsLeft=%s (%s-%s=%s) bitsUsed=%s' % (bitsLeft, WORD, bitsLeft, WORD-bitsLeft, bitsUsed)
-      
+      bitsUsed = math.ceil(math.log(pendingValue) / math.log(2.0))
+      assert bitsUsed <= (WORD - bitsLeft), 'bitsLeft=%s (%s-%s=%s) bitsUsed=%s' % (bitsLeft, WORD, bitsLeft, WORD - bitsLeft, bitsUsed)
+
     if bitsLeft >= bitsPerValue:
-      pendingValue += v << (WORD-bitsLeft)
+      pendingValue += v << (WORD - bitsLeft)
       bitsLeft -= bitsPerValue
       if bitsLeft == 0:
         packed.append(pendingValue)
@@ -461,17 +460,17 @@ def pack(l):
       # split
 
       # bottom bitsLeft go in current word:
-      pendingValue += (v & MASKS[bitsLeft-1]) << (WORD-bitsLeft)
+      pendingValue += (v & MASKS[bitsLeft - 1]) << (WORD - bitsLeft)
       packed.append(pendingValue)
 
       pendingValue = v >> bitsLeft
-      bitsLeft = WORD - (bitsPerValue-bitsLeft)
+      bitsLeft = WORD - (bitsPerValue - bitsLeft)
 
   if bitsLeft < WORD:
     packed.append(pendingValue)
 
   # verify(l, packed, bitsPerValue)
-  
+
   return packed, bitsPerValue
 
 def verify(data, packedData, bitsPerValue):
@@ -481,16 +480,16 @@ def verify(data, packedData, bitsPerValue):
 def unpack(data, index, bitsPerValue):
   bitLoc = bitsPerValue * index
   dataLoc = int(bitLoc >> LOG2_WORD)
-  bitStart = int(bitLoc & (WORD-1))
+  bitStart = int(bitLoc & (WORD - 1))
   if bitStart + bitsPerValue <= WORD:
     # not split
-    return int(((data[dataLoc] >> bitStart) & MASKS[bitsPerValue-1]))
+    return int(((data[dataLoc] >> bitStart) & MASKS[bitsPerValue - 1]))
   else:
     # split
-    part = WORD-bitStart;
-    return int((((data[dataLoc] >> bitStart) & MASKS[part-1]) +
-                ((data[1+dataLoc] & MASKS[bitsPerValue-part-1]) << part)))
-  
+    part = WORD - bitStart;
+    return int((((data[dataLoc] >> bitStart) & MASKS[part - 1]) +
+                ((data[1 + dataLoc] & MASKS[bitsPerValue - part - 1]) << part)))
+
 if __name__ == '__main__':
   if not __debug__:
     print

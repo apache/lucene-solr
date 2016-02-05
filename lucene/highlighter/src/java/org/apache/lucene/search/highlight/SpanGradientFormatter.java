@@ -1,4 +1,3 @@
-package org.apache.lucene.search.highlight;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +14,7 @@ package org.apache.lucene.search.highlight;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+package org.apache.lucene.search.highlight;
 /**
  * Formats text with different color intensity depending on the score of the
  * term using the span tag.  GradientFormatter uses a bgcolor argument to the font tag which

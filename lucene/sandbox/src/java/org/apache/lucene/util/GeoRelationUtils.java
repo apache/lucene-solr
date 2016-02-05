@@ -1,5 +1,3 @@
-package org.apache.lucene.util;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
 
 /**
  * Reusable geo-relation utility methods
@@ -50,8 +49,8 @@ public class GeoRelationUtils {
      * TODO convert coordinates to cylindrical projection (e.g. mercator)
      */
     for (int i = 1; i < x.length; i++) {
-      if (x[i] < lon && x[i-1] >= lon || x[i-1] < lon && x[i] >= lon) {
-        if (y[i] + (lon - x[i]) / (x[i-1] - x[i]) * (y[i-1] - y[i]) < lat) {
+      if (x[i] <= lon && x[i-1] >= lon || x[i-1] <= lon && x[i] >= lon) {
+        if (y[i] + (lon - x[i]) / (x[i-1] - x[i]) * (y[i-1] - y[i]) <= lat) {
           inPoly = !inPoly;
         }
       }

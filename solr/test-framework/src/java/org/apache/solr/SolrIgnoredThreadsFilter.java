@@ -1,10 +1,3 @@
-package org.apache.solr;
-
-import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
-
-import com.carrotsearch.randomizedtesting.ThreadFilter;
-
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,6 +14,12 @@ import com.carrotsearch.randomizedtesting.ThreadFilter;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr;
+
+import org.apache.lucene.search.TimeLimitingCollector.TimerThread;
+
+import com.carrotsearch.randomizedtesting.ThreadFilter;
+
 
 /**
  * This ignores those threads in Solr for which there is no way to

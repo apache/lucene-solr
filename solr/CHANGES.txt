@@ -158,6 +158,10 @@ Bug Fixes
   values settings when copying a FieldInfo (Ishan Chattopadhyaya via
   Mike McCandless)
 
+* SOLR-8409: Ensures that quotes in solr params (eg. q param) are properly handled (Dennis Gove)
+
+* SOLR-8640: CloudSolrClient does not send credentials for update request (noble, hoss)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
@@ -340,6 +344,10 @@ New Features
 * SOLR-8560: Added RequestStatusState enum which can be used when comparing states of 
   asynchronous requests. (Shai Erera)
 
+* SOLR-8586: added index fingerprint, a hash over all versions currently in the index.
+  PeerSync now uses this to check if replicas are in sync. (yonik)
+
+
 Bug Fixes
 ----------------------
 
@@ -436,6 +444,9 @@ Bug Fixes
 
 * SOLR-8607: The Schema API refuses to add new fields that match existing dynamic fields.
   (Jan Høydahl, Steve Rowe)
+
+* SOLR-8575: Fix HDFSLogReader replay status numbers and a performance bug where we can reopen
+  FSDataInputStream too often. (Mark Miller, Patrick Dvorack)
   
 Optimizations
 ----------------------

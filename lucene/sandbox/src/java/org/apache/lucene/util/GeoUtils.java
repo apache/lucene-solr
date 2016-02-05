@@ -1,5 +1,3 @@
-package org.apache.lucene.util;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
 
 import java.util.ArrayList;
 
@@ -218,7 +217,8 @@ public final class GeoUtils {
       maxLat = Math.max(polyLats[i], maxLat);
     }
     // expand bounding box by TOLERANCE factor to handle round-off error
-    return new GeoRect(minLon - TOLERANCE, maxLon + TOLERANCE, minLat - TOLERANCE, maxLat + TOLERANCE);
+    return new GeoRect(Math.max(minLon - TOLERANCE, MIN_LON_INCL), Math.min(maxLon + TOLERANCE, MAX_LON_INCL),
+        Math.max(minLat - TOLERANCE, MIN_LAT_INCL), Math.min(maxLat + TOLERANCE, MAX_LAT_INCL));
   }
 
   /**

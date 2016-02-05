@@ -1,5 +1,3 @@
-package org.apache.solr.client.solrj.impl;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,7 +14,7 @@ package org.apache.solr.client.solrj.impl;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+package org.apache.solr.client.solrj.impl;
 
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;

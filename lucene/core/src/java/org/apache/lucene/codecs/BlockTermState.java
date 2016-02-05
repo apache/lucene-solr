@@ -1,4 +1,3 @@
-package org.apache.lucene.codecs;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,6 +14,7 @@ package org.apache.lucene.codecs;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs;
 
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader; // javadocs
 import org.apache.lucene.index.OrdTermState;

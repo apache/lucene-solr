@@ -1,10 +1,3 @@
-package org.apache.lucene.facet.taxonomy.writercache;
-
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import org.apache.lucene.facet.taxonomy.FacetLabel;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,6 +14,12 @@ import org.apache.lucene.facet.taxonomy.FacetLabel;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.facet.taxonomy.writercache;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import org.apache.lucene.facet.taxonomy.FacetLabel;
 
 /**
  * An an LRU cache of mapping from name to int.
