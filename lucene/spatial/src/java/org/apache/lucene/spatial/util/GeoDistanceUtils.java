@@ -14,7 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.util;
+package org.apache.lucene.spatial.util;
+
+import org.apache.lucene.util.SloppyMath;
 
 import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
 
@@ -26,6 +28,10 @@ import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
 public class GeoDistanceUtils {
   /** error threshold for point-distance queries (in percent) NOTE: Guideline from USGS is 0.005 **/
   public static final double DISTANCE_PCT_ERR = 0.005;
+
+  // No instance:
+  private GeoDistanceUtils() {
+  }
 
   /**
    * Compute the great-circle distance using original haversine implementation published by Sinnot in:

@@ -14,17 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.spatial.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.GeoPointField;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.GeoRect;
-import org.apache.lucene.util.GeoRelationUtils;
-import org.apache.lucene.util.GeoUtils;
+import org.apache.lucene.spatial.document.GeoPointField;
+import org.apache.lucene.spatial.util.GeoRect;
+import org.apache.lucene.spatial.util.GeoRelationUtils;
 import org.apache.lucene.util.SloppyMath;
 
 /** Package private implementation for the public facing GeoPointDistanceQuery delegate class.
@@ -48,7 +48,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
   }
 
   @Override
-  public void setRewriteMethod(RewriteMethod method) {
+  public void setRewriteMethod(MultiTermQuery.RewriteMethod method) {
     throw new UnsupportedOperationException("cannot change rewrite method");
   }
 
@@ -94,7 +94,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
     }
 
     /**
-     * The two-phase query approach. The parent {@link org.apache.lucene.search.GeoPointTermsEnum} class matches
+     * The two-phase query approach. The parent {@link GeoPointTermsEnum} class matches
      * encoded terms that fall within the minimum bounding box of the point-radius circle. Those documents that pass
      * the initial bounding box filter are then post filter compared to the provided distance using the
      * {@link org.apache.lucene.util.SloppyMath#haversin} method.

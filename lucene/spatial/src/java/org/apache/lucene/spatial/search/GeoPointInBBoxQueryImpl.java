@@ -14,16 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.spatial.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.GeoPointField;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.GeoRelationUtils;
 import org.apache.lucene.util.SloppyMath;
+import org.apache.lucene.spatial.document.GeoPointField;
+import org.apache.lucene.spatial.util.GeoRelationUtils;
 
 /** Package private implementation for the public facing GeoPointInBBoxQuery delegate class.
  *
@@ -49,7 +50,7 @@ class GeoPointInBBoxQueryImpl extends GeoPointTermQuery {
   }
 
   @Override
-  public void setRewriteMethod(RewriteMethod method) {
+  public void setRewriteMethod(MultiTermQuery.RewriteMethod method) {
     throw new UnsupportedOperationException("cannot change rewrite method");
   }
 

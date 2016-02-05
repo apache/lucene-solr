@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.util;
+package org.apache.lucene.spatial.util;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -45,6 +45,11 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SloppyMath;
+import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
 // TODO: cutover TestGeoUtils too?

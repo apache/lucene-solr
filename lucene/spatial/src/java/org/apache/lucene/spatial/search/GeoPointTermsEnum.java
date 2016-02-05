@@ -14,19 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.spatial.search;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.lucene.document.GeoPointField;
+import org.apache.lucene.spatial.document.GeoPointField;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.GeoRelationUtils;
-import org.apache.lucene.util.GeoUtils;
+import org.apache.lucene.spatial.util.GeoRelationUtils;
+import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.util.LegacyNumericUtils;
 
 /**

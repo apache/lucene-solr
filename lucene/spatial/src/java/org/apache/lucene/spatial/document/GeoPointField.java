@@ -14,11 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.document;
+package org.apache.lucene.spatial.document;
 
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.util.GeoUtils;
+import org.apache.lucene.spatial.util.GeoUtils;
 
 /**
  * <p>
@@ -32,8 +34,8 @@ import org.apache.lucene.util.GeoUtils;
  * </pre>
  *
  * <p>To perform simple geospatial queries against a <code>GeoPointField</code>,
- * see {@link org.apache.lucene.search.GeoPointInBBoxQuery}, {@link org.apache.lucene.search.GeoPointInPolygonQuery},
- * or {@link org.apache.lucene.search.GeoPointDistanceQuery}
+ * see {@link org.apache.lucene.spatial.search.GeoPointInBBoxQuery}, {@link org.apache.lucene.spatial.search.GeoPointInPolygonQuery},
+ * or {@link org.apache.lucene.spatial.search.GeoPointDistanceQuery}
  *
  * NOTE: This indexes only high precision encoded terms which may result in visiting a high number
  * of terms for large queries. See LUCENE-6481 for a future improvement.
@@ -41,6 +43,7 @@ import org.apache.lucene.util.GeoUtils;
  * @lucene.experimental
  */
 public final class GeoPointField extends Field {
+  /** encoding step value for GeoPoint prefix terms */
   public static final int PRECISION_STEP = 9;
 
   /**
@@ -109,10 +112,12 @@ public final class GeoPointField extends Field {
     fieldsData = GeoUtils.mortonHash(lon, lat);
   }
 
+  /** access longitude value */
   public double getLon() {
     return GeoUtils.mortonUnhashLon((long) fieldsData);
   }
 
+  /** access latitude value */
   public double getLat() {
     return GeoUtils.mortonUnhashLat((long) fieldsData);
   }

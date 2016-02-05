@@ -14,22 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.spatial.search;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.GeoDistanceUtils;
-import org.apache.lucene.util.GeoRect;
-import org.apache.lucene.util.GeoUtils;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.spatial.util.GeoDistanceUtils;
+import org.apache.lucene.spatial.util.GeoRect;
+import org.apache.lucene.spatial.util.GeoUtils;
 
 /** Implements a simple point distance query on a GeoPoint field. This is based on
- * {@link org.apache.lucene.search.GeoPointInBBoxQuery} and is implemented using a two phase approach. First,
+ * {@link GeoPointInBBoxQuery} and is implemented using a two phase approach. First,
  * like {@code GeoPointInBBoxQueryImpl} candidate terms are queried using the numeric ranges based on
  * the morton codes of the min and max lat/lon pairs that intersect the boundary of the point-radius
  * circle. Terms
  * passing this initial filter are then passed to a secondary {@code postFilter} method that verifies whether the
  * decoded lat/lon point fall within the specified query distance (see {@link org.apache.lucene.util.SloppyMath#haversin}.
  * All morton value comparisons are subject to the same precision tolerance defined in
- * {@value org.apache.lucene.util.GeoUtils#TOLERANCE} and distance comparisons are subject to the accuracy of the
+ * {@value org.apache.lucene.spatial.util.GeoUtils#TOLERANCE} and distance comparisons are subject to the accuracy of the
  * haversine formula (from R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159)
  *
  * <p>Note: This query currently uses haversine which is a sloppy distance calculation (see above reference). For large
@@ -38,11 +41,17 @@ import org.apache.lucene.util.GeoUtils;
  *
  * @lucene.experimental */
 public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
+  /** longitude value (in degrees) for query location */
   protected final double centerLon;
+  /** latitude value (in degrees) for query location */
   protected final double centerLat;
+  /** distance (in meters) from lon, lat center location */
   protected final double radiusMeters;
 
-  /** NOTE: radius is in meters. */
+  /**
+   * Constructs a Query for all {@link org.apache.lucene.spatial.document.GeoPointField} types within a
+   * distance (in meters) from a given point
+   **/
   public GeoPointDistanceQuery(final String field, final double centerLon, final double centerLat, final double radiusMeters) {
     this(field, GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters), centerLon, centerLat, radiusMeters);
   }
@@ -156,14 +165,17 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
         .toString();
   }
 
+  /** getter method for center longitude value */
   public double getCenterLon() {
     return this.centerLon;
   }
 
+  /** getter method for center latitude value */
   public double getCenterLat() {
     return this.centerLat;
   }
 
+  /** getter method for distance value (in meters) */
   public double getRadiusMeters() {
     return this.radiusMeters;
   }

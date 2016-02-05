@@ -26,8 +26,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.spatial.util.GeoUtils;
 
 /** Finds all previously indexed points that fall within the specified boundings box.
  *

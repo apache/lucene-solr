@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.spatial.search;
 
 import java.io.IOException;
 
@@ -23,8 +23,17 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.BulkScorer;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.GeoUtils;
+import org.apache.lucene.spatial.util.GeoUtils;
 
 /**
  * Custom ConstantScoreWrapper for {@code GeoPointTermQuery} that cuts over to DocValues
@@ -63,18 +72,18 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointTermQuery> 
     return new ConstantScoreWeight(this) {
 
       private DocIdSet getDocIDs(LeafReaderContext context) throws IOException {
-        final Terms terms = context.reader().terms(query.field);
+        final Terms terms = context.reader().terms(query.getField());
         if (terms == null) {
           return DocIdSet.EMPTY;
         }
 
-        final GeoPointTermsEnum termsEnum = (GeoPointTermsEnum)(query.getTermsEnum(terms));
+        final GeoPointTermsEnum termsEnum = (GeoPointTermsEnum)(query.getTermsEnum(terms, null));
         assert termsEnum != null;
 
         LeafReader reader = context.reader();
         DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc());
         PostingsEnum docs = null;
-        SortedNumericDocValues sdv = reader.getSortedNumericDocValues(query.field);
+        SortedNumericDocValues sdv = reader.getSortedNumericDocValues(query.getField());
 
         while (termsEnum.next() != null) {
           docs = termsEnum.postings(docs, PostingsEnum.NONE);

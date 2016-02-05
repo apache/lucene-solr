@@ -14,10 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.spatial.search;
+
+import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.util.GeoUtils;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.util.AttributeSource;
 
 /**
  * TermQuery for GeoPointField for overriding {@link org.apache.lucene.search.MultiTermQuery} methods specific to
@@ -27,9 +34,13 @@ import org.apache.lucene.util.GeoUtils;
  */
 abstract class GeoPointTermQuery extends MultiTermQuery {
   // simple bounding box optimization - no objects used to avoid dependencies
+  /** minimum longitude value (in degrees) */
   protected final double minLon;
+  /** minimum latitude value (in degrees) */
   protected final double minLat;
+  /** maximum longitude value (in degrees) */
   protected final double maxLon;
+  /** maximum latitude value (in degrees) */
   protected final double maxLat;
 
   /**
@@ -59,12 +70,45 @@ abstract class GeoPointTermQuery extends MultiTermQuery {
     this.rewriteMethod = GEO_CONSTANT_SCORE_REWRITE;
   }
 
-  public static final RewriteMethod GEO_CONSTANT_SCORE_REWRITE = new RewriteMethod() {
+  private static final RewriteMethod GEO_CONSTANT_SCORE_REWRITE = new RewriteMethod() {
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) {
       return new GeoPointTermQueryConstantScoreWrapper<>((GeoPointTermQuery)query);
     }
   };
 
+  /** override package protected method */
+  @Override
+  protected abstract TermsEnum getTermsEnum(final Terms terms, AttributeSource atts) throws IOException;
 
+  /** check if this instance equals another instance */
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    if (!super.equals(o)) return false;
+
+    GeoPointTermQuery that = (GeoPointTermQuery) o;
+
+    if (Double.compare(that.minLon, minLon) != 0) return false;
+    if (Double.compare(that.minLat, minLat) != 0) return false;
+    if (Double.compare(that.maxLon, maxLon) != 0) return false;
+    return Double.compare(that.maxLat, maxLat) == 0;
+  }
+
+  /** compute hashcode */
+  @Override
+  public int hashCode() {
+    int result = super.hashCode();
+    long temp;
+    temp = Double.doubleToLongBits(minLon);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(minLat);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(maxLon);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    temp = Double.doubleToLongBits(maxLat);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    return result;
+  }
 }

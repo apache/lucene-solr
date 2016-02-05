@@ -14,12 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.util;
+package org.apache.lucene.spatial.util;
+
+import org.apache.lucene.util.SloppyMath;
 
 /**
  * Reusable geo-relation utility methods
  */
 public class GeoRelationUtils {
+
+  // No instance:
+  private GeoRelationUtils() {
+  }
 
   /**
    * Determine if a bbox (defined by minLon, minLat, maxLon, maxLat) contains the provided point (defined by lon, lat)
@@ -62,6 +68,9 @@ public class GeoRelationUtils {
   // Rectangle relations
   /////////////////////////
 
+  /**
+   * Computes whether two rectangles are disjoint
+   */
   public static boolean rectDisjoint(final double aMinX, final double aMinY, final double aMaxX, final double aMaxY,
                                      final double bMinX, final double bMinY, final double bMaxX, final double bMaxY) {
     return (aMaxX < bMinX || aMinX > bMaxX || aMaxY < bMinY || aMinY > bMaxY);
@@ -75,6 +84,9 @@ public class GeoRelationUtils {
     return !(aMinX < bMinX || aMinY < bMinY || aMaxX > bMaxX || aMaxY > bMaxY);
   }
 
+  /**
+   * Computes whether two rectangles cross
+   */
   public static boolean rectCrosses(final double aMinX, final double aMinY, final double aMaxX, final double aMaxY,
                                     final double bMinX, final double bMinY, final double bMaxX, final double bMaxY) {
     return !(rectDisjoint(aMinX, aMinY, aMaxX, aMaxY, bMinX, bMinY, bMaxX, bMaxY) ||
@@ -380,11 +392,18 @@ public class GeoRelationUtils {
         || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 > radiusMeters;
   }
 
+  /**
+   * Convenience method for computing whether a rectangle is within a circle using additional precision checks
+   */
   public static boolean rectWithinCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                          final double centerLon, final double centerLat, final double radiusMeters) {
     return rectWithinCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radiusMeters, false);
   }
 
+  /**
+   * Computes whether a rectangle is within a circle. Note: approx == true will be faster but less precise and may
+   * fail on large rectangles
+   */
   public static boolean rectWithinCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                          final double centerLon, final double centerLat, final double radiusMeters,
                                          final boolean approx) {
@@ -401,6 +420,10 @@ public class GeoRelationUtils {
     return rectCrossesCircle(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, radiusMeters, false);
   }
 
+  /**
+   * Computes whether a rectangle crosses a circle. Note: approx == true will be faster but less precise and may
+   * fail on large rectangles
+   */
   public static boolean rectCrossesCircle(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                           final double centerLon, final double centerLat, final double radiusMeters,
                                           final boolean approx) {

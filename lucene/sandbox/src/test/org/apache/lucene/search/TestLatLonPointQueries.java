@@ -18,9 +18,9 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.util.BaseGeoPointTestCase;
-import org.apache.lucene.util.GeoDistanceUtils;
-import org.apache.lucene.util.GeoRect;
+import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
+import org.apache.lucene.spatial.util.GeoDistanceUtils;
+import org.apache.lucene.spatial.util.GeoRect;
 
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   // todo deconflict GeoPoint and BKD encoding methods and error tolerance
