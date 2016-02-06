@@ -41,6 +41,8 @@ import java.util.concurrent.ExecutorService;
 
 public class StreamingSolrClients {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private final int runnerCount = Integer.getInteger("solr.cloud.replication.runners", 1);
   
   private HttpClient httpClient;
   
@@ -70,7 +72,7 @@ public class StreamingSolrClients {
       // NOTE: increasing to more than 1 threadCount for the client could cause updates to be reordered
       // on a greater scale since the current behavior is to only increase the number of connections/Runners when
       // the queue is more than half full.
-      client = new ConcurrentUpdateSolrClient(url, httpClient, 100, 1, updateExecutor, true) {
+      client = new ConcurrentUpdateSolrClient(url, httpClient, 100, runnerCount, updateExecutor, true) {
         @Override
         public void handleError(Throwable ex) {
           req.trackRequestResult(null, false);
