@@ -17,15 +17,6 @@ package org.apache.lucene.replicator.nrt;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
-import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-import org.apache.lucene.util.LuceneTestCase;
-
-import com.carrotsearch.randomizedtesting.SeedUtils;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -38,6 +29,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
+import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+
+import com.carrotsearch.randomizedtesting.SeedUtils;
+
 // nocommit make some explicit failure tests
 
 // MockRandom's .sd file has no index header/footer:
@@ -49,9 +50,12 @@ public class TestNRTReplication extends LuceneTestCase {
   private Path childTempDir;
 
   final AtomicLong nodeStartCounter = new AtomicLong();
+  private long nextPrimaryGen;
+  private long lastPrimaryGen;
+  LineFileDocs docs;
 
   /** Launches a child "server" (separate JVM), which is either primary or replica node */
-  NodeProcess startNode(int primaryTCPPort, final int id, Path indexPath, boolean isPrimary, long forcePrimaryVersion) throws IOException {
+  private NodeProcess startNode(int primaryTCPPort, final int id, Path indexPath, long forcePrimaryVersion, boolean willCrash) throws IOException {
     List<String> cmd = new ArrayList<>();
 
     cmd.add(System.getProperty("java.home") 
@@ -61,25 +65,29 @@ public class TestNRTReplication extends LuceneTestCase {
         + "java");
     cmd.add("-Xmx512m");
 
+    long myPrimaryGen;
     if (primaryTCPPort != -1) {
+      // I am a replica
       cmd.add("-Dtests.nrtreplication.primaryTCPPort=" + primaryTCPPort);
-    } else if (isPrimary == false) {
-      // We cannot start a replica when there is no primary:
-      return null;
+      myPrimaryGen = lastPrimaryGen;
+    } else {
+      myPrimaryGen = nextPrimaryGen++;
+      lastPrimaryGen = myPrimaryGen;
     }
+    cmd.add("-Dtests.nrtreplication.primaryGen=" + myPrimaryGen);
     cmd.add("-Dtests.nrtreplication.closeorcrash=false");
 
     cmd.add("-Dtests.nrtreplication.node=true");
     cmd.add("-Dtests.nrtreplication.nodeid=" + id);
     cmd.add("-Dtests.nrtreplication.startNS=" + Node.globalStartNS);
     cmd.add("-Dtests.nrtreplication.indexpath=" + indexPath);
-    if (isPrimary) {
+    cmd.add("-Dtests.nrtreplication.checkonclose=true");
+
+    if (primaryTCPPort == -1) {
+      // We are the primary node
       cmd.add("-Dtests.nrtreplication.isPrimary=true");
       cmd.add("-Dtests.nrtreplication.forcePrimaryVersion=" + forcePrimaryVersion);
     }
-
-    long myPrimaryGen = 0;
-    cmd.add("-Dtests.nrtreplication.primaryGen=" + myPrimaryGen);
 
     // Mixin our own counter because this is called from a fresh thread which means the seed otherwise isn't changing each time we spawn a
     // new node:
@@ -112,7 +120,6 @@ public class TestNRTReplication extends LuceneTestCase {
     long initCommitVersion = -1;
     long initInfosVersion = -1;
     Pattern logTimeStart = Pattern.compile("^[0-9\\.]+s .*");
-    boolean willCrash = false;
     boolean sawExistingSegmentsFile = false;
 
     while (true) {
@@ -169,7 +176,7 @@ public class TestNRTReplication extends LuceneTestCase {
                                            message("done wait for process " + p);
                                            int exitValue = p.exitValue();
                                            message("exit value=" + exitValue + " willCrash=" + finalWillCrash);
-                                           if (exitValue != 0) {
+                                           if (exitValue != 0 && finalWillCrash == false) {
                                              // should fail test
                                              throw new RuntimeException("node " + id + " process had unexpected non-zero exit status=" + exitValue);
                                            }
@@ -178,32 +185,33 @@ public class TestNRTReplication extends LuceneTestCase {
     pumper.setName("pump" + id);
 
     message("top: node=" + id + " started at tcpPort=" + tcpPort + " initCommitVersion=" + initCommitVersion + " initInfosVersion=" + initInfosVersion);
-    return new NodeProcess(p, id, tcpPort, pumper, isPrimary, initCommitVersion, initInfosVersion, nodeClosing);
+    return new NodeProcess(p, id, tcpPort, pumper, primaryTCPPort == -1, initCommitVersion, initInfosVersion, nodeClosing);
+  }
+
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    Node.globalStartNS = System.nanoTime();
+    childTempDir = createTempDir("child");
+    docs = new LineFileDocs(random());
+  }
+
+  @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
+    docs.close();
   }
 
   public void testReplicateDeleteAllDocuments() throws Exception {
 
-    Node.globalStartNS = System.nanoTime();
-    childTempDir = createTempDir("child");
-
-    message("change thread name from " + Thread.currentThread().getName());
-    Thread.currentThread().setName("main");
-    
     Path primaryPath = createTempDir("primary");
-    NodeProcess primary = startNode(-1, 0, primaryPath, true, -1);
+    NodeProcess primary = startNode(-1, 0, primaryPath, -1, false);
 
     Path replicaPath = createTempDir("replica");
-    NodeProcess replica = startNode(primary.tcpPort, 1, replicaPath, false, -1);
+    NodeProcess replica = startNode(primary.tcpPort, 1, replicaPath, -1, false);
 
     // Tell primary current replicas:
-    try (Connection c = new Connection(primary.tcpPort)) {
-      c.out.writeByte(SimplePrimaryNode.CMD_SET_REPLICAS);
-      c.out.writeVInt(1);
-      c.out.writeVInt(replica.id);
-      c.out.writeVInt(replica.tcpPort);
-      c.flush();
-      c.in.readByte();
-    }
+    sendReplicasToPrimary(primary, replica);
 
     // Index 10 docs into primary:
     LineFileDocs docs = new LineFileDocs(random());
@@ -215,33 +223,14 @@ public class TestNRTReplication extends LuceneTestCase {
     }
 
     // Nothing in replica index yet
-    Connection replicaC = new Connection(replica.tcpPort);
-    replicaC.out.writeByte(SimplePrimaryNode.CMD_SEARCH_ALL);
-    replicaC.flush();
-    long version1 = replicaC.in.readVLong();
-    assertEquals(0L, version1);
-    int hitCount = replicaC.in.readVInt();
-    assertEquals(0, hitCount);
+    assertVersionAndHits(replica, 0, 0);
 
     // Refresh primary, which also pushes to replica:
     long primaryVersion1 = primary.flush(0);
     assertTrue(primaryVersion1 > 0);
 
-    long version2;
-
     // Wait for replica to show the change
-    while (true) {
-      replicaC.out.writeByte(SimplePrimaryNode.CMD_SEARCH_ALL);
-      replicaC.flush();
-      version2 = replicaC.in.readVLong();
-      hitCount = replicaC.in.readVInt();
-      if (version2 == primaryVersion1) {
-        assertEquals(10, hitCount);
-        // good!
-        break;
-      }
-      Thread.sleep(10);
-    }
+    waitForVersionAndHits(replica, primaryVersion1, 10);
 
     // Delete all docs from primary
     if (random().nextBoolean()) {
@@ -255,32 +244,14 @@ public class TestNRTReplication extends LuceneTestCase {
     }
 
     // Replica still shows 10 docs:
-    replicaC.out.writeByte(SimplePrimaryNode.CMD_SEARCH_ALL);
-    replicaC.flush();
-    long version3 = replicaC.in.readVLong();
-    assertEquals(version2, version3);
-    hitCount = replicaC.in.readVInt();
-    assertEquals(10, hitCount);
+    assertVersionAndHits(replica, primaryVersion1, 10);
     
     // Refresh primary, which also pushes to replica:
     long primaryVersion2 = primary.flush(0);
     assertTrue(primaryVersion2 > primaryVersion1);
 
     // Wait for replica to show the change
-    long version4;
-    while (true) {
-      replicaC.out.writeByte(SimplePrimaryNode.CMD_SEARCH_ALL);
-      replicaC.flush();
-      version4 = replicaC.in.readVLong();
-      hitCount = replicaC.in.readVInt();
-      if (version4 == primaryVersion2) {
-        assertTrue(version4 > version3);
-        assertEquals(0, hitCount);
-        // good!
-        break;
-      }
-      Thread.sleep(10);
-    }
+    waitForVersionAndHits(replica, primaryVersion2, 0);
 
     // Index 10 docs again:
     for(int i=0;i<10;i++) {
@@ -293,21 +264,8 @@ public class TestNRTReplication extends LuceneTestCase {
     assertTrue(primaryVersion3 > primaryVersion2);
 
     // Wait for replica to show the change
-    while (true) {
-      replicaC.out.writeByte(SimplePrimaryNode.CMD_SEARCH_ALL);
-      replicaC.flush();
-      long version5 = replicaC.in.readVLong();
-      hitCount = replicaC.in.readVInt();
-      if (version5 == primaryVersion3) {
-        assertEquals(10, hitCount);
-        assertTrue(version5 > version4);
-        // good!
-        break;
-      }
-      Thread.sleep(10);
-    }
+    waitForVersionAndHits(replica, primaryVersion3, 10);
 
-    replicaC.close();
     primaryC.close();
 
     replica.close();
@@ -316,27 +274,13 @@ public class TestNRTReplication extends LuceneTestCase {
 
   public void testReplicateForceMerge() throws Exception {
 
-    Node.globalStartNS = System.nanoTime();
-    childTempDir = createTempDir("child");
-
-    message("change thread name from " + Thread.currentThread().getName());
-    Thread.currentThread().setName("main");
-    
     Path primaryPath = createTempDir("primary");
-    NodeProcess primary = startNode(-1, 0, primaryPath, true, -1);
+    NodeProcess primary = startNode(-1, 0, primaryPath, -1, false);
 
     Path replicaPath = createTempDir("replica");
-    NodeProcess replica = startNode(primary.tcpPort, 1, replicaPath, false, -1);
+    NodeProcess replica = startNode(primary.tcpPort, 1, replicaPath, -1, false);
 
-    // Tell primary current replicas:
-    try (Connection c = new Connection(primary.tcpPort)) {
-      c.out.writeByte(SimplePrimaryNode.CMD_SET_REPLICAS);
-      c.out.writeVInt(1);
-      c.out.writeVInt(replica.id);
-      c.out.writeVInt(replica.tcpPort);
-      c.flush();
-      c.in.readByte();
-    }
+    sendReplicasToPrimary(primary, replica);
 
     // Index 10 docs into primary:
     LineFileDocs docs = new LineFileDocs(random());
@@ -367,27 +311,558 @@ public class TestNRTReplication extends LuceneTestCase {
     long primaryVersion3 = primary.flush(0);
     assertTrue(primaryVersion3 > primaryVersion2);
 
-    Connection replicaC = new Connection(replica.tcpPort);
-
     // Wait for replica to show the change
-    while (true) {
-      replicaC.out.writeByte(SimplePrimaryNode.CMD_SEARCH_ALL);
-      replicaC.flush();
-      long version = replicaC.in.readVLong();
-      int hitCount = replicaC.in.readVInt();
-      if (version == primaryVersion3) {
-        assertEquals(20, hitCount);
-        // good!
-        break;
-      }
-      Thread.sleep(10);
-    }
+    waitForVersionAndHits(replica, primaryVersion3, 20);
 
-    replicaC.close();
     primaryC.close();
 
     replica.close();
     primary.close();
+  }
+
+  // Start up, index 10 docs, replicate, but crash and restart the replica without committing it:
+  public void testReplicaCrashNoCommit() throws Exception {
+
+    Path primaryPath = createTempDir("primary");
+    NodeProcess primary = startNode(-1, 0, primaryPath, -1, false);
+
+    Path replicaPath = createTempDir("replica");
+    NodeProcess replica = startNode(primary.tcpPort, 1, replicaPath, -1, true);
+
+    sendReplicasToPrimary(primary, replica);
+
+    // Index 10 docs into primary:
+    LineFileDocs docs = new LineFileDocs(random());
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+      for(int i=0;i<10;i++) {
+        Document doc = docs.nextDoc();
+        primary.addOrUpdateDocument(c, doc, false);
+      }
+    }
+
+    // Refresh primary, which also pushes to replica:
+    long primaryVersion1 = primary.flush(0);
+    assertTrue(primaryVersion1 > 0);
+
+    // Wait for replica to sync up:
+    waitForVersionAndHits(replica, primaryVersion1, 10);
+
+    // Crash replica:
+    replica.crash();
+
+    // Restart replica:
+    replica = startNode(primary.tcpPort, 1, replicaPath, -1, false);
+
+    // On startup the replica searches the last commit (empty here):
+    assertVersionAndHits(replica, 0, 0);
+
+    // Ask replica to sync:
+    replica.newNRTPoint(primaryVersion1, primary.tcpPort);
+    waitForVersionAndHits(replica, primaryVersion1, 10);
+
+    replica.close();
+    primary.close();
+  }
+
+  // Start up, index 10 docs, replicate, commit, crash and restart the replica
+  public void testReplicaCrashWithCommit() throws Exception {
+
+    Path primaryPath = createTempDir("primary");
+    NodeProcess primary = startNode(-1, 0, primaryPath, -1, false);
+
+    Path replicaPath = createTempDir("replica");
+    NodeProcess replica = startNode(primary.tcpPort, 1, replicaPath, -1, true);
+
+    sendReplicasToPrimary(primary, replica);
+
+    // Index 10 docs into primary:
+    LineFileDocs docs = new LineFileDocs(random());
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+      for(int i=0;i<10;i++) {
+        Document doc = docs.nextDoc();
+        primary.addOrUpdateDocument(c, doc, false);
+      }
+    }
+
+    // Refresh primary, which also pushes to replica:
+    long primaryVersion1 = primary.flush(0);
+    assertTrue(primaryVersion1 > 0);
+
+    // Wait for replica to sync up:
+    waitForVersionAndHits(replica, primaryVersion1, 10);
+
+    // Commit and crash replica:
+    replica.commit();
+    replica.crash();
+
+    // Restart replica:
+    replica = startNode(primary.tcpPort, 1, replicaPath, -1, false);
+
+    // On startup the replica searches the last commit:
+    assertVersionAndHits(replica, primaryVersion1, 10);
+
+    replica.close();
+    primary.close();
+  }
+
+  // Start up, index 10 docs, replicate, commit, crash, index more docs, replicate, then restart the replica
+  public void testIndexingWhileReplicaIsDown() throws Exception {
+
+    Path primaryPath = createTempDir("primary");
+    NodeProcess primary = startNode(-1, 0, primaryPath, -1, false);
+
+    Path replicaPath = createTempDir("replica");
+    NodeProcess replica = startNode(primary.tcpPort, 1, replicaPath, -1, true);
+
+    sendReplicasToPrimary(primary, replica);
+
+    // Index 10 docs into primary:
+    LineFileDocs docs = new LineFileDocs(random());
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+      for(int i=0;i<10;i++) {
+        Document doc = docs.nextDoc();
+        primary.addOrUpdateDocument(c, doc, false);
+      }
+    }
+
+    // Refresh primary, which also pushes to replica:
+    long primaryVersion1 = primary.flush(0);
+    assertTrue(primaryVersion1 > 0);
+
+    // Wait for replica to sync up:
+    waitForVersionAndHits(replica, primaryVersion1, 10);
+
+    // Commit and crash replica:
+    replica.commit();
+    replica.crash();
+
+    sendReplicasToPrimary(primary);
+
+    // Index 10 more docs, while replica is down
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+      for(int i=0;i<10;i++) {
+        Document doc = docs.nextDoc();
+        primary.addOrUpdateDocument(c, doc, false);
+      }
+    }
+
+    // And flush:
+    long primaryVersion2 = primary.flush(0);
+    assertTrue(primaryVersion2 > primaryVersion1);
+
+    // Now restart replica:
+    replica = startNode(primary.tcpPort, 1, replicaPath, -1, false);
+
+    sendReplicasToPrimary(primary, replica);
+
+    // On startup the replica still searches its last commit:
+    assertVersionAndHits(replica, primaryVersion1, 10);
+
+    // Now ask replica to sync:
+    replica.newNRTPoint(primaryVersion2, primary.tcpPort);
+
+    waitForVersionAndHits(replica, primaryVersion2, 20);
+
+    replica.close();
+    primary.close();
+  }
+ 
+  // Crash primary and promote a replica
+  public void testCrashPrimary1() throws Exception {
+
+    Path path1 = createTempDir("1");
+    NodeProcess primary = startNode(-1, 0, path1, -1, true);
+
+    Path path2 = createTempDir("2");
+    NodeProcess replica = startNode(primary.tcpPort, 1, path2, -1, true);
+
+    sendReplicasToPrimary(primary, replica);
+
+    // Index 10 docs into primary:
+    LineFileDocs docs = new LineFileDocs(random());
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+      for(int i=0;i<10;i++) {
+        Document doc = docs.nextDoc();
+        primary.addOrUpdateDocument(c, doc, false);
+      }
+    }
+
+    // Refresh primary, which also pushes to replica:
+    long primaryVersion1 = primary.flush(0);
+    assertTrue(primaryVersion1 > 0);
+
+    // Wait for replica to sync up:
+    waitForVersionAndHits(replica, primaryVersion1, 10);
+
+    // Crash primary:
+    primary.crash();
+
+    // Promote replica:
+    replica.commit();
+    replica.close();
+    
+    primary = startNode(-1, 1, path2, -1, false);
+
+    // Should still see 10 docs:
+    assertVersionAndHits(primary, primaryVersion1, 10);
+
+    primary.close();
+  }
+
+  // Crash primary and then restart it
+  public void testCrashPrimary2() throws Exception {
+
+    Path path1 = createTempDir("1");
+    NodeProcess primary = startNode(-1, 0, path1, -1, true);
+
+    Path path2 = createTempDir("2");
+    NodeProcess replica = startNode(primary.tcpPort, 1, path2, -1, true);
+
+    sendReplicasToPrimary(primary, replica);
+
+    // Index 10 docs into primary:
+    LineFileDocs docs = new LineFileDocs(random());
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+      for(int i=0;i<10;i++) {
+        Document doc = docs.nextDoc();
+        primary.addOrUpdateDocument(c, doc, false);
+      }
+    }
+
+    // Refresh primary, which also pushes to replica:
+    long primaryVersion1 = primary.flush(0);
+    assertTrue(primaryVersion1 > 0);
+
+    // Wait for replica to sync up:
+    waitForVersionAndHits(replica, primaryVersion1, 10);
+
+    primary.commit();
+
+    // Index 10 docs, but crash before replicating or committing:
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+      for(int i=0;i<10;i++) {
+        Document doc = docs.nextDoc();
+        primary.addOrUpdateDocument(c, doc, false);
+      }
+    }
+
+    // Crash primary:
+    primary.crash();
+
+    // Restart it:
+    primary = startNode(-1, 0, path1, -1, true);
+
+    sendReplicasToPrimary(primary, replica);
+
+    // Index 10 more docs
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+      for(int i=0;i<10;i++) {
+        Document doc = docs.nextDoc();
+        primary.addOrUpdateDocument(c, doc, false);
+      }
+    }
+
+    long primaryVersion2 = primary.flush(0);
+    assertTrue(primaryVersion2 > primaryVersion1);
+
+    // Wait for replica to sync up:
+    waitForVersionAndHits(replica, primaryVersion2, 20);
+
+    primary.close();
+    replica.close();
+  }
+
+  // Crash primary and then restart it, while a replica node is down, then bring replica node back up and make sure it properly "unforks" itself
+  public void testCrashPrimary3() throws Exception {
+
+    Path path1 = createTempDir("1");
+    NodeProcess primary = startNode(-1, 0, path1, -1, true);
+
+    Path path2 = createTempDir("2");
+    NodeProcess replica = startNode(primary.tcpPort, 1, path2, -1, true);
+
+    sendReplicasToPrimary(primary, replica);
+
+    // Index 10 docs into primary:
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+      for(int i=0;i<10;i++) {
+        Document doc = docs.nextDoc();
+        primary.addOrUpdateDocument(c, doc, false);
+      }
+    }
+
+    // Refresh primary, which also pushes to replica:
+    long primaryVersion1 = primary.flush(0);
+    assertTrue(primaryVersion1 > 0);
+
+    // Wait for replica to sync up:
+    waitForVersionAndHits(replica, primaryVersion1, 10);
+
+    replica.commit();
+
+    replica.close();
+    primary.crash();
+
+    // At this point replica is "in the future": it has 10 docs committed, but the primary crashed before committing so it has 0 docs
+
+    // Restart primary:
+    primary = startNode(-1, 0, path1, -1, true);
+
+    // Index 20 docs into primary:
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+      for(int i=0;i<20;i++) {
+        Document doc = docs.nextDoc();
+        primary.addOrUpdateDocument(c, doc, false);
+      }
+    }
+
+    // Flush primary, but there are no replicas to sync to:
+    long primaryVersion2 = primary.flush(0);
+
+    // Now restart replica, which on init should detect on a "lost branch" because its 10 docs that were committed came from a different
+    // primary node:
+    replica = startNode(primary.tcpPort, 1, path2, -1, true);
+
+    assertVersionAndHits(replica, primaryVersion2, 20);
+
+    primary.close();
+    replica.close();
+  }
+
+  public void testCrashPrimaryWhileCopying() throws Exception {
+
+    Path path1 = createTempDir("1");
+    NodeProcess primary = startNode(-1, 0, path1, -1, true);
+
+    Path path2 = createTempDir("2");
+    NodeProcess replica = startNode(primary.tcpPort, 1, path2, -1, true);
+
+    sendReplicasToPrimary(primary, replica);
+
+    // Index 100 docs into primary:
+    LineFileDocs docs = new LineFileDocs(random());
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+      for(int i=0;i<100;i++) {
+        Document doc = docs.nextDoc();
+        primary.addOrUpdateDocument(c, doc, false);
+      }
+    }
+
+    // Refresh primary, which also pushes (async) to replica:
+    long primaryVersion1 = primary.flush(0);
+    assertTrue(primaryVersion1 > 0);
+
+    Thread.sleep(TestUtil.nextInt(random(), 1, 30));
+
+    // Crash primary, likely/hopefully while replica is still copying
+    primary.crash();
+
+    // Could see either 100 docs (replica finished before crash) or 0 docs:
+    try (Connection c = new Connection(replica.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_SEARCH_ALL);
+      c.flush();
+      long version = c.in.readVLong();
+      int hitCount = c.in.readVInt();
+      if (version == 0) {
+        assertEquals(0, hitCount);
+      } else {
+        assertEquals(primaryVersion1, version);
+        assertEquals(100, hitCount);
+      }
+    }
+
+    primary.close();
+    replica.close();
+  }
+
+  public void testCrashReplica() throws Exception {
+
+    Path path1 = createTempDir("1");
+    NodeProcess primary = startNode(-1, 0, path1, -1, true);
+
+    Path path2 = createTempDir("2");
+    NodeProcess replica = startNode(primary.tcpPort, 1, path2, -1, true);
+
+    sendReplicasToPrimary(primary, replica);
+
+    // Index 10 docs into primary:
+    LineFileDocs docs = new LineFileDocs(random());
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+      for(int i=0;i<10;i++) {
+        Document doc = docs.nextDoc();
+        primary.addOrUpdateDocument(c, doc, false);
+      }
+    }
+
+    // Refresh primary, which also pushes to replica:
+    long primaryVersion1 = primary.flush(0);
+    assertTrue(primaryVersion1 > 0);
+
+    // Wait for replica to sync up:
+    waitForVersionAndHits(replica, primaryVersion1, 10);
+
+    // Crash replica
+    replica.crash();
+
+    sendReplicasToPrimary(primary);
+
+    // Lots of new flushes while replica is down:
+    long primaryVersion2 = 0;
+    for(int iter=0;iter<10;iter++) {
+      // Index 10 docs into primary:
+      try (Connection c = new Connection(primary.tcpPort)) {
+        c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+        for(int i=0;i<10;i++) {
+          Document doc = docs.nextDoc();
+          primary.addOrUpdateDocument(c, doc, false);
+        }
+      }
+      primaryVersion2 = primary.flush(0);
+    }
+
+    // Start up replica again:
+    replica = startNode(primary.tcpPort, 1, path2, -1, true);
+
+    sendReplicasToPrimary(primary, replica);
+
+    // Now ask replica to sync:
+    replica.newNRTPoint(primaryVersion2, primary.tcpPort);
+
+    // Make sure it sees all docs that were indexed while it was down:
+    assertVersionAndHits(primary, primaryVersion2, 110);
+
+    replica.close();
+    primary.close();
+  }
+
+  public void testFullClusterCrash() throws Exception {
+
+    Path path1 = createTempDir("1");
+    NodeProcess primary = startNode(-1, 0, path1, -1, true);
+
+    Path path2 = createTempDir("2");
+    NodeProcess replica1 = startNode(primary.tcpPort, 1, path2, -1, true);
+
+    Path path3 = createTempDir("3");
+    NodeProcess replica2 = startNode(primary.tcpPort, 2, path3, -1, true);
+
+    sendReplicasToPrimary(primary, replica1, replica2);
+
+    // Index 50 docs into primary:
+    LineFileDocs docs = new LineFileDocs(random());
+    long primaryVersion1 = 0;
+    for (int iter=0;iter<5;iter++) {
+      try (Connection c = new Connection(primary.tcpPort)) {
+        c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+        for(int i=0;i<10;i++) {
+          Document doc = docs.nextDoc();
+          primary.addOrUpdateDocument(c, doc, false);
+        }
+      }
+
+      // Refresh primary, which also pushes to replicas:
+      primaryVersion1 = primary.flush(0);
+      assertTrue(primaryVersion1 > 0);
+    }
+
+    // Wait for replicas to sync up:
+    waitForVersionAndHits(replica1, primaryVersion1, 50);
+    waitForVersionAndHits(replica2, primaryVersion1, 50);
+
+    primary.commit();
+    replica1.commit();
+    replica2.commit();
+
+    // Index 10 more docs, but don't sync to replicas:
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_INDEXING);
+      for(int i=0;i<10;i++) {
+        Document doc = docs.nextDoc();
+        primary.addOrUpdateDocument(c, doc, false);
+      }
+    }
+
+    // Full cluster crash
+    primary.crash();
+    replica1.crash();
+    replica2.crash();
+
+    // Full cluster restart
+    primary = startNode(-1, 0, path1, -1, true);
+    replica1 = startNode(primary.tcpPort, 1, path2, -1, true);
+    replica2 = startNode(primary.tcpPort, 2, path3, -1, true);
+
+    // Only 50 because we didn't commit primary before the crash:
+    
+    // It's -1 because it's unpredictable how IW changes segments version on init:
+    assertVersionAndHits(primary, -1, 50);
+    assertVersionAndHits(replica1, primaryVersion1, 50);
+    assertVersionAndHits(replica2, primaryVersion1, 50);
+
+    primary.close();
+    replica1.close();
+    replica2.close();
+  }
+
+  /** Tell primary current replicas. */
+  private void sendReplicasToPrimary(NodeProcess primary, NodeProcess... replicas) throws IOException {
+    try (Connection c = new Connection(primary.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_SET_REPLICAS);
+      c.out.writeVInt(replicas.length);
+      for(int id=0;id<replicas.length;id++) {
+        NodeProcess replica = replicas[id];
+        c.out.writeVInt(replica.id);
+        c.out.writeVInt(replica.tcpPort);
+      }
+      c.flush();
+      c.in.readByte();
+    }
+  }
+
+  /** Verifies this node is currently searching the specified version with the specified total hit count, or that it eventually does when
+   *  keepTrying is true. */
+  private void assertVersionAndHits(NodeProcess node, long expectedVersion, int expectedHitCount) throws Exception {
+    try (Connection c = new Connection(node.tcpPort)) {
+      c.out.writeByte(SimplePrimaryNode.CMD_SEARCH_ALL);
+      c.flush();
+      long version = c.in.readVLong();
+      int hitCount = c.in.readVInt();
+      if (expectedVersion != -1) {
+        assertEquals("hitCount=" + hitCount, expectedVersion, version);
+      }
+      assertEquals(expectedHitCount, hitCount);
+    }
+  }
+
+  private void waitForVersionAndHits(NodeProcess node, long expectedVersion, int expectedHitCount) throws Exception {
+    try (Connection c = new Connection(node.tcpPort)) {
+      while (true) {
+        c.out.writeByte(SimplePrimaryNode.CMD_SEARCH_ALL);
+        c.flush();
+        long version = c.in.readVLong();
+        int hitCount = c.in.readVInt();
+
+        if (version == expectedVersion) {
+          assertEquals(expectedHitCount, hitCount);
+          break;
+        }
+
+        assertTrue(version < expectedVersion);
+        Thread.sleep(10);
+      }
+    }
   }
 
   static void message(String message) {

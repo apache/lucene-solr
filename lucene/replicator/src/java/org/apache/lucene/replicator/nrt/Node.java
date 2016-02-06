@@ -49,7 +49,8 @@ import org.apache.lucene.util.StringHelper;
 abstract class Node implements Closeable {
 
   static boolean VERBOSE_FILES = true;
-  static boolean VERBOSE_CONNECTIONS = false;
+  // nocommit
+  static boolean VERBOSE_CONNECTIONS = true;
 
   // Keys we store into IndexWriter's commit user data:
 

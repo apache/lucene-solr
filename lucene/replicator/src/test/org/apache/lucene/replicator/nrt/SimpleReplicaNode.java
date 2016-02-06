@@ -64,8 +64,8 @@ class SimpleReplicaNode extends ReplicaNode {
   /** Changes over time, as primary node crashes and moves around */
   int curPrimaryTCPPort;
 
-  public SimpleReplicaNode(Random random, int id, int tcpPort, Path indexPath, long curPrimaryGen, int primaryTCPPort, SearcherFactory searcherFactory) throws IOException {
-    super(id, getDirectory(random, id, indexPath), searcherFactory);
+  public SimpleReplicaNode(Random random, int id, int tcpPort, Path indexPath, long curPrimaryGen, int primaryTCPPort, SearcherFactory searcherFactory, boolean doCheckIndexOnClose) throws IOException {
+    super(id, getDirectory(random, id, indexPath, doCheckIndexOnClose), searcherFactory);
     this.tcpPort = tcpPort;
     this.random = new Random(random.nextLong());
 
@@ -131,13 +131,13 @@ class SimpleReplicaNode extends ReplicaNode {
     return new SimpleCopyJob(reason, c, copyState, this, files, highPriority, onceDone);
   }
 
-  static Directory getDirectory(Random random, int id, Path path) throws IOException {
+  static Directory getDirectory(Random random, int id, Path path, boolean doCheckIndexOnClose) throws IOException {
     MockDirectoryWrapper dir = LuceneTestCase.newMockFSDirectory(path);
     
     dir.setAssertNoUnrefencedFilesOnClose(true);
-    // This is very costly (takes more time to check than it did to index); we do this ourselves in the end instead of each time a replica
-    // is restarted:
-    dir.setCheckIndexOnClose(false);
+    if (doCheckIndexOnClose) {
+      dir.setCheckIndexOnClose(false);
+    }
 
     // Corrupt any index files not referenced by current commit point; this is important (increases test evilness) because we may have done
     // a hard crash of the previous JVM writing to this directory and so MDW's corrupt-unknown-files-on-close never ran:

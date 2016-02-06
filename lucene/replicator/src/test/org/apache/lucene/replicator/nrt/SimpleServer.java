@@ -238,6 +238,7 @@ public class SimpleServer extends LuceneTestCase {
     boolean doRandomCrash = "true".equals(System.getProperty("tests.nrtreplication.doRandomCrash"));
     boolean doRandomClose = "true".equals(System.getProperty("tests.nrtreplication.doRandomClose"));
     boolean doFlipBitsDuringCopy = "true".equals(System.getProperty("tests.nrtreplication.doFlipBitsDuringCopy"));
+    boolean doCheckIndexOnClose = "true".equals(System.getProperty("tests.nrtreplication.checkonclose"));
 
     // Create server socket that we listen for incoming requests on:
     try (final ServerSocket ss = new ServerSocket(0, 0, InetAddress.getLoopbackAddress())) {
@@ -246,11 +247,11 @@ public class SimpleServer extends LuceneTestCase {
       System.out.println("\nPORT: " + tcpPort);
       final Node node;
       if (isPrimary) {
-        node = new SimplePrimaryNode(random(), indexPath, id, tcpPort, primaryGen, forcePrimaryVersion, null, doFlipBitsDuringCopy);
+        node = new SimplePrimaryNode(random(), indexPath, id, tcpPort, primaryGen, forcePrimaryVersion, null, doFlipBitsDuringCopy, doCheckIndexOnClose);
         System.out.println("\nCOMMIT VERSION: " + ((PrimaryNode) node).getLastCommitVersion());
       } else {
         try {
-          node = new SimpleReplicaNode(random(), id, tcpPort, indexPath, primaryGen, primaryTCPPort, null);
+          node = new SimpleReplicaNode(random(), id, tcpPort, indexPath, primaryGen, primaryTCPPort, null, doCheckIndexOnClose);
         } catch (RuntimeException re) {
           if (re.getMessage().startsWith("replica cannot start")) {
             // this is "OK": it means MDW's refusal to delete a segments_N commit point means we cannot start:

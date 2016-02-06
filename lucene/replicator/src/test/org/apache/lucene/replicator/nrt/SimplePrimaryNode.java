@@ -76,8 +76,8 @@ class SimplePrimaryNode extends PrimaryNode {
   final Random random;
 
   // These are updated by parent test process whenever replicas change:
-  int[] replicaTCPPorts;
-  int[] replicaIDs;
+  int[] replicaTCPPorts = new int[0];
+  int[] replicaIDs = new int[0];
 
   // So we only flip a bit once per file name:
   final Set<String> bitFlipped = Collections.synchronizedSet(new HashSet<>());
@@ -115,8 +115,8 @@ class SimplePrimaryNode extends PrimaryNode {
   }
 
   public SimplePrimaryNode(Random random, Path indexPath, int id, int tcpPort, long primaryGen, long forcePrimaryVersion, SearcherFactory searcherFactory,
-                           boolean doFlipBitsDuringCopy) throws IOException {
-    super(initWriter(id, random, indexPath), id, primaryGen, forcePrimaryVersion, searcherFactory);
+                           boolean doFlipBitsDuringCopy, boolean doCheckIndexOnClose) throws IOException {
+    super(initWriter(id, random, indexPath, doCheckIndexOnClose), id, primaryGen, forcePrimaryVersion, searcherFactory);
     this.tcpPort = tcpPort;
     this.random = new Random(random.nextLong());
     this.doFlipBitsDuringCopy = doFlipBitsDuringCopy;
@@ -129,8 +129,8 @@ class SimplePrimaryNode extends PrimaryNode {
     this.replicaTCPPorts = replicaTCPPorts;
   }
 
-  private static IndexWriter initWriter(int id, Random random, Path indexPath) throws IOException {
-    Directory dir = SimpleReplicaNode.getDirectory(random, id, indexPath);
+  private static IndexWriter initWriter(int id, Random random, Path indexPath, boolean doCheckIndexOnClose) throws IOException {
+    Directory dir = SimpleReplicaNode.getDirectory(random, id, indexPath, doCheckIndexOnClose);
 
     MockAnalyzer analyzer = new MockAnalyzer(random);
     analyzer.setMaxTokenLength(TestUtil.nextInt(random, 1, IndexWriter.MAX_TERM_LENGTH));
@@ -599,13 +599,15 @@ class SimplePrimaryNode extends PrimaryNode {
           IndexSearcher searcher = mgr.acquire();
           try {
             long version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
-            int hitCount = searcher.search(new TermQuery(new Term("body", "the")), 1).totalHits;
+            int hitCount = searcher.count(new TermQuery(new Term("body", "the")));
             //message("version=" + version + " searcher=" + searcher);
             out.writeVLong(version);
             out.writeVInt(hitCount);
+            bos.flush();
           } finally {
             mgr.release(searcher);
           }
+          bos.flush();
         }
         continue outer;
 
@@ -615,10 +617,11 @@ class SimplePrimaryNode extends PrimaryNode {
           IndexSearcher searcher = mgr.acquire();
           try {
             long version = ((DirectoryReader) searcher.getIndexReader()).getVersion();
-            int hitCount = searcher.search(new MatchAllDocsQuery(), 1).totalHits;
+            int hitCount = searcher.count(new MatchAllDocsQuery());
             //message("version=" + version + " searcher=" + searcher);
             out.writeVLong(version);
             out.writeVInt(hitCount);
+            bos.flush();
           } finally {
             mgr.release(searcher);
           }
@@ -630,6 +633,7 @@ class SimplePrimaryNode extends PrimaryNode {
           Thread.currentThread().setName("msearch");
           int expectedAtLeastCount = in.readVInt();
           verifyAtLeastMarkerCount(expectedAtLeastCount, out);
+          bos.flush();
         }
         continue outer;
 

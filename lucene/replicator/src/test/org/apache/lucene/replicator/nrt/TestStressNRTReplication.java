@@ -518,6 +518,10 @@ public class TestStressNRTReplication extends LuceneTestCase {
       return null;
     }
 
+    // This is very costly (takes more time to check than it did to index); we do this ourselves in the end instead of each time a replica
+    // is restarted:
+    // cmd.add("-Dtests.nrtreplication.checkonclose=true");
+
     cmd.add("-Dtests.nrtreplication.node=true");
     cmd.add("-Dtests.nrtreplication.nodeid=" + id);
     cmd.add("-Dtests.nrtreplication.startNS=" + Node.globalStartNS);
@@ -590,7 +594,6 @@ public class TestStressNRTReplication extends LuceneTestCase {
     long initInfosVersion = -1;
     Pattern logTimeStart = Pattern.compile("^[0-9\\.]+s .*");
     boolean willCrash = false;
-    boolean sawExistingSegmentsFile = false;
 
     while (true) {
       String l = r.readLine();
@@ -609,12 +612,6 @@ public class TestStressNRTReplication extends LuceneTestCase {
 
         // Hackity hack, in case primary crashed/closed and we haven't noticed (reaped the process) yet:
         if (isPrimary == false) {
-          if (sawExistingSegmentsFile) {
-            // This means MDW's virus checker blocked us from deleting segments_N that we must delete in order to start ... just return null
-            // and retry again later:
-            message("failed to remove segments_N; skipping");
-            return null;
-          }
           for(int i=0;i<100;i++) {
             NodeProcess primary2 = primary;
             if (primaryGen != myPrimaryGen || primary2 == null || primary2.nodeIsClosing.get()) {
@@ -658,8 +655,6 @@ public class TestStressNRTReplication extends LuceneTestCase {
         willCrash = true;
       } else if (l.startsWith("NODE STARTED")) {
         break;
-      } else if (l.contains("replica cannot start: existing segments file=")) {
-        sawExistingSegmentsFile = true;
       }
     }
 

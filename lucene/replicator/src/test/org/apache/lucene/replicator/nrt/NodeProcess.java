@@ -77,6 +77,7 @@ class NodeProcess implements Closeable {
       isOpen = false;
       p.destroy();
       try {
+        p.waitFor();
         pumper.join();
       } catch (InterruptedException ie) {
         Thread.currentThread().interrupt();
@@ -95,6 +96,7 @@ class NodeProcess implements Closeable {
       }
       return true;
     } catch (Throwable t) {
+      // nocommit throw this
       // Something wrong with this replica; skip it:
       System.out.println("PARENT: top: hit SocketException during commit with R" + id + ": " + t + "; skipping");
       return false;
@@ -106,6 +108,7 @@ class NodeProcess implements Closeable {
       c.out.writeByte(SimplePrimaryNode.CMD_COMMIT);
       c.flush();
     } catch (Throwable t) {
+      // nocommit throw this
       // Something wrong with this replica; skip it:
       System.out.println("PARENT: top: hit SocketException during commit with R" + id + ": " + t + "; skipping");
     }
@@ -118,6 +121,7 @@ class NodeProcess implements Closeable {
       c.s.shutdownOutput();
       return c.in.readVLong();
     } catch (Throwable t) {
+      // nocommit throw this
       // Something wrong with this replica; skip it:
       System.out.println("PARENT: top: hit SocketException during getSearchingVersion with R" + id + "; skipping");
       return -1L;
@@ -145,11 +149,11 @@ class NodeProcess implements Closeable {
   public synchronized boolean shutdown() {
     lock.lock();
     try {
-      System.out.println("PARENT: now shutdown node=" + id + " isOpen=" + isOpen);
+      //System.out.println("PARENT: now shutdown node=" + id + " isOpen=" + isOpen);
       if (isOpen) {
         // Ask the child process to shutdown gracefully:
         isOpen = false;
-        System.out.println("PARENT: send CMD_CLOSE to node=" + id);
+        //System.out.println("PARENT: send CMD_CLOSE to node=" + id);
         try (Connection c = new Connection(tcpPort)) {
           c.out.writeByte(SimplePrimaryNode.CMD_CLOSE);
           c.flush();
@@ -171,6 +175,15 @@ class NodeProcess implements Closeable {
       return true;
     } finally {
       lock.unlock();
+    }
+  }
+
+  public void newNRTPoint(long version, int primaryTCPPort) throws IOException {
+    try (Connection c = new Connection(tcpPort)) {
+      c.out.writeByte(SimpleReplicaNode.CMD_NEW_NRT_POINT);
+      c.out.writeVLong(version);
+      c.out.writeInt(primaryTCPPort);
+      c.flush();
     }
   }
 
