@@ -1,4 +1,4 @@
-/** 
+/*
  * Copyright (c) 2005 Bruno Martins
  * All rights reserved.
  *
