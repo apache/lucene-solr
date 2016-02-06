@@ -122,6 +122,10 @@ New Features
 * SOLR-8586: added index fingerprint, a hash over all versions currently in the index.
   PeerSync now uses this to check if replicas are in sync. (yonik)
 
+* SOLR-8500: Allow the number of threads ConcurrentUpdateSolrClient StreamingSolrClients configurable by a 
+  system property. NOTE: this is an expert option and can result in more often needing to do full index replication
+  for recovery, the sweet spot for using this is very high volume, leader-only indexing. (Tim Potter, Erick Erickson)
+
 
 Bug Fixes
 ----------------------
