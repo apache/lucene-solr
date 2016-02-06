@@ -83,7 +83,6 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
       assertFalse(files.contains("subdir"));
     } finally {
       IOUtils.close(fsDir);
-      IOUtils.rm(path);
     }
   }
 

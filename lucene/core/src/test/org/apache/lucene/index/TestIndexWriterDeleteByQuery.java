@@ -27,7 +27,7 @@ public class TestIndexWriterDeleteByQuery extends LuceneTestCase {
 
   // LUCENE-6379
   public void testDeleteMatchAllDocsQuery() throws Exception {
-    Directory dir = newDirectory();
+    Directory dir = newMaybeVirusCheckingDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     Document doc = new Document();
     // Norms are disabled:

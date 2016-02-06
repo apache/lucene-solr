@@ -20,6 +20,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoDistanceUtils;
 import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoUtils;
@@ -32,7 +33,7 @@ import org.apache.lucene.spatial.util.GeoUtils;
  * passing this initial filter are then passed to a secondary {@code postFilter} method that verifies whether the
  * decoded lat/lon point fall within the specified query distance (see {@link org.apache.lucene.util.SloppyMath#haversin}.
  * All morton value comparisons are subject to the same precision tolerance defined in
- * {@value org.apache.lucene.spatial.util.GeoUtils#TOLERANCE} and distance comparisons are subject to the accuracy of the
+ * {@value org.apache.lucene.spatial.util.GeoEncodingUtils#TOLERANCE} and distance comparisons are subject to the accuracy of the
  * haversine formula (from R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159)
  *
  * <p>Note: This query currently uses haversine which is a sloppy distance calculation (see above reference). For large
@@ -53,14 +54,20 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
    * distance (in meters) from a given point
    **/
   public GeoPointDistanceQuery(final String field, final double centerLon, final double centerLat, final double radiusMeters) {
-    this(field, GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters), centerLon, centerLat, radiusMeters);
+    this(field, TermEncoding.PREFIX, centerLon, centerLat, radiusMeters);
   }
 
-  private GeoPointDistanceQuery(final String field, GeoRect bbox, final double centerLon,
+  public GeoPointDistanceQuery(final String field, final TermEncoding termEncoding, final double centerLon, final double centerLat, final double radiusMeters) {
+    this(field, termEncoding, GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters), centerLon, centerLat, radiusMeters);
+  }
+
+  private GeoPointDistanceQuery(final String field, final TermEncoding termEncoding, final GeoRect bbox, final double centerLon,
                                 final double centerLat, final double radiusMeters) {
-    super(field, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
+    super(field, termEncoding, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
     {
-      // check longitudinal overlap (limits radius)
+      // check longitudinal overlap (restrict distance to maximum longitudinal radius)
+      // todo this restriction technically shouldn't be needed,
+      // its only purpose is to ensure the bounding box doesn't self overlap.
       final double maxRadius = GeoDistanceUtils.maxRadialDistanceMeters(centerLon, centerLat);
       if (radiusMeters > maxRadius) {
         throw new IllegalArgumentException("radiusMeters " + radiusMeters + " exceeds maxRadius [" + maxRadius
@@ -97,7 +104,7 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
         // unwrap left
         unwrappedLon += -360.0D;
       }
-      GeoPointDistanceQueryImpl left = new GeoPointDistanceQueryImpl(field, this, unwrappedLon,
+      GeoPointDistanceQueryImpl left = new GeoPointDistanceQueryImpl(field, termEncoding, this, unwrappedLon,
           new GeoRect(GeoUtils.MIN_LON_INCL, maxLon, minLat, maxLat));
       bqb.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
 
@@ -105,13 +112,13 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
         // unwrap right
         unwrappedLon += 360.0D;
       }
-      GeoPointDistanceQueryImpl right = new GeoPointDistanceQueryImpl(field, this, unwrappedLon,
+      GeoPointDistanceQueryImpl right = new GeoPointDistanceQueryImpl(field, termEncoding, this, unwrappedLon,
           new GeoRect(minLon, GeoUtils.MAX_LON_INCL, minLat, maxLat));
       bqb.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
 
       return bqb.build();
     }
-    return new GeoPointDistanceQueryImpl(field, this, centerLon,
+    return new GeoPointDistanceQueryImpl(field, termEncoding, this, centerLon,
         new GeoRect(this.minLon, this.maxLon, this.minLat, this.maxLat));
   }
 

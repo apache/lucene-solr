@@ -17,6 +17,10 @@
 package org.apache.lucene.index;
 
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.AlreadyClosedException;
@@ -24,10 +28,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import org.apache.lucene.util.TestUtil;
 
 public class TestIndexWriterFromReader extends LuceneTestCase {
 
@@ -111,10 +112,6 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
   // Pull NRT reader after writer has committed and then indexed another doc:
   public void testAfterCommitThenIndex() throws Exception {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // We only hit exc if stale segments file was deleted:
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     w.addDocument(new Document());
     w.commit();
@@ -140,10 +137,6 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
   // NRT rollback: pull NRT reader after writer has committed and then before indexing another doc
   public void testNRTRollback() throws Exception {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // We only hit exc if stale segments file was deleted:
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     w.addDocument(new Document());
     w.commit();

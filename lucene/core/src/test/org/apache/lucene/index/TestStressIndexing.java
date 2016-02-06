@@ -164,7 +164,7 @@ public class TestStressIndexing extends LuceneTestCase {
     FSDirectory.
   */
   public void testStressIndexAndSearching() throws Exception {
-    Directory directory = newDirectory();
+    Directory directory = newMaybeVirusCheckingDirectory();
     if (directory instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(true);
     }

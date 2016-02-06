@@ -50,7 +50,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   static int seed=0;
 
   public void testRandomIWReader() throws Throwable {
-    Directory dir = newDirectory();
+    Directory dir = newMaybeVirusCheckingDirectory();
     
     // TODO: verify equals using IW.getReader
     DocsAndWriter dw = indexRandomIWReader(5, 3, 100, dir);
@@ -63,8 +63,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
   }
   
   public void testRandom() throws Throwable {
-    Directory dir1 = newDirectory();
-    Directory dir2 = newDirectory();
+    Directory dir1 = newMaybeVirusCheckingDirectory();
+    Directory dir2 = newMaybeVirusCheckingDirectory();
     // mergeFactor=2; maxBufferedDocs=2; Map docs = indexRandom(1, 3, 2, dir1);
     boolean doReaderPooling = random().nextBoolean();
     Map<String,Document> docs = indexRandom(5, 3, 100, dir1, doReaderPooling);

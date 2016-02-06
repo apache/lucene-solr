@@ -31,6 +31,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TimeUnits;
 import org.apache.lucene.util.packed.PackedInts;
 import org.junit.Ignore;
+
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 @Ignore("Requires tons of heap to run (30 GB hits OOME but 35 GB passes after ~4.5 hours)")

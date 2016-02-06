@@ -38,6 +38,7 @@ import java.util.UUID;
 import org.apache.lucene.mockfile.FilterFileSystem;
 import org.apache.lucene.mockfile.FilterFileSystemProvider;
 import org.apache.lucene.mockfile.FilterPath;
+import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 
 /** Simple test methods for IOUtils */
 public class TestIOUtils extends LuceneTestCase {

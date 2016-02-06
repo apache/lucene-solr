@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.TestUtil;
 
 /** Simple tests for NativeFSLockFactory */
 public class TestNativeFSLockFactory extends BaseLockFactoryTestCase {
@@ -79,19 +80,14 @@ public class TestNativeFSLockFactory extends BaseLockFactoryTestCase {
   
   /** delete the lockfile and test ensureValid fails */
   public void testDeleteLockFile() throws IOException {
-    Directory dir = getDirectory(createTempDir());
-    try {
+    try (Directory dir = getDirectory(createTempDir())) {
+      assumeFalse("we must be able to delete an open file", TestUtil.hasWindowsFS(dir));
+
       Lock lock = dir.obtainLock("test.lock");
       lock.ensureValid();
-    
-      try {
-        dir.deleteFile("test.lock");
-      } catch (Exception e) {
-        // we can't delete a file for some reason, just clean up and assume the test.
-        IOUtils.closeWhileHandlingException(lock);
-        assumeNoException("test requires the ability to delete a locked file", e);
-      }
-    
+
+      dir.deleteFile("test.lock");
+
       try {
         lock.ensureValid();
         fail("no exception");
@@ -100,9 +96,6 @@ public class TestNativeFSLockFactory extends BaseLockFactoryTestCase {
       } finally {
         IOUtils.closeWhileHandlingException(lock);
       }
-    } finally {
-      // Do this in finally clause in case the assumeNoException is false:
-      dir.close();
     }
   }
 }

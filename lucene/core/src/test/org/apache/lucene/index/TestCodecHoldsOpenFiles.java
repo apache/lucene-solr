@@ -17,8 +17,6 @@
 package org.apache.lucene.index;
 
 
-import java.io.IOException;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -47,14 +45,8 @@ public class TestCodecHoldsOpenFiles extends LuceneTestCase {
     w.commit();
     w.close();
 
-    for(String fileName : d.listAll()) {
-      try {
-        d.deleteFile(fileName);
-        // may succeed, e.g. if the file is completely read into RAM.
-      } catch (IOException ioe) {
-        // ignore: this means codec (correctly) is holding
-        // the file open
-      }
+    for (String name : d.listAll()) {
+      d.deleteFile(name);
     }
 
     for(LeafReaderContext cxt : r.leaves()) {

@@ -20,6 +20,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
 
 /** Implements a point distance range query on a GeoPoint field. This is based on
  * {@code org.apache.lucene.spatial.search.GeoPointDistanceQuery} and is implemented using a
@@ -36,8 +37,13 @@ public final class GeoPointDistanceRangeQuery extends GeoPointDistanceQuery {
    * distance (in meters) range from a given point
    */
   public GeoPointDistanceRangeQuery(final String field, final double centerLon, final double centerLat,
+                                    final double minRadiusMeters, final double maxRadiusMeters) {
+    this(field, TermEncoding.PREFIX, centerLon, centerLat, minRadiusMeters, maxRadiusMeters);
+  }
+
+  public GeoPointDistanceRangeQuery(final String field, final TermEncoding termEncoding, final double centerLon, final double centerLat,
                                     final double minRadiusMeters, final double maxRadius) {
-    super(field, centerLon, centerLat, maxRadius);
+    super(field, termEncoding, centerLon, centerLat, maxRadius);
     this.minRadiusMeters = minRadiusMeters;
   }
 
@@ -52,7 +58,7 @@ public final class GeoPointDistanceRangeQuery extends GeoPointDistanceQuery {
     BooleanQuery.Builder bqb = new BooleanQuery.Builder();
 
     // create a new exclusion query
-    GeoPointDistanceQuery exclude = new GeoPointDistanceQuery(field, centerLon, centerLat, minRadiusMeters);
+    GeoPointDistanceQuery exclude = new GeoPointDistanceQuery(field, termEncoding, centerLon, centerLat, minRadiusMeters);
     // full map search
 //    if (radiusMeters >= GeoProjectionUtils.SEMIMINOR_AXIS) {
 //      bqb.add(new BooleanClause(new GeoPointInBBoxQuery(this.field, -180.0, -90.0, 180.0, 90.0), BooleanClause.Occur.MUST));

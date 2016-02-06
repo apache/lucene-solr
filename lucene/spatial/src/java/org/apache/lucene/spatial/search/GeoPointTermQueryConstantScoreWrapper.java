@@ -33,15 +33,18 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.spatial.util.GeoUtils;
+
+import static org.apache.lucene.spatial.util.GeoEncodingUtils.mortonUnhashLat;
+import static org.apache.lucene.spatial.util.GeoEncodingUtils.mortonUnhashLon;
+
 
 /**
- * Custom ConstantScoreWrapper for {@code GeoPointTermQuery} that cuts over to DocValues
+ * Custom ConstantScoreWrapper for {@code GeoPointMultiTermQuery} that cuts over to DocValues
  * for post filtering boundary ranges. Multi-valued GeoPoint documents are supported.
  *
  * @lucene.experimental
  */
-final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointTermQuery> extends Query {
+final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointMultiTermQuery> extends Query {
   protected final Q query;
 
   protected GeoPointTermQueryConstantScoreWrapper(Q query) {
@@ -95,7 +98,7 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointTermQuery> 
               sdv.setDocument(docId);
               for (int i=0; i<sdv.count(); ++i) {
                 hash = sdv.valueAt(i);
-                if (termsEnum.postFilter(GeoUtils.mortonUnhashLon(hash), GeoUtils.mortonUnhashLat(hash))) {
+                if (termsEnum.postFilter(mortonUnhashLon(hash), mortonUnhashLat(hash))) {
                   builder.add(docId);
                   break;
                 }

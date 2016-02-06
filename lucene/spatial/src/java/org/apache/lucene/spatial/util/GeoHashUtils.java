@@ -40,7 +40,7 @@ public class GeoHashUtils {
 
   /** maximum precision for geohash strings */
   public static final int PRECISION = 12;
-  private static final short MORTON_OFFSET = (GeoUtils.BITS<<1) - (PRECISION*5);
+  private static final short MORTON_OFFSET = (GeoEncodingUtils.BITS<<1) - (PRECISION*5);
 
   // No instance:
   private GeoHashUtils() {
@@ -52,7 +52,7 @@ public class GeoHashUtils {
   public static final long longEncode(final double lon, final double lat, final int level) {
     // shift to appropriate level
     final short msf = (short)(((12 - level) * 5) + MORTON_OFFSET);
-    return ((BitUtil.flipFlop(GeoUtils.mortonHash(lon, lat)) >>> msf) << 4) | level;
+    return ((BitUtil.flipFlop(GeoEncodingUtils.mortonHash(lon, lat)) >>> msf) << 4) | level;
   }
 
   /**
@@ -118,7 +118,7 @@ public class GeoHashUtils {
    */
   public static final String stringEncode(final double lon, final double lat, final int level) {
     // convert to geohashlong
-    final long ghLong = fromMorton(GeoUtils.mortonHash(lon, lat), level);
+    final long ghLong = fromMorton(GeoEncodingUtils.mortonHash(lon, lat), level);
     return stringEncode(ghLong);
 
   }
@@ -139,7 +139,7 @@ public class GeoHashUtils {
 
     StringBuilder geoHash = new StringBuilder();
     short precision = 0;
-    final short msf = (GeoUtils.BITS<<1)-5;
+    final short msf = (GeoEncodingUtils.BITS<<1)-5;
     long mask = 31L<<msf;
     do {
       geoHash.append(BASE_32[(int)((mask & hashedVal)>>>(msf-(precision*5)))]);

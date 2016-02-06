@@ -1,5 +1,5 @@
 /*
-+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
  * The ASF licenses this file to You under the Apache License, Version 2.0
@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.facet.taxonomy.writercache;
 
 import java.nio.ByteBuffer;
@@ -28,7 +29,6 @@ import java.util.Random;
 
 import org.apache.lucene.facet.FacetTestCase;
 import org.apache.lucene.facet.taxonomy.FacetLabel;
-
 import org.junit.Test;
 
 public class TestCompactLabelToOrdinal extends FacetTestCase {

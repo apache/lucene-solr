@@ -394,9 +394,6 @@ public class TestBKD extends LuceneTestCase {
         try {
           dir.setRandomIOExceptionRate(0.05);
           dir.setRandomIOExceptionRateOnOpen(0.05);
-          if (dir instanceof MockDirectoryWrapper) {
-            dir.setEnableVirusScanner(false);
-          }
           verify(dir, docValues, null, numDims, numBytesPerDim, 50, maxMBHeap);
         } catch (IllegalArgumentException iae) {
           // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry w/ more heap
@@ -847,9 +844,6 @@ public class TestBKD extends LuceneTestCase {
       dir = newFSDirectory(createTempDir("TestBKDTree"));
     } else {
       dir = newDirectory();
-    }
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
     }
     return dir;
   }

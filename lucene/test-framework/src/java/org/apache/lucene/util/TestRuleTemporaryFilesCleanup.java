@@ -177,6 +177,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("filesystem: " + fs.provider());
     }
+
     return fs.provider().getFileSystem(URI.create("file:///"));
   }
 
@@ -210,6 +211,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     // was successful. Otherwise just report the path of temporary files
     // and leave them there.
     if (failureMarker.wasSuccessful()) {
+
       try {
         IOUtils.rm(everything);
       } catch (IOException e) {

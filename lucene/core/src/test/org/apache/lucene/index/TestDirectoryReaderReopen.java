@@ -45,8 +45,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-
-
 public class TestDirectoryReaderReopen extends LuceneTestCase {
   
   public void testReopen() throws Exception {
@@ -625,10 +623,6 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
 
   public void testOverDecRefDuringReopen() throws Exception {
     MockDirectoryWrapper dir = newMockDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // ensure we produce enough of our exceptions
-      dir.setEnableVirusScanner(false);
-    }
 
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.getDefaultCodec());
@@ -762,8 +756,8 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(dir);
 
     // Blow away the index:
-    for(String fileName : dir.listAll()) {
-      dir.deleteFile(fileName);
+    for(String name : dir.listAll()) {
+      dir.deleteFile(name);
     }
 
     w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));

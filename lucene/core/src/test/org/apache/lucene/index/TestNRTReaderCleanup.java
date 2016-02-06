@@ -40,12 +40,6 @@ public class TestNRTReaderCleanup extends LuceneTestCase {
 
     MockDirectoryWrapper dir = newMockDirectory();
     
-    // don't act like windows either, or the test won't simulate the condition
-    dir.setEnableVirusScanner(false);
-
-    // Allow deletion of still open files:
-    dir.setNoDeleteOpenFile(false);
-
     // Allow writing to same file more than once:
     dir.setPreventDoubleWrite(false);
 
@@ -66,8 +60,8 @@ public class TestNRTReaderCleanup extends LuceneTestCase {
     w.close();
 
     // Blow away index and make a new writer:
-    for(String fileName : dir.listAll()) {
-      dir.deleteFile(fileName);
+    for(String name : dir.listAll()) {
+      dir.deleteFile(name);
     }
 
     w = new RandomIndexWriter(random(), dir);

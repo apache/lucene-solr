@@ -22,7 +22,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.StringReader;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,6 +62,8 @@ import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.mockfile.FilterPath;
+import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -67,15 +73,20 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.store.SimpleFSLockFactory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
@@ -90,494 +101,467 @@ import org.junit.Test;
 
 public class TestIndexWriter extends LuceneTestCase {
 
-    private static final FieldType storedTextType = new FieldType(TextField.TYPE_NOT_STORED);
-    public void testDocCount() throws IOException {
-        Directory dir = newDirectory();
+  private static final FieldType storedTextType = new FieldType(TextField.TYPE_NOT_STORED);
+  public void testDocCount() throws IOException {
+    Directory dir = newDirectory();
 
-        IndexWriter writer = null;
-        IndexReader reader = null;
-        int i;
+    IndexWriter writer = null;
+    IndexReader reader = null;
+    int i;
 
-        writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
 
-        // add 100 documents
-        for (i = 0; i < 100; i++) {
-            addDocWithIndex(writer,i);
-        }
-        assertEquals(100, writer.maxDoc());
-        writer.close();
-
-        // delete 40 documents
-        writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                        .setMergePolicy(NoMergePolicy.INSTANCE));
-        for (i = 0; i < 40; i++) {
-            writer.deleteDocuments(new Term("id", ""+i));
-        }
-        writer.close();
-
-        reader = DirectoryReader.open(dir);
-        assertEquals(60, reader.numDocs());
-        reader.close();
-
-        // merge the index down and check that the new doc count is correct
-        writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-        assertEquals(60, writer.numDocs());
-        writer.forceMerge(1);
-        assertEquals(60, writer.maxDoc());
-        assertEquals(60, writer.numDocs());
-        writer.close();
-
-        // check that the index reader gives the same numbers.
-        reader = DirectoryReader.open(dir);
-        assertEquals(60, reader.maxDoc());
-        assertEquals(60, reader.numDocs());
-        reader.close();
-
-        // make sure opening a new index for create over
-        // this existing one works correctly:
-        writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                        .setOpenMode(OpenMode.CREATE));
-        assertEquals(0, writer.maxDoc());
-        assertEquals(0, writer.numDocs());
-        writer.close();
-        dir.close();
+    // add 100 documents
+    for (i = 0; i < 100; i++) {
+      addDocWithIndex(writer,i);
     }
+    assertEquals(100, writer.maxDoc());
+    writer.close();
 
-    static void addDoc(IndexWriter writer) throws IOException
-    {
-        Document doc = new Document();
-        doc.add(newTextField("content", "aaa", Field.Store.NO));
-        writer.addDocument(doc);
+    // delete 40 documents
+    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                             .setMergePolicy(NoMergePolicy.INSTANCE));
+    for (i = 0; i < 40; i++) {
+      writer.deleteDocuments(new Term("id", ""+i));
     }
+    writer.close();
 
-    static void addDocWithIndex(IndexWriter writer, int index) throws IOException
-    {
-        Document doc = new Document();
-        doc.add(newField("content", "aaa " + index, storedTextType));
-        doc.add(newField("id", "" + index, storedTextType));
-        writer.addDocument(doc);
+    reader = DirectoryReader.open(dir);
+    assertEquals(60, reader.numDocs());
+    reader.close();
+
+    // merge the index down and check that the new doc count is correct
+    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    assertEquals(60, writer.numDocs());
+    writer.forceMerge(1);
+    assertEquals(60, writer.maxDoc());
+    assertEquals(60, writer.numDocs());
+    writer.close();
+
+    // check that the index reader gives the same numbers.
+    reader = DirectoryReader.open(dir);
+    assertEquals(60, reader.maxDoc());
+    assertEquals(60, reader.numDocs());
+    reader.close();
+
+    // make sure opening a new index for create over
+    // this existing one works correctly:
+    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                             .setOpenMode(OpenMode.CREATE));
+    assertEquals(0, writer.maxDoc());
+    assertEquals(0, writer.numDocs());
+    writer.close();
+    dir.close();
+  }
+
+  static void addDoc(IndexWriter writer) throws IOException
+  {
+    Document doc = new Document();
+    doc.add(newTextField("content", "aaa", Field.Store.NO));
+    writer.addDocument(doc);
+  }
+
+  static void addDocWithIndex(IndexWriter writer, int index) throws IOException
+  {
+    Document doc = new Document();
+    doc.add(newField("content", "aaa " + index, storedTextType));
+    doc.add(newField("id", "" + index, storedTextType));
+    writer.addDocument(doc);
+  }
+
+  // TODO: we have the logic in MDW to do this check, and it's better, because it knows about files it tried
+  // to delete but couldn't: we should replace this!!!!
+  public static void assertNoUnreferencedFiles(Directory dir, String message) throws IOException {
+    String[] startFiles = dir.listAll();
+    new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random()))).rollback();
+    String[] endFiles = dir.listAll();
+
+    Arrays.sort(startFiles);
+    Arrays.sort(endFiles);
+
+    if (!Arrays.equals(startFiles, endFiles)) {
+      fail(message + ": before delete:\n    " + arrayToString(startFiles) + "\n  after delete:\n    " + arrayToString(endFiles));
     }
+  }
 
-
-
-    // TODO: we have the logic in MDW to do this check, and it's better, because it knows about files it tried
-    // to delete but couldn't: we should replace this!!!!
-    public static void assertNoUnreferencedFiles(Directory dir, String message) throws IOException {
-      if (dir instanceof MockDirectoryWrapper) {
-        assertFalse("test is broken: should disable virus scanner", ((MockDirectoryWrapper)dir).getEnableVirusScanner());
+  static String arrayToString(String[] l) {
+    String s = "";
+    for(int i=0;i<l.length;i++) {
+      if (i > 0) {
+        s += "\n    ";
       }
-      String[] startFiles = dir.listAll();
-      new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random()))).rollback();
-      String[] endFiles = dir.listAll();
-
-      Arrays.sort(startFiles);
-      Arrays.sort(endFiles);
-
-      if (!Arrays.equals(startFiles, endFiles)) {
-        fail(message + ": before delete:\n    " + arrayToString(startFiles) + "\n  after delete:\n    " + arrayToString(endFiles));
-      }
+      s += l[i];
     }
+    return s;
+  }
 
-    static String arrayToString(String[] l) {
-      String s = "";
-      for(int i=0;i<l.length;i++) {
-        if (i > 0) {
-          s += "\n    ";
-        }
-        s += l[i];
-      }
-      return s;
-    }
+  // Make sure we can open an index for create even when a
+  // reader holds it open (this fails pre lock-less
+  // commits on windows):
+  public void testCreateWithReader() throws IOException {
+    Directory dir = newDirectory();
 
-    // Make sure we can open an index for create even when a
-    // reader holds it open (this fails pre lock-less
-    // commits on windows):
-    public void testCreateWithReader() throws IOException {
-      Directory dir = newDirectory();
+    // add one document & close writer
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    addDoc(writer);
+    writer.close();
 
-      // add one document & close writer
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    // now open reader:
+    IndexReader reader = DirectoryReader.open(dir);
+    assertEquals("should be one document", reader.numDocs(), 1);
+
+    // now open index for create:
+    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                             .setOpenMode(OpenMode.CREATE));
+    assertEquals("should be zero documents", writer.maxDoc(), 0);
+    addDoc(writer);
+    writer.close();
+
+    assertEquals("should be one document", reader.numDocs(), 1);
+    IndexReader reader2 = DirectoryReader.open(dir);
+    assertEquals("should be one document", reader2.numDocs(), 1);
+    reader.close();
+    reader2.close();
+
+    dir.close();
+  }
+
+  public void testChangesAfterClose() throws IOException {
+    Directory dir = newDirectory();
+
+    IndexWriter writer = null;
+
+    writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    addDoc(writer);
+
+    // close
+    writer.close();
+    try {
       addDoc(writer);
-      writer.close();
+      fail("did not hit AlreadyClosedException");
+    } catch (AlreadyClosedException e) {
+      // expected
+    }
+    dir.close();
+  }
 
-      // now open reader:
-      IndexReader reader = DirectoryReader.open(dir);
-      assertEquals("should be one document", reader.numDocs(), 1);
 
-      // now open index for create:
-      writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                      .setOpenMode(OpenMode.CREATE));
-      assertEquals("should be zero documents", writer.maxDoc(), 0);
-      addDoc(writer);
-      writer.close();
 
-      assertEquals("should be one document", reader.numDocs(), 1);
-      IndexReader reader2 = DirectoryReader.open(dir);
-      assertEquals("should be one document", reader2.numDocs(), 1);
-      reader.close();
-      reader2.close();
+  public void testIndexNoDocuments() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    writer.commit();
+    writer.close();
 
-      dir.close();
+    IndexReader reader = DirectoryReader.open(dir);
+    assertEquals(0, reader.maxDoc());
+    assertEquals(0, reader.numDocs());
+    reader.close();
+
+    writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                              .setOpenMode(OpenMode.APPEND));
+    writer.commit();
+    writer.close();
+
+    reader = DirectoryReader.open(dir);
+    assertEquals(0, reader.maxDoc());
+    assertEquals(0, reader.numDocs());
+    reader.close();
+    dir.close();
+  }
+
+  public void testSmallRAMBuffer() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer  = new IndexWriter(
+                                          dir,
+                                          newIndexWriterConfig(new MockAnalyzer(random()))
+                                          .setRAMBufferSizeMB(0.000001)
+                                          .setMergePolicy(newLogMergePolicy(10))
+                                          );
+    int lastNumSegments = getSegmentCount(dir);
+    for(int j=0;j<9;j++) {
+      Document doc = new Document();
+      doc.add(newField("field", "aaa" + j, storedTextType));
+      writer.addDocument(doc);
+      // Verify that with a tiny RAM buffer we see new
+      // segment after every doc
+      int numSegments = getSegmentCount(dir);
+      assertTrue(numSegments > lastNumSegments);
+      lastNumSegments = numSegments;
+    }
+    writer.close();
+    dir.close();
+  }
+
+  /** Returns how many unique segment names are in the directory. */
+  private static int getSegmentCount(Directory dir) throws IOException {
+    Set<String> segments = new HashSet<>();
+    for(String file : dir.listAll()) {
+      segments.add(IndexFileNames.parseSegmentName(file));
     }
 
-    public void testChangesAfterClose() throws IOException {
-        Directory dir = newDirectory();
+    return segments.size();
+  }
 
-        IndexWriter writer = null;
+  // Make sure it's OK to change RAM buffer size and
+  // maxBufferedDocs in a write session
+  public void testChangingRAMBuffer() throws IOException {
+    Directory dir = newDirectory();      
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    writer.getConfig().setMaxBufferedDocs(10);
+    writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
 
-        writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-        addDoc(writer);
-
-        // close
-        writer.close();
-        try {
-          addDoc(writer);
-          fail("did not hit AlreadyClosedException");
-        } catch (AlreadyClosedException e) {
-          // expected
-        }
-        dir.close();
-    }
-
-
-
-    public void testIndexNoDocuments() throws IOException {
-      Directory dir = newDirectory();
-      IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-      writer.commit();
-      writer.close();
-
-      IndexReader reader = DirectoryReader.open(dir);
-      assertEquals(0, reader.maxDoc());
-      assertEquals(0, reader.numDocs());
-      reader.close();
-
-      writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                       .setOpenMode(OpenMode.APPEND));
-      writer.commit();
-      writer.close();
-
-      reader = DirectoryReader.open(dir);
-      assertEquals(0, reader.maxDoc());
-      assertEquals(0, reader.numDocs());
-      reader.close();
-      dir.close();
-    }
-
-    public void testSmallRAMBuffer() throws IOException {
-      Directory dir = newDirectory();
-      IndexWriter writer  = new IndexWriter(
-          dir,
-          newIndexWriterConfig(new MockAnalyzer(random()))
-              .setRAMBufferSizeMB(0.000001)
-              .setMergePolicy(newLogMergePolicy(10))
-      );
-      int lastNumSegments = getSegmentCount(dir);
-      for(int j=0;j<9;j++) {
-        Document doc = new Document();
-        doc.add(newField("field", "aaa" + j, storedTextType));
-        writer.addDocument(doc);
-        // Verify that with a tiny RAM buffer we see new
-        // segment after every doc
-        int numSegments = getSegmentCount(dir);
-        assertTrue(numSegments > lastNumSegments);
-        lastNumSegments = numSegments;
+    int lastFlushCount = -1;
+    for(int j=1;j<52;j++) {
+      Document doc = new Document();
+      doc.add(new Field("field", "aaa" + j, storedTextType));
+      writer.addDocument(doc);
+      TestUtil.syncConcurrentMerges(writer);
+      int flushCount = writer.getFlushCount();
+      if (j == 1)
+        lastFlushCount = flushCount;
+      else if (j < 10)
+        // No new files should be created
+        assertEquals(flushCount, lastFlushCount);
+      else if (10 == j) {
+        assertTrue(flushCount > lastFlushCount);
+        lastFlushCount = flushCount;
+        writer.getConfig().setRAMBufferSizeMB(0.000001);
+        writer.getConfig().setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+      } else if (j < 20) {
+        assertTrue(flushCount > lastFlushCount);
+        lastFlushCount = flushCount;
+      } else if (20 == j) {
+        writer.getConfig().setRAMBufferSizeMB(16);
+        writer.getConfig().setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+        lastFlushCount = flushCount;
+      } else if (j < 30) {
+        assertEquals(flushCount, lastFlushCount);
+      } else if (30 == j) {
+        writer.getConfig().setRAMBufferSizeMB(0.000001);
+        writer.getConfig().setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+      } else if (j < 40) {
+        assertTrue(flushCount> lastFlushCount);
+        lastFlushCount = flushCount;
+      } else if (40 == j) {
+        writer.getConfig().setMaxBufferedDocs(10);
+        writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+        lastFlushCount = flushCount;
+      } else if (j < 50) {
+        assertEquals(flushCount, lastFlushCount);
+        writer.getConfig().setMaxBufferedDocs(10);
+        writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+      } else if (50 == j) {
+        assertTrue(flushCount > lastFlushCount);
       }
-      writer.close();
-      dir.close();
     }
+    writer.close();
+    dir.close();
+  }
 
-    /** Returns how many unique segment names are in the directory. */
-    private static int getSegmentCount(Directory dir) throws IOException {
-      Set<String> segments = new HashSet<>();
-      for(String file : dir.listAll()) {
-        segments.add(IndexFileNames.parseSegmentName(file));
-      }
+  public void testChangingRAMBuffer2() throws IOException {
+    Directory dir = newDirectory();      
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    writer.getConfig().setMaxBufferedDocs(10);
+    writer.getConfig().setMaxBufferedDeleteTerms(10);
+    writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
 
-      return segments.size();
+    for(int j=1;j<52;j++) {
+      Document doc = new Document();
+      doc.add(new Field("field", "aaa" + j, storedTextType));
+      writer.addDocument(doc);
     }
-
-    // Make sure it's OK to change RAM buffer size and
-    // maxBufferedDocs in a write session
-    public void testChangingRAMBuffer() throws IOException {
-      Directory dir = newDirectory();      
-      IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-      writer.getConfig().setMaxBufferedDocs(10);
-      writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-
-      int lastFlushCount = -1;
-      for(int j=1;j<52;j++) {
-        Document doc = new Document();
-        doc.add(new Field("field", "aaa" + j, storedTextType));
-        writer.addDocument(doc);
-        TestUtil.syncConcurrentMerges(writer);
-        int flushCount = writer.getFlushCount();
-        if (j == 1)
-          lastFlushCount = flushCount;
-        else if (j < 10)
-          // No new files should be created
-          assertEquals(flushCount, lastFlushCount);
-        else if (10 == j) {
-          assertTrue(flushCount > lastFlushCount);
-          lastFlushCount = flushCount;
-          writer.getConfig().setRAMBufferSizeMB(0.000001);
-          writer.getConfig().setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-        } else if (j < 20) {
-          assertTrue(flushCount > lastFlushCount);
-          lastFlushCount = flushCount;
-        } else if (20 == j) {
-          writer.getConfig().setRAMBufferSizeMB(16);
-          writer.getConfig().setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-          lastFlushCount = flushCount;
-        } else if (j < 30) {
-          assertEquals(flushCount, lastFlushCount);
-        } else if (30 == j) {
-          writer.getConfig().setRAMBufferSizeMB(0.000001);
-          writer.getConfig().setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-        } else if (j < 40) {
-          assertTrue(flushCount> lastFlushCount);
-          lastFlushCount = flushCount;
-        } else if (40 == j) {
-          writer.getConfig().setMaxBufferedDocs(10);
-          writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-          lastFlushCount = flushCount;
-        } else if (j < 50) {
-          assertEquals(flushCount, lastFlushCount);
-          writer.getConfig().setMaxBufferedDocs(10);
-          writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-        } else if (50 == j) {
-          assertTrue(flushCount > lastFlushCount);
-        }
-      }
-      writer.close();
-      dir.close();
-    }
-
-    public void testChangingRAMBuffer2() throws IOException {
-      Directory dir = newDirectory();      
-      IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-      writer.getConfig().setMaxBufferedDocs(10);
-      writer.getConfig().setMaxBufferedDeleteTerms(10);
-      writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-
-      for(int j=1;j<52;j++) {
-        Document doc = new Document();
-        doc.add(new Field("field", "aaa" + j, storedTextType));
-        writer.addDocument(doc);
-      }
       
-      int lastFlushCount = -1;
-      for(int j=1;j<52;j++) {
-        writer.deleteDocuments(new Term("field", "aaa" + j));
-        TestUtil.syncConcurrentMerges(writer);
-        int flushCount = writer.getFlushCount();
+    int lastFlushCount = -1;
+    for(int j=1;j<52;j++) {
+      writer.deleteDocuments(new Term("field", "aaa" + j));
+      TestUtil.syncConcurrentMerges(writer);
+      int flushCount = writer.getFlushCount();
        
-        if (j == 1)
-          lastFlushCount = flushCount;
-        else if (j < 10) {
-          // No new files should be created
-          assertEquals(flushCount, lastFlushCount);
-        } else if (10 == j) {
-          assertTrue("" + j, flushCount > lastFlushCount);
-          lastFlushCount = flushCount;
-          writer.getConfig().setRAMBufferSizeMB(0.000001);
-          writer.getConfig().setMaxBufferedDeleteTerms(1);
-        } else if (j < 20) {
-          assertTrue(flushCount > lastFlushCount);
-          lastFlushCount = flushCount;
-        } else if (20 == j) {
-          writer.getConfig().setRAMBufferSizeMB(16);
-          writer.getConfig().setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-          lastFlushCount = flushCount;
-        } else if (j < 30) {
-          assertEquals(flushCount, lastFlushCount);
-        } else if (30 == j) {
-          writer.getConfig().setRAMBufferSizeMB(0.000001);
-          writer.getConfig().setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-          writer.getConfig().setMaxBufferedDeleteTerms(1);
-        } else if (j < 40) {
-          assertTrue(flushCount> lastFlushCount);
-          lastFlushCount = flushCount;
-        } else if (40 == j) {
-          writer.getConfig().setMaxBufferedDeleteTerms(10);
-          writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-          lastFlushCount = flushCount;
-        } else if (j < 50) {
-          assertEquals(flushCount, lastFlushCount);
-          writer.getConfig().setMaxBufferedDeleteTerms(10);
-          writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-        } else if (50 == j) {
-          assertTrue(flushCount > lastFlushCount);
-        }
+      if (j == 1)
+        lastFlushCount = flushCount;
+      else if (j < 10) {
+        // No new files should be created
+        assertEquals(flushCount, lastFlushCount);
+      } else if (10 == j) {
+        assertTrue("" + j, flushCount > lastFlushCount);
+        lastFlushCount = flushCount;
+        writer.getConfig().setRAMBufferSizeMB(0.000001);
+        writer.getConfig().setMaxBufferedDeleteTerms(1);
+      } else if (j < 20) {
+        assertTrue(flushCount > lastFlushCount);
+        lastFlushCount = flushCount;
+      } else if (20 == j) {
+        writer.getConfig().setRAMBufferSizeMB(16);
+        writer.getConfig().setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+        lastFlushCount = flushCount;
+      } else if (j < 30) {
+        assertEquals(flushCount, lastFlushCount);
+      } else if (30 == j) {
+        writer.getConfig().setRAMBufferSizeMB(0.000001);
+        writer.getConfig().setMaxBufferedDeleteTerms(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+        writer.getConfig().setMaxBufferedDeleteTerms(1);
+      } else if (j < 40) {
+        assertTrue(flushCount> lastFlushCount);
+        lastFlushCount = flushCount;
+      } else if (40 == j) {
+        writer.getConfig().setMaxBufferedDeleteTerms(10);
+        writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+        lastFlushCount = flushCount;
+      } else if (j < 50) {
+        assertEquals(flushCount, lastFlushCount);
+        writer.getConfig().setMaxBufferedDeleteTerms(10);
+        writer.getConfig().setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+      } else if (50 == j) {
+        assertTrue(flushCount > lastFlushCount);
       }
-      writer.close();
-      dir.close();
     }
+    writer.close();
+    dir.close();
+  }
 
-    public void testEnablingNorms() throws IOException {
-      Directory dir = newDirectory();
-      IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                   .setMaxBufferedDocs(10));
-      // Enable norms for only 1 doc, pre flush
-      FieldType customType = new FieldType(TextField.TYPE_STORED);
-      customType.setOmitNorms(true);
-      for(int j=0;j<10;j++) {
-        Document doc = new Document();
-        Field f = null;
-        if (j != 8) {
-          f = newField("field", "aaa", customType);
-        }
-        else {
-          f = newField("field", "aaa", storedTextType);
-        }
-        doc.add(f);
-        writer.addDocument(doc);
-      }
-      writer.close();
-
-      Term searchTerm = new Term("field", "aaa");
-
-      IndexReader reader = DirectoryReader.open(dir);
-      IndexSearcher searcher = newSearcher(reader);
-      ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
-      assertEquals(10, hits.length);
-      reader.close();
-
-      writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                      .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
-      // Enable norms for only 1 doc, post flush
-      for(int j=0;j<27;j++) {
-        Document doc = new Document();
-        Field f = null;
-        if (j != 26) {
-          f = newField("field", "aaa", customType);
-        }
-        else {
-          f = newField("field", "aaa", storedTextType);
-        }
-        doc.add(f);
-        writer.addDocument(doc);
-      }
-      writer.close();
-      reader = DirectoryReader.open(dir);
-      searcher = newSearcher(reader);
-      hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
-      assertEquals(27, hits.length);
-      reader.close();
-
-      reader = DirectoryReader.open(dir);
-      reader.close();
-
-      dir.close();
-    }
-
-    public void testHighFreqTerm() throws IOException {
-      Directory dir = newDirectory();
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-                                                  .setRAMBufferSizeMB(0.01));
-      // Massive doc that has 128 K a's
-      StringBuilder b = new StringBuilder(1024*1024);
-      for(int i=0;i<4096;i++) {
-        b.append(" a a a a a a a a");
-        b.append(" a a a a a a a a");
-        b.append(" a a a a a a a a");
-        b.append(" a a a a a a a a");
-      }
+  public void testEnablingNorms() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                          .setMaxBufferedDocs(10));
+    // Enable norms for only 1 doc, pre flush
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    customType.setOmitNorms(true);
+    for(int j=0;j<10;j++) {
       Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_STORED);
-      customType.setStoreTermVectors(true);
-      customType.setStoreTermVectorPositions(true);
-      customType.setStoreTermVectorOffsets(true);
-      doc.add(newField("field", b.toString(), customType));
-      writer.addDocument(doc);
-      writer.close();
-
-      IndexReader reader = DirectoryReader.open(dir);
-      assertEquals(1, reader.maxDoc());
-      assertEquals(1, reader.numDocs());
-      Term t = new Term("field", "a");
-      assertEquals(1, reader.docFreq(t));
-      PostingsEnum td = TestUtil.docs(random(), reader,
-          "field",
-          new BytesRef("a"),
-          null,
-          PostingsEnum.FREQS);
-      td.nextDoc();
-      assertEquals(128*1024, td.freq());
-      reader.close();
-      dir.close();
-    }
-
-    public void testFlushWithNoMerging() throws IOException {
-      Directory dir = newDirectory();
-      IndexWriter writer = new IndexWriter(
-          dir,
-          newIndexWriterConfig(new MockAnalyzer(random()))
-              .setMaxBufferedDocs(2)
-              .setMergePolicy(newLogMergePolicy(10))
-      );
-      Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_STORED);
-      customType.setStoreTermVectors(true);
-      customType.setStoreTermVectorPositions(true);
-      customType.setStoreTermVectorOffsets(true);
-      doc.add(newField("field", "aaa", customType));
-      for(int i=0;i<19;i++) {
-        writer.addDocument(doc);
+      Field f = null;
+      if (j != 8) {
+        f = newField("field", "aaa", customType);
       }
-      writer.flush(false, true);
-      writer.close();
-      SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
-      // Since we flushed w/o allowing merging we should now
-      // have 10 segments
-      assertEquals(10, sis.size());
-      dir.close();
-    }
-
-    public void testFlushWithNoCommit() throws IOException {
-      Directory dir = newDirectory();
-      IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-      IndexWriter writer = new IndexWriter(dir, iwc);
-      Document doc = new Document();
-      writer.addDocument(doc);
-      writer.commit();
-      
-      writer.addDocument(doc);
-      writer.flush();
-      DirectoryReader r = DirectoryReader.open(dir);
-      assertEquals(1, r.maxDoc());
-      writer.commit();
-      DirectoryReader r2 = DirectoryReader.openIfChanged(r);
-      assertNotNull(r2);
-      assertEquals(2, r2.maxDoc());
-      IOUtils.close(r2, r, writer, dir);
-    }
-
-    // Make sure we can flush segment w/ norms, then add
-    // empty doc (no norms) and flush
-    public void testEmptyDocAfterFlushingRealDoc() throws IOException {
-      Directory dir = newDirectory();
-      IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-      Document doc = new Document();
-      FieldType customType = new FieldType(TextField.TYPE_STORED);
-      customType.setStoreTermVectors(true);
-      customType.setStoreTermVectorPositions(true);
-      customType.setStoreTermVectorOffsets(true);
-      doc.add(newField("field", "aaa", customType));
-      writer.addDocument(doc);
-      writer.commit();
-      if (VERBOSE) {
-        System.out.println("\nTEST: now add empty doc");
+      else {
+        f = newField("field", "aaa", storedTextType);
       }
-      writer.addDocument(new Document());
-      writer.close();
-      IndexReader reader = DirectoryReader.open(dir);
-      assertEquals(2, reader.numDocs());
-      reader.close();
-      dir.close();
+      doc.add(f);
+      writer.addDocument(doc);
     }
+    writer.close();
 
+    Term searchTerm = new Term("field", "aaa");
 
+    IndexReader reader = DirectoryReader.open(dir);
+    IndexSearcher searcher = newSearcher(reader);
+    ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
+    assertEquals(10, hits.length);
+    reader.close();
+
+    writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                             .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
+    // Enable norms for only 1 doc, post flush
+    for(int j=0;j<27;j++) {
+      Document doc = new Document();
+      Field f = null;
+      if (j != 26) {
+        f = newField("field", "aaa", customType);
+      }
+      else {
+        f = newField("field", "aaa", storedTextType);
+      }
+      doc.add(f);
+      writer.addDocument(doc);
+    }
+    writer.close();
+    reader = DirectoryReader.open(dir);
+    searcher = newSearcher(reader);
+    hits = searcher.search(new TermQuery(searchTerm), 1000).scoreDocs;
+    assertEquals(27, hits.length);
+    reader.close();
+
+    reader = DirectoryReader.open(dir);
+    reader.close();
+
+    dir.close();
+  }
+
+  public void testHighFreqTerm() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
+                                         .setRAMBufferSizeMB(0.01));
+    // Massive doc that has 128 K a's
+    StringBuilder b = new StringBuilder(1024*1024);
+    for(int i=0;i<4096;i++) {
+      b.append(" a a a a a a a a");
+      b.append(" a a a a a a a a");
+      b.append(" a a a a a a a a");
+      b.append(" a a a a a a a a");
+    }
+    Document doc = new Document();
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    customType.setStoreTermVectors(true);
+    customType.setStoreTermVectorPositions(true);
+    customType.setStoreTermVectorOffsets(true);
+    doc.add(newField("field", b.toString(), customType));
+    writer.addDocument(doc);
+    writer.close();
+
+    IndexReader reader = DirectoryReader.open(dir);
+    assertEquals(1, reader.maxDoc());
+    assertEquals(1, reader.numDocs());
+    Term t = new Term("field", "a");
+    assertEquals(1, reader.docFreq(t));
+    PostingsEnum td = TestUtil.docs(random(), reader,
+                                    "field",
+                                    new BytesRef("a"),
+                                    null,
+                                    PostingsEnum.FREQS);
+    td.nextDoc();
+    assertEquals(128*1024, td.freq());
+    reader.close();
+    dir.close();
+  }
+
+  public void testFlushWithNoMerging() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(
+                                         dir,
+                                         newIndexWriterConfig(new MockAnalyzer(random()))
+                                         .setMaxBufferedDocs(2)
+                                         .setMergePolicy(newLogMergePolicy(10))
+                                         );
+    Document doc = new Document();
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    customType.setStoreTermVectors(true);
+    customType.setStoreTermVectorPositions(true);
+    customType.setStoreTermVectorOffsets(true);
+    doc.add(newField("field", "aaa", customType));
+    for(int i=0;i<19;i++)
+      writer.addDocument(doc);
+    writer.flush(false, true);
+    writer.close();
+    SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
+    // Since we flushed w/o allowing merging we should now
+    // have 10 segments
+    assertEquals(10, sis.size());
+    dir.close();
+  }
+
+  // Make sure we can flush segment w/ norms, then add
+  // empty doc (no norms) and flush
+  public void testEmptyDocAfterFlushingRealDoc() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    Document doc = new Document();
+    FieldType customType = new FieldType(TextField.TYPE_STORED);
+    customType.setStoreTermVectors(true);
+    customType.setStoreTermVectorPositions(true);
+    customType.setStoreTermVectorOffsets(true);
+    doc.add(newField("field", "aaa", customType));
+    writer.addDocument(doc);
+    writer.commit();
+    if (VERBOSE) {
+      System.out.println("\nTEST: now add empty doc");
+    }
+    writer.addDocument(new Document());
+    writer.close();
+    IndexReader reader = DirectoryReader.open(dir);
+    assertEquals(2, reader.numDocs());
+    reader.close();
+    dir.close();
+  }
 
   /**
    * Test that no NullPointerException will be raised,
@@ -1276,10 +1260,16 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
   public void testDeleteUnusedFiles() throws Exception {
+
     assumeFalse("test relies on exact filenames", Codec.getDefault() instanceof SimpleTextCodec);
     for(int iter=0;iter<2;iter++) {
-      MockDirectoryWrapper dir = newMockDirectory(); // relies on windows semantics
-      dir.setEnableVirusScanner(false); // but ensures files are actually deleted
+      // relies on windows semantics
+      Path path = createTempDir();
+      FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+      Path indexPath = new FilterPath(path, fs);
+
+      // NOTE: cannot use MMapDir, because WindowsFS doesn't see/think it keeps file handles open?
+      FSDirectory dir = new NIOFSDirectory(indexPath);
 
       MergePolicy mergePolicy = newLogMergePolicy(true);
       
@@ -1306,20 +1296,15 @@ public class TestIndexWriter extends LuceneTestCase {
         r = DirectoryReader.open(dir);
       }
 
-      List<String> files = new ArrayList<>(Arrays.asList(dir.listAll()));
-
-      // RAMDir won't have a write.lock, but fs dirs will:
-      files.remove("write.lock");
-
-      assertTrue(files.contains("_0.cfs"));
-      assertTrue(files.contains("_0.cfe"));
-      assertTrue(files.contains("_0.si"));
+      assertTrue(Files.exists(indexPath.resolve("_0.cfs")));
+      assertTrue(Files.exists(indexPath.resolve("_0.cfe")));
+      assertTrue(Files.exists(indexPath.resolve("_0.si")));
       if (iter == 1) {
         // we run a full commit so there should be a segments file etc.
-        assertTrue(files.contains("segments_1"));
+        assertTrue(Files.exists(indexPath.resolve("segments_1")));
       } else {
         // this is an NRT reopen - no segments files yet
-        assertFalse(files.contains("segments_1"));
+        assertFalse(Files.exists(indexPath.resolve("segments_1")));
       }
       w.addDocument(doc);
       w.forceMerge(1);
@@ -1329,34 +1314,29 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexReader r2 = DirectoryReader.openIfChanged(r);
       assertNotNull(r2);
       assertTrue(r != r2);
-      files = Arrays.asList(dir.listAll());
 
       // NOTE: here we rely on "Windows" behavior, ie, even
       // though IW wanted to delete _0.cfs since it was
       // merged away, because we have a reader open
       // against this file, it should still be here:
-      assertTrue(files.contains("_0.cfs"));
+      assertTrue(Files.exists(indexPath.resolve("_0.cfs")));
       // forceMerge created this
       //assertTrue(files.contains("_2.cfs"));
       w.deleteUnusedFiles();
 
-      files = Arrays.asList(dir.listAll());
       // r still holds this file open
-      assertTrue(files.contains("_0.cfs"));
+      assertTrue(Files.exists(indexPath.resolve("_0.cfs")));
       //assertTrue(files.contains("_2.cfs"));
 
       r.close();
       if (iter == 0) {
         // on closing NRT reader, it calls writer.deleteUnusedFiles
-        files = Arrays.asList(dir.listAll());
-        assertFalse(files.contains("_0.cfs"));
+        assertFalse(Files.exists(indexPath.resolve("_0.cfs")));
       } else {
-        // now writer can remove it
-        w.deleteUnusedFiles();
-        files = Arrays.asList(dir.listAll());
-        assertFalse(files.contains("_0.cfs"));
+        // now FSDir can remove it
+        dir.deletePendingFiles();
+        assertFalse(Files.exists(indexPath.resolve("_0.cfs")));
       }
-      //assertTrue(files.contains("_2.cfs"));
 
       w.close();
       r2.close();
@@ -1369,10 +1349,6 @@ public class TestIndexWriter extends LuceneTestCase {
     // Validates that iw.deleteUnusedFiles() also deletes unused index commits
     // in case a deletion policy which holds onto commits is used.
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // otherwise the delete of old commit might not actually succeed temporarily.
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-    }
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                 .setIndexDeletionPolicy(new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy())));
     SnapshotDeletionPolicy sdp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
@@ -1425,9 +1401,6 @@ public class TestIndexWriter extends LuceneTestCase {
     // indexed, flushed (but not committed) and then IW rolls back, then no
     // files are left in the Directory.
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-    }
     
     String[] origFiles = dir.listAll();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
@@ -1492,10 +1465,6 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testNoUnwantedTVFiles() throws Exception {
 
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // test uses IW unref'ed check which is unaware of retries
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-    }
     IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
                                                      .setRAMBufferSizeMB(0.01)
                                                      .setMergePolicy(newLogMergePolicy()));
@@ -1661,7 +1630,6 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testDeleteAllNRTLeftoverFiles() throws Exception {
 
     MockDirectoryWrapper d = new MockDirectoryWrapper(random(), new RAMDirectory());
-    d.setEnableVirusScanner(false); // needs for files to actually be deleted
     IndexWriter w = new IndexWriter(d, new IndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     for(int i = 0; i < 20; i++) {
@@ -1784,10 +1752,6 @@ public class TestIndexWriter extends LuceneTestCase {
   // LUCENE-3872
   public void testPrepareCommitThenRollback() throws Exception {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // indexExists might return true if virus scanner prevents deletions 
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-    }
     IndexWriter w = new IndexWriter(dir,
                                     new IndexWriterConfig(new MockAnalyzer(random())));
 
@@ -2273,18 +2237,6 @@ public class TestIndexWriter extends LuceneTestCase {
         dir.setCheckIndexOnClose(false);
       }
 
-      if (dir instanceof MockDirectoryWrapper) {
-        MockDirectoryWrapper mdw = (MockDirectoryWrapper) dir;
-        String[] files = dir.listAll();
-        Arrays.sort(files);
-        if ((Arrays.equals(new String[] {"segments_0"}, files) ||
-             Arrays.equals(new String[] {"segments_0", "write.lock"}, files)) &&
-            mdw.didTryToDelete("segments_0")) {
-          // This means virus checker blocked IW deleting the corrupt first commit
-          dir.setCheckIndexOnClose(false);
-        }
-      }
-
       dir.close();
     }
   }
@@ -2733,7 +2685,7 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   // LUCENE-6523
-  public void testCommitImmediaatelyAfterNRTReopen() throws Exception {
+  public void testCommitImmediatelyAfterNRTReopen() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
@@ -2753,11 +2705,46 @@ public class TestIndexWriter extends LuceneTestCase {
     IOUtils.close(r, r2, w, dir);
   }
 
+  public void testWithPendingDeletions() throws Exception {
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
+
+    Path path = createTempDir();
+
+    // Use WindowsFS to prevent open files from being deleted:
+    FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Path root = new FilterPath(path, fs);
+
+    // MMapDirectory doesn't work because it closes its file handles after mapping!
+    try (FSDirectory dir = new SimpleFSDirectory(root)) {
+      IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+      IndexWriter w = new IndexWriter(dir, iwc);
+      w.commit();
+      IndexInput in = dir.openInput("segments_1", IOContext.DEFAULT);
+      w.addDocument(new Document());
+      w.close();
+      assertTrue(dir.checkPendingDeletions());
+
+      // make sure we get NFSF if we try to delete and already-pending-delete file:
+      try {
+        dir.deleteFile("segments_1");
+        fail("didn't hit exception");
+      } catch (NoSuchFileException nfse) {
+        // expected
+      }
+
+      iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+      try {
+        w = new IndexWriter(dir, iwc);
+      } catch (IllegalArgumentException iae) {
+        assertTrue(iae.getMessage().contains("still has pending deleted files; cannot initialize IndexWriter"));
+      }
+      in.close();
+    }
+  }
+
   public void testLeftoverTempFiles() throws Exception {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     IndexWriter w = new IndexWriter(dir, iwc);
     w.close();

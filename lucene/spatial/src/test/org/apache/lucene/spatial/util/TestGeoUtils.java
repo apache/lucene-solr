@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.BeforeClass;
 
@@ -38,8 +39,8 @@ import static org.apache.lucene.spatial.util.GeoDistanceUtils.DISTANCE_PCT_ERR;
  */
 public class TestGeoUtils extends LuceneTestCase {
 
-  private static final double LON_SCALE = (0x1L<<GeoUtils.BITS)/360.0D;
-  private static final double LAT_SCALE = (0x1L<<GeoUtils.BITS)/180.0D;
+  private static final double LON_SCALE = (0x1L<<GeoEncodingUtils.BITS)/360.0D;
+  private static final double LAT_SCALE = (0x1L<<GeoEncodingUtils.BITS)/180.0D;
 
   // Global bounding box we will "cover" in the random test; we have to make this "smallish" else the queries take very long:
   private static double originLat;
@@ -77,7 +78,7 @@ public class TestGeoUtils extends LuceneTestCase {
 
       // compute geohash straight from lat/lon and from morton encoded value to ensure they're the same
       randomGeoHashString = GeoHashUtils.stringEncode(lon, lat, randomLevel = random().nextInt(12 - 1) + 1);
-      mortonGeoHash = GeoHashUtils.stringEncodeFromMortonLong(GeoUtils.mortonHash(lon, lat), randomLevel);
+      mortonGeoHash = GeoHashUtils.stringEncodeFromMortonLong(GeoEncodingUtils.mortonHash(lon, lat), randomLevel);
       assertEquals(randomGeoHashString, mortonGeoHash);
 
       // v&v conversion from lat/lon or geohashstring to geohash long and back to geohash string
@@ -90,8 +91,8 @@ public class TestGeoUtils extends LuceneTestCase {
       assertEquals(mortonLongFromGHLong, mortonLongFromGHString);
 
       // v&v lat/lon from geohash string and geohash long
-      assertEquals(GeoUtils.mortonUnhashLat(mortonLongFromGHString), GeoUtils.mortonUnhashLat(mortonLongFromGHLong), 0);
-      assertEquals(GeoUtils.mortonUnhashLon(mortonLongFromGHString), GeoUtils.mortonUnhashLon(mortonLongFromGHLong), 0);
+      assertEquals(GeoEncodingUtils.mortonUnhashLat(mortonLongFromGHString), GeoEncodingUtils.mortonUnhashLat(mortonLongFromGHLong), 0);
+      assertEquals(GeoEncodingUtils.mortonUnhashLon(mortonLongFromGHString), GeoEncodingUtils.mortonUnhashLon(mortonLongFromGHLong), 0);
     }
   }
 
@@ -115,8 +116,8 @@ public class TestGeoUtils extends LuceneTestCase {
     final String geohash = GeoHashUtils.stringEncode(4.8909347, 52.3738007);
     final long hash = GeoHashUtils.mortonEncode(geohash);
 
-    assertEquals(52.3738007, GeoUtils.mortonUnhashLat(hash), 0.00001D);
-    assertEquals(4.8909347, GeoUtils.mortonUnhashLon(hash), 0.00001D);
+    assertEquals(52.3738007, GeoEncodingUtils.mortonUnhashLat(hash), 0.00001D);
+    assertEquals(4.8909347, GeoEncodingUtils.mortonUnhashLon(hash), 0.00001D);
   }
 
   /**
@@ -128,18 +129,18 @@ public class TestGeoUtils extends LuceneTestCase {
 
     final long hash = GeoHashUtils.mortonEncode(geohash);
 
-    assertEquals(84.6, GeoUtils.mortonUnhashLat(hash), 0.00001D);
-    assertEquals(10.5, GeoUtils.mortonUnhashLon(hash), 0.00001D);
+    assertEquals(84.6, GeoEncodingUtils.mortonUnhashLat(hash), 0.00001D);
+    assertEquals(10.5, GeoEncodingUtils.mortonUnhashLon(hash), 0.00001D);
   }
 
   public void testDecodeEncode() {
     final String geoHash = "u173zq37x014";
     assertEquals(geoHash, GeoHashUtils.stringEncode(4.8909347, 52.3738007));
     final long mortonHash = GeoHashUtils.mortonEncode(geoHash);
-    final double lon = GeoUtils.mortonUnhashLon(mortonHash);
-    final double lat = GeoUtils.mortonUnhashLat(mortonHash);
-    assertEquals(52.37380061d, GeoUtils.mortonUnhashLat(mortonHash), 0.000001d);
-    assertEquals(4.8909343d, GeoUtils.mortonUnhashLon(mortonHash), 0.000001d);
+    final double lon = GeoEncodingUtils.mortonUnhashLon(mortonHash);
+    final double lat = GeoEncodingUtils.mortonUnhashLat(mortonHash);
+    assertEquals(52.37380061d, GeoEncodingUtils.mortonUnhashLat(mortonHash), 0.000001d);
+    assertEquals(4.8909343d, GeoEncodingUtils.mortonUnhashLon(mortonHash), 0.000001d);
 
     assertEquals(geoHash, GeoHashUtils.stringEncode(lon, lat));
   }
@@ -416,7 +417,7 @@ public class TestGeoUtils extends LuceneTestCase {
     }
   }
 
-  /** Tests consistency of GeoUtils.rectWithinCircle, .rectCrossesCircle, .rectWithin and SloppyMath.haversine distance check */
+  /** Tests consistency of GeoEncodingUtils.rectWithinCircle, .rectCrossesCircle, .rectWithin and SloppyMath.haversine distance check */
   public void testGeoRelations() throws Exception {
 
     int numDocs = atLeast(1000);
@@ -540,6 +541,24 @@ public class TestGeoUtils extends LuceneTestCase {
       if (failCount != 0) {
         System.out.print(sw.toString());
         fail(failCount + " incorrect hits (see above)");
+      }
+    }
+  }
+
+  /**
+   * Tests stability of {@link GeoEncodingUtils#geoCodedToPrefixCoded}
+   */
+  public void testGeoPrefixCoding() throws Exception {
+    int numIters = atLeast(1000);
+    long hash;
+    long decodedHash;
+    BytesRefBuilder brb = new BytesRefBuilder();
+    while (numIters-- >= 0) {
+      hash = GeoEncodingUtils.mortonHash(randomLon(false), randomLat(false));
+      for (int i=32; i<64; ++i) {
+        GeoEncodingUtils.geoCodedToPrefixCoded(hash, i, brb);
+        decodedHash = GeoEncodingUtils.prefixCodedToGeoCoded(brb.get());
+        assertEquals((hash >>> i) << i, decodedHash);
       }
     }
   }

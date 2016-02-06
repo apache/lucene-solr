@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -118,7 +119,9 @@ public class FileSwitchDirectory extends Directory {
     if (exc != null && files.isEmpty()) {
       throw exc;
     }
-    return files.toArray(new String[files.size()]);
+    String[] result = files.toArray(new String[files.size()]);
+    Arrays.sort(result);
+    return result;
   }
 
   /** Utility method to return a file's extension. */
@@ -141,7 +144,11 @@ public class FileSwitchDirectory extends Directory {
 
   @Override
   public void deleteFile(String name) throws IOException {
-    getDirectory(name).deleteFile(name);
+    if (getDirectory(name) == primaryDir) {
+      primaryDir.deleteFile(name);
+    } else {
+      secondaryDir.deleteFile(name);
+    }
   }
 
   @Override
