@@ -181,6 +181,10 @@ API Changes
 
 Optimizations
 
+* LUCENE-6930: Decouple GeoPointField from NumericType by using a custom
+  and efficient GeoPointTokenStream and TermEnum designed for GeoPoint prefix
+  terms. (Nick Knize)
+
 * LUCENE-6951: Improve GeoPointInPolygonQuery using point orientation based
   line crossing algorithm, and adding result for multi-value docs when least
   1 point satisfies polygon criteria. (Nick Knize)
