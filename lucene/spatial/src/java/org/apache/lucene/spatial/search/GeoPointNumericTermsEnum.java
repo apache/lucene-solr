@@ -30,7 +30,7 @@ import org.apache.lucene.util.NumericUtils;
 
 /**
  * Decomposes a given {@link GeoPointMultiTermQuery} into a set of terms that represent the query criteria using
- * {@link import org.apache.lucene.document.GeoPointTokenStream.TermEncoding#NUMERIC} method defined by
+ * {@link org.apache.lucene.spatial.document.GeoPointField.TermEncoding#NUMERIC} method defined by
  * {@link org.apache.lucene.analysis.NumericTokenStream}. The terms are then enumerated by the
  * {@link GeoPointTermQueryConstantScoreWrapper} and all docs whose GeoPoint fields match the prefix terms or
  * pass the {@link GeoPointMultiTermQuery.CellComparator#postFilter} criteria are returned in the resulting DocIdSet.

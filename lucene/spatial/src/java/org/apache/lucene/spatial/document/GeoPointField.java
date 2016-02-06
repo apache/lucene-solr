@@ -54,7 +54,7 @@ public final class GeoPointField extends Field {
   public enum TermEncoding {
     /**
      * encodes prefix terms only resulting in a small index and faster queries - use with
-     * {@link GeoPointTokenStream}
+     * {@code GeoPointTokenStream}
      */
     PREFIX,
     /**

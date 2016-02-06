@@ -32,7 +32,7 @@ import static org.apache.lucene.spatial.util.GeoEncodingUtils.getPrefixCodedShif
 
 /**
  * Decomposes a given {@link GeoPointMultiTermQuery} into a set of terms that represent the query criteria using
- * {@link GeoPointField.TermEncoding#PREFIX} method defined by
+ * {@link org.apache.lucene.spatial.document.GeoPointField.TermEncoding#PREFIX} method defined by
  * {@link GeoPointField}. The terms are then enumerated by the
  * {@link GeoPointTermQueryConstantScoreWrapper} and all docs whose GeoPoint fields match the prefix terms or pass
  * the {@link GeoPointMultiTermQuery.CellComparator#postFilter} criteria are returned in the

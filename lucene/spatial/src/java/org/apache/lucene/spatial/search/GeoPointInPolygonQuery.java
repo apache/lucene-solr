@@ -16,12 +16,8 @@
  */
 package org.apache.lucene.spatial.search;
 
-import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoEncodingUtils;
 import org.apache.lucene.spatial.util.GeoRect;
@@ -36,11 +32,7 @@ import org.apache.lucene.spatial.util.GeoUtils;
  * to a secondary filter that verifies whether the decoded lat/lon point falls within
  * (or on the boundary) of the bounding box query. Finally, the remaining candidate
  * term is passed to the final point in polygon check. All value comparisons are subject
-<<<<<<< HEAD:lucene/spatial/src/java/org/apache/lucene/spatial/search/GeoPointInPolygonQuery.java
- * to the same precision tolerance defined in {@value org.apache.lucene.spatial.util.GeoUtils#TOLERANCE}
-=======
  * to the same precision tolerance defined in {@value GeoEncodingUtils#TOLERANCE}
->>>>>>> LUCENE-6930: Decouples GeoPointField from NumericType by using a custom GeoPointTokenStream and TermEnum designed for GeoPoint prefix terms:lucene/sandbox/src/java/org/apache/lucene/search/GeoPointInPolygonQuery.java
  *
  * <p>NOTES:
  *    1.  The polygon coordinates need to be in either clockwise or counter-clockwise order.
@@ -101,8 +93,8 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
   }
 
   /**
-   * Custom {@link org.apache.lucene.index.TermsEnum} that computes morton hash ranges based on the defined edges of
-   * the provided polygon.
+   * Custom {@code org.apache.lucene.spatial.search.GeoPointMultiTermQuery.CellComparator} that computes morton hash
+   * ranges based on the defined edges of the provided polygon.
    */
   private final class GeoPolygonCellComparator extends CellComparator {
     GeoPolygonCellComparator(GeoPointMultiTermQuery query) {

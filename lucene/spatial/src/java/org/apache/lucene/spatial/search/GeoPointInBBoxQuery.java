@@ -34,7 +34,7 @@ import org.apache.lucene.spatial.util.GeoUtils;
  * passing this initial filter are passed to a final check that verifies whether
  * the decoded lat/lon falls within (or on the boundary) of the query bounding box.
  * The value comparisons are subject to a precision tolerance defined in
- * {@value org.apache.lucene.spatial.util.GeoUtils#TOLERANCE}
+ * {@value org.apache.lucene.spatial.util.GeoEncodingUtils#TOLERANCE}
  *
  * NOTES:
  *    1.  All latitude/longitude values must be in decimal degrees.

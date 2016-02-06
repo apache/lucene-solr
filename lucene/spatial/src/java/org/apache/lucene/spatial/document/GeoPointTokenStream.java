@@ -85,7 +85,7 @@ final class GeoPointTokenStream extends TokenStream {
    * <code>precisionStep</code> using the given
    * {@link org.apache.lucene.util.AttributeFactory}.
    * The stream is not yet initialized,
-   * before using set a value using the various set<em>???</em>Value() methods.
+   * before using set a value using the various setGeoCode method.
    */
   public GeoPointTokenStream() {
     super(new GeoPointAttributeFactory(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY));
