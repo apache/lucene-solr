@@ -1271,7 +1271,7 @@ public abstract class LuceneTestCase extends Assert {
     return newDirectory(random());
   }
 
-  /** Like {@link newDirectory} except randomly the {@link VirusCheckingFS} may be installed */
+  /** Like {@link #newDirectory} except randomly the {@link VirusCheckingFS} may be installed */
   public static BaseDirectoryWrapper newMaybeVirusCheckingDirectory() {
     if (random().nextInt(5) == 4) {
       Path path = addVirusChecker(createTempDir());
@@ -1340,7 +1340,7 @@ public abstract class LuceneTestCase extends Assert {
     return newFSDirectory(f, FSLockFactory.getDefault());
   }
 
-  /** Like {@link newFSDirectory(Path)}, but randomly insert {@link VirusCheckingFS} */
+  /** Like {@link #newFSDirectory(Path)}, but randomly insert {@link VirusCheckingFS} */
   public static BaseDirectoryWrapper newMaybeVirusCheckingFSDirectory(Path f) {
     if (random().nextInt(5) == 4) {
       f = addVirusChecker(f);
