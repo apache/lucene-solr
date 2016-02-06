@@ -1,5 +1,3 @@
-package org.apache.lucene.replicator;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.replicator;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.replicator;
 
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -42,7 +41,6 @@ import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.replicator.IndexAndTaxonomyRevision.SnapshotDirectoryTaxonomyWriter;
 import org.apache.lucene.replicator.ReplicationClient.ReplicationHandler;
@@ -424,22 +422,6 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
               }
             }
 
-            if (indexStatus == null || indexStatus.clean == false) {
-
-              // Because segments file for taxo index is replicated after
-              // main index's segments file, if there's an error while replicating
-              // main index's segments file and if virus checker prevents
-              // deletion of taxo index's segments file, it can look like corruption.
-              // But it should be "false" meaning if we remove the latest segments
-              // file then the index is intact.  It's like pulling a hideous
-              // looking rock out of the ground, but then you pull the cruft
-              // off the outside of it and discover it's actually a beautiful
-              // diamond:
-              String segmentsFileName = SegmentInfos.getLastCommitSegmentsFileName(handlerTaxoDir);
-              assertTrue(handlerTaxoDir.didTryToDelete(segmentsFileName));
-              handlerTaxoDir.getDelegate().deleteFile(segmentsFileName);
-              TestUtil.checkIndex(handlerTaxoDir.getDelegate());
-            }
           } catch (IOException e) {
             failed.set(true);
             throw new RuntimeException(e);

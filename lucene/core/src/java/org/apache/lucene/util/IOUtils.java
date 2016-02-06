@@ -1,5 +1,3 @@
-package org.apache.lucene.util;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
+
 
 import java.io.BufferedReader;
 import java.io.Closeable;
@@ -194,7 +194,7 @@ public final class IOUtils {
    * Note that the files should not be null.
    */
   public static void deleteFilesIgnoringExceptions(Directory dir, Collection<String> files) {
-    for (String name : files) {
+    for(String name : files) {
       try {
         dir.deleteFile(name);
       } catch (Throwable ignored) {
@@ -215,11 +215,11 @@ public final class IOUtils {
    * completes normally if there were no exceptions.
    * 
    * @param dir Directory to delete files from
-   * @param files file names to delete
+   * @param names file names to delete
    */
-  public static void deleteFiles(Directory dir, Collection<String> files) throws IOException {
+  public static void deleteFiles(Directory dir, Collection<String> names) throws IOException {
     Throwable th = null;
-    for (String name : files) {
+    for (String name : names) {
       if (name != null) {
         try {
           dir.deleteFile(name);

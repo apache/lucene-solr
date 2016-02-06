@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -384,7 +384,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
 
             final Directory dir = openDirectory(leafIndex);
 
-            if (Files.exists(leafIndex.resolve("done")) == false) {
+            if (slowFileExists(dir, "done") == false) {
               if (DEBUG) System.out.println(Thread.currentThread().getName() + ": TEST: build segment index for " + leaf + " " + segIDGen + " (source: " + info.getDiagnostics().get("source") + ") dir=" + leafIndex);
 
               if (dir.listAll().length != 0) {
@@ -505,7 +505,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     }
 
     /** Just replaces the sub-readers with parallel readers, so reindexed fields are merged into new segments. */
-    private class ReindexingMergePolicy extends MergePolicy {
+    private class ReindexingMergePolicy extends MergePolicyWrapper {
 
       class ReindexingOneMerge extends OneMerge {
 
@@ -596,11 +596,9 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         return wrapped;
       }
 
-      final MergePolicy in;
-
       /** Create a new {@code MergePolicy} that sorts documents with the given {@code sort}. */
       public ReindexingMergePolicy(MergePolicy in) {
-        this.in = in;
+        super(in);
       }
 
       @Override
@@ -895,7 +893,8 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
     AtomicLong currentSchemaGen = new AtomicLong();
 
     // TODO: separate refresh thread, search threads, indexing threads
-    ReindexingReader reindexer = getReindexerNewDVFields(createTempDir(), currentSchemaGen);
+    Path root = createTempDir();
+    ReindexingReader reindexer = getReindexerNewDVFields(root, currentSchemaGen);
     reindexer.commit();
 
     Document doc = new Document();
@@ -1151,7 +1150,8 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
   }
 
   public void testBasic() throws Exception {
-    ReindexingReader reindexer = getReindexer(createTempDir());
+    Path tempPath = createTempDir();
+    ReindexingReader reindexer = getReindexer(tempPath);
 
     // Start with initial empty commit:
     reindexer.commit();

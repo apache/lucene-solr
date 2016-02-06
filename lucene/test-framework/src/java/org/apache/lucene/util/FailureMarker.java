@@ -1,10 +1,3 @@
-package org.apache.lucene.util;
-
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.runner.notification.Failure;
-import org.junit.runner.notification.RunListener;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,6 +14,12 @@ import org.junit.runner.notification.RunListener;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.runner.notification.Failure;
+import org.junit.runner.notification.RunListener;
 
 /**
  * A {@link RunListener} that detects suite/ test failures. We need it because failures

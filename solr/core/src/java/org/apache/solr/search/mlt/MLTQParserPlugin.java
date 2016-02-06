@@ -1,4 +1,3 @@
-package org.apache.solr.search.mlt;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +14,7 @@ package org.apache.solr.search.mlt;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+package org.apache.solr.search.mlt;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -27,11 +26,6 @@ import org.apache.solr.search.QParserPlugin;
  */
 public class MLTQParserPlugin extends QParserPlugin {
   public static final String NAME = "mlt";
-  
-  @Override
-  public void init(NamedList args) {
-    
-  }
   
   @Override
   public QParser createParser(String qstr, SolrParams localParams,

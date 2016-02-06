@@ -1,14 +1,3 @@
-package org.apache.lucene.facet.taxonomy;
-
-import java.util.Arrays;
-
-import org.apache.lucene.facet.FacetField;
-import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.TestUtil;
-import org.junit.Test;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,6 +14,16 @@ import org.junit.Test;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.facet.taxonomy;
+
+import java.util.Arrays;
+
+import org.apache.lucene.facet.FacetField;
+import org.apache.lucene.facet.FacetTestCase;
+import org.apache.lucene.facet.sortedset.SortedSetDocValuesFacetField;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.TestUtil;
+import org.junit.Test;
 
 public class TestFacetLabel extends FacetTestCase {
   

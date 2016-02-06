@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -148,7 +148,7 @@ public class TieredMergePolicy extends MergePolicy {
 
   /** Returns the current maxMergedSegmentMB setting.
    *
-   * @see #getMaxMergedSegmentMB */
+   * @see #setMaxMergedSegmentMB */
   public double getMaxMergedSegmentMB() {
     return maxMergedSegmentBytes/1024/1024.;
   }
@@ -180,7 +180,7 @@ public class TieredMergePolicy extends MergePolicy {
    *  Default is 2 MB. */
   public TieredMergePolicy setFloorSegmentMB(double v) {
     if (v <= 0.0) {
-      throw new IllegalArgumentException("floorSegmentMB must be >= 0.0 (got " + v + ")");
+      throw new IllegalArgumentException("floorSegmentMB must be > 0.0 (got " + v + ")");
     }
     v *= 1024 * 1024;
     floorSegmentBytes = v > Long.MAX_VALUE ? Long.MAX_VALUE : (long) v;

@@ -1,5 +1,3 @@
-package org.apache.solr.client.solrj.io.stream;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.solr.client.solrj.io.stream;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj.io.stream;
 
 import java.io.File;
 import java.io.IOException;
@@ -136,6 +135,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     testUniqueStream();
     testRollupStream();
     testStatsStream();
+    testNulls();
     testDaemonStream();
     testParallelUniqueStream();
     testParallelReducerStream();
@@ -303,6 +303,68 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     del("*:*");
     commit();
   }
+
+
+  private void testNulls() throws Exception {
+
+    indexr(id, "0",                  "a_i", "1", "a_f", "0", "s_multi", "aaa", "s_multi", "bbb", "i_multi", "100", "i_multi", "200");
+    indexr(id, "2", "a_s", "hello2", "a_i", "3", "a_f", "0");
+    indexr(id, "3", "a_s", "hello3", "a_i", "4", "a_f", "3");
+    indexr(id, "4", "a_s", "hello4",             "a_f", "4");
+    indexr(id, "1", "a_s", "hello1", "a_i", "2", "a_f", "1");
+    commit();
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    Tuple tuple;
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withFunctionName("search", CloudSolrStream.class);
+    // Basic test
+    expression = StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_i asc\")");
+    stream = new CloudSolrStream(expression, factory);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 5);
+    assertOrder(tuples, 4, 0, 1, 2, 3);
+
+    tuple = tuples.get(0);
+    assertTrue("hello4".equals(tuple.getString("a_s")));
+    assertNull(tuple.get("s_multi"));
+    assertNull(tuple.get("i_multi"));
+    assertEquals(0L, (long)tuple.getLong("a_i"));
+
+
+    tuple = tuples.get(1);
+    assertNull(tuple.get("a_s"));
+    List<String> strings = tuple.getStrings("s_multi");
+    assertNotNull(strings);
+    assertEquals("aaa", strings.get(0));
+    assertEquals("bbb", strings.get(1));
+    List<Long> longs = tuple.getLongs("i_multi");
+    assertNotNull(longs);
+
+    //test sort (asc) with null string field. Null should sort to the top.
+    expression = StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_s asc\")");
+    stream = new CloudSolrStream(expression, factory);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 5);
+    assertOrder(tuples, 0, 1, 2, 3, 4);
+
+    //test sort(desc) with null string field.  Null should sort to the bottom.
+    expression = StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_s desc\")");
+    stream = new CloudSolrStream(expression, factory);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 5);
+    assertOrder(tuples, 4, 3, 2, 1, 0);
+
+    del("*:*");
+    commit();
+  }
+
   
   private void testMergeStream() throws Exception {
 

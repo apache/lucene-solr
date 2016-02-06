@@ -1,6 +1,3 @@
-package org.apache.lucene.codecs.lucene60;
-
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,6 +14,8 @@ package org.apache.lucene.codecs.lucene60;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.lucene60;
+
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -48,38 +47,69 @@ public class Lucene60PointReader extends PointReader implements Closeable {
   /** Sole constructor */
   public Lucene60PointReader(SegmentReadState readState) throws IOException {
     this.readState = readState;
-    String dataFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
-                                                         readState.segmentSuffix,
-                                                         Lucene60PointFormat.DATA_EXTENSION);
-    dataIn = readState.directory.openInput(dataFileName, readState.context);
+
+
     String indexFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
                                                           readState.segmentSuffix,
                                                           Lucene60PointFormat.INDEX_EXTENSION);
 
-    boolean success = false;
+    Map<Integer,Long> fieldToFileOffset = new HashMap<>();
 
     // Read index file
     try (ChecksumIndexInput indexIn = readState.directory.openChecksumInput(indexFileName, readState.context)) {
-      CodecUtil.checkIndexHeader(indexIn,
-                                 Lucene60PointFormat.CODEC_NAME,
-                                 Lucene60PointFormat.INDEX_VERSION_START,
-                                 Lucene60PointFormat.INDEX_VERSION_START,
+      Throwable priorE = null;
+      try {
+        CodecUtil.checkIndexHeader(indexIn,
+                                   Lucene60PointFormat.META_CODEC_NAME,
+                                   Lucene60PointFormat.INDEX_VERSION_START,
+                                   Lucene60PointFormat.INDEX_VERSION_START,
+                                   readState.segmentInfo.getId(),
+                                   readState.segmentSuffix);
+        int count = indexIn.readVInt();
+        for(int i=0;i<count;i++) {
+          int fieldNumber = indexIn.readVInt();
+          long fp = indexIn.readVLong();
+          fieldToFileOffset.put(fieldNumber, fp);
+        }
+      } catch (Throwable t) {
+        priorE = t;
+      } finally {
+        CodecUtil.checkFooter(indexIn, priorE);
+      }
+    }
+
+    String dataFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
+                                                         readState.segmentSuffix,
+                                                         Lucene60PointFormat.DATA_EXTENSION);
+    boolean success = false;
+    dataIn = readState.directory.openInput(dataFileName, readState.context);
+    try {
+
+      CodecUtil.checkIndexHeader(dataIn,
+                                 Lucene60PointFormat.DATA_CODEC_NAME,
+                                 Lucene60PointFormat.DATA_VERSION_START,
+                                 Lucene60PointFormat.DATA_VERSION_START,
                                  readState.segmentInfo.getId(),
                                  readState.segmentSuffix);
-      int count = indexIn.readVInt();
-      for(int i=0;i<count;i++) {
-        int fieldNumber = indexIn.readVInt();
-        long fp = indexIn.readVLong();
+
+      // NOTE: data file is too costly to verify checksum against all the bytes on open,
+      // but for now we at least verify proper structure of the checksum footer: which looks
+      // for FOOTER_MAGIC + algorithmID. This is cheap and can detect some forms of corruption
+      // such as file truncation.
+      CodecUtil.retrieveChecksum(dataIn);
+
+      for(Map.Entry<Integer,Long> ent : fieldToFileOffset.entrySet()) {
+        int fieldNumber = ent.getKey();
+        long fp = ent.getValue();
         dataIn.seek(fp);
         BKDReader reader = new BKDReader(dataIn);
         readers.put(fieldNumber, reader);
-        //reader.verify(readState.segmentInfo.maxDoc());
       }
-      CodecUtil.checkFooter(indexIn);
+
       success = true;
     } finally {
       if (success == false) {
-        IOUtils.closeWhileHandlingException(dataIn);
+        IOUtils.closeWhileHandlingException(this);
       }
     }
   }

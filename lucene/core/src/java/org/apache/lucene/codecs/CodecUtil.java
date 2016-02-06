@@ -1,5 +1,3 @@
-package org.apache.lucene.codecs;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.codecs;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs;
 
 
 import java.io.IOException;
@@ -427,6 +426,9 @@ public final class CodecUtil {
    * @throws IOException if the footer is invalid
    */
   public static long retrieveChecksum(IndexInput in) throws IOException {
+    if (in.length() < footerLength()) {
+      throw new CorruptIndexException("misplaced codec footer (file truncated?): length=" + in.length() + " but footerLength==" + footerLength(), in);
+    }
     in.seek(in.length() - footerLength());
     validateFooter(in);
     return readCRC(in);

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.search;
 
 import java.io.IOException;
@@ -121,10 +120,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   public static final String HINT_TOP_FC = "top_fc";
   public static final String HINT_MULTI_DOCVALUES = "multi_docvalues";
 
-
-  public void init(NamedList namedList) {
-
-  }
 
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
     return new CollapsingQParser(qstr, localParams, params, request);

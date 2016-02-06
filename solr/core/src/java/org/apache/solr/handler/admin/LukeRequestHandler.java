@@ -14,8 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.handler.admin;
+
+import static org.apache.lucene.index.IndexOptions.DOCS;
+import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS;
+import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -41,6 +44,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
@@ -60,8 +64,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.analysis.TokenizerChain;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -79,10 +83,6 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrIndexWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.lucene.index.IndexOptions.DOCS;
-import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS;
-import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
 
 /**
  * This handler exposes the internal lucene index.  It is inspired by and 
@@ -586,8 +586,13 @@ public class LukeRequestHandler extends RequestHandlerBase
     indexInfo.add("current", reader.isCurrent() );
     indexInfo.add("hasDeletions", reader.hasDeletions() );
     indexInfo.add("directory", dir );
-    indexInfo.add("userData", reader.getIndexCommit().getUserData());
-    String s = reader.getIndexCommit().getUserData().get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
+    IndexCommit indexCommit = reader.getIndexCommit();
+    String segmentsFileName = indexCommit.getSegmentsFileName();
+    indexInfo.add("segmentsFile", segmentsFileName);
+    indexInfo.add("segmentsFileSizeInBytes", indexCommit.getDirectory().fileLength(segmentsFileName));
+    Map<String,String> userData = indexCommit.getUserData();
+    indexInfo.add("userData", userData);
+    String s = userData.get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
     if (s != null) {
       indexInfo.add("lastModified", new Date(Long.parseLong(s)));
     }

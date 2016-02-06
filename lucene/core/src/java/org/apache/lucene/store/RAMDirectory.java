@@ -1,5 +1,3 @@
-package org.apache.lucene.store;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,11 +14,14 @@ package org.apache.lucene.store;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.store;
+
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -119,8 +120,12 @@ public class RAMDirectory extends BaseDirectory implements Accountable {
     // concurrently
     Set<String> fileNames = fileMap.keySet();
     List<String> names = new ArrayList<>(fileNames.size());
-    for (String name : fileNames) names.add(name);
-    return names.toArray(new String[names.size()]);
+    for (String name : fileNames) {
+      names.add(name);
+    }
+    String[] namesArray = names.toArray(new String[names.size()]);
+    Arrays.sort(namesArray);
+    return namesArray;
   }
 
   public final boolean fileNameExists(String name) {

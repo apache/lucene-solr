@@ -1,5 +1,3 @@
-package org.apache.solr.core;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.solr.core;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
@@ -68,9 +67,6 @@ public class MockDirectoryFactory extends EphemeralDirectoryFactory {
       // tries to write to index.properties after the file has
       // already been created.
       mockDirWrapper.setPreventDoubleWrite(false);
-      
-      // IndexFetcher & co don't seem ready for this:
-      mockDirWrapper.setEnableVirusScanner(false);
       
       if (allowReadingFilesStillOpenForWrite) {
         mockDirWrapper.setAllowReadingFilesStillOpenForWrite(true);

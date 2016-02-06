@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -183,11 +182,6 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
   // Just tests that we can open all files returned by listAll
   public void testListAll() throws Exception {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // test lists files manually and tries to verify every .cfs it finds,
-      // but a virus scanner could leave some trash.
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-    }
     // riw should sometimes create docvalues fields, etc
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();

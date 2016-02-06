@@ -1,5 +1,3 @@
-package org.apache.lucene.replicator.http;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.replicator.http;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.replicator.http;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -40,12 +39,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
-
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 public class HttpReplicatorTest extends ReplicatorTestCase {
   private Path clientWorkDir;

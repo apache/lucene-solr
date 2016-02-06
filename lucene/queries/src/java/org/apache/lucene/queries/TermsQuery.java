@@ -1,5 +1,3 @@
-package org.apache.lucene.queries;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.queries;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.queries;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -25,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.SortedSet;
 
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -55,6 +55,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -86,22 +87,17 @@ public class TermsQuery extends Query implements Accountable {
   private final PrefixCodedTerms termData;
   private final int termDataHashCode; // cached hashcode of termData
 
-  private static Term[] toTermArray(String field, List<BytesRef> termBytes) {
-    Term[] array = new Term[termBytes.size()];
-    int i = 0;
-    for (BytesRef t : termBytes) {
-      array[i++] = new Term(field, t);
-    }
-    return array;
-  }
-
   /**
-   * Creates a new {@link TermsQuery} from the given list. The list
+   * Creates a new {@link TermsQuery} from the given collection. It
    * can contain duplicate terms and multiple fields.
    */
-  public TermsQuery(final List<Term> terms) {
+  public TermsQuery(Collection<Term> terms) {
     Term[] sortedTerms = terms.toArray(new Term[terms.size()]);
-    ArrayUtil.timSort(sortedTerms);
+    // already sorted if we are a SortedSet with natural order
+    boolean sorted = terms instanceof SortedSet && ((SortedSet<Term>)terms).comparator() == null;
+    if (!sorted) {
+      ArrayUtil.timSort(sortedTerms);
+    }
     PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
     Term previous = null;
     for (Term term : sortedTerms) {
@@ -113,21 +109,38 @@ public class TermsQuery extends Query implements Accountable {
     termData = builder.finish();
     termDataHashCode = termData.hashCode();
   }
-
+  
   /**
-   * Creates a new {@link TermsQuery} from the given {@link BytesRef} list for
-   * a single field.
+   * Creates a new {@link TermsQuery} from the given collection for
+   * a single field. It can contain duplicate terms.
    */
-  public TermsQuery(final String field, final List<BytesRef> terms) {
-    this(toTermArray(field, terms));
+  public TermsQuery(String field, Collection<BytesRef> terms) {
+    BytesRef[] sortedTerms = terms.toArray(new BytesRef[terms.size()]);
+    // already sorted if we are a SortedSet with natural order
+    boolean sorted = terms instanceof SortedSet && ((SortedSet<BytesRef>)terms).comparator() == null;
+    if (!sorted) {
+      ArrayUtil.timSort(sortedTerms);
+    }
+    PrefixCodedTerms.Builder builder = new PrefixCodedTerms.Builder();
+    BytesRefBuilder previous = null;
+    for (BytesRef term : sortedTerms) {
+      if (previous == null) {
+        previous = new BytesRefBuilder();
+      } else if (previous.get().equals(term)) {
+        continue; // deduplicate
+      }
+      builder.add(field, term);
+      previous.copyBytes(term);
+    }
+    termData = builder.finish();
+    termDataHashCode = termData.hashCode();
   }
 
   /**
    * Creates a new {@link TermsQuery} from the given {@link BytesRef} array for
    * a single field.
    */
-  public TermsQuery(final String field, final BytesRef...terms) {
-    // this ctor prevents unnecessary Term creations
+  public TermsQuery(String field, BytesRef...terms) {
    this(field, Arrays.asList(terms));
   }
 

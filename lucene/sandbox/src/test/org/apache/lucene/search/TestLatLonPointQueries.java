@@ -1,5 +1,3 @@
-package org.apache.lucene.search;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,14 +14,17 @@ package org.apache.lucene.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search;
 
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.util.BaseGeoPointTestCase;
-import org.apache.lucene.util.GeoDistanceUtils;
-import org.apache.lucene.util.GeoRect;
+import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
+import org.apache.lucene.spatial.util.GeoDistanceUtils;
+import org.apache.lucene.spatial.util.GeoRect;
 
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
+  // todo deconflict GeoPoint and BKD encoding methods and error tolerance
+  public static final double BKD_TOLERANCE = 1e-7;
 
   @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
@@ -56,6 +57,14 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
     assert Double.isNaN(pointLat) == false;
 
+    // false positive/negatives due to quantization error exist for both rectangles and polygons
+    if (compare(pointLat, rect.minLat) == 0
+        || compare(pointLat, rect.maxLat) == 0
+        || compare(pointLon, rect.minLon) == 0
+        || compare(pointLon, rect.maxLon) == 0) {
+      return null;
+    }
+
     int rectLatMinEnc = LatLonPoint.encodeLat(rect.minLat);
     int rectLatMaxEnc = LatLonPoint.encodeLat(rect.maxLat);
     int rectLonMinEnc = LatLonPoint.encodeLon(rect.minLon);
@@ -78,19 +87,16 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
     }
   }
 
-  private static final double POLY_TOLERANCE = 1e-7;
+  // todo reconcile with GeoUtils (see LUCENE-6996)
+  public static double compare(final double v1, final double v2) {
+    final double delta = v1-v2;
+    return Math.abs(delta) <= BKD_TOLERANCE ? 0 : delta;
+  }
 
   @Override
   protected Boolean polyRectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
-    if (Math.abs(rect.minLat-pointLat) < POLY_TOLERANCE ||
-        Math.abs(rect.maxLat-pointLat) < POLY_TOLERANCE ||
-        Math.abs(rect.minLon-pointLon) < POLY_TOLERANCE ||
-        Math.abs(rect.maxLon-pointLon) < POLY_TOLERANCE) {
-      // The poly check quantizes slightly differently, so we allow for boundary cases to disagree
-      return null;
-    } else {
-      return rectContainsPoint(rect, pointLat, pointLon);
-    }
+    // TODO write better random polygon tests
+    return rectContainsPoint(rect, pointLat, pointLon);
   }
 
   @Override
@@ -112,12 +118,29 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
     boolean small = random().nextBoolean();
     for(int iter=0;iter<iters;iter++) {
       double lat = randomLat(small);
-      double latQuantized = LatLonPoint.decodeLat(LatLonPoint.encodeLat(lat));
-      assertEquals(lat, latQuantized, LatLonPoint.TOLERANCE);
+      double latEnc = LatLonPoint.decodeLat(LatLonPoint.encodeLat(lat));
+      assertEquals("lat=" + lat + " latEnc=" + latEnc + " diff=" + (lat - latEnc), lat, latEnc, LatLonPoint.TOLERANCE);
 
       double lon = randomLon(small);
-      double lonQuantized = LatLonPoint.decodeLon(LatLonPoint.encodeLon(lon));
-      assertEquals(lon, lonQuantized, LatLonPoint.TOLERANCE);
+      double lonEnc = LatLonPoint.decodeLon(LatLonPoint.encodeLon(lon));
+      assertEquals("lon=" + lon + " lonEnc=" + lonEnc + " diff=" + (lon - lonEnc), lon, lonEnc, LatLonPoint.TOLERANCE);
+    }
+  }
+
+  public void testScaleUnscaleIsStable() throws Exception {
+    int iters = atLeast(1000);
+    boolean small = random().nextBoolean();
+    for(int iter=0;iter<iters;iter++) {
+      double lat = randomLat(small);
+      double lon = randomLon(small);
+
+      double latEnc = LatLonPoint.decodeLat(LatLonPoint.encodeLat(lat));
+      double lonEnc = LatLonPoint.decodeLon(LatLonPoint.encodeLon(lon));
+
+      double latEnc2 = LatLonPoint.decodeLat(LatLonPoint.encodeLat(latEnc));
+      double lonEnc2 = LatLonPoint.decodeLon(LatLonPoint.encodeLon(lonEnc));
+      assertEquals(latEnc, latEnc2, 0.0);
+      assertEquals(lonEnc, lonEnc2, 0.0);
     }
   }
 }

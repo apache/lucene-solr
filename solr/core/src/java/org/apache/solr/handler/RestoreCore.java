@@ -1,5 +1,3 @@
-package org.apache.solr.handler;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,8 +14,8 @@ package org.apache.solr.handler;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.handler;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;

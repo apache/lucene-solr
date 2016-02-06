@@ -1,5 +1,3 @@
-package org.apache.lucene.codecs.simpletext;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.codecs.simpletext;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.simpletext;
+
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -67,7 +67,7 @@ class SimpleTextPointWriter extends PointWriter {
   public void writeField(FieldInfo fieldInfo, PointReader values) throws IOException {
 
     // We use the normal BKDWriter, but subclass to customize how it writes the index and blocks to disk:
-    BKDWriter writer = new BKDWriter(writeState.directory,
+    try (BKDWriter writer = new BKDWriter(writeState.directory,
                                      writeState.segmentInfo.name,
                                      fieldInfo.getPointDimensionCount(),
                                      fieldInfo.getPointNumBytes(),
@@ -152,27 +152,28 @@ class SimpleTextPointWriter extends PointWriter {
           write(out, new BytesRef(bytes, 0, bytes.length).toString());
           newline(out);
         }          
-      };
+      }) {
 
-    values.intersect(fieldInfo.name, new IntersectVisitor() {
-        @Override
-        public void visit(int docID) {
-          throw new IllegalStateException();
-        }
+      values.intersect(fieldInfo.name, new IntersectVisitor() {
+          @Override
+          public void visit(int docID) {
+            throw new IllegalStateException();
+          }
 
-        public void visit(int docID, byte[] packedValue) throws IOException {
-          writer.add(packedValue, docID);
-        }
+          public void visit(int docID, byte[] packedValue) throws IOException {
+            writer.add(packedValue, docID);
+          }
 
-        @Override
-        public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-          return Relation.CELL_CROSSES_QUERY;
-        }
-      });
+          @Override
+          public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+            return Relation.CELL_CROSSES_QUERY;
+          }
+        });
 
-    // We could have 0 points on merge since all docs with points may be deleted:
-    if (writer.getPointCount() > 0) {
-      indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+      // We could have 0 points on merge since all docs with points may be deleted:
+      if (writer.getPointCount() > 0) {
+        indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+      }
     }
   }
 
@@ -197,9 +198,13 @@ class SimpleTextPointWriter extends PointWriter {
   }
 
   @Override
+  public void finish() throws IOException {
+    SimpleTextUtil.writeChecksum(dataOut, scratch);
+  }
+
+  @Override
   public void close() throws IOException {
     if (dataOut != null) {
-      SimpleTextUtil.writeChecksum(dataOut, scratch);
       dataOut.close();
       dataOut = null;
 

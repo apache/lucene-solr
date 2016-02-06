@@ -1,5 +1,3 @@
-package org.apache.solr.search;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,7 +14,7 @@ package org.apache.solr.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.CommonParams;
@@ -47,10 +45,6 @@ import org.slf4j.LoggerFactory;
 public class SurroundQParserPlugin extends QParserPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String NAME = "surround";
-
-  @Override
-  public void init(NamedList args) {
-  }
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams,

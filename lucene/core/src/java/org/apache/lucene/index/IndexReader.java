@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -138,7 +138,7 @@ public abstract class IndexReader implements Closeable {
     parentReaders.add(reader);
   }
 
-  private void notifyReaderClosedListeners(Throwable th) {
+  private void notifyReaderClosedListeners(Throwable th) throws IOException {
     synchronized(readerClosedListeners) {
       for(ReaderClosedListener listener : readerClosedListeners) {
         try {
@@ -151,7 +151,7 @@ public abstract class IndexReader implements Closeable {
           }
         }
       }
-      IOUtils.reThrowUnchecked(th);
+      IOUtils.reThrow(th);
     }
   }
 

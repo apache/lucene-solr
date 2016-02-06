@@ -1,5 +1,3 @@
-package org.apache.lucene.util.bkd;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.util.bkd;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util.bkd;
+
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -394,9 +394,6 @@ public class TestBKD extends LuceneTestCase {
         try {
           dir.setRandomIOExceptionRate(0.05);
           dir.setRandomIOExceptionRateOnOpen(0.05);
-          if (dir instanceof MockDirectoryWrapper) {
-            dir.setEnableVirusScanner(false);
-          }
           verify(dir, docValues, null, numDims, numBytesPerDim, 50, maxMBHeap);
         } catch (IllegalArgumentException iae) {
           // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry w/ more heap
@@ -847,9 +844,6 @@ public class TestBKD extends LuceneTestCase {
       dir = newFSDirectory(createTempDir("TestBKDTree"));
     } else {
       dir = newDirectory();
-    }
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
     }
     return dir;
   }

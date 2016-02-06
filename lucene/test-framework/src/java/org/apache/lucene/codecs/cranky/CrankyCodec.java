@@ -1,5 +1,3 @@
-package org.apache.lucene.codecs.cranky;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.codecs.cranky;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.cranky;
 
 import java.util.Random;
 
@@ -26,6 +25,7 @@ import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.PointFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
@@ -89,6 +89,11 @@ public class CrankyCodec extends FilterCodec {
   @Override
   public CompoundFormat compoundFormat() {
     return new CrankyCompoundFormat(delegate.compoundFormat(), random);
+  }
+
+  @Override
+  public PointFormat pointFormat() {
+    return new CrankyPointFormat(delegate.pointFormat(), random);
   }
 
   @Override

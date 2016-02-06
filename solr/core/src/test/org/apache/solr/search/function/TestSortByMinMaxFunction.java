@@ -1,4 +1,3 @@
-package org.apache.solr.search.function;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +14,7 @@ package org.apache.solr.search.function;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+package org.apache.solr.search.function;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;

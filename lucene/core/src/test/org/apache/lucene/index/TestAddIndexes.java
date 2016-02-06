@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -32,6 +32,8 @@ import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -169,6 +171,9 @@ public class TestAddIndexes extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
       doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
+      doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
+      doc.add(new NumericDocValuesField("dv", i));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
     // Deletes one of the 10 added docs, leaving 9:
@@ -202,6 +207,9 @@ public class TestAddIndexes extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
       doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
+      doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
+      doc.add(new NumericDocValuesField("dv", i));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
     
@@ -238,6 +246,9 @@ public class TestAddIndexes extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newStringField("id", "" + (i % 10), Field.Store.NO));
       doc.add(newTextField("content", "bbb " + i, Field.Store.NO));
+      doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
+      doc.add(new NumericDocValuesField("dv", i));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
 
@@ -510,6 +521,9 @@ public class TestAddIndexes extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(newTextField("content", "aaa", Field.Store.NO));
+      doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
+      doc.add(new NumericDocValuesField("dv", i));
       writer.addDocument(doc);
     }
   }
@@ -518,6 +532,9 @@ public class TestAddIndexes extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(newTextField("content", "bbb", Field.Store.NO));
+      doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
+      doc.add(new NumericDocValuesField("dv", i));
       writer.addDocument(doc);
     }
   }
@@ -1001,6 +1018,9 @@ public class TestAddIndexes extends LuceneTestCase {
       Document doc = new Document();
       doc.add(newTextField("content", "aaa", Field.Store.NO));
       doc.add(newTextField("id", "" + (docStart + i), Field.Store.YES));
+      doc.add(new IntPoint("doc", i));
+      doc.add(new IntPoint("doc2d", i, i));
+      doc.add(new NumericDocValuesField("dv", i));
       writer.addDocument(doc);
     }
   }
@@ -1083,7 +1103,6 @@ public class TestAddIndexes extends LuceneTestCase {
     }
   }
 
-
   // LUCENE-2790: tests that the non CFS files were deleted by addIndexes
   public void testNonCFSLeftovers() throws Exception {
     Directory[] dirs = new Directory[2];
@@ -1101,7 +1120,6 @@ public class TestAddIndexes extends LuceneTestCase {
     DirectoryReader[] readers = new DirectoryReader[] { DirectoryReader.open(dirs[0]), DirectoryReader.open(dirs[1]) };
     
     MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
-    dir.setEnableVirusScanner(false); // we check for specific list of files
     IndexWriterConfig conf = new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy(true));
     MergePolicy lmp = conf.getMergePolicy();
     // Force creation of CFS:

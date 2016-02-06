@@ -1,5 +1,3 @@
-  package org.apache.solr.client.solrj.io.stream.metrics;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,10 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/*
-*
-*/
+package org.apache.solr.client.solrj.io.stream.metrics;
 
 import java.io.Serializable;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -38,8 +33,8 @@ public class Bucket implements Serializable {
     this.bucketKey = bucketKey;
   }
 
-  public String getBucketValue(Tuple tuple) {
-    return tuple.get(bucketKey).toString();
+  public Object getBucketValue(Tuple tuple) {
+    return tuple.get(bucketKey);
   }
 
   public String toString() {

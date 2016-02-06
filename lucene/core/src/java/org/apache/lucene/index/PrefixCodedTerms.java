@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.IOException;
 import java.util.Objects;
@@ -66,22 +66,27 @@ public class PrefixCodedTerms implements Accountable {
 
     /** add a term */
     public void add(Term term) {
-      assert lastTerm.equals(new Term("")) || term.compareTo(lastTerm) > 0;
+      add(term.field(), term.bytes());
+    }
+
+    /** add a term */
+    public void add(String field, BytesRef bytes) {
+      assert lastTerm.equals(new Term("")) || new Term(field, bytes).compareTo(lastTerm) > 0;
 
       try {
-        int prefix = sharedPrefix(lastTerm.bytes, term.bytes);
-        int suffix = term.bytes.length - prefix;
-        if (term.field.equals(lastTerm.field)) {
+        int prefix = sharedPrefix(lastTerm.bytes, bytes);
+        int suffix = bytes.length - prefix;
+        if (field.equals(lastTerm.field)) {
           output.writeVInt(prefix << 1);
         } else {
           output.writeVInt(prefix << 1 | 1);
-          output.writeString(term.field);
+          output.writeString(field);
         }
         output.writeVInt(suffix);
-        output.writeBytes(term.bytes.bytes, term.bytes.offset + prefix, suffix);
-        lastTermBytes.copyBytes(term.bytes);
+        output.writeBytes(bytes.bytes, bytes.offset + prefix, suffix);
+        lastTermBytes.copyBytes(bytes);
         lastTerm.bytes = lastTermBytes.get();
-        lastTerm.field = term.field;
+        lastTerm.field = field;
         size += 1;
       } catch (IOException e) {
         throw new RuntimeException(e);

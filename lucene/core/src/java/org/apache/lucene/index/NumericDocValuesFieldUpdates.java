@@ -1,12 +1,3 @@
-package org.apache.lucene.index;
-
-import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.InPlaceMergeSorter;
-import org.apache.lucene.util.packed.PackedInts;
-import org.apache.lucene.util.packed.PagedGrowableWriter;
-import org.apache.lucene.util.packed.PagedMutable;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,6 +14,15 @@ import org.apache.lucene.util.packed.PagedMutable;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.InPlaceMergeSorter;
+import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.PagedGrowableWriter;
+import org.apache.lucene.util.packed.PagedMutable;
+
 
 /**
  * A {@link DocValuesFieldUpdates} which holds updates of documents, of a single

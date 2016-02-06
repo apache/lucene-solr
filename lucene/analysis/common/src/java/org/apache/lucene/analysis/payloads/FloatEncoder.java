@@ -1,7 +1,3 @@
-package org.apache.lucene.analysis.payloads;
-
-import org.apache.lucene.util.BytesRef;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +14,10 @@ import org.apache.lucene.util.BytesRef;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.analysis.payloads;
+
+import org.apache.lucene.util.BytesRef;
+
 
 /**
  * Encode a character array Float as a {@link BytesRef}.

@@ -1,5 +1,3 @@
-package org.apache.lucene.store;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.store;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.store;
+
 
 import java.io.Closeable;
 import java.io.FileNotFoundException;
@@ -43,7 +43,7 @@ import org.apache.lucene.util.IOUtils;
 public abstract class Directory implements Closeable {
 
   /**
-   * Returns an array of strings, one for each entry in the directory.
+   * Returns an array of strings, one for each entry in the directory, in sorted (UTF16, java's String.compare) order.
    * 
    * @throws IOException in case of IO error
    */
@@ -66,7 +66,6 @@ public abstract class Directory implements Closeable {
    *         length.
    */
   public abstract long fileLength(String name) throws IOException;
-
 
   /** Creates a new, empty file in the directory with the given name.
       Returns a stream writing this file. */

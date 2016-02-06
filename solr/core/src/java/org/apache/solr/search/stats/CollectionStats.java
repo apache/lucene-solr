@@ -1,5 +1,3 @@
-package org.apache.solr.search.stats;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,7 +14,8 @@ package org.apache.solr.search.stats;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
+package org.apache.solr.search.stats;
+
 import org.apache.lucene.search.CollectionStatistics;
 
 /**

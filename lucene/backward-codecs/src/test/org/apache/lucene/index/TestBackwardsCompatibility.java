@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -60,7 +60,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
@@ -584,7 +583,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       checker.close();
 
       dir.close();
-      IOUtils.rm(oldIndexDir);
     }
   }
   
@@ -1238,12 +1236,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         System.out.println("testUpgradeOldSingleSegmentIndexWithAdditions: index=" +name);
       }
       Directory dir = newDirectory(oldIndexDirs.get(name));
-      if (dir instanceof MockDirectoryWrapper) {
-        // we need to ensure we delete old commits for this test,
-        // otherwise IndexUpgrader gets angry
-        ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-      }
-
       assertEquals("Original index must be single segment", 1, getNumberOfSegments(dir));
 
       // create a bunch of dummy segments

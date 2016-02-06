@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -57,14 +57,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.TestUtil;
 
 @SuppressCodecs("SimpleText") // too slow here
@@ -950,7 +950,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     for (FailOnlyInCommit failure : failures) {
       MockDirectoryWrapper dir = newMockDirectory();
       dir.setFailOnCreateOutput(false);
-      dir.setEnableVirusScanner(false); // we check for specific list of files
       int fileCount = dir.listAll().length;
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
       Document doc = new Document();
@@ -965,7 +964,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       } catch (RuntimeException re) {
         // Expected
       }
-      assertTrue(failure.failOnCommit && failure.failOnDeleteFile);
+      assertTrue("failOnCommit=" + failure.failOnCommit + " failOnDeleteFile=" + failure.failOnDeleteFile, failure.failOnCommit && failure.failOnDeleteFile);
       w.rollback();
       String files[] = dir.listAll();
       assertTrue(files.length == fileCount || (files.length == fileCount+1 && Arrays.asList(files).contains(IndexWriter.WRITE_LOCK_NAME)));
@@ -1178,10 +1177,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testSimulatedCorruptIndex1() throws IOException {
       BaseDirectoryWrapper dir = newDirectory();
       dir.setCheckIndexOnClose(false); // we are corrupting it!
-      if (dir instanceof MockDirectoryWrapper) {
-        // we want to ensure our corruption always succeeds!
-        ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-      }
 
       IndexWriter writer = null;
 
@@ -1230,10 +1225,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testSimulatedCorruptIndex2() throws IOException {
     BaseDirectoryWrapper dir = newDirectory();
     dir.setCheckIndexOnClose(false); // we are corrupting it!
-    if (dir instanceof MockDirectoryWrapper) {
-      // we want to ensure our corruption always succeeds!
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-    }
     IndexWriter writer = null;
 
     writer  = new IndexWriter(
@@ -1786,7 +1777,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
         }
 
         @Override
-        public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException {
+        public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
           return null;
         }
       });

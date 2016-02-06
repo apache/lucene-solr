@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -120,8 +120,6 @@ public class TestDoc extends LuceneTestCase {
       // We create unreferenced files (we don't even write
       // a segments file):
       ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
-      // this test itself deletes files (has no retry mechanism)
-      ((MockDirectoryWrapper) directory).setEnableVirusScanner(false);
     }
 
     IndexWriter writer = new IndexWriter(
@@ -164,8 +162,6 @@ public class TestDoc extends LuceneTestCase {
       // We create unreferenced files (we don't even write
       // a segments file):
       ((MockDirectoryWrapper) directory).setAssertNoUnrefencedFilesOnClose(false);
-      // this test itself deletes files (has no retry mechanism)
-      ((MockDirectoryWrapper) directory).setEnableVirusScanner(false);
     }
 
     writer = new IndexWriter(
@@ -237,8 +233,8 @@ public class TestDoc extends LuceneTestCase {
       Collection<String> filesToDelete = si.files();
       codec.compoundFormat().write(dir, si, context);
       si.setUseCompoundFile(true);
-      for (final String fileToDelete : filesToDelete) {
-        si1.info.dir.deleteFile(fileToDelete);
+      for(String name : filesToDelete) {
+        si1.info.dir.deleteFile(name);
       }
     }
 

@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.IOException;
 
@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -63,7 +64,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           System.out.println("TEST: cycle: diskFree=" + diskFree);
         }
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
-        dir.setEnableVirusScanner(false); // currently uses the IW unreferenced files method, unaware of retries
         dir.setMaxSizeInBytes(diskFree);
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
         MergeScheduler ms = writer.getConfig().getMergeScheduler();
@@ -572,6 +572,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     Document doc = new Document();
     doc.add(newTextField("content", "aaa", Field.Store.NO));
     doc.add(new NumericDocValuesField("numericdv", 1));
+    doc.add(new IntPoint("point", 1));
+    doc.add(new IntPoint("point2d", 1, 1));
     writer.addDocument(doc);
   }
   
@@ -580,6 +582,8 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     doc.add(newTextField("content", "aaa " + index, Field.Store.NO));
     doc.add(newTextField("id", "" + index, Field.Store.NO));
     doc.add(new NumericDocValuesField("numericdv", 1));
+    doc.add(new IntPoint("point", 1));
+    doc.add(new IntPoint("point2d", 1, 1));
     writer.addDocument(doc);
   }
 }

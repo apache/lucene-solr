@@ -1,4 +1,3 @@
-package org.apache.solr.schema;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +14,7 @@ package org.apache.solr.schema;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+package org.apache.solr.schema;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -395,7 +394,7 @@ public final class ManagedIndexSchema extends IndexSchema {
       newSchema = shallowCopy(true);
 
       for (SchemaField newField : newFields) {
-        if (null != newSchema.getFieldOrNull(newField.getName())) {
+        if (null != newSchema.fields.get(newField.getName())) {
           String msg = "Field '" + newField.getName() + "' already exists.";
           throw new FieldExistsException(ErrorCode.BAD_REQUEST, msg);
         }
@@ -1195,7 +1194,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           String msg = "Can't add dynamic field '" + fieldName + "'.";
           throw new SolrException(ErrorCode.BAD_REQUEST, msg);
         }
-        SchemaField existingFieldWithTheSameName = getFieldOrNull(fieldName);
+        SchemaField existingFieldWithTheSameName = fields.get(fieldName);
         if (null != existingFieldWithTheSameName) {
           String msg = "Field '" + fieldName + "' already exists.";
           throw new SolrException(ErrorCode.BAD_REQUEST, msg);

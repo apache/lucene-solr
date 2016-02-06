@@ -1,4 +1,3 @@
-package org.apache.solr.client.solrj.io.comp;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +14,7 @@ package org.apache.solr.client.solrj.io.comp;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+package org.apache.solr.client.solrj.io.comp;
 import java.io.Serializable;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -28,17 +27,10 @@ public class HashKey implements Serializable {
 
 
   public HashKey(String value) {
-    parts = (Object[])value.split("::");
+    parts = value.split("::");
   }
 
-  public HashKey(Tuple t, String[] keys) {
-    this.parts = new Object[keys.length];
-    for(int i=0; i<keys.length; i++) {
-      parts[i] = t.get(keys[i]);
-    }
-  }
-
-  public HashKey(String[] parts) {
+  public HashKey(Object[] parts) {
     this.parts = parts;
   }
 

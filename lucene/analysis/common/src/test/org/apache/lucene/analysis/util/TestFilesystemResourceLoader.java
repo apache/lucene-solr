@@ -1,5 +1,3 @@
-package org.apache.lucene.analysis.util;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.analysis.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.analysis.util;
+
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -57,25 +57,21 @@ public class TestFilesystemResourceLoader extends LuceneTestCase {
   
   public void testBaseDir() throws Exception {
     final Path base = createTempDir("fsResourceLoaderBase");
+    Writer os = Files.newBufferedWriter(base.resolve("template.txt"), StandardCharsets.UTF_8);
     try {
-      Writer os = Files.newBufferedWriter(base.resolve("template.txt"), StandardCharsets.UTF_8);
-      try {
-        os.write("foobar\n");
-      } finally {
-        IOUtils.closeWhileHandlingException(os);
-      }
-      
-      ResourceLoader rl = new FilesystemResourceLoader(base);
-      assertEquals("foobar", WordlistLoader.getLines(rl.openResource("template.txt"), StandardCharsets.UTF_8).get(0));
-      // Same with full path name:
-      String fullPath = base.resolve("template.txt").toAbsolutePath().toString();
-      assertEquals("foobar",
-          WordlistLoader.getLines(rl.openResource(fullPath), StandardCharsets.UTF_8).get(0));
-      assertClasspathDelegation(rl);
-      assertNotFound(rl);
+      os.write("foobar\n");
     } finally {
-      IOUtils.rm(base);
+      IOUtils.closeWhileHandlingException(os);
     }
+      
+    ResourceLoader rl = new FilesystemResourceLoader(base);
+    assertEquals("foobar", WordlistLoader.getLines(rl.openResource("template.txt"), StandardCharsets.UTF_8).get(0));
+    // Same with full path name:
+    String fullPath = base.resolve("template.txt").toAbsolutePath().toString();
+    assertEquals("foobar",
+                 WordlistLoader.getLines(rl.openResource(fullPath), StandardCharsets.UTF_8).get(0));
+    assertClasspathDelegation(rl);
+    assertNotFound(rl);
   }
   
   public void testDelegation() throws Exception {

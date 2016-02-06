@@ -1,4 +1,3 @@
-package org.apache.solr.search;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +14,7 @@ package org.apache.solr.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+package org.apache.solr.search;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
@@ -54,11 +53,6 @@ public class SpatialFilterQParserPlugin extends QParserPlugin {
                               SolrParams params, SolrQueryRequest req) {
 
     return new SpatialFilterQParser(qstr, localParams, params, req, false);
-  }
-
-  @Override
-  public void init(NamedList args) {
-
   }
 
 }

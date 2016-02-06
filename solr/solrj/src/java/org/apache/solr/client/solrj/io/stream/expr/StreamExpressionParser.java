@@ -1,10 +1,3 @@
-package org.apache.solr.client.solrj.io.stream.expr;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,6 +14,12 @@ import java.util.Locale;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj.io.stream.expr;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * Takes a prefix notation expression and returns a tokenized expression
@@ -105,6 +104,15 @@ public class StreamExpressionParser {
           throw new IllegalArgumentException(String.format(Locale.ROOT,"'%s' is not a proper named parameter clause", working));
         }
       }
+      
+      // if contain \" replace with "
+      if(parameter.contains("\\\"")){
+        parameter = parameter.replace("\\\"", "\"");
+        if(0 == parameter.length()){
+          throw new IllegalArgumentException(String.format(Locale.ROOT,"'%s' is not a proper named parameter clause", working));
+        }
+      }
+      
       namedParameter.setParameter(new StreamExpressionValue(parameter));
     }
     

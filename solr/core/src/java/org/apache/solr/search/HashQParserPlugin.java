@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.search;
 
 import java.io.IOException;
@@ -55,10 +54,6 @@ public class HashQParserPlugin extends QParserPlugin {
 
   public static final String NAME = "hash";
 
-
-  public void init(NamedList params) {
-
-  }
 
   public QParser createParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest request) {
     return new HashQParser(query, localParams, params, request);

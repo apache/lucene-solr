@@ -1,4 +1,3 @@
-package org.apache.solr.handler.loader;
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +14,7 @@ package org.apache.solr.handler.loader;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+package org.apache.solr.handler.loader;
 import javax.xml.parsers.SAXParserFactory;
 import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLInputFactory;

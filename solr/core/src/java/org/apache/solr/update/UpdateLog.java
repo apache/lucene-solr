@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.update;
 
 import java.io.Closeable;
@@ -506,7 +505,9 @@ public class UpdateLog implements PluginInfoInitialized {
     }
   }
 
-  /** Opens a new realtime searcher and clears the id caches */
+  /** Opens a new realtime searcher and clears the id caches.
+   * This may also be called when we updates are being buffered (from PeerSync/IndexFingerprint)
+   */
   public void openRealtimeSearcher() {
     synchronized (this) {
       // We must cause a new IndexReader to be opened before anything looks at these caches again
@@ -1323,7 +1324,7 @@ public class UpdateLog implements PluginInfoInitialized {
                 loglog.info(
                     "log replay status {} active={} starting pos={} current pos={} current size={} % read={}",
                     translog, activeLog, recoveryInfo.positionOfStart, cpos, csize,
-                    Math.round(cpos / (double) csize * 100.));
+                    Math.floor(cpos / (double) csize * 100.));
 
               }
             }

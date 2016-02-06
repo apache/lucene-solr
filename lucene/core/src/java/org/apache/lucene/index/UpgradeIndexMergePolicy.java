@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import org.apache.lucene.util.Version;
 
@@ -48,15 +48,12 @@ import java.util.HashMap;
   * @lucene.experimental
   * @see IndexUpgrader
   */
-public class UpgradeIndexMergePolicy extends MergePolicy {
-
-  /** Wrapped {@link MergePolicy}. */
-  protected final MergePolicy base;
+public class UpgradeIndexMergePolicy extends MergePolicyWrapper {
 
   /** Wrap the given {@link MergePolicy} and intercept forceMerge requests to
    * only upgrade segments written with previous Lucene versions. */
-  public UpgradeIndexMergePolicy(MergePolicy base) {
-    this.base = base;
+  public UpgradeIndexMergePolicy(MergePolicy in) {
+    super(in);
   }
   
   /** Returns if the given segment should be upgraded. The default implementation
@@ -70,7 +67,7 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
 
   @Override
   public MergeSpecification findMerges(MergeTrigger mergeTrigger, SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
-    return base.findMerges(null, segmentInfos, writer);
+    return in.findMerges(null, segmentInfos, writer);
   }
   
   @Override
@@ -91,7 +88,7 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
     if (oldSegments.isEmpty())
       return null;
 
-    MergeSpecification spec = base.findForcedMerges(segmentInfos, maxSegmentCount, oldSegments, writer);
+    MergeSpecification spec = in.findForcedMerges(segmentInfos, maxSegmentCount, oldSegments, writer);
     
     if (spec != null) {
       // remove all segments that are in merge specification from oldSegments,
@@ -104,7 +101,7 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
 
     if (!oldSegments.isEmpty()) {
       if (verbose(writer)) {
-        message("findForcedMerges: " +  base.getClass().getSimpleName() +
+        message("findForcedMerges: " +  in.getClass().getSimpleName() +
         " does not want to merge all old segments, merge remaining ones into new segment: " + oldSegments, writer);
       }
       final List<SegmentCommitInfo> newInfos = new ArrayList<>();
@@ -121,21 +118,6 @@ public class UpgradeIndexMergePolicy extends MergePolicy {
     }
 
     return spec;
-  }
-  
-  @Override
-  public MergeSpecification findForcedDeletesMerges(SegmentInfos segmentInfos, IndexWriter writer) throws IOException {
-    return base.findForcedDeletesMerges(segmentInfos, writer);
-  }
-  
-  @Override
-  public boolean useCompoundFile(SegmentInfos segments, SegmentCommitInfo newSegment, IndexWriter writer) throws IOException {
-    return base.useCompoundFile(segments, newSegment, writer);
-  }
-  
-  @Override
-  public String toString() {
-    return "[" + getClass().getSimpleName() + "->" + base + "]";
   }
   
   private boolean verbose(IndexWriter writer) {

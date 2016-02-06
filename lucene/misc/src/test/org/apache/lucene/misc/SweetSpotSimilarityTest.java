@@ -1,4 +1,3 @@
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.misc;
 
 import org.apache.lucene.search.similarities.ClassicSimilarity;
@@ -24,7 +22,6 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.FieldInvertState;
-
 
 /**
  * Test of the SweetSpotSimilarity

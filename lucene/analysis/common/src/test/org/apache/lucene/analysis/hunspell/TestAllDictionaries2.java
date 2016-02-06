@@ -1,5 +1,3 @@
-package org.apache.lucene.analysis.hunspell;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.analysis.hunspell;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.analysis.hunspell;
+
 
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -189,9 +189,6 @@ public class TestAllDictionaries2 extends LuceneTestCase {
         try (InputStream dictionary = Files.newInputStream(dicEntry);
              InputStream affix = Files.newInputStream(affEntry);
              Directory tempDir = newDirectory()) {
-          if (tempDir instanceof MockDirectoryWrapper) {
-            ((MockDirectoryWrapper) tempDir).setEnableVirusScanner(false);
-          }
           Dictionary dic = new Dictionary(tempDir, "dictionary", affix, dictionary);
           System.out.println(tests[i] + "\t" + RamUsageTester.humanSizeOf(dic) + "\t(" +
                              "words=" + RamUsageTester.humanSizeOf(dic.words) + ", " +
@@ -226,9 +223,6 @@ public class TestAllDictionaries2 extends LuceneTestCase {
           try (InputStream dictionary = Files.newInputStream(dicEntry);
                InputStream affix = Files.newInputStream(affEntry);
                Directory tempDir = newDirectory()) {
-            if (tempDir instanceof MockDirectoryWrapper) {
-              ((MockDirectoryWrapper) tempDir).setEnableVirusScanner(false);
-            }
             new Dictionary(tempDir, "dictionary", affix, dictionary);
           } 
         }

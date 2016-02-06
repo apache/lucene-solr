@@ -1,5 +1,3 @@
-package org.apache.solr.search.facet;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.solr.search.facet;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.search.facet;
 
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -162,7 +161,7 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
   }
 
   protected RuntimeException err(String msg) {
-    return new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg + " ,path="+getPathStr());
+    return new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg + " , path="+getPathStr());
   }
 
   public abstract FacetRequest parse(Object o) throws SyntaxError;
@@ -192,7 +191,7 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
         } else if (parsedValue instanceof AggValueSource) {
           facet.addStat(key, (AggValueSource)parsedValue);
         } else {
-          throw new RuntimeException("Huh? TODO: " + parsedValue);
+          throw err("Unknown facet type key=" + key + " class=" + (parsedValue == null ? "null" : parsedValue.getClass().getName()));
         }
       }
     } else {
@@ -248,7 +247,11 @@ abstract class FacetParser<FacetRequestT extends FacetRequest> {
       return parseRangeFacet(key, args);
     }
 
-    return parseStat(key, type, args);
+    AggValueSource stat = parseStat(key, type, args);
+    if (stat == null) {
+      throw err("Unknown facet or stat. key=" + key + " type=" + type + " args=" + args);
+    }
+    return stat;
   }
 
 

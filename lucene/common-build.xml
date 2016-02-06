@@ -278,6 +278,7 @@
     <propertyref regex=".*\.loaded$$"/>
     <propertyref name="lucene.javadoc.url"/><!-- for Solr -->
     <propertyref name="tests.totals.tmpfile" />
+    <propertyref name="git-autoclean.disabled"/>
   </propertyset>
 
   <patternset id="lucene.local.src.package.patterns"
@@ -380,9 +381,41 @@
     <delete file="velocity.log"/>
   </target>
 
-  <target name="init" depends="resolve">
+  <target name="init" depends="git-autoclean,resolve">
     <!-- currently empty -->
   </target>
+  
+  <!-- Keep track of GIT branch and do "ant clean" on root folder when changed, to prevent bad builds... -->
+  
+  <property name="gitHeadFile" location="${common.dir}/../.git/HEAD"/>
+  <property name="gitHeadLocal" location="${common.dir}/build/git-HEAD"/>
+  <available file="${gitHeadFile}" property="isGitCheckout"/>
+
+  <target name="git-autoclean" depends="-check-git-state,-git-cleanroot,-copy-git-state"/>
+  
+  <target name="-check-git-state" if="isGitCheckout" unless="git-autoclean.disabled">
+    <condition property="gitHeadChanged">
+      <and>
+        <available file="${gitHeadLocal}"/>
+        <not><filesmatch file1="${gitHeadFile}" file2="${gitHeadLocal}"/></not>
+      </and>
+    </condition>
+  </target>
+
+  <target name="-git-cleanroot" depends="-check-git-state" if="gitHeadChanged" unless="git-autoclean.disabled">
+    <echo message="Git branch changed, cleaning up for sane build..."/>
+    <ant dir="${common.dir}/.." target="clean" inheritall="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  
+  <target name="-copy-git-state" if="isGitCheckout" unless="git-autoclean.disabled">
+    <mkdir dir="${common.dir}/build"/>
+    <copy file="${gitHeadFile}" tofile="${gitHeadLocal}"/>
+    <property name="git-autoclean.disabled" value="true"/>
+  </target>
+
+  <!-- IVY stuff -->
 
   <target name="ivy-configure">
      <!-- [DW] ivy loses its configuration for some reason. cannot explain this. if

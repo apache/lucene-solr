@@ -808,8 +808,8 @@ public class TestNRTReplication extends LuceneTestCase {
     
     // It's -1 because it's unpredictable how IW changes segments version on init:
     assertVersionAndHits(primary, -1, 50);
-    assertVersionAndHits(replica1, primaryVersion1, 50);
-    assertVersionAndHits(replica2, primaryVersion1, 50);
+    assertVersionAndHits(replica1, primary.initInfosVersion, 50);
+    assertVersionAndHits(replica2, primary.initInfosVersion, 50);
 
     primary.close();
     replica1.close();
@@ -840,7 +840,7 @@ public class TestNRTReplication extends LuceneTestCase {
       long version = c.in.readVLong();
       int hitCount = c.in.readVInt();
       if (expectedVersion != -1) {
-        assertEquals("hitCount=" + hitCount, expectedVersion, version);
+        assertEquals("wrong searcher version, with hitCount=" + hitCount, expectedVersion, version);
       }
       assertEquals(expectedHitCount, hitCount);
     }

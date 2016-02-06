@@ -1,5 +1,3 @@
-package org.apache.lucene.search.suggest.analyzing;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,12 +14,14 @@ package org.apache.lucene.search.suggest.analyzing;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search.suggest.analyzing;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -58,8 +58,8 @@ import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.SortingMergePolicy;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.EarlyTerminatingSortingCollector;

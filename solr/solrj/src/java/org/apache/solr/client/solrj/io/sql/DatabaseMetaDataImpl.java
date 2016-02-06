@@ -1,5 +1,3 @@
-package org.apache.solr.client.solrj.io.sql;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,18 +14,22 @@ package org.apache.solr.client.solrj.io.sql;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj.io.sql;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 class DatabaseMetaDataImpl implements DatabaseMetaData {
   private final ConnectionImpl connection;
+  private final Statement connectionStatement;
 
-  DatabaseMetaDataImpl(ConnectionImpl connection) {
+  public DatabaseMetaDataImpl(ConnectionImpl connection, Statement connectionStatement) {
     this.connection = connection;
+    this.connectionStatement = connectionStatement;
   }
 
   @Override
@@ -637,12 +639,12 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
 
   @Override
   public ResultSet getSchemas() throws SQLException {
-    return null;
+    return this.connectionStatement.executeQuery("select TABLE_SCHEM, TABLE_CATALOG from _SCHEMAS_");
   }
 
   @Override
   public ResultSet getCatalogs() throws SQLException {
-    return null;
+    return this.connectionStatement.executeQuery("select TABLE_CAT from _CATALOGS_");
   }
 
   @Override
@@ -697,7 +699,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
 
   @Override
   public ResultSet getTypeInfo() throws SQLException {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -772,7 +774,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
 
   @Override
   public Connection getConnection() throws SQLException {
-    return null;
+    return this.connection;
   }
 
   @Override

@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -44,8 +44,6 @@ import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-
-
 
 public class TestDirectoryReaderReopen extends LuceneTestCase {
   
@@ -625,10 +623,6 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
 
   public void testOverDecRefDuringReopen() throws Exception {
     MockDirectoryWrapper dir = newMockDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // ensure we produce enough of our exceptions
-      dir.setEnableVirusScanner(false);
-    }
 
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setCodec(TestUtil.getDefaultCodec());
@@ -762,8 +756,8 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(dir);
 
     // Blow away the index:
-    for(String fileName : dir.listAll()) {
-      dir.deleteFile(fileName);
+    for(String name : dir.listAll()) {
+      dir.deleteFile(name);
     }
 
     w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));

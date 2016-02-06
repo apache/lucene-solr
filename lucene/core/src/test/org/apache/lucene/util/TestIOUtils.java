@@ -1,5 +1,3 @@
-package org.apache.lucene.util;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
+
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -38,6 +38,7 @@ import java.util.UUID;
 import org.apache.lucene.mockfile.FilterFileSystem;
 import org.apache.lucene.mockfile.FilterFileSystemProvider;
 import org.apache.lucene.mockfile.FilterPath;
+import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 
 /** Simple test methods for IOUtils */
 public class TestIOUtils extends LuceneTestCase {

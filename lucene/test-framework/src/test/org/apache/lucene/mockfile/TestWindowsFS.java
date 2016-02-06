@@ -1,5 +1,3 @@
-package org.apache.lucene.mockfile;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.mockfile;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.mockfile;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -41,10 +40,10 @@ import org.apache.lucene.util.Constants;
 /** Basic tests for WindowsFS */
 public class TestWindowsFS extends MockFileSystemTestCase {
   
-  // currently we don't emulate windows well enough to work on windows!
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    // irony: currently we don't emulate windows well enough to work on windows!
     assumeFalse("windows is not supported", Constants.WINDOWS);
   }
 

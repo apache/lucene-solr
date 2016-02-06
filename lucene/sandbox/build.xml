@@ -23,4 +23,29 @@
 
   <import file="../module-build.xml"/>
 
+  <target name="compile-test-spatial" depends="init" if="module.has.tests">
+    <ant dir="${common.dir}/spatial" target="compile-test" inheritAll="false"/>
+  </target>
+
+  <path id="classpath">
+    <path refid="base.classpath"/>
+    <pathelement path="${spatial.jar}"/>
+  </path>
+  <target name="compile-core" depends="jar-spatial,common.compile-core" />
+
+  <path id="test.classpath">
+    <pathelement location="${build.dir}/classes/java"/>
+    <pathelement location="${build.dir}/classes/test"/>
+    <pathelement location="${common.dir}/build/spatial/classes/test"/>
+    <path refid="test.base.classpath"/>
+    <pathelement path="${spatial.jar}"/>
+    <path refid="junit-path"/>
+  </path>
+
+  <path id="junit.classpath">
+    <path refid="test.classpath"/>
+    <pathelement path="${java.class.path}"/>
+  </path>
+  <target name="compile-test" depends="jar-spatial,compile-test-spatial,common.compile-test" />
+
 </project>

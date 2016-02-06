@@ -1,5 +1,3 @@
-package org.apache.solr.search;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.solr.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.search;
 
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.complexPhrase.ComplexPhraseQueryParser;
@@ -40,6 +39,7 @@ public class ComplexPhraseQParserPlugin extends QParserPlugin {
 
   @Override
   public void init(NamedList args) {
+    super.init(args);
     if (args != null) {
       Object val = args.get("inOrder");
       if (val != null) {

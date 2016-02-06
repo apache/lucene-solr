@@ -1,5 +1,3 @@
-package org.apache.lucene.search;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search;
 
 import java.io.IOException;
 
@@ -27,8 +26,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.GeoUtils;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.spatial.util.GeoUtils;
 
 /** Finds all previously indexed points that fall within the specified boundings box.
  *

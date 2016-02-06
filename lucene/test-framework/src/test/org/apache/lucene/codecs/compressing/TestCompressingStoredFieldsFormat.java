@@ -1,5 +1,3 @@
-package org.apache.lucene.codecs.compressing;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.codecs.compressing;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.compressing;
 
 import java.io.IOException;
 import java.util.Random;
@@ -55,10 +54,6 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
 
   public void testDeletePartiallyWrittenFilesIfAbort() throws IOException {
     Directory dir = newDirectory();
-    // test explicitly needs files to always be actually deleted
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-    }
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomInts.randomIntBetween(random(), 2, 30));
     iwConf.setCodec(CompressingCodec.randomInstance(random()));

@@ -1,5 +1,3 @@
-package org.apache.solr.search.join;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.solr.search.join;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.search.join;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.SolrParams;
@@ -77,6 +76,29 @@ public class GraphQueryTest extends SolrTestCaseJ4 {
     qr = createRequest(g4Query);    
     assertQ(qr,"//*[@numFound='2']");
     
+    String g5Query = "{!graph from=\"node_id\" to=\"edge_id\" returnRoot=\"true\" returnOnlyLeaf=\"false\" maxDepth=0}id:doc_8";
+    qr = createRequest(g5Query);    
+    assertQ(qr,"//*[@numFound='1']");  
+
+    String g6Query = "{!graph from=\"node_id\" to=\"edge_id\" returnRoot=\"true\" returnOnlyLeaf=\"false\" maxDepth=1}id:doc_8";
+    qr = createRequest(g6Query);    
+    assertQ(qr,"//*[@numFound='3']");
+    
+    String g7Query = "{!graph from=\"node_id\" to=\"edge_id\" returnRoot=\"false\" returnOnlyLeaf=\"false\" maxDepth=1}id:doc_8";
+    qr = createRequest(g7Query);    
+    assertQ(qr,"//*[@numFound='2']");
+
+    String g8Query = "{!graph from=\"node_id\" to=\"edge_id\" returnRoot=\"false\" returnOnlyLeaf=\"true\" maxDepth=2}id:doc_8";
+    qr = createRequest(g8Query);    
+    assertQ(qr,"//*[@numFound='1']");
+
+    String g9Query = "{!graph from=\"node_id\" to=\"edge_id\" maxDepth=1}id:doc_1";
+    qr = createRequest(g9Query);    
+    assertQ(qr,"//*[@numFound='2']");
+    
+    String g10Query = "{!graph from=\"node_id\" to=\"edge_id\" returnRoot=false maxDepth=1}id:doc_1";
+    qr = createRequest(g10Query);    
+    assertQ(qr,"//*[@numFound='1']");
   }
 
   private SolrQueryRequest createRequest(String query) {

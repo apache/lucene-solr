@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,8 +14,9 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
 
-import java.io.IOException;
+
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Collections;
@@ -159,7 +158,7 @@ public class TestIndexableField extends LuceneTestCase {
     }
 
     @Override
-    public TokenStream tokenStream(Analyzer analyzer, TokenStream previous) throws IOException {
+    public TokenStream tokenStream(Analyzer analyzer, TokenStream previous) {
       return readerValue() != null ? analyzer.tokenStream(name(), readerValue()) :
         analyzer.tokenStream(name(), new StringReader(stringValue()));
     }

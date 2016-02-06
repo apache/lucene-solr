@@ -1,5 +1,3 @@
-package org.apache.lucene.analysis.hunspell;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.analysis.hunspell;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.analysis.hunspell;
+
 
 import java.io.BufferedWriter;
 import java.io.InputStream;
@@ -28,6 +28,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /** Tests that &gt; 64k affixes actually works and doesnt overflow some internal int */
 public class Test64kAffixes extends LuceneTestCase {
@@ -54,9 +55,6 @@ public class Test64kAffixes extends LuceneTestCase {
     dictWriter.close();
     
     try (InputStream affStream = Files.newInputStream(affix); InputStream dictStream = Files.newInputStream(dict); Directory tempDir2 = newDirectory()) {
-      if (tempDir2 instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper) tempDir2).setEnableVirusScanner(false);
-      }
       Dictionary dictionary = new Dictionary(tempDir2, "dictionary", affStream, dictStream);
       Stemmer stemmer = new Stemmer(dictionary);
       // drinks should still stem to drink

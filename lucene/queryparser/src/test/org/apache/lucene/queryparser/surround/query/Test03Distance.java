@@ -1,5 +1,3 @@
-package org.apache.lucene.queryparser.surround.query;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.queryparser.surround.query;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.queryparser.surround.query;
 
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;

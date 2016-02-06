@@ -1,11 +1,10 @@
-package org.apache.lucene.index;
-
 /*
- * Copyright 2004 The Apache Software Foundation
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -15,8 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
 
-import java.io.File;
 import java.nio.file.Path;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -80,6 +79,8 @@ public class TestAtomicUpdate extends LuceneTestCase {
         Document d = new Document();
         d.add(new StringField("id", Integer.toString(i), Field.Store.YES));
         d.add(new TextField("contents", English.intToEnglish(i+10*count), Field.Store.NO));
+        d.add(new IntPoint("doc", i));
+        d.add(new IntPoint("doc2d", i, i));
         writer.updateDocument(new Term("id", Integer.toString(i)), d);
       }
     }
@@ -179,6 +180,5 @@ public class TestAtomicUpdate extends LuceneTestCase {
     directory = newFSDirectory(dirPath);
     runTest(directory);
     directory.close();
-    IOUtils.rm(dirPath);
   }
 }

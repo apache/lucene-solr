@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.client.solrj.impl;
 
 import org.apache.http.HttpResponse;
@@ -160,8 +159,6 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
       }
     };
     
-    concurrentClient.setParser(new BinaryResponseParser());
-    concurrentClient.setRequestWriter(new BinaryRequestWriter());
     concurrentClient.setPollQueueTime(0);
     
     // ensure it doesn't block where there's nothing to do yet

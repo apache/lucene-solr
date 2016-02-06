@@ -1,5 +1,3 @@
-package org.apache.lucene.search.suggest.jaspell;
-
 /** 
  * Copyright (c) 2005 Bruno Martins
  * All rights reserved.
@@ -28,6 +26,7 @@ package org.apache.lucene.search.suggest.jaspell;
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
  * THE POSSIBILITY OF SUCH DAMAGE.
  */
+package org.apache.lucene.search.suggest.jaspell;
 
 import java.io.BufferedReader;
 import java.io.IOException;

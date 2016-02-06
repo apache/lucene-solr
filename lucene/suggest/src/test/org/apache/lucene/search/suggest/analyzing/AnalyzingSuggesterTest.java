@@ -1,5 +1,3 @@
-package org.apache.lucene.search.suggest.analyzing;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.search.suggest.analyzing;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search.suggest.analyzing;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -1268,10 +1267,6 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
   }
 
   private Directory getDirectory() {     
-    Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
+    return newDirectory();
   }
 }

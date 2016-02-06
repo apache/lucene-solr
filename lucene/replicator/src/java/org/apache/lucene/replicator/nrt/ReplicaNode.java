@@ -44,6 +44,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ByteArrayIndexInput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
@@ -78,6 +79,10 @@ abstract class ReplicaNode extends Node {
 
   public ReplicaNode(int id, Directory dir, SearcherFactory searcherFactory) throws IOException {
     super(id, dir, searcherFactory);
+
+    if (dir instanceof FSDirectory && ((FSDirectory) dir).checkPendingDeletions()) {
+      throw new IllegalArgumentException("Directory " + dir + " still has pending deleted files; cannot initialize IndexWriter");
+    }
 
     boolean success = false;
 

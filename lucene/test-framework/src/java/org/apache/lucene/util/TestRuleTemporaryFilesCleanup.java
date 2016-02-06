@@ -1,5 +1,3 @@
-package org.apache.lucene.util;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
 
 import java.io.IOException;
 import java.net.URI;
@@ -178,6 +177,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     if (LuceneTestCase.VERBOSE) {
       System.out.println("filesystem: " + fs.provider());
     }
+
     return fs.provider().getFileSystem(URI.create("file:///"));
   }
 
@@ -211,6 +211,7 @@ final class TestRuleTemporaryFilesCleanup extends TestRuleAdapter {
     // was successful. Otherwise just report the path of temporary files
     // and leave them there.
     if (failureMarker.wasSuccessful()) {
+
       try {
         IOUtils.rm(everything);
       } catch (IOException e) {

@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
 
 import static org.apache.lucene.index.PostingsEnum.ALL;
 import static org.apache.lucene.index.PostingsEnum.FREQS;
@@ -145,7 +144,6 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
       fieldsProducer = null;
 
       dir.close();
-      IOUtils.rm(path);
     }
   }
 
@@ -172,7 +170,6 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
 
     fieldsProducer.close();
     dir.close();
-    IOUtils.rm(path);
   }
 
   protected static void checkReuse(TermsEnum termsEnum, int firstFlags, int secondFlags, boolean shouldReuse) throws IOException {

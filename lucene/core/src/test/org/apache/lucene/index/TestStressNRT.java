@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -104,7 +104,7 @@ public class TestStressNRT extends LuceneTestCase {
 
     List<Thread> threads = new ArrayList<>();
 
-    Directory dir = newDirectory();
+    Directory dir = newMaybeVirusCheckingDirectory();
 
     final RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())));
     writer.setDoRandomForceMergeAssert(false);

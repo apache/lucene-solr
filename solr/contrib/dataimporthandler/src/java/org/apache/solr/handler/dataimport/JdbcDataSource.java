@@ -294,47 +294,65 @@ public class JdbcDataSource extends
     return colNames;
   }
 
-  private class ResultSetIterator {
-    ResultSet resultSet;
+  protected class ResultSetIterator {
+    private ResultSet resultSet;
 
-    Statement stmt = null;
+    private Statement stmt = null;
 
-    List<String> colNames;
-
-    Iterator<Map<String, Object>> rSetIterator;
+   
+    private Iterator<Map<String, Object>> rSetIterator;
 
     public ResultSetIterator(String query) {
 
+      final List<String> colNames;
       try {
         Connection c = getConnection();
-        stmt = c.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-        stmt.setFetchSize(batchSize);
-        stmt.setMaxRows(maxRows);
+        stmt = createStatement(c);
         LOG.debug("Executing SQL: " + query);
         long start = System.nanoTime();
-        if (stmt.execute(query)) {
-          resultSet = stmt.getResultSet();
-        }
+        resultSet = executeStatement(stmt, query);
         LOG.trace("Time taken for sql :"
                 + TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
         colNames = readFieldNames(resultSet.getMetaData());
       } catch (Exception e) {
         wrapAndThrow(SEVERE, e, "Unable to execute query: " + query);
+        return;
       }
       if (resultSet == null) {
         rSetIterator = new ArrayList<Map<String, Object>>().iterator();
         return;
       }
 
-      rSetIterator = new Iterator<Map<String, Object>>() {
+      rSetIterator = createIterator(stmt, resultSet, convertType, colNames, fieldNameVsType);
+    }
+
+    
+    protected Statement createStatement(Connection c) throws SQLException {
+      Statement statement = c.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+      statement.setFetchSize(batchSize);
+      statement.setMaxRows(maxRows);
+      return statement;
+    }
+
+    protected ResultSet executeStatement(Statement statement, String query) throws SQLException {
+      if (statement.execute(query)) {
+        return statement.getResultSet();
+      }
+      return null;
+    }
+
+
+    protected Iterator<Map<String,Object>> createIterator(Statement stmt, ResultSet resultSet, boolean convertType,
+        List<String> colNames, Map<String,Integer> fieldNameVsType) {
+      return new Iterator<Map<String,Object>>() {
         @Override
         public boolean hasNext() {
-          return hasnext();
+          return hasnext(resultSet, stmt);
         }
 
         @Override
-        public Map<String, Object> next() {
-          return getARow();
+        public Map<String,Object> next() {
+          return getARow(resultSet, convertType, colNames, fieldNameVsType);
         }
 
         @Override
@@ -342,12 +360,11 @@ public class JdbcDataSource extends
         }
       };
     }
+    
+ 
 
-    private Iterator<Map<String, Object>> getIterator() {
-      return rSetIterator;
-    }
-
-    private Map<String, Object> getARow() {
+    protected Map<String,Object> getARow(ResultSet resultSet, boolean convertType, List<String> colNames,
+        Map<String,Integer> fieldNameVsType) {
       if (resultSet == null)
         return null;
       Map<String, Object> result = new HashMap<>();
@@ -402,7 +419,7 @@ public class JdbcDataSource extends
       return result;
     }
 
-    private boolean hasnext() {
+    protected boolean hasnext(ResultSet resultSet, Statement stmt) {
       if (resultSet == null)
         return false;
       try {
@@ -419,7 +436,7 @@ public class JdbcDataSource extends
       }
     }
 
-    private void close() {
+    protected void close() {
       try {
         if (resultSet != null)
           resultSet.close();
@@ -432,9 +449,14 @@ public class JdbcDataSource extends
         stmt = null;
       }
     }
+
+    protected final Iterator<Map<String,Object>> getIterator() {
+      return rSetIterator;
+    }
+    
   }
 
-  Connection getConnection() throws Exception {
+  protected Connection getConnection() throws Exception {
     long currTime = System.nanoTime();
     if (currTime - connLastUsed > CONN_TIME_OUT) {
       synchronized (this) {

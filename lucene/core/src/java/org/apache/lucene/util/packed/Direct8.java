@@ -1,7 +1,5 @@
 // This file has been automatically generated, DO NOT EDIT
 
-package org.apache.lucene.util.packed;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +16,7 @@ package org.apache.lucene.util.packed;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util.packed;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -40,6 +39,11 @@ final class Direct8 extends PackedInts.MutableImpl {
   Direct8(int packedIntsVersion, DataInput in, int valueCount) throws IOException {
     this(valueCount);
     in.readBytes(values, 0, valueCount);
+    // because packed ints have not always been byte-aligned
+    final int remaining = (int) (PackedInts.Format.PACKED.byteCount(packedIntsVersion, valueCount, 8) - 1L * valueCount);
+    for (int i = 0; i < remaining; ++i) {
+      in.readByte();
+    }
   }
 
   @Override

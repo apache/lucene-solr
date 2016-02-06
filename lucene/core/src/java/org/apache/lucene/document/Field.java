@@ -1,5 +1,3 @@
-package org.apache.lucene.document;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.document;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.document;
+
 
 import java.io.IOException;
 import java.io.Reader;
@@ -27,7 +27,6 @@ import org.apache.lucene.analysis.tokenattributes.BytesTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.util.BytesRef;
@@ -497,7 +496,7 @@ public class Field implements IndexableField {
   }
 
   @Override
-  public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException {
+  public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) {
     if (fieldType().indexOptions() == IndexOptions.NONE) {
       // Not indexed
       return null;

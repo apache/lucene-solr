@@ -1,5 +1,3 @@
-package org.apache.lucene.store;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.store;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.store;
+
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -100,7 +100,6 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
   public void testNoDir() throws Throwable {
     Path primDir = createTempDir("foo");
     Path secondDir = createTempDir("bar");
-    IOUtils.rm(primDir, secondDir);
     Directory dir = newFSSwitchDirectory(primDir, secondDir, Collections.<String>emptySet());
     try {
       DirectoryReader.open(dir);

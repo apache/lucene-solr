@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 package org.apache.lucene.analysis.wikipedia;
 
 import java.io.StringReader;

@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,14 +14,15 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
 
-import java.io.IOException;
+
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.search.similarities.ClassicSimilarity; // javadocs
-import org.apache.lucene.search.similarities.Similarity; // javadocs
+import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.BytesRef;
 
 // TODO: how to handle versioning here...?
@@ -55,9 +54,8 @@ public interface IndexableField {
    *              check.
    * @return TokenStream value for indexing the document.  Should always return
    *         a non-null value if the field is to be indexed
-   * @throws IOException Can be thrown while creating the TokenStream
    */
-  public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse) throws IOException;
+  public TokenStream tokenStream(Analyzer analyzer, TokenStream reuse);
 
   /** 
    * Returns the field's index-time boost.

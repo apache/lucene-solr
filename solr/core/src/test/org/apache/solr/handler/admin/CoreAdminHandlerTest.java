@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.handler.admin;
 
 import java.io.File;
@@ -128,10 +127,25 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     assertTrue("instDir doesn't exist: " + instDir, Files.exists(instDir));
     final File instPropFile = new File(workDir, "instProp");
     FileUtils.copyDirectory(instDir.toFile(), instPropFile);
-    
-    // create a new core (using CoreAdminHandler) w/ properties
-    
+
     SolrQueryResponse resp = new SolrQueryResponse();
+    // Sneaking in a test for using a bad core name
+    try {
+      admin.handleRequestBody
+          (req(CoreAdminParams.ACTION,
+              CoreAdminParams.CoreAdminAction.CREATE.toString(),
+              CoreAdminParams.INSTANCE_DIR, instPropFile.getAbsolutePath(),
+              CoreAdminParams.NAME, "ugly$core=name"),
+              resp);
+
+    } catch (SolrException se) {
+      assertTrue("Expected error message for bad core name.", se.toString().contains("Invalid core name"));
+    }
+    CoreDescriptor cd = cores.getCoreDescriptor("ugly$core=name");
+    assertNull("Should NOT have added this core!", cd);
+
+    // create a new core (using CoreAdminHandler) w/ properties
+
     admin.handleRequestBody
       (req(CoreAdminParams.ACTION,
            CoreAdminParams.CoreAdminAction.CREATE.toString(),
@@ -142,7 +156,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
        resp);
     assertNull("Exception on create", resp.getException());
 
-    CoreDescriptor cd = cores.getCoreDescriptor("props");
+    cd = cores.getCoreDescriptor("props");
     assertNotNull("Core not added!", cd);
     assertEquals(cd.getCoreProperty("hoss", null), "man");
     assertEquals(cd.getCoreProperty("foo", null), "baz");
@@ -188,7 +202,43 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     assertEquals("bogus_dir_core status isn't empty",
                  0, ((NamedList)status.get("bogus_dir_core")).size());
 
-               
+
+    //Try renaming the core, we should fail
+    // First assert that the props core exists
+    cd = cores.getCoreDescriptor("props");
+    assertNotNull("Core disappeared!", cd);
+
+    // now rename it something else just for kicks since we don't actually test this that I could find.
+    admin.handleRequestBody
+        (req(CoreAdminParams.ACTION,
+            CoreAdminParams.CoreAdminAction.RENAME.toString(),
+            CoreAdminParams.CORE, "props",
+            CoreAdminParams.OTHER, "rename_me"),
+            resp);
+
+    cd = cores.getCoreDescriptor("rename_me");
+    assertNotNull("Core should have been renamed!", cd);
+
+    // Rename it something bogus and see if you get an exception, the old core is still there and the bogus one isn't
+    try {
+      admin.handleRequestBody
+          (req(CoreAdminParams.ACTION,
+              CoreAdminParams.CoreAdminAction.RENAME.toString(),
+              CoreAdminParams.CORE, "rename_me",
+              CoreAdminParams.OTHER, "bad$name"),
+              resp);
+    } catch (IllegalArgumentException iae) { // why the heck does create return a SolrException (admittedly wrapping an IAE)
+      assertTrue("Expected error message for bad core name.", iae.getMessage().contains("Invalid core name"));
+    }
+
+    cd = cores.getCoreDescriptor("bad$name");
+    assertNull("Core should NOT exist!", cd);
+
+    cd = cores.getCoreDescriptor("rename_me");
+    assertNotNull("Core should have been renamed!", cd);
+
+
+
     // :TODO: because of SOLR-3665 we can't ask for status from all cores
 
   }

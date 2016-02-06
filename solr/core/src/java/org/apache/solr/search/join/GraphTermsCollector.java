@@ -1,5 +1,3 @@
-package org.apache.solr.search.join;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.solr.search.join;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.search.join;
 
 import java.io.IOException;
 
@@ -108,7 +107,7 @@ class GraphTermsCollector extends SimpleCollector implements Collector {
     numHits++;
   }
   
-  public DocSet getDocSet() {
+  public BitDocSet getDocSet() {
     if (bits == null) {
       // TODO: this shouldn't happen
       bits = new FixedBitSet(maxDoc);

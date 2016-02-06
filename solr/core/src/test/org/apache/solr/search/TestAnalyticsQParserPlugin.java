@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
@@ -40,10 +39,6 @@ import java.io.IOException;
 @Ignore
 public class TestAnalyticsQParserPlugin extends QParserPlugin {
 
-
-  public void init(NamedList params) {
-
-  }
 
   public QParser createParser(String query, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new TestAnalyticsQueryParser(query, localParams, params, req);

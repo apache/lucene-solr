@@ -1,5 +1,3 @@
-package org.apache.solr.client.solrj.io.sql;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,7 +14,9 @@ package org.apache.solr.client.solrj.io.sql;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj.io.sql;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.math.BigDecimal;
@@ -40,23 +40,68 @@ import java.util.Calendar;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.PushBackStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
 
 class ResultSetImpl implements ResultSet {
   private final StatementImpl statement;
-  private final SolrStream solrStream;
+  private final PushBackStream solrStream;
+  private final ResultSetMetaData resultSetMetaData;
+  private final Tuple metadataTuple;
+  private final Tuple firstTuple;
   private Tuple tuple;
   private boolean done;
   private boolean closed;
   private SQLWarning currentWarning;
+  private boolean wasLastValueNull;
 
-  ResultSetImpl(StatementImpl statement) {
+  ResultSetImpl(StatementImpl statement, SolrStream solrStream) throws SQLException {
     this.statement = statement;
-    this.solrStream = statement.getSolrStream();
+
+    try {
+      this.solrStream = new PushBackStream(solrStream);
+
+      StreamContext context = new StreamContext();
+      context.setSolrClientCache(((ConnectionImpl)this.statement.getConnection()).getSolrClientCache());
+      this.solrStream.setStreamContext(context);
+
+      this.solrStream.open();
+
+      this.metadataTuple = this.solrStream.read();
+
+      Object isMetadata = this.metadataTuple.get("isMetadata");
+      if(isMetadata == null || !isMetadata.equals(true)) {
+        throw new RuntimeException("First tuple is not a metadata tuple");
+      }
+
+      this.firstTuple = this.solrStream.read();
+      this.solrStream.pushBack(firstTuple);
+    } catch (IOException e) {
+      throw new SQLException("Couldn't read first tuple", e);
+    }
+
+    this.resultSetMetaData = new ResultSetMetaDataImpl(this);
+  }
+
+  Tuple getMetadataTuple() {
+    return this.metadataTuple;
+  }
+
+  Tuple getFirstTuple() {
+    return this.firstTuple;
+  }
+
+  private void checkClosed() throws SQLException {
+    if(isClosed()) {
+      throw new SQLException("ResultSet is closed.");
+    }
   }
 
   @Override
   public boolean next() throws SQLException {
+    checkClosed();
+
     try {
       if(done) {
         return false;
@@ -69,7 +114,7 @@ class ResultSetImpl implements ResultSet {
       } else {
         return true;
       }
-    } catch (Exception e) {
+    } catch (IOException e) {
       throw new SQLException(e);
     }
   }
@@ -77,76 +122,82 @@ class ResultSetImpl implements ResultSet {
   @Override
   public void close() throws SQLException {
     this.done = this.closed = true;
+
+    try {
+      this.solrStream.close();
+    } catch (IOException e) {
+      throw new SQLException(e);
+    }
   }
 
   @Override
   public boolean wasNull() throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.wasLastValueNull;
   }
 
   @Override
   public String getString(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getString(this.resultSetMetaData.getColumnLabel(columnIndex));
   }
 
   @Override
   public boolean getBoolean(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getBoolean(this.resultSetMetaData.getColumnLabel(columnIndex));
   }
 
   @Override
   public byte getByte(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getByte(this.resultSetMetaData.getColumnLabel(columnIndex));
   }
 
   @Override
   public short getShort(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getShort(this.resultSetMetaData.getColumnLabel(columnIndex));
   }
 
   @Override
   public int getInt(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getInt(this.resultSetMetaData.getColumnLabel(columnIndex));
   }
 
   @Override
   public long getLong(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getLong(this.resultSetMetaData.getColumnLabel(columnIndex));
   }
 
   @Override
   public float getFloat(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getFloat(this.resultSetMetaData.getColumnLabel(columnIndex));
   }
 
   @Override
   public double getDouble(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getDouble(this.resultSetMetaData.getColumnLabel(columnIndex));
   }
 
   @Override
   public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getBigDecimal(this.resultSetMetaData.getColumnLabel(columnIndex), scale);
   }
 
   @Override
   public byte[] getBytes(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getBytes(this.resultSetMetaData.getColumnLabel(columnIndex));
   }
 
   @Override
   public Date getDate(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getDate(this.resultSetMetaData.getColumnLabel(columnIndex));
   }
 
   @Override
   public Time getTime(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getTime(this.resultSetMetaData.getColumnLabel(columnIndex));
   }
 
   @Override
   public Timestamp getTimestamp(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getTimestamp(this.resultSetMetaData.getColumnLabel(columnIndex));
   }
 
   @Override
@@ -166,77 +217,169 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public String getString(String columnLabel) throws SQLException {
-    return tuple.getString(columnLabel);
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    String value = tuple.getString(columnLabel);
+    if(value.equals(String.valueOf((Object)null))) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return value;
   }
 
   @Override
   public boolean getBoolean(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    Object value = getObject(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return false;
+    }
+    return (boolean)value;
   }
 
   @Override
   public byte getByte(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    Number number = (Number)getObject(columnLabel);
+    if(number == null) {
+      this.wasLastValueNull = true;
+      return 0;
+    } else {
+      return number.byteValue();
+    }
   }
 
   @Override
   public short getShort(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    Number number = (Number)getObject(columnLabel);
+    if(number == null) {
+      this.wasLastValueNull = true;
+      return 0;
+    } else {
+      return number.shortValue();
+    }
   }
 
   @Override
   public int getInt(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    Number number = (Number)getObject(columnLabel);
+    if(number == null) {
+      this.wasLastValueNull = true;
+      return 0;
+    } else {
+      return number.intValue();
+    }
   }
 
   @Override
   public long getLong(String columnLabel) throws SQLException {
-    Long l =  tuple.getLong(columnLabel);
-    if(l == null) {
-      return 0;
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    Number number = (Number)getObject(columnLabel);
+    if(number == null) {
+      this.wasLastValueNull = true;
+      return 0L;
     } else {
-      return l.longValue();
+      return number.longValue();
     }
   }
 
   @Override
   public float getFloat(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    Number number = (Number)getObject(columnLabel);
+    if(number == null) {
+      this.wasLastValueNull = true;
+      return 0.0F;
+    } else {
+      return number.floatValue();
+    }
   }
 
   @Override
   public double getDouble(String columnLabel) throws SQLException {
-    Double d = tuple.getDouble(columnLabel);
-    if(d == null) {
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    Number number = (Number)getObject(columnLabel);
+    if(number == null) {
+      this.wasLastValueNull = true;
       return 0.0D;
     } else {
-      return d.doubleValue();
+      return number.doubleValue();
     }
   }
 
   @Override
   public BigDecimal getBigDecimal(String columnLabel, int scale) throws SQLException {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public byte[] getBytes(String columnLabel) throws SQLException {
-    return new byte[0];
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    Object value = getObject(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return (byte[])value;
   }
 
   @Override
   public Date getDate(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    Object value = getObject(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return (Date)value;
   }
 
   @Override
   public Time getTime(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    Object value = getObject(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return (Time)value;
   }
 
   @Override
   public Timestamp getTimestamp(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    Object value = getObject(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return (Timestamp)value;
   }
 
   @Override
@@ -279,17 +422,27 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public ResultSetMetaData getMetaData() throws SQLException {
-    return new ResultSetMetaDataImpl(this);
+    checkClosed();
+
+    return this.resultSetMetaData;
   }
 
   @Override
   public Object getObject(int columnIndex) throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.getObject(this.resultSetMetaData.getColumnLabel(columnIndex));
   }
 
   @Override
   public Object getObject(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    Object value = this.tuple.get(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return value;
   }
 
   @Override
@@ -314,7 +467,15 @@ class ResultSetImpl implements ResultSet {
 
   @Override
   public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
-    throw new UnsupportedOperationException();
+    this.wasLastValueNull = false;
+    checkClosed();
+
+    Object value = this.getObject(columnLabel);
+    if(value == null) {
+      this.wasLastValueNull = true;
+      return null;
+    }
+    return (BigDecimal)value;
   }
 
   @Override

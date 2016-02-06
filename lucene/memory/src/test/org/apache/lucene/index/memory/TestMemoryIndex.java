@@ -1,5 +1,3 @@
-package org.apache.lucene.index.memory;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,18 +14,24 @@ package org.apache.lucene.index.memory;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index.memory;
 
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockPayloadAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
@@ -154,6 +158,28 @@ public class TestMemoryIndex extends LuceneTestCase {
 
     assertTrue(n1 != n2);
     TestUtil.checkReader(reader);
+  }
+
+  @Test
+  public void testBuildFromDocument() {
+
+    Document doc = new Document();
+    doc.add(new TextField("field1", "some text", Field.Store.NO));
+    doc.add(new TextField("field1", "some more text", Field.Store.NO));
+    doc.add(new StringField("field2", "untokenized text", Field.Store.NO));
+
+    analyzer.setPositionIncrementGap(100);
+
+    MemoryIndex mi = MemoryIndex.fromDocument(doc, analyzer);
+
+    assertThat(mi.search(new TermQuery(new Term("field1", "text"))), not(0.0f));
+    assertThat(mi.search(new TermQuery(new Term("field2", "text"))), is(0.0f));
+    assertThat(mi.search(new TermQuery(new Term("field2", "untokenized text"))), not(0.0f));
+
+    assertThat(mi.search(new PhraseQuery("field1", "some", "more", "text")), not(0.0f));
+    assertThat(mi.search(new PhraseQuery("field1", "some", "text")), not(0.0f));
+    assertThat(mi.search(new PhraseQuery("field1", "text", "some")), is(0.0f));
+
   }
 
 

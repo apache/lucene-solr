@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -195,12 +194,9 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
 
   /** The purpose of this test is to make sure that bulk merge doesn't accumulate useless data over runs. */
   public void testMergeStability() throws Exception {
+    assumeTrue("merge is not stable", mergeIsStable());
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // Else, the virus checker may prevent deletion of files and cause
-      // us to see too many bytes used by extension in the end:
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
+
     // do not use newMergePolicy that might return a MockMergePolicy that ignores the no-CFS ratio
     // do not use RIW which will change things up!
     MergePolicy mp = newTieredMergePolicy();
@@ -219,11 +215,6 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     DirectoryReader reader = DirectoryReader.open(dir);
 
     Directory dir2 = newDirectory();
-    if (dir2 instanceof MockDirectoryWrapper) {
-      // Else, the virus checker may prevent deletion of files and cause
-      // us to see too many bytes used by extension in the end:
-      ((MockDirectoryWrapper) dir2).setEnableVirusScanner(false);
-    }
     mp = newTieredMergePolicy();
     mp.setNoCFSRatio(0);
     cfg = new IndexWriterConfig(new MockAnalyzer(random())).setUseCompoundFile(false).setMergePolicy(mp);
@@ -238,6 +229,10 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     reader.close();
     dir.close();
     dir2.close();
+  }
+
+  protected boolean mergeIsStable() {
+    return true;
   }
 
   /** Test the accuracy of the ramBytesUsed estimations. */

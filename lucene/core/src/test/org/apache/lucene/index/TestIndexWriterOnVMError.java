@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -31,6 +31,7 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -124,6 +125,8 @@ public class TestIndexWriterOnVMError extends LuceneTestCase {
           FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
           ft.setStoreTermVectors(true);
           doc.add(newField("text_vectors", TestUtil.randomAnalysisString(random(), 6, true), ft));
+          doc.add(new IntPoint("point", random().nextInt()));
+          doc.add(new IntPoint("point2d", random().nextInt(), random().nextInt()));
           
           if (random().nextInt(10) > 0) {
             // single doc

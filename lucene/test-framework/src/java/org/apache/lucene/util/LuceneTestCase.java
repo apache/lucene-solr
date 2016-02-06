@@ -1,5 +1,3 @@
-package org.apache.lucene.util;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
 
 import java.io.Closeable;
 import java.io.FileNotFoundException;
@@ -30,6 +29,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.net.URI;
+import java.nio.file.FileSystem;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -76,6 +77,8 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexReader.ReaderClosedListener;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
+import org.apache.lucene.mockfile.FilterPath;
+import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.search.AssertingIndexSearcher;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -136,6 +139,8 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
 import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
 import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
+
+import junit.framework.AssertionFailedError;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
@@ -1268,6 +1273,16 @@ public abstract class LuceneTestCase extends Assert {
   public static BaseDirectoryWrapper newDirectory() {
     return newDirectory(random());
   }
+
+  /** Like {@link #newDirectory} except randomly the {@link VirusCheckingFS} may be installed */
+  public static BaseDirectoryWrapper newMaybeVirusCheckingDirectory() {
+    if (random().nextInt(5) == 4) {
+      Path path = addVirusChecker(createTempDir());
+      return newFSDirectory(path);
+    } else {
+      return newDirectory(random());
+    }
+  }
   
   /**
    * Returns a new Directory instance, using the specified random.
@@ -1305,6 +1320,15 @@ public abstract class LuceneTestCase extends Assert {
     return (MockDirectoryWrapper) newFSDirectory(f, lf, false);
   }
 
+  public static Path addVirusChecker(Path path) {
+    if (TestUtil.hasVirusChecker(path) == false) {
+      VirusCheckingFS fs = new VirusCheckingFS(path.getFileSystem(), random().nextLong());
+      FileSystem filesystem = fs.getFileSystem(URI.create("file:///"));
+      path = new FilterPath(path, filesystem);
+    }
+    return path;
+  }
+
   /**
    * Returns a new Directory instance, with contents copied from the
    * provided directory. See {@link #newDirectory()} for more
@@ -1316,6 +1340,14 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Returns a new FSDirectory instance over the given file, which must be a folder. */
   public static BaseDirectoryWrapper newFSDirectory(Path f) {
+    return newFSDirectory(f, FSLockFactory.getDefault());
+  }
+
+  /** Like {@link #newFSDirectory(Path)}, but randomly insert {@link VirusCheckingFS} */
+  public static BaseDirectoryWrapper newMaybeVirusCheckingFSDirectory(Path f) {
+    if (random().nextInt(5) == 4) {
+      f = addVirusChecker(f);
+    }
     return newFSDirectory(f, FSLockFactory.getDefault());
   }
 
@@ -1891,6 +1923,7 @@ public abstract class LuceneTestCase extends Assert {
     assertDocValuesEquals(info, leftReader, rightReader);
     assertDeletedDocsEquals(info, leftReader, rightReader);
     assertFieldInfosEquals(info, leftReader, rightReader);
+    assertPointsEquals(info, leftReader, rightReader);
   }
 
   /** 
@@ -2534,6 +2567,90 @@ public abstract class LuceneTestCase extends Assert {
     }
     
     assertEquals(info, left, right);
+  }
+
+  // naive silly memory heavy uninversion!!  maps docID -> packed values (a Set because a given doc can be multi-valued)
+  private Map<Integer,Set<BytesRef>> uninvert(String fieldName, PointValues points) throws IOException {
+    final Map<Integer,Set<BytesRef>> docValues = new HashMap<>();
+    points.intersect(fieldName, new PointValues.IntersectVisitor() {
+        @Override
+        public void visit(int docID) {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void visit(int docID, byte[] packedValue) throws IOException {
+          if (docValues.containsKey(docID) == false) {
+            docValues.put(docID, new HashSet<BytesRef>());
+          }
+          docValues.get(docID).add(new BytesRef(packedValue.clone()));
+        }
+
+        @Override
+        public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+          // We pretend our query shape is so hairy that it crosses every single cell:
+          return PointValues.Relation.CELL_CROSSES_QUERY;
+        }
+      });
+    return docValues;
+  }
+
+  public void assertPointsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
+    assertPointsEquals(info,
+                       MultiFields.getMergedFieldInfos(leftReader),
+                       MultiPointValues.get(leftReader),
+                       MultiFields.getMergedFieldInfos(rightReader),
+                       MultiPointValues.get(rightReader));
+  }
+
+  public void assertPointsEquals(String info, FieldInfos fieldInfos1, PointValues points1, FieldInfos fieldInfos2, PointValues points2) throws IOException {
+    for(FieldInfo fieldInfo1 : fieldInfos1) {
+      if (fieldInfo1.getPointDimensionCount() != 0) {
+        FieldInfo fieldInfo2 = fieldInfos2.fieldInfo(fieldInfo1.name);
+        // same dimension count?
+        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo2.getPointDimensionCount());
+        // same bytes per dimension?
+        assertEquals(info, fieldInfo2.getPointNumBytes(), fieldInfo2.getPointNumBytes());
+
+        assertEquals(info + " field=" + fieldInfo1.name,
+                     uninvert(fieldInfo1.name, points1),
+                     uninvert(fieldInfo1.name, points2));
+      }
+    }
+
+    // make sure FieldInfos2 doesn't have any point fields that FieldInfo1 didn't have
+    for(FieldInfo fieldInfo2 : fieldInfos2) {
+      if (fieldInfo2.getPointDimensionCount() != 0) {
+        FieldInfo fieldInfo1 = fieldInfos1.fieldInfo(fieldInfo2.name);
+        // same dimension count?
+        assertEquals(info, fieldInfo2.getPointDimensionCount(), fieldInfo1.getPointDimensionCount());
+        // same bytes per dimension?
+        assertEquals(info, fieldInfo2.getPointNumBytes(), fieldInfo1.getPointNumBytes());
+
+        // we don't need to uninvert and compare here ... we did that in the first loop above
+      }
+    }
+  }
+
+  /** A runnable that can throw any checked exception. */
+  @FunctionalInterface
+  public interface ThrowingRunnable {
+    void run() throws Throwable;
+  }
+
+  /** Checks a specific exception class is thrown by the given runnable, and returns it. */
+  public static <T extends Throwable> T expectThrows(Class<T> expectedType, ThrowingRunnable runnable) {
+    try {
+      runnable.run();
+    } catch (Throwable e) {
+      if (expectedType.isInstance(e)) {
+        return expectedType.cast(e);
+      }
+      AssertionFailedError assertion = new AssertionFailedError("Unexpected exception type, expected " + expectedType.getSimpleName());
+      assertion.initCause(e);
+      throw assertion;
+    }
+    throw new AssertionFailedError("Expected exception " + expectedType.getSimpleName());
   }
 
   /** Returns true if the file exists (can be opened), false

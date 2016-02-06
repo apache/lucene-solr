@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,7 +23,8 @@ import java.util.List;
 
 import org.apache.lucene.util.StringHelper;
 
-class MultiPointValues extends PointValues {
+/** Merges multiple {@link PointValues} into a single one. */
+public class MultiPointValues extends PointValues {
 
   private final List<PointValues> subs;
   private final List<Integer> docBases;
@@ -33,6 +34,7 @@ class MultiPointValues extends PointValues {
     this.docBases = docBases;
   }
 
+  /** Returns a {@link PointValues} merging all point values from the provided reader. */
   public static PointValues get(IndexReader r) {
     final List<LeafReaderContext> leaves = r.leaves();
     final int size = leaves.size();

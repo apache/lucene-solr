@@ -1,5 +1,3 @@
-package org.apache.solr.client.solrj;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.solr.client.solrj;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj;
 
 import java.io.IOException;
 import java.net.URL;
@@ -79,7 +78,7 @@ public class ConnectionReuseTest extends AbstractFullDistribZkTestBase {
     
     SolrClient client;
     HttpClient httpClient = HttpClientUtil.createClient(null);
-    int rndClient = 0;//random().nextInt(3);
+    int rndClient = random().nextInt(3);
     if (rndClient == 0) {
       client = new ConcurrentUpdateSolrClient(url.toString(), httpClient, 6, 1); // currently only testing with 1 thread
     } else if (rndClient == 1)  {

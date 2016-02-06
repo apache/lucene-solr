@@ -1,13 +1,3 @@
-package org.apache.lucene.util;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.internal.AssumptionViolatedException;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,6 +14,15 @@ import org.junit.runners.model.Statement;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.internal.AssumptionViolatedException;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 /**
  * A rule for marking failed tests and suites.

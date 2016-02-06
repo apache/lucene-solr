@@ -1,5 +1,3 @@
-package org.apache.solr.search.join;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.solr.search.join;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.search.join;
 
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -30,10 +29,6 @@ public class GraphQParserPlugin extends QParserPlugin {
   
   // Graph Query Parser parser name
   public static final String NAME = "graph";
-  
-  @Override
-  public void init(NamedList args) {
-  }
   
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {

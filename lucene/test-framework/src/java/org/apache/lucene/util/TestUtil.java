@@ -1,5 +1,3 @@
-package org.apache.lucene.util;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,6 +25,7 @@ import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -90,10 +90,15 @@ import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.mockfile.FilterFileSystem;
+import org.apache.lucene.mockfile.VirusCheckingFS;
+import org.apache.lucene.mockfile.WindowsFS;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
@@ -111,14 +116,12 @@ public final class TestUtil {
   }
 
   /** 
-   * Convenience method unzipping zipName into destDir, cleaning up 
-   * destDir first.
+   * Convenience method unzipping zipName into destDir. You must pass it a clean destDir.
+   *
    * Closes the given InputStream after extracting! 
    */
   public static void unzip(InputStream in, Path destDir) throws IOException {
     in = new BufferedInputStream(in);
-    IOUtils.rm(destDir);
-    Files.createDirectory(destDir);
 
     try (ZipInputStream zipInput = new ZipInputStream(in)) {
       ZipEntry entry;
@@ -1279,5 +1282,95 @@ public final class TestUtil {
       }
     }
     return ram;
+  }
+
+  public static boolean hasWindowsFS(Directory dir) {
+    dir = FilterDirectory.unwrap(dir);
+    if (dir instanceof FSDirectory) {
+      Path path = ((FSDirectory) dir).getDirectory();
+      FileSystem fs = path.getFileSystem();
+      while (fs instanceof FilterFileSystem) {
+        FilterFileSystem ffs = (FilterFileSystem) fs;
+        if (ffs.getParent() instanceof WindowsFS) {
+          return true;
+        }
+        fs = ffs.getDelegate();
+      }
+    }
+
+    return false;
+  }
+
+  public static boolean hasWindowsFS(Path path) {
+    FileSystem fs = path.getFileSystem();
+    while (fs instanceof FilterFileSystem) {
+      FilterFileSystem ffs = (FilterFileSystem) fs;
+      if (ffs.getParent() instanceof WindowsFS) {
+        return true;
+      }
+      fs = ffs.getDelegate();
+    }
+
+    return false;
+  }
+
+  public static boolean hasVirusChecker(Directory dir) {
+    dir = FilterDirectory.unwrap(dir);
+    if (dir instanceof FSDirectory) {
+      return hasVirusChecker(((FSDirectory) dir).getDirectory());
+    } else {
+      return false;
+    }
+  }
+
+  public static boolean hasVirusChecker(Path path) {
+    FileSystem fs = path.getFileSystem();
+    while (fs instanceof FilterFileSystem) {
+      FilterFileSystem ffs = (FilterFileSystem) fs;
+      if (ffs.getParent() instanceof VirusCheckingFS) {
+        return true;
+      }
+      fs = ffs.getDelegate();
+    }
+
+    return false;
+  }
+
+  /** Returns true if VirusCheckingFS is in use and was in fact already enabled */
+  public static boolean disableVirusChecker(Directory in) {
+    Directory dir = FilterDirectory.unwrap(in);
+    if (dir instanceof FSDirectory) {
+
+      FileSystem fs = ((FSDirectory) dir).getDirectory().getFileSystem();
+      while (fs instanceof FilterFileSystem) {
+        FilterFileSystem ffs = (FilterFileSystem) fs;
+        if (ffs.getParent() instanceof VirusCheckingFS) {
+          VirusCheckingFS vfs = (VirusCheckingFS) ffs.getParent();
+          boolean isEnabled = vfs.isEnabled();
+          vfs.disable();
+          return isEnabled;
+        }
+        fs = ffs.getDelegate();
+      }
+    }
+
+    return false;
+  }
+
+  public static void enableVirusChecker(Directory in) {
+    Directory dir = FilterDirectory.unwrap(in);
+    if (dir instanceof FSDirectory) {
+
+      FileSystem fs = ((FSDirectory) dir).getDirectory().getFileSystem();
+      while (fs instanceof FilterFileSystem) {
+        FilterFileSystem ffs = (FilterFileSystem) fs;
+        if (ffs.getParent() instanceof VirusCheckingFS) {
+          VirusCheckingFS vfs = (VirusCheckingFS) ffs.getParent();
+          vfs.enable();
+          return;
+        }
+        fs = ffs.getDelegate();
+      }
+    }
   }
 }

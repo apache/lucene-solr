@@ -1,5 +1,3 @@
-package org.apache.lucene.benchmark.byTask.utils;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.benchmark.byTask.utils;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.benchmark.byTask.utils;
+
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -30,8 +30,6 @@ import java.nio.file.Path;
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
-import org.apache.lucene.util.IOUtils;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -135,16 +133,6 @@ public class StreamUtilsTest extends BenchmarkTestCase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    testDir = getWorkDir().resolve("ContentSourceTest");
-    IOUtils.rm(testDir);
-    Files.createDirectory(testDir);
+    testDir = createTempDir("ContentSourceTest");
   }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    IOUtils.rm(testDir);
-    super.tearDown();
-  }
-
 }

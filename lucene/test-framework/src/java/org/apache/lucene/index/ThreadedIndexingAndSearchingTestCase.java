@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -654,7 +653,6 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
 
     TestUtil.checkIndex(dir);
     dir.close();
-    IOUtils.rm(tempDir);
 
     if (VERBOSE) {
       System.out.println("TEST: done [" + (System.currentTimeMillis()-t0) + " ms]");

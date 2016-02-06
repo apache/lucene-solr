@@ -1,10 +1,3 @@
-package org.apache.lucene.search;
-
-import java.util.Arrays;
-
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause.Occur;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,6 +14,13 @@ import org.apache.lucene.search.BooleanClause.Occur;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.search;
+
+import java.util.Arrays;
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
+
 
 /**
  * Basic equivalence tests for core queries

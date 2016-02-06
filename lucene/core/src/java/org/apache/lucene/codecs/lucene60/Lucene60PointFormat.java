@@ -1,5 +1,3 @@
-package org.apache.lucene.codecs.lucene60;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.codecs.lucene60;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.codecs.lucene60;
+
 
 import java.io.IOException;
 
@@ -73,7 +73,8 @@ import org.apache.lucene.index.SegmentWriteState;
 
 public final class Lucene60PointFormat extends PointFormat {
 
-  static final String CODEC_NAME = "Lucene60PointFormat";
+  static final String DATA_CODEC_NAME = "Lucene60PointFormatData";
+  static final String META_CODEC_NAME = "Lucene60PointFormatMeta";
 
   /**
    * Filename extension for the leaf blocks

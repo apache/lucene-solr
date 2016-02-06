@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.handler.component;
 
 import org.apache.lucene.search.Query;
@@ -262,6 +261,10 @@ public class ResponseBuilder
 
   public void setResponseDocs(SolrDocumentList _responseDocs) {
     this._responseDocs = _responseDocs;
+  }
+  
+  public SolrDocumentList getResponseDocs() {
+    return this._responseDocs;
   }
 
   public boolean isDebugTrack() {

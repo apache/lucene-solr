@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.core;
 
 import java.io.IOException;
@@ -32,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -113,12 +113,12 @@ public class CoreContainer {
   protected Properties containerProperties;
 
   private ConfigSetService coreConfigService;
-  
+
   protected ZkContainer zkSys = new ZkContainer();
   protected ShardHandlerFactory shardHandlerFactory;
-  
+
   private UpdateShardHandler updateShardHandler;
-  
+
   private ExecutorService coreContainerWorkExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
       new DefaultSolrThreadFactory("coreContainerWorkExecutor") );
 
@@ -131,7 +131,7 @@ public class CoreContainer {
   protected final String solrHome;
 
   protected final CoresLocator coresLocator;
-  
+
   private String hostName;
 
   private final JarRepository jarRepository = new JarRepository(this);
@@ -207,7 +207,7 @@ public class CoreContainer {
   public CoreContainer(NodeConfig config, Properties properties) {
     this(config, properties, new CorePropertiesLocator(config.getCoreRootDirectory()));
   }
-  
+
   public CoreContainer(NodeConfig config, Properties properties, boolean asyncSolrCoreLoad) {
     this(config, properties, new CorePropertiesLocator(config.getCoreRootDirectory()), asyncSolrCoreLoad);
   }
@@ -215,7 +215,7 @@ public class CoreContainer {
   public CoreContainer(NodeConfig config, Properties properties, CoresLocator locator) {
     this(config, properties, locator, false);
   }
-  
+
   public CoreContainer(NodeConfig config, Properties properties, CoresLocator locator, boolean asyncSolrCoreLoad) {
     this.loader = config.getSolrResourceLoader();
     this.solrHome = loader.getInstancePath().toString();
@@ -335,7 +335,7 @@ public class CoreContainer {
   /**
    * This method allows subclasses to construct a CoreContainer
    * without any default init behavior.
-   * 
+   *
    * @param testConstructor pass (Object)null.
    * @lucene.experimental
    */
@@ -350,7 +350,7 @@ public class CoreContainer {
   public static CoreContainer createAndLoad(Path solrHome) {
     return createAndLoad(solrHome, solrHome.resolve(SolrXmlConfig.SOLR_XML_FILE));
   }
-  
+
   /**
    * Create a new CoreContainer and load its cores
    * @param solrHome the solr home directory
@@ -368,7 +368,7 @@ public class CoreContainer {
     }
     return cc;
   }
-  
+
   public Properties getContainerProperties() {
     return containerProperties;
   }
@@ -463,7 +463,7 @@ public class CoreContainer {
                 if (zkSys.getZkController() != null) {
                   zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
                 }
-                
+
                 core = create(cd, false);
               } finally {
                 if (asyncSolrCoreLoad) {
@@ -510,7 +510,7 @@ public class CoreContainer {
         ExecutorUtil.shutdownAndAwaitTermination(coreLoadExecutor);
       }
     }
-    
+
     if (isZooKeeperAware()) {
       zkSys.getZkController().checkOverseerDesignate();
     }
@@ -536,7 +536,7 @@ public class CoreContainer {
   }
 
   private volatile boolean isShutDown = false;
-  
+
   public boolean isShutDown() {
     return isShutDown;
   }
@@ -547,11 +547,11 @@ public class CoreContainer {
   public void shutdown() {
     log.info("Shutting down CoreContainer instance="
         + System.identityHashCode(this));
-    
+
     isShutDown = true;
-    
+
     ExecutorUtil.shutdownAndAwaitTermination(coreContainerWorkExecutor);
-    
+
     if (isZooKeeperAware()) {
       cancelCoreRecoveries();
       zkSys.publishCoresAsDown(solrCores.getCores());
@@ -640,7 +640,7 @@ public class CoreContainer {
       }
     }
   }
-  
+
   @Override
   protected void finalize() throws Throwable {
     try {
@@ -655,17 +655,26 @@ public class CoreContainer {
   public CoresLocator getCoresLocator() {
     return coresLocator;
   }
-  
+
+  // Insure that the core name won't cause problems later on.
+  final static Pattern corePattern = Pattern.compile("^[\\._A-Za-z0-9]*$");
+
+
+  public void validateCoreName(String name) {
+    if (name == null || !corePattern.matcher(name).matches()) {
+      throw new IllegalArgumentException("Invalid core name: '" + name +
+          "' Names must consist entirely of periods, underscores and alphanumerics");
+    }
+  }
+
+
+
   protected SolrCore registerCore(String name, SolrCore core, boolean registerInZk) {
     if( core == null ) {
       throw new RuntimeException( "Can not register a null core." );
     }
-    if( name == null ||
-        name.indexOf( '/'  ) >= 0 ||
-        name.indexOf( '\\' ) >= 0 ){
-      throw new RuntimeException( "Invalid core name: "+name );
-    }
-    // We can register a core when creating them via the admin UI, so we need to insure that the dynamic descriptors
+
+    // We can register a core when creating them via the admin UI, so we need to ensure that the dynamic descriptors
     // are up to date
     CoreDescriptor cd = core.getCoreDescriptor();
     if ((cd.isTransient() || ! cd.isLoadOnStartup())
@@ -808,6 +817,7 @@ public class CoreContainer {
     SolrCore core = null;
     try {
       MDCLoggingContext.setCore(core);
+      validateCoreName(dcore.getName());
       if (zkSys.getZkController() != null) {
         zkSys.getZkController().preRegister(dcore);
       }
@@ -1010,6 +1020,7 @@ public class CoreContainer {
   }
 
   public void rename(String name, String toName) {
+    validateCoreName(toName);
     try (SolrCore core = getCore(name)) {
       if (core != null) {
         registerCore(toName, core, true);

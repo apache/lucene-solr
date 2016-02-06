@@ -1,8 +1,3 @@
-package org.apache.lucene.util;
-
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +14,10 @@ import java.security.PrivilegedAction;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util;
+
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 
 /**
  * A {@link SecurityManager} that prevents tests calling {@link System#exit(int)}.

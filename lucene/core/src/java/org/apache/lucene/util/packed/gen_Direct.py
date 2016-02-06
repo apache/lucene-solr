@@ -15,9 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-HEADER="""// This file has been automatically generated, DO NOT EDIT
-
-package org.apache.lucene.util.packed;
+HEADER = """// This file has been automatically generated, DO NOT EDIT
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -35,6 +33,7 @@ package org.apache.lucene.util.packed;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util.packed;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -51,31 +50,31 @@ CASTS = {8: "(byte) ", 16: "(short) ", 32: "(int) ", 64: ""}
 if __name__ == '__main__':
   for bpv in TYPES.keys():
     type
-    f = open("Direct%d.java" %bpv, 'w')
+    f = open("Direct%d.java" % bpv, 'w')
     f.write(HEADER)
     f.write("""/**
  * Direct wrapping of %d-bits values to a backing array.
  * @lucene.internal
- */\n""" %bpv)
-    f.write("final class Direct%d extends PackedInts.MutableImpl {\n" %bpv)
-    f.write("  final %s[] values;\n\n" %TYPES[bpv])
+ */\n""" % bpv)
+    f.write("final class Direct%d extends PackedInts.MutableImpl {\n" % bpv)
+    f.write("  final %s[] values;\n\n" % TYPES[bpv])
 
-    f.write("  Direct%d(int valueCount) {\n" %bpv)
-    f.write("    super(valueCount, %d);\n" %bpv)
-    f.write("    values = new %s[valueCount];\n" %TYPES[bpv])
+    f.write("  Direct%d(int valueCount) {\n" % bpv)
+    f.write("    super(valueCount, %d);\n" % bpv)
+    f.write("    values = new %s[valueCount];\n" % TYPES[bpv])
     f.write("  }\n\n")
 
-    f.write("  Direct%d(int packedIntsVersion, DataInput in, int valueCount) throws IOException {\n" %bpv)
+    f.write("  Direct%d(int packedIntsVersion, DataInput in, int valueCount) throws IOException {\n" % bpv)
     f.write("    this(valueCount);\n")
     if bpv == 8:
       f.write("    in.readBytes(values, 0, valueCount);\n")
     else:
       f.write("    for (int i = 0; i < valueCount; ++i) {\n")
-      f.write("      values[i] = in.read%s();\n" %TYPES[bpv].title())
+      f.write("      values[i] = in.read%s();\n" % TYPES[bpv].title())
       f.write("    }\n")
     if bpv != 64:
       f.write("    // because packed ints have not always been byte-aligned\n")
-      f.write("    final int remaining = (int) (PackedInts.Format.PACKED.byteCount(packedIntsVersion, valueCount, %d) - %dL * valueCount);\n" %(bpv, bpv / 8))
+      f.write("    final int remaining = (int) (PackedInts.Format.PACKED.byteCount(packedIntsVersion, valueCount, %d) - %dL * valueCount);\n" % (bpv, bpv / 8))
       f.write("    for (int i = 0; i < remaining; ++i) {\n")
       f.write("      in.readByte();\n")
       f.write("    }\n")
@@ -105,7 +104,7 @@ if __name__ == '__main__':
   public void clear() {
     Arrays.fill(values, %s0L);
   }
-""" %(MASKS[bpv], CASTS[bpv], CASTS[bpv]))
+""" % (MASKS[bpv], CASTS[bpv], CASTS[bpv]))
 
     if bpv == 64:
       f.write("""
@@ -169,7 +168,7 @@ if __name__ == '__main__':
     assert val == (val%s);
     Arrays.fill(values, fromIndex, toIndex, %sval);
   }
-""" %(MASKS[bpv], CASTS[bpv], MASKS[bpv], CASTS[bpv]))
+""" % (MASKS[bpv], CASTS[bpv], MASKS[bpv], CASTS[bpv]))
 
     f.write("}\n")
 

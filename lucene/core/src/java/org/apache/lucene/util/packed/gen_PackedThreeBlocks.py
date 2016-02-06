@@ -15,9 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-HEADER="""// This file has been automatically generated, DO NOT EDIT
-
-package org.apache.lucene.util.packed;
+HEADER = """// This file has been automatically generated, DO NOT EDIT
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -35,6 +33,7 @@ package org.apache.lucene.util.packed;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.util.packed;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -51,32 +50,32 @@ CASTS = {8: "(byte) ", 16: "(short) ", 32: "(int) ", 64: ""}
 if __name__ == '__main__':
   for bpv in TYPES.keys():
     type
-    f = open("Packed%dThreeBlocks.java" %bpv, 'w')
+    f = open("Packed%dThreeBlocks.java" % bpv, 'w')
     f.write(HEADER)
     f.write("""/**
  * Packs integers into 3 %ss (%d bits per value).
  * @lucene.internal
- */\n""" %(TYPES[bpv], bpv*3))
-    f.write("final class Packed%dThreeBlocks extends PackedInts.MutableImpl {\n" %bpv)
-    f.write("  final %s[] blocks;\n\n" %TYPES[bpv])
+ */\n""" % (TYPES[bpv], bpv * 3))
+    f.write("final class Packed%dThreeBlocks extends PackedInts.MutableImpl {\n" % bpv)
+    f.write("  final %s[] blocks;\n\n" % TYPES[bpv])
 
     f.write("  public static final int MAX_SIZE = Integer.MAX_VALUE / 3;\n\n")
 
-    f.write("  Packed%dThreeBlocks(int valueCount) {\n" %bpv)
-    f.write("    super(valueCount, %d);\n" %(bpv*3))
+    f.write("  Packed%dThreeBlocks(int valueCount) {\n" % bpv)
+    f.write("    super(valueCount, %d);\n" % (bpv * 3))
     f.write("    if (valueCount > MAX_SIZE) {\n")
     f.write("      throw new ArrayIndexOutOfBoundsException(\"MAX_SIZE exceeded\");\n")
     f.write("    }\n")
-    f.write("    blocks = new %s[valueCount * 3];\n" %TYPES[bpv])
+    f.write("    blocks = new %s[valueCount * 3];\n" % TYPES[bpv])
     f.write("  }\n\n")
 
-    f.write("  Packed%dThreeBlocks(int packedIntsVersion, DataInput in, int valueCount) throws IOException {\n" %bpv)
+    f.write("  Packed%dThreeBlocks(int packedIntsVersion, DataInput in, int valueCount) throws IOException {\n" % bpv)
     f.write("    this(valueCount);\n")
     if bpv == 8:
       f.write("    in.readBytes(blocks, 0, 3 * valueCount);\n")
     else:
       f.write("    for (int i = 0; i < 3 * valueCount; ++i) {\n")
-      f.write("      blocks[i] = in.read%s();\n" %TYPES[bpv].title())
+      f.write("      blocks[i] = in.read%s();\n" % TYPES[bpv].title())
       f.write("    }\n")
     f.write("  }\n")
 
@@ -156,8 +155,8 @@ if __name__ == '__main__':
         + ",size=" + size() + ",blocks=" + blocks.length + ")";
   }
 }
-""" %(MASKS[bpv], 2*bpv, MASKS[bpv], bpv, MASKS[bpv], MASKS[bpv], 2*bpv, MASKS[bpv], bpv, MASKS[bpv], CASTS[bpv], 2*bpv, CASTS[bpv], bpv, CASTS[bpv], CASTS[bpv],
-      2*bpv, CASTS[bpv], bpv, CASTS[bpv], TYPES[bpv], CASTS[bpv], 2*bpv, TYPES[bpv],
+""" % (MASKS[bpv], 2 * bpv, MASKS[bpv], bpv, MASKS[bpv], MASKS[bpv], 2 * bpv, MASKS[bpv], bpv, MASKS[bpv], CASTS[bpv], 2 * bpv, CASTS[bpv], bpv, CASTS[bpv], CASTS[bpv],
+      2 * bpv, CASTS[bpv], bpv, CASTS[bpv], TYPES[bpv], CASTS[bpv], 2 * bpv, TYPES[bpv],
       CASTS[bpv], bpv, TYPES[bpv], CASTS[bpv], CASTS[bpv]))
 
     f.close()

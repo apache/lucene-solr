@@ -1,5 +1,3 @@
-package org.apache.solr.client.solrj.io.sql;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,7 +14,7 @@ package org.apache.solr.client.solrj.io.sql;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+package org.apache.solr.client.solrj.io.sql;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -66,6 +64,9 @@ public class DriverImpl implements Driver {
     if (!props.containsKey("aggregationMode")) {
       props.setProperty("aggregationMode", "facet");
     }
+
+    // JDBC requires metadata like field names from the SQLHandler. Force this property to be true.
+    props.setProperty("includeMetadata", "true");
 
     String zkHost = uri.getAuthority() + uri.getPath();
 

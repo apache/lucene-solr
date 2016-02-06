@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.search;
 
 import org.apache.solr.common.params.SolrParams;
@@ -29,10 +28,6 @@ public class FooQParserPlugin extends QParserPlugin {
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new FooQParser(qstr, localParams, params, req);
-  }
-
-  @Override
-  public void init(NamedList args) {
   }
 }
 

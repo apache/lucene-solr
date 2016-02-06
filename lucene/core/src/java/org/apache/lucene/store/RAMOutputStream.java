@@ -1,5 +1,3 @@
-package org.apache.lucene.store;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.store;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.store;
+
 
 import java.io.IOException;
 import java.util.Collection;
@@ -71,7 +71,7 @@ public class RAMOutputStream extends IndexOutput implements Accountable {
     }
   }
 
-  /** Copy the current contents of this buffer to the named output. */
+  /** Copy the current contents of this buffer to the provided {@link DataOutput}. */
   public void writeTo(DataOutput out) throws IOException {
     flush();
     final long end = file.length;

@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.search;
 
 import org.apache.solr.common.params.SolrParams;
@@ -27,10 +26,6 @@ import org.apache.solr.request.SolrQueryRequest;
  */
 public class ExtendedDismaxQParserPlugin extends QParserPlugin {
   public static final String NAME = "edismax";
-
-  @Override
-  public void init(NamedList args) {
-  }
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {

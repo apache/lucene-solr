@@ -1,5 +1,3 @@
-package org.apache.lucene.geo3d;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.geo3d;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.geo3d;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -651,7 +650,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     iwc.setCodec(getCodec());
     Directory dir;
     if (lats.length > 100000) {
-      dir = noVirusChecker(newFSDirectory(createTempDir("TestBKDTree")));
+      dir = newFSDirectory(createTempDir("TestBKDTree"));
     } else {
       dir = getDirectory();
     }
@@ -789,14 +788,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     IOUtils.close(r, dir);
   }
 
-  private static Directory noVirusChecker(Directory dir) {
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
-  }
-
   private static Directory getDirectory() {     
-    return noVirusChecker(newDirectory());
+    return newDirectory();
   }
 }

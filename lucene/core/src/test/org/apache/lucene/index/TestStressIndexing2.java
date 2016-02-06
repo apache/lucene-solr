@@ -1,9 +1,10 @@
-package org.apache.lucene.index;
-
 /*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -13,6 +14,7 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,7 +50,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   static int seed=0;
 
   public void testRandomIWReader() throws Throwable {
-    Directory dir = newDirectory();
+    Directory dir = newMaybeVirusCheckingDirectory();
     
     // TODO: verify equals using IW.getReader
     DocsAndWriter dw = indexRandomIWReader(5, 3, 100, dir);
@@ -61,8 +63,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
   }
   
   public void testRandom() throws Throwable {
-    Directory dir1 = newDirectory();
-    Directory dir2 = newDirectory();
+    Directory dir1 = newMaybeVirusCheckingDirectory();
+    Directory dir2 = newMaybeVirusCheckingDirectory();
     // mergeFactor=2; maxBufferedDocs=2; Map docs = indexRandom(1, 3, 2, dir1);
     boolean doReaderPooling = random().nextBoolean();
     Map<String,Document> docs = indexRandom(5, 3, 100, dir1, doReaderPooling);

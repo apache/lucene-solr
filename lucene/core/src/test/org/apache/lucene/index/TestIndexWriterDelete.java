@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -498,10 +498,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     // First build up a starting index:
     MockDirectoryWrapper startDir = newMockDirectory();
-    // TODO: find the resource leak that only occurs sometimes here.
-    startDir.setNoDeleteOpenFile(false);
-    // test uses IW unref'ed helper which is unaware of retries
-    startDir.setEnableVirusScanner(false);
+
     IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     for (int i = 0; i < 157; i++) {
       Document d = new Document();
@@ -527,8 +524,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(startDir));
       dir.setPreventDoubleWrite(false);
       dir.setAllowRandomFileNotFoundException(false);
-      // test uses IW unref'ed helper which is unaware of retries
-      dir.setEnableVirusScanner(false);
       IndexWriter modifier = new IndexWriter(dir,
                                              newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false))
                                              .setMaxBufferedDocs(1000)
@@ -913,8 +908,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     String[] text = { "Amsterdam", "Venice" };
 
     MockDirectoryWrapper dir = newMockDirectory();
-    // test uses IW unref'ed helper which is unaware of retries
-    dir.setEnableVirusScanner(false);
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)));
     modifier.commit();
     dir.failOn(failure.reset());

@@ -1,5 +1,3 @@
-package org.apache.lucene.replicator;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,7 @@ package org.apache.lucene.replicator;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.replicator;
 
 import java.io.InputStream;
 import java.util.List;
@@ -73,10 +72,6 @@ public class IndexRevisionTest extends ReplicatorTestCase {
   @Test
   public void testRevisionRelease() throws Exception {
     Directory dir = newDirectory();
-    // we look to see that certain files are deleted:
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-    }
     IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);

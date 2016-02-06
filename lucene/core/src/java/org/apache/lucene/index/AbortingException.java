@@ -1,5 +1,3 @@
-package org.apache.lucene.index;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,6 +14,8 @@ package org.apache.lucene.index;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.index;
+
 
 /** Thrown and caught internally in {@link IndexWriter} methods when an {@code IOException} would cause it to
  *  lose previously indexed documents.  When this happens, the {@link IndexWriter} is forcefully 
