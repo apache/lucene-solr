@@ -129,10 +129,6 @@ public class TestHunspellStemFilter extends BaseTokenStreamTestCase {
   }
 
   private static Directory getDirectory() {
-    Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
+    return newDirectory();
   }
 }

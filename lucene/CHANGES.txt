@@ -110,6 +110,11 @@ Changes in Runtime Behavior
   and codec components are no longer allowed to use this extension
   (Robert Muir, Mike McCandless)
 
+* LUCENE-6835: Directory.listAll now returns entries in sorted order,
+  to not leak platform-specific behavior, and "retrying file deletion"
+  is now the responsibility of Directory.deleteFile, not the caller.
+  (Robert Muir, Mike McCandless)
+
 Tests
 
 * LUCENE-7009: Add expectThrows utility to LuceneTestCase. This uses a lambda

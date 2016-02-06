@@ -104,7 +104,7 @@ public class TestStressNRT extends LuceneTestCase {
 
     List<Thread> threads = new ArrayList<>();
 
-    Directory dir = newDirectory();
+    Directory dir = newMaybeVirusCheckingDirectory();
 
     final RandomIndexWriter writer = new RandomIndexWriter(random(), dir, newIndexWriterConfig(new MockAnalyzer(random())));
     writer.setDoRandomForceMergeAssert(false);

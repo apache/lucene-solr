@@ -40,10 +40,10 @@ import org.apache.lucene.util.Constants;
 /** Basic tests for WindowsFS */
 public class TestWindowsFS extends MockFileSystemTestCase {
   
-  // currently we don't emulate windows well enough to work on windows!
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    // irony: currently we don't emulate windows well enough to work on windows!
     assumeFalse("windows is not supported", Constants.WINDOWS);
   }
 

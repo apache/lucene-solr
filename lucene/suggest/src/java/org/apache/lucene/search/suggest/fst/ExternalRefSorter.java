@@ -18,6 +18,7 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
 
 import org.apache.lucene.store.IOContext;

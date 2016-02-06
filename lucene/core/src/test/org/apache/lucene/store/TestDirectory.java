@@ -23,8 +23,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 public class TestDirectory extends LuceneTestCase {
 
@@ -110,23 +110,17 @@ public class TestDirectory extends LuceneTestCase {
       dir.close();
       assertFalse(dir.isOpen);
     }
-    
-    IOUtils.rm(path);
   }
 
   // LUCENE-1468
   @SuppressWarnings("resource")
   public void testCopySubdir() throws Throwable {
     Path path = createTempDir("testsubdir");
-    try {
-      Files.createDirectory(path.resolve("subdir"));
-      FSDirectory fsDir = new SimpleFSDirectory(path);
-      RAMDirectory ramDir = new RAMDirectory(fsDir, newIOContext(random()));
-      List<String> files = Arrays.asList(ramDir.listAll());
-      assertFalse(files.contains("subdir"));
-    } finally {
-      IOUtils.rm(path);
-    }
+    Files.createDirectory(path.resolve("subdir"));
+    FSDirectory fsDir = new SimpleFSDirectory(path);
+    RAMDirectory ramDir = new RAMDirectory(fsDir, newIOContext(random()));
+    List<String> files = Arrays.asList(ramDir.listAll());
+    assertFalse(files.contains("subdir"));
   }
 
   // LUCENE-1468
@@ -145,7 +139,6 @@ public class TestDirectory extends LuceneTestCase {
       }
     } finally {
       fsDir.close();
-      IOUtils.rm(path);
     }
   }
 }

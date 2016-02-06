@@ -323,7 +323,7 @@ public class BlockDirectory extends FilterDirectory {
     }
     return dest;
   }
-  
+
   public void deleteFile(String name) throws IOException {
     cache.delete(getFileCacheName(name));
     super.deleteFile(name);

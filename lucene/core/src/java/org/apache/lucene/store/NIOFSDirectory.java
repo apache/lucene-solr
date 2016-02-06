@@ -73,10 +73,10 @@ public class NIOFSDirectory extends FSDirectory {
     this(path, FSLockFactory.getDefault());
   }
 
-  /** Creates an IndexInput for the file with the given name. */
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
+    ensureCanRead(name);
     Path path = getDirectory().resolve(name);
     FileChannel fc = FileChannel.open(path, StandardOpenOption.READ);
     return new NIOFSIndexInput("NIOFSIndexInput(path=\"" + path + "\")", fc, context);

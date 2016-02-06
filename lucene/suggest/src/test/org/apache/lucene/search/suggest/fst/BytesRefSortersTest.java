@@ -30,9 +30,6 @@ public class BytesRefSortersTest extends LuceneTestCase {
   @Test
   public void testExternalRefSorter() throws Exception {
     Directory tempDir = newDirectory();
-    if (tempDir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) tempDir).setEnableVirusScanner(false);
-    }
     ExternalRefSorter s = new ExternalRefSorter(new OfflineSorter(tempDir, "temp"));
     check(s);
     IOUtils.close(s, tempDir);

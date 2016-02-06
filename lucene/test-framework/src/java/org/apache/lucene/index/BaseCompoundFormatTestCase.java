@@ -182,11 +182,6 @@ public abstract class BaseCompoundFormatTestCase extends BaseIndexFileFormatTest
   // Just tests that we can open all files returned by listAll
   public void testListAll() throws Exception {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // test lists files manually and tries to verify every .cfs it finds,
-      // but a virus scanner could leave some trash.
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-    }
     // riw should sometimes create docvalues fields, etc
     RandomIndexWriter riw = new RandomIndexWriter(random(), dir);
     Document doc = new Document();

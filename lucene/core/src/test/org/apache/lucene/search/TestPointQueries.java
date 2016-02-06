@@ -175,9 +175,9 @@ public class TestPointQueries extends LuceneTestCase {
     iwc.setCodec(getCodec());
     Directory dir;
     if (values.length > 100000) {
-      dir = noVirusChecker(newFSDirectory(createTempDir("TestRangeTree")));
+      dir = newMaybeVirusCheckingFSDirectory(createTempDir("TestRangeTree"));
     } else {
-      dir = getDirectory();
+      dir = newMaybeVirusCheckingDirectory();
     }
 
     int missingPct = random().nextInt(100);
@@ -439,9 +439,9 @@ public class TestPointQueries extends LuceneTestCase {
 
     Directory dir;
     if (docValues.length > 100000) {
-      dir = noVirusChecker(newFSDirectory(createTempDir("TestPointRangeQuery")));
+      dir = newFSDirectory(createTempDir("TestPointQueries"));
     } else {
-      dir = getDirectory();
+      dir = newDirectory();
     }
 
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -721,7 +721,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
   
   public void testMinMaxLong() throws Exception {
-    Directory dir = getDirectory();
+    Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -760,7 +760,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testBasicSortedSet() throws Exception {
-    Directory dir = getDirectory();
+    Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -825,7 +825,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testLongMinMaxNumeric() throws Exception {
-    Directory dir = getDirectory();
+    Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -851,7 +851,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testLongMinMaxSortedSet() throws Exception {
-    Directory dir = getDirectory();
+    Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -878,7 +878,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testSortedSetNoOrdsMatch() throws Exception {
-    Directory dir = getDirectory();
+    Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -900,7 +900,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testNumericNoValuesMatch() throws Exception {
-    Directory dir = getDirectory();
+    Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -920,7 +920,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testNoDocs() throws Exception {
-    Directory dir = getDirectory();
+    Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -935,7 +935,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testWrongNumDims() throws Exception {
-    Directory dir = getDirectory();
+    Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -958,7 +958,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testWrongNumBytes() throws Exception {
-    Directory dir = getDirectory();
+    Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -982,7 +982,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testAllPointDocsWereDeletedAndThenMergedAgain() throws Exception {
-    Directory dir = getDirectory();
+    Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(getCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
@@ -1018,17 +1018,6 @@ public class TestPointQueries extends LuceneTestCase {
     IOUtils.close(w, dir);
   }
 
-  private static Directory noVirusChecker(Directory dir) {
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
-  }
-
-  private static Directory getDirectory() {     
-    return noVirusChecker(newDirectory());
-  }
-
   private static Codec getCodec() {
     if (Codec.getDefault().getName().equals("Lucene60")) {
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 16, 2048);
@@ -1059,7 +1048,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testExactPointQuery() throws Exception {
-    Directory dir = getDirectory();
+    Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(getCodec());
     IndexWriter w = new IndexWriter(dir, iwc);

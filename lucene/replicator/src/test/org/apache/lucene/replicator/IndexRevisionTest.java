@@ -72,10 +72,6 @@ public class IndexRevisionTest extends ReplicatorTestCase {
   @Test
   public void testRevisionRelease() throws Exception {
     Directory dir = newDirectory();
-    // we look to see that certain files are deleted:
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
-    }
     IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);

@@ -650,7 +650,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     iwc.setCodec(getCodec());
     Directory dir;
     if (lats.length > 100000) {
-      dir = noVirusChecker(newFSDirectory(createTempDir("TestBKDTree")));
+      dir = newFSDirectory(createTempDir("TestBKDTree"));
     } else {
       dir = getDirectory();
     }
@@ -788,14 +788,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     IOUtils.close(r, dir);
   }
 
-  private static Directory noVirusChecker(Directory dir) {
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
-  }
-
   private static Directory getDirectory() {     
-    return noVirusChecker(newDirectory());
+    return newDirectory();
   }
 }

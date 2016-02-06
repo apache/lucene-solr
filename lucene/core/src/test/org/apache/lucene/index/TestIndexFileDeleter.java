@@ -18,6 +18,9 @@ package org.apache.lucene.index;
 
 
 import java.io.*;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -26,6 +29,8 @@ import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.mockfile.FilterPath;
+import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -34,6 +39,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -46,8 +52,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     Directory dir = newDirectory();
     if (dir instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
-      // ensure we actually delete files
-      ((MockDirectoryWrapper)dir).setEnableVirusScanner(false);
     }
 
     MergePolicy mergePolicy = newLogMergePolicy(true, 10);
@@ -220,9 +224,9 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   }
   
   public void testVirusScannerDoesntCorruptIndex() throws IOException {
-    MockDirectoryWrapper dir = newMockDirectory();
-    dir.setPreventDoubleWrite(false); // we arent trying to test this
-    dir.setEnableVirusScanner(false); // we have our own to make test reproduce always
+    Path path = createTempDir();
+    Directory dir = newFSDirectory(addVirusChecker(path));
+    TestUtil.disableVirusChecker(dir);
     
     // add empty commit
     new IndexWriter(dir, new IndexWriterConfig(null)).close();
@@ -230,25 +234,12 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     dir.createOutput("_0.si", IOContext.DEFAULT).close();
 
     // start virus scanner
-    final AtomicBoolean stopScanning = new AtomicBoolean();
-    dir.failOn(new MockDirectoryWrapper.Failure() {
-      @Override
-      public void eval(MockDirectoryWrapper dir) throws IOException {
-        if (stopScanning.get()) {
-          return;
-        }
-        for (StackTraceElement f : new Exception().getStackTrace()) {
-          if ("deleteFile".equals(f.getMethodName())) {
-            throw new IOException("temporarily cannot delete file");
-          }
-        }
-      }
-    });
+    TestUtil.enableVirusChecker(dir);
     
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(null));
     iw.addDocument(new Document());
     // stop virus scanner
-    stopScanning.set(true);
+    TestUtil.disableVirusChecker(dir);
     iw.commit();
     iw.close();
     dir.close();

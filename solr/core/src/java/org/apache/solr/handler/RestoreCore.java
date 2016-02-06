@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;

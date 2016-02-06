@@ -141,7 +141,11 @@ public class FileSwitchDirectory extends Directory {
 
   @Override
   public void deleteFile(String name) throws IOException {
-    getDirectory(name).deleteFile(name);
+    if (getDirectory(name) == primaryDir) {
+      primaryDir.deleteFile(name);
+    } else {
+      secondaryDir.deleteFile(name);
+    }
   }
 
   @Override

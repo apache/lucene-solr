@@ -65,6 +65,7 @@ public class RAFDirectory extends FSDirectory {
   @Override
   public IndexInput openInput(String name, IOContext context) throws IOException {
     ensureOpen();
+    ensureCanRead(name);
     final File path = directory.resolve(name).toFile();
     RandomAccessFile raf = new RandomAccessFile(path, "r");
     return new RAFIndexInput("SimpleFSIndexInput(path=\"" + path.getPath() + "\")", raf, context);

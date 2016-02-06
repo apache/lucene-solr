@@ -19,7 +19,6 @@ package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
 
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;

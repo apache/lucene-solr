@@ -64,7 +64,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
           System.out.println("TEST: cycle: diskFree=" + diskFree);
         }
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
-        dir.setEnableVirusScanner(false); // currently uses the IW unreferenced files method, unaware of retries
         dir.setMaxSizeInBytes(diskFree);
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
         MergeScheduler ms = writer.getConfig().getMergeScheduler();

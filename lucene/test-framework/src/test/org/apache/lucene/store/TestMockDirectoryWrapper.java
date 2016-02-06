@@ -36,7 +36,6 @@ public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
     } else {
       dir = newMockFSDirectory(path);
     }
-    dir.setEnableVirusScanner(false); // test manipulates filesystem directly
     return dir;
   }
   

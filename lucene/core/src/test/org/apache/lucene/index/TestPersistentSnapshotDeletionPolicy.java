@@ -22,6 +22,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,7 +50,6 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   public void testExistingSnapshots() throws Exception {
     int numSnapshots = 3;
     MockDirectoryWrapper dir = newMockDirectory();
-    dir.setEnableVirusScanner(false); // test relies on files actually being deleted
     IndexWriter writer = new IndexWriter(dir, getConfig(random(), getDeletionPolicy(dir)));
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     assertNull(psdp.getLastSaveFile());

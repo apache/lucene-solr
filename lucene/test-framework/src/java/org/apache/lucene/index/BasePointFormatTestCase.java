@@ -215,9 +215,6 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
         try {
           dir.setRandomIOExceptionRate(0.05);
           dir.setRandomIOExceptionRateOnOpen(0.05);
-          if (dir instanceof MockDirectoryWrapper) {
-            dir.setEnableVirusScanner(false);
-          }
           verify(dir, docValues, null, numDims, numBytesPerDim, true);
         } catch (IllegalStateException ise) {
           if (ise.getMessage().contains("this writer hit an unrecoverable error")) {
@@ -900,13 +897,6 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
     return x;
   }
 
-  private static Directory noVirusChecker(Directory dir) {
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) dir).setEnableVirusScanner(false);
-    }
-    return dir;
-  }
-
   private Directory getDirectory(int numPoints) throws IOException {
     Directory dir;
     if (numPoints > 100000) {
@@ -914,7 +904,6 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
     } else {
       dir = newDirectory();
     }
-    noVirusChecker(dir);
     //dir = FSDirectory.open(createTempDir());
     return dir;
   }
