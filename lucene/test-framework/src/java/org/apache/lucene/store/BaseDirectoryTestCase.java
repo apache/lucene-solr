@@ -1295,4 +1295,30 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       assertTrue(Arrays.asList(fsDir.listAll()).contains(fileName));
     }
   }
+
+  public void testListAllIsSorted() throws IOException {
+    try (Directory dir = getDirectory(createTempDir())) {
+      int count = atLeast(20);
+      Set<String> names = new HashSet<>();
+      while(names.size() < count) {
+        String name = TestUtil.randomSimpleString(random());
+        if (name.length() == 0) {
+          continue;
+        }
+        if (random().nextInt(5) == 1) {
+          IndexOutput out = dir.createTempOutput(name, "foo", IOContext.DEFAULT);
+          names.add(out.getName());
+          out.close();
+        } else if (names.contains(name) == false) {
+          IndexOutput out = dir.createOutput(name, IOContext.DEFAULT);
+          names.add(out.getName());
+          out.close();
+        }
+      }
+      String[] actual = dir.listAll();
+      String[] expected = actual.clone();
+      Arrays.sort(expected);
+      assertEquals(expected, actual);
+    }
+  }
 }

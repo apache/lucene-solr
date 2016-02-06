@@ -106,7 +106,9 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
                                         "cache=" + Arrays.toString(cache.listAll()) + ",delegate=" + Arrays.toString(in.listAll()));
       }
     }
-    return files.toArray(new String[files.size()]);
+    String[] result = files.toArray(new String[files.size()]);
+    Arrays.sort(result);
+    return result;
   }
 
   @Override
