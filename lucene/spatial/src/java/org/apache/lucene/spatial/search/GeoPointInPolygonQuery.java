@@ -18,10 +18,11 @@ package org.apache.lucene.spatial.search;
 
 import java.util.Arrays;
 
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoEncodingUtils;
 import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.GeoRelationUtils;
 import org.apache.lucene.spatial.util.GeoUtils;
 
 /** Implements a simple point in polygon query on a GeoPoint field. This is based on
@@ -43,11 +44,11 @@ import org.apache.lucene.spatial.util.GeoUtils;
  *
  * @lucene.experimental
  */
-public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
+public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
   // polygon position arrays - this avoids the use of any objects or
   // or geo library dependencies
-  private final double[] x;
-  private final double[] y;
+  protected final double[] x;
+  protected final double[] y;
 
   public GeoPointInPolygonQuery(final String field, final double[] polyLons, final double[] polyLats) {
     this(field, TermEncoding.PREFIX, GeoUtils.polyToBBox(polyLons, polyLats), polyLons, polyLats);
@@ -83,53 +84,8 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQueryImpl {
 
   /** throw exception if trying to change rewrite method */
   @Override
-  public void setRewriteMethod(RewriteMethod method) {
-    throw new UnsupportedOperationException("cannot change rewrite method");
-  }
-
-  @Override
-  protected CellComparator newCellComparator() {
-    return new GeoPolygonCellComparator(this);
-  }
-
-  /**
-   * Custom {@code org.apache.lucene.spatial.search.GeoPointMultiTermQuery.CellComparator} that computes morton hash
-   * ranges based on the defined edges of the provided polygon.
-   */
-  private final class GeoPolygonCellComparator extends CellComparator {
-    GeoPolygonCellComparator(GeoPointMultiTermQuery query) {
-      super(query);
-    }
-
-    @Override
-    protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectCrossesPolyApprox(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
-          GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
-    }
-
-    @Override
-    protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectWithinPolyApprox(minLon, minLat, maxLon, maxLat, x, y, GeoPointInPolygonQuery.this.minLon,
-          GeoPointInPolygonQuery.this.minLat, GeoPointInPolygonQuery.this.maxLon, GeoPointInPolygonQuery.this.maxLat);
-    }
-
-    @Override
-    protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return cellContains(minLon, minLat, maxLon, maxLat) || cellWithin(minLon, minLat, maxLon, maxLat)
-          || cellCrosses(minLon, minLat, maxLon, maxLat);
-    }
-
-    /**
-     * The two-phase query approach. The parent
-     * {@link org.apache.lucene.spatial.search.GeoPointTermsEnum#accept} method is called to match
-     * encoded terms that fall within the bounding box of the polygon. Those documents that pass the initial
-     * bounding box filter are then compared to the provided polygon using the
-     * {@link org.apache.lucene.spatial.util.GeoRelationUtils#pointInPolygon} method.
-     */
-    @Override
-    protected boolean postFilter(final double lon, final double lat) {
-      return GeoRelationUtils.pointInPolygon(x, y, lat, lon);
-    }
+  public Query rewrite(IndexReader reader) {
+    return new GeoPointInPolygonQueryImpl(field, termEncoding, this, this.minLon, this.minLat, this.maxLon, this.maxLat);
   }
 
   @Override
