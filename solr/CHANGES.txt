@@ -353,6 +353,8 @@ New Features
   system property. NOTE: this is an expert option and can result in more often needing to do full index replication
   for recovery, the sweet spot for using this is very high volume, leader-only indexing. (Tim Potter, Erick Erickson)
 
+* SOLR-8642: SOLR allows creation of collections with invalid names
+  (Jason Gerlowski via Erick Erickson)
 
 Bug Fixes
 ----------------------
