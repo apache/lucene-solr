@@ -34,7 +34,7 @@ import org.apache.lucene.spatial.util.GeoUtils;
  * to a secondary filter that verifies whether the decoded lat/lon point falls within
  * (or on the boundary) of the bounding box query. Finally, the remaining candidate
  * term is passed to the final point in polygon check. All value comparisons are subject
- * to the same precision tolerance defined in {@value GeoEncodingUtils#TOLERANCE}
+ * to the same precision tolerance defined in {@value org.apache.lucene.spatial.util.GeoEncodingUtils#TOLERANCE}
  *
  * <p>NOTES:
  *    1.  The polygon coordinates need to be in either clockwise or counter-clockwise order.
