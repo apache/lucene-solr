@@ -16,12 +16,22 @@
  */
 package org.apache.solr.client.solrj.io.sql;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.RowIdLifetime;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Set;
+
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.util.SimpleOrderedMap;
 
 class DatabaseMetaDataImpl implements DatabaseMetaData {
   private final ConnectionImpl connection;
@@ -30,6 +40,21 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
   public DatabaseMetaDataImpl(ConnectionImpl connection, Statement connectionStatement) {
     this.connection = connection;
     this.connectionStatement = connectionStatement;
+  }
+
+  private int getVersionPart(String version, int part) {
+    // TODO Is there a better way to do this? Reuse code from elsewhere?
+    // Gets the parts of the Solr version. If fail then just return 0.
+    if (version != null) {
+      try {
+        String[] versionParts = version.split("\\.", 3);
+        return Integer.parseInt(versionParts[part]);
+      } catch (Throwable e) {
+        return 0;
+      }
+    } else {
+      return 0;
+    }
   }
 
   @Override
@@ -79,32 +104,78 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
 
   @Override
   public String getDatabaseProductName() throws SQLException {
-    return null;
+    return "Apache Solr";
   }
 
   @Override
   public String getDatabaseProductVersion() throws SQLException {
-    return null;
+    // Returns the version for the first live node in the Solr cluster.
+    SolrQuery sysQuery = new SolrQuery();
+    sysQuery.setRequestHandler("/admin/info/system");
+
+    CloudSolrClient cloudSolrClient = this.connection.getClient();
+    Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
+    SolrClient solrClient = null;
+    for (String node : liveNodes) {
+      try {
+        String nodeURL = cloudSolrClient.getZkStateReader().getBaseUrlForNodeName(node);
+        solrClient = new HttpSolrClient(nodeURL);
+
+        QueryResponse rsp = solrClient.query(sysQuery);
+        return String.valueOf(((SimpleOrderedMap) rsp.getResponse().get("lucene")).get("solr-spec-version"));
+      } catch (SolrServerException | IOException ignore) {
+        return "";
+      } finally {
+        if (solrClient != null) {
+          try {
+            solrClient.close();
+          } catch (IOException ignore) {
+            // Don't worry about failing to close the Solr client
+          }
+        }
+      }
+    }
+
+    // If no version found just return empty string
+    return "";
+  }
+
+  @Override
+  public int getDatabaseMajorVersion() throws SQLException {
+    return getVersionPart(this.getDatabaseProductVersion(), 0);
+  }
+
+  @Override
+  public int getDatabaseMinorVersion() throws SQLException {
+    return getVersionPart(this.getDatabaseProductVersion(), 1);
   }
 
   @Override
   public String getDriverName() throws SQLException {
-    return null;
+    return this.getClass().getPackage().getSpecificationTitle();
   }
 
   @Override
   public String getDriverVersion() throws SQLException {
-    return null;
+    return this.getClass().getPackage().getSpecificationVersion();
   }
 
   @Override
   public int getDriverMajorVersion() {
-    return 0;
+    try {
+      return getVersionPart(this.getDriverVersion(), 0);
+    } catch (SQLException e) {
+      return 0;
+    }
   }
 
   @Override
   public int getDriverMinorVersion() {
-    return 0;
+    try {
+      return getVersionPart(this.getDriverVersion(), 1);
+    } catch (SQLException e) {
+      return 0;
+    }
   }
 
   @Override
@@ -823,18 +894,8 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
   }
 
   @Override
-  public int getDatabaseMajorVersion() throws SQLException {
-    return 0;
-  }
-
-  @Override
-  public int getDatabaseMinorVersion() throws SQLException {
-    return 0;
-  }
-
-  @Override
   public int getJDBCMajorVersion() throws SQLException {
-    return 0;
+    return 4;
   }
 
   @Override

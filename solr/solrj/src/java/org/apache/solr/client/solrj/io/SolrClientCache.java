@@ -37,10 +37,10 @@ public class SolrClientCache implements Serializable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private Map<String, SolrClient> solrClients = new HashMap();
+  private final Map<String, SolrClient> solrClients = new HashMap<>();
 
   public synchronized CloudSolrClient getCloudSolrClient(String zkHost) {
-    CloudSolrClient client = null;
+    CloudSolrClient client;
     if (solrClients.containsKey(zkHost)) {
       client = (CloudSolrClient) solrClients.get(zkHost);
     } else {
@@ -53,7 +53,7 @@ public class SolrClientCache implements Serializable {
   }
 
   public synchronized HttpSolrClient getHttpSolrClient(String host) {
-    HttpSolrClient client = null;
+    HttpSolrClient client;
     if (solrClients.containsKey(host)) {
       client = (HttpSolrClient) solrClients.get(host);
     } else {
@@ -64,12 +64,11 @@ public class SolrClientCache implements Serializable {
   }
 
   public void close() {
-    Iterator<SolrClient> it = solrClients.values().iterator();
-    while(it.hasNext()) {
+    for(Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
       try {
-        it.next().close();
+        entry.getValue().close();
       } catch (IOException e) {
-        log.error(e.getMessage(), e);
+        log.error("Error closing SolrClient for " + entry.getKey(), e);
       }
     }
   }

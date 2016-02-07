@@ -381,7 +381,13 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
   private void testJDBCMethods(String collection, String connectionString, Properties properties, String sql) throws Exception {
     try (Connection con = DriverManager.getConnection(connectionString, properties)) {
       assertTrue(con.isValid(DEFAULT_CONNECTION_TIMEOUT));
+
       assertEquals(zkServer.getZkAddress(), con.getCatalog());
+      con.setCatalog(zkServer.getZkAddress());
+      assertEquals(zkServer.getZkAddress(), con.getCatalog());
+
+      assertEquals(collection, con.getSchema());
+      con.setSchema(collection);
       assertEquals(collection, con.getSchema());
 
       DatabaseMetaData databaseMetaData = con.getMetaData();
@@ -389,6 +395,21 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
       assertEquals(con, databaseMetaData.getConnection());
       assertEquals(connectionString, databaseMetaData.getURL());
+
+      assertEquals(4, databaseMetaData.getJDBCMajorVersion());
+      assertEquals(0, databaseMetaData.getJDBCMinorVersion());
+
+      assertEquals("Apache Solr", databaseMetaData.getDatabaseProductName());
+
+      // The following tests require package information that is not available when running via Maven
+//      assertEquals(this.getClass().getPackage().getSpecificationVersion(), databaseMetaData.getDatabaseProductVersion());
+//      assertEquals(0, databaseMetaData.getDatabaseMajorVersion());
+//      assertEquals(0, databaseMetaData.getDatabaseMinorVersion());
+
+//      assertEquals(this.getClass().getPackage().getSpecificationTitle(), databaseMetaData.getDriverName());
+//      assertEquals(this.getClass().getPackage().getSpecificationVersion(), databaseMetaData.getDriverVersion());
+//      assertEquals(0, databaseMetaData.getDriverMajorVersion());
+//      assertEquals(0, databaseMetaData.getDriverMinorVersion());
 
       try(ResultSet rs = databaseMetaData.getCatalogs()) {
         assertTrue(rs.next());
