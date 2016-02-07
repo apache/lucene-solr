@@ -92,8 +92,6 @@ abstract class ReplicaNode extends Node {
       // Obtain a write lock on this index since we "act like" an IndexWriter, to prevent any other IndexWriter or ReplicaNode from using it:
       writeFileLock = dir.obtainLock(IndexWriter.WRITE_LOCK_NAME);
       
-      // nocommit must check for no pending deletes here, like IW does
-
       state = "init";
       deleter = new ReplicaFileDeleter(this, dir);
     } catch (Throwable t) {

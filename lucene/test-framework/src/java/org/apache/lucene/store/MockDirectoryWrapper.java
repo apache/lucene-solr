@@ -230,10 +230,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw (AssertionError) fillOpenTrace(new AssertionError("MockDirectoryWrapper: dest file \"" + dest + "\" is still open: cannot rename"), dest, true);
     }
 
-    if (createdFiles.contains(dest)) {
-      throw new IOException("MockDirectoryWrapper: dest file \"" + dest + "\" already exists: cannot rename");
-    }
-
     boolean success = false;
     try {
       in.renameFile(source, dest);
@@ -275,7 +271,14 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     for(String fileName : listAll()) {
       if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
         System.out.println("MDW: read " + fileName + " to gather files it references");
-        knownFiles.addAll(SegmentInfos.readCommit(this, fileName).files(true));
+        SegmentInfos infos;
+        try {
+          infos = SegmentInfos.readCommit(this, fileName);
+        } catch (IOException ioe) {
+          System.out.println("MDW: exception reading segment infos " + fileName + "; files: " + Arrays.toString(listAll()));
+          throw ioe;
+        }
+        knownFiles.addAll(infos.files(true));
       }
     }
 
@@ -438,7 +441,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   /** Simulates a crash of OS or machine by overwriting
    *  unsynced files. */
   public synchronized void crash() throws IOException {
-    crashed = true;
     openFiles = new HashMap<>();
     openFilesForWrite = new HashSet<>();
     openFilesDeleted = new HashSet<>();
@@ -451,6 +453,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       } catch (Exception ignored) {}
     }
     corruptFiles(unSyncedFiles);
+    crashed = true;
     unSyncedFiles = new HashSet<>();
   }
 
@@ -569,6 +572,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
     unSyncedFiles.remove(name);
     in.deleteFile(name);
+    createdFiles.remove(name);
   }
 
   // sets the cause of the incoming ioe to be the stack
@@ -829,7 +833,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         }
         throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks, cause);
       }
-      
+
       if (getCheckIndexOnClose()) {
         randomIOExceptionRate = 0.0;
         randomIOExceptionRateOnOpen = 0.0;
@@ -846,6 +850,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true);
           
           // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
+          // nocommit pull this outside of "getCheckIndexOnClose"
           if (assertNoUnreferencedFilesOnClose) {
 
             // now look for unreferenced files: discount ones that we tried to delete but could not

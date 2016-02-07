@@ -84,6 +84,7 @@ class Jobs extends Thread implements Closeable {
           topJob.onceDone.run(topJob);
         } catch (Throwable t2) {
           node.message("ignore exception calling OnceDone: " + t2);
+          t2.printStackTrace(System.out);
         }
         continue;
       }

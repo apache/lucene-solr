@@ -122,6 +122,7 @@ class ReplicaFileDeleter {
       node.message("file " + fileName + ": delete failed: " + missing);
       throw new IllegalStateException("file " + fileName + ": we attempted delete but the file does not exist?", missing);
     } catch (IOException ioe) {
+      // nocommit remove this retry logic!  it's Directory's job now...
       if (Node.VERBOSE_FILES) {
         node.message("file " + fileName + ": delete failed: " + ioe + "; will retry later");
       }

@@ -161,7 +161,8 @@ public class TestStressNRTReplication extends LuceneTestCase {
   static final boolean DO_BIT_FLIPS_DURING_COPY = true;
 
   /** Set to a non-null value to force exactly that many nodes; else, it's random. */
-  static final Integer NUM_NODES = null;
+  // nocommit
+  static final Integer NUM_NODES = 2;
 
   final AtomicBoolean failed = new AtomicBoolean();
 
@@ -980,10 +981,10 @@ public class TestStressNRTReplication extends LuceneTestCase {
             continue;
           }
 
-          // nocommit not anymore?
-          // This can be null if we got the new primary after crash and that primary is still catching up (replaying xlog):
+          // This can be null if primary is flushing, has already refreshed its searcher, but is e.g. still notifying replicas and hasn't
+          // yet returned the version to us, in which case this searcher thread can see the version before the main thread has added it to
+          // versionToMarker:
           Integer expectedAtLeastHitCount = versionToMarker.get(version);
-          assertNotNull("version=" + version, expectedAtLeastHitCount);
 
           if (expectedAtLeastHitCount != null && expectedAtLeastHitCount > 0 && random().nextInt(10) == 7) {
             try {

@@ -699,7 +699,32 @@ final class IndexFileDeleter implements Closeable {
       infoStream.message("IFD", "delete \"" + names + "\"");
     }
 
+    // We make two passes, first deleting any segments_N files, second deleting all the rest.  We do this so that if we throw exc or JVM
+    // crashes during deletions, we don't leave the index in an "apparently corrupt" state:
     for(String name : names) {
+      if (name.startsWith(IndexFileNames.SEGMENTS) == false) {
+        continue;
+      }
+      try {
+        directory.deleteFile(name);
+      } catch (NoSuchFileException | FileNotFoundException e) {
+        // IndexWriter should only ask us to delete files it knows it wrote, so if we hit this, something is wrong!
+
+        if (Constants.WINDOWS) {
+          // TODO: can we remove this OS-specific hacky logic?  If windows deleteFile is buggy, we should instead contain this workaround in
+          // a WindowsFSDirectory ...
+          // LUCENE-6684: we suppress this assert for Windows, since a file could be in a confusing "pending delete" state, and falsely
+          // return NSFE/FNFE
+        } else {
+          throw e;
+        }
+      }
+    }
+
+    for(String name : names) {
+      if (name.startsWith(IndexFileNames.SEGMENTS) == true) {
+        continue;
+      }
       try {
         directory.deleteFile(name);
       } catch (NoSuchFileException | FileNotFoundException e) {
