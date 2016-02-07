@@ -78,6 +78,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.store.NoLockFactory;
@@ -1268,8 +1269,14 @@ public class TestIndexWriter extends LuceneTestCase {
       FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
       Path indexPath = new FilterPath(path, fs);
 
-      // NOTE: cannot use MMapDir, because WindowsFS doesn't see/think it keeps file handles open?
-      FSDirectory dir = new NIOFSDirectory(indexPath);
+      // NOTE: on Unix, we cannot use MMapDir, because WindowsFS doesn't see/think it keeps file handles open.  Yet, on Windows, we MUST use
+      // MMapDir because the windows OS will in fact prevent file deletion for us, and fails otherwise:
+      FSDirectory dir;
+      if (Constants.WINDOWS) {
+        dir = new MMapDirectory(indexPath);
+      } else {
+        dir = new NIOFSDirectory(indexPath);
+      }
 
       MergePolicy mergePolicy = newLogMergePolicy(true);
       

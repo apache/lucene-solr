@@ -45,17 +45,17 @@ class ConnectionImpl implements Connection {
   private final String url;
   private final SolrClientCache solrClientCache = new SolrClientCache();
   private final CloudSolrClient client;
-  private final String collection;
   private final Properties properties;
   private final DatabaseMetaData databaseMetaData;
   private final Statement connectionStatement;
+  private String collection;
   private boolean closed;
   private SQLWarning currentWarning;
 
   ConnectionImpl(String url, String zkHost, String collection, Properties properties) throws SQLException {
     this.url = url;
-    this.client = solrClientCache.getCloudSolrClient(zkHost);
-    this.collection = collection;
+    this.client = this.solrClientCache.getCloudSolrClient(zkHost);
+    this.setSchema(collection);
     this.properties = properties;
     this.connectionStatement = createStatement();
     this.databaseMetaData = new DatabaseMetaDataImpl(this, this.connectionStatement);
@@ -158,7 +158,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public void setCatalog(String catalog) throws SQLException {
-    throw new UnsupportedOperationException();
+
   }
 
   @Override
@@ -301,7 +301,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public boolean isValid(int timeout) throws SQLException {
-    // check that the connection isn't close and able to connect within the timeout
+    // check that the connection isn't closed and able to connect within the timeout
     try {
       if(!isClosed()) {
         this.client.connect(timeout, TimeUnit.SECONDS);
@@ -345,7 +345,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public void setSchema(String schema) throws SQLException {
-    throw new UnsupportedOperationException();
+    this.collection = schema;
   }
 
   @Override

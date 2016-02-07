@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Random;
@@ -45,6 +46,7 @@ class StatementImpl implements Statement {
   private String currentSQL;
   private ResultSetImpl currentResultSet;
   private SQLWarning currentWarning;
+  private int maxRows;
 
   StatementImpl(ConnectionImpl connection) {
     this.connection = connection;
@@ -56,6 +58,10 @@ class StatementImpl implements Statement {
       if(this.currentResultSet != null) {
         this.currentResultSet.close();
         this.currentResultSet = null;
+      }
+
+      if(maxRows > 0 && !containsLimit(sql)) {
+        sql = sql + " limit "+Integer.toString(maxRows);
       }
 
       closed = false;  // If closed reopen so Statement can be reused.
@@ -132,12 +138,12 @@ class StatementImpl implements Statement {
 
   @Override
   public int getMaxRows() throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.maxRows;
   }
 
   @Override
   public void setMaxRows(int max) throws SQLException {
-    throw new UnsupportedOperationException();
+    this.maxRows = max;
   }
 
   @Override
@@ -350,5 +356,11 @@ class StatementImpl implements Statement {
   @Override
   public boolean isWrapperFor(Class<?> iface) throws SQLException {
     throw new UnsupportedOperationException();
+  }
+
+  private boolean containsLimit(String sql) {
+    String[] tokens = sql.split("\\s+");
+    String secondToLastToken = tokens[tokens.length-2];
+    return ("limit").equals(secondToLastToken.toLowerCase(Locale.getDefault()));
   }
 }

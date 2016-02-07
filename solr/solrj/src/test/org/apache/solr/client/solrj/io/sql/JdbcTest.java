@@ -166,7 +166,8 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     stmt.close();
 
     //Test statement reuse
-    rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc limit 2");
+    stmt.setMaxRows(2);
+    rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc");
     assert(rs.next());
     assert(rs.getLong("a_i") == 0);
     assert(rs.getLong(2) == 0);
@@ -176,8 +177,8 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     assert(!rs.next());
     stmt.close();
 
-    //Test simple loop
-    rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc limit 100");
+    //Test simple loop. Since limit is set it will override the statement maxRows.
+    rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc    LIMIT   100");
     int count = 0;
     while(rs.next()) {
       ++count;
@@ -381,7 +382,13 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
   private void testJDBCMethods(String collection, String connectionString, Properties properties, String sql) throws Exception {
     try (Connection con = DriverManager.getConnection(connectionString, properties)) {
       assertTrue(con.isValid(DEFAULT_CONNECTION_TIMEOUT));
+
       assertEquals(zkServer.getZkAddress(), con.getCatalog());
+      con.setCatalog(zkServer.getZkAddress());
+      assertEquals(zkServer.getZkAddress(), con.getCatalog());
+
+      assertEquals(collection, con.getSchema());
+      con.setSchema(collection);
       assertEquals(collection, con.getSchema());
 
       DatabaseMetaData databaseMetaData = con.getMetaData();
@@ -389,6 +396,21 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
       assertEquals(con, databaseMetaData.getConnection());
       assertEquals(connectionString, databaseMetaData.getURL());
+
+      assertEquals(4, databaseMetaData.getJDBCMajorVersion());
+      assertEquals(0, databaseMetaData.getJDBCMinorVersion());
+
+      assertEquals("Apache Solr", databaseMetaData.getDatabaseProductName());
+
+      // The following tests require package information that is not available when running via Maven
+//      assertEquals(this.getClass().getPackage().getSpecificationVersion(), databaseMetaData.getDatabaseProductVersion());
+//      assertEquals(0, databaseMetaData.getDatabaseMajorVersion());
+//      assertEquals(0, databaseMetaData.getDatabaseMinorVersion());
+
+//      assertEquals(this.getClass().getPackage().getSpecificationTitle(), databaseMetaData.getDriverName());
+//      assertEquals(this.getClass().getPackage().getSpecificationVersion(), databaseMetaData.getDriverVersion());
+//      assertEquals(0, databaseMetaData.getDriverMajorVersion());
+//      assertEquals(0, databaseMetaData.getDriverMinorVersion());
 
       try(ResultSet rs = databaseMetaData.getCatalogs()) {
         assertTrue(rs.next());
