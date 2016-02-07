@@ -281,6 +281,59 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getLong("field_i") == 7);
       assert(tuple.get("str_s").equals("a"));
 
+
+      params = new HashMap();
+      params.put(CommonParams.QT, "/sql");
+
+      //Test unlimited unsorted result. Should sort on _version_ desc
+      params.put("stmt", "select 'id', field_i, str_s from collection1 where 'text'='XXXX'");
+
+      solrStream = new SolrStream(jetty.url, params);
+      tuples = getTuples(solrStream);
+
+      assert(tuples.size() == 8);
+
+      tuple = tuples.get(0);
+      assert(tuple.getLong("id") == 8);
+      assert(tuple.getLong("field_i") == 60);
+      assert(tuple.get("str_s").equals("c"));
+
+      tuple = tuples.get(1);
+      assert(tuple.getLong("id") == 7);
+      assert(tuple.getLong("field_i") == 50);
+      assert(tuple.get("str_s").equals("c"));
+
+      tuple = tuples.get(2);
+      assert(tuple.getLong("id") == 6);
+      assert(tuple.getLong("field_i") == 40);
+      assert(tuple.get("str_s").equals("c"));
+
+      tuple = tuples.get(3);
+      assert(tuple.getLong("id") == 5);
+      assert(tuple.getLong("field_i") == 30);
+      assert(tuple.get("str_s").equals("c"));
+
+      tuple = tuples.get(4);
+      assert(tuple.getLong("id") == 4);
+      assert(tuple.getLong("field_i") == 11);
+      assert(tuple.get("str_s").equals("b"));
+
+      tuple = tuples.get(5);
+      assert(tuple.getLong("id") == 3);
+      assert(tuple.getLong("field_i") == 20);
+      assert(tuple.get("str_s").equals("a"));
+
+      tuple = tuples.get(6);
+      assert(tuple.getLong("id") == 2);
+      assert(tuple.getLong("field_i") == 8);
+      assert(tuple.get("str_s").equals("b"));
+
+      tuple = tuples.get(7);
+      assert(tuple.getLong("id") == 1);
+      assert(tuple.getLong("field_i") == 7);
+      assert(tuple.get("str_s").equals("a"));
+
+
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("stmt", "select id, field_i, str_s from collection1 where text='XXXX' order by field_i desc limit 1");

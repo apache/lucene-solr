@@ -612,11 +612,12 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       }
     } else {
       if(sqlVisitor.limit < 0) {
-        throw new IOException("order by is required for unlimited select statements.");
+        siBuf.append("_version_ desc");
+        fl = fl+",_version_";
       } else {
         siBuf.append("score desc");
         if(!score) {
-          fl = fl+(",score");
+          fl = fl+",score";
         }
       }
     }
@@ -640,11 +641,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       tupleStream = new CloudSolrStream(zkHost, collection, params);
     }
 
-    if(sqlVisitor.hasColumnAliases) {
-      return new SelectStream(tupleStream, sqlVisitor.columnAliases);
-    } else {
-      return tupleStream;
-    }
+    return new SelectStream(tupleStream, sqlVisitor.columnAliases);
   }
 
   private static boolean sortsEqual(Bucket[] buckets, String direction, List<SortItem> sortItems, Map<String, String> reverseColumnAliases) {
