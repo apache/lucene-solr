@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.spatial.search;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.index.IndexReader;
@@ -84,7 +85,10 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
 
   /** throw exception if trying to change rewrite method */
   @Override
-  public Query rewrite(IndexReader reader) {
+  public Query rewrite(IndexReader reader) throws IOException {
+    if (getBoost() != 1f) {
+      return super.rewrite(reader);
+    }
     return new GeoPointInPolygonQueryImpl(field, termEncoding, this, this.minLon, this.minLat, this.maxLon, this.maxLat);
   }
 

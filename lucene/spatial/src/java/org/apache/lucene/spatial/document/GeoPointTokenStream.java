@@ -40,7 +40,7 @@ import static org.apache.lucene.spatial.document.GeoPointField.PRECISION_STEP;
  * <p><i>NOTE: This is used as the default encoding unless
  * {@code GeoPointField.setNumericType(FieldType.LegacyNumericType.LONG)} is set</i></p>
  *
- * This class is similar to {@link org.apache.lucene.analysis.LegacyNumericTokenStream} but encodes terms up to a
+ * This class is similar to {@link org.apache.lucene.analysis.NumericTokenStream} but encodes terms up to a
  * a maximum of {@link #MAX_SHIFT} using a fixed precision step defined by
  * {@link GeoPointField#PRECISION_STEP}. This yields a total of 4 terms per GeoPoint
  * each consisting of 5 bytes (4 prefix bytes + 1 precision byte).
@@ -49,7 +49,7 @@ import static org.apache.lucene.spatial.document.GeoPointField.PRECISION_STEP;
  * {@link GeoPointField#PREFIX_TYPE_STORED}</p>
  *
  * <p>If prefix terms are used then the default GeoPoint query constructors may be used, but if
- * {@link org.apache.lucene.analysis.LegacyNumericTokenStream} is used, then be sure to pass
+ * {@link org.apache.lucene.analysis.NumericTokenStream} is used, then be sure to pass
  * {@link GeoPointField.TermEncoding#NUMERIC} to all GeoPointQuery constructors</p>
  *
  * Here's an example usage:
