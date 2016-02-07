@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Random;
@@ -59,7 +60,7 @@ class StatementImpl implements Statement {
         this.currentResultSet = null;
       }
 
-      if(maxRows > 0 && !(sql.toLowerCase()).contains("limit")) {
+      if(maxRows > 0 && !containsLimit(sql)) {
         sql = sql + " limit "+Integer.toString(maxRows);
       }
 
@@ -355,5 +356,11 @@ class StatementImpl implements Statement {
   @Override
   public boolean isWrapperFor(Class<?> iface) throws SQLException {
     throw new UnsupportedOperationException();
+  }
+
+  private boolean containsLimit(String sql) {
+    String[] tokens = sql.split("\\s+");
+    String secondToLastToken = tokens[tokens.length-2];
+    return ("limit").equals(secondToLastToken);
   }
 }
