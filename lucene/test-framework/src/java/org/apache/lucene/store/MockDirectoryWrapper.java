@@ -726,11 +726,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       randomIOExceptionRateOnOpen = 0.0;
 
       if ((getCheckIndexOnClose() || assertNoUnreferencedFilesOnClose) && DirectoryReader.indexExists(this)) {
-        if (LuceneTestCase.VERBOSE) {
-          System.out.println("\nNOTE: MockDirectoryWrapper: now crush");
-        }
         if (getCheckIndexOnClose()) {
 
+          if (LuceneTestCase.VERBOSE) {
+            System.out.println("\nNOTE: MockDirectoryWrapper: now crush");
+          }
           crash(); // corrupt any unsynced-files
           if (LuceneTestCase.VERBOSE) {
             System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
