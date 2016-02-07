@@ -88,7 +88,7 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = newDirectory();
-    termEncoding = TermEncoding.PREFIX;// randomTermEncoding();
+    termEncoding = randomTermEncoding();
     fieldType = randomFieldType();
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
