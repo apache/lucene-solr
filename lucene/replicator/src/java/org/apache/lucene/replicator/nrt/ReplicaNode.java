@@ -195,10 +195,13 @@ abstract class ReplicaNode extends Node {
         // If this throws exc (e.g. due to virus checker), we cannot start this replica:
         assert deleter.getRefCount(segmentsFileName) == 1;
         deleter.decRef(Collections.singleton(segmentsFileName));
-        if (deleter.isPending(segmentsFileName)) {
-          // If e.g. virus checker blocks us from deleting, we absolutely cannot start this node else we can cause corruption:
+
+        if (dir instanceof FSDirectory && ((FSDirectory) dir).checkPendingDeletions()) {
+          // If e.g. virus checker blocks us from deleting, we absolutely cannot start this node else there is a definite window during
+          // which if we carsh, we cause corruption:
           throw new RuntimeException("replica cannot start: existing segments file=" + segmentsFileName + " must be removed in order to start, but the file delete failed");
         }
+
         // So we don't later try to decRef it (illegally) again:
         boolean didRemove = lastCommitFiles.remove(segmentsFileName);
         assert didRemove;
@@ -427,9 +430,6 @@ abstract class ReplicaNode extends Node {
       }
 
       lastFileMetaData = copyState.files;
-
-      // It's a good time to delete pending files, since we just refreshed and some previously open files are now closed:
-      deleter.deletePending();
     }
 
     int markerCount;
@@ -719,17 +719,6 @@ abstract class ReplicaNode extends Node {
    * "summarizing" its contents, is precisely the same file that we have locally.  If the file does not exist locally, or if its its header
    * (inclues the segment id), length, footer (including checksum) differ, then this returns false, else true. */
   private boolean fileIsIdentical(String fileName, FileMetaData srcMetaData) throws IOException {
-
-    if (deleter.isPending(fileName)) {
-      // This was a file we had wanted to delete yet a virus checker prevented us, and now we need to overwrite it.
-      // Such files are in an unknown state, and even if their header and footer and length all
-      // match, since they may not have been fsync'd by the previous node instance on this directory,
-      // they could in theory have corruption internally.  So we always force ourselves to copy them here:
-      if (Node.VERBOSE_FILES) {
-        message("file " + fileName + ": will copy [we had wanted to delete this file on init, but failed]");
-      }
-      return false;
-    }
 
     FileMetaData destMetaData = readLocalFileMetaData(fileName);
     if (destMetaData == null) {

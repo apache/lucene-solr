@@ -135,9 +135,7 @@ class SimpleReplicaNode extends ReplicaNode {
     MockDirectoryWrapper dir = LuceneTestCase.newMockFSDirectory(path);
     
     dir.setAssertNoUnrefencedFilesOnClose(true);
-    // nocommit
-    //dir.setCheckIndexOnClose(doCheckIndexOnClose);
-    dir.setCheckIndexOnClose(true);
+    dir.setCheckIndexOnClose(doCheckIndexOnClose);
 
     // Corrupt any index files not referenced by current commit point; this is important (increases test evilness) because we may have done
     // a hard crash of the previous JVM writing to this directory and so MDW's corrupt-unknown-files-on-close never ran:

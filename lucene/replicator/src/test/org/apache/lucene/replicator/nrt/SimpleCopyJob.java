@@ -173,13 +173,6 @@ class SimpleCopyJob extends CopyJob {
       String tmpFileName = ent.getValue();
       String fileName = ent.getKey();
 
-      // Tricky: if primary crashes while warming (pre-copying) a merged segment _X, the new primary can easily flush or merge to _X (since we don't
-      // have a distributed inflateGens for the new primary) and _X file names will be reused.  In this case, our local deleter will be
-      // thinking it must remove _X's files (from the warmed merge that never went live), but this is dangerous when virus checker is active
-      // since deleter may finally succeed in deleting the file after we have copied the new _X flushed files.  So at this point was ask the
-      // deleter to NOT delete the file anymore:
-      dest.deleter.clearPending(Collections.singleton(fileName));
-
       if (Node.VERBOSE_FILES) {
         dest.message("rename file " + tmpFileName + " to " + fileName);
       }
@@ -241,7 +234,7 @@ class SimpleCopyJob extends CopyJob {
     }
   }
 
-  public synchronized void cancel(String reason, Throwable exc) {
+  public synchronized void cancel(String reason, Throwable exc) throws IOException {
     try {
       super.cancel(reason, exc);
     } finally {

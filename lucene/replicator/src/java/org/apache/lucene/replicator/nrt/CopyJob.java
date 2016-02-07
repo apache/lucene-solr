@@ -186,7 +186,7 @@ public abstract class CopyJob implements Comparable<CopyJob> {
   /** Use current thread (blocking) to do all copying and then return once done, or throw exception on failure */
   public abstract void runBlocking() throws Exception;
 
-  public void cancel(String reason, Throwable exc) {
+  public void cancel(String reason, Throwable exc) throws IOException {
     if (this.exc != null) {
       // Already cancelled
       return;

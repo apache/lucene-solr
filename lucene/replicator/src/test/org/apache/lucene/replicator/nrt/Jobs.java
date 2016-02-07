@@ -18,6 +18,7 @@ package org.apache.lucene.replicator.nrt;
  */
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -131,7 +132,7 @@ class Jobs extends Thread implements Closeable {
   }
 
   /** Cancels any existing jobs that are copying the same file names as this one */
-  public synchronized void cancelConflictingJobs(CopyJob newJob) {
+  public synchronized void cancelConflictingJobs(CopyJob newJob) throws IOException {
     for (CopyJob job : queue) {
       if (job.conflicts(newJob)) {
         node.message("top: now cancel existing conflicting job=" + job + " due to newJob=" + newJob);

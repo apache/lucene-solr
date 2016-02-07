@@ -38,7 +38,6 @@ import org.apache.lucene.store.IOContext;
 
 class ReplicaFileDeleter {
   private final Map<String,Integer> refCounts = new HashMap<String,Integer>();
-  private final Set<String> pending = new HashSet<String>();
   private final Directory dir;
   private final Node node;
 
@@ -63,10 +62,6 @@ class ReplicaFileDeleter {
   public synchronized void incRef(Collection<String> fileNames) throws IOException {
     for(String fileName : fileNames) {
 
-      if (pending.contains(fileName)) {
-        throw new IllegalStateException("cannot incRef file \"" + fileName + "\": it is pending delete");
-      }
-
       assert slowFileExists(dir, fileName): "file " + fileName + " does not exist!";
 
       Integer curCount = refCounts.get(fileName);
@@ -78,24 +73,23 @@ class ReplicaFileDeleter {
     }
   }
 
-  public synchronized void decRef(Collection<String> fileNames) {
-    // We don't delete the files immediately when their RC drops to 0; instead, we add to the pending set, and then call deletePending in
-    // the end:
+  public synchronized void decRef(Collection<String> fileNames) throws IOException {
+    Set<String> toDelete = new HashSet<>();
     for(String fileName : fileNames) {
       Integer curCount = refCounts.get(fileName);
       assert curCount != null: "fileName=" + fileName;
       assert curCount.intValue() > 0;
       if (curCount.intValue() == 1) {
         refCounts.remove(fileName);
-        pending.add(fileName);
+        toDelete.add(fileName);
       } else {
         refCounts.put(fileName, curCount.intValue() - 1);
       }
     }
 
-    deletePending();
+    delete(toDelete);
 
-    // TODO: this local IR could incRef files here, like we do now with IW ... then we can assert this again:
+    // TODO: this local IR could incRef files here, like we do now with IW's NRT readers ... then we can assert this again:
 
     // we can't assert this, e.g a search can be running when we switch to a new NRT point, holding a previous IndexReader still open for
     // a bit:
@@ -109,111 +103,69 @@ class ReplicaFileDeleter {
     */
   }
 
-  private synchronized boolean delete(String fileName) {
-    try {
-      if (Node.VERBOSE_FILES) {
-        node.message("file " + fileName + ": now delete");
-      }
-      dir.deleteFile(fileName);
-      pending.remove(fileName);
-      return true;
-    } catch (FileNotFoundException|NoSuchFileException missing) {
-      // This should never happen: we should only be asked to track files that do exist
-      node.message("file " + fileName + ": delete failed: " + missing);
-      throw new IllegalStateException("file " + fileName + ": we attempted delete but the file does not exist?", missing);
-    } catch (IOException ioe) {
-      // nocommit remove this retry logic!  it's Directory's job now...
-      if (Node.VERBOSE_FILES) {
-        node.message("file " + fileName + ": delete failed: " + ioe + "; will retry later");
-      }
-      pending.add(fileName);
-      return false;
-    }
-  }
-
-  public synchronized Integer getRefCount(String fileName) {
-    return refCounts.get(fileName);
-  }
-
-  public synchronized boolean isPending(String fileName) {
-    return pending.contains(fileName);
-  }
-
-  public synchronized void deletePending() {
+  private synchronized void delete(Collection<String> toDelete) throws IOException {
     if (Node.VERBOSE_FILES) {
-      node.message("now deletePending: " + pending.size() + " files to try: " + pending);
+      node.message("now delete " + toDelete.size() + " files: " + toDelete);
     }
-
-    // Clone the set because it will change as we iterate:
-    List<String> toDelete = new ArrayList<>(pending);
 
     // First pass: delete any segments_N files.  We do these first to be certain stale commit points are removed
-    // before we remove any files they reference.  If any delete of segments_N fails, we leave all other files
-    // undeleted so index is never in a corrupt state:
+    // before we remove any files they reference, in case we crash right now:
     for (String fileName : toDelete) {
-      Integer rc = refCounts.get(fileName);
-      if (rc != null && rc > 0) {
-        // Should never happen!  This means we are about to pending-delete a referenced index file
-        throw new IllegalStateException("file \"" + fileName + "\" is in pending delete set but has non-zero refCount=" + rc);
-      } else if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
-        if (delete(fileName) == false) {
-          if (Node.VERBOSE_FILES) {
-            node.message("failed to remove commit point \"" + fileName + "\"; skipping deletion of all other pending files");
-          }
-          return;
-        }
+      assert refCounts.containsKey(fileName) == false;
+      if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
+        delete(fileName);
       }
     }
 
     // Only delete other files if we were able to remove the segments_N files; this way we never
     // leave a corrupt commit in the index even in the presense of virus checkers:
     for(String fileName : toDelete) {
+      assert refCounts.containsKey(fileName) == false;
       if (fileName.startsWith(IndexFileNames.SEGMENTS) == false) {
         delete(fileName);
       }
     }
 
-    Set<String> copy = new HashSet<String>(pending);
-    pending.clear();
-    for(String fileName : copy) {
-      delete(fileName);
-    }
   }
 
-  /** Necessary in case we had tried to delete this fileName before, it failed, but then it was later overwritten (because primary changed
-   *  and new primary didn't know this segment name had been previously attempted) and now has > 0 refCount */
-  public synchronized void clearPending(Collection<String> fileNames) {
-    for(String fileName : fileNames) {
-      if (pending.remove(fileName)) {
-        node.message("file " + fileName + ": deleter.clearPending now clear from pending");
-      }
+  private synchronized void delete(String fileName) throws IOException {
+    if (Node.VERBOSE_FILES) {
+      node.message("file " + fileName + ": now delete");
     }
+    dir.deleteFile(fileName);
   }
 
-  public synchronized void deleteIfNoRef(String fileName) {
+  public synchronized Integer getRefCount(String fileName) {
+    return refCounts.get(fileName);
+  }
+
+  public synchronized void deleteIfNoRef(String fileName) throws IOException {
     if (refCounts.containsKey(fileName) == false) {
       deleteNewFile(fileName);
     }
   }
 
-  public synchronized void deleteNewFile(String fileName) {
+  public synchronized void deleteNewFile(String fileName) throws IOException {
     delete(fileName);
   }
 
+  /*
   public synchronized Set<String> getPending() {
     return new HashSet<String>(pending);
   }
+  */
 
   public synchronized void deleteUnknownFiles(String segmentsFileName) throws IOException {
+    Set<String> toDelete = new HashSet<>();
     for(String fileName : dir.listAll()) {
       if (refCounts.containsKey(fileName) == false &&
           fileName.equals("write.lock") == false &&
           fileName.equals(segmentsFileName) == false) {
         node.message("will delete unknown file \"" + fileName + "\"");
-        pending.add(fileName);
+        toDelete.add(fileName);
       }
     }
 
-    deletePending();
+    delete(toDelete);
   }
 }
