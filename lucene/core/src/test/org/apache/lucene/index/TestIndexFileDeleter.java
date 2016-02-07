@@ -488,4 +488,80 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     w.close();
     dir.close();
   }
+
+  // LUCENE-6835: make sure best-effort to not create an "apparently but not really" corrupt index is working:
+  public void testExcInDeleteFile() throws Throwable {
+    int iters = atLeast(10);
+    for(int iter=0;iter<iters;iter++) {
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter);
+      }
+      MockDirectoryWrapper dir = newMockDirectory();
+
+      final AtomicBoolean doFailExc = new AtomicBoolean();
+
+      dir.failOn(new MockDirectoryWrapper.Failure() {
+          @Override
+          public void eval(MockDirectoryWrapper dir) throws IOException {
+            if (doFailExc.get() && random().nextInt(4) == 1) {
+              Exception e = new Exception();
+              StackTraceElement stack[] = e.getStackTrace();
+              for (int i = 0; i < stack.length; i++) {
+                if (stack[i].getClassName().equals(MockDirectoryWrapper.class.getName()) && stack[i].getMethodName().equals("deleteFile")) {
+                  throw new MockDirectoryWrapper.FakeIOException();
+                }
+              }
+            }
+          }
+        });
+
+      IndexWriterConfig iwc = newIndexWriterConfig();
+      iwc.setMergeScheduler(new SerialMergeScheduler());
+      RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+      w.addDocument(new Document());
+
+      // makes segments_1
+      if (VERBOSE) {
+        System.out.println("TEST: now commit");
+      }
+      w.commit();
+
+      w.addDocument(new Document());
+      doFailExc.set(true);
+      if (VERBOSE) {
+        System.out.println("TEST: now close");
+      }
+      try {
+        w.close();
+        if (VERBOSE) {
+          System.out.println("TEST: no exception (ok)");
+        }
+      } catch (RuntimeException re) {
+        assertTrue(re.getCause() instanceof MockDirectoryWrapper.FakeIOException);
+        // good
+        if (VERBOSE) {
+          System.out.println("TEST: got expected exception:");
+          re.printStackTrace(System.out);
+        }
+      } catch (MockDirectoryWrapper.FakeIOException fioe) {
+        // good
+        if (VERBOSE) {
+          System.out.println("TEST: got expected exception:");
+          fioe.printStackTrace(System.out);
+        }
+      }
+      doFailExc.set(false);
+      assertFalse(w.w.isOpen());
+
+      for(String name : dir.listAll()) {
+        if (name.startsWith(IndexFileNames.SEGMENTS)) {
+          if (VERBOSE) {
+            System.out.println("TEST: now read " + name);
+          }
+          SegmentInfos.readCommit(dir, name);
+        }
+      }
+      dir.close();
+    }
+  }
 }

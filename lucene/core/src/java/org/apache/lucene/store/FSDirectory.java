@@ -327,7 +327,7 @@ public abstract class FSDirectory extends BaseDirectory {
     if (pendingDeletes.contains(name)) {
       throw new NoSuchFileException("file \"" + name + "\" is already pending delete");
     }
-    privateDeleteFile(name);
+    privateDeleteFile(name, false);
     maybeDeletePendingFiles();
   }
 
@@ -347,7 +347,7 @@ public abstract class FSDirectory extends BaseDirectory {
 
       // Clone the set since we mutate it in privateDeleteFile:
       for(String name : new HashSet<>(pendingDeletes)) {
-        privateDeleteFile(name);
+        privateDeleteFile(name, true);
       }
     }
   }
@@ -363,14 +363,21 @@ public abstract class FSDirectory extends BaseDirectory {
     }
   }
 
-  private void privateDeleteFile(String name) throws IOException {
+  private void privateDeleteFile(String name, boolean isPendingDelete) throws IOException {
     try {
       Files.delete(directory.resolve(name));
       pendingDeletes.remove(name);
     } catch (NoSuchFileException | FileNotFoundException e) {
       // We were asked to delete a non-existent file:
       pendingDeletes.remove(name);
-      throw e;
+      if (isPendingDelete && Constants.WINDOWS) {
+        // TODO: can we remove this OS-specific hacky logic?  If windows deleteFile is buggy, we should instead contain this workaround in
+        // a WindowsFSDirectory ...
+        // LUCENE-6684: we suppress this check for Windows, since a file could be in a confusing "pending delete" state, failing the first
+        // delete attempt with access denied and then apparently falsely failing here when we try ot delete it again, with NSFE/FNFE
+      } else {
+        throw e;
+      }
     } catch (IOException ioe) {
       // On windows, a file delete can fail because there's still an open
       // file handle against it.  We record this in pendingDeletes and
