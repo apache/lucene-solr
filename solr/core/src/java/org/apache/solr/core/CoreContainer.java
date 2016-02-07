@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.regex.Pattern;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -64,6 +63,7 @@ import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.SolrIdentifierValidator;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -656,19 +656,6 @@ public class CoreContainer {
     return coresLocator;
   }
 
-  // Insure that the core name won't cause problems later on.
-  final static Pattern corePattern = Pattern.compile("^[\\._A-Za-z0-9]*$");
-
-
-  public void validateCoreName(String name) {
-    if (name == null || !corePattern.matcher(name).matches()) {
-      throw new IllegalArgumentException("Invalid core name: '" + name +
-          "' Names must consist entirely of periods, underscores and alphanumerics");
-    }
-  }
-
-
-
   protected SolrCore registerCore(String name, SolrCore core, boolean registerInZk) {
     if( core == null ) {
       throw new RuntimeException( "Can not register a null core." );
@@ -817,7 +804,7 @@ public class CoreContainer {
     SolrCore core = null;
     try {
       MDCLoggingContext.setCore(core);
-      validateCoreName(dcore.getName());
+      SolrIdentifierValidator.validateCoreName(dcore.getName());
       if (zkSys.getZkController() != null) {
         zkSys.getZkController().preRegister(dcore);
       }
@@ -1020,7 +1007,7 @@ public class CoreContainer {
   }
 
   public void rename(String name, String toName) {
-    validateCoreName(toName);
+    SolrIdentifierValidator.validateCoreName(toName);
     try (SolrCore core = getCore(name)) {
       if (core != null) {
         registerCore(toName, core, true);

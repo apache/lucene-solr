@@ -131,6 +131,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.SolrIdentifierValidator;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -356,7 +357,9 @@ public class CollectionsHandler extends RequestHandlerBase {
         addMapObject(props, RULE);
         addMapObject(props, SNITCH);
         verifyRuleParams(h.coreContainer, props);
-        if (SYSTEM_COLL.equals(props.get(NAME))) {
+        final String collectionName = (String) props.get(NAME);
+        SolrIdentifierValidator.validateCollectionName(collectionName);
+        if (SYSTEM_COLL.equals(collectionName)) {
           //We must always create a .system collection with only a single shard
           props.put(NUM_SLICES, 1);
           props.remove(SHARDS_PROP);
@@ -426,6 +429,8 @@ public class CollectionsHandler extends RequestHandlerBase {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler handler)
           throws Exception {
+        final String aliasName = req.getParams().get(NAME);
+        SolrIdentifierValidator.validateCollectionName(aliasName);
         return req.getParams().required().getAll(null, NAME, "collections");
       }
     },
