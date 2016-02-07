@@ -45,6 +45,7 @@ class StatementImpl implements Statement {
   private String currentSQL;
   private ResultSetImpl currentResultSet;
   private SQLWarning currentWarning;
+  private int maxRows;
 
   StatementImpl(ConnectionImpl connection) {
     this.connection = connection;
@@ -56,6 +57,10 @@ class StatementImpl implements Statement {
       if(this.currentResultSet != null) {
         this.currentResultSet.close();
         this.currentResultSet = null;
+      }
+
+      if(maxRows > 0 && !(sql.toLowerCase()).contains("limit")) {
+        sql = sql + " limit "+Integer.toString(maxRows);
       }
 
       closed = false;  // If closed reopen so Statement can be reused.
@@ -132,12 +137,12 @@ class StatementImpl implements Statement {
 
   @Override
   public int getMaxRows() throws SQLException {
-    throw new UnsupportedOperationException();
+    return this.maxRows;
   }
 
   @Override
   public void setMaxRows(int max) throws SQLException {
-    throw new UnsupportedOperationException();
+    this.maxRows = max;
   }
 
   @Override

@@ -166,7 +166,8 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     stmt.close();
 
     //Test statement reuse
-    rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc limit 2");
+    stmt.setMaxRows(2);
+    rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc");
     assert(rs.next());
     assert(rs.getLong("a_i") == 0);
     assert(rs.getLong(2) == 0);
@@ -176,7 +177,7 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     assert(!rs.next());
     stmt.close();
 
-    //Test simple loop
+    //Test simple loop. Since limit is set it will override the statement maxRows
     rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc limit 100");
     int count = 0;
     while(rs.next()) {
