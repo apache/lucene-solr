@@ -722,80 +722,81 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks, cause);
       }
       
-      if (getCheckIndexOnClose()) {
-        randomIOExceptionRate = 0.0;
-        randomIOExceptionRateOnOpen = 0.0;
+      randomIOExceptionRate = 0.0;
+      randomIOExceptionRateOnOpen = 0.0;
 
-        if (DirectoryReader.indexExists(this)) {
-          if (LuceneTestCase.VERBOSE) {
-            System.out.println("\nNOTE: MockDirectoryWrapper: now crush");
-          }
+      if ((getCheckIndexOnClose() || assertNoUnreferencedFilesOnClose) && DirectoryReader.indexExists(this)) {
+        if (LuceneTestCase.VERBOSE) {
+          System.out.println("\nNOTE: MockDirectoryWrapper: now crush");
+        }
+        if (getCheckIndexOnClose()) {
+
           crash(); // corrupt any unsynced-files
           if (LuceneTestCase.VERBOSE) {
             System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
           } 
 
           TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true);
+        }
           
-          // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
-          if (assertNoUnreferencedFilesOnClose) {
+        // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
+        if (assertNoUnreferencedFilesOnClose) {
 
-            // now look for unreferenced files: discount ones that we tried to delete but could not
-            Set<String> allFiles = new HashSet<>(Arrays.asList(listAll()));
-            String[] startFiles = allFiles.toArray(new String[0]);
-            IndexWriterConfig iwc = new IndexWriterConfig(null);
-            iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
+          // now look for unreferenced files: discount ones that we tried to delete but could not
+          Set<String> allFiles = new HashSet<>(Arrays.asList(listAll()));
+          String[] startFiles = allFiles.toArray(new String[0]);
+          IndexWriterConfig iwc = new IndexWriterConfig(null);
+          iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
 
-            // We must do this before opening writer otherwise writer will be angry if there are pending deletions:
-            TestUtil.disableVirusChecker(in);
+          // We must do this before opening writer otherwise writer will be angry if there are pending deletions:
+          TestUtil.disableVirusChecker(in);
 
-            new IndexWriter(in, iwc).rollback();
-            String[] endFiles = in.listAll();
+          new IndexWriter(in, iwc).rollback();
+          String[] endFiles = in.listAll();
             
-            Set<String> startSet = new TreeSet<>(Arrays.asList(startFiles));
-            Set<String> endSet = new TreeSet<>(Arrays.asList(endFiles));
+          Set<String> startSet = new TreeSet<>(Arrays.asList(startFiles));
+          Set<String> endSet = new TreeSet<>(Arrays.asList(endFiles));
             
-            startFiles = startSet.toArray(new String[0]);
-            endFiles = endSet.toArray(new String[0]);
+          startFiles = startSet.toArray(new String[0]);
+          endFiles = endSet.toArray(new String[0]);
             
-            if (!Arrays.equals(startFiles, endFiles)) {
-              List<String> removed = new ArrayList<>();
-              for(String fileName : startFiles) {
-                if (!endSet.contains(fileName)) {
-                  removed.add(fileName);
-                }
+          if (!Arrays.equals(startFiles, endFiles)) {
+            List<String> removed = new ArrayList<>();
+            for(String fileName : startFiles) {
+              if (!endSet.contains(fileName)) {
+                removed.add(fileName);
               }
-              
-              List<String> added = new ArrayList<>();
-              for(String fileName : endFiles) {
-                if (!startSet.contains(fileName)) {
-                  added.add(fileName);
-                }
-              }
-              
-              String extras;
-              if (removed.size() != 0) {
-                extras = "\n\nThese files were removed: " + removed;
-              } else {
-                extras = "";
-              }
-              
-              if (added.size() != 0) {
-                extras += "\n\nThese files were added (waaaaaaaaaat!): " + added;
-              }
-              
-              throw new RuntimeException("unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles) + extras);
             }
-            
-            DirectoryReader ir1 = DirectoryReader.open(this);
-            int numDocs1 = ir1.numDocs();
-            ir1.close();
-            new IndexWriter(this, new IndexWriterConfig(null)).close();
-            DirectoryReader ir2 = DirectoryReader.open(this);
-            int numDocs2 = ir2.numDocs();
-            ir2.close();
-            assert numDocs1 == numDocs2 : "numDocs changed after opening/closing IW: before=" + numDocs1 + " after=" + numDocs2;
+              
+            List<String> added = new ArrayList<>();
+            for(String fileName : endFiles) {
+              if (!startSet.contains(fileName)) {
+                added.add(fileName);
+              }
+            }
+              
+            String extras;
+            if (removed.size() != 0) {
+              extras = "\n\nThese files were removed: " + removed;
+            } else {
+              extras = "";
+            }
+              
+            if (added.size() != 0) {
+              extras += "\n\nThese files were added (waaaaaaaaaat!): " + added;
+            }
+              
+            throw new RuntimeException("unreferenced files: before delete:\n    " + Arrays.toString(startFiles) + "\n  after delete:\n    " + Arrays.toString(endFiles) + extras);
           }
+            
+          DirectoryReader ir1 = DirectoryReader.open(this);
+          int numDocs1 = ir1.numDocs();
+          ir1.close();
+          new IndexWriter(this, new IndexWriterConfig(null)).close();
+          DirectoryReader ir2 = DirectoryReader.open(this);
+          int numDocs2 = ir2.numDocs();
+          ir2.close();
+          assert numDocs1 == numDocs2 : "numDocs changed after opening/closing IW: before=" + numDocs1 + " after=" + numDocs2;
         }
       }
       success = true;
