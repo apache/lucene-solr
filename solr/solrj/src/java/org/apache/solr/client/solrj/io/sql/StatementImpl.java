@@ -361,6 +361,6 @@ class StatementImpl implements Statement {
   private boolean containsLimit(String sql) {
     String[] tokens = sql.split("\\s+");
     String secondToLastToken = tokens[tokens.length-2];
-    return ("limit").equals(secondToLastToken);
+    return ("limit").equals(secondToLastToken.toLowerCase(Locale.getDefault()));
   }
 }

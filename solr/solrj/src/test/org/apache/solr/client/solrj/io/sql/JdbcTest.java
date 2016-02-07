@@ -177,8 +177,8 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     assert(!rs.next());
     stmt.close();
 
-    //Test simple loop. Since limit is set it will override the statement maxRows
-    rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc limit 100");
+    //Test simple loop. Since limit is set it will override the statement maxRows.
+    rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc    LIMIT   100");
     int count = 0;
     while(rs.next()) {
       ++count;
