@@ -162,8 +162,18 @@ public class DistributedMap {
     return stat.getNumChildren();
   }
 
-  public void remove(String trackingId) throws KeeperException, InterruptedException {
-    zookeeper.delete(dir + "/" + prefix + trackingId, -1, true);
+  /**
+   * return true if the znode was successfully deleted
+   *        false if the node didn't exist and therefore not deleted
+   *        exception an exception occurred while deleting
+   */
+  public boolean remove(String trackingId) throws KeeperException, InterruptedException {
+    try {
+      zookeeper.delete(dir + "/" + prefix + trackingId, -1, true);
+    } catch (KeeperException.NoNodeException e) {
+      return false;
+    }
+    return true;
   }
 
   /**

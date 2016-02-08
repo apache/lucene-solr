@@ -262,7 +262,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       throws KeeperException, InterruptedException {
     String taskKey = messageHandler.getTaskKey(message);
 
-    if(taskKey == null)
+    if (taskKey == null)
       return true;
 
     OverseerMessageHandler.ExclusiveMarking marking = messageHandler.checkExclusiveMarking(taskKey, message);
@@ -277,7 +277,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         throw new IllegalArgumentException("Undefined marking: " + marking);
     }
 
-    if(runningZKTasks.contains(id))
+    if (runningZKTasks.contains(id))
       return false;
 
     return true;
@@ -295,7 +295,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   public void close() {
     isClosed = true;
-    if(tpe != null) {
+    if (tpe != null) {
       if (!tpe.isShutdown()) {
         ExecutorUtil.shutdownAndAwaitTermination(tpe);
       }
@@ -399,7 +399,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     messageHandler.markExclusiveTask(taskKey, message);
 
-    if(asyncId != null)
+    if (asyncId != null)
       runningMap.put(asyncId, null);
   }
   
@@ -436,7 +436,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           updateStats(statsName);
         }
 
-        if(asyncId != null) {
+        if (asyncId != null) {
           if (response != null && (response.getResponse().get("failure") != null 
               || response.getResponse().get("exception") != null)) {
             failureMap.put(asyncId, SolrResponse.serializable(response));
@@ -465,7 +465,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         log.warn("Resetting task {} as the thread was interrupted.", head.getId());
         Thread.currentThread().interrupt();
       } finally {
-        if(!success) {
+        if (!success) {
           // Reset task from tracking data structures so that it can be retried.
           resetTaskWithException(messageHandler, head.getId(), asyncId, taskKey, message);
         }
@@ -485,8 +485,12 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         runningTasks.remove(id);
       }
 
-      if(asyncId != null)
-        runningMap.remove(asyncId);
+      if (asyncId != null) {
+        if (!runningMap.remove(asyncId)) {
+          log.warn("Could not find and remove async call [" + asyncId + "] from the running map.");
+        }
+      }
+
 
       messageHandler.unmarkExclusiveTask(taskKey, operation, message);
     }
@@ -494,8 +498,11 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     private void resetTaskWithException(OverseerMessageHandler messageHandler, String id, String asyncId, String taskKey, ZkNodeProps message) {
       log.warn("Resetting task: {}, requestid: {}, taskKey: {}", id, asyncId, taskKey);
       try {
-        if (asyncId != null)
-          runningMap.remove(asyncId);
+        if (asyncId != null) {
+          if (!runningMap.remove(asyncId)) {
+            log.warn("Could not find and remove async call [" + asyncId + "] from the running map.");
+          }
+        }
 
         synchronized (runningTasks) {
           runningTasks.remove(id);
@@ -520,14 +527,14 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     }
 
     private boolean isSuccessful() {
-      if(response == null)
+      if (response == null)
         return false;
       return !(response.getResponse().get("failure") != null || response.getResponse().get("exception") != null);
     }
   }
 
   private void printTrackingMaps() {
-    if(log.isDebugEnabled()) {
+    if (log.isDebugEnabled()) {
       synchronized (runningTasks) {
         log.debug("RunningTasks: {}", runningTasks.toString());
       }

@@ -43,6 +43,7 @@ public interface CollectionParams
     REMOVEROLE(true),
     CLUSTERPROP(true),
     REQUESTSTATUS(false),
+    DELETESTATUS(false),
     ADDREPLICA(true),
     OVERSEERSTATUS(false),
     LIST(false),
