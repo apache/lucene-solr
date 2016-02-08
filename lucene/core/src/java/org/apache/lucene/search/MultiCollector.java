@@ -152,7 +152,8 @@ public class MultiCollector implements Collector {
       if (cacheScores) {
         scorer = new ScoreCachingWrappingScorer(scorer);
       }
-      for (LeafCollector c : collectors) {
+      for (int i = 0; i < numCollectors; ++i) {
+        final LeafCollector c = collectors[i];
         c.setScorer(scorer);
       }
     }

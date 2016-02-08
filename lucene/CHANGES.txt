@@ -235,6 +235,9 @@ Bug Fixes
 * LUCENE-6998: Fix a couple places to better detect truncated index files
   as corruption.  (Robert Muir, Mike McCandless)
 
+* LUCENE-7002: Fixed MultiCollector to not throw a NPE if setScorer is called
+  after one of the sub collectors is done collecting. (John Wang, Adrien Grand)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)
