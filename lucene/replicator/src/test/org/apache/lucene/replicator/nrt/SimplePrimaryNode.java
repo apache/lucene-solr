@@ -304,6 +304,7 @@ class SimplePrimaryNode extends PrimaryNode {
           message("send NEW_NRT_POINT to R" + replicaID + " at tcpPort=" + replicaTCPPorts[i]);
           c.out.writeByte(SimpleReplicaNode.CMD_NEW_NRT_POINT);
           c.out.writeVLong(version);
+          c.out.writeVLong(primaryGen);
           c.out.writeInt(tcpPort);
           c.flush();
           // TODO: we should use multicast to broadcast files out to replicas

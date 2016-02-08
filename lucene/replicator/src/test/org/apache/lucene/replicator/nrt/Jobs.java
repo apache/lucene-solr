@@ -106,6 +106,7 @@ class Jobs extends Thread implements Closeable {
           topJob.onceDone.run(topJob);
         } catch (Throwable t) {
           node.message("ignore exception calling OnceDone: " + t);
+          t.printStackTrace(System.out);
         }
       }
     }
@@ -120,12 +121,14 @@ class Jobs extends Thread implements Closeable {
         try {
           job.cancel("jobs closing", null);
         } catch (Throwable t) {
-          node.message("ignore exception calling cancel: " + t);
+          node.message("ignore exception calling cancel");
+          t.printStackTrace(System.out);
         }
         try {
           job.onceDone.run(job);
         } catch (Throwable t) {
-          node.message("ignore exception calling OnceDone: " + t);
+          node.message("ignore exception calling OnceDone");
+          t.printStackTrace(System.out);
         }
       }
     }

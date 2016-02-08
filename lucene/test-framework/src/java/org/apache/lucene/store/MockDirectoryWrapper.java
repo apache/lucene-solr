@@ -852,6 +852,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           
         // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
         if (assertNoUnreferencedFilesOnClose) {
+          System.out.println("MDW: now assert no unref'd files at close");
 
           // now look for unreferenced files: discount ones that we tried to delete but could not
           Set<String> allFiles = new HashSet<>(Arrays.asList(listAll()));
