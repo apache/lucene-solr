@@ -282,7 +282,11 @@ public class DaemonStream extends TupleStream implements Expressible {
         Map m = new HashMap();
         m.put("EOF", true);
         Tuple tuple = new Tuple(m);
-        queue.offer(tuple);
+        try {
+          queue.put(tuple);
+        } catch (InterruptedException e) {
+          logger.error("Error in DaemonStream", e);
+        }
       }
       setStopTime(new Date().getTime());
     }
