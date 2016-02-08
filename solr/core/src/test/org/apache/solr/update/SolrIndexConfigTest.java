@@ -42,7 +42,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   private static final String solrConfigFileName = "solrconfig.xml";
   private static final String solrConfigFileNameWarmer = "solrconfig-warmer.xml";
   private static final String solrConfigFileNameTieredMergePolicy = "solrconfig-tieredmergepolicy.xml";
-
+  private static final String solrConfigFileNameTieredMergePolicyFactory = "solrconfig-tieredmergepolicyfactory.xml";
   private static final String schemaFileName = "schema.xml";
 
   @BeforeClass
@@ -68,10 +68,9 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
   @Test
   public void testTieredMPSolrIndexConfigCreation() throws Exception {
-    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameTieredMergePolicy, null);
-    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null,
-        null);
-    assertNotNull(solrIndexConfig);
+    String solrConfigFileName = random().nextBoolean() ? solrConfigFileNameTieredMergePolicy : solrConfigFileNameTieredMergePolicyFactory;
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileName, null);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
     IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
     
     h.getCore().setLatestSchema(indexSchema);
@@ -105,11 +104,16 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   }
 
   public void testToMap() throws Exception {
-    final String solrConfigFileName = (random().nextBoolean() ? solrConfigFileNameWarmer : solrConfigFileNameTieredMergePolicy);
+    final String solrConfigFileNameTMP = random().nextBoolean() ? solrConfigFileNameTieredMergePolicy : solrConfigFileNameTieredMergePolicyFactory;
+    final String solrConfigFileName = (random().nextBoolean() ? solrConfigFileNameWarmer : solrConfigFileNameTMP);
     SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileName, null);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
     assertNotNull(solrIndexConfig);
-    assertNotNull(solrIndexConfig.mergePolicyInfo);
+    if (solrConfigFileName.equals(solrConfigFileNameTieredMergePolicyFactory)) {
+      assertNotNull(solrIndexConfig.mergePolicyFactoryInfo);
+    } else {
+      assertNotNull(solrIndexConfig.mergePolicyInfo);
+    }
     if (solrConfigFileName.equals(solrConfigFileNameWarmer)) {
       assertNotNull(solrIndexConfig.mergedSegmentWarmerInfo);
     } else {

@@ -72,16 +72,13 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
   }
 
   public void testLegacyMergePolicyConfig() throws Exception {
-    final boolean expectCFS 
-      = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
+    final boolean expectCFS = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
 
     initCore("solrconfig-mergepolicy-legacy.xml","schema-minimal.xml");
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
     assertEquals(expectCFS, iwc.getUseCompoundFile());
 
-
-    TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class,
-                                               iwc.getMergePolicy());
+    TieredMergePolicy tieredMP = assertAndCast(TieredMergePolicy.class, iwc.getMergePolicy());
 
     assertEquals(7, tieredMP.getMaxMergeAtOnce());
     assertEquals(7.0D, tieredMP.getSegmentsPerTier(), 0.0D);

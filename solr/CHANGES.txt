@@ -280,6 +280,15 @@ Upgrading from Solr 5.4
 * bin/post now defaults application/json files to the /update/json/docs end-point.  Use `-format solr` to force
   files to the /update end-point.   See SOLR-7042 for more details.
 
+* <mergePolicy> is deprecated in favor of a new <mergePolicyFactory> element. See SOLR-8621 for details. To
+  migrate existing solrconfig.xml, you can replace the <mergePolicy> element with the following (assuming you
+  use TieredMergePolicy):
+  <mergePolicyFactory class="solr.TieredMergePolicyFactory">
+    <int name="maxMergeAtOnce">10</int>
+    <double name="maxMergedSegmentMB">5120</double>
+    ...
+  </mergePolicyFactory>
+
 Detailed Change List
 ----------------------
 
@@ -355,6 +364,10 @@ New Features
 
 * SOLR-8642: SOLR allows creation of collections with invalid names
   (Jason Gerlowski via Erick Erickson)
+
+* SOLR-8621: Deprecate <mergePolicy> in favor of <mergePolicyFactory>. It allows to configure
+  both the "simple" merge policies, but also more advanced ones, e.g. UpgradeIndexMergePolicy.
+  (Christine Poerschke, Shai Erera)
 
 Bug Fixes
 ----------------------
