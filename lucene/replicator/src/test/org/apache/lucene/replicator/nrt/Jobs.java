@@ -80,7 +80,12 @@ class Jobs extends Thread implements Closeable {
         } else {
           node.message("AlreadyClosedException during job.visit job=" + topJob + "; now cancel");
         }
-        topJob.cancel("unexpected exception in visit", t);
+        try {
+          topJob.cancel("unexpected exception in visit", t);
+        } catch (Throwable t2) {
+          node.message("ignore exception calling cancel: " + t2);
+          t2.printStackTrace(System.out);
+        }
         try {
           topJob.onceDone.run(topJob);
         } catch (Throwable t2) {
@@ -101,6 +106,7 @@ class Jobs extends Thread implements Closeable {
           topJob.onceDone.run(topJob);
         } catch (Throwable t) {
           node.message("ignore exception calling OnceDone: " + t);
+          t.printStackTrace(System.out);
         }
       }
     }
@@ -112,11 +118,17 @@ class Jobs extends Thread implements Closeable {
       while (queue.isEmpty() == false) {
         SimpleCopyJob job = (SimpleCopyJob) queue.poll();
         node.message("top: Jobs: now cancel job=" + job);
-        job.cancel("jobs closing", null);
+        try {
+          job.cancel("jobs closing", null);
+        } catch (Throwable t) {
+          node.message("ignore exception calling cancel");
+          t.printStackTrace(System.out);
+        }
         try {
           job.onceDone.run(job);
         } catch (Throwable t) {
-          node.message("ignore exception calling OnceDone: " + t);
+          node.message("ignore exception calling OnceDone");
+          t.printStackTrace(System.out);
         }
       }
     }

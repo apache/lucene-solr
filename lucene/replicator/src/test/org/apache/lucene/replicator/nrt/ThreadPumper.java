@@ -31,6 +31,7 @@ class ThreadPumper {
         @Override
         public void run() {
           try {
+            long startTimeNS = System.nanoTime();
             Pattern logTimeStart = Pattern.compile("^[0-9\\.]+s .*");
             String line;
             while ((line = from.readLine()) != null) {
@@ -42,7 +43,7 @@ class ThreadPumper {
                 // Already a well-formed log output:
                 System.out.println(line);
               } else {
-                TestNRTReplication.message(line);
+                TestStressNRTReplication.message(line, startTimeNS);
               }
               if (line.contains("now force close server socket after")) {
                 nodeClosing.set(true);
@@ -60,4 +61,3 @@ class ThreadPumper {
     return t;
   }
 }
-

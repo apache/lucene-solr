@@ -356,7 +356,7 @@ public class TestNRTReplication extends LuceneTestCase {
     assertVersionAndHits(replica, 0, 0);
 
     // Ask replica to sync:
-    replica.newNRTPoint(primaryVersion1, primary.tcpPort);
+    replica.newNRTPoint(primaryVersion1, 0, primary.tcpPort);
     waitForVersionAndHits(replica, primaryVersion1, 10);
 
     replica.close();
@@ -461,7 +461,7 @@ public class TestNRTReplication extends LuceneTestCase {
     assertVersionAndHits(replica, primaryVersion1, 10);
 
     // Now ask replica to sync:
-    replica.newNRTPoint(primaryVersion2, primary.tcpPort);
+    replica.newNRTPoint(primaryVersion2, 0, primary.tcpPort);
 
     waitForVersionAndHits(replica, primaryVersion2, 20);
 
@@ -736,7 +736,7 @@ public class TestNRTReplication extends LuceneTestCase {
     sendReplicasToPrimary(primary, replica);
 
     // Now ask replica to sync:
-    replica.newNRTPoint(primaryVersion2, primary.tcpPort);
+    replica.newNRTPoint(primaryVersion2, 0, primary.tcpPort);
 
     // Make sure it sees all docs that were indexed while it was down:
     assertVersionAndHits(primary, primaryVersion2, 110);

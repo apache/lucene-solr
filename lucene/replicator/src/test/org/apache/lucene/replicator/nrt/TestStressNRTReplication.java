@@ -60,13 +60,7 @@ import com.carrotsearch.randomizedtesting.SeedUtils;
 
 // nocommit why so many "hit SocketException during commit with R0"?
 
-// nocommit why so much time when so many nodes are down
-
-// nocommit indexing is too fast?  (xlog replay fails to finish before primary crashes itself)
-
 // nocommit why all these NodeCommunicationExcs?
-
-// nocommit the sockets are a pita on jvm crashing ...
 
 /*
   TODO
@@ -161,8 +155,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
   static final boolean DO_BIT_FLIPS_DURING_COPY = true;
 
   /** Set to a non-null value to force exactly that many nodes; else, it's random. */
-  // nocommit
-  static final Integer NUM_NODES = 2;
+  static final Integer NUM_NODES = null;
 
   final AtomicBoolean failed = new AtomicBoolean();
 
@@ -213,9 +206,6 @@ public class TestStressNRTReplication extends LuceneTestCase {
 
     // Silly bootstrapping:
     versionToTransLogLocation.put(0L, 0L);
-
-    // nocommit why also 1?
-    //versionToTransLogLocation.put(1L, 0L);
 
     versionToMarker.put(0L, 0);
 
@@ -334,10 +324,15 @@ public class TestStressNRTReplication extends LuceneTestCase {
       {
         NodeProcess node = nodes[random().nextInt(nodes.length)];
         if (node != null && node.nodeIsClosing.get() == false) {
-          // TODO: if this node is primary, it means we committed a "partial" version (not exposed as an NRT point)... not sure it matters.
+          // TODO: if this node is primary, it means we committed an unpublished version (not exposed as an NRT point)... not sure it matters.
           // maybe we somehow allow IW to commit a specific sis (the one we just flushed)?
           message("top: now commit node=" + node);
-          node.commitAsync();
+          try {
+            node.commitAsync();
+          } catch (Throwable t) {
+            message("top: hit exception during commit with R" + node.id + "; skipping");
+            t.printStackTrace(System.out);
+          }
         }
       }
     }
@@ -400,7 +395,14 @@ public class TestStressNRTReplication extends LuceneTestCase {
     for (NodeProcess node : nodes) {
       if (node != null) {
         message("ask " + node + " for its current searching version");
-        long searchingVersion = node.getSearchingVersion();
+        long searchingVersion;
+        try {
+          searchingVersion = node.getSearchingVersion();
+        } catch (Throwable t) {
+          message("top: hit SocketException during getSearchingVersion with R" + node.id + "; skipping");
+          t.printStackTrace(System.out);
+          continue;
+        }
         message(node + " has searchingVersion=" + searchingVersion);
         if (searchingVersion > maxSearchingVersion) {
           maxSearchingVersion = searchingVersion;
@@ -415,8 +417,12 @@ public class TestStressNRTReplication extends LuceneTestCase {
     }
 
     message("top: promote " + replicaToPromote + " version=" + maxSearchingVersion + "; now commit");
-    if (replicaToPromote.commit() == false) {
-      message("top: commit failed; skipping primary promotion");
+    try {
+      replicaToPromote.commit();
+    } catch (Throwable t) {
+      // Something wrong with this replica; skip it:
+      message("top: hit exception during commit with R" + replicaToPromote.id + "; skipping");
+      t.printStackTrace(System.out);
       return;
     }
 
@@ -478,8 +484,9 @@ public class TestStressNRTReplication extends LuceneTestCase {
     try {
       transLog.replay(newPrimary, startTransLogLoc, nextTransLogLoc);
     } catch (IOException ioe) {
-      // nocommit what if primary node is still running here, and we failed for some other reason?
-      message("top: replay xlog failed; abort");
+      message("top: replay xlog failed; shutdown new primary");
+      ioe.printStackTrace(System.out);
+      newPrimary.shutdown();
       return;
     }
 
@@ -1179,6 +1186,16 @@ public class TestStressNRTReplication extends LuceneTestCase {
     System.out.println(String.format(Locale.ROOT,
                                      "%5.3fs       :     parent [%11s] %s",
                                      (now-Node.globalStartNS)/1000000000.,
+                                     Thread.currentThread().getName(),
+                                     message));
+  }
+
+  static void message(String message, long localStartNS) {
+    long now = System.nanoTime();
+    System.out.println(String.format(Locale.ROOT,
+                                     "%5.3fs %5.1fs:     parent [%11s] %s",
+                                     (now-Node.globalStartNS)/1000000000.,
+                                     (now-localStartNS)/1000000000.,
                                      Thread.currentThread().getName(),
                                      message));
   }

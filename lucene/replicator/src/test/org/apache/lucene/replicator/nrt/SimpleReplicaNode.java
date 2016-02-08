@@ -176,10 +176,11 @@ class SimpleReplicaNode extends ReplicaNode {
       case CMD_NEW_NRT_POINT:
         {
           long version = in.readVLong();
+          long newPrimaryGen = in.readVLong();
           Thread.currentThread().setName("recv-" + version);
           curPrimaryTCPPort = in.readInt();
-          message("newNRTPoint primaryTCPPort=" + curPrimaryTCPPort);
-          newNRTPoint(version);
+          message("newNRTPoint primaryTCPPort=" + curPrimaryTCPPort + " version=" + version + " newPrimaryGen=" + newPrimaryGen);
+          newNRTPoint(newPrimaryGen, version);
         }
         break;
 

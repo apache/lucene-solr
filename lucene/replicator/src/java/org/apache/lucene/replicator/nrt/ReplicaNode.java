@@ -462,11 +462,18 @@ abstract class ReplicaNode extends Node {
 
   /** Call this to notify this replica node that a new NRT infos is available on the primary.
    *  We kick off a job (runs in the background) to copy files across, and open a new reader once that's done. */
-  public synchronized CopyJob newNRTPoint(long version) throws IOException {
+  public synchronized CopyJob newNRTPoint(long newPrimaryGen, long version) throws IOException {
 
     if (isClosed()) {
       throw new AlreadyClosedException("this replica is closed: state=" + state);
     }
+
+    // Cutover (possibly) to new primary first, so we discard any pre-copied merged segments up front, before checking for which files need
+    // copying.  While it's possible the pre-copied merged segments could still be useful to us, in the case that the new primary is either
+    // the same primary (just e.g. rebooted), or a promoted replica that had a newer NRT point than we did that included the pre-copied
+    // merged segments, it's still a bit risky to rely solely on checksum/file length to catch the difference, so we defensively discard
+    // here and re-copy in that case:
+    maybeNewPrimary(newPrimaryGen);
 
     // Caller should not "publish" us until we have finished .start():
     assert mgr != null;
@@ -520,9 +527,9 @@ abstract class ReplicaNode extends Node {
       return null;
     }
 
+    assert newPrimaryGen == job.getCopyState().primaryGen;
+
     Collection<String> newNRTFiles = job.getFileNames();
-    long newPrimaryGen = job.getCopyState().primaryGen;
-    maybeNewPrimary(newPrimaryGen);
 
     message("top: newNRTPoint: job files=" + newNRTFiles);
 
@@ -608,9 +615,15 @@ abstract class ReplicaNode extends Node {
   }
 
   /** Called when the primary changed */
-  protected synchronized void maybeNewPrimary(long newPrimaryGen) {
+  protected synchronized void maybeNewPrimary(long newPrimaryGen) throws IOException {
     if (newPrimaryGen != lastPrimaryGen) {
       message("top: now change lastPrimaryGen from " + lastPrimaryGen + " to " + newPrimaryGen + " pendingMergeFiles=" + pendingMergeFiles);
+
+      message("top: delete if no ref pendingMergeFiles=" + pendingMergeFiles);
+      for(String fileName : pendingMergeFiles) {
+        deleter.deleteIfNoRef(fileName);
+      }
+
       assert newPrimaryGen > lastPrimaryGen: "newPrimaryGen=" + newPrimaryGen + " vs lastPrimaryGen=" + lastPrimaryGen;
       lastPrimaryGen = newPrimaryGen;
       pendingMergeFiles.clear();

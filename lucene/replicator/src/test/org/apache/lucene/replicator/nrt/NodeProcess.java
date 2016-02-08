@@ -86,7 +86,7 @@ class NodeProcess implements Closeable {
     }
   }
 
-  public boolean commit() {
+  public boolean commit() throws IOException {
     try (Connection c = new Connection(tcpPort)) {
       c.out.writeByte(SimplePrimaryNode.CMD_COMMIT);
       c.flush();
@@ -95,36 +95,22 @@ class NodeProcess implements Closeable {
         throw new RuntimeException("commit failed");
       }
       return true;
-    } catch (Throwable t) {
-      // nocommit throw this
-      // Something wrong with this replica; skip it:
-      System.out.println("PARENT: top: hit SocketException during commit with R" + id + ": " + t + "; skipping");
-      return false;
     }
   }
 
-  public void commitAsync() {
+  public void commitAsync() throws IOException {
     try (Connection c = new Connection(tcpPort)) {
       c.out.writeByte(SimplePrimaryNode.CMD_COMMIT);
       c.flush();
-    } catch (Throwable t) {
-      // nocommit throw this
-      // Something wrong with this replica; skip it:
-      System.out.println("PARENT: top: hit SocketException during commit with R" + id + ": " + t + "; skipping");
     }
   }
 
-  public long getSearchingVersion() {
+  public long getSearchingVersion() throws IOException {
     try (Connection c = new Connection(tcpPort)) {
       c.out.writeByte(SimplePrimaryNode.CMD_GET_SEARCHING_VERSION);
       c.flush();
       c.s.shutdownOutput();
       return c.in.readVLong();
-    } catch (Throwable t) {
-      // nocommit throw this
-      // Something wrong with this replica; skip it:
-      System.out.println("PARENT: top: hit SocketException during getSearchingVersion with R" + id + "; skipping");
-      return -1L;
     }
   }
 
@@ -162,6 +148,7 @@ class NodeProcess implements Closeable {
           }
         } catch (Throwable t) {
           System.out.println("top: shutdown failed; ignoring");
+          t.printStackTrace(System.out);
         }
         try {
           p.waitFor();
@@ -178,10 +165,11 @@ class NodeProcess implements Closeable {
     }
   }
 
-  public void newNRTPoint(long version, int primaryTCPPort) throws IOException {
+  public void newNRTPoint(long version, long primaryGen, int primaryTCPPort) throws IOException {
     try (Connection c = new Connection(tcpPort)) {
       c.out.writeByte(SimpleReplicaNode.CMD_NEW_NRT_POINT);
       c.out.writeVLong(version);
+      c.out.writeVLong(primaryGen);
       c.out.writeInt(primaryTCPPort);
       c.flush();
     }
