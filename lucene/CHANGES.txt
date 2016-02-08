@@ -4,6 +4,13 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 
+======================= Lucene 5.4.2 =======================
+
+Bug Fixes
+
+* LUCENE-7018: Fix GeoPointTermQueryConstantScoreWrapper to add document on
+  first GeoPointField match. (Nick Knize)
+
 ======================= Lucene 5.4.1 =======================
 
 Bug Fixes
