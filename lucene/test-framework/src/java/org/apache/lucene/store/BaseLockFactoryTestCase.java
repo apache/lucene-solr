@@ -233,19 +233,14 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
         iwc.setOpenMode(OpenMode.APPEND);
         try {
           writer = new IndexWriter(dir, iwc);
-        } catch (LockObtainFailedException e) {
-          // lock obtain timed out
-          // NOTE: we should at some point
-          // consider this a failure?  The lock
-          // obtains, across IndexReader &
-          // IndexWriters should be "fair" (ie
-          // FIFO).
         } catch (Throwable t) {
           if (Constants.WINDOWS && t instanceof AccessDeniedException) {
             // LUCENE-6684: suppress this: on Windows, a file in the curious "pending delete" state can
             // cause this exc on IW init, where one thread/process deleted an old
             // segments_N, but the delete hasn't finished yet because other threads/processes
             // still have it open
+            printStream.println("TEST: AccessDeniedException on init witer");
+            t.printStackTrace(printStream);
           } else {
             hitException = true;
             System.out.println("Stress Test Index Writer: creation hit unexpected exception: " + t.toString());
