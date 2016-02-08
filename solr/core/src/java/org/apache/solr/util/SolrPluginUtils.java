@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -51,7 +50,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.RequestParams;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
@@ -1013,28 +1011,15 @@ public class SolrPluginUtils {
   }
 
 
-  public static void invokeSetters(Object bean, NamedList initArgs) {
+  public static void invokeSetters(Object bean, Iterable<Map.Entry<String,Object>> initArgs) {
     if (initArgs == null) return;
-    Class clazz = bean.getClass();
-    Method[] methods = clazz.getMethods();
-    Iterator<Map.Entry<String, Object>> iterator = initArgs.iterator();
-    while (iterator.hasNext()) {
-      Map.Entry<String, Object> entry = iterator.next();
+    final Class<?> clazz = bean.getClass();
+    for (Map.Entry<String,Object> entry : initArgs) {
       String key = entry.getKey();
       String setterName = "set" + String.valueOf(Character.toUpperCase(key.charAt(0))) + key.substring(1);
-      Method method = null;
       try {
-        for (Method m : methods) {
-          if (m.getName().equals(setterName) && m.getParameterTypes().length == 1) {
-            method = m;
-            break;
-          }
-        }
-        if (method == null) {
-          throw new RuntimeException("no setter corrresponding to '" + key + "' in " + clazz.getName());
-        }
-        Class pClazz = method.getParameterTypes()[0];
-        Object val = entry.getValue();
+        final Method method = findSetter(clazz, setterName, key);
+        final Object val = entry.getValue();
         method.invoke(bean, val);
       } catch (InvocationTargetException | IllegalAccessException e1) {
         throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName(), e1);
@@ -1042,7 +1027,14 @@ public class SolrPluginUtils {
     }
   }
 
-
+  private static Method findSetter(Class<?> clazz, String setterName, String key) {
+    for (Method m : clazz.getMethods()) {
+      if (m.getName().equals(setterName) && m.getParameterTypes().length == 1) {
+        return m;
+      }
+    }
+    throw new RuntimeException("No setter corrresponding to '" + key + "' in " + clazz.getName());
+  }
 
    /**
    * Given the integer purpose of a request generates a readable value corresponding 
