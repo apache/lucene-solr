@@ -289,6 +289,9 @@ Upgrading from Solr 5.4
     ...
   </mergePolicyFactory>
 
+* Clearing up stored async collection api responses via REQUESTSTATUS call is now deprecated and would be
+  removed in 6.0. See SOLR-8648 for more details.
+
 Detailed Change List
 ----------------------
 
@@ -368,6 +371,9 @@ New Features
 * SOLR-8621: Deprecate <mergePolicy> in favor of <mergePolicyFactory>. It allows to configure
   both the "simple" merge policies, but also more advanced ones, e.g. UpgradeIndexMergePolicy.
   (Christine Poerschke, Shai Erera)
+
+* SOLR-8648: DELETESTATUS API for selective deletion and flushing of stored async collection API responses.
+  (Anshum Gupta)
 
 Bug Fixes
 ----------------------

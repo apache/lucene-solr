@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -481,6 +482,50 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
 
     @Override
     protected RequestStatus getThis() {
+      return this;
+    }
+  }
+
+  // DELETESTATUS request
+  public static class DeleteStatus extends CollectionAdminRequest<DeleteStatus> {
+    protected String requestId = null;
+    protected Boolean flush = null;
+
+    public DeleteStatus() {
+      action = CollectionAction.DELETESTATUS;
+    }
+
+    public DeleteStatus setRequestId(String requestId) {
+      this.requestId = requestId;
+      return this;
+    }
+
+    public DeleteStatus setFlush(Boolean flush) {
+      this.flush = flush;
+      return this;
+    }
+
+    public String getRequestId() {
+      return this.requestId;
+    }
+
+    public Boolean getFlush() {
+      return this.flush;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      if (requestId != null)
+        params.set(CoreAdminParams.REQUESTID, requestId);
+
+      if (flush != null)
+        params.set(CollectionAdminParams.FLUSH, flush);
+      return params;
+    }
+
+    @Override
+    protected DeleteStatus getThis() {
       return this;
     }
   }

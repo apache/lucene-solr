@@ -40,32 +40,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.BALANCESHARDUNIQUE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CLUSTERSTATUS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATEALIAS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEALIAS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICAPROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.FORCELEADER;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.LIST;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MIGRATESTATEFORMAT;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.OVERSEERSTATUS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.RELOAD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REMOVEROLE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.REQUESTSTATUS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.SYNCSHARD;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
@@ -116,6 +91,7 @@ import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -142,6 +118,7 @@ import com.google.common.collect.ImmutableSet;
 
 public class CollectionsHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   protected final CoreContainer coreContainer;
 
   public CollectionsHandler() {
@@ -551,18 +528,11 @@ public class CollectionsHandler extends RequestHandlerBase {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
         req.getParams().required().check(REQUESTID);
-        
+
         final CoreContainer coreContainer = h.coreContainer;
         final String requestId = req.getParams().get(REQUESTID);
         final ZkController zkController = coreContainer.getZkController();
-        
-        if (requestId.equals("-1")) {
-          // Special taskId (-1), clears up the request state maps.
-          zkController.getOverseerCompletedMap().clear();
-          zkController.getOverseerFailureMap().clear();
-          return null;
-        }
-        
+
         final NamedList<Object> results = new NamedList<>();
         if (zkController.getOverseerCompletedMap().contains(requestId)) {
           final DistributedMap.MapEvent mapEvent = zkController.getOverseerCompletedMap().get(requestId);
@@ -579,7 +549,7 @@ public class CollectionsHandler extends RequestHandlerBase {
         } else {
           addStatusToResponse(results, NOT_FOUND, "Did not find [" + requestId + "] in any tasks queue");
         }
-        
+
         final SolrResponse response = new OverseerSolrResponse(results);
         rsp.getValues().addAll(response.getResponse());
         return null;
@@ -590,6 +560,42 @@ public class CollectionsHandler extends RequestHandlerBase {
         status.add("state", state.getKey());
         status.add("msg", msg);
         results.add("status", status);
+      }
+    },
+    DELETESTATUS_OP(DELETESTATUS) {
+      @SuppressWarnings("unchecked")
+      @Override
+      Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
+        final CoreContainer coreContainer = h.coreContainer;
+        final String requestId = req.getParams().get(REQUESTID);
+        final ZkController zkController = coreContainer.getZkController();
+        Boolean flush = req.getParams().getBool(CollectionAdminParams.FLUSH, false);
+
+        if (requestId == null && !flush) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Either requestid or flush parameter must be specified.");
+        }
+
+        if (requestId != null && flush) {
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+              "Both requestid and flush parameters can not be specified together.");
+        }
+
+        if (flush) {
+          zkController.getOverseerCompletedMap().clear();
+          zkController.getOverseerFailureMap().clear();
+          rsp.getValues().add("status", "successfully cleared stored collection api responses");
+          return null;
+        } else {
+          // Request to cleanup
+          if (zkController.getOverseerCompletedMap().remove(requestId)) {
+            rsp.getValues().add("status", "successfully removed stored response for [" + requestId + "]");
+          } else if (zkController.getOverseerFailureMap().remove(requestId)) {
+            rsp.getValues().add("status", "successfully removed stored response for [" + requestId + "]");
+          } else {
+            rsp.getValues().add("status", "[" + requestId + "] not found in stored responses");
+          }
+        }
+        return null;
       }
     },
     ADDREPLICA_OP(ADDREPLICA) {

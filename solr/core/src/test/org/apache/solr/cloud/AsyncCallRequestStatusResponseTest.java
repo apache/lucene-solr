@@ -23,16 +23,16 @@ import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
 public class AsyncCallRequestStatusResponseTest extends AbstractFullDistribZkTestBase {
-  
+
   @ShardsFixed(num = 2)
   @Test
   public void testAsyncCallStatusResponse() throws Exception {
     CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-    create.setCollectionName("asynccall");
-    create.setNumShards(2);
-    create.setAsyncId("1000");
-    create.setConfigName("conf1");
-    create.process(cloudClient);
+    create.setCollectionName("asynccall")
+        .setNumShards(2)
+        .setAsyncId("1000")
+        .setConfigName("conf1")
+        .process(cloudClient);
     waitForCollection(cloudClient.getZkStateReader(), "asynccall", 2);
     final RequestStatusState state = getRequestStateAfterCompletion("1000", 30, cloudClient);
     assertSame(RequestStatusState.COMPLETED, state);
