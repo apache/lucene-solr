@@ -299,6 +299,7 @@ public class UpdateRequest extends AbstractUpdateRequest {
           UpdateRequest urequest = new UpdateRequest();
           urequest.setParams(params);
           urequest.deleteById(deleteId, version);
+          urequest.setCommitWithin(getCommitWithin());
           request = new LBHttpSolrClient.Req(urequest, urls);
           routes.put(leaderUrl, request);
         }

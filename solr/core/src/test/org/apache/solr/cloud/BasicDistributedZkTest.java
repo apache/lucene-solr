@@ -25,13 +25,13 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -49,10 +49,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.TimeOut;
-import org.junit.BeforeClass;
+import org.apache.solr.util.RTimer;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +61,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -320,7 +317,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     query(false, new Object[] {"q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS});
     query(false, new Object[] {"q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY});
 
-    // try commitWithin
+    // try add commitWithin
     long before = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     for (SolrClient client : clients) {
       assertEquals("unexpected pre-commitWithin document count on node: " + ((HttpSolrClient)client).getBaseURL(), before, client.query(new SolrQuery("*:*")).getResults().getNumFound());
@@ -328,23 +325,26 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("commitWithin", 10);
-    add(cloudClient, params, getDoc("id", 300));
+    add(cloudClient, params , getDoc("id", 300), getDoc("id", 301));
 
-    final List<SolrClient> clientsToCheck = new ArrayList<>(clients);
-    TimeOut timeout = new TimeOut(45, TimeUnit.SECONDS);
-    do {
-      final Iterator<SolrClient> it = clientsToCheck.iterator();
-      while (it.hasNext()) {
-        final SolrClient sc = it.next();
-        if ((before + 1) == sc.query(new SolrQuery("*:*")).getResults().getNumFound()) {
-          it.remove();
-        }
-      }
-      Thread.sleep(100);
-    } while (!clientsToCheck.isEmpty() && !timeout.hasTimedOut());
-    
-    assertTrue("commitWithin did not work on some nodes: "+clientsToCheck, clientsToCheck.isEmpty());
-    
+    waitForDocCount(before + 2, 30000, "add commitWithin did not work");
+
+    // try deleteById commitWithin
+    UpdateRequest deleteByIdReq = new UpdateRequest();
+    deleteByIdReq.deleteById("300");
+    deleteByIdReq.setCommitWithin(10);
+    deleteByIdReq.process(cloudClient);
+
+    waitForDocCount(before + 1, 30000, "deleteById commitWithin did not work");
+
+    // try deleteByQuery commitWithin
+    UpdateRequest deleteByQueryReq = new UpdateRequest();
+    deleteByQueryReq.deleteByQuery("id:301");
+    deleteByQueryReq.setCommitWithin(10);
+    deleteByQueryReq.process(cloudClient);
+
+    waitForDocCount(before, 30000, "deleteByQuery commitWithin did not work");
+
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.
     // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
@@ -368,6 +368,22 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     // Thread.sleep(10000000000L);
     if (DEBUG) {
       super.printLayout();
+    }
+  }
+
+  private void waitForDocCount(long expectedNumFound, long waitMillis, String failureMessage)
+      throws SolrServerException, IOException, InterruptedException {
+    RTimer timer = new RTimer();
+    long timeout = (long)timer.getTime() + waitMillis;
+    while (cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound() != expectedNumFound) {
+      if (timeout <= (long)timer.getTime()) {
+        fail(failureMessage);
+      }
+      Thread.sleep(100);
+    }
+
+    for (SolrClient client : clients) {
+      assertEquals(failureMessage, expectedNumFound, client.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
   }
   
