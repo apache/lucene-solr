@@ -188,7 +188,11 @@ public class SolrIndexConfig implements MapSerializable {
         "lockType", lockType,
         "infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
     if(mergeSchedulerInfo != null) m.put("mergeScheduler",mergeSchedulerInfo.toMap());
-    if(mergePolicyInfo != null) m.put("mergePolicy",mergePolicyInfo.toMap());
+    if (mergePolicyInfo != null) {
+      m.put("mergePolicy", mergePolicyInfo.toMap());
+    } else if (mergePolicyFactoryInfo != null) {
+      m.put("mergePolicy", mergePolicyFactoryInfo.toMap());
+    }
     if(mergedSegmentWarmerInfo != null) m.put("mergedSegmentWarmer",mergedSegmentWarmerInfo.toMap());
     return m;
   }
