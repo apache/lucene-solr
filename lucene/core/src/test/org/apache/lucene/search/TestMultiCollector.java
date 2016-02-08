@@ -19,9 +19,12 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
@@ -63,6 +66,27 @@ public class TestMultiCollector extends LuceneTestCase {
     
   }
 
+  private static class SetScorerCollector extends FilterCollector {
+
+    private final AtomicBoolean setScorerCalled;
+
+    public SetScorerCollector(Collector in, AtomicBoolean setScorerCalled) {
+      super(in);
+      this.setScorerCalled = setScorerCalled;
+    }
+
+    @Override
+    public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
+      return new FilterLeafCollector(super.getLeafCollector(context)) {
+        @Override
+        public void setScorer(Scorer scorer) throws IOException {
+          super.setScorer(scorer);
+          setScorerCalled.set(true);
+        }
+      };
+    }
+  }
+
   public void testCollectionTerminatedExceptionHandling() throws IOException {
     final int iters = atLeast(3);
     for (int iter = 0; iter < iters; ++iter) {
@@ -93,6 +117,53 @@ public class TestMultiCollector extends LuceneTestCase {
       reader.close();
       dir.close();
     }
+  }
+
+  public void testSetScorerAfterCollectionTerminated() throws IOException {
+    Collector collector1 = new TotalHitCountCollector();
+    Collector collector2 = new TotalHitCountCollector();
+
+    AtomicBoolean setScorerCalled1 = new AtomicBoolean();
+    collector1 = new SetScorerCollector(collector1, setScorerCalled1);
+    
+    AtomicBoolean setScorerCalled2 = new AtomicBoolean();
+    collector2 = new SetScorerCollector(collector2, setScorerCalled2);
+
+    collector1 = new TerminateAfterCollector(collector1, 1);
+    collector2 = new TerminateAfterCollector(collector2, 2);
+
+    Scorer scorer = new FakeScorer();
+
+    List<Collector> collectors = Arrays.asList(collector1, collector2);
+    Collections.shuffle(collectors, random());
+    Collector collector = MultiCollector.wrap(collectors);
+
+    LeafCollector leafCollector = collector.getLeafCollector(null);
+    leafCollector.setScorer(scorer);
+    assertTrue(setScorerCalled1.get());
+    assertTrue(setScorerCalled2.get());
+
+    leafCollector.collect(0);
+    leafCollector.collect(1);
+
+    setScorerCalled1.set(false);
+    setScorerCalled2.set(false);
+    leafCollector.setScorer(scorer);
+    assertFalse(setScorerCalled1.get());
+    assertTrue(setScorerCalled2.get());
+
+    try {
+      leafCollector.collect(1);
+      fail();
+    } catch (CollectionTerminatedException e) {
+      // expected
+    }
+
+    setScorerCalled1.set(false);
+    setScorerCalled2.set(false);
+    leafCollector.setScorer(scorer);
+    assertFalse(setScorerCalled1.get());
+    assertFalse(setScorerCalled2.get());
   }
 
 }
