@@ -19,14 +19,15 @@ package org.apache.solr.index;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.schema.IndexSchema;
 
 /**
  * A {@link MergePolicyFactory} for {@link LogByteSizeMergePolicy} objects.
  */
 public class LogByteSizeMergePolicyFactory extends SimpleMergePolicyFactory {
 
-  public LogByteSizeMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args) {
-    super(resourceLoader, args);
+  public LogByteSizeMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+    super(resourceLoader, args, schema);
   }
 
   @Override

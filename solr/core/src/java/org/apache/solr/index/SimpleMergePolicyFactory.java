@@ -18,6 +18,7 @@ package org.apache.solr.index;
 
 import org.apache.lucene.index.MergePolicy;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.schema.IndexSchema;
 
 /**
  * A {@link MergePolicyFactory} for simple {@link MergePolicy} objects. Implementations need only create the policy
@@ -25,8 +26,8 @@ import org.apache.solr.core.SolrResourceLoader;
  */
 public abstract class SimpleMergePolicyFactory extends MergePolicyFactory {
 
-  protected SimpleMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args) {
-    super(resourceLoader, args);
+  protected SimpleMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+    super(resourceLoader, args, schema);
   }
 
   protected abstract MergePolicy getMergePolicyInstance();

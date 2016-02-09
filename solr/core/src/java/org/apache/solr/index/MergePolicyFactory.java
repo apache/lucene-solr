@@ -18,18 +18,21 @@ package org.apache.solr.index;
 
 import org.apache.lucene.index.MergePolicy;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.schema.IndexSchema;
 
 /**
  * A factory for creating a {@link MergePolicy}.
  */
 public abstract class MergePolicyFactory {
 
+  protected final IndexSchema schema;
   protected final MergePolicyFactoryArgs args;
   protected final SolrResourceLoader resourceLoader;
 
-  protected MergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args) {
+  protected MergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     this.resourceLoader = resourceLoader;
     this.args = args;
+    this.schema = schema;
   }
 
   public abstract MergePolicy getMergePolicy();

@@ -19,14 +19,15 @@ package org.apache.solr.index;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.UpgradeIndexMergePolicy;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.schema.IndexSchema;
 
 /**
  * A {@link MergePolicyFactory} for {@link UpgradeIndexMergePolicy} objects.
  */
 public class UpgradeIndexMergePolicyFactory extends WrapperMergePolicyFactory {
 
-  public UpgradeIndexMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args) {
-    super(resourceLoader, args);
+  public UpgradeIndexMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+    super(resourceLoader, args, schema);
   }
 
   @Override
