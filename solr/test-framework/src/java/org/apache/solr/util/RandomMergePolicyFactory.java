@@ -24,7 +24,7 @@ import org.apache.solr.index.MergePolicyFactoryArgs;
 public final class RandomMergePolicyFactory extends MergePolicyFactory {
 
   public RandomMergePolicyFactory() {
-    super(null, new MergePolicyFactoryArgs());
+    super(null, new MergePolicyFactoryArgs(), null);
   }
 
   @Override

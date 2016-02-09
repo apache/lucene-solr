@@ -58,7 +58,7 @@ public class SolrIndexConfig implements MapSerializable {
 
   private static final String NO_SUB_PACKAGES[] = new String[0];
 
-  private final DefaultMergePolicyFactory defaultMergePolicyFactory = new DefaultMergePolicyFactory();
+  private static final String DEFAULT_MERGE_POLICY_FACTORY_CLASSNAME = DefaultMergePolicyFactory.class.getName();
   public static final String DEFAULT_MERGE_SCHEDULER_CLASSNAME = ConcurrentMergeScheduler.class.getName();
   public final Version luceneVersion;
 
@@ -261,20 +261,23 @@ public class SolrIndexConfig implements MapSerializable {
       return buildMergePolicyFromInfo(schema);
     }
 
-    final MergePolicyFactory mpf;
+    final String mpfClassName;
+    final MergePolicyFactoryArgs mpfArgs;
     if (mergePolicyFactoryInfo == null) {
-      mpf = defaultMergePolicyFactory;
+      mpfClassName = DEFAULT_MERGE_POLICY_FACTORY_CLASSNAME;
+      mpfArgs = new MergePolicyFactoryArgs();
     } else {
-      final String mpfClassName = mergePolicyFactoryInfo.className;
-      final MergePolicyFactoryArgs mpfArgs = new MergePolicyFactoryArgs(mergePolicyFactoryInfo.initArgs);
-      final SolrResourceLoader resourceLoader = schema.getResourceLoader();
-      mpf = resourceLoader.newInstance(
-          mpfClassName,
-          MergePolicyFactory.class,
-          NO_SUB_PACKAGES,
-          new Class[] { SolrResourceLoader.class, MergePolicyFactoryArgs.class },
-          new Object[] { resourceLoader, mpfArgs });
+      mpfClassName = mergePolicyFactoryInfo.className;
+      mpfArgs = new MergePolicyFactoryArgs(mergePolicyFactoryInfo.initArgs);
     }
+
+    final SolrResourceLoader resourceLoader = schema.getResourceLoader();
+    final MergePolicyFactory mpf = resourceLoader.newInstance(
+        mpfClassName,
+        MergePolicyFactory.class,
+        NO_SUB_PACKAGES,
+        new Class[] { SolrResourceLoader.class, MergePolicyFactoryArgs.class, IndexSchema.class },
+        new Object[] { resourceLoader, mpfArgs, schema });
 
     return mpf.getMergePolicy();
   }
@@ -291,6 +294,14 @@ public class SolrIndexConfig implements MapSerializable {
   private MergePolicy buildMergePolicyFromInfo(IndexSchema schema) {
     final MergePolicy policy;
     if (mergePolicyInfo == null) {
+      final SolrResourceLoader resourceLoader = schema.getResourceLoader();
+      final MergePolicyFactoryArgs mpfArgs = new MergePolicyFactoryArgs();
+      final MergePolicyFactory defaultMergePolicyFactory = resourceLoader.newInstance(
+          DEFAULT_MERGE_POLICY_FACTORY_CLASSNAME,
+          MergePolicyFactory.class,
+          NO_SUB_PACKAGES,
+          new Class[] { SolrResourceLoader.class, MergePolicyFactoryArgs.class, IndexSchema.class },
+          new Object[] { resourceLoader, mpfArgs, schema });
       policy = defaultMergePolicyFactory.getMergePolicy();
     } else {
       policy = schema.getResourceLoader().newInstance(mergePolicyInfo.className, MergePolicy.class);

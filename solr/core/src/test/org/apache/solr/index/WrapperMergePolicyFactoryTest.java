@@ -21,6 +21,7 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.schema.IndexSchema;
 
 /** Unit tests for {@link WrapperMergePolicyFactory}. */
 public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
@@ -29,7 +30,7 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
 
   public void testReturnsDefaultMergePolicyIfNoneSpecified() {
     final MergePolicyFactoryArgs args = new MergePolicyFactoryArgs();
-    MergePolicyFactory mpf = new DefaultingWrapperMergePolicyFactory(resourceLoader, args);
+    MergePolicyFactory mpf = new DefaultingWrapperMergePolicyFactory(resourceLoader, args, null);
     assertSame(mpf.getMergePolicy(), NoMergePolicy.INSTANCE);
   }
 
@@ -37,7 +38,7 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
     final MergePolicyFactoryArgs args = new MergePolicyFactoryArgs();
     args.add(WrapperMergePolicyFactory.WRAPPED_PREFIX, "foo");
     try {
-      new DefaultingWrapperMergePolicyFactory(resourceLoader, args).getMergePolicy();
+      new DefaultingWrapperMergePolicyFactory(resourceLoader, args, null).getMergePolicy();
       fail("Should have failed when no 'class' specified for wrapped merge policy");
     } catch (final IllegalArgumentException e) {
       // Good!
@@ -54,7 +55,7 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
     args.add("test.class", TieredMergePolicyFactory.class.getName());
     args.add("test.maxMergeAtOnce", testMaxMergeAtOnce);
     args.add("test.maxMergedSegmentMB", testMaxMergedSegmentMB);
-    MergePolicyFactory mpf = new DefaultingWrapperMergePolicyFactory(resourceLoader, args) {
+    MergePolicyFactory mpf = new DefaultingWrapperMergePolicyFactory(resourceLoader, args, null) {
       @Override
       protected MergePolicy getDefaultWrappedMergePolicy() {
         throw new IllegalStateException("Should not have reached here!");
@@ -69,8 +70,8 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
 
   private static class DefaultingWrapperMergePolicyFactory extends WrapperMergePolicyFactory {
 
-    DefaultingWrapperMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs wrapperArgs) {
-      super(resourceLoader, wrapperArgs);
+    DefaultingWrapperMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs wrapperArgs, IndexSchema schema) {
+      super(resourceLoader, wrapperArgs, schema);
       if (!args.keys().isEmpty()) {
         throw new IllegalArgumentException("All arguments should have been claimed by the wrapped policy but some ("+args+") remain.");
       }

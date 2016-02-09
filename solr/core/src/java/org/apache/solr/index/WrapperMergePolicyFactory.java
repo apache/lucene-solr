@@ -20,6 +20,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.index.MergePolicy;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.schema.IndexSchema;
 
 /**
  * A {@link MergePolicyFactory} for wrapping additional {@link MergePolicyFactory factories}.
@@ -34,8 +35,8 @@ public abstract class WrapperMergePolicyFactory extends MergePolicyFactory {
 
   private final MergePolicyFactoryArgs wrappedMergePolicyArgs;
 
-  protected WrapperMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args) {
-    super(resourceLoader, args);
+  protected WrapperMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+    super(resourceLoader, args, schema);
     wrappedMergePolicyArgs = filterWrappedMergePolicyFactoryArgs();
   }
 
@@ -63,8 +64,8 @@ public abstract class WrapperMergePolicyFactory extends MergePolicyFactory {
         className,
         MergePolicyFactory.class,
         NO_SUB_PACKAGES,
-        new Class[] {SolrResourceLoader.class, MergePolicyFactoryArgs.class},
-        new Object[] {resourceLoader, wrappedMergePolicyArgs});
+        new Class[] {SolrResourceLoader.class, MergePolicyFactoryArgs.class, IndexSchema.class},
+        new Object[] {resourceLoader, wrappedMergePolicyArgs, schema});
     return mpf.getMergePolicy();
   }
 

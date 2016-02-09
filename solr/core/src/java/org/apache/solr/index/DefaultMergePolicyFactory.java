@@ -19,21 +19,22 @@ package org.apache.solr.index;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.schema.IndexSchema;
 
 /**
  * A {@link MergePolicyFactory} for the default {@link MergePolicy}.
  */
 public class DefaultMergePolicyFactory extends MergePolicyFactory {
 
-  public DefaultMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args) {
-    super(resourceLoader, args);
+  public DefaultMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+    super(resourceLoader, args, schema);
     if (!args.keys().isEmpty()) {
       throw new IllegalArgumentException("Arguments were "+args+" but "+getClass().getSimpleName()+" takes no arguments.");
     }
   }
 
   public DefaultMergePolicyFactory() {
-    super(null, null);
+    super(null, null, null);
   }
 
   @Override

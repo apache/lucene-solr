@@ -17,6 +17,7 @@
 package org.apache.solr.index;
 
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.schema.IndexSchema;
 
 /**
  * Dummy implementation of {@link org.apache.solr.index.MergePolicyFactory}
@@ -25,8 +26,8 @@ import org.apache.solr.core.SolrResourceLoader;
  */
 class DummyMergePolicyFactory extends LogByteSizeMergePolicyFactory {
 
-  private DummyMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args) {
-    super(resourceLoader, args);
+  private DummyMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
+    super(resourceLoader, args, schema);
   }
 
 }
