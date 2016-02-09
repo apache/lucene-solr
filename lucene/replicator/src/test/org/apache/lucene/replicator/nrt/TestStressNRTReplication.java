@@ -58,10 +58,6 @@ import org.apache.lucene.util.ThreadInterruptedException;
 
 import com.carrotsearch.randomizedtesting.SeedUtils;
 
-// nocommit why so many "hit SocketException during commit with R0"?
-
-// nocommit why all these NodeCommunicationExcs?
-
 /*
   TODO
     - fangs
@@ -1145,7 +1141,9 @@ public class TestStressNRTReplication extends LuceneTestCase {
             }
           } catch (IOException se) {
             // Assume primary crashed
-            message("top: indexer lost connection to primary");
+            if (c != null) {
+              message("top: indexer lost connection to primary");
+            }
             try {
               c.close();
             } catch (Throwable t) {

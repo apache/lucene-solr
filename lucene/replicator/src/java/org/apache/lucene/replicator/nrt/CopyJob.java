@@ -30,8 +30,9 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.util.IOUtils;
 
 /** Handles copying one set of files, e.g. all files for a new NRT point, or files for pre-copying a merged segment.
- *  This notifies the caller via OnceDone when the job finishes or failed. */
-
+ *  This notifies the caller via OnceDone when the job finishes or failed.
+ *
+ * @lucene.experimental */
 public abstract class CopyJob implements Comparable<CopyJob> {
   private final static AtomicLong counter = new AtomicLong();
   protected final ReplicaNode dest;

@@ -26,7 +26,6 @@ import org.apache.lucene.store.Directory;
  * {@link DirectoryReader}.
  * 
  * @see DirectoryReader#open(Directory)
- * @see DirectoryReader#open(IndexWriter, boolean)
  */
 public class StandardIndexReaderFactory extends IndexReaderFactory {
   

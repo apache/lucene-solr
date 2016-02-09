@@ -44,7 +44,9 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.StringHelper;
 
-/** Common base class for {@link PrimaryNode} and {@link ReplicaNode}. */
+/** Common base class for {@link PrimaryNode} and {@link ReplicaNode}.
+ *
+ * @lucene.experimental */
 
 abstract class Node implements Closeable {
 

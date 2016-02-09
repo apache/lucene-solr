@@ -17,7 +17,9 @@ package org.apache.lucene.replicator.nrt;
  * limitations under the License.
  */
 
-/** Holds metadata details about a single file that we use to confirm two files (one remote, one local) are in fact "identical". */
+/** Holds metadata details about a single file that we use to confirm two files (one remote, one local) are in fact "identical".
+ *
+ * @lucene.experimental */
 
 class FileMetaData {
 

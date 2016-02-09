@@ -17,6 +17,12 @@ package org.apache.lucene.replicator.nrt;
  * limitations under the License.
  */
 
+/**
+ * Should be thrown by subclasses of {@link PrimaryNode} and {@link ReplicaNode} if a non-fatal exception
+ * occurred while communicating between nodes.
+ *
+ * @lucene.experimental
+ */
 public class NodeCommunicationException extends RuntimeException {
   public NodeCommunicationException(String when, Throwable cause) {
     super(when);

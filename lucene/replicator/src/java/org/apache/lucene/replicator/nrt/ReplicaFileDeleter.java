@@ -34,8 +34,6 @@ import org.apache.lucene.store.IOContext;
 
 // TODO: can we factor/share with IFD: this is doing exactly the same thing, but on the replica side
 
-// TODO: once LUCENE-6835 is in, this class becomes a lot simpler?
-
 class ReplicaFileDeleter {
   private final Map<String,Integer> refCounts = new HashMap<String,Integer>();
   private final Directory dir;
@@ -50,7 +48,7 @@ class ReplicaFileDeleter {
    *  (can be opened), false if it cannot be opened, and
    *  (unlike Java's File.exists) throws IOException if
    *  there's some unexpected error. */
-  static boolean slowFileExists(Directory dir, String fileName) throws IOException {
+  private static boolean slowFileExists(Directory dir, String fileName) throws IOException {
     try {
       dir.openInput(fileName, IOContext.DEFAULT).close();
       return true;

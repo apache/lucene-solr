@@ -46,7 +46,10 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * replicas since step 2) could otherwise be done concurrently with replicas copying files over.
  */
 
-/** Node that holds an IndexWriter, indexing documents into its local index. */
+/** Node that holds an IndexWriter, indexing documents into its local index.
+ *
+ * @lucene.experimental */
+
 public abstract class PrimaryNode extends Node {
 
   // Current NRT segment infos, incRef'd with IndexWriter.deleter:

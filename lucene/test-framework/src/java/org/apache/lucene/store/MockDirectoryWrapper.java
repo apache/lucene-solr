@@ -432,7 +432,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         throw new AssertionError();
       }
 
-      if (true || LuceneTestCase.VERBOSE) {
+      if (LuceneTestCase.VERBOSE) {
         System.out.println("MockDirectoryWrapper: " + action + " unsynced file: " + name);
       }
     }

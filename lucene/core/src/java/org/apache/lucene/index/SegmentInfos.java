@@ -485,7 +485,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     out.writeVInt(Version.LATEST.major);
     out.writeVInt(Version.LATEST.minor);
     out.writeVInt(Version.LATEST.bugfix);
-    System.out.println(Thread.currentThread().getName() + ": now write " + out.getName() + " with version=" + version);
+    //System.out.println(Thread.currentThread().getName() + ": now write " + out.getName() + " with version=" + version);
 
     out.writeLong(version); 
     out.writeInt(counter); // write counter

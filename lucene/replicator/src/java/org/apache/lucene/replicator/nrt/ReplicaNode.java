@@ -50,7 +50,9 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.util.IOUtils;
 
-/** Replica node, that pulls index changes from the primary node by copying newly flushed or merged index files */
+/** Replica node, that pulls index changes from the primary node by copying newly flushed or merged index files.
+ * 
+ *  @lucene.experimental */
 
 abstract class ReplicaNode extends Node {
 

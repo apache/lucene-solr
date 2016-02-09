@@ -24,7 +24,9 @@ import java.util.Set;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.Directory;
 
-/** Holds incRef'd file level details for one point-in-time segment infos on the primary node. */
+/** Holds incRef'd file level details for one point-in-time segment infos on the primary node.
+ *
+ * @lucene.experimental */
 public class CopyState {
 
   public final Map<String,FileMetaData> files;
