@@ -163,7 +163,7 @@ class SimplePrimaryNode extends PrimaryNode {
       return;
     }
 
-    message("top: warm merge " + info + " to " + replicaTCPPorts.length + " replicas: files=" + files.keySet());
+    message("top: warm merge " + info + " to " + replicaTCPPorts.length + " replicas; tcpPort=" + tcpPort + ": files=" + files.keySet());
 
     MergePreCopy preCopy = new MergePreCopy(files);
     warmingSegments.add(preCopy);
@@ -289,8 +289,8 @@ class SimplePrimaryNode extends PrimaryNode {
       // Something did get flushed (there were indexing ops since the last flush):
 
       verifyAtLeastMarkerCount(atLeastMarkerCount, null);
-
-      // Tell caller the version before pushing to replicas, so that even if we crash after this, caller will know what version we
+ 
+     // Tell caller the version before pushing to replicas, so that even if we crash after this, caller will know what version we
       // (possibly) pushed to some replicas.  Alternatively we could make this 2 separate ops?
       long version = getCopyStateVersion();
       message("send flushed version=" + version);
@@ -432,10 +432,19 @@ class SimplePrimaryNode extends PrimaryNode {
     tokenizedWithTermVectors.setStoreTermVectorPositions(true);
   }
 
-  private void handleIndexing(Socket socket, DataInput in, DataOutput out, BufferedOutputStream bos) throws IOException {
+  private void handleIndexing(Socket socket, AtomicBoolean stop, InputStream is, DataInput in, DataOutput out, BufferedOutputStream bos) throws IOException, InterruptedException {
     Thread.currentThread().setName("indexing");
     message("start handling indexing socket=" + socket);
     while (true) {
+      while (true) {
+        if (is.available() > 0) {
+          break;
+        }
+        if (stop.get()) {
+          return;
+        }
+        Thread.sleep(10);
+      }
       byte cmd;
       try {
         cmd = in.readByte();
@@ -587,7 +596,7 @@ class SimplePrimaryNode extends PrimaryNode {
         break;
 
       case CMD_INDEXING:
-        handleIndexing(socket, in, out, bos);
+        handleIndexing(socket, stop, is, in, out, bos);
         break;
 
       case CMD_GET_SEARCHING_VERSION:

@@ -106,7 +106,8 @@ public class SimpleServer extends LuceneTestCase {
           // Test should fail with this:
           throw new RuntimeException(t);
         } else {
-          node.message("exception " + t + " handling client connection; ignoring");
+          node.message("exception handling client connection; ignoring:");
+          t.printStackTrace(System.out);
         }
       } finally {
         if (success) {

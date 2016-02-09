@@ -155,7 +155,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
   static final boolean DO_BIT_FLIPS_DURING_COPY = true;
 
   /** Set to a non-null value to force exactly that many nodes; else, it's random. */
-  static final Integer NUM_NODES = null;
+  static final Integer NUM_NODES;
 
   final AtomicBoolean failed = new AtomicBoolean();
 
@@ -321,7 +321,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
 
       // Commit a random node, primary or replica
 
-      {
+      if (random().nextInt(10) == 1) {
         NodeProcess node = nodes[random().nextInt(nodes.length)];
         if (node != null && node.nodeIsClosing.get() == false) {
           // TODO: if this node is primary, it means we committed an unpublished version (not exposed as an NRT point)... not sure it matters.
@@ -751,7 +751,8 @@ public class TestStressNRTReplication extends LuceneTestCase {
         c.flush();
         c.in.readByte();
       } catch (Throwable t) {
-        message("top: ignore exc sending replicas to primary: " + t);
+        message("top: ignore exc sending replicas to primary P" + curPrimary.id + " at tcpPort=" + curPrimary.tcpPort);
+        t.printStackTrace(System.out);
       }
     }
   }
