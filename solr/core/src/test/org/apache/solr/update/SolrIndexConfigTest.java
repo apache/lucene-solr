@@ -40,7 +40,8 @@ import org.junit.Test;
 public class SolrIndexConfigTest extends SolrTestCaseJ4 {
 
   private static final String solrConfigFileName = "solrconfig.xml";
-  private static final String solrConfigFileNameWarmer = "solrconfig-warmer.xml";
+  private static final String solrConfigFileNameWarmerRandomMergePolicy = "solrconfig-warmer.xml";
+  private static final String solrConfigFileNameWarmerRandomMergePolicyFactory = "solrconfig-warmer-randommergepolicyfactory.xml";
   private static final String solrConfigFileNameTieredMergePolicy = "solrconfig-tieredmergepolicy.xml";
   private static final String solrConfigFileNameTieredMergePolicyFactory = "solrconfig-tieredmergepolicyfactory.xml";
   private static final String schemaFileName = "schema.xml";
@@ -55,7 +56,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   @Test
   public void testFailingSolrIndexConfigCreation() {
     try {
-      SolrConfig solrConfig = new SolrConfig("bad-mp-solrconfig.xml");
+      SolrConfig solrConfig = new SolrConfig(random().nextBoolean() ? "bad-mp-solrconfig.xml" : "bad-mpf-solrconfig.xml");
       SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
       IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
       h.getCore().setLatestSchema(indexSchema);
@@ -91,7 +92,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   }
 
   public void testMergedSegmentWarmerIndexConfigCreation() throws Exception {
-    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameWarmer, null);
+    SolrConfig solrConfig = new SolrConfig(instanceDir, random().nextBoolean() ? solrConfigFileNameWarmerRandomMergePolicy : solrConfigFileNameWarmerRandomMergePolicyFactory, null);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
     assertNotNull(solrIndexConfig);
     assertNotNull(solrIndexConfig.mergedSegmentWarmerInfo);
@@ -104,17 +105,20 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   }
 
   public void testToMap() throws Exception {
+    final String solrConfigFileNameWarmer = random().nextBoolean() ? solrConfigFileNameWarmerRandomMergePolicy : solrConfigFileNameWarmerRandomMergePolicyFactory;
     final String solrConfigFileNameTMP = random().nextBoolean() ? solrConfigFileNameTieredMergePolicy : solrConfigFileNameTieredMergePolicyFactory;
     final String solrConfigFileName = (random().nextBoolean() ? solrConfigFileNameWarmer : solrConfigFileNameTMP);
     SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileName, null);
     SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
     assertNotNull(solrIndexConfig);
-    if (solrConfigFileName.equals(solrConfigFileNameTieredMergePolicyFactory)) {
+    if (solrConfigFileName.equals(solrConfigFileNameTieredMergePolicyFactory) ||
+        solrConfigFileName.equals(solrConfigFileNameWarmerRandomMergePolicyFactory)) {
       assertNotNull(solrIndexConfig.mergePolicyFactoryInfo);
     } else {
       assertNotNull(solrIndexConfig.mergePolicyInfo);
     }
-    if (solrConfigFileName.equals(solrConfigFileNameWarmer)) {
+    if (solrConfigFileName.equals(solrConfigFileNameWarmerRandomMergePolicy) ||
+        solrConfigFileName.equals(solrConfigFileNameWarmerRandomMergePolicyFactory)) {
       assertNotNull(solrIndexConfig.mergedSegmentWarmerInfo);
     } else {
       assertNull(solrIndexConfig.mergedSegmentWarmerInfo);
@@ -151,7 +155,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     
     ++mSizeExpected; assertTrue(m.get("mergeScheduler") instanceof Map);
     ++mSizeExpected; assertTrue(m.get("mergePolicy") instanceof Map);
-    if (solrConfigFileName.equals(solrConfigFileNameWarmer)) {
+    if (solrConfigFileName.equals(solrConfigFileNameWarmerRandomMergePolicy) ||
+        solrConfigFileName.equals(solrConfigFileNameWarmerRandomMergePolicyFactory)) {
       ++mSizeExpected; assertTrue(m.get("mergedSegmentWarmer") instanceof Map);
     } else {
       assertNull(m.get("mergedSegmentWarmer"));
