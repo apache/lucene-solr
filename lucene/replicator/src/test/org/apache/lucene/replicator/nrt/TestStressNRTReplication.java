@@ -155,7 +155,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
   static final boolean DO_BIT_FLIPS_DURING_COPY = true;
 
   /** Set to a non-null value to force exactly that many nodes; else, it's random. */
-  static final Integer NUM_NODES;
+  static final Integer NUM_NODES = null;
 
   final AtomicBoolean failed = new AtomicBoolean();
 
