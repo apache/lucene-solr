@@ -50,6 +50,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.LuceneTestCase;
@@ -63,29 +64,17 @@ import com.carrotsearch.randomizedtesting.SeedUtils;
   TODO
     - fangs
       - sometimes have one replica be really slow at copying / have random pauses (fake GC) / etc.
-      - graceful primary close
-    - why do we do the "rename temp to actual" all at the end...?  what really does that buy us?
-    - replica should also track maxSegmentName its seen, and tap into inflateGens if it's later promoted to primary?
     - test should not print scary exceptions and then succeed!
-    - since all nodes are local, we could have a different test only impl that just does local file copies instead of via tcp...
     - are the pre-copied-completed-merged files not being cleared in primary?
       - hmm the logic isn't right today?  a replica may skip pulling a given copy state, that recorded the finished merged segments?
-    - beast & fix bugs
-    - graceful cluster restart
-    - better translog integration
-    - get "graceful primary shutdown" working
-    - there is still some global state we rely on for "correctness", e.g. lastPrimaryVersion
-    - clean up how version is persisted in commit data
-    - why am i not using hashes here?  how does ES use them?
-    - get all other "single shard" functions working too: this cluster should "act like" a single shard
-      - SLM
-      - controlled nrt reopen thread / returning long gen on write
-      - live field values
-      - add indexes
-    - make cluster level APIs to search, index, that deal w/ primary failover, etc.
-    - must prune xlog
-      - refuse to start primary unless we have quorum
     - later
+      - since all nodes are local, we could have a different test only impl that just does local file copies instead of via tcp...
+      - get all other "single shard" functions working too: this cluster should "act like" a single shard
+        - SLM
+        - controlled nrt reopen thread / returning long gen on write
+        - live field values
+      - add indexes
+      - replica should also track maxSegmentName its seen, and tap into inflateGens if it's later promoted to primary?
       - if we named index files using segment's ID we wouldn't have file name conflicts after primary crash / rollback?
       - back pressure on indexing if replicas can't keep up?
       - get xlog working on top?  needs to be checkpointed, so we can correlate IW ops to NRT reader version and prune xlog based on commit
@@ -190,6 +179,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
 
   final Set<Integer> crashingNodes = Collections.synchronizedSet(new HashSet<>());
 
+  @Nightly
   public void test() throws Exception {
 
     Node.globalStartNS = System.nanoTime();

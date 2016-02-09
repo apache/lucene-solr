@@ -18,6 +18,7 @@ package org.apache.lucene.replicator.nrt;
  */
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -67,8 +68,9 @@ public abstract class PrimaryNode extends Node {
 
   private final AtomicInteger copyingCount = new AtomicInteger();
 
-  public PrimaryNode(IndexWriter writer, int id, long primaryGen, long forcePrimaryVersion, SearcherFactory searcherFactory) throws IOException {
-    super(id, writer.getDirectory(), searcherFactory);
+  public PrimaryNode(IndexWriter writer, int id, long primaryGen, long forcePrimaryVersion,
+                     SearcherFactory searcherFactory, PrintStream printStream) throws IOException {
+    super(id, writer.getDirectory(), searcherFactory, printStream);
     message("top: now init primary");
     this.writer = writer;
     this.primaryGen = primaryGen;
@@ -115,7 +117,7 @@ public abstract class PrimaryNode extends Node {
 
     } catch (Throwable t) {
       message("init: exception");
-      t.printStackTrace(System.out);
+      t.printStackTrace(printStream);
       throw new RuntimeException(t);
     }
   }

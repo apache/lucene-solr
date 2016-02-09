@@ -4738,7 +4738,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
   
-  /** @lucene.internal */
+  /** Record that the files referenced by this {@link SegmentInfos} are still in use.
+   *
+   * @lucene.internal */
   public synchronized void incRefDeleter(SegmentInfos segmentInfos) throws IOException {
     ensureOpen();
     deleter.incRef(segmentInfos, false);
@@ -4747,7 +4749,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
 
-  /** @lucene.internal */
+  /** Record that the files referenced by this {@link SegmentInfos} are no longer in use.  Only call this if you are sure you previously
+   *  called {@link #incRefDeleter}.
+   *
+  * @lucene.internal */
   public synchronized void decRefDeleter(SegmentInfos segmentInfos) throws IOException {
     ensureOpen();
     deleter.decRef(segmentInfos);

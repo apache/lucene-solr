@@ -29,7 +29,7 @@ import org.apache.lucene.util.IOUtils;
 
 /** Copies one file from an incoming DataInput to a dest filename in a local Directory */
 
-class CopyOneFile implements Closeable {
+public class CopyOneFile implements Closeable {
   private final DataInput in;
   private final IndexOutput out;
   private final ReplicaNode dest;

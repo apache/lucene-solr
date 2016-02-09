@@ -30,6 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.IOUtils;
 
+/** Default implementation of {@link DirectoryReader}. */
 public final class StandardDirectoryReader extends DirectoryReader {
 
   final IndexWriter writer;
@@ -336,7 +337,9 @@ public final class StandardDirectoryReader extends DirectoryReader {
     return segmentInfos.getVersion();
   }
 
-  /** @lucene.internal */
+  /** Return the {@link SegmentInfos} for this reader.
+   *
+   * @lucene.internal */
   public SegmentInfos getSegmentInfos() {
     return segmentInfos;
   }

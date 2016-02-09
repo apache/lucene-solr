@@ -64,8 +64,9 @@ class SimpleReplicaNode extends ReplicaNode {
   /** Changes over time, as primary node crashes and moves around */
   int curPrimaryTCPPort;
 
-  public SimpleReplicaNode(Random random, int id, int tcpPort, Path indexPath, long curPrimaryGen, int primaryTCPPort, SearcherFactory searcherFactory, boolean doCheckIndexOnClose) throws IOException {
-    super(id, getDirectory(random, id, indexPath, doCheckIndexOnClose), searcherFactory);
+  public SimpleReplicaNode(Random random, int id, int tcpPort, Path indexPath, long curPrimaryGen, int primaryTCPPort,
+                           SearcherFactory searcherFactory, boolean doCheckIndexOnClose) throws IOException {
+    super(id, getDirectory(random, id, indexPath, doCheckIndexOnClose), searcherFactory, System.out);
     this.tcpPort = tcpPort;
     this.random = new Random(random.nextLong());
 
@@ -139,7 +140,7 @@ class SimpleReplicaNode extends ReplicaNode {
 
     // Corrupt any index files not referenced by current commit point; this is important (increases test evilness) because we may have done
     // a hard crash of the previous JVM writing to this directory and so MDW's corrupt-unknown-files-on-close never ran:
-    Node.nodeMessage(id, "top: corrupt unknown files");
+    Node.nodeMessage(System.out, id, "top: corrupt unknown files");
     dir.corruptUnknownFiles();
 
     return dir;

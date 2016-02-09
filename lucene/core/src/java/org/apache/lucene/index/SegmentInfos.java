@@ -285,6 +285,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     }
   }
 
+  /** Read the commit from the provided {@link ChecksumIndexInput}. */
   public static final SegmentInfos readCommit(Directory directory, ChecksumIndexInput input, long generation) throws IOException {
 
     // NOTE: as long as we want to throw indexformattooold (vs corruptindexexception), we need
@@ -479,6 +480,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     }
   }
 
+  /** Write ourselves to the provided {@link IndexOutput} */
   public void write(Directory directory, IndexOutput out) throws IOException {
     CodecUtil.writeIndexHeader(out, "segments", VERSION_CURRENT, 
                                StringHelper.randomId(), Long.toString(generation, Character.MAX_RADIX));
@@ -725,8 +727,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     this.counter = other.counter;
   }
 
+  /** Set the generation to be used for the next commit */
   public void setNextWriteGeneration(long generation) {
-    assert generation >= this.generation;
+    if (generation < this.generation) {
+      throw new IllegalStateException("cannot decrease generation to " + generation + " from current generation " + this.generation);
+    }
     this.generation = generation;
   }
 
@@ -843,6 +848,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     return userData;
   }
 
+  /** Sets the commit data. */
   public void setUserData(Map<String,String> data, boolean doIncrementVersion) {
     if (data == null) {
       userData = Collections.<String,String>emptyMap();

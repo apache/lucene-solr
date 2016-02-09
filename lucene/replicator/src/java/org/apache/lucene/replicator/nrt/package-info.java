@@ -1,5 +1,3 @@
-package org.apache.lucene.replicator.nrt;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,27 +14,8 @@ package org.apache.lucene.replicator.nrt;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-/** Holds metadata details about a single file that we use to confirm two files (one remote, one local) are in fact "identical".
- *
- * @lucene.experimental */
-
-public class FileMetaData {
-
-  // Header and footer of the file must be identical between primary and replica to consider the files equal:
-  public final byte[] header;
-  public final byte[] footer;
-
-  public final long length;
-
-  // Used to ensure no bit flips when copying the file:
-  public final long checksum;
-
-  public FileMetaData(byte[] header, byte[] footer, long length, long checksum) {
-    this.header = header;
-    this.footer = footer;
-    this.length = length;
-    this.checksum = checksum;
-  }
-}
-
+ 
+/** 
+ * <h1>Near-real-time replication framework</h1>
+ */
+package org.apache.lucene.replicator.nrt;

@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -78,6 +79,9 @@ abstract class Node implements Closeable {
   /** When this node was started */
   public static final long localStartNS = System.nanoTime();
 
+  /** For debug logging */
+  protected final PrintStream printStream;
+
   // public static final long globalStartNS;
 
   // For debugging:
@@ -86,10 +90,11 @@ abstract class Node implements Closeable {
   /** File metadata for last sync that succeeded; we use this as a cache */
   protected volatile Map<String,FileMetaData> lastFileMetaData;
 
-  public Node(int id, Directory dir, SearcherFactory searcherFactory) {
+  public Node(int id, Directory dir, SearcherFactory searcherFactory, PrintStream printStream) {
     this.id = id;
     this.dir = dir;
     this.searcherFactory = searcherFactory;
+    this.printStream = printStream;
   }
 
   @Override
@@ -99,37 +104,41 @@ abstract class Node implements Closeable {
 
   public abstract void commit() throws IOException;
 
-  public static void nodeMessage(String message) {
-    long now = System.nanoTime();
-    System.out.println(String.format(Locale.ROOT,
-                                     "%5.3fs %5.1fs:           [%11s] %s",
-                                     (now-globalStartNS)/1000000000.,
-                                     (now-localStartNS)/1000000000.,
-                                     Thread.currentThread().getName(),
-                                     message));
-
+  public static void nodeMessage(PrintStream printStream, String message) {
+    if (printStream != null) {
+      long now = System.nanoTime();
+      printStream.println(String.format(Locale.ROOT,
+                                        "%5.3fs %5.1fs:           [%11s] %s",
+                                        (now-globalStartNS)/1000000000.,
+                                        (now-localStartNS)/1000000000.,
+                                        Thread.currentThread().getName(),
+                                        message));
+    }
   }
 
-  public static void nodeMessage(int id, String message) {
-    long now = System.nanoTime();
-    System.out.println(String.format(Locale.ROOT,
-                                     "%5.3fs %5.1fs:         N%d [%11s] %s",
-                                     (now-globalStartNS)/1000000000.,
-                                     (now-localStartNS)/1000000000.,
-                                     id,
-                                     Thread.currentThread().getName(),
-                                     message));
-
+  public static void nodeMessage(PrintStream printStream, int id, String message) {
+    if (printStream != null) {
+      long now = System.nanoTime();
+      printStream.println(String.format(Locale.ROOT,
+                                       "%5.3fs %5.1fs:         N%d [%11s] %s",
+                                       (now-globalStartNS)/1000000000.,
+                                       (now-localStartNS)/1000000000.,
+                                       id,
+                                       Thread.currentThread().getName(),
+                                       message));
+    }
   }
 
   protected void message(String message) {
-    long now = System.nanoTime();
-    System.out.println(String.format(Locale.ROOT,
-                                     "%5.3fs %5.1fs: %7s %2s [%11s] %s",
-                                     (now-globalStartNS)/1000000000.,
-                                     (now-localStartNS)/1000000000.,
-                                     state, name(),
-                                     Thread.currentThread().getName(), message));
+    if (printStream != null) {
+      long now = System.nanoTime();
+      printStream.println(String.format(Locale.ROOT,
+                                       "%5.3fs %5.1fs: %7s %2s [%11s] %s",
+                                       (now-globalStartNS)/1000000000.,
+                                       (now-localStartNS)/1000000000.,
+                                       state, name(),
+                                       Thread.currentThread().getName(), message));
+    }
   }
 
   public String name() {

@@ -18,6 +18,7 @@ package org.apache.lucene.replicator.nrt;
  */
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,7 +55,7 @@ import org.apache.lucene.util.IOUtils;
  * 
  *  @lucene.experimental */
 
-abstract class ReplicaNode extends Node {
+public abstract class ReplicaNode extends Node {
 
   ReplicaFileDeleter deleter;
 
@@ -79,8 +80,8 @@ abstract class ReplicaNode extends Node {
   /** Primary gen last time we successfully replicated: */
   protected long lastPrimaryGen;
 
-  public ReplicaNode(int id, Directory dir, SearcherFactory searcherFactory) throws IOException {
-    super(id, dir, searcherFactory);
+  public ReplicaNode(int id, Directory dir, SearcherFactory searcherFactory, PrintStream printStream) throws IOException {
+    super(id, dir, searcherFactory, printStream);
 
     if (dir instanceof FSDirectory && ((FSDirectory) dir).checkPendingDeletions()) {
       throw new IllegalArgumentException("Directory " + dir + " still has pending deleted files; cannot initialize IndexWriter");
@@ -98,7 +99,7 @@ abstract class ReplicaNode extends Node {
       deleter = new ReplicaFileDeleter(this, dir);
     } catch (Throwable t) {
       message("exc on init:");
-      t.printStackTrace(System.out);
+      t.printStackTrace(printStream);
       throw t;
     } finally {
       if (success == false) {
@@ -307,7 +308,7 @@ abstract class ReplicaNode extends Node {
     } catch (Throwable t) {
       if (t.getMessage().startsWith("replica cannot start") == false) {
         message("exc on start:");
-        t.printStackTrace(System.out);
+        t.printStackTrace(printStream);
       } else {
         dir.close();
       }
@@ -522,7 +523,7 @@ abstract class ReplicaNode extends Node {
     } catch (NodeCommunicationException nce) {
       // E.g. primary could crash/close when we are asking it for the copy state:
       message("top: ignoring communication exception creating CopyJob: " + nce);
-      //nce.printStackTrace(System.out);
+      //nce.printStackTrace(printStream);
       if (state.equals("syncing")) {
         state = "idle";
       }
@@ -560,7 +561,7 @@ abstract class ReplicaNode extends Node {
     } catch (NodeCommunicationException nce) {
       // E.g. primary could crash/close when we are asking it for the copy state:
       message("top: ignoring exception starting CopyJob: " + nce);
-      nce.printStackTrace(System.out);
+      nce.printStackTrace(printStream);
       if (state.equals("syncing")) {
         state = "idle";
       }

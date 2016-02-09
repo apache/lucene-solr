@@ -116,7 +116,7 @@ class SimplePrimaryNode extends PrimaryNode {
 
   public SimplePrimaryNode(Random random, Path indexPath, int id, int tcpPort, long primaryGen, long forcePrimaryVersion, SearcherFactory searcherFactory,
                            boolean doFlipBitsDuringCopy, boolean doCheckIndexOnClose) throws IOException {
-    super(initWriter(id, random, indexPath, doCheckIndexOnClose), id, primaryGen, forcePrimaryVersion, searcherFactory);
+    super(initWriter(id, random, indexPath, doCheckIndexOnClose), id, primaryGen, forcePrimaryVersion, searcherFactory, System.out);
     this.tcpPort = tcpPort;
     this.random = new Random(random.nextLong());
     this.doFlipBitsDuringCopy = doFlipBitsDuringCopy;

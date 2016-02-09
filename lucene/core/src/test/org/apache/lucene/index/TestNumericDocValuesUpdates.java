@@ -54,7 +54,6 @@ import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 
-
 @SuppressWarnings("resource")
 public class TestNumericDocValuesUpdates extends LuceneTestCase {
 
