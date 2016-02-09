@@ -68,7 +68,6 @@ import org.xml.sax.SAXException;
 public class EnumField extends PrimitiveFieldType {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  protected static final Locale LOCALE = Locale.getDefault();
   protected static final String PARAM_ENUMS_CONFIG = "enumsConfig";
   protected static final String PARAM_ENUM_NAME = "enumName";
   protected static final Integer DEFAULT_VALUE = -1;
@@ -104,11 +103,11 @@ public class EnumField extends PrimitiveFieldType {
         final Document doc = dbf.newDocumentBuilder().parse(is);
         final XPathFactory xpathFactory = XPathFactory.newInstance();
         final XPath xpath = xpathFactory.newXPath();
-        final String xpathStr = String.format(LOCALE, "/enumsConfig/enum[@name='%s']", enumName);
+        final String xpathStr = String.format(Locale.ROOT, "/enumsConfig/enum[@name='%s']", enumName);
         final NodeList nodes = (NodeList) xpath.evaluate(xpathStr, doc, XPathConstants.NODESET);
         final int nodesLength = nodes.getLength();
         if (nodesLength == 0) {
-          String exceptionMessage = String.format(LOCALE, "No enum configuration found for enum '%s' in %s.",
+          String exceptionMessage = String.format(Locale.ENGLISH, "No enum configuration found for enum '%s' in %s.",
                   enumName, enumsConfigFile);
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, exceptionMessage);
         }
@@ -122,12 +121,12 @@ public class EnumField extends PrimitiveFieldType {
           final Node valueNode = valueNodes.item(i);
           final String valueStr = valueNode.getTextContent();
           if ((valueStr == null) || (valueStr.length() == 0)) {
-            final String exceptionMessage = String.format(LOCALE, "A value was defined with an no value in enum '%s' in %s.",
+            final String exceptionMessage = String.format(Locale.ENGLISH, "A value was defined with an no value in enum '%s' in %s.",
                     enumName, enumsConfigFile);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, exceptionMessage);
           }
           if (enumStringToIntMap.containsKey(valueStr)) {
-            final String exceptionMessage = String.format(LOCALE, "A duplicated definition was found for value '%s' in enum '%s' in %s.",
+            final String exceptionMessage = String.format(Locale.ENGLISH, "A duplicated definition was found for value '%s' in enum '%s' in %s.",
                     valueStr, enumName, enumsConfigFile);
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, exceptionMessage);
           }
@@ -153,7 +152,7 @@ public class EnumField extends PrimitiveFieldType {
     }
 
     if ((enumStringToIntMap.size() == 0) || (enumIntToStringMap.size() == 0)) {
-      String exceptionMessage = String.format(LOCALE, "Invalid configuration was defined for enum '%s' in %s.",
+      String exceptionMessage = String.format(Locale.ENGLISH, "Invalid configuration was defined for enum '%s' in %s.",
               enumName, enumsConfigFile);
       throw new SolrException(SolrException.ErrorCode.NOT_FOUND, exceptionMessage);
     }
