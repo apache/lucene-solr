@@ -33,7 +33,8 @@ public enum OverseerAction {
   REMOVEROUTINGRULE,
   UPDATESHARDSTATE,
   STATE,
-  QUIT;
+  QUIT,
+  DOWNNODE;
 
   public static OverseerAction get(String p) {
     if (p != null) {

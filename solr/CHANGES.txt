@@ -488,6 +488,8 @@ Optimizations
 * SOLR-8615: Just like creating cores, we should use multiple threads when closing cores.
   (Mark Miller)
 
+* SOLR-7281: Add an overseer action to publish an entire node as 'down'. (Mark Miller, shalin)
+
 Other Changes
 ----------------------
 

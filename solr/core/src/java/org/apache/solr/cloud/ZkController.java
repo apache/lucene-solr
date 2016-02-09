@@ -387,28 +387,7 @@ public final class ZkController {
     if (descriptors != null) {
       // before registering as live, make sure everyone is in a
       // down state
-      for (CoreDescriptor descriptor : descriptors) {
-        try {
-          descriptor.getCloudDescriptor().setLeader(false);
-          publish(descriptor, Replica.State.DOWN, updateLastPublished);
-        } catch (Exception e) {
-          if (isClosed) {
-            return;
-          }
-          try {
-            Thread.sleep(1000);
-          } catch (InterruptedException e1) {
-            Thread.currentThread().interrupt();
-          }
-          try {
-            publish(descriptor, Replica.State.DOWN);
-          } catch (Exception e2) {
-            SolrException.log(log, "", e2);
-            continue;
-          }
-        }
-      }
-
+      publishNodeAsDown(getNodeName()); 
       for (CoreDescriptor descriptor : descriptors) {
         // if it looks like we are going to be the leader, we don't
         // want to wait for the following stuff
@@ -2503,5 +2482,32 @@ public final class ZkController {
       }
     }
     return false;
+  }
+  
+  
+  /**
+   * Best effort to set DOWN state for all replicas on node.
+   * 
+   * @param nodeName to operate on
+   */
+  public void publishNodeAsDown(String nodeName) {
+    log.info("Publish node={} as DOWN", nodeName);
+    ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
+        ZkStateReader.NODE_NAME_PROP, nodeName);
+    try {
+      Overseer.getInQueue(getZkClient()).offer(Utils.toJSON(m));
+    } catch (KeeperException e) {
+      log.info("Could not publish node as down: " + e.getMessage());
+    } catch (RuntimeException e) {
+      Throwable rootCause = SolrException.getRootCause(e);
+      if (rootCause instanceof KeeperException) {
+        log.info("Could not publish node as down: " + e.getMessage());
+      } else {
+        throw e;
+      }
+    } catch (InterruptedException e) {
+      Thread.interrupted();
+      log.info("", e);
+    }
   }
 }
