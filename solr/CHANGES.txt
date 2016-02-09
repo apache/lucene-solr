@@ -280,12 +280,39 @@ Upgrading from Solr 5.4
 * bin/post now defaults application/json files to the /update/json/docs end-point.  Use `-format solr` to force
   files to the /update end-point.   See SOLR-7042 for more details.
 
-* <mergePolicy> is deprecated in favor of a new <mergePolicyFactory> element. See SOLR-8621 for details. To
-  migrate existing solrconfig.xml, you can replace the <mergePolicy> element with the following (assuming you
-  use TieredMergePolicy):
-  <mergePolicyFactory class="solr.TieredMergePolicyFactory">
-    <int name="maxMergeAtOnce">10</int>
-    <double name="maxMergedSegmentMB">5120</double>
+* In solrconfig.xml the <mergePolicy> element is deprecated in favor of a similar <mergePolicyFactory> element,
+  the <mergeFactor> and <maxMergeDocs> elements are also deprecated, please see SOLR-8621 for full details.
+
+  To migrate your existing solrconfig.xml, you can replace elements as follows:
+
+  <!-- TieredMergePolicy example -->
+  <!-- deprecated -->
+  <mergeFactor>??</mergeFactor>
+  <mergePolicy class="org.apache.lucene.index.TieredMergePolicy">
+    <bool name="useCompoundFile">???</bool> <!-- deprecated since Lucene/Solr 4.4.0 -->
+    ...
+  </mergePolicy>
+  <!-- replacement -->
+  <useCompoundFile>???</useCompoundFile> <!-- since Lucene/Solr 4.4.0 -->
+  <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
+    <int name="maxMergeAtOnce">??</int> <!-- formerly the <mergeFactor> element implicitly set this -->
+    <int name="segmentsPerTier">??</int> <!-- formerly the <mergeFactor> element implicitly set this -->
+    ...
+  </mergePolicyFactory>
+
+  <!-- Log(ByteSize|Doc)MergePolicy example -->
+  <!-- deprecated -->
+  <maxMergeDocs>????</maxMergeDocs>
+  <mergeFactor>??</mergeFactor>
+  <mergePolicy class="org.apache.lucene.index.Log?MergePolicy">
+    <bool name="useCompoundFile">???</bool> <!-- deprecated since Lucene/Solr 4.4.0 -->
+    ...
+  </mergePolicy>
+  <!-- replacement -->
+  <useCompoundFile>???</useCompoundFile> <!-- since Lucene/Solr 4.4.0 -->
+  <mergePolicyFactory class="org.apache.solr.index.Log?MergePolicyFactory">
+    <int name="maxMergeDocs">????</int> <!-- formerly the <maxMergeDocs> element set this -->
+    <int name="mergeFactor">??</int> <!-- formerly the <mergeFactor> element set this -->
     ...
   </mergePolicyFactory>
 
