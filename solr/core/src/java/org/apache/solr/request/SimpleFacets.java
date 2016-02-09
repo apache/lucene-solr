@@ -71,6 +71,7 @@ import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortedIntDocSet;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.facet.FacetProcessor;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -79,6 +80,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
@@ -358,7 +360,7 @@ public class SimpleFacets {
   }
 
   enum FacetMethod {
-    ENUM, FC, FCS;
+    ENUM, FC, FCS, UIF;
   }
 
   /**
@@ -420,6 +422,8 @@ public class SimpleFacets {
       method = FacetMethod.FCS;
     } else if (FacetParams.FACET_METHOD_fc.equals(methodStr)) {
       method = FacetMethod.FC;
+    } else if(FacetParams.FACET_METHOD_uif.equals(methodStr)) {
+      method = FacetMethod.UIF;
     }
 
     if (method == FacetMethod.ENUM && TrieField.getMainValuePrefix(ft) != null) {
@@ -482,6 +486,73 @@ public class SimpleFacets {
             ps.setNumThreads(threads);
             counts = ps.getFacetCounts(executor);
           }
+          break;
+        case UIF:
+
+            //Emulate the JSON Faceting structure so we can use the same parsing classes
+            Map<String, Object> jsonFacet = new HashMap<>(13);
+            jsonFacet.put("type", "terms");
+            jsonFacet.put("field", field);
+            jsonFacet.put("offset", offset);
+            jsonFacet.put("limit", limit);
+            jsonFacet.put("mincount", mincount);
+            jsonFacet.put("missing", missing);
+            
+            if (prefix!=null) {
+              // presumably it supports single-value, but at least now returns wrong results on multi-value
+              throw new SolrException (
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  FacetParams.FACET_PREFIX+"="+prefix+
+                  " are not supported by "+FacetParams.FACET_METHOD+"="+FacetParams.FACET_METHOD_uif+
+                  " for field:"+ field
+                  //jsonFacet.put("prefix", prefix);
+              );
+            }
+            jsonFacet.put("numBuckets", params.getFieldBool(field, "numBuckets", false));
+            jsonFacet.put("allBuckets", params.getFieldBool(field, "allBuckets", false));
+            jsonFacet.put("method", "uif");
+            jsonFacet.put("cacheDf", 0);
+            jsonFacet.put("perSeg", false);
+            
+            final String sortVal;
+            switch(sort){
+              case FacetParams.FACET_SORT_COUNT_LEGACY:
+                sortVal = FacetParams.FACET_SORT_COUNT;
+              break;
+              case FacetParams.FACET_SORT_INDEX_LEGACY:
+                sortVal = FacetParams.FACET_SORT_INDEX;
+              break;
+              default:
+                sortVal = sort;
+            }
+            jsonFacet.put("sort", sortVal );
+
+            Map<String, Object> topLevel = new HashMap<>();
+            topLevel.put(field, jsonFacet);
+              
+            topLevel.put("processEmpty", true);
+
+            FacetProcessor fproc = FacetProcessor.createProcessor(rb.req, topLevel, // rb.getResults().docSet
+                                                                    docs );
+            //TODO do we handle debug?  Should probably already be handled by the legacy code
+            fproc.process();
+
+            //Go through the response to build the expected output for SimpleFacets
+            Object res = fproc.getResponse();
+            counts = new NamedList<Integer>();
+            if(res != null) {
+              SimpleOrderedMap<Object> som = (SimpleOrderedMap<Object>)res;
+              SimpleOrderedMap<Object> asdf = (SimpleOrderedMap<Object>) som.get(field);
+
+              List<SimpleOrderedMap<Object>> buckets = (List<SimpleOrderedMap<Object>>)asdf.get("buckets");
+              for(SimpleOrderedMap<Object> b : buckets) {
+                counts.add(b.get("val").toString(), (Integer)b.get("count"));
+              }
+              if(missing) {
+                SimpleOrderedMap<Object> missingCounts = (SimpleOrderedMap<Object>) asdf.get("missing");
+                counts.add(null, (Integer)missingCounts.get("count"));
+              }
+            }
           break;
         case FC:
           counts = DocValuesFacets.getCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix, contains, ignoreCase);
@@ -957,4 +1028,3 @@ public class SimpleFacets {
     return rb;
   }
 }
-

@@ -144,8 +144,8 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
 
   // NOTE: dv is not a "real" facet.method. when we see it, we facet on the dv field (*_dv)
   // but alias the result back as if we faceted on the regular indexed field for comparisons.
-  List<String> multiValuedMethods = Arrays.asList(new String[]{"enum","fc","dv"});
-  List<String> singleValuedMethods = Arrays.asList(new String[]{"enum","fc","fcs","dv"});
+  List<String> multiValuedMethods = Arrays.asList(new String[]{"enum","fc","dv","uif"});
+  List<String> singleValuedMethods = Arrays.asList(new String[]{"enum","fc","fcs","dv","uif"});
 
 
   void doFacetTests(FldType ftype) throws Exception {
@@ -215,6 +215,9 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
       List<String> methods = multiValued ? multiValuedMethods : singleValuedMethods;
       List<String> responses = new ArrayList<>(methods.size());
       for (String method : methods) {
+        if (method.equals("uif") && params.get("facet.prefix")!=null) {
+          continue; // it's not supported there
+        }
         if (method.equals("dv")) {
           params.set("facet.field", "{!key="+facet_field+"}"+facet_field+"_dv");
           params.set("facet.method",(String) null);
@@ -238,7 +241,7 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
       **/
 
       if (validate) {
-        for (int i=1; i<methods.size(); i++) {
+        for (int i=1; i<responses.size(); i++) {
           String err = JSONTestUtil.match("/", responses.get(i), responses.get(0), 0.0);
           if (err != null) {
             log.error("ERROR: mismatch facet response: " + err +

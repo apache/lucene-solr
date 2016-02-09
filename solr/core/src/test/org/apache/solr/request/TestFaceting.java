@@ -28,6 +28,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.uninverting.DocTermOrds;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
@@ -158,9 +159,10 @@ public class TestFaceting extends SolrTestCaseJ4 {
     assertU(adoc("id", "1", "many_ws", sb.toString()));
     assertU(commit());
 
-    assertQ("check many tokens",
+    for(String method:new String[]{"fc","uif"}){
+      assertQ("check many tokens",
             req("q", "*:*","indent","true"
-                ,"facet", "true", "facet.method","fc"
+                ,"facet", "true", "facet.method",method
                 ,"facet.field", "many_ws"
                 ,"facet.limit", "-1"
                 )
@@ -181,6 +183,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
             ,"//lst[@name='many_ws']/int[@name='" + t(4090) + "'][.='1']"
             ,"//lst[@name='many_ws']/int[@name='" + t(4999) + "'][.='1']"
             );
+    }
 
     // add second document, check facets for items with count =2
     sb = new StringBuilder();
@@ -189,9 +192,11 @@ public class TestFaceting extends SolrTestCaseJ4 {
     sb.append(t(4999)).append(' ');
     assertU(adoc("id", "2", "many_ws", sb.toString()));
     assertU(commit());
-    assertQ("check many tokens",
+    
+    for(String method:new String[]{"fc","uif"}){
+      assertQ("check many tokens",
             req("q", "*:*","indent","true"
-                ,"facet", "true", "facet.method","fc"
+                ,"facet", "true", "facet.method",method
                 ,"facet.field", "many_ws"
                 ,"facet.limit", "-1"
                 )
@@ -202,6 +207,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
             ,"//lst[@name='many_ws']/int[@name='" + t(4998) + "'][.='1']"
             ,"//lst[@name='many_ws']/int[@name='" + t(4999) + "'][.='2']"
               );
+    }
   }
 
   @Test
@@ -230,10 +236,13 @@ public class TestFaceting extends SolrTestCaseJ4 {
     }
     assertU(commit());
 
+    final int methodSeed = random().nextInt(2);
+    
     for (int i=0; i<iter; i+=iter/10) {
     assertQ("check many tokens",
             req("q", "id:"+t(i),"indent","true"
-                ,"facet", "true", "facet.method","fc"
+                ,"facet", "true",
+                "facet.method",((methodSeed + i)%2 ==0 ?"fc":"uif")
                 ,"facet.field", "many_ws"
                 ,"facet.limit", "-1"
                 ,"facet.mincount", "1"
@@ -247,7 +256,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
     int i=iter-1;
     assertQ("check many tokens",
             req("q", "id:"+t(i),"indent","true"
-                ,"facet", "true", "facet.method","fc"
+                ,"facet", "true", "facet.method",((methodSeed + i)%2 ==0 ?"fc":"uif")
                 ,"facet.field", "many_ws"
                 ,"facet.limit", "-1"
                 ,"facet.mincount", "1"
@@ -274,7 +283,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
     assertU(adoc(fields.toArray(new String[0])));
     assertU(commit());
     for (String suffix : suffixes) {
-      for (String facetMethod : new String[] {FacetParams.FACET_METHOD_enum, FacetParams.FACET_METHOD_fc, FacetParams.FACET_METHOD_fcs}) {
+      for (String facetMethod : new String[] {FacetParams.FACET_METHOD_enum, FacetParams.FACET_METHOD_fc, FacetParams.FACET_METHOD_fcs, FacetParams.FACET_METHOD_uif}) {
         for (String facetSort : new String[] {FacetParams.FACET_SORT_COUNT, FacetParams.FACET_SORT_INDEX}) {
           for (String value : new String[] {"42", "43"}) { // match or not
             final String field = "f_" + suffix;
@@ -299,13 +308,13 @@ public class TestFaceting extends SolrTestCaseJ4 {
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[2][@name='-285.672']",
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
-
+   
     assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX, FacetParams.FACET_MINCOUNT, "1", FacetParams.FACET_METHOD, FacetParams.FACET_METHOD_fc),
         "*[count(//lst[@name='f_td']/int)=3]",
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[2][@name='-285.672']",
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[3][@name='-1.218']");
-
+    
     assertQ(req("q", "*:*", FacetParams.FACET, "true", FacetParams.FACET_FIELD, "f_td", "f.f_td.facet.sort", FacetParams.FACET_SORT_INDEX, FacetParams.FACET_MINCOUNT, "1", "indent","true"),
         "*[count(//lst[@name='f_td']/int)=3]",
         "//lst[@name='facet_fields']/lst[@name='f_td']/int[1][@name='-420.126']",
@@ -442,8 +451,10 @@ public class TestFaceting extends SolrTestCaseJ4 {
           "text_t", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
       assertU(commit());
   
-      assertQ("checking facets when one has missing=true&mincount=2 and the other has missing=false&mincount=0",
-              req("q", "id:[42 TO 47]"
+      for(String [] methodParam: new String[][]{ new String[]{}, new String []{"facet.method", "uif"}}) {
+        assertQ("checking facets when one has missing=true&mincount=2 and the other has missing=false&mincount=0",
+              req(methodParam
+                  , "q", "id:[42 TO 47]"
                   ,"facet", "true"
                   ,"facet.zeros", "false"
                   ,"fq", "id:[42 TO 45]"
@@ -467,8 +478,9 @@ public class TestFaceting extends SolrTestCaseJ4 {
               ,"//lst[@name='bar']/int[not(@name)][.='1']"
               );
   
-      assertQ("checking facets when one has missing=true&mincount=2 and the other has missing=false&mincount=0",
-              req("q", "id:[42 TO 47]"
+      assertQforUIF("checking facets when one has missing=true&mincount=2 and the other has missing=false&mincount=0",
+              req(methodParam
+                  ,"q", "id:[42 TO 47]"
                   ,"facet", "true"
                   ,"facet.zeros", "false"
                   ,"fq", "id:[42 TO 45]"
@@ -489,7 +501,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
               );
 
       assertQ("localparams in one facet variant should not affect defaults in another: facet.sort vs facet.missing",
-                  req("q", "id:[42 TO 47]"
+                  req(methodParam
+                      ,"q", "id:[42 TO 47]"
                           ,"rows","0"
                           ,"facet", "true"
                           ,"fq", "id:[42 TO 45]"
@@ -515,7 +528,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
                   );
 
       assertQ("localparams in one facet variant should not affect defaults in another: facet.mincount",
-                  req("q", "id:[42 TO 47]"
+                  req(methodParam
+                      ,"q", "id:[42 TO 47]"
                           ,"rows","0"
                           ,"facet", "true"
                           ,"fq", "id:[42 TO 45]"
@@ -535,7 +549,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
                   );
 
       assertQ("localparams in one facet variant should not affect defaults in another: facet.missing",
-                  req("q", "id:[42 TO 47]"
+                  req(methodParam
+                      ,"q", "id:[42 TO 47]"
                           ,"rows","0"
                           ,"facet", "true"
                           ,"fq", "id:[42 TO 45]"
@@ -557,8 +572,9 @@ public class TestFaceting extends SolrTestCaseJ4 {
                   ,"//lst[@name='bar']/int[4][@name='Pig'][.='0']"
                   );
 
-      assertQ("checking facets when local facet.prefix param used after regular/raw field faceting",
-          req("q", "*:*"
+      assertQforUIF("checking facets when local facet.prefix param used after regular/raw field faceting",
+          req(methodParam
+              ,"q", "*:*"
               ,"facet", "true"
               ,"facet.field", fname
               ,"facet.field", "{!key=foo " +
@@ -571,8 +587,9 @@ public class TestFaceting extends SolrTestCaseJ4 {
           ,"//lst[@name='foo']/int[@name='Tool'][.='2']"
       );
 
-      assertQ("checking facets when local facet.prefix param used before regular/raw field faceting",
-          req("q", "*:*"
+        assertQforUIF("checking facets when local facet.prefix param used before regular/raw field faceting",
+          req(methodParam
+              ,"q", "*:*"
               ,"facet", "true"
               ,"facet.field", "{!key=foo " +
               "facet.prefix=T "+
@@ -583,7 +600,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
           ,"*[count(//lst[@name='" + fname + "']/int)=4]"
           ,"*[count(//lst[@name='foo']/int)=1]"
           ,"//lst[@name='foo']/int[@name='Tool'][.='2']"
-      );
+        );
+      }
 
       final String foo_range_facet = "{!key=foo facet.range.gap=2}val_i";
       final String val_range_facet = "val_i";
@@ -605,6 +623,15 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
       clearIndex();
       assertU(commit());
+  }
+      
+  private void assertQforUIF(String message, SolrQueryRequest request, String ... tests) {
+    final String paramString = request.getParamString();
+    if (paramString.contains("uif") && paramString.contains("prefix")){
+      assertQEx("uif prohibits prefix", "not supported", request, ErrorCode.BAD_REQUEST);
+    }else{
+      assertQ(message,request, tests);
+    }
   }
 
   private void add50ocs() {
@@ -642,11 +669,14 @@ public class TestFaceting extends SolrTestCaseJ4 {
   public void testThreadWait() throws Exception {
 
     add50ocs();
+    String[] methodParam = random().nextBoolean() ? new String[]{} : new String[]{"facet.method","uif"} ;
+    
     // All I really care about here is the chance to fire off a bunch of threads to the UnIninvertedField.get method
     // to insure that we get into/out of the lock. Again, it's not entirely deterministic, but it might catch bad
     // stuff occasionally...
     assertQ("check threading, more threads than fields",
-        req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+        req(methodParam
+            , "q", "id:*", "indent", "true", "fl", "id", "rows", "1"
             , "facet", "true"
             , "facet.field", "f0_ws"
             , "facet.field", "f0_ws"
@@ -710,8 +740,12 @@ public class TestFaceting extends SolrTestCaseJ4 {
   @Test
   public void testMultiThreadedFacets() throws Exception {
     add50ocs();
+    
+    String[] methodParam = random().nextBoolean() ? new String[]{} : new String[]{"facet.method","uif"} ;
+    
     assertQ("check no threading, threads == 0",
-        req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+        req(methodParam
+            , "q", "id:*", "indent", "true", "fl", "id", "rows", "1"
             , "facet", "true"
             , "facet.field", "f0_ws"
             , "facet.field", "f1_ws"
@@ -766,7 +800,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
       SortedSetDocValues ui9 = DocValues.getSortedSet(currentSearcher.getLeafReader(), "f9_ws");
 
       assertQ("check threading, more threads than fields",
-          req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+          req(methodParam
+              ,"q", "id:*", "indent", "true", "fl", "id", "rows", "1"
               , "facet", "true"
               , "facet.field", "f0_ws"
               , "facet.field", "f1_ws"
@@ -806,7 +841,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
 
       );
       assertQ("check threading, fewer threads than fields",
-          req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+          req(methodParam
+              ,"q", "id:*", "indent", "true", "fl", "id", "rows", "1"
               , "facet", "true"
               , "facet.field", "f0_ws"
               , "facet.field", "f1_ws"
@@ -852,7 +888,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
       // It's NOT testing whether the pending/sleep is actually functioning, I had to do that by hand since I don't
       // see how to make sure that uninverting the field multiple times actually happens to hit the wait state.
       assertQ("check threading, more threads than fields",
-          req("q", "id:*", "indent", "true", "fl", "id", "rows", "1"
+          req(methodParam
+              ,"q", "id:*", "indent", "true", "fl", "id", "rows", "1"
               , "facet", "true"
               , "facet.field", "f0_ws"
               , "facet.field", "f0_ws"

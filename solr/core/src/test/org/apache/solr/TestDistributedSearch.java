@@ -409,14 +409,14 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     ,"facet.field",t1);
 
     // test filter tagging, facet exclusion, and naming (multi-select facet support)
-    query("q","*:*", "rows",0, "facet","true", "facet.query","{!key=myquick}quick", "facet.query","{!key=myall ex=a}all", "facet.query","*:*"
+    queryAndCompareUIF("q","*:*", "rows",0, "facet","true", "facet.query","{!key=myquick}quick", "facet.query","{!key=myall ex=a}all", "facet.query","*:*"
     ,"facet.field","{!key=mykey ex=a}"+t1
     ,"facet.field","{!key=other ex=b}"+t1
     ,"facet.field","{!key=again ex=a,b}"+t1
     ,"facet.field",t1
     ,"fq","{!tag=a}id:[1 TO 7]", "fq","{!tag=b}id:[3 TO 9]"
     );
-    query("q", "*:*", "facet", "true", "facet.field", "{!ex=t1}SubjectTerms_mfacet", "fq", "{!tag=t1}SubjectTerms_mfacet:(test 1)", "facet.limit", "10", "facet.mincount", "1");
+    queryAndCompareUIF("q", "*:*", "facet", "true", "facet.field", "{!ex=t1}SubjectTerms_mfacet", "fq", "{!tag=t1}SubjectTerms_mfacet:(test 1)", "facet.limit", "10", "facet.mincount", "1");
 
     // test field that is valid in schema but missing in all shards
     query("q","*:*", "rows",100, "facet","true", "facet.field",missingField, "facet.mincount",2);
@@ -1049,6 +1049,17 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     handle.put("severity", UNORDERED); // this is stupid, but stats.facet doesn't garuntee order
     query("q", "*:*", "stats", "true", "stats.field", fieldName, 
           "stats.facet", fieldName);
+  }
+
+  /** comparing results with facet.method=uif */
+  private void queryAndCompareUIF(Object ... params) throws Exception {
+    final QueryResponse expect = query(params);
+    
+    final Object[] newParams = Arrays.copyOf(params, params.length+2);
+    newParams[newParams.length-2] = "facet.method";
+    newParams[newParams.length-1] = "uif";
+    final QueryResponse uifResult = query(newParams);
+    compareResponses(expect, uifResult);
   }
 
   protected void checkMinCountsField(List<FacetField.Count> counts, Object[] pairs) {
