@@ -91,7 +91,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     final boolean expectCFS 
       = Boolean.parseBoolean(System.getProperty("useCompoundFile"));
 
-    initCore("solrconfig-tieredmergepolicy.xml","schema-minimal.xml");
+    initCore(random().nextBoolean() ? "solrconfig-tieredmergepolicy.xml" : "solrconfig-tieredmergepolicyfactory.xml","schema-minimal.xml");
     IndexWriterConfig iwc = solrConfig.indexConfig.toIndexWriterConfig(h.getCore());
     assertEquals(expectCFS, iwc.getUseCompoundFile());
 
