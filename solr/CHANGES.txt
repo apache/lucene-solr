@@ -483,6 +483,9 @@ Optimizations
 
 * SOLR-8501: Specify the entity request size when known in HttpSolrClient. (Mark Miller)
 
+* SOLR-8615: Just like creating cores, we should use multiple threads when closing cores.
+  (Mark Miller)
+
 Other Changes
 ----------------------
 
