@@ -321,7 +321,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
 
       // Commit a random node, primary or replica
 
-      {
+      if (random().nextInt(10) == 1) {
         NodeProcess node = nodes[random().nextInt(nodes.length)];
         if (node != null && node.nodeIsClosing.get() == false) {
           // TODO: if this node is primary, it means we committed an unpublished version (not exposed as an NRT point)... not sure it matters.
@@ -751,7 +751,8 @@ public class TestStressNRTReplication extends LuceneTestCase {
         c.flush();
         c.in.readByte();
       } catch (Throwable t) {
-        message("top: ignore exc sending replicas to primary: " + t);
+        message("top: ignore exc sending replicas to primary P" + curPrimary.id + " at tcpPort=" + curPrimary.tcpPort);
+        t.printStackTrace(System.out);
       }
     }
   }
