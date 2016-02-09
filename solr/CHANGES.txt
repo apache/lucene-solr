@@ -146,6 +146,10 @@ New Features
 
 * SOLR-8502: Improve Solr JDBC Driver to support SQL Clients like DBVisualizer (Kevin Risden, Joel Bernstein)
 
+* SOLR-8466: adding facet.method=uif to bring back UnInvertedField faceting which is used to work on
+  facet.method=fc. It's more performant for rarely changing indexes. Note: it ignores prefix and contains yet.
+  (Jamie Johnson via Mikhail Khludnev)
+
 Bug Fixes
 ----------------------
 * SOLR-8386: Add field option in the new admin UI schema page loads up even when no schemaFactory has been
