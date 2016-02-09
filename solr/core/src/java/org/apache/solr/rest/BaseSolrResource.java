@@ -175,10 +175,16 @@ public abstract class BaseSolrResource extends ServerResource {
     
     // TODO: should status=0 (success?) be left as-is in the response header?
     SolrCore.postDecorateResponse(null, solrRequest, solrResponse);
+    addDeprecatedWarning();
 
     if (log.isInfoEnabled() && solrResponse.getToLog().size() > 0) {
       log.info(solrResponse.getToLogAsString(solrCore.getLogId()));
     }
+  }
+
+  protected void addDeprecatedWarning(){
+    solrResponse.add("warn","This API is deprecated");
+
   }
 
   /**
