@@ -319,6 +319,8 @@ Upgrading from Solr 5.4
 * Clearing up stored async collection api responses via REQUESTSTATUS call is now deprecated and would be
   removed in 6.0. See SOLR-8648 for more details.
 
+* SOLR-6594: Deprecated the old schema API which will be removed in a later major release
+
 Detailed Change List
 ----------------------
 

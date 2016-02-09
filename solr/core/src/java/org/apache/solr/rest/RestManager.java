@@ -431,7 +431,12 @@ public class RestManager {
         throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, errMsg, ioExc);
       }
       return parsedJson;
-    }        
+    }
+
+    @Override
+    protected void addDeprecatedWarning() {
+      //this is not deprecated
+    }
   } // end ManagedEndpoint class
   
   /**
@@ -788,5 +793,5 @@ public class RestManager {
     if (ManagedResource.ChildResourceSupport.class.isAssignableFrom(res.getClass())) {
       router.attach(path+"/{child}", res.getServerResourceClass());
     }    
-  }  
+  }
 }
