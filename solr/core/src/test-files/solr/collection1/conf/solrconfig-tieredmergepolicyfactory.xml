@@ -23,8 +23,10 @@
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <indexConfig>
+    <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
     <mergePolicyFactory class="org.apache.solr.index.TieredMergePolicyFactory">
       <int name="maxMergeAtOnceExplicit">19</int>
+      <int name="maxMergeAtOnce">7</int>
       <int name="segmentsPerTier">9</int>
       <double name="noCFSRatio">0.1</double>
     </mergePolicyFactory>
