@@ -668,6 +668,8 @@ Other Changes
 * SOLR-8308: Core gets inaccessible after RENAME operation with special characters
   (Erik Hatcher, Erick Erickson)
 
+* SOLR-3141: Warn in logs when expensive optimize calls are made (yonik, janhoy)
+
 ==================  5.4.1 ==================
 
 Bug Fixes
