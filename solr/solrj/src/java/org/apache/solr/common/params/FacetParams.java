@@ -56,6 +56,11 @@ public interface FacetParams {
   public static final String FACET_METHOD_fcs = "fcs";
 
   /**
+   * Value for FACET_METHOD param to indicate that Solr should use an UnInvertedField
+   */
+  public static final String FACET_METHOD_uif = "uif";
+
+  /**
    * Any lucene formated queries the user would like to use for
    * Facet Constraint Counts (multi-value)
    */

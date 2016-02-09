@@ -294,6 +294,16 @@ Other
   TestSortingMergePolicy now extend it, TestUpgradeIndexMergePolicy added)
   (Christine Poerschke)
 
+======================= Lucene 5.4.2 =======================
+
+Bug Fixes
+
+* LUCENE-7018: Fix GeoPointTermQueryConstantScoreWrapper to add document on
+  first GeoPointField match. (Nick Knize)
+
+* LUCENE-7019: add two-phase iteration to GeoPointTermQueryConstantScoreWrapper.
+  (Robert Muir via Nick Knize)
+
 ======================= Lucene 5.4.1 =======================
 
 Bug Fixes

@@ -404,6 +404,10 @@ New Features
 * SOLR-8648: DELETESTATUS API for selective deletion and flushing of stored async collection API responses.
   (Anshum Gupta)
 
+* SOLR-8466: adding facet.method=uif to bring back UnInvertedField faceting which is used to work on
+  facet.method=fc. It's more performant for rarely changing indexes. Note: it ignores prefix and contains yet.
+  (Jamie Johnson via Mikhail Khludnev)
+
 Bug Fixes
 ----------------------
 

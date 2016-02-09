@@ -39,6 +39,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.TimeZoneUtils;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
@@ -494,9 +495,11 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
     ModifiableSolrParams params = params("q","*:*", "rows","0", "facet","true", "facet.field","{!key=myalias}"+field);
     
-    String[] methods = {null, "fc","enum","fcs"};
+    String[] methods = {null, "fc","enum","fcs", "uif"
+        };
     if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
-      methods = new String[]{null, "fc","enum"};
+      methods = new String[]{null, "fc","enum", "uif"
+          };
     }
 
     prefixes = prefixes==null ? new String[]{null} : prefixes;
@@ -509,7 +512,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         params.set("facet.method", method);
       }
       for (String prefix : prefixes) {
-        if (prefix == null) {
+        if (prefix == null || "uif".equals(method)) {// there is no support 
           params.remove("facet.prefix");
         } else {
           params.set("facet.prefix", prefix);
@@ -559,31 +562,36 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             "*[count(//doc)=1]"
             );
  
-    assertQ("check counts for facet queries",
-            req("q", "id:[42 TO 47]"
-                ,"facet", "true"
-                ,"facet.query", "trait_s:Obnoxious"
-                ,"facet.query", "id:[42 TO 45]"
-                ,"facet.query", "id:[43 TO 47]"
-                ,"facet.field", "trait_s"
-                )
-            ,"*[count(//doc)=6]"
- 
-            ,"//lst[@name='facet_counts']/lst[@name='facet_queries']"
-            ,"//lst[@name='facet_queries']/int[@name='trait_s:Obnoxious'][.='2']"
-            ,"//lst[@name='facet_queries']/int[@name='id:[42 TO 45]'][.='4']"
-            ,"//lst[@name='facet_queries']/int[@name='id:[43 TO 47]'][.='5']"
- 
-            ,"//lst[@name='facet_counts']/lst[@name='facet_fields']"
-            ,"//lst[@name='facet_fields']/lst[@name='trait_s']"
-            ,"*[count(//lst[@name='trait_s']/int)=4]"
-            ,"//lst[@name='trait_s']/int[@name='Tool'][.='2']"
-            ,"//lst[@name='trait_s']/int[@name='Obnoxious'][.='2']"
-            ,"//lst[@name='trait_s']/int[@name='Pig'][.='1']"
-            );
+    final String[] uifSwitch = new String[]{(random().nextBoolean() ? "":"f.trait_s.")+"facet.method", "uif"};
+    final String[] none = new String[]{};
+    
+    for(String[] methodParam : new String[][]{ none, uifSwitch}){
+      assertQ("check counts for facet queries",
+          req(methodParam
+              ,"q", "id:[42 TO 47]"
+              ,"facet", "true"
+              ,"facet.query", "trait_s:Obnoxious"
+              ,"facet.query", "id:[42 TO 45]"
+              ,"facet.query", "id:[43 TO 47]"
+              ,"facet.field", "trait_s"
+              )
+          ,"*[count(//doc)=6]"
 
-    assertQ("check multi-select facets with naming",
-            req("q", "id:[42 TO 47]"
+          ,"//lst[@name='facet_counts']/lst[@name='facet_queries']"
+          ,"//lst[@name='facet_queries']/int[@name='trait_s:Obnoxious'][.='2']"
+          ,"//lst[@name='facet_queries']/int[@name='id:[42 TO 45]'][.='4']"
+          ,"//lst[@name='facet_queries']/int[@name='id:[43 TO 47]'][.='5']"
+
+          ,"//lst[@name='facet_counts']/lst[@name='facet_fields']"
+          ,"//lst[@name='facet_fields']/lst[@name='trait_s']"
+          ,"*[count(//lst[@name='trait_s']/int)=4]"
+          ,"//lst[@name='trait_s']/int[@name='Tool'][.='2']"
+          ,"//lst[@name='trait_s']/int[@name='Obnoxious'][.='2']"
+          ,"//lst[@name='trait_s']/int[@name='Pig'][.='1']"
+          );
+      
+      assertQ("check multi-select facets with naming",
+            req(methodParam, "q", "id:[42 TO 47]"
                 ,"facet", "true"
                 ,"facet.query", "{!ex=1}trait_s:Obnoxious"
                 ,"facet.query", "{!ex=2 key=foo}id:[42 TO 45]"    // tag=2 same as 1
@@ -605,7 +613,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"//lst[@name='trait_s']/int[@name='Obnoxious'][.='2']"
             ,"//lst[@name='trait_s']/int[@name='Pig'][.='1']"
             );
-
+    }
     // test excluding main query
     assertQ(req("q", "{!tag=main}id:43"
                  ,"facet", "true"
@@ -616,8 +624,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
              ,"//lst[@name='facet_queries']/int[@name='bar'][.='1']"
              );
 
-    assertQ("check counts for applied facet queries using filtering (fq)",
-            req("q", "id:[42 TO 47]"
+    for(String[] methodParam : new String[][]{ none, uifSwitch}){
+      assertQ("check counts for applied facet queries using filtering (fq)",
+            req(methodParam
+                ,"q", "id:[42 TO 47]"
                 ,"facet", "true"
                 ,"fq", "id:[42 TO 45]"
                 ,"facet.field", "trait_s"
@@ -635,8 +645,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"//lst[@name='trait_s']/int[@name='Pig'][.='0']"
             );
  
-    assertQ("check counts with facet.zero=false&facet.missing=true using fq",
-            req("q", "id:[42 TO 47]"
+      assertQ("check counts with facet.zero=false&facet.missing=true using fq",
+            req(methodParam
+                ,"q", "id:[42 TO 47]"
                 ,"facet", "true"
                 ,"facet.zeros", "false"
                 ,"f.trait_s.facet.missing", "true"
@@ -651,8 +662,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"//lst[@name='trait_s']/int[not(@name)][.='1']"
             );
 
-    assertQ("check counts with facet.mincount=1&facet.missing=true using fq",
-            req("q", "id:[42 TO 47]"
+      assertQ("check counts with facet.mincount=1&facet.missing=true using fq",
+            req(methodParam
+                ,"q", "id:[42 TO 47]"
                 ,"facet", "true"
                 ,"facet.mincount", "1"
                 ,"f.trait_s.facet.missing", "true"
@@ -667,8 +679,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"//lst[@name='trait_s']/int[not(@name)][.='1']"
             );
 
-    assertQ("check counts with facet.mincount=2&facet.missing=true using fq",
-            req("q", "id:[42 TO 47]"
+      assertQ("check counts with facet.mincount=2&facet.missing=true using fq",
+            req(methodParam
+                ,"q", "id:[42 TO 47]"
                 ,"facet", "true"
                 ,"facet.mincount", "2"
                 ,"f.trait_s.facet.missing", "true"
@@ -681,8 +694,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"//lst[@name='trait_s']/int[not(@name)][.='1']"               
             );
 
-    assertQ("check sorted paging",
-            req("q", "id:[42 TO 47]"
+      assertQ("check sorted paging",
+            req(methodParam
+                ,"q", "id:[42 TO 47]"
                 ,"facet", "true"
                 ,"fq", "id:[42 TO 45]"
                 ,"facet.field", "trait_s"
@@ -697,9 +711,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"//lst[@name='trait_s']/int[@name='Pig'][.='0']"
             );
 
-    // check that the default sort is by count
-    assertQ("check sorted paging",
-            req("q", "id:[42 TO 47]"
+      // check that the default sort is by count
+      assertQ("check sorted paging",
+            req(methodParam, "q", "id:[42 TO 47]"
                 ,"facet", "true"
                 ,"fq", "id:[42 TO 45]"
                 ,"facet.field", "trait_s"
@@ -713,10 +727,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"//int[3][@name='Obnoxious'][.='1']"
             );
 
-    //
-    // check that legacy facet.sort=true/false works
-    //
-    assertQ(req("q", "id:[42 TO 47]"
+      //
+      // check that legacy facet.sort=true/false works
+      //
+      assertQ(req(methodParam, "q", "id:[42 TO 47]"
                 ,"facet", "true"
                 ,"fq", "id:[42 TO 45]"
                 ,"facet.field", "trait_s"
@@ -731,7 +745,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"//int[3][@name='Obnoxious'][.='1']"
             );
 
-     assertQ(req("q", "id:[42 TO 47]"
+       assertQ(req(methodParam, "q", "id:[42 TO 47]"
                 ,"facet", "true"
                 ,"fq", "id:[42 TO 45]"
                 ,"facet.field", "trait_s"
@@ -745,16 +759,18 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"//int[2][@name='Obnoxious'][.='1']"
             ,"//int[3][@name='Tool'][.='2']"
             );
+    }
 
-
-     assertQ(req("q", "id:[42 TO 47]"
+    for(String method : new String[]{ "fc","uif"}){
+       assertQ(req("q", "id:[42 TO 47]"
                 ,"facet", "true"
-                ,"facet.method","fc"
                 ,"fq", "id:[42 TO 45]"
                 ,"facet.field", "zerolen_s"
+                ,(random().nextBoolean() ? "":"f.zerolen_s.")+"facet.method", method
                 )
-            ,"*[count(//lst[@name='zerolen_s']/int)=1]"
-     );
+            ,"*[count(//lst[@name='zerolen_s']/int[@name=''])=1]"
+       );
+    }
 
     assertQ("a facet.query that analyzes to no query shoud not NPE",
         req("q", "*:*",
@@ -2020,6 +2036,24 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     doFacetPrefix("tt_s1", "{!threads=0}", "", "facet.method","fcs");   // direct execution
     doFacetPrefix("tt_s1", "{!threads=-1}", "", "facet.method","fcs");  // default / unlimited threads
     doFacetPrefix("tt_s1", "{!threads=2}", "", "facet.method","fcs");   // specific number of threads
+  }
+  
+  /** no prefix for uif */
+  @Test(expected=RuntimeException.class)
+  public void testNOFacetPrefixForUif() {
+    if (random().nextBoolean()) {
+      doFacetPrefix("tt_s1", null, "", "facet.method", "uif");
+    } else {
+      doFacetPrefix("t_s", null, "", "facet.method", "uif");
+    }
+  }
+  
+  @Test
+  @Ignore("SOLR-8466 - facet.method=uif ignores facet.contains")
+  public void testFacetContainsUif() {
+    doFacetContains("contains_s1", "contains_group_s1", "Astra", "BAst", "Ast", "facet.method", "uif");
+    doFacetPrefix("contains_s1", null, "Astra", "facet.method", "uif", "facet.contains", "Ast");
+    doFacetPrefix("contains_s1", null, "Astra", "facet.method", "uif", "facet.contains", "aST", "facet.contains.ignoreCase", "true");
   }
 
   static void indexFacetContains() {
