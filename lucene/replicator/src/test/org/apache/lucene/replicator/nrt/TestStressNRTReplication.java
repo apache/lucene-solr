@@ -785,7 +785,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
       try {
         while (stop.get() == false) {
           Thread.sleep(TestUtil.nextInt(random(), 50, 500));
-          message("top: restarter cycle");
+          //message("top: restarter cycle");
 
           // Randomly crash full cluster:
           if (DO_FULL_CLUSTER_CRASH && random().nextInt(500) == 17) {
@@ -921,6 +921,8 @@ public class TestStressNRTReplication extends LuceneTestCase {
           continue;
         }
 
+        boolean nodeIsPrimary = node == primary;
+
         try {
 
           Thread.currentThread().setName("Searcher node=" + node);
@@ -970,6 +972,12 @@ public class TestStressNRTReplication extends LuceneTestCase {
             if (oldHitCount == null) {
               hitCounts.put(version, hitCount);
               message("top: searcher: record search hitCount version=" + version + " hitCount=" + hitCount + " node=" + node);
+              if (nodeIsPrimary && version > lastPrimaryVersion) {
+                // It's possible a search request sees a new primary version because it's in the process of flushing, but then the primary
+                // crashes.  In this case we need to ensure new primary forces its version beyond this:
+                message("top: searcher: set lastPrimaryVersion=" + lastPrimaryVersion + " vs " + version);
+                lastPrimaryVersion = version;
+              }
             } else {
               // Just ensure that all nodes show the same hit count for
               // the same version, i.e. they really are replicas of one another:
