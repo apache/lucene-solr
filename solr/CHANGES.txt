@@ -262,6 +262,9 @@ Optimizations
   count. Also includes change to move to the next non-zero term value when selecting a segment
   position. (Keith Laban, Steve Bower, Dennis Gove)
 
+* SOLR-8615: Just like creating cores, we should use multiple threads when closing cores.
+  (Mark Miller)
+
 Other Changes
 ----------------------
 
