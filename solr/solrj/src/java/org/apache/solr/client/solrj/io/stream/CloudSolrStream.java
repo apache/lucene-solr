@@ -300,11 +300,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
 
       if(slices == null) {
-
-        String colLower = this.collection.toLowerCase(Locale.getDefault());
         //Try case insensitive match
         for(String col : clusterState.getCollections()) {
-          if(col.toLowerCase(Locale.getDefault()).equals(colLower)) {
+          if(col.equalsIgnoreCase(this.collection)) {
             slices = clusterState.getActiveSlices(col);
             break;
           }

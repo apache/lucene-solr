@@ -165,13 +165,13 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
 
       TupleStream sqlStream = null;
 
-      if(sqlVistor.table.toUpperCase(Locale.getDefault()).contains("_CATALOGS_")) {
+      if(sqlVistor.table.toUpperCase(Locale.ROOT).contains("_CATALOGS_")) {
         if (!sqlVistor.fields.contains("TABLE_CAT")) {
           throw new IOException("When querying _CATALOGS_, fields must contain column TABLE_CAT");
         }
 
         sqlStream = new CatalogsStream(defaultZkhost);
-      } else if(sqlVistor.table.toUpperCase(Locale.getDefault()).contains("_SCHEMAS_")) {
+      } else if(sqlVistor.table.toUpperCase(Locale.ROOT).contains("_SCHEMAS_")) {
         if (!sqlVistor.fields.contains("TABLE_SCHEM") || !sqlVistor.fields.contains("TABLE_CATALOG")) {
           throw new IOException("When querying _SCHEMAS_, fields must contain both TABLE_SCHEM and TABLE_CATALOG");
         }
@@ -657,7 +657,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       }
 
 
-      if(!sortItem.getOrdering().toString().toLowerCase(Locale.getDefault()).contains(direction.toLowerCase(Locale.getDefault()))) {
+      if(!sortItem.getOrdering().toString().toLowerCase(Locale.ROOT).contains(direction.toLowerCase(Locale.ROOT))) {
         return false;
       }
     }
@@ -838,7 +838,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
   }
 
   private static String ascDesc(String s) {
-    if(s.toLowerCase(Locale.getDefault()).contains("desc")) {
+    if(s.toLowerCase(Locale.ROOT).contains("desc")) {
       return "desc";
     } else {
       return "asc";
@@ -846,7 +846,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
   }
 
   private static ComparatorOrder ascDescComp(String s) {
-    if(s.toLowerCase(Locale.getDefault()).contains("desc")) {
+    if(s.toLowerCase(Locale.ROOT).contains("desc")) {
       return ComparatorOrder.DESCENDING;
     } else {
       return ComparatorOrder.ASCENDING;
