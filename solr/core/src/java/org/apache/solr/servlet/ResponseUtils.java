@@ -42,8 +42,12 @@ public class ResponseUtils {
       SolrException solrExc = (SolrException)ex;
       code = solrExc.code();
       NamedList<String> errorMetadata = solrExc.getMetadata();
-      if (errorMetadata != null)
-        info.add("metadata", errorMetadata);
+      if (errorMetadata == null) {
+        errorMetadata = new NamedList<>();
+      }
+      errorMetadata.add(SolrException.ERROR_CLASS, ex.getClass().getName());
+      errorMetadata.add(SolrException.ROOT_ERROR_CLASS, SolrException.getRootCause(ex).getClass().getName());
+      info.add("metadata", errorMetadata);
     }
     
     for (Throwable th = ex; th != null; th = th.getCause()) {
