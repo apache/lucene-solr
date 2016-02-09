@@ -26,6 +26,7 @@ import java.util.TimerTask;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
@@ -65,14 +66,18 @@ public class TestInjection {
   
   public static String failUpdateRequests = null;
   
+  public static String nonExistentCoreExceptionAfterUnload = null;
+  
   private static Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
+
 
 
   public static void reset() {
     nonGracefullClose = null;
     failReplicaRequests = null;
     failUpdateRequests = null;
-
+    nonExistentCoreExceptionAfterUnload = null;
+    
     for (Timer timer : timers) {
       timer.cancel();
     }
@@ -142,6 +147,19 @@ public class TestInjection {
     return true;
   }
   
+  public static boolean injectNonExistentCoreExceptionAfterUnload(String cname) {
+    if (nonExistentCoreExceptionAfterUnload != null) {
+      Pair<Boolean,Integer> pair = parseValue(nonExistentCoreExceptionAfterUnload);
+      boolean enabled = pair.getKey();
+      int chanceIn100 = pair.getValue();
+      if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
+        throw new NonExistentCoreException("Core not found to unload: " + cname);
+      }
+    }
+
+    return true;
+  }
+  
   private static Pair<Boolean,Integer> parseValue(String raw) {
     Matcher m = ENABLED_PERCENT.matcher(raw);
     if (!m.matches()) throw new RuntimeException("No match, probably bad syntax: " + raw);
@@ -152,6 +170,5 @@ public class TestInjection {
     }
     return new Pair<>(Boolean.parseBoolean(val), Integer.parseInt(percent));
   }
-
 
 }

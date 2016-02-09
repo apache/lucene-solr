@@ -477,7 +477,9 @@ Bug Fixes
   
 * SOLR-8651: The commitWithin parameter is not passed on for deleteById in UpdateRequest in
   distributed queries (Jessica Cheng Mallet via Erick Erickson)
-  
+
+* SOLR-8551: Make collection deletion more robust. (Mark Miller)
+
 Optimizations
 ----------------------
 

@@ -675,7 +675,7 @@ public class CoreContainer {
 
     if (isShutDown) {
       core.close();
-      throw new IllegalStateException("This CoreContainer has been close");
+      throw new IllegalStateException("This CoreContainer has been closed");
     }
     if (cd.isTransient()) {
       old = solrCores.putTransientCore(cfg, name, core, loader);

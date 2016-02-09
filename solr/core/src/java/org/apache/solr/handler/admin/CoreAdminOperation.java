@@ -37,6 +37,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.SyncStrategy;
 import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -68,6 +69,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.util.PropertiesUtil;
 import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,13 +133,15 @@ enum CoreAdminOperation {
   },
   UNLOAD_OP(UNLOAD) {
     @Override
-    public void call(CallInfo callInfo) {
+    public void call(CallInfo callInfo) throws IOException {
       SolrParams params = callInfo.req.getParams();
       String cname = params.get(CoreAdminParams.CORE);
       boolean deleteIndexDir = params.getBool(CoreAdminParams.DELETE_INDEX, false);
       boolean deleteDataDir = params.getBool(CoreAdminParams.DELETE_DATA_DIR, false);
       boolean deleteInstanceDir = params.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, false);
       callInfo.handler.coreContainer.unload(cname, deleteIndexDir, deleteDataDir, deleteInstanceDir);
+
+      assert TestInjection.injectNonExistentCoreExceptionAfterUnload(cname);
     }
   },
   RELOAD_OP(RELOAD) {

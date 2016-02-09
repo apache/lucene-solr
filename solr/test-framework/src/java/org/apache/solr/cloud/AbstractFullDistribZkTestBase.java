@@ -1789,6 +1789,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
   protected void assertCollectionNotExists(String collectionName, int timeoutSeconds) throws Exception {
     waitForCollectionToDisappear(collectionName, getCommonCloudSolrClient().getZkStateReader(), false, true, timeoutSeconds);
+    assertFalse(cloudClient.getZkStateReader().getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
   }
 
 
