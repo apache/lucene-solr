@@ -46,12 +46,14 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.lucene.util.TestUtil;
 
 /** Child process with silly naive TCP socket server to handle
  *  between-node commands, launched for each node  by TestNRTReplication. */
 @SuppressCodecs({"MockRandom", "Memory", "Direct", "SimpleText"})
 @SuppressSysoutChecks(bugUrl = "Stuff gets printed, important stuff for debugging a failure")
+@SuppressForbidden(reason = "We need Unsafe to actually crush :-)")
 public class SimpleServer extends LuceneTestCase {
 
   final static Set<Thread> clientThreads = Collections.synchronizedSet(new HashSet<>());

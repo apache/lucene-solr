@@ -887,7 +887,7 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     if (newVersion < version) {
       throw new IllegalArgumentException("newVersion (=" + newVersion + ") cannot be less than current version (=" + version + ")");
     }
-    System.out.println(Thread.currentThread().getName() + ": SIS.setVersion change from " + version + " to " + newVersion);
+    //System.out.println(Thread.currentThread().getName() + ": SIS.setVersion change from " + version + " to " + newVersion);
     version = newVersion;
   }
 

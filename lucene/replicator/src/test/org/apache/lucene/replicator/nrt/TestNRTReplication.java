@@ -35,6 +35,7 @@ import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.SeedUtils;
@@ -53,6 +54,7 @@ public class TestNRTReplication extends LuceneTestCase {
   LineFileDocs docs;
 
   /** Launches a child "server" (separate JVM), which is either primary or replica node */
+  @SuppressForbidden(reason = "ProcessBuilder requires java.io.File for CWD")
   private NodeProcess startNode(int primaryTCPPort, final int id, Path indexPath, long forcePrimaryVersion, boolean willCrash) throws IOException {
     List<String> cmd = new ArrayList<>();
 

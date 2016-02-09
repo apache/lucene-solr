@@ -438,7 +438,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             anyChanges |= maybeApplyDeletes(applyAllDeletes);
             if (writeAllDeletes) {
               // Must move the deletes to disk:
-              System.out.println("IW: now readerPool.commit");
               readerPool.commit(segmentInfos);
             }
 
@@ -1174,7 +1173,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     return docWriter.getNumDocs() + segmentInfos.totalMaxDoc();
   }
 
-  /** If {@link SegmentInfos#getVersion} is below {@code newVersion} then update it to this value. */
+  /** If {@link SegmentInfos#getVersion} is below {@code newVersion} then update it to this value.
+   *
+   * @lucene.internal */
   public synchronized void advanceSegmentInfosVersion(long newVersion) {
     ensureOpen();
     if (segmentInfos.getVersion() < newVersion) {
@@ -2897,6 +2898,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     setCommitData(commitUserData, true);
   }
 
+  /**
+   * Sets the commit user data map, controlling whether to advance the {@link SegmentInfos#getVersion}.
+   *
+   * @see #setCommitData(Map)
+   *
+   * @lucene.internal */
   public final synchronized void setCommitData(Map<String,String> commitUserData, boolean doIncrementVersion) {
     segmentInfos.setUserData(new HashMap<>(commitUserData), doIncrementVersion);
     changeCount.incrementAndGet();

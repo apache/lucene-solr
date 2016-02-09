@@ -93,7 +93,7 @@ public abstract class DirectoryReader extends BaseCompositeReader<LeafReader> {
    * gain some performance by passing false.
    * @param writeAllDeletes If true, new deletes will be written
    * down to index files instead of carried over from writer to
-   * reader in heap
+   * reader directly in heap
    *
    * @see #open(IndexWriter)
    *

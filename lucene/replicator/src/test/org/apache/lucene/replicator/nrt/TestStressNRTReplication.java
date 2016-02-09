@@ -50,9 +50,10 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -502,6 +503,7 @@ public class TestStressNRTReplication extends LuceneTestCase {
   }
 
   /** Launches a child "server" (separate JVM), which is either primary or replica node */
+  @SuppressForbidden(reason = "ProcessBuilder requires java.io.File for CWD")
   NodeProcess startNode(final int id, Path indexPath, boolean isPrimary, long forcePrimaryVersion) throws IOException {
     nodeTimeStamps[id] = System.nanoTime();
     List<String> cmd = new ArrayList<>();
