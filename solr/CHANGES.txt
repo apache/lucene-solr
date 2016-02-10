@@ -513,6 +513,9 @@ Bug Fixes
 
 * SOLR-8551: Make collection deletion more robust. (Mark Miller)
 
+* SOLR-8578: Successful or not, requests are not always fully consumed by Solrj clients and we
+  count on HttpClient or the JVM. (Mark Miller)
+
 Optimizations
 ----------------------
 
