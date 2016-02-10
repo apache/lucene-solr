@@ -14,14 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.search;
+package org.apache.lucene.spatial.geopoint.search;
 
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
-import org.apache.lucene.spatial.search.GeoPointMultiTermQuery.CellComparator;
+import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
+import org.apache.lucene.spatial.geopoint.search.GeoPointMultiTermQuery.CellComparator;
 
 /**
  * Base class for {@link GeoPointNumericTermsEnum} and {@link GeoPointPrefixTermsEnum} which compares

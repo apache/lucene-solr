@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.document;
+package org.apache.lucene.spatial.geopoint.document;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -36,8 +36,8 @@ import org.apache.lucene.spatial.util.GeoEncodingUtils;
  * </pre>
  *
  * <p>To perform simple geospatial queries against a <code>GeoPointField</code>,
- * see {@link org.apache.lucene.spatial.search.GeoPointInBBoxQuery}, {@link org.apache.lucene.spatial.search.GeoPointInPolygonQuery},
- * or {@link org.apache.lucene.spatial.search.GeoPointDistanceQuery}
+ * see {@link org.apache.lucene.spatial.geopoint.search.GeoPointInBBoxQuery}, {@link org.apache.lucene.spatial.geopoint.search.GeoPointInPolygonQuery},
+ * or {@link org.apache.lucene.spatial.geopoint.search.GeoPointDistanceQuery}
  *
  * NOTE: This indexes only high precision encoded terms which may result in visiting a high number
  * of terms for large queries. See LUCENE-6481 for a future improvement.

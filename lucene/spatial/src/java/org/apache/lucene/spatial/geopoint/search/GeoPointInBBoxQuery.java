@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.search;
+package org.apache.lucene.spatial.geopoint.search;
 
 import java.io.IOException;
 
@@ -24,7 +24,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldValueQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
+import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoUtils;
 
 /** Implements a simple bounding box query on a GeoPoint field. This is inspired by
@@ -55,7 +55,7 @@ public class GeoPointInBBoxQuery extends Query {
   protected final TermEncoding termEncoding;
 
   /**
-   * Constructs a query for all {@link org.apache.lucene.spatial.document.GeoPointField} types that fall within a
+   * Constructs a query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types that fall within a
    * defined bounding box
    */
   public GeoPointInBBoxQuery(final String field, final double minLon, final double minLat, final double maxLon, final double maxLat) {

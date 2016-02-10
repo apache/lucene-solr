@@ -1,4 +1,4 @@
-package org.apache.lucene.spatial.document;
+package org.apache.lucene.spatial.geopoint.document;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,7 +31,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.spatial.util.GeoEncodingUtils;
 
-import static org.apache.lucene.spatial.document.GeoPointField.PRECISION_STEP;
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.PRECISION_STEP;
 
 /**
  * <b>Expert:</b> This class provides a {@link TokenStream} used by {@link GeoPointField}

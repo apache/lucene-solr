@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.search;
+package org.apache.lucene.spatial.geopoint.search;
 
 import java.io.IOException;
 
@@ -22,10 +22,10 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
+import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 
 /** Implements a point distance range query on a GeoPoint field. This is based on
- * {@code org.apache.lucene.spatial.search.GeoPointDistanceQuery} and is implemented using a
+ * {@code org.apache.lucene.spatial.geopoint.search.GeoPointDistanceQuery} and is implemented using a
  * {@code org.apache.lucene.search.BooleanClause.MUST_NOT} clause to exclude any points that fall within
  * minRadiusMeters from the provided point.
  *
@@ -35,7 +35,7 @@ public final class GeoPointDistanceRangeQuery extends GeoPointDistanceQuery {
   protected final double minRadiusMeters;
 
   /**
-   * Constructs a query for all {@link org.apache.lucene.spatial.document.GeoPointField} types within a minimum / maximum
+   * Constructs a query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types within a minimum / maximum
    * distance (in meters) range from a given point
    */
   public GeoPointDistanceRangeQuery(final String field, final double centerLon, final double centerLat,

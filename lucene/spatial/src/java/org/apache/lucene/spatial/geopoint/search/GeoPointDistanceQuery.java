@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.search;
+package org.apache.lucene.spatial.geopoint.search;
 
 import java.io.IOException;
 
@@ -22,7 +22,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
+import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoDistanceUtils;
 import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoUtils;
@@ -52,7 +52,7 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
   protected final double radiusMeters;
 
   /**
-   * Constructs a Query for all {@link org.apache.lucene.spatial.document.GeoPointField} types within a
+   * Constructs a Query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types within a
    * distance (in meters) from a given point
    **/
   public GeoPointDistanceQuery(final String field, final double centerLon, final double centerLat, final double radiusMeters) {
