@@ -95,6 +95,9 @@ Bug Fixes
   and other small LeaderElector improvements. (Scott Blum via Mark Miller, Alan
   Woodward)
 
+* SOLR-8599: After a failed connection during construction of SolrZkClient attempt to retry until a connection
+  can be made. (Keith Laban, Dennis Gove)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
