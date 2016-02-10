@@ -2511,18 +2511,11 @@ public final class ZkController {
         ZkStateReader.NODE_NAME_PROP, nodeName);
     try {
       Overseer.getInQueue(getZkClient()).offer(Utils.toJSON(m));
-    } catch (KeeperException e) {
-      log.info("Could not publish node as down: " + e.getMessage());
-    } catch (RuntimeException e) {
-      Throwable rootCause = SolrException.getRootCause(e);
-      if (rootCause instanceof KeeperException) {
-        log.info("Could not publish node as down: " + e.getMessage());
-      } else {
-        throw e;
-      }
     } catch (InterruptedException e) {
       Thread.interrupted();
-      log.info("", e);
-    }
+      log.info("Publish node as down was interrupted.");
+    } catch (Exception e) {
+      log.info("Could not publish node as down: " + e.getMessage());
+    } 
   }
 }
