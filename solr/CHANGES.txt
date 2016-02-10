@@ -198,6 +198,9 @@ Bug Fixes
 * SOLR-8697: Scope ZK election nodes by session to prevent elections from interfering with each other
   and other small LeaderElector improvements. (Scott Blum via Mark Miller)
 
+* SOLR-8599: After a failed connection during construction of SolrZkClient attempt to retry until a connection
+  can be made. (Keith Laban, Dennis Gove)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
