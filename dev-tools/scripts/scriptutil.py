@@ -97,19 +97,19 @@ def update_file(filename, line_re, edit):
 
 # branch types are "release", "stable" and "trunk"
 def find_branch_type():
-  output = subprocess.check_output('svn info', shell=True)
+  output = subprocess.check_output('git status', shell=True)
   for line in output.split(b'\n'):
-    if line.startswith(b'URL:'):
-      url = line.split(b'/')[-1]
+    if line.startswith(b'On branch '):
+      branchName = line.split(b' ')[-1]
       break
   else:
-    raise Exception('svn info missing repo URL')
+    raise Exception('git status missing branch name')
 
-  if url == b'trunk':
-    return 'trunk'
-  if url.startswith(b'branch_'):
+  if branchName == b'master':
+    return 'master'
+  if branchName.startswith(b'branch_'):
     return 'stable'
-  if url.startswith(b'lucene_solr_'):
+  if branchName.startswith(b'lucene_solr_'):
     return 'release'
   raise Exception('Cannot run bumpVersion.py on feature branch')
 
