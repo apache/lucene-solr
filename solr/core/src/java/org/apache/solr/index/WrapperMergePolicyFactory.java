@@ -16,7 +16,9 @@
  */
 package org.apache.solr.index;
 
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 import org.apache.lucene.index.MergePolicy;
 import org.apache.solr.core.SolrResourceLoader;
@@ -34,10 +36,26 @@ public abstract class WrapperMergePolicyFactory extends MergePolicyFactory {
   static final String WRAPPED_PREFIX = "wrapped.prefix"; // not private so that test(s) can use it
 
   private final MergePolicyFactoryArgs wrappedMergePolicyArgs;
+  private final String wrappedMergePolicyClassName;
 
   protected WrapperMergePolicyFactory(SolrResourceLoader resourceLoader, MergePolicyFactoryArgs args, IndexSchema schema) {
     super(resourceLoader, args, schema);
     wrappedMergePolicyArgs = filterWrappedMergePolicyFactoryArgs();
+    if (wrappedMergePolicyArgs == null) {
+      wrappedMergePolicyClassName = null;
+    } else {
+      wrappedMergePolicyClassName = (String) wrappedMergePolicyArgs.remove(CLASS);
+      if (wrappedMergePolicyClassName == null) {
+        throw new IllegalArgumentException("Class name not defined for wrapped MergePolicyFactory!");
+      }
+    }
+    if (wrappedMergePolicyArgs != null) {
+      final Set<String> overshadowedWrappedMergePolicyArgs = new HashSet<>(wrappedMergePolicyArgs.keys());
+      overshadowedWrappedMergePolicyArgs.retainAll(args.keys());
+      if (!overshadowedWrappedMergePolicyArgs.isEmpty()) {
+        throw new IllegalArgumentException("Wrapping and wrapped merge policy args overlap! "+overshadowedWrappedMergePolicyArgs);
+      }
+    }
   }
 
   /**
@@ -55,13 +73,8 @@ public abstract class WrapperMergePolicyFactory extends MergePolicyFactory {
       return getDefaultWrappedMergePolicy();
     }
 
-    final String className = (String) wrappedMergePolicyArgs.remove(CLASS);
-    if (className == null) {
-      throw new IllegalArgumentException("Class name not defined for wrapped MergePolicyFactory!");
-    }
-
     final MergePolicyFactory mpf = resourceLoader.newInstance(
-        className,
+        wrappedMergePolicyClassName,
         MergePolicyFactory.class,
         NO_SUB_PACKAGES,
         new Class[] {SolrResourceLoader.class, MergePolicyFactoryArgs.class, IndexSchema.class},
