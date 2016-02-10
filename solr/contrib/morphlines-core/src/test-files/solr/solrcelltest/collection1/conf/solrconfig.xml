@@ -167,7 +167,7 @@
          Even older versions of Lucene used LogDocMergePolicy.
       -->
     <!--
-        <mergePolicyFacory class="solr.TieredMergePolicyFactory">
+        <mergePolicyFactory class="solr.TieredMergePolicyFactory">
           <int name="maxMergeAtOnce">10</int>
           <int name="segmentsPerTier">10</int>
         </mergePolicyFactory>
