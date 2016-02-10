@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.search;
+package org.apache.lucene.spatial.geopoint.search;
 
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.spatial.document.GeoPointField.TermEncoding;
+import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
 
 /** Package private implementation for the public facing GeoPointInPolygonQuery delegate class.
@@ -44,7 +44,7 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
   }
 
   /**
-   * Custom {@code org.apache.lucene.spatial.search.GeoPointMultiTermQuery.CellComparator} that computes morton hash
+   * Custom {@code org.apache.lucene.spatial.geopoint.search.GeoPointMultiTermQuery.CellComparator} that computes morton hash
    * ranges based on the defined edges of the provided polygon.
    */
   private final class GeoPolygonCellComparator extends CellComparator {
@@ -72,7 +72,7 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
 
     /**
      * The two-phase query approach. The parent
-     * {@link org.apache.lucene.spatial.search.GeoPointTermsEnum#accept} method is called to match
+     * {@link org.apache.lucene.spatial.geopoint.search.GeoPointTermsEnum#accept} method is called to match
      * encoded terms that fall within the bounding box of the polygon. Those documents that pass the initial
      * bounding box filter are then compared to the provided polygon using the
      * {@link org.apache.lucene.spatial.util.GeoRelationUtils#pointInPolygon} method.

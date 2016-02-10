@@ -1,4 +1,4 @@
-package org.apache.lucene.spatial.search;
+package org.apache.lucene.spatial.geopoint.search;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.spatial.document.GeoPointField;
+import org.apache.lucene.spatial.geopoint.document.GeoPointField;
 import org.apache.lucene.spatial.util.GeoEncodingUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -30,7 +30,7 @@ import org.apache.lucene.util.LegacyNumericUtils;
 
 /**
  * Decomposes a given {@link GeoPointMultiTermQuery} into a set of terms that represent the query criteria using
- * {@link org.apache.lucene.spatial.document.GeoPointField.TermEncoding#NUMERIC} method defined by
+ * {@link org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding#NUMERIC} method defined by
  * {@link org.apache.lucene.analysis.LegacyNumericTokenStream}. The terms are then enumerated by the
  * {@link GeoPointTermQueryConstantScoreWrapper} and all docs whose GeoPoint fields match the prefix terms or
  * pass the {@link GeoPointMultiTermQuery.CellComparator#postFilter} criteria are returned in the resulting DocIdSet.

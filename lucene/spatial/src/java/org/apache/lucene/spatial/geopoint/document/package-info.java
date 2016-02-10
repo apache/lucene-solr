@@ -16,6 +16,6 @@
  */
 
 /**
- * Geospatial Query Implementations for Core Lucene
+ * Geospatial Field Implementations for Core Lucene
  */
-package org.apache.lucene.spatial.search;
+package org.apache.lucene.spatial.geopoint.document;
