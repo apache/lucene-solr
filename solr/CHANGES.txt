@@ -60,6 +60,9 @@ Bug Fixes
 * SOLR-8983: Cleanup clusterstate and replicas for a failed create collection request
   (Varun Thacker, Anshum Gupta)
 
+* SOLR-8578: Successful or not, requests are not always fully consumed by Solrj clients and we
+  count on HttpClient or the JVM. (Mark Miller)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

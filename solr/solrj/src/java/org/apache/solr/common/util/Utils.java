@@ -17,7 +17,9 @@
 package org.apache.solr.common.util;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,16 +33,22 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.util.EntityUtils;
 import org.apache.solr.common.SolrException;
 import org.noggit.CharArr;
 import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 
 public class Utils {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
   public static Map getDeepCopy(Map map, int maxDepth) {
     return getDeepCopy(map, maxDepth, true);
   }
@@ -160,6 +168,39 @@ public class Utils {
     }
 
     return false;
+  }
+  
+  /**
+   * If the passed entity has content, make sure it is fully
+   * read and closed.
+   * 
+   * @param entity to consume or null
+   */
+  public static void consumeFully(HttpEntity entity) {
+    if (entity != null) {
+      try {
+        // make sure the stream is full read
+        readFully(entity.getContent());
+      } catch (UnsupportedOperationException e) {
+        // nothing to do then
+      } catch (IOException e) {
+        // quiet
+      } finally {
+        // close the stream
+        EntityUtils.consumeQuietly(entity);
+      }
+    }
+  }
+
+  /**
+   * Make sure the InputStream is fully read.
+   * 
+   * @param is to read
+   * @throws IOException on problem with IO
+   */
+  private static void readFully(InputStream is) throws IOException {
+    is.skip(is.available());
+    while (is.read() != -1) {}
   }
 
   public static final Pattern ARRAY_ELEMENT_INDEX = Pattern
