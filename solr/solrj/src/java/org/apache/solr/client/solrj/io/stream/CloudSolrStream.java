@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.Random;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
@@ -294,7 +295,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
-
+      Set<String> liveNodes = clusterState.getLiveNodes();
       //System.out.println("Connected to zk an got cluster state.");
 
       Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
@@ -302,7 +303,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
       if(slices == null) {
         //Try case insensitive match
         for(String col : clusterState.getCollections()) {
-          if(col.equalsIgnoreCase(this.collection)) {
+          if(col.equalsIgnoreCase(collection)) {
             slices = clusterState.getActiveSlices(col);
             break;
           }
@@ -319,6 +320,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
         Collection<Replica> replicas = slice.getReplicas();
         List<Replica> shuffler = new ArrayList();
         for(Replica replica : replicas) {
+          if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName()))
           shuffler.add(replica);
         }
 
