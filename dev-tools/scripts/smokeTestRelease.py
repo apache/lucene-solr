@@ -171,7 +171,7 @@ MANIFEST_FILE_NAME = 'META-INF/MANIFEST.MF'
 NOTICE_FILE_NAME = 'META-INF/NOTICE.txt'
 LICENSE_FILE_NAME = 'META-INF/LICENSE.txt'
 
-def checkJARMetaData(desc, jarFile, svnRevision, version):
+def checkJARMetaData(desc, jarFile, gitRevision, version):
 
   with zipfile.ZipFile(jarFile, 'r') as z:
     for name in (MANIFEST_FILE_NAME, NOTICE_FILE_NAME, LICENSE_FILE_NAME):
@@ -201,11 +201,12 @@ def checkJARMetaData(desc, jarFile, svnRevision, version):
         raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF' % \
                            (desc, verify))
 
-    if svnRevision != 'skip':
-      # Make sure this matches the version and svn revision we think we are releasing:
-      verifyRevision = 'Implementation-Version: %s %s ' % (version, svnRevision)
+    if gitRevision != 'skip':
+      # Make sure this matches the version and git revision we think we are releasing:
+      # TODO: LUCENE-7023: is it OK that Implementation-Version's value now spans two lines?
+      verifyRevision = 'Implementation-Version: %s %s' % (version, gitRevision)
       if s.find(verifyRevision) == -1:
-        raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF (wrong svn revision?)' % \
+        raise RuntimeError('%s is missing "%s" inside its META-INF/MANIFEST.MF (wrong git revision?)' % \
                            (desc, verifyRevision))
 
     notice = decodeUTF8(z.read(NOTICE_FILE_NAME))
@@ -239,7 +240,8 @@ def checkJARMetaData(desc, jarFile, svnRevision, version):
 def normSlashes(path):
   return path.replace(os.sep, '/')
     
-def checkAllJARs(topDir, project, svnRevision, version, tmpDir, baseURL):
+
+def checkAllJARs(topDir, project, gitRevision, version, tmpDir, baseURL):
   print('    verify JAR metadata/identity/no javax.* or java.* classes...')
   if project == 'solr':
     luceneDistFilenames = dict()
@@ -265,7 +267,7 @@ def checkAllJARs(topDir, project, svnRevision, version, tmpDir, baseURL):
         fullPath = '%s/%s' % (root, file)
         noJavaPackageClasses('JAR file "%s"' % fullPath, fullPath)
         if file.lower().find('lucene') != -1 or file.lower().find('solr') != -1:
-          checkJARMetaData('JAR file "%s"' % fullPath, fullPath, svnRevision, version)
+          checkJARMetaData('JAR file "%s"' % fullPath, fullPath, gitRevision, version)
         if project == 'solr' and file.lower().find('lucene') != -1:
           jarFilename = os.path.basename(file)
           if jarFilename not in luceneDistFilenames:
@@ -565,7 +567,7 @@ def getDirEntries(urlString):
       if text == 'Parent Directory' or text == '..':
         return links[(i+1):]
 
-def unpackAndVerify(java, project, tmpDir, artifact, svnRevision, version, testArgs, baseURL):
+def unpackAndVerify(java, project, tmpDir, artifact, gitRevision, version, testArgs, baseURL):
   destDir = '%s/unpack' % tmpDir
   if os.path.exists(destDir):
     shutil.rmtree(destDir)
@@ -585,14 +587,14 @@ def unpackAndVerify(java, project, tmpDir, artifact, svnRevision, version, testA
     raise RuntimeError('unpack produced entries %s; expected only %s' % (l, expected))
 
   unpackPath = '%s/%s' % (destDir, expected)
-  verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, testArgs, tmpDir, baseURL)
+  verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, testArgs, tmpDir, baseURL)
 
 LUCENE_NOTICE = None
 LUCENE_LICENSE = None
 SOLR_NOTICE = None
 SOLR_LICENSE = None
 
-def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, testArgs, tmpDir, baseURL):
+def verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, testArgs, tmpDir, baseURL):
   global LUCENE_NOTICE
   global LUCENE_LICENSE
   global SOLR_NOTICE
@@ -706,7 +708,7 @@ def verifyUnpacked(java, project, artifact, unpackPath, svnRevision, version, te
 
   else:
 
-    checkAllJARs(os.getcwd(), project, svnRevision, version, tmpDir, baseURL)
+    checkAllJARs(os.getcwd(), project, gitRevision, version, tmpDir, baseURL)
 
     if project == 'lucene':
       testDemo(java.run_java8, isSrc, version, '1.8')
@@ -1205,7 +1207,7 @@ def make_java_config(parser, java8_home):
   return jc(run_java8, java8_home)
 
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
-revision_re = re.compile(r'rev(\d+)')
+revision_re = re.compile(r'rev([a-f\d]+)')
 def parse_config():
   epilogue = textwrap.dedent('''
     Example usage:
@@ -1219,7 +1221,7 @@ def parse_config():
   parser.add_argument('--not-signed', dest='is_signed', action='store_false', default=True,
                       help='Indicates the release is not signed')
   parser.add_argument('--revision',
-                      help='SVN revision number that release was built with, defaults to that in URL')
+                      help='GIT revision number that release was built with, defaults to that in URL')
   parser.add_argument('--version', metavar='X.Y.Z(-ALPHA|-BETA)?',
                       help='Version of the release, defaults to that in URL')
   parser.add_argument('--test-java8', metavar='JAVA8_HOME',
@@ -1243,7 +1245,8 @@ def parse_config():
     if revision_match is None:
       parser.error('Could not find revision in URL')
     c.revision = revision_match.group(1)
-  
+    print('Revision: %s' % c.revision)
+
   c.java = make_java_config(parser, c.test_java8)
 
   if c.tmp_dir:
@@ -1370,8 +1373,8 @@ def main():
   c = parse_config()
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
   smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, ' '.join(c.test_args))
-  
-def smokeTest(java, baseURL, svnRevision, version, tmpDir, isSigned, testArgs):
+
+def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, testArgs):
 
   startTime = datetime.datetime.now()
   
@@ -1406,19 +1409,19 @@ def smokeTest(java, baseURL, svnRevision, version, tmpDir, isSigned, testArgs):
   print('Test Lucene...')
   checkSigs('lucene', lucenePath, version, tmpDir, isSigned)
   for artifact in ('lucene-%s.tgz' % version, 'lucene-%s.zip' % version):
-    unpackAndVerify(java, 'lucene', tmpDir, artifact, svnRevision, version, testArgs, baseURL)
-  unpackAndVerify(java, 'lucene', tmpDir, 'lucene-%s-src.tgz' % version, svnRevision, version, testArgs, baseURL)
+    unpackAndVerify(java, 'lucene', tmpDir, artifact, gitRevision, version, testArgs, baseURL)
+  unpackAndVerify(java, 'lucene', tmpDir, 'lucene-%s-src.tgz' % version, gitRevision, version, testArgs, baseURL)
 
   print()
   print('Test Solr...')
   checkSigs('solr', solrPath, version, tmpDir, isSigned)
   for artifact in ('solr-%s.tgz' % version, 'solr-%s.zip' % version):
-    unpackAndVerify(java, 'solr', tmpDir, artifact, svnRevision, version, testArgs, baseURL)
-  unpackAndVerify(java, 'solr', tmpDir, 'solr-%s-src.tgz' % version, svnRevision, version, testArgs, baseURL)
+    unpackAndVerify(java, 'solr', tmpDir, artifact, gitRevision, version, testArgs, baseURL)
+  unpackAndVerify(java, 'solr', tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs, baseURL)
 
   print()
   print('Test Maven artifacts for Lucene and Solr...')
-  checkMaven(baseURL, tmpDir, svnRevision, version, isSigned)
+  checkMaven(baseURL, tmpDir, gitRevision, version, isSigned)
 
   print('\nSUCCESS! [%s]\n' % (datetime.datetime.now() - startTime))
 
