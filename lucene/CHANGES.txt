@@ -121,6 +121,9 @@ Tests
   expression to encapsulate a statement that is expected to throw an exception.
   (Ryan Ernst)
 
+======================= Lucene 5.6.0 =======================
+(No Changes)
+
 ======================= Lucene 5.5.0 =======================
 
 New Features

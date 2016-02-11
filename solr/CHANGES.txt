@@ -239,6 +239,9 @@ Other Changes
 * SOLR-5209: Unloading or deleting the last replica of a shard now no longer
   cascades to remove the shard from the clusterstate. (Christine Poerschke)
 
+======================= 5.6.0 =======================
+(No Changes)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
