@@ -206,7 +206,7 @@ def read_version(path):
 def parse_config():
   epilogue = textwrap.dedent('''
     Example usage for a Release Manager:
-    python3.2 -u buildAndPushRelease.py --push-remote mikemccand --sign 6E68DA61 --rc-num 1 --version 4.7.0 /path/to/lucene_solr_4_7
+    python3.2 -u buildAndPushRelease.py --push-remote mikemccand --sign 6E68DA61 --rc-num 1 /path/to/lucene_solr_4_7
   ''')
   description = 'Utility to build, push, and test a release.'
   parser = argparse.ArgumentParser(description=description, epilog=epilogue,
