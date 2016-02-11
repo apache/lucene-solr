@@ -452,7 +452,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
             if (random().nextBoolean()) {
               DirectoryReader ir = null;
               try {
-                ir = DirectoryReader.open(iw, random().nextBoolean());
+                ir = DirectoryReader.open(iw, random().nextBoolean(), false);
                 dir.setRandomIOExceptionRateOnOpen(0.0); // disable exceptions on openInput until next iteration
                 TestUtil.checkReader(ir);
               } finally {

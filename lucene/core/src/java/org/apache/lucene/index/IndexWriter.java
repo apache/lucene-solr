@@ -333,7 +333,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   final CloseableThreadLocal<MergeRateLimiter> rateLimiters = new CloseableThreadLocal<>();
 
   DirectoryReader getReader() throws IOException {
-    return getReader(true);
+    return getReader(true, false);
   }
 
   /**
@@ -394,8 +394,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @throws IOException If there is a low-level I/O error
    */
-  DirectoryReader getReader(boolean applyAllDeletes) throws IOException {
+  DirectoryReader getReader(boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
     ensureOpen();
+
+    if (writeAllDeletes && applyAllDeletes == false) {
+      throw new IllegalArgumentException("applyAllDeletes must be true when writeAllDeletes=true");
+    }
 
     final long tStart = System.currentTimeMillis();
 
@@ -432,7 +436,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // just like we do when loading segments_N
           synchronized(this) {
             anyChanges |= maybeApplyDeletes(applyAllDeletes);
-            r = StandardDirectoryReader.open(this, segmentInfos, applyAllDeletes);
+            if (writeAllDeletes) {
+              // Must move the deletes to disk:
+              readerPool.commit(segmentInfos);
+            }
+
+            r = StandardDirectoryReader.open(this, segmentInfos, applyAllDeletes, writeAllDeletes);
             if (infoStream.isEnabled("IW")) {
               infoStream.message("IW", "return reader version=" + r.getVersion() + " reader=" + r);
             }
@@ -1162,6 +1171,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   public synchronized int maxDoc() {
     ensureOpen();
     return docWriter.getNumDocs() + segmentInfos.totalMaxDoc();
+  }
+
+  /** If {@link SegmentInfos#getVersion} is below {@code newVersion} then update it to this value.
+   *
+   * @lucene.internal */
+  public synchronized void advanceSegmentInfosVersion(long newVersion) {
+    ensureOpen();
+    if (segmentInfos.getVersion() < newVersion) {
+      segmentInfos.setVersion(newVersion);
+    }
+    changed();
   }
 
   /** Returns total number of docs in this index, including
@@ -2875,7 +2895,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * contents after calling this method has no effect.
    */
   public final synchronized void setCommitData(Map<String,String> commitUserData) {
-    segmentInfos.setUserData(new HashMap<>(commitUserData));
+    setCommitData(commitUserData, true);
+  }
+
+  /**
+   * Sets the commit user data map, controlling whether to advance the {@link SegmentInfos#getVersion}.
+   *
+   * @see #setCommitData(Map)
+   *
+   * @lucene.internal */
+  public final synchronized void setCommitData(Map<String,String> commitUserData, boolean doIncrementVersion) {
+    segmentInfos.setUserData(new HashMap<>(commitUserData), doIncrementVersion);
     changeCount.incrementAndGet();
   }
   
@@ -4579,10 +4609,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   synchronized boolean nrtIsCurrent(SegmentInfos infos) {
     //System.out.println("IW.nrtIsCurrent " + (infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedDeletesStream.any()));
     ensureOpen();
-    boolean isCurrent = infos.version == segmentInfos.version && !docWriter.anyChanges() && !bufferedUpdatesStream.any();
+    boolean isCurrent = infos.getVersion() == segmentInfos.getVersion() && !docWriter.anyChanges() && !bufferedUpdatesStream.any();
     if (infoStream.isEnabled("IW")) {
       if (isCurrent == false) {
-        infoStream.message("IW", "nrtIsCurrent: infoVersion matches: " + (infos.version == segmentInfos.version) + "; DW changes: " + docWriter.anyChanges() + "; BD changes: "+ bufferedUpdatesStream.any());
+        infoStream.message("IW", "nrtIsCurrent: infoVersion matches: " + (infos.getVersion() == segmentInfos.getVersion()) + "; DW changes: " + docWriter.anyChanges() + "; BD changes: "+ bufferedUpdatesStream.any());
       }
     }
     return isCurrent;
@@ -4708,15 +4738,22 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
   
-  synchronized void incRefDeleter(SegmentInfos segmentInfos) throws IOException {
+  /** Record that the files referenced by this {@link SegmentInfos} are still in use.
+   *
+   * @lucene.internal */
+  public synchronized void incRefDeleter(SegmentInfos segmentInfos) throws IOException {
     ensureOpen();
     deleter.incRef(segmentInfos, false);
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "incRefDeleter for NRT reader version=" + segmentInfos.getVersion() + " segments=" + segString(segmentInfos));
     }
   }
-  
-  synchronized void decRefDeleter(SegmentInfos segmentInfos) throws IOException {
+
+  /** Record that the files referenced by this {@link SegmentInfos} are no longer in use.  Only call this if you are sure you previously
+   *  called {@link #incRefDeleter}.
+   *
+  * @lucene.internal */
+  public synchronized void decRefDeleter(SegmentInfos segmentInfos) throws IOException {
     ensureOpen();
     deleter.decRef(segmentInfos);
     if (infoStream.isEnabled("IW")) {

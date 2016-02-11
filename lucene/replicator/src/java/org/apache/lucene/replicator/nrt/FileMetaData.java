@@ -1,3 +1,5 @@
+package org.apache.lucene.replicator.nrt;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,28 +16,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.core;
-import java.io.IOException;
 
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.Directory;
+/** Holds metadata details about a single file that we use to confirm two files (one remote, one local) are in fact "identical".
+ *
+ * @lucene.experimental */
 
-/**
- * Default IndexReaderFactory implementation. Returns a standard Lucene
- * {@link DirectoryReader}.
- * 
- * @see DirectoryReader#open(Directory)
- */
-public class StandardIndexReaderFactory extends IndexReaderFactory {
-  
-  @Override
-  public DirectoryReader newReader(Directory indexDir, SolrCore core) throws IOException {
-    return DirectoryReader.open(indexDir);
-  }
+public class FileMetaData {
 
-  @Override
-  public DirectoryReader newReader(IndexWriter writer, SolrCore core) throws IOException {
-    return DirectoryReader.open(writer);
+  // Header and footer of the file must be identical between primary and replica to consider the files equal:
+  public final byte[] header;
+  public final byte[] footer;
+
+  public final long length;
+
+  // Used to ensure no bit flips when copying the file:
+  public final long checksum;
+
+  public FileMetaData(byte[] header, byte[] footer, long length, long checksum) {
+    this.header = header;
+    this.footer = footer;
+    this.length = length;
+    this.checksum = checksum;
   }
 }
+

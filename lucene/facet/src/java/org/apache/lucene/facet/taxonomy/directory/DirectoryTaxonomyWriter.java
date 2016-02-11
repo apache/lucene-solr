@@ -270,7 +270,7 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
         // verify that the taxo-writer hasn't been closed on us.
         ensureOpen();
         if (!initializedReaderManager) {
-          readerManager = new ReaderManager(indexWriter, false);
+          readerManager = new ReaderManager(indexWriter, false, false);
           shouldRefreshReaderManager = false;
           initializedReaderManager = true;
         }

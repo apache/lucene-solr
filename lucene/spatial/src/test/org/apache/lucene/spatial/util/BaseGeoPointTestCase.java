@@ -622,7 +622,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
             for (int iter=0;iter<iters && failed.get() == false;iter++) {
 
               if (VERBOSE) {
-                System.out.println("\nTEST: iter=" + iter + " s=" + s);
+                System.out.println("\n" + Thread.currentThread().getName() + ": TEST: iter=" + iter + " s=" + s);
               }
               Query query;
               VerifyHits verifyHits;

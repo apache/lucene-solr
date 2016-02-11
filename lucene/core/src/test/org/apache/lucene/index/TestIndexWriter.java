@@ -1021,7 +1021,7 @@ public class TestIndexWriter extends LuceneTestCase {
               if (random.nextInt(3) == 0) {
                 IndexReader r = null;
                 try {
-                  r = DirectoryReader.open(w, random.nextBoolean());
+                  r = DirectoryReader.open(w, random.nextBoolean(), false);
                   if (random.nextBoolean() && r.maxDoc() > 0) {
                     int docid = random.nextInt(r.maxDoc());
                     w.tryDeleteDocument(r, docid);

@@ -14,28 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.core;
-import java.io.IOException;
-
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.Directory;
-
-/**
- * Default IndexReaderFactory implementation. Returns a standard Lucene
- * {@link DirectoryReader}.
- * 
- * @see DirectoryReader#open(Directory)
+ 
+/** 
+ * <h1>Near-real-time replication framework</h1>
  */
-public class StandardIndexReaderFactory extends IndexReaderFactory {
-  
-  @Override
-  public DirectoryReader newReader(Directory indexDir, SolrCore core) throws IOException {
-    return DirectoryReader.open(indexDir);
-  }
-
-  @Override
-  public DirectoryReader newReader(IndexWriter writer, SolrCore core) throws IOException {
-    return DirectoryReader.open(writer);
-  }
-}
+package org.apache.lucene.replicator.nrt;

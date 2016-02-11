@@ -38,11 +38,14 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
 
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NoDeletionPolicy;
+import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.mockfile.FilterFileSystem;
 import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.util.IOUtils;
@@ -219,8 +222,12 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw new IOException("cannot rename after crash");
     }
     
-    if (assertNoDeleteOpenFile && openFiles.containsKey(source)) {
-      throw (AssertionError) fillOpenTrace(new AssertionError("MockDirectoryWrapper: file \"" + source + "\" is still open: cannot rename"), source, true);
+    if (openFiles.containsKey(source) && assertNoDeleteOpenFile) {
+      throw (AssertionError) fillOpenTrace(new AssertionError("MockDirectoryWrapper: source file \"" + source + "\" is still open: cannot rename"), source, true);
+    }
+
+    if (openFiles.containsKey(dest) && assertNoDeleteOpenFile) {
+      throw (AssertionError) fillOpenTrace(new AssertionError("MockDirectoryWrapper: dest file \"" + dest + "\" is still open: cannot rename"), dest, true);
     }
 
     boolean success = false;
@@ -235,6 +242,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           unSyncedFiles.add(dest);
         }
         openFilesDeleted.remove(source);
+        createdFiles.add(dest);
       }
     }
   }
@@ -256,14 +264,186 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
   }
 
+  public synchronized void corruptUnknownFiles() throws IOException {
+
+    System.out.println("MDW: corrupt unknown files");
+    Set<String> knownFiles = new HashSet<>();
+    for(String fileName : listAll()) {
+      if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
+        System.out.println("MDW: read " + fileName + " to gather files it references");
+        SegmentInfos infos;
+        try {
+          infos = SegmentInfos.readCommit(this, fileName);
+        } catch (IOException ioe) {
+          System.out.println("MDW: exception reading segment infos " + fileName + "; files: " + Arrays.toString(listAll()));
+          throw ioe;
+        }
+        knownFiles.addAll(infos.files(true));
+      }
+    }
+
+    Set<String> toCorrupt = new HashSet<>();
+    Matcher m = IndexFileNames.CODEC_FILE_PATTERN.matcher("");
+    for(String fileName : listAll()) {
+      m.reset(fileName);
+      if (knownFiles.contains(fileName) == false &&
+          fileName.endsWith("write.lock") == false &&
+          (m.matches() || fileName.startsWith(IndexFileNames.PENDING_SEGMENTS))) {
+        toCorrupt.add(fileName);
+      }
+    }
+
+    corruptFiles(toCorrupt);
+  }
+
+  public synchronized void corruptFiles(Collection<String> files) throws IOException {
+    // Must make a copy because we change the incoming unsyncedFiles
+    // when we create temp files, delete, etc., below:
+    for(String name : new ArrayList<>(files)) {
+      int damage = randomState.nextInt(6);
+      String action = null;
+
+      switch(damage) {
+
+      case 0:
+        action = "deleted";
+        deleteFile(name);
+        break;
+
+      case 1:
+        action = "zeroed";
+        // Zero out file entirely
+        long length;
+        try {
+          length = fileLength(name);
+        } catch (IOException ioe) {
+          // Ignore
+          continue;
+        }
+        byte[] zeroes = new byte[256];
+        long upto = 0;
+        try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
+          while(upto < length) {
+            final int limit = (int) Math.min(length-upto, zeroes.length);
+            out.writeBytes(zeroes, 0, limit);
+            upto += limit;
+          }
+        } catch (IOException ioe) {
+          // ignore
+        }
+        break;
+
+      case 2:
+        {
+          action = "partially truncated";
+          // Partially Truncate the file:
+
+          // First, make temp file and copy only half this
+          // file over:
+          String tempFileName = null;
+          try (IndexOutput tempOut = in.createTempOutput("name", "mdw_corrupt", LuceneTestCase.newIOContext(randomState));
+               IndexInput ii = in.openInput(name, LuceneTestCase.newIOContext(randomState))) {
+              tempFileName = tempOut.getName();
+              tempOut.copyBytes(ii, ii.length()/2);
+            } catch (IOException ioe) {
+            // ignore
+          }
+
+          // Delete original and copy bytes back:
+          deleteFile(name);
+
+          try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
+               IndexInput ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState))) {
+              out.copyBytes(ii, ii.length());
+            } catch (IOException ioe) {
+            // ignore
+          }
+          deleteFile(tempFileName);
+        }
+        break;
+      
+      case 3:
+        // The file survived intact:
+        action = "didn't change";
+        break;
+
+      case 4:
+        // Corrupt one bit randomly in the file:
+
+        {
+
+          String tempFileName = null;
+          try (IndexOutput tempOut = in.createTempOutput("name", "mdw_corrupt", LuceneTestCase.newIOContext(randomState));
+               IndexInput ii = in.openInput(name, LuceneTestCase.newIOContext(randomState))) {
+              tempFileName = tempOut.getName();
+              if (ii.length() > 0) {
+                // Copy first part unchanged:
+                long byteToCorrupt = (long) (randomState.nextDouble() * ii.length());
+                if (byteToCorrupt > 0) {
+                  tempOut.copyBytes(ii, byteToCorrupt);
+                }
+
+                // Randomly flip one bit from this byte:
+                byte b = ii.readByte();
+                int bitToFlip = randomState.nextInt(8);
+                b = (byte) (b ^ (1 << bitToFlip));
+                tempOut.writeByte(b);
+
+                action = "flip bit " + bitToFlip + " of byte " + byteToCorrupt + " out of " + ii.length() + " bytes";
+
+                // Copy last part unchanged:
+                long bytesLeft = ii.length() - byteToCorrupt - 1;
+                if (bytesLeft > 0) {
+                  tempOut.copyBytes(ii, bytesLeft);
+                }
+              } else {
+                action = "didn't change";
+              }
+            } catch (IOException ioe) {
+            // ignore
+          }
+
+          // Delete original and copy bytes back:
+          deleteFile(name);
+
+          try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
+               IndexInput ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState))) {
+              out.copyBytes(ii, ii.length());
+            } catch (IOException ioe) {
+            // ignore
+          }
+
+          deleteFile(tempFileName);
+        }
+        break;
+        
+      case 5:
+        action = "fully truncated";
+        // Totally truncate the file to zero bytes
+        deleteFile(name);
+
+        try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
+        } catch (IOException ioe) {
+          // ignore
+        }
+        break;
+
+      default:
+        throw new AssertionError();
+      }
+
+      if (LuceneTestCase.VERBOSE) {
+        System.out.println("MockDirectoryWrapper: " + action + " unsynced file: " + name);
+      }
+    }
+  }
+
   /** Simulates a crash of OS or machine by overwriting
    *  unsynced files. */
   public synchronized void crash() throws IOException {
     openFiles = new HashMap<>();
     openFilesForWrite = new HashSet<>();
     openFilesDeleted = new HashSet<>();
-    Iterator<String> it = unSyncedFiles.iterator();
-    unSyncedFiles = new HashSet<>();
     // first force-close all files, so we can corrupt on windows etc.
     // clone the file map, as these guys want to remove themselves on close.
     Map<Closeable,Exception> m = new IdentityHashMap<>(openFileHandles);
@@ -272,78 +452,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         f.close();
       } catch (Exception ignored) {}
     }
-
-    // Maybe disable virus checker so it doesn't interfere with our efforts to corrupt files below:
-    boolean virusCheckerWasEnabled = TestUtil.disableVirusChecker(in);
-
-    while(it.hasNext()) {
-      String name = it.next();
-      int damage = randomState.nextInt(5);
-      String action = null;
-
-      if (damage == 0) {
-        action = "deleted";
-        deleteFile(name);
-      } else if (damage == 1) {
-        action = "zeroed";
-        // Zero out file entirely
-        long length = fileLength(name);
-        byte[] zeroes = new byte[256];
-        long upto = 0;
-        IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
-        while(upto < length) {
-          final int limit = (int) Math.min(length-upto, zeroes.length);
-          out.writeBytes(zeroes, 0, limit);
-          upto += limit;
-        }
-        out.close();
-      } else if (damage == 2) {
-        action = "partially truncated";
-        // Partially Truncate the file:
-
-        // First, make temp file and copy only half this
-        // file over:
-        String tempFileName;
-        while (true) {
-          tempFileName = ""+randomState.nextInt();
-          if (!LuceneTestCase.slowFileExists(in, tempFileName)) {
-            break;
-          }
-        }
-        final IndexOutput tempOut = in.createOutput(tempFileName, LuceneTestCase.newIOContext(randomState));
-        IndexInput ii = in.openInput(name, LuceneTestCase.newIOContext(randomState));
-        tempOut.copyBytes(ii, ii.length()/2);
-        tempOut.close();
-        ii.close();
-
-        // Delete original and copy bytes back:
-        deleteFile(name);
-        
-        try(IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
-          ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState));
-          out.copyBytes(ii, ii.length());
-          ii.close();
-        }
-        deleteFile(tempFileName);
-      } else if (damage == 3) {
-        // The file survived intact:
-        action = "didn't change";
-      } else {
-        action = "fully truncated";
-        // Totally truncate the file to zero bytes
-        deleteFile(name);
-        try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
-        }
-      }
-      // Re-enable
-      if (virusCheckerWasEnabled) {
-        TestUtil.enableVirusChecker(in);
-      }
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockDirectoryWrapper: " + action + " unsynced file: " + name);
-      }
-    }
+    corruptFiles(unSyncedFiles);
     crashed = true;
+    unSyncedFiles = new HashSet<>();
   }
 
   public synchronized void clearCrash() {
@@ -461,6 +572,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
     unSyncedFiles.remove(name);
     in.deleteFile(name);
+    createdFiles.remove(name);
   }
 
   // sets the cause of the incoming ioe to be the stack
@@ -721,7 +833,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         }
         throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open locks: " + openLocks, cause);
       }
-      
       randomIOExceptionRate = 0.0;
       randomIOExceptionRateOnOpen = 0.0;
 
@@ -741,6 +852,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           
         // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
         if (assertNoUnreferencedFilesOnClose) {
+          System.out.println("MDW: now assert no unref'd files at close");
 
           // now look for unreferenced files: discount ones that we tried to delete but could not
           Set<String> allFiles = new HashSet<>(Arrays.asList(listAll()));
@@ -936,7 +1048,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       return super.toString();
     }
   }
-
 
   // don't override optional methods like copyFrom: we need the default impl for things like disk 
   // full checks. we randomly exercise "raw" directories anyway. We ensure default impls are used:

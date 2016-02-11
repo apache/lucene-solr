@@ -45,7 +45,7 @@ public final class ReaderManager extends ReferenceManager<DirectoryReader> {
    * @throws IOException If there is a low-level I/O error
    */
   public ReaderManager(IndexWriter writer) throws IOException {
-    this(writer, true);
+    this(writer, true, false);
   }
 
   /**
@@ -63,11 +63,13 @@ public final class ReaderManager extends ReferenceManager<DirectoryReader> {
    *          tolerate deleted documents being returned you might gain some
    *          performance by passing <code>false</code>. See
    *          {@link DirectoryReader#openIfChanged(DirectoryReader, IndexWriter, boolean)}.
+   * @param writeAllDeletes
+   *          If <code>true</code>, new deletes will be forcefully written to index files.
    * 
    * @throws IOException If there is a low-level I/O error
    */
-  public ReaderManager(IndexWriter writer, boolean applyAllDeletes) throws IOException {
-    current = DirectoryReader.open(writer, applyAllDeletes);
+  public ReaderManager(IndexWriter writer, boolean applyAllDeletes, boolean writeAllDeletes) throws IOException {
+    current = DirectoryReader.open(writer, applyAllDeletes, writeAllDeletes);
   }
   
   /**

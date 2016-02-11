@@ -1,3 +1,5 @@
+package org.apache.lucene.replicator.nrt;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,28 +16,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.core;
-import java.io.IOException;
-
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.Directory;
 
 /**
- * Default IndexReaderFactory implementation. Returns a standard Lucene
- * {@link DirectoryReader}.
- * 
- * @see DirectoryReader#open(Directory)
+ * Should be thrown by subclasses of {@link PrimaryNode} and {@link ReplicaNode} if a non-fatal exception
+ * occurred while communicating between nodes.
+ *
+ * @lucene.experimental
  */
-public class StandardIndexReaderFactory extends IndexReaderFactory {
-  
-  @Override
-  public DirectoryReader newReader(Directory indexDir, SolrCore core) throws IOException {
-    return DirectoryReader.open(indexDir);
-  }
-
-  @Override
-  public DirectoryReader newReader(IndexWriter writer, SolrCore core) throws IOException {
-    return DirectoryReader.open(writer);
+public class NodeCommunicationException extends RuntimeException {
+  public NodeCommunicationException(String when, Throwable cause) {
+    super(when);
+    assert cause != null;
+    initCause(cause);
   }
 }
