@@ -167,6 +167,8 @@ Bug Fixes
 * SOLR-8461: CloudSolrStream and ParallelStream can choose replicas that are not active
   (Cao Manh Dat, Varun Thacker, Joel Bernstein)
 
+* SOLR-8527: Improve JdbcTest to cleanup properly on failures (Kevin Risden, Joel Bernstein)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
@@ -243,6 +245,7 @@ Other Changes
   cascades to remove the shard from the clusterstate. (Christine Poerschke)
 
 * SOLR-8190: Implement Closeable on TupleStream (Kevin Risden, Joel Bernstein)
+
 
 ======================= 5.6.0 =======================
 (No Changes)
