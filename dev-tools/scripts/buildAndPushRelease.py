@@ -61,8 +61,10 @@ def getGitRev():
   status = os.popen('git status').read().strip()
   if 'nothing to commit, working directory clean' not in status:
     raise RuntimeError('git clone is dirty:\n\n%s' % status)
+
+  # TODO: we should also detect unpushed changes here?  Something like "git cherry -v origin/branch_5_5"?
+  print('  git clone is clean')
   return os.popen('git rev-parse HEAD').read().strip()
-  
 
 def prepare(root, version, gpgKeyID, gpgPassword):
   print()
