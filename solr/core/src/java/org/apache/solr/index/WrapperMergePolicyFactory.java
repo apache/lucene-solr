@@ -82,6 +82,19 @@ public abstract class WrapperMergePolicyFactory extends MergePolicyFactory {
     return mpf.getMergePolicy();
   }
 
+  /** Returns an instance of the wrapping {@link MergePolicy} without configuring its set parameters. */
+  protected abstract MergePolicy getMergePolicyInstance(MergePolicy wrappedMP);
+
+
+  /** Returns a wrapping {@link MergePolicy} with its set parameters configured. */
+  @Override
+  public final MergePolicy getMergePolicy() {
+    final MergePolicy wrappedMP = getWrappedMergePolicy();
+    final MergePolicy mp = getMergePolicyInstance(wrappedMP);
+    args.invokeSetters(mp);
+    return mp;
+  }
+
   /**
    * Returns a {@link MergePolicyFactoryArgs} for the wrapped {@link MergePolicyFactory}. This method also removes all
    * args from this instance's args.
