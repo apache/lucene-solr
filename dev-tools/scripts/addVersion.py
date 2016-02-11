@@ -168,8 +168,7 @@ def check_solr_version_tests():
 def read_config():
   parser = argparse.ArgumentParser(description='Add a new version')
   parser.add_argument('version', type=Version.parse)
-  parser.add_argument('-c', '--changeid', type=int, help='SVN ChangeId for downstream version change to merge')
-  parser.add_argument('-r', '--downstream-repo', help='Path to downstream checkout for given changeid')
+  parser.add_argument('-c', '--changeid', type=str, help='SVN ChangeId for downstream version change to merge')
   c = parser.parse_args()
 
   c.branch_type = find_branch_type()
@@ -177,10 +176,6 @@ def read_config():
                       c.version.is_minor_release() and c.branch_type == 'stable' or \
                       c.branch_type == 'major'
 
-  if bool(c.changeid) != bool(c.downstream_repo):
-    parser.error('--changeid and --upstream-repo must be used together')
-  if not c.changeid and not c.matching_branch:
-    parser.error('Must use --changeid for forward porting bugfix release version to other branches')
   if c.changeid and c.matching_branch:
     parser.error('Cannot use --changeid on branch that new version will originate on')
   if c.changeid and c.version.is_major_release():
@@ -190,9 +185,6 @@ def read_config():
   
 def main():
   c = read_config() 
-
-  if c.changeid:
-    merge_change(c.changeid, c.downstream_repo)  
 
   print('\nAdding new version %s' % c.version)
   update_changes('lucene/CHANGES.txt', c.version)
