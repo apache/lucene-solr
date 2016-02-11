@@ -115,68 +115,81 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1", props)) {
       try (Statement stmt = con.createStatement()) {
         try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i desc limit 2")) {
-          assertTrue(rs.getMetaData() != null);
+          assertTrue(rs.next());
 
-          assert(rs.next());
-          assert(rs.getLong("a_i") == 14);
-          assert(rs.getLong(2) == 14);
-          assert(rs.getString("a_s").equals("hello0"));
-          assert(rs.getString(3).equals("hello0"));
-          assert(rs.getDouble("a_f") == 10);
-          assert(rs.getDouble(4) == 10);
+          assertEquals(14, rs.getLong("a_i"));
+          assertEquals(14, rs.getLong(2));
+          assertEquals("hello0", rs.getString("a_s"));
+          assertEquals("hello0", rs.getString(3));
+          assertEquals(10, rs.getDouble("a_f"), 0);
+          assertEquals(10, rs.getDouble(4), 0);
 
-          assert(rs.next());
-          assert(rs.getLong("a_i") == 13);
-          assert(rs.getLong(2) == 13);
-          assert(rs.getString("a_s").equals("hello3"));
-          assert(rs.getString(3).equals("hello3"));
-          assert(rs.getDouble("a_f") == 9);
-          assert(rs.getDouble(4) == 9);
-          assert(!rs.next());
+          assertTrue(rs.next());
+
+          assertEquals(13, rs.getLong("a_i"));
+          assertEquals(13, rs.getLong(2));
+          assertEquals("hello3", rs.getString("a_s"));
+          assertEquals("hello3", rs.getString(3));
+          assertEquals(9, rs.getDouble("a_f"), 0);
+          assertEquals(9, rs.getDouble(4), 0);
+
+          assertFalse(rs.next());
         }
 
         //Test statement reuse
         try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc limit 2")) {
-          assert(rs.next());
-          assert(rs.getLong("a_i") == 0);
-          assert(rs.getLong(2) == 0);
-          assert(rs.getString("a_s").equals("hello0"));
-          assert(rs.getString(3).equals("hello0"));
-          assert(rs.getDouble("a_f") == 1);
-          assert(rs.getDouble(4) == 1);
+          assertTrue(rs.next());
 
-          assert(rs.next());
-          assert(rs.getLong("a_i") == 1);
-          assert(rs.getLong(2) == 1);
-          assert(rs.getString("a_s").equals("hello0"));
-          assert(rs.getString(3).equals("hello0"));
-          assert(rs.getDouble("a_f") == 5);
-          assert(rs.getDouble(4) == 5);
-          assert(!rs.next());
+          assertEquals(0, rs.getLong("a_i"));
+          assertEquals(0, rs.getLong(2));
+          assertEquals("hello0", rs.getString("a_s"));
+          assertEquals("hello0", rs.getString(3));
+          assertEquals(1, rs.getDouble("a_f"), 0);
+          assertEquals(1, rs.getDouble(4), 0);
+
+          assertTrue(rs.next());
+
+          assertEquals(1, rs.getLong("a_i"));
+          assertEquals(1, rs.getLong(2));
+          assertEquals("hello0", rs.getString("a_s"));
+          assertEquals("hello0", rs.getString(3));
+          assertEquals(5, rs.getDouble("a_f"), 0);
+          assertEquals(5, rs.getDouble(4), 0);
+
+          assertFalse(rs.next());
         }
       }
 
       //Test connection reuse
       try (Statement stmt = con.createStatement()) {
         try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i desc limit 2")) {
-          assert(rs.next());
-          assert(rs.getLong("a_i") == 14);
-          assert(rs.getLong(2) == 14);
-          assert(rs.next());
-          assert(rs.getLong("a_i") == 13);
-          assert(rs.getLong(2) == 13);
+          assertTrue(rs.next());
+
+          assertEquals(14, rs.getLong("a_i"));
+          assertEquals(14, rs.getLong(2));
+
+          assertTrue(rs.next());
+
+          assertEquals(13, rs.getLong("a_i"));
+          assertEquals(13, rs.getLong(2));
+
+          assertFalse(rs.next());
         }
 
         //Test statement reuse
         stmt.setMaxRows(2);
         try (ResultSet rs = stmt.executeQuery("select id, a_i, a_s, a_f from collection1 order by a_i asc")) {
-          assert(rs.next());
-          assert(rs.getLong("a_i") == 0);
-          assert(rs.getLong(2) == 0);
-          assert(rs.next());
-          assert(rs.getLong("a_i") == 1);
-          assert(rs.getLong(2) == 1);
-          assert(!rs.next());
+          assertTrue(rs.next());
+
+          assertEquals(0, rs.getLong("a_i"));
+          assertEquals(0, rs.getLong(2));
+
+          assertTrue(rs.next());
+
+          assertEquals(1, rs.getLong("a_i"));
+          assertEquals(1, rs.getLong(2));
+
+          assertFalse(rs.next());
         }
 
         //Test simple loop. Since limit is set it will override the statement maxRows.
@@ -185,7 +198,7 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
           while (rs.next()) {
             ++count;
           }
-          assert(count == 10);
+          assertEquals(10, count);
         }
       }
     }
@@ -198,24 +211,28 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
         try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s " +
             "order by sum(a_f) desc")) {
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello3"));
-          assert(rs.getString(1).equals("hello3"));
-          assert(rs.getDouble("sum(a_f)") == 26);
-          assert(rs.getDouble(2) == 26);
+          assertTrue(rs.next());
 
+          assertEquals("hello3", rs.getString("a_s"));
+          assertEquals("hello3", rs.getString(1));
+          assertEquals(26, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(26, rs.getDouble(2), 0);
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello0"));
-          assert(rs.getString(1).equals("hello0"));
-          assert(rs.getDouble("sum(a_f)") == 18);
-          assert(rs.getDouble(2) == 18);
+          assertTrue(rs.next());
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello4"));
-          assert(rs.getString(1).equals("hello4"));
-          assert(rs.getDouble("sum(a_f)") == 11);
-          assert(rs.getDouble(2) == 11);
+          assertEquals("hello0", rs.getString("a_s"));
+          assertEquals("hello0", rs.getString(1));
+          assertEquals(18, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(18, rs.getDouble(2), 0);
+
+          assertTrue(rs.next());
+
+          assertEquals("hello4", rs.getString("a_s"));
+          assertEquals("hello4", rs.getString(1));
+          assertEquals(11, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(11, rs.getDouble(2), 0);
+
+          assertFalse(rs.next());
         }
       }
     }
@@ -229,23 +246,28 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
         try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s " +
             "order by sum(a_f) desc")) {
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello3"));
-          assert(rs.getString(1).equals("hello3"));
-          assert(rs.getDouble("sum(a_f)") == 26);
-          assert(rs.getDouble(2) == 26);
+          assertTrue(rs.next());
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello0"));
-          assert(rs.getString(1).equals("hello0"));
-          assert(rs.getDouble("sum(a_f)") == 18);
-          assert(rs.getDouble(2) == 18);
+          assertEquals("hello3", rs.getString("a_s"));
+          assertEquals("hello3", rs.getString(1));
+          assertEquals(26, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(26, rs.getDouble(2), 0);
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello4"));
-          assert(rs.getString(1).equals("hello4"));
-          assert(rs.getDouble("sum(a_f)") == 11);
-          assert(rs.getDouble(2) == 11);
+          assertTrue(rs.next());
+
+          assertEquals("hello0", rs.getString("a_s"));
+          assertEquals("hello0", rs.getString(1));
+          assertEquals(18, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(18, rs.getDouble(2), 0);
+
+          assertTrue(rs.next());
+
+          assertEquals("hello4", rs.getString("a_s"));
+          assertEquals("hello4", rs.getString(1));
+          assertEquals(11, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(11, rs.getDouble(2), 0);
+
+          assertFalse(rs.next());
         }
       }
     }
@@ -263,23 +285,28 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
         try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s " +
             "order by sum(a_f) desc")) {
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello3"));
-          assert(rs.getString(1).equals("hello3"));
-          assert(rs.getDouble("sum(a_f)") == 26);
-          assert(rs.getDouble(2) == 26);
+          assertTrue(rs.next());
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello0"));
-          assert(rs.getString(1).equals("hello0"));
-          assert(rs.getDouble("sum(a_f)") == 18);
-          assert(rs.getDouble(2) == 18);
+          assertEquals("hello3", rs.getString("a_s"));
+          assertEquals("hello3", rs.getString(1));
+          assertEquals(26, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(26, rs.getDouble(2), 0);
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello4"));
-          assert(rs.getString(1).equals("hello4"));
-          assert(rs.getDouble("sum(a_f)") == 11);
-          assert(rs.getDouble(2) == 11);
+          assertTrue(rs.next());
+
+          assertEquals("hello0", rs.getString("a_s"));
+          assertEquals("hello0", rs.getString(1));
+          assertEquals(18, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(18, rs.getDouble(2), 0);
+
+          assertTrue(rs.next());
+
+          assertEquals("hello4", rs.getString("a_s"));
+          assertEquals("hello4", rs.getString(1));
+          assertEquals(11, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(11, rs.getDouble(2), 0);
+
+          assertFalse(rs.next());
         }
       }
     }
@@ -289,32 +316,37 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
         "jdbc:solr://" + zkHost + "?collection=collection1&username=&password=&testKey1=testValue&testKey2")) {
 
       Properties p = ((ConnectionImpl) con).getProperties();
-      assert(p.getProperty("username").equals(""));
-      assert(p.getProperty("password").equals(""));
-      assert(p.getProperty("testKey1").equals("testValue"));
-      assert(p.getProperty("testKey2").equals(""));
+      assertEquals("", p.getProperty("username"));
+      assertEquals("", p.getProperty("password"));
+      assertEquals("testValue", p.getProperty("testKey1"));
+      assertEquals("", p.getProperty("testKey2"));
 
       try (Statement stmt = con.createStatement()) {
         try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s " +
             "order by sum(a_f) desc")) {
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello3"));
-          assert(rs.getString(1).equals("hello3"));
-          assert(rs.getDouble("sum(a_f)") == 26);
-          assert(rs.getDouble(2) == 26);
+          assertTrue(rs.next());
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello0"));
-          assert(rs.getString(1).equals("hello0"));
-          assert(rs.getDouble("sum(a_f)") == 18);
-          assert(rs.getDouble(2) == 18);
+          assertEquals("hello3", rs.getString("a_s"));
+          assertEquals("hello3", rs.getString(1));
+          assertEquals(26, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(26, rs.getDouble(2), 0);
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello4"));
-          assert(rs.getString(1).equals("hello4"));
-          assert(rs.getDouble("sum(a_f)") == 11);
-          assert(rs.getDouble(2) == 11);
+          assertTrue(rs.next());
+
+          assertEquals("hello0", rs.getString("a_s"));
+          assertEquals("hello0", rs.getString(1));
+          assertEquals(18, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(18, rs.getDouble(2), 0);
+
+          assertTrue(rs.next());
+
+          assertEquals("hello4", rs.getString("a_s"));
+          assertEquals("hello4", rs.getString(1));
+          assertEquals(11, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(11, rs.getDouble(2), 0);
+
+          assertFalse(rs.next());
         }
       }
     }
@@ -338,23 +370,28 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
         try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s " +
             "order by sum(a_f) desc")) {
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello3"));
-          assert(rs.getString(1).equals("hello3"));
-          assert(rs.getDouble("sum(a_f)") == 26);
-          assert(rs.getDouble(2) == 26);
+          assertTrue(rs.next());
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello0"));
-          assert(rs.getString(1).equals("hello0"));
-          assert(rs.getDouble("sum(a_f)") == 18);
-          assert(rs.getDouble(2) == 18);
+          assertEquals("hello3", rs.getString("a_s"));
+          assertEquals("hello3", rs.getString(1));
+          assertEquals(26, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(26, rs.getDouble(2), 0);
 
-          assert(rs.next());
-          assert(rs.getString("a_s").equals("hello4"));
-          assert(rs.getString(1).equals("hello4"));
-          assert(rs.getDouble("sum(a_f)") == 11);
-          assert(rs.getDouble(2) == 11);
+          assertTrue(rs.next());
+
+          assertEquals("hello0", rs.getString("a_s"));
+          assertEquals("hello0", rs.getString(1));
+          assertEquals(18, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(18, rs.getDouble(2), 0);
+
+          assertTrue(rs.next());
+
+          assertEquals("hello4", rs.getString("a_s"));
+          assertEquals("hello4", rs.getString(1));
+          assertEquals(11, rs.getDouble("sum(a_f)"), 0);
+          assertEquals(11, rs.getDouble(2), 0);
+
+          assertFalse(rs.next());
         }
       }
     }
