@@ -59,10 +59,8 @@ def runAndSendGPGPassword(command, password):
 
 def getGitRev():
   status = os.popen('git status').read().strip()
-  if 'Your branch is up-to-date' not in status:
-    raise RuntimeError('git clone has local changes:\n\n%s' % status)
-  if 'Untracked files' in status:
-    raise RuntimeError('there are untracked files; please run git clean -xfd:\n\n%s' % status)
+  if 'nothing to commit, working directory clean' not in status:
+    raise RuntimeError('git clone is dirty:\n\n%s' % status)
   return os.popen('git rev-parse HEAD').read().strip()
   
 
