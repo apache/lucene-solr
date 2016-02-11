@@ -164,6 +164,9 @@ Bug Fixes
 
 * SOLR-8640: CloudSolrClient does not send credentials for update request (noble, hoss)
 
+* SOLR-8461: CloudSolrStream and ParallelStream can choose replicas that are not active
+  (Cao Manh Dat, Varun Thacker, Joel Bernstein)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
