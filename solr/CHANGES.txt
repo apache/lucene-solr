@@ -508,8 +508,6 @@ Bug Fixes
 * SOLR-8607: The Schema API refuses to add new fields that match existing dynamic fields.
   (Jan Høydahl, Steve Rowe)
 
-* SOLR-8575: Fix HDFSLogReader replay status numbers and a performance bug where we can reopen
-  FSDataInputStream too often. (Mark Miller, Patrick Dvorack)
   
 * SOLR-8651: The commitWithin parameter is not passed on for deleteById in UpdateRequest in
   distributed queries (Jessica Cheng Mallet via Erick Erickson)
