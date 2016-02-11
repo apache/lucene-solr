@@ -1333,8 +1333,8 @@ public class UpdateLog implements PluginInfoInitialized {
                 loglog.info(
                         "log replay status {} active={} starting pos={} current pos={} current size={} % read={}",
                         translog, activeLog, recoveryInfo.positionOfStart, cpos, csize,
-                        Math.floor(cpos / (double) csize * 100.));
-
+                        Math.round(cpos / (double) csize * 100.));
+                
               }
             }
 

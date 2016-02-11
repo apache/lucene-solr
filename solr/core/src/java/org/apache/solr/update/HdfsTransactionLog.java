@@ -390,18 +390,16 @@ public class HdfsTransactionLog extends TransactionLog {
       
       // we actually need a new reader to 
       // see if any data was added by the writer
-      if (pos >= sz) {
-        log.info("Read available inputstream data, opening new inputstream pos={} sz={}", pos, sz);
-        
-        synchronized (HdfsTransactionLog.this) {
-          sz = fos.size();
-        }
-        
+      if (fis.position() >= sz) {
         fis.close();
         tlogOutStream.hflush();
-
-        FSDataInputStream fdis = fs.open(tlogFile);
-        fis = new FSDataFastInputStream(fdis, pos);
+        try {
+          FSDataInputStream fdis = fs.open(tlogFile);
+          fis = new FSDataFastInputStream(fdis, pos);
+          sz = fs.getFileStatus(tlogFile).getLen();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
       }
       
       if (pos == 0) {
@@ -448,7 +446,7 @@ public class HdfsTransactionLog extends TransactionLog {
     
     @Override
     public long currentSize() {
-      return fos.size();
+      return sz;
     }
 
   }
@@ -606,3 +604,5 @@ class FSDataFastInputStream extends FastInputStream {
     return "readFromStream="+readFromStream +" pos="+pos +" end="+end + " bufferPos="+getBufferPos() + " position="+position() ;
   }
 }
+
+
