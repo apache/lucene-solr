@@ -126,7 +126,7 @@ public class WrapperMergePolicyFactoryTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public MergePolicy getMergePolicy() {
+    protected MergePolicy getMergePolicyInstance(MergePolicy wrappedMP) {
       return getWrappedMergePolicy();
     }
 
