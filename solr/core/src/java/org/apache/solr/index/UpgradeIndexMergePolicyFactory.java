@@ -31,10 +31,8 @@ public class UpgradeIndexMergePolicyFactory extends WrapperMergePolicyFactory {
   }
 
   @Override
-  public MergePolicy getMergePolicy() {
-    final MergePolicy wrappedMP = getWrappedMergePolicy();
+  protected MergePolicy getMergePolicyInstance(MergePolicy wrappedMP) {
     final MergePolicy mp = new UpgradeIndexMergePolicy(wrappedMP);
-    args.invokeSetters(mp);
     return mp;
   }
 
