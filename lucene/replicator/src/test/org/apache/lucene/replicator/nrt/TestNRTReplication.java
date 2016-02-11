@@ -32,6 +32,7 @@ import java.util.regex.Pattern;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.LuceneTestCase;
@@ -202,6 +203,7 @@ public class TestNRTReplication extends LuceneTestCase {
     docs.close();
   }
 
+  @Nightly
   public void testReplicateDeleteAllDocuments() throws Exception {
 
     Path primaryPath = createTempDir("primary");
@@ -272,6 +274,7 @@ public class TestNRTReplication extends LuceneTestCase {
     primary.close();
   }
 
+  @Nightly
   public void testReplicateForceMerge() throws Exception {
 
     Path primaryPath = createTempDir("primary");
@@ -321,6 +324,7 @@ public class TestNRTReplication extends LuceneTestCase {
   }
 
   // Start up, index 10 docs, replicate, but crash and restart the replica without committing it:
+  @Nightly
   public void testReplicaCrashNoCommit() throws Exception {
 
     Path primaryPath = createTempDir("primary");
@@ -366,6 +370,7 @@ public class TestNRTReplication extends LuceneTestCase {
   }
 
   // Start up, index 10 docs, replicate, commit, crash and restart the replica
+  @Nightly
   public void testReplicaCrashWithCommit() throws Exception {
 
     Path primaryPath = createTempDir("primary");
@@ -408,6 +413,7 @@ public class TestNRTReplication extends LuceneTestCase {
   }
 
   // Start up, index 10 docs, replicate, commit, crash, index more docs, replicate, then restart the replica
+  @Nightly
   public void testIndexingWhileReplicaIsDown() throws Exception {
 
     Path primaryPath = createTempDir("primary");
@@ -472,6 +478,7 @@ public class TestNRTReplication extends LuceneTestCase {
   }
  
   // Crash primary and promote a replica
+  @Nightly
   public void testCrashPrimary1() throws Exception {
 
     Path path1 = createTempDir("1");
@@ -515,6 +522,7 @@ public class TestNRTReplication extends LuceneTestCase {
   }
 
   // Crash primary and then restart it
+  @Nightly
   public void testCrashPrimary2() throws Exception {
 
     Path path1 = createTempDir("1");
@@ -581,6 +589,7 @@ public class TestNRTReplication extends LuceneTestCase {
   }
 
   // Crash primary and then restart it, while a replica node is down, then bring replica node back up and make sure it properly "unforks" itself
+  @Nightly
   public void testCrashPrimary3() throws Exception {
 
     Path path1 = createTempDir("1");
@@ -639,6 +648,7 @@ public class TestNRTReplication extends LuceneTestCase {
     replica.close();
   }
 
+  @Nightly
   public void testCrashPrimaryWhileCopying() throws Exception {
 
     Path path1 = createTempDir("1");
@@ -747,6 +757,7 @@ public class TestNRTReplication extends LuceneTestCase {
     primary.close();
   }
 
+  @Nightly
   public void testFullClusterCrash() throws Exception {
 
     Path path1 = createTempDir("1");
