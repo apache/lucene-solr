@@ -21,8 +21,12 @@ import java.util.Map;
 
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.SimpleMergedSegmentWarmer;
+import org.apache.lucene.index.SortingMergePolicy;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrConfig;
@@ -44,6 +48,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
   private static final String solrConfigFileNameWarmerRandomMergePolicyFactory = "solrconfig-warmer-randommergepolicyfactory.xml";
   private static final String solrConfigFileNameTieredMergePolicy = "solrconfig-tieredmergepolicy.xml";
   private static final String solrConfigFileNameTieredMergePolicyFactory = "solrconfig-tieredmergepolicyfactory.xml";
+  private static final String solrConfigFileNameSortingMergePolicyFactory = "solrconfig-sortingmergepolicyfactory.xml";
   private static final String schemaFileName = "schema.xml";
 
   @BeforeClass
@@ -89,6 +94,28 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     assertEquals("ms.maxMergeCount", 987, ms.getMaxMergeCount());
     assertEquals("ms.maxThreadCount", 42, ms.getMaxThreadCount());
 
+  }
+
+  public void testSortingMPSolrIndexConfigCreation() throws Exception {
+    final String expectedFieldName = "timestamp";
+    final SortField.Type expectedFieldType = SortField.Type.LONG;
+    final boolean expectedFieldSortDescending = true;
+
+    SolrConfig solrConfig = new SolrConfig(instanceDir, solrConfigFileNameSortingMergePolicyFactory, null);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null, null);
+    assertNotNull(solrIndexConfig);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
+
+    h.getCore().setLatestSchema(indexSchema);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
+
+    final MergePolicy mergePolicy = iwc.getMergePolicy();
+    assertNotNull("null mergePolicy", mergePolicy);
+    assertTrue("mergePolicy ("+mergePolicy+") is not a SortingMergePolicy", mergePolicy instanceof SortingMergePolicy);
+    final SortingMergePolicy sortingMergePolicy = (SortingMergePolicy) mergePolicy;
+    final Sort expected = new Sort(new SortField(expectedFieldName, expectedFieldType, expectedFieldSortDescending));
+    final Sort actual = sortingMergePolicy.getSort();
+    assertEquals("SortingMergePolicy.getSort", expected, actual);
   }
 
   public void testMergedSegmentWarmerIndexConfigCreation() throws Exception {

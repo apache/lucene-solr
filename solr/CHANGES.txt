@@ -10,7 +10,12 @@ See http://lucene.apache.org/solr for more information.
 
 
 ======================= 5.6.0 =======================
-(No Changes)
+
+New Features
+----------------------
+
+* SOLR-5730: Make Lucene's SortingMergePolicy and EarlyTerminatingSortingCollector configurable in Solr.
+  (Christine Poerschke, hossmann, Tomás Fernández Löbbe, Shai Erera)
 
 ======================= 5.5.0 =======================
 

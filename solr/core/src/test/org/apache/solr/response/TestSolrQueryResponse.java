@@ -45,6 +45,12 @@ public class TestSolrQueryResponse extends LuceneTestCase {
   }
 
   @Test
+  public void testResponseHeaderSegmentTerminatedEarly() throws Exception {
+    assertEquals("SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY value changed",
+        "segmentTerminatedEarly", SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
+  }
+
+  @Test
   public void testValues() throws Exception {
     final SolrQueryResponse response = new SolrQueryResponse();
     assertEquals("values initially not empty", 0, response.getValues().size());

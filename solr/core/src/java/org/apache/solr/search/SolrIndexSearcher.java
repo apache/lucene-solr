@@ -187,6 +187,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   private void buildAndRunCollectorChain(QueryResult qr, Query query,
       Collector collector, QueryCommand cmd, DelegatingCollector postFilter) throws IOException {
     
+    EarlyTerminatingSortingCollector earlyTerminatingSortingCollector = null;
+    if (cmd.getSegmentTerminateEarly()) {
+      final Sort cmdSort = cmd.getSort();
+      final int cmdLen = cmd.getLen();
+      final Sort mergeSort = core.getSolrCoreState().getMergePolicySort();
+
+      if (cmdSort == null || cmdLen <= 0 || mergeSort == null ||
+          !EarlyTerminatingSortingCollector.canEarlyTerminate(cmdSort, mergeSort)) {
+        log.warn("unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} mergeSort={}", cmdSort, cmdLen, mergeSort);
+      } else {
+        collector = earlyTerminatingSortingCollector = new EarlyTerminatingSortingCollector(collector, cmdSort, cmd.getLen(), mergeSort);
+      }
+    }
+
     final boolean terminateEarly = cmd.getTerminateEarly();
     if (terminateEarly) {
       collector = new EarlyTerminatingCollector(collector, cmd.getLen());
@@ -212,6 +226,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
         ((DelegatingCollector) collector).finish();
       }
       throw etce;
+    } finally {
+      if (earlyTerminatingSortingCollector != null) {
+        qr.setSegmentTerminatedEarly(earlyTerminatingSortingCollector.terminatedEarly());
+      }
     }
     if (collector instanceof DelegatingCollector) {
       ((DelegatingCollector) collector).finish();
@@ -1481,6 +1499,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
   public static final int GET_DOCSET            = 0x40000000;
   static final int NO_CHECK_FILTERCACHE  = 0x20000000;
   static final int NO_SET_QCACHE         = 0x10000000;
+  static final int SEGMENT_TERMINATE_EARLY = 0x08;
   public static final int TERMINATE_EARLY = 0x04;
   public static final int GET_DOCLIST           =        0x02; // get the documents actually returned in a response
   public static final int GET_SCORES             =       0x01;
@@ -2547,6 +2566,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
     public QueryCommand setTerminateEarly(boolean segmentTerminateEarly) {
       return segmentTerminateEarly ? setFlags(TERMINATE_EARLY) : clearFlags(TERMINATE_EARLY);
     }
+
+    public boolean getSegmentTerminateEarly() { return (flags & SEGMENT_TERMINATE_EARLY) != 0; }
+    public QueryCommand setSegmentTerminateEarly(boolean segmentSegmentTerminateEarly) {
+      return segmentSegmentTerminateEarly ? setFlags(SEGMENT_TERMINATE_EARLY) : clearFlags(SEGMENT_TERMINATE_EARLY);
+    }
   }
 
 
@@ -2555,6 +2579,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    */
   public static class QueryResult {
     private boolean partialResults;
+    private Boolean segmentTerminatedEarly;
     private DocListAndSet docListAndSet;
     private CursorMark nextCursorMark;
 
@@ -2578,6 +2603,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
 
     public boolean isPartialResults() { return partialResults; }
     public void setPartialResults(boolean partialResults) { this.partialResults = partialResults; }
+
+    public Boolean getSegmentTerminatedEarly() { return segmentTerminatedEarly; }
+    public void setSegmentTerminatedEarly(Boolean segmentTerminatedEarly) { this.segmentTerminatedEarly = segmentTerminatedEarly; }
 
     public void setDocListAndSet( DocListAndSet listSet ) { docListAndSet = listSet; }
     public DocListAndSet getDocListAndSet() { return docListAndSet; }
