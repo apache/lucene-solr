@@ -360,8 +360,15 @@ public class HdfsTransactionLog extends TransactionLog {
       super();
       incref();
       try {
+        
+        synchronized (HdfsTransactionLog.this) {
+          fos.flushBuffer();
+          sz = fos.size();
+        }
+        
+        tlogOutStream.hflush();
+        
         FSDataInputStream fdis = fs.open(tlogFile);
-        sz = fs.getFileStatus(tlogFile).getLen();
         fis = new FSDataFastInputStream(fdis, startingPos);
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -384,22 +391,23 @@ public class HdfsTransactionLog extends TransactionLog {
         if (pos >= fos.size()) {
           return null;
         }
-       
-        fos.flushBuffer();
       }
       
       // we actually need a new reader to 
       // see if any data was added by the writer
-      if (fis.position() >= sz) {
-        fis.close();
-        tlogOutStream.hflush();
-        try {
-          FSDataInputStream fdis = fs.open(tlogFile);
-          fis = new FSDataFastInputStream(fdis, pos);
-          sz = fs.getFileStatus(tlogFile).getLen();
-        } catch (IOException e) {
-          throw new RuntimeException(e);
+      if (pos >= sz) {
+        log.info("Read available inputstream data, opening new inputstream pos={} sz={}", pos, sz);
+        
+        synchronized (HdfsTransactionLog.this) {
+          fos.flushBuffer();
+          sz = fos.size();
         }
+        
+        tlogOutStream.hflush();
+        fis.close();
+   
+        FSDataInputStream fdis = fs.open(tlogFile);
+        fis = new FSDataFastInputStream(fdis, pos);
       }
       
       if (pos == 0) {
@@ -446,7 +454,7 @@ public class HdfsTransactionLog extends TransactionLog {
     
     @Override
     public long currentSize() {
-      return sz;
+      return fos.size();
     }
 
   }
@@ -604,5 +612,3 @@ class FSDataFastInputStream extends FastInputStream {
     return "readFromStream="+readFromStream +" pos="+pos +" end="+end + " bufferPos="+getBufferPos() + " position="+position() ;
   }
 }
-
-

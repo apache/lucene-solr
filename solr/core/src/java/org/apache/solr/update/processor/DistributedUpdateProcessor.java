@@ -318,6 +318,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // if we are in zk mode...
     if (zkEnabled) {
 
+      assert TestInjection.injectUpdateRandomPause();
+      
       if ((updateCommand.getFlags() & (UpdateCommand.REPLAY | UpdateCommand.PEER_SYNC)) != 0) {
         isLeader = false;     // we actually might be the leader, but we don't want leader-logic for these types of updates anyway.
         forwardToLeader = false;

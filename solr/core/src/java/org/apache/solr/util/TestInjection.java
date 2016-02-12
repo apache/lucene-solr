@@ -16,6 +16,7 @@
  */
 package org.apache.solr.util;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashSet;
 
@@ -31,10 +32,14 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
  * Allows random faults to be injected in running code during test runs.
+ * 
+ * Set static strings to "true" or "false" or "true:60" for true 60% of the time.
  */
 public class TestInjection {
   
@@ -45,6 +50,8 @@ public class TestInjection {
     }
     
   }
+  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final Pattern ENABLED_PERCENT = Pattern.compile("(true|false)(?:\\:(\\d+))?$", Pattern.CASE_INSENSITIVE);
   private static final Random RANDOM;
@@ -67,16 +74,20 @@ public class TestInjection {
   public static String failUpdateRequests = null;
   
   public static String nonExistentCoreExceptionAfterUnload = null;
+
+  public static String updateLogReplayRandomPause = null;
+  
+  public static String updateRandomPause = null;
   
   private static Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
-
-
 
   public static void reset() {
     nonGracefullClose = null;
     failReplicaRequests = null;
     failUpdateRequests = null;
     nonExistentCoreExceptionAfterUnload = null;
+    updateLogReplayRandomPause = null;
+    updateRandomPause = null;
     
     for (Timer timer : timers) {
       timer.cancel();
@@ -154,6 +165,44 @@ public class TestInjection {
       int chanceIn100 = pair.getValue();
       if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
         throw new NonExistentCoreException("Core not found to unload: " + cname);
+      }
+    }
+
+    return true;
+  }
+  
+  public static boolean injectUpdateLogReplayRandomPause() {
+    if (updateLogReplayRandomPause != null) {
+      Pair<Boolean,Integer> pair = parseValue(updateLogReplayRandomPause);
+      boolean enabled = pair.getKey();
+      int chanceIn100 = pair.getValue();
+      if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
+        long rndTime = RANDOM.nextInt(1000);
+        log.info("inject random log replay delay of {}ms", rndTime);
+        try {
+          Thread.sleep(rndTime);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
+    }
+
+    return true;
+  }
+  
+  public static boolean injectUpdateRandomPause() {
+    if (updateRandomPause != null) {
+      Pair<Boolean,Integer> pair = parseValue(updateRandomPause);
+      boolean enabled = pair.getKey();
+      int chanceIn100 = pair.getValue();
+      if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
+        long rndTime = RANDOM.nextInt(1000);
+        log.info("inject random update delay of {}ms", rndTime);
+        try {
+          Thread.sleep(rndTime);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
       }
     }
 

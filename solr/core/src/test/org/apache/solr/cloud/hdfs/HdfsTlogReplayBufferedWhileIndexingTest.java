@@ -18,28 +18,33 @@ package org.apache.solr.cloud.hdfs;
 
 import java.io.IOException;
 
-import com.carrotsearch.randomizedtesting.annotations.Nightly;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
-import org.apache.solr.cloud.ChaosMonkeyNothingIsSafeTest;
+import org.apache.solr.cloud.TlogReplayBufferedWhileIndexingTest;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @Slow
 @Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-@SuppressObjectReleaseTracker(bugUrl="Testing purposes")
-public class HdfsChaosMonkeyNothingIsSafeTest extends ChaosMonkeyNothingIsSafeTest {
+public class HdfsTlogReplayBufferedWhileIndexingTest extends TlogReplayBufferedWhileIndexingTest {
+  
+  public HdfsTlogReplayBufferedWhileIndexingTest() throws Exception {
+    super();
+  }
+
   private static MiniDFSCluster dfsCluster;
   
   @BeforeClass
   public static void setupClass() throws Exception {
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
+    System.setProperty("solr.hdfs.blockcache.blocksperbank", "2048");
   }
   
   @AfterClass
@@ -47,20 +52,11 @@ public class HdfsChaosMonkeyNothingIsSafeTest extends ChaosMonkeyNothingIsSafeTe
     HdfsTestUtil.teardownClass(dfsCluster);
     dfsCluster = null;
   }
-  
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    
-    // super class may hard code directory
-    useFactory("org.apache.solr.core.HdfsDirectoryFactory");
-  }
 
   
   @Override
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
-
 
 }
