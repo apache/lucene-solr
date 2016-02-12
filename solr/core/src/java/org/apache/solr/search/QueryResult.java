@@ -22,6 +22,7 @@ package org.apache.solr.search;
 public class QueryResult {
   
   private boolean partialResults;
+  private Boolean segmentTerminatedEarly;
   private DocListAndSet docListAndSet;
   private CursorMark nextCursorMark;
   
@@ -57,6 +58,14 @@ public class QueryResult {
     this.partialResults = partialResults;
   }
   
+  public Boolean getSegmentTerminatedEarly() {
+    return segmentTerminatedEarly;
+  }
+
+  public void setSegmentTerminatedEarly(Boolean segmentTerminatedEarly) {
+    this.segmentTerminatedEarly = segmentTerminatedEarly;
+  }
+
   public void setDocListAndSet(DocListAndSet listSet) {
     docListAndSet = listSet;
   }

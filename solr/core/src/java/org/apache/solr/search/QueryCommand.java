@@ -207,4 +207,16 @@ public class QueryCommand {
     }
   }
 
+  public boolean getSegmentTerminateEarly() {
+    return (flags & SolrIndexSearcher.SEGMENT_TERMINATE_EARLY) != 0;
+  }
+
+  public QueryCommand setSegmentTerminateEarly(boolean segmentSegmentTerminateEarly) {
+    if (segmentSegmentTerminateEarly) {
+      return setFlags(SolrIndexSearcher.SEGMENT_TERMINATE_EARLY);
+    } else {
+      return clearFlags(SolrIndexSearcher.SEGMENT_TERMINATE_EARLY);
+    }
+  }
+
 }

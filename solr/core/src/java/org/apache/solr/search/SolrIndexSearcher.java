@@ -70,6 +70,7 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.EarlyTerminatingSortingCollector;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
@@ -219,6 +220,20 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private void buildAndRunCollectorChain(QueryResult qr, Query query, Collector collector, QueryCommand cmd,
       DelegatingCollector postFilter) throws IOException {
 
+    EarlyTerminatingSortingCollector earlyTerminatingSortingCollector = null;
+    if (cmd.getSegmentTerminateEarly()) {
+      final Sort cmdSort = cmd.getSort();
+      final int cmdLen = cmd.getLen();
+      final Sort mergeSort = core.getSolrCoreState().getMergePolicySort();
+
+      if (cmdSort == null || cmdLen <= 0 || mergeSort == null ||
+          !EarlyTerminatingSortingCollector.canEarlyTerminate(cmdSort, mergeSort)) {
+        log.warn("unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} mergeSort={}", cmdSort, cmdLen, mergeSort);
+      } else {
+        collector = earlyTerminatingSortingCollector = new EarlyTerminatingSortingCollector(collector, cmdSort, cmd.getLen(), mergeSort);
+      }
+    }
+
     final boolean terminateEarly = cmd.getTerminateEarly();
     if (terminateEarly) {
       collector = new EarlyTerminatingCollector(collector, cmd.getLen());
@@ -244,6 +259,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         ((DelegatingCollector) collector).finish();
       }
       throw etce;
+    } finally {
+      if (earlyTerminatingSortingCollector != null) {
+        qr.setSegmentTerminatedEarly(earlyTerminatingSortingCollector.terminatedEarly());
+      }
     }
     if (collector instanceof DelegatingCollector) {
       ((DelegatingCollector) collector).finish();
@@ -1465,6 +1484,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public static final int GET_DOCSET = 0x40000000;
   static final int NO_CHECK_FILTERCACHE = 0x20000000;
   static final int NO_SET_QCACHE = 0x10000000;
+  static final int SEGMENT_TERMINATE_EARLY = 0x08;
   public static final int TERMINATE_EARLY = 0x04;
   public static final int GET_DOCLIST = 0x02; // get the documents actually returned in a response
   public static final int GET_SCORES = 0x01;

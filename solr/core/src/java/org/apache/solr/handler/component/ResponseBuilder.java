@@ -453,6 +453,10 @@ public class ResponseBuilder
     if (result.isPartialResults()) {
       rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
     }
+    final Boolean segmentTerminatedEarly = result.getSegmentTerminatedEarly();
+    if (segmentTerminatedEarly != null) {
+      rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, segmentTerminatedEarly);
+    }
     if (null != cursorMark) {
       assert null != result.getNextCursorMark() : "using cursor but no next cursor set";
       this.setNextCursorMark(result.getNextCursorMark());

@@ -373,11 +373,17 @@ public class QueryComponent extends SearchComponent
     
     QueryResult result = new QueryResult();
 
+    cmd.setSegmentTerminateEarly(params.getBool(CommonParams.SEGMENT_TERMINATE_EARLY, CommonParams.SEGMENT_TERMINATE_EARLY_DEFAULT));
+    if (cmd.getSegmentTerminateEarly()) {
+      result.setSegmentTerminatedEarly(Boolean.FALSE);
+    }
+
     //
     // grouping / field collapsing
     //
     GroupingSpecification groupingSpec = rb.getGroupingSpec();
     if (groupingSpec != null) {
+      cmd.setSegmentTerminateEarly(false); // not supported, silently ignore any segmentTerminateEarly flag
       try {
         boolean needScores = (cmd.getFlags() & SolrIndexSearcher.GET_SCORES) != 0;
         if (params.getBool(GroupParams.GROUP_DISTRIBUTED_FIRST, false)) {
@@ -983,8 +989,10 @@ public class QueryComponent extends SearchComponent
       long numFound = 0;
       Float maxScore=null;
       boolean partialResults = false;
+      Boolean segmentTerminatedEarly = null;
       for (ShardResponse srsp : sreq.responses) {
         SolrDocumentList docs = null;
+        NamedList<?> responseHeader = null;
 
         if(shardInfo!=null) {
           SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
@@ -1003,6 +1011,11 @@ public class QueryComponent extends SearchComponent
             }
           }
           else {
+            responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
+            final Object rhste = (responseHeader == null ? null : responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
+            if (rhste != null) {
+              nl.add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, rhste);
+            }
             docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
             nl.add("numFound", docs.getNumFound());
             nl.add("maxScore", docs.getMaxScore());
@@ -1024,9 +1037,22 @@ public class QueryComponent extends SearchComponent
           docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
         }
         
-        NamedList<?> responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
-        if (responseHeader != null && Boolean.TRUE.equals(responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
-          partialResults = true;
+        if (responseHeader == null) { // could have been initialized in the shards info block above
+          responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
+        }
+
+        if (responseHeader != null) {
+          if (Boolean.TRUE.equals(responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+            partialResults = true;
+          }
+          if (!Boolean.TRUE.equals(segmentTerminatedEarly)) {
+            final Object ste = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
+            if (Boolean.TRUE.equals(ste)) {
+              segmentTerminatedEarly = Boolean.TRUE;
+            } else if (Boolean.FALSE.equals(ste)) {
+              segmentTerminatedEarly = Boolean.FALSE;
+            }
+          }
         }
         
         // calculate global maxScore and numDocsFound
@@ -1116,6 +1142,15 @@ public class QueryComponent extends SearchComponent
       if (partialResults) {
         if(rb.rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY) == null) {
           rb.rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
+        }
+      }
+      if (segmentTerminatedEarly != null) {
+        final Object existingSegmentTerminatedEarly = rb.rsp.getResponseHeader().get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
+        if (existingSegmentTerminatedEarly == null) {
+          rb.rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, segmentTerminatedEarly);
+        } else if (!Boolean.TRUE.equals(existingSegmentTerminatedEarly) && Boolean.TRUE.equals(segmentTerminatedEarly)) {
+          rb.rsp.getResponseHeader().remove(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
+          rb.rsp.getResponseHeader().add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, segmentTerminatedEarly);
         }
       }
   }

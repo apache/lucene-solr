@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.locks.Lock;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.search.Sort;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -125,6 +126,13 @@ public abstract class SolrCoreState {
    */
   public abstract void rollbackIndexWriter(SolrCore core) throws IOException;
   
+  /**
+   * Get the current Sort of the current IndexWriter's MergePolicy..
+   *
+   * @throws IOException If there is a low-level I/O error.
+   */
+  public abstract Sort getMergePolicySort() throws IOException;
+
   /**
    * @return the {@link DirectoryFactory} that should be used.
    */
