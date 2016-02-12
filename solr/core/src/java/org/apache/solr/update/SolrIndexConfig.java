@@ -191,7 +191,7 @@ public class SolrIndexConfig implements MapSerializable {
     if (mergePolicyInfo != null) {
       m.put("mergePolicy", mergePolicyInfo.toMap());
     } else if (mergePolicyFactoryInfo != null) {
-      m.put("mergePolicy", mergePolicyFactoryInfo.toMap());
+      m.put("mergePolicyFactory", mergePolicyFactoryInfo.toMap());
     }
     if(mergedSegmentWarmerInfo != null) m.put("mergedSegmentWarmer",mergedSegmentWarmerInfo.toMap());
     return m;
