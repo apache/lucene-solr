@@ -31,7 +31,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.SolrQueryResponse;
 
-class TestSegmentTerminateEarlyState {
+class SegmentTerminateEarlyTestState {
 
   final String keyField = "id";
   final String timestampField = "timestamp";
