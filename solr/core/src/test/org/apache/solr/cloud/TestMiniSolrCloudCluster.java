@@ -469,7 +469,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
 
     final String collectionName = "testSegmentTerminateEarlyCollection";
 
-    final TestSegmentTerminateEarlyState tstes = new TestSegmentTerminateEarlyState();
+    final SegmentTerminateEarlyTestState tstes = new SegmentTerminateEarlyTestState();
 
     File solrXml = new File(SolrTestCaseJ4.TEST_HOME(), "solr-no-core.xml");
     Builder jettyConfig = JettyConfig.builder();
