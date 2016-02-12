@@ -278,7 +278,12 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
       try {
         SolrQueryResponse pingrsp = new SolrQueryResponse();
         core.execute(handler, req, pingrsp );
-        ex = pingrsp.getException();       
+        ex = pingrsp.getException(); 
+        NamedList<Object> headers = rsp.getResponseHeader();
+        if(headers != null) {
+          headers.add("zkConnected", pingrsp.getResponseHeader().get("zkConnected"));
+        }
+        
       }
       catch( Exception e ) {
         ex = e;

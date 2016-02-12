@@ -28,6 +28,7 @@ import java.util.Set;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -36,6 +37,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -201,8 +203,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   private ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
     ShardHandler shardHandler = null;
 
-    rb.isDistrib = req.getParams().getBool("distrib", req.getCore().getCoreDescriptor()
-        .getCoreContainer().isZooKeeperAware());
+    CoreContainer cc = req.getCore().getCoreDescriptor().getCoreContainer();
+    boolean isZkAware = cc.isZooKeeperAware();
+    rb.isDistrib = req.getParams().getBool("distrib", isZkAware);
     if (!rb.isDistrib) {
       // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
       // search is distributed.
@@ -216,6 +219,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       if (!rb.isDistrib) {
         shardHandler = null; // request is not distributed after all and so the shard handler is not needed
       }
+    }
+
+    if(isZkAware) {
+      ZkController zkController = cc.getZkController();
+      NamedList<Object> headers = rb.rsp.getResponseHeader();
+      if(headers != null) {
+        headers.add("zkConnected", 
+            zkController != null 
+          ? !zkController.getZkClient().getConnectionManager().isLikelyExpired() 
+          : false);
+      }
+      
     }
 
     return shardHandler;
