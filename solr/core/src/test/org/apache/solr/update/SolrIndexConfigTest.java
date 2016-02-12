@@ -154,7 +154,14 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     }
     
     ++mSizeExpected; assertTrue(m.get("mergeScheduler") instanceof Map);
-    ++mSizeExpected; assertTrue(m.get("mergePolicy") instanceof Map);
+    if (solrConfigFileName.equals(solrConfigFileNameTieredMergePolicyFactory) ||
+        solrConfigFileName.equals(solrConfigFileNameWarmerRandomMergePolicyFactory)) {
+      assertNull(m.get("mergePolicy"));
+      ++mSizeExpected; assertTrue(m.get("mergePolicyFactory") instanceof Map);
+    } else {
+      ++mSizeExpected; assertTrue(m.get("mergePolicy") instanceof Map);
+      assertNull(m.get("mergePolicyFactory"));
+    }
     if (solrConfigFileName.equals(solrConfigFileNameWarmerRandomMergePolicy) ||
         solrConfigFileName.equals(solrConfigFileNameWarmerRandomMergePolicyFactory)) {
       ++mSizeExpected; assertTrue(m.get("mergedSegmentWarmer") instanceof Map);
