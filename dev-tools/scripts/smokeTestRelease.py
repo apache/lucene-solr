@@ -90,7 +90,7 @@ def getHREFs(urlString):
       h = http.client.HTTPSConnection(url.netloc)
     else:
       raise RuntimeError("Unknown protocol: %s" % url.scheme)
-    h.request('GET', url.path)
+    h.request('HEAD', url.path)
     r = h.getresponse()
     newLoc = r.getheader('location')
     if newLoc is not None:
@@ -588,6 +588,7 @@ def unpackAndVerify(java, project, tmpDir, artifact, gitRevision, version, testA
 
   unpackPath = '%s/%s' % (destDir, expected)
   verifyUnpacked(java, project, artifact, unpackPath, gitRevision, version, testArgs, tmpDir, baseURL)
+  return unpackPath
 
 LUCENE_NOTICE = None
 LUCENE_LICENSE = None
@@ -887,21 +888,10 @@ def testDemo(run_java, isSrc, version, jdk):
 
 def removeTrailingZeros(version):
   return re.sub(r'(\.0)*$', '', version)
-  
-def checkMaven(baseURL, tmpDir, svnRevision, version, isSigned):
-  # Locate the release branch in subversion
-  m = re.match('(\d+)\.(\d+)', version) # Get Major.minor version components
-  releaseBranchText = 'lucene_solr_%s_%s/' % (m.group(1), m.group(2))
-  branchesURL = 'http://svn.apache.org/repos/asf/lucene/dev/branches/'
-  releaseBranchSvnURL = None
-  branches = getDirEntries(branchesURL)
-  for text, subURL in branches:
-    if text == releaseBranchText:
-      releaseBranchSvnURL = subURL
 
+def checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigned):
   POMtemplates = defaultdict()
-  getPOMtemplates(POMtemplates, tmpDir, releaseBranchSvnURL)
-  print()
+  getPOMtemplates(solrSrcUnpackPath, POMtemplates, tmpDir)
   print('    download artifacts')
   artifacts = {'lucene': [], 'solr': []}
   for project in ('lucene', 'solr'):
@@ -922,10 +912,11 @@ def checkMaven(baseURL, tmpDir, svnRevision, version, isSigned):
   distFiles = getBinaryDistFilesForMavenChecks(tmpDir, version, baseURL)
   checkIdenticalMavenArtifacts(distFiles, artifacts, version)
 
-  checkAllJARs('%s/maven/org/apache/lucene' % tmpDir, 'lucene', svnRevision, version, tmpDir, baseURL)
-  checkAllJARs('%s/maven/org/apache/solr' % tmpDir, 'solr', svnRevision, version, tmpDir, baseURL)
+  checkAllJARs('%s/maven/org/apache/lucene' % tmpDir, 'lucene', gitRevision, version, tmpDir, baseURL)
+  checkAllJARs('%s/maven/org/apache/solr' % tmpDir, 'solr', gitRevision, version, tmpDir, baseURL)
 
 def getBinaryDistFilesForMavenChecks(tmpDir, version, baseURL):
+  # TODO: refactor distribution unpacking so that it only happens once per distribution per smoker run
   distFiles = defaultdict()
   for project in ('lucene', 'solr'):
     distFiles[project] = getBinaryDistFiles(project, tmpDir, version, baseURL)
@@ -1140,35 +1131,24 @@ def verifyArtifactPerPOMtemplate(POMtemplates, artifacts, tmpDir, version):
         if artifact not in artifacts['lucene'] and artifact not in artifacts['solr']:
           raise RuntimeError('Missing artifact %s' % artifact)
 
-def getPOMtemplates(POMtemplates, tmpDir, releaseBranchSvnURL):
-  print('    get POM templates')
+def getPOMtemplates(solrSrcUnpackPath, POMtemplates, tmpDir):
+  print('    find pom.xml.template files in the unpacked Solr source distribution')
   allPOMtemplates = []
-  sourceLocation = releaseBranchSvnURL
-  if sourceLocation is None:
-    # Use the POM templates under dev-tools/maven/ in the local working copy
-    # sys.path[0] is the directory containing this script: dev-tools/scripts/
-    sourceLocation = os.path.abspath('%s/../maven' % sys.path[0])
-    rePOMtemplate = re.compile(r'^pom.xml.template$')
-    for root, dirs, files in os.walk(sourceLocation):
-      allPOMtemplates.extend([os.path.join(root, f) for f in files if rePOMtemplate.search(f)])
-  else:
-    sourceLocation += 'dev-tools/maven/'
-    targetDir = '%s/dev-tools/maven' % tmpDir
-    if not os.path.exists(targetDir):
-      os.makedirs(targetDir)
-    crawl(allPOMtemplates, sourceLocation, targetDir, set(['Apache Subversion', 'maven.testlogging.properties']))
+  rePOMtemplate = re.compile(r'^pom\.xml\.template$')
+  for root, dirs, files in os.walk(solrSrcUnpackPath):
+    allPOMtemplates.extend([os.path.join(root, f) for f in files if rePOMtemplate.search(f)])
 
   reLucenePOMtemplate = re.compile(r'.*/maven/lucene.*/pom\.xml\.template$')
   POMtemplates['lucene'] = [p for p in allPOMtemplates if reLucenePOMtemplate.search(p)]
   if POMtemplates['lucene'] is None:
-    raise RuntimeError('No Lucene POMs found at %s' % sourceLocation)
+    raise RuntimeError('No Lucene POMs found at %s' % solrSrcUnpackPath)
   reSolrPOMtemplate = re.compile(r'.*/maven/solr.*/pom\.xml\.template$')
   POMtemplates['solr'] = [p for p in allPOMtemplates if reSolrPOMtemplate.search(p)]
   if POMtemplates['solr'] is None:
-    raise RuntimeError('No Solr POMs found at %s' % sourceLocation)
+    raise RuntimeError('No Solr POMs found at %s' % solrSrcUnpackPath)
   POMtemplates['grandfather'] = [p for p in allPOMtemplates if '/maven/pom.xml.template' in p]
   if len(POMtemplates['grandfather']) == 0:
-    raise RuntimeError('No Lucene/Solr grandfather POM found at %s' % sourceLocation)
+    raise RuntimeError('No Lucene/Solr grandfather POM found at %s' % solrSrcUnpackPath)
 
 def crawl(downloadedFiles, urlString, targetDir, exclusions=set()):
   for text, subURL in getDirEntries(urlString):
@@ -1417,11 +1397,12 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, testArgs):
   checkSigs('solr', solrPath, version, tmpDir, isSigned)
   for artifact in ('solr-%s.tgz' % version, 'solr-%s.zip' % version):
     unpackAndVerify(java, 'solr', tmpDir, artifact, gitRevision, version, testArgs, baseURL)
-  unpackAndVerify(java, 'solr', tmpDir, 'solr-%s-src.tgz' % version, gitRevision, version, testArgs, baseURL)
+  solrSrcUnpackPath = unpackAndVerify(java, 'solr', tmpDir, 'solr-%s-src.tgz' % version,
+                                       gitRevision, version, testArgs, baseURL)
 
   print()
   print('Test Maven artifacts for Lucene and Solr...')
-  checkMaven(baseURL, tmpDir, gitRevision, version, isSigned)
+  checkMaven(solrSrcUnpackPath, baseURL, tmpDir, gitRevision, version, isSigned)
 
   print('\nSUCCESS! [%s]\n' % (datetime.datetime.now() - startTime))
 
