@@ -92,7 +92,7 @@ public final class NumericUtils {
   /**
    * The maximum term length (used for <code>byte[]</code> buffer size)
    * for encoding <code>long</code> values.
-   * @see #longToPrefixCodedBytes
+   * @see #longToPrefixCoded
    */
   public static final int BUF_SIZE_LONG = 63/7 + 2;
 
@@ -105,7 +105,7 @@ public final class NumericUtils {
   /**
    * The maximum term length (used for <code>byte[]</code> buffer size)
    * for encoding <code>int</code> values.
-   * @see #intToPrefixCodedBytes
+   * @see #intToPrefixCoded
    */
   public static final int BUF_SIZE_INT = 31/7 + 2;
 
@@ -116,32 +116,36 @@ public final class NumericUtils {
    * @param val the numeric value
    * @param shift how many bits to strip from the right
    * @param bytes will contain the encoded value
+   * @deprecated Use {@link #longToPrefixCoded} instead.
+   */
+  @Deprecated
+  public static void longToPrefixCodedBytes(final long val, final int shift, final BytesRefBuilder bytes) {
+    longToPrefixCoded(val, shift, bytes);
+  }
+
+  /**
+   * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
+   * This is method is used by {@link NumericTokenStream}.
+   * After encoding, {@code bytes.offset} will always be 0.
+   * @param val the numeric value
+   * @param shift how many bits to strip from the right
+   * @param bytes will contain the encoded value
+   * @deprecated Use {@link #longToPrefixCoded} instead.
+   */
+  @Deprecated
+  public static void intToPrefixCodedBytes(final int val, final int shift, final BytesRefBuilder bytes) {
+    intToPrefixCoded(val, shift, bytes);
+  }
+
+  /**
+   * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
+   * This is method is used by {@link NumericTokenStream}.
+   * After encoding, {@code bytes.offset} will always be 0.
+   * @param val the numeric value
+   * @param shift how many bits to strip from the right
+   * @param bytes will contain the encoded value
    */
   public static void longToPrefixCoded(final long val, final int shift, final BytesRefBuilder bytes) {
-    longToPrefixCodedBytes(val, shift, bytes);
-  }
-
-  /**
-   * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
-   * This is method is used by {@link NumericTokenStream}.
-   * After encoding, {@code bytes.offset} will always be 0.
-   * @param val the numeric value
-   * @param shift how many bits to strip from the right
-   * @param bytes will contain the encoded value
-   */
-  public static void intToPrefixCoded(final int val, final int shift, final BytesRefBuilder bytes) {
-    intToPrefixCodedBytes(val, shift, bytes);
-  }
-
-  /**
-   * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
-   * This is method is used by {@link NumericTokenStream}.
-   * After encoding, {@code bytes.offset} will always be 0.
-   * @param val the numeric value
-   * @param shift how many bits to strip from the right
-   * @param bytes will contain the encoded value
-   */
-  public static void longToPrefixCodedBytes(final long val, final int shift, final BytesRefBuilder bytes) {
     // ensure shift is 0..63
     if ((shift & ~0x3f) != 0) {
       throw new IllegalArgumentException("Illegal shift value, must be 0..63; got shift=" + shift);
@@ -169,7 +173,7 @@ public final class NumericUtils {
    * @param shift how many bits to strip from the right
    * @param bytes will contain the encoded value
    */
-  public static void intToPrefixCodedBytes(final int val, final int shift, final BytesRefBuilder bytes) {
+  public static void intToPrefixCoded(final int val, final int shift, final BytesRefBuilder bytes) {
     // ensure shift is 0..31
     if ((shift & ~0x1f) != 0) {
       throw new IllegalArgumentException("Illegal shift value, must be 0..31; got shift=" + shift);
@@ -219,7 +223,7 @@ public final class NumericUtils {
    * This method can be used to decode a term's value.
    * @throws NumberFormatException if the supplied {@link BytesRef} is
    * not correctly prefix encoded.
-   * @see #longToPrefixCodedBytes
+   * @see #longToPrefixCoded
    */
   public static long prefixCodedToLong(final BytesRef val) {
     long sortableBits = 0L;
@@ -243,7 +247,7 @@ public final class NumericUtils {
    * This method can be used to decode a term's value.
    * @throws NumberFormatException if the supplied {@link BytesRef} is
    * not correctly prefix encoded.
-   * @see #intToPrefixCodedBytes
+   * @see #intToPrefixCoded
    */
   public static int prefixCodedToInt(final BytesRef val) {
     int sortableBits = 0;
@@ -428,8 +432,8 @@ public final class NumericUtils {
      */
     public void addRange(final long min, final long max, final int shift) {
       final BytesRefBuilder minBytes = new BytesRefBuilder(), maxBytes = new BytesRefBuilder();
-      longToPrefixCodedBytes(min, shift, minBytes);
-      longToPrefixCodedBytes(max, shift, maxBytes);
+      longToPrefixCoded(min, shift, minBytes);
+      longToPrefixCoded(max, shift, maxBytes);
       addRange(minBytes.get(), maxBytes.get());
     }
   
@@ -457,8 +461,8 @@ public final class NumericUtils {
      */
     public void addRange(final int min, final int max, final int shift) {
       final BytesRefBuilder minBytes = new BytesRefBuilder(), maxBytes = new BytesRefBuilder();
-      intToPrefixCodedBytes(min, shift, minBytes);
-      intToPrefixCodedBytes(max, shift, maxBytes);
+      intToPrefixCoded(min, shift, minBytes);
+      intToPrefixCoded(max, shift, maxBytes);
       addRange(minBytes.get(), maxBytes.get());
     }
   
