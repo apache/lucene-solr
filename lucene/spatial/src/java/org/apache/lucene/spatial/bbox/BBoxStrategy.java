@@ -581,7 +581,7 @@ public class BBoxStrategy extends SpatialStrategy {
 
   private Query makeNumberTermQuery(String field, double number) {
     BytesRefBuilder bytes = new BytesRefBuilder();
-    LegacyNumericUtils.longToPrefixCodedBytes(LegacyNumericUtils.doubleToSortableLong(number), 0, bytes);
+    LegacyNumericUtils.longToPrefixCoded(LegacyNumericUtils.doubleToSortableLong(number), 0, bytes);
     return new TermQuery(new Term(field, bytes.get()));
   }
 

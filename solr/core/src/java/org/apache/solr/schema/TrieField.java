@@ -463,19 +463,19 @@ public class TrieField extends PrimitiveFieldType {
     try {
       switch (type) {
         case INTEGER:
-          LegacyNumericUtils.intToPrefixCodedBytes(Integer.parseInt(s), 0, result);
+          LegacyNumericUtils.intToPrefixCoded(Integer.parseInt(s), 0, result);
           break;
         case FLOAT:
-          LegacyNumericUtils.intToPrefixCodedBytes(LegacyNumericUtils.floatToSortableInt(Float.parseFloat(s)), 0, result);
+          LegacyNumericUtils.intToPrefixCoded(LegacyNumericUtils.floatToSortableInt(Float.parseFloat(s)), 0, result);
           break;
         case LONG:
-          LegacyNumericUtils.longToPrefixCodedBytes(Long.parseLong(s), 0, result);
+          LegacyNumericUtils.longToPrefixCoded(Long.parseLong(s), 0, result);
           break;
         case DOUBLE:
-          LegacyNumericUtils.longToPrefixCodedBytes(LegacyNumericUtils.doubleToSortableLong(Double.parseDouble(s)), 0, result);
+          LegacyNumericUtils.longToPrefixCoded(LegacyNumericUtils.doubleToSortableLong(Double.parseDouble(s)), 0, result);
           break;
         case DATE:
-          LegacyNumericUtils.longToPrefixCodedBytes(DateFormatUtil.parseMath(null, s).getTime(), 0, result);
+          LegacyNumericUtils.longToPrefixCoded(DateFormatUtil.parseMath(null, s).getTime(), 0, result);
           break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
@@ -580,17 +580,17 @@ public class TrieField extends PrimitiveFieldType {
     if (val != null) {
       switch (type) {
         case INTEGER:
-          LegacyNumericUtils.intToPrefixCodedBytes(val.intValue(), 0, bytes);
+          LegacyNumericUtils.intToPrefixCoded(val.intValue(), 0, bytes);
           break;
         case FLOAT:
-          LegacyNumericUtils.intToPrefixCodedBytes(LegacyNumericUtils.floatToSortableInt(val.floatValue()), 0, bytes);
+          LegacyNumericUtils.intToPrefixCoded(LegacyNumericUtils.floatToSortableInt(val.floatValue()), 0, bytes);
           break;
         case LONG: //fallthrough!
         case DATE:
-          LegacyNumericUtils.longToPrefixCodedBytes(val.longValue(), 0, bytes);
+          LegacyNumericUtils.longToPrefixCoded(val.longValue(), 0, bytes);
           break;
         case DOUBLE:
-          LegacyNumericUtils.longToPrefixCodedBytes(LegacyNumericUtils.doubleToSortableLong(val.doubleValue()), 0, bytes);
+          LegacyNumericUtils.longToPrefixCoded(LegacyNumericUtils.doubleToSortableLong(val.doubleValue()), 0, bytes);
           break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
@@ -602,7 +602,7 @@ public class TrieField extends PrimitiveFieldType {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
       switch (type) {
         case INTEGER:
-          LegacyNumericUtils.intToPrefixCodedBytes(toInt(bytesRef.bytes, bytesRef.offset), 0, bytes);
+          LegacyNumericUtils.intToPrefixCoded(toInt(bytesRef.bytes, bytesRef.offset), 0, bytes);
           break;
         case FLOAT: {
           // WARNING: Code Duplication! Keep in sync with o.a.l.util.LegacyNumericUtils!
@@ -610,12 +610,12 @@ public class TrieField extends PrimitiveFieldType {
           // code in next 2 lines is identical to: int v = LegacyNumericUtils.floatToSortableInt(Float.intBitsToFloat(toInt(arr)));
           int v = toInt(bytesRef.bytes, bytesRef.offset);
           if (v<0) v ^= 0x7fffffff;
-          LegacyNumericUtils.intToPrefixCodedBytes(v, 0, bytes);
+          LegacyNumericUtils.intToPrefixCoded(v, 0, bytes);
           break;
         }
         case LONG: //fallthrough!
         case DATE:
-          LegacyNumericUtils.longToPrefixCodedBytes(toLong(bytesRef.bytes, bytesRef.offset), 0, bytes);
+          LegacyNumericUtils.longToPrefixCoded(toLong(bytesRef.bytes, bytesRef.offset), 0, bytes);
           break;
         case DOUBLE: {
           // WARNING: Code Duplication! Keep in sync with o.a.l.util.LegacyNumericUtils!
@@ -623,7 +623,7 @@ public class TrieField extends PrimitiveFieldType {
           // code in next 2 lines is identical to: long v = LegacyNumericUtils.doubleToSortableLong(Double.longBitsToDouble(toLong(arr)));
           long v = toLong(bytesRef.bytes, bytesRef.offset);
           if (v<0) v ^= 0x7fffffffffffffffL;
-          LegacyNumericUtils.longToPrefixCodedBytes(v, 0, bytes);
+          LegacyNumericUtils.longToPrefixCoded(v, 0, bytes);
           break;
         }
         default:

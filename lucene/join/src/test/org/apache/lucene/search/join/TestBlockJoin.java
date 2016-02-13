@@ -616,7 +616,7 @@ public class TestBlockJoin extends LuceneTestCase {
       if (VERBOSE) {
         System.out.println("DELETE parentID=" + deleteID);
       }
-      LegacyNumericUtils.intToPrefixCodedBytes(deleteID, 0, term);
+      LegacyNumericUtils.intToPrefixCoded(deleteID, 0, term);
       w.deleteDocuments(new Term("blockID", term.toBytesRef()));
       joinW.deleteDocuments(new Term("blockID", term.toBytesRef()));
     }

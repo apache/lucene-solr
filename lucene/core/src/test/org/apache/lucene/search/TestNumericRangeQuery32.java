@@ -361,9 +361,9 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       }
       final BytesRef lowerBytes, upperBytes;
       BytesRefBuilder b = new BytesRefBuilder();
-      LegacyNumericUtils.intToPrefixCodedBytes(lower, 0, b);
+      LegacyNumericUtils.intToPrefixCoded(lower, 0, b);
       lowerBytes = b.toBytesRef();
-      LegacyNumericUtils.intToPrefixCodedBytes(upper, 0, b);
+      LegacyNumericUtils.intToPrefixCoded(upper, 0, b);
       upperBytes = b.toBytesRef();
 
       // test inclusive range

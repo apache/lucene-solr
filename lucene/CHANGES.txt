@@ -90,6 +90,9 @@ API Changes
 * LUCENE-6947: SortField.missingValue is now protected. You can read its value
   using the new SortField.getMissingValue getter. (Adrien Grand)
 
+* LUCENE-7028: Remove duplicate method in LegacyNumericUtils.
+  (Uwe Schindler)
+
 Optimizations
 
 * LUCENE-6891: Use prefix coding when writing points in 
