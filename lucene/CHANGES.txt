@@ -190,6 +190,9 @@ API Changes
 * LUCENE-6988: IndexableField.tokenStream() no longer throws IOException
   (Alan Woodward)
 
+* LUCENE-7028: Deprecate a duplicate method in NumericUtils.
+  (Uwe Schindler)
+
 Optimizations
 
 * LUCENE-6930: Decouple GeoPointField from NumericType by using a custom
