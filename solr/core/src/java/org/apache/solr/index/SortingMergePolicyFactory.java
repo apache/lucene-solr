@@ -25,7 +25,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SortSpecParsing;
 
 /**
- * A {@link MergePolicyFactory} for {@link SortingMergePolicy} objects.
+ * A {@link MergePolicyFactory} for {@code SortingMergePolicy} objects.
  */
 public class SortingMergePolicyFactory extends WrapperMergePolicyFactory {
 
