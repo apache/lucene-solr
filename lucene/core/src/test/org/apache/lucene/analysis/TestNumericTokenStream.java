@@ -17,6 +17,7 @@
 package org.apache.lucene.analysis;
 
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.analysis.LegacyNumericTokenStream.LegacyNumericTermAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
@@ -25,10 +26,11 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
 
+@Deprecated
 public class TestNumericTokenStream extends BaseTokenStreamTestCase {
 
-  static final long lvalue = 4573245871874382L;
-  static final int ivalue = 123456;
+  final long lvalue = random().nextLong();
+  final int ivalue = random().nextInt();
 
   public void testLongStream() throws Exception {
     @SuppressWarnings("resource")
@@ -116,12 +118,60 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
     stream.close();
   }
   
+  /** LUCENE-7027 */
+  public void testCaptureStateAfterExhausted() throws Exception {
+    // default precstep
+    try (LegacyNumericTokenStream stream=new LegacyNumericTokenStream()) {
+      // int
+      stream.setIntValue(ivalue);
+      stream.reset();
+      while (stream.incrementToken());
+      stream.captureState();
+      stream.end();
+      stream.captureState();
+      // long
+      stream.setLongValue(lvalue);
+      stream.reset();
+      while (stream.incrementToken());
+      stream.captureState();
+      stream.end();
+      stream.captureState();
+    }
+    // huge precstep
+    try (LegacyNumericTokenStream stream=new LegacyNumericTokenStream(Integer.MAX_VALUE)) {
+      // int
+      stream.setIntValue(ivalue);
+      stream.reset();
+      while (stream.incrementToken());
+      stream.captureState();
+      stream.end();
+      stream.captureState();
+      // long
+      stream.setLongValue(lvalue);
+      stream.reset();
+      while (stream.incrementToken());
+      stream.captureState();
+      stream.end();
+      stream.captureState();
+    }
+  }
+  
   public void testAttributeClone() throws Exception {
     LegacyNumericTermAttributeImpl att = new LegacyNumericTermAttributeImpl();
-    att.init(1234L, 64, 8, 0); // set some value, to make getBytesRef() work
+    att.init(lvalue, 64, 8, 0); // set some value, to make getBytesRef() work
     LegacyNumericTermAttributeImpl copy = TestCharTermAttributeImpl.assertCloneIsEqual(att);
     assertNotSame(att.getBytesRef(), copy.getBytesRef());
     LegacyNumericTermAttributeImpl copy2 = TestCharTermAttributeImpl.assertCopyIsEqual(att);
+    assertNotSame(att.getBytesRef(), copy2.getBytesRef());
+    
+    // LUCENE-7027 test
+    att.init(lvalue, 64, 8, 64); // Exhausted TokenStream -> should return empty BytesRef
+    assertEquals(new BytesRef(), att.getBytesRef());
+    copy = TestCharTermAttributeImpl.assertCloneIsEqual(att);
+    assertEquals(new BytesRef(), copy.getBytesRef());
+    assertNotSame(att.getBytesRef(), copy.getBytesRef());
+    copy2 = TestCharTermAttributeImpl.assertCopyIsEqual(att);
+    assertEquals(new BytesRef(), copy2.getBytesRef());
     assertNotSame(att.getBytesRef(), copy2.getBytesRef());
   }
   

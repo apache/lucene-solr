@@ -157,7 +157,9 @@ public final class LegacyNumericTokenStream extends TokenStream {
     @Override
     public BytesRef getBytesRef() {
       assert valueSize == 64 || valueSize == 32;
-      if (valueSize == 64) {
+      if (shift >= valueSize) {
+        bytes.clear();
+      } else if (valueSize == 64) {
         LegacyNumericUtils.longToPrefixCoded(value, shift, bytes);
       } else {
         LegacyNumericUtils.intToPrefixCoded((int) value, shift, bytes);

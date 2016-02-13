@@ -241,6 +241,10 @@ Bug Fixes
 * LUCENE-7002: Fixed MultiCollector to not throw a NPE if setScorer is called
   after one of the sub collectors is done collecting. (John Wang, Adrien Grand)
 
+* LUCENE-7027: Fixed NumericTermAttribute to not throw IllegalArgumentException
+  after NumericTokenStream was exhausted.  (Uwe Schindler, Lee Hinman,
+  Mike McCandless)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)
