@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
 
-@Deprecated
 public class TestNumericTokenStream extends BaseTokenStreamTestCase {
 
   final long lvalue = random().nextLong();
