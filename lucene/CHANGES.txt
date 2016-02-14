@@ -251,6 +251,12 @@ Bug Fixes
   after NumericTokenStream was exhausted.  (Uwe Schindler, Lee Hinman,
   Mike McCandless)
 
+* LUCENE-7018: Fix GeoPointTermQueryConstantScoreWrapper to add document on
+  first GeoPointField match. (Nick Knize)
+
+* LUCENE-7019: Add two-phase iteration to GeoPointTermQueryConstantScoreWrapper.
+  (Robert Muir via Nick Knize)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)
@@ -306,16 +312,6 @@ Other
 * LUCENE-7006: increase BaseMergePolicyTestCase use (TestNoMergePolicy and
   TestSortingMergePolicy now extend it, TestUpgradeIndexMergePolicy added)
   (Christine Poerschke)
-
-======================= Lucene 5.4.2 =======================
-
-Bug Fixes
-
-* LUCENE-7018: Fix GeoPointTermQueryConstantScoreWrapper to add document on
-  first GeoPointField match. (Nick Knize)
-
-* LUCENE-7019: add two-phase iteration to GeoPointTermQueryConstantScoreWrapper.
-  (Robert Muir via Nick Knize)
 
 ======================= Lucene 5.4.1 =======================
 
