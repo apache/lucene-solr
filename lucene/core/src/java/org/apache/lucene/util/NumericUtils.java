@@ -130,7 +130,7 @@ public final class NumericUtils {
    * @param val the numeric value
    * @param shift how many bits to strip from the right
    * @param bytes will contain the encoded value
-   * @deprecated Use {@link #longToPrefixCoded} instead.
+   * @deprecated Use {@link #intToPrefixCoded} instead.
    */
   @Deprecated
   public static void intToPrefixCodedBytes(final int val, final int shift, final BytesRefBuilder bytes) {
