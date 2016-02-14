@@ -31,4 +31,11 @@ public class TestMmapDirectory extends BaseDirectoryTestCase {
     m.setPreload(random().nextBoolean());
     return m;
   }
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    assumeTrue("test requires a jre that supports unmapping", MMapDirectory.UNMAP_SUPPORTED);
+  }
+  
 }
