@@ -61,6 +61,9 @@ New Features
 * LUCENE-6975: Add ExactPointQuery, to match a single N-dimensional
   point (Robert Muir, Mike McCandless)
 
+* LUCENE-6989: Add preliminary support for MMapDirectory unmapping in Java 9.
+  (Uwe Schindler, Chris Hegarty, Peter Levart)
+
 API Changes
 
 * LUCENE-6067: Accountable.getChildResources has a default

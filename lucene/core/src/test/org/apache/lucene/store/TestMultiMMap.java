@@ -46,7 +46,8 @@ public class TestMultiMMap extends BaseDirectoryTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    assumeTrue("test requires a jre that supports unmapping", MMapDirectory.UNMAP_SUPPORTED);
+    assumeTrue("test requires a jre that supports unmapping: " + MMapDirectory.UNMAP_NOT_SUPPORTED_REASON,
+        MMapDirectory.UNMAP_SUPPORTED);
   }
   
   public void testCloneSafety() throws Exception {

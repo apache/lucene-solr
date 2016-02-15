@@ -1055,7 +1055,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             "index=" + segString() + "\n" +
             "version=" + Version.LATEST.toString() + "\n" +
             config.toString());
-      infoStream.message("IW", "MMapDirectory.UNMAP_SUPPORTED=" + MMapDirectory.UNMAP_SUPPORTED);
+      final StringBuilder unmapInfo = new StringBuilder(Boolean.toString(MMapDirectory.UNMAP_SUPPORTED));
+      if (!MMapDirectory.UNMAP_SUPPORTED) {
+        unmapInfo.append(" (").append(MMapDirectory.UNMAP_NOT_SUPPORTED_REASON).append(")");
+      }
+      infoStream.message("IW", "MMapDirectory.UNMAP_SUPPORTED=" + unmapInfo);
     }
   }
 
