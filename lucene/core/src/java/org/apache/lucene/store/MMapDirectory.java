@@ -72,7 +72,7 @@ import org.apache.lucene.util.SuppressForbidden;
  *
  * <p>This class supplies the workaround mentioned in the bug report
  * (see {@link #setUseUnmap}), which may fail on
- * non-Sun JVMs. It forcefully unmaps the buffer on close by using
+ * non-Oracle/OpenJDK JVMs. It forcefully unmaps the buffer on close by using
  * an undocumented internal cleanup functionality. If
  * {@link #UNMAP_SUPPORTED} is <code>true</code>, the workaround
  * will be automatically enabled (with no guarantees; if you discover
@@ -137,12 +137,6 @@ public class MMapDirectory extends FSDirectory {
    * Create a new MMapDirectory for the named location, specifying the 
    * maximum chunk size used for memory mapping.
    *  The directory is created at the named location if it does not yet exist.
-   * 
-   * @param path the path of the directory
-   * @param lockFactory the lock factory to use, or null for the default
-   * ({@link NativeFSLockFactory});
-   * @param maxChunkSize maximum chunk size (default is 1 GiBytes for
-   * 64 bit JVMs and 256 MiBytes for 32 bit JVMs) used for memory mapping.
    * <p>
    * Especially on 32 bit platform, the address space can be very fragmented,
    * so large index files cannot be mapped. Using a lower chunk size makes 
@@ -152,6 +146,12 @@ public class MMapDirectory extends FSDirectory {
    * be {@code 1 << 30}, as the address space is big enough.
    * <p>
    * <b>Please note:</b> The chunk size is always rounded down to a power of 2.
+   * 
+   * @param path the path of the directory
+   * @param lockFactory the lock factory to use, or null for the default
+   * ({@link NativeFSLockFactory});
+   * @param maxChunkSize maximum chunk size (default is 1 GiBytes for
+   * 64 bit JVMs and 256 MiBytes for 32 bit JVMs) used for memory mapping.
    * @throws IOException if there is a low-level I/O error
    */
   public MMapDirectory(Path path, LockFactory lockFactory, int maxChunkSize) throws IOException {
@@ -166,14 +166,27 @@ public class MMapDirectory extends FSDirectory {
   /**
    * This method enables the workaround for unmapping the buffers
    * from address space after closing {@link IndexInput}, that is
-   * mentioned in the bug report. This hack may fail on non-Sun JVMs.
+   * mentioned in the bug report. This hack may fail on non-Oracle/OpenJDK JVMs.
    * It forcefully unmaps the buffer on close by using
    * an undocumented internal cleanup functionality.
    * <p><b>NOTE:</b> Enabling this is completely unsupported
    * by Java and may lead to JVM crashes if <code>IndexInput</code>
    * is closed while another thread is still accessing it (SIGSEGV).
+   * <p>To enable the hack, the following requirements need to be
+   * fulfilled: The used JVM must be Oracle Java / OpenJDK 8
+   * <em>(preliminary support for Java 9 was added with Lucene 6)</em>.
+   * In addition, the following permissions need to be granted
+   * to {@code lucene-core.jar} in your
+   * <a href="http://docs.oracle.com/javase/8/docs/technotes/guides/security/PolicyFiles.html">policy file</a>:
+   * <ul>
+   * <li>{@code permission java.lang.reflect.ReflectPermission "suppressAccessChecks";}</li>
+   * <li>{@code permission java.lang.RuntimePermission "accessClassInPackage.sun.misc";}</li>
+   * <li>{@code permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.ref";}</li>
+   * </ul>
    * @throws IllegalArgumentException if {@link #UNMAP_SUPPORTED}
    * is <code>false</code> and the workaround cannot be enabled.
+   * The exception message also contains an explanation why the hack
+   * cannot be enabled (e.g., missing permissions).
    */
   public void setUseUnmap(final boolean useUnmapHack) {
     if (useUnmapHack && !UNMAP_SUPPORTED) {
