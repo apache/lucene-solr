@@ -163,9 +163,10 @@ public class MMapDirectory extends FSDirectory {
   /**
    * <code>true</code>, if this platform supports unmapping mmapped files.
    */
-  public static final boolean UNMAP_SUPPORTED = AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
+  public static final boolean UNMAP_SUPPORTED = (Constants.JRE_IS_MINIMUM_JAVA9 == false)
+    && AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
     @Override
-    @SuppressForbidden(reason = "Java 9 Jigsaw whitelists access to sun.misc.Cleaner, so setAccessible works")
+    @SuppressForbidden(reason = "Needs access to private APIs in DirectBuffer and sun.misc.Cleaner to enable hack")
     public Boolean run() {
       try {
         Class<?> clazz = Class.forName("java.nio.DirectByteBuffer");
@@ -315,7 +316,7 @@ public class MMapDirectory extends FSDirectory {
       try {
         AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
           @Override
-          @SuppressForbidden(reason = "Java 9 Jigsaw whitelists access to sun.misc.Cleaner, so setAccessible works")
+          @SuppressForbidden(reason = "Needs access to private APIs in DirectBuffer and sun.misc.Cleaner to enable hack")
           public Void run() throws Exception {
             final Method getCleanerMethod = buffer.getClass()
               .getMethod("cleaner");
