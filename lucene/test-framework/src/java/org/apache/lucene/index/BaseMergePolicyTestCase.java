@@ -39,14 +39,27 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
     final MergeScheduler mergeScheduler = new SerialMergeScheduler() {
       @Override
       synchronized public void merge(IndexWriter writer, MergeTrigger trigger, boolean newMergesFound) throws IOException {
-        if (!mayMerge.get() && writer.getNextMerge() != null) {
-          throw new AssertionError();
+        if (mayMerge.get() == false) {
+          MergePolicy.OneMerge merge = writer.getNextMerge();
+          if (merge != null) {
+            System.out.println("TEST: we should not need any merging, yet merge policy returned merge " + merge);
+            throw new AssertionError();
+          }
         }
+
         super.merge(writer, trigger, newMergesFound);
       }
     };
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergeScheduler(mergeScheduler).setMergePolicy(mergePolicy()));
-    writer.getConfig().getMergePolicy().setNoCFSRatio(random().nextBoolean() ? 0 : 1);
+
+    MergePolicy mp = mergePolicy();
+    assumeFalse("this test cannot tolerate random forceMerges", mp.toString().contains("MockRandomMergePolicy"));
+    mp.setNoCFSRatio(random().nextBoolean() ? 0 : 1);
+
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMergeScheduler(mergeScheduler);
+    iwc.setMergePolicy(mp);
+
+    IndexWriter writer = new IndexWriter(dir, iwc);
     final int numSegments = TestUtil.nextInt(random(), 2, 20);
     for (int i = 0; i < numSegments; ++i) {
       final int numDocs = TestUtil.nextInt(random(), 1, 5);
@@ -59,6 +72,9 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
       final int segmentCount = writer.getSegmentCount();
       final int maxNumSegments = i == 0 ? 1 : TestUtil.nextInt(random(), 1, 10);
       mayMerge.set(segmentCount > maxNumSegments);
+      if (VERBOSE) {
+        System.out.println("TEST: now forceMerge(maxNumSegments=" + maxNumSegments + ") vs segmentCount=" + segmentCount);
+      }
       writer.forceMerge(maxNumSegments);
     }
     writer.close();

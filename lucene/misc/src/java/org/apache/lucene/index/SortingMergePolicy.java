@@ -163,6 +163,10 @@ public final class SortingMergePolicy extends MergePolicyWrapper {
       };
     }
 
+    @Override
+    public String toString() {
+      return "SortingMergePolicy.SortingOneMerge(segments=" + segString() + " sort=" + sort + ")";
+    }
   }
 
   class SortingMergeSpecification extends MergeSpecification {
