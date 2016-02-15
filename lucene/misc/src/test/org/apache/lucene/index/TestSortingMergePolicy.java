@@ -100,6 +100,9 @@ public class TestSortingMergePolicy extends BaseMergePolicyTestCase {
       mp = newMergePolicy();
     }
     // wrap it with a sorting mp
+    if (VERBOSE) {
+      System.out.println("TEST: return SortingMergePolicy(mp=" + mp + " sort=" + sort + ")");
+    }
     return new SortingMergePolicy(mp, sort);
   }
 
