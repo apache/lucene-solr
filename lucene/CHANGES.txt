@@ -260,6 +260,9 @@ Bug Fixes
 * LUCENE-7019: Add two-phase iteration to GeoPointTermQueryConstantScoreWrapper.
   (Robert Muir via Nick Knize)
 
+* LUCENE-6989: Disable MMapDirectory unmap-hack for Java 9. Official support
+  will come with Lucene 6.  (Uwe Schindler)
+
 Other
 
 * LUCENE-6924: Upgrade randomizedtesting to 2.3.2. (Dawid Weiss)
