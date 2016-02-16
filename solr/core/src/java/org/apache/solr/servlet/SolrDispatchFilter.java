@@ -19,6 +19,7 @@ package org.apache.solr.servlet;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -185,58 +186,76 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain, boolean retry) throws IOException, ServletException {
     if (!(request instanceof HttpServletRequest)) return;
+    try {
 
-    if (cores == null || cores.isShutDown()) {
-      log.error("Error processing the request. CoreContainer is either not initialized or shutting down.");
-      throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-          "Error processing the request. CoreContainer is either not initialized or shutting down.");
-    }
-
-    AtomicReference<ServletRequest> wrappedRequest = new AtomicReference<>();
-    if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been sent
-      return;
-    }
-    if (wrappedRequest.get() != null) {
-      request = wrappedRequest.get();
-    }
-    if (cores.getAuthenticationPlugin() != null) {
-      log.debug("User principal: {}", ((HttpServletRequest)request).getUserPrincipal());
-    }
-
-    // No need to even create the HttpSolrCall object if this path is excluded.
-    if(excludePatterns != null) {
-      String requestPath = ((HttpServletRequest) request).getServletPath();
-      String extraPath = ((HttpServletRequest)request).getPathInfo();
-      if (extraPath != null) { // In embedded mode, servlet path is empty - include all post-context path here for testing 
-        requestPath += extraPath;
+      if (cores == null || cores.isShutDown()) {
+        log.error("Error processing the request. CoreContainer is either not initialized or shutting down.");
+        throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
+            "Error processing the request. CoreContainer is either not initialized or shutting down.");
       }
-      for (Pattern p : excludePatterns) {
-        Matcher matcher = p.matcher(requestPath);
-        if (matcher.lookingAt()) {
-          chain.doFilter(request, response);
-          return;
+
+      AtomicReference<ServletRequest> wrappedRequest = new AtomicReference<>();
+      if (!authenticateRequest(request, response, wrappedRequest)) { // the response and status code have already been
+                                                                     // sent
+        return;
+      }
+      if (wrappedRequest.get() != null) {
+        request = wrappedRequest.get();
+      }
+      if (cores.getAuthenticationPlugin() != null) {
+        log.debug("User principal: {}", ((HttpServletRequest) request).getUserPrincipal());
+      }
+
+      // No need to even create the HttpSolrCall object if this path is excluded.
+      if (excludePatterns != null) {
+        String requestPath = ((HttpServletRequest) request).getServletPath();
+        String extraPath = ((HttpServletRequest) request).getPathInfo();
+        if (extraPath != null) { // In embedded mode, servlet path is empty - include all post-context path here for
+                                 // testing
+          requestPath += extraPath;
+        }
+        for (Pattern p : excludePatterns) {
+          Matcher matcher = p.matcher(requestPath);
+          if (matcher.lookingAt()) {
+            chain.doFilter(request, response);
+            return;
+          }
         }
       }
-    }
 
-    HttpSolrCall call = getHttpSolrCall((HttpServletRequest) request, (HttpServletResponse) response, retry);
-    ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
-    try {
-      Action result = call.call();
-      switch (result) {
-        case PASSTHROUGH:
-          chain.doFilter(request, response);
-          break;
-        case RETRY:
-          doFilter(request, response, chain, true);
-          break;
-        case FORWARD:
-          request.getRequestDispatcher(call.getPath()).forward(request, response);
-          break;
-      }  
+      HttpSolrCall call = getHttpSolrCall((HttpServletRequest) request, (HttpServletResponse) response, retry);
+      ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
+      try {
+        Action result = call.call();
+        switch (result) {
+          case PASSTHROUGH:
+            chain.doFilter(request, response);
+            break;
+          case RETRY:
+            doFilter(request, response, chain, true);
+            break;
+          case FORWARD:
+            request.getRequestDispatcher(call.getPath()).forward(request, response);
+            break;
+        }
+      } finally {
+        call.destroy();
+        ExecutorUtil.setServerThreadFlag(null);
+      }
     } finally {
-      call.destroy();
-      ExecutorUtil.setServerThreadFlag(null);
+      consumeInputFully((HttpServletRequest) request);
+    }
+  }
+  
+  // we make sure we read the full client request so that the client does
+  // not hit a connection reset and we can reuse the 
+  // connection - see SOLR-8453 and SOLR-8683
+  private void consumeInputFully(HttpServletRequest req) {
+    try {
+      ServletInputStream is = req.getInputStream();
+      while (!is.isFinished() && is.read() != -1) {}
+    } catch (IOException e) {
+      log.info("Could not consume full client request", e);
     }
   }
   

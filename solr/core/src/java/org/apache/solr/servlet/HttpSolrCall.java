@@ -621,13 +621,9 @@ public class HttpSolrCall {
     } finally {
       try {
         if (exp != null) {
-          try {
-            SimpleOrderedMap info = new SimpleOrderedMap();
-            int code = ResponseUtils.getErrorInfo(ex, info, log);
-            sendError(code, info.toString());
-          } finally {
-            consumeInput(req);
-          }
+          SimpleOrderedMap info = new SimpleOrderedMap();
+          int code = ResponseUtils.getErrorInfo(ex, info, log);
+          sendError(code, info.toString());
         }
       } finally {
         if (core == null && localCore != null) {
@@ -642,21 +638,6 @@ public class HttpSolrCall {
       response.sendError(code, message);
     } catch (EOFException e) {
       log.info("Unable to write error response, client closed connection or we are shutting down", e);
-    } finally {
-      consumeInput(req);
-    }
-  }
-
-  // when we send back an error, we make sure we read
-  // the full client request so that the client does
-  // not hit a connection reset and we can reuse the 
-  // connection - see SOLR-8453
-  private void consumeInput(HttpServletRequest req) {
-    try {
-      ServletInputStream is = req.getInputStream();
-      while (!is.isFinished() && is.read() != -1) {}
-    } catch (IOException e) {
-      log.info("Could not consume full client request", e);
     }
   }
 
@@ -743,10 +724,6 @@ public class HttpSolrCall {
       //else http HEAD request, nothing to write out, waited this long just to get ContentType
     } catch (EOFException e) {
       log.info("Unable to write response, client closed connection or we are shutting down", e);
-    } finally {
-      if (solrRsp.getException() != null) {
-        consumeInput(req);
-      }
     }
   }
 
