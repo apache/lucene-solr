@@ -155,6 +155,9 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
   // IndexWriters over & over in 2 threads and making sure
   // no unexpected exceptions are raised:
   public void testStressLocks() throws Exception {
+
+    assumeFalse("this test produces false failures on Windows when a segments_N file cannot be deleted by IW since it's still held open by IR", Constants.WINDOWS);
+
     Directory dir = getDirectory(createTempDir());
 
     // First create a 1 doc index:
