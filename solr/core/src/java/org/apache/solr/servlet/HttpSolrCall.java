@@ -55,7 +55,6 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.entity.InputStreamEntity;
-import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -587,7 +586,7 @@ public class HttpSolrCall {
           SolrException.ErrorCode.SERVER_ERROR,
           "Error trying to proxy request for url: " + coreUrl, e));
     } finally {
-      EntityUtils.consumeQuietly(httpEntity);
+      Utils.consumeFully(httpEntity);
     }
 
   }

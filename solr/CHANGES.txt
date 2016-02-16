@@ -169,6 +169,9 @@ Bug Fixes
 
 * SOLR-8527: Improve JdbcTest to cleanup properly on failures (Kevin Risden, Joel Bernstein)
 
+* SOLR-8578: Successful or not, requests are not always fully consumed by Solrj clients and we
+  count on HttpClient or the JVM. (Mark Miller)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
@@ -533,9 +536,6 @@ Bug Fixes
   distributed queries (Jessica Cheng Mallet via Erick Erickson)
 
 * SOLR-8551: Make collection deletion more robust. (Mark Miller)
-
-* SOLR-8578: Successful or not, requests are not always fully consumed by Solrj clients and we
-  count on HttpClient or the JVM. (Mark Miller)
   
 Optimizations
 ----------------------
