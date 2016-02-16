@@ -27,6 +27,7 @@ Carrot2 3.10.4
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
+Jetty 9.3.6.v20151106
 
 System Requirements
 ----------------------
@@ -256,6 +257,8 @@ Other Changes
 * SOLR-8190: Implement Closeable on TupleStream (Kevin Risden, Joel Bernstein)
 
 * SOLR-8529: Improve JdbcTest to not use plain assert statements (Kevin Risden, Joel Bernstein)
+
+* SOLR-7339: Upgrade Jetty to v9.3.6.v20151106. (Gregg Donovan, shalin, Mark Miller)
 
 ======================= 5.6.0 =======================
 

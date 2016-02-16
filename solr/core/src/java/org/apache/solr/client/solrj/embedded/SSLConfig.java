@@ -86,7 +86,7 @@ public class SSLConfig {
     if (sslConfig.getKeyStorePassword() != null)
       factory.setKeyStorePassword(sslConfig.getKeyStorePassword());
     if (sslConfig.getTrustStore() != null)
-      factory.setTrustStorePath(System.getProperty(sslConfig.getTrustStore()));
+      factory.setTrustStorePath(sslConfig.getTrustStore());
     if (sslConfig.getTrustStorePassword() != null)
       factory.setTrustStorePassword(sslConfig.getTrustStorePassword());
 
