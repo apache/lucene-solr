@@ -580,7 +580,6 @@ public class HttpSolrCall {
         OutputStream os = resp.getOutputStream();
 
         IOUtils.copyLarge(is, os);
-        os.flush();
       }
 
     } catch (IOException e) {

@@ -188,6 +188,9 @@ Optimizations
 * SOLR-8532: Optimize GraphQuery when maxDepth is set by not collecting edges at the maxDepth level.
   (Kevin Watters via yonik)
 
+* SOLR-8669: Non binary responses use chunked encoding because we flush the outputstream early.
+  (Mark Miller)
+
 Other Changes
 ----------------------
 
@@ -533,7 +536,7 @@ Bug Fixes
 
 * SOLR-8578: Successful or not, requests are not always fully consumed by Solrj clients and we
   count on HttpClient or the JVM. (Mark Miller)
-
+  
 Optimizations
 ----------------------
 
@@ -543,6 +546,9 @@ Optimizations
   (Mark Miller)
 
 * SOLR-7281: Add an overseer action to publish an entire node as 'down'. (Mark Miller, shalin)
+
+* SOLR-8669: Non binary responses use chunked encoding because we flush the outputstream early.
+  (Mark Miller)
 
 Other Changes
 ----------------------

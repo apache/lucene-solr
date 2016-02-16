@@ -48,7 +48,20 @@ public final class QueryResponseWriterUtil {
       BinaryQueryResponseWriter binWriter = (BinaryQueryResponseWriter) responseWriter;
       binWriter.write(outputStream, solrRequest, solrResponse);
     } else {
-      Writer writer = buildWriter(outputStream, ContentStreamBase.getCharsetFromContentType(contentType));
+      OutputStream out = new OutputStream() {
+        @Override
+        public void write(int b) throws IOException {
+          outputStream.write(b);
+        }
+        @Override
+        public void flush() throws IOException {
+          // We don't flush here, which allows us to flush below
+          // and only flush internal buffers, not the response.
+          // If we flush the response early, we trigger chunked encoding.
+          // See SOLR-8669.
+        }
+      };
+      Writer writer = buildWriter(out, ContentStreamBase.getCharsetFromContentType(contentType));
       responseWriter.write(writer, solrRequest, solrResponse);
       writer.flush();
     }
