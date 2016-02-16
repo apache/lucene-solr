@@ -37,6 +37,7 @@ import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.search.spell.LevensteinDistance;
 import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.solr.common.params.ShardParams;
@@ -224,7 +225,12 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
    */
   protected void initIndex() throws IOException {
     if (indexDir != null) {
-      index = FSDirectory.open(new File(indexDir).toPath());
+      // TODO: this is a workaround for SpellChecker repeatedly closing and opening a new IndexWriter while leaving readers open, which on
+      // Windows causes problems because deleted files can't be opened.  It would be better for SpellChecker to hold a single IW instance,
+      // and close it on close, but Solr never seems to close its spell checkers.  Wrapping as FilterDirectory prevents IndexWriter from
+      // catching the pending deletions:
+      index = new FilterDirectory(FSDirectory.open(new File(indexDir).toPath())) {
+      };
     } else {
       index = new RAMDirectory();
     }
