@@ -163,11 +163,15 @@ public class MMapDirectory extends FSDirectory {
   /**
    * <code>true</code>, if this platform supports unmapping mmapped files.
    */
-  public static final boolean UNMAP_SUPPORTED = (Constants.JRE_IS_MINIMUM_JAVA9 == false)
-    && AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
+  public static final boolean UNMAP_SUPPORTED = AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
     @Override
     @SuppressForbidden(reason = "Needs access to private APIs in DirectBuffer and sun.misc.Cleaner to enable hack")
     public Boolean run() {
+      // we currently don't support Java 9+, because internal APIs changed
+      // and the checks done here are not complete to detect this:
+      if (Constants.JRE_IS_MINIMUM_JAVA9) {
+        return false;
+      }
       try {
         Class<?> clazz = Class.forName("java.nio.DirectByteBuffer");
         Method method = clazz.getMethod("cleaner");
