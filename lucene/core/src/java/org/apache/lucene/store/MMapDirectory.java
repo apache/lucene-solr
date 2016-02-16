@@ -30,6 +30,7 @@ import java.security.PrivilegedAction;
 import java.security.PrivilegedExceptionAction;
 import java.security.PrivilegedActionException;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.Future;
 import java.lang.reflect.Method;
 
@@ -167,16 +168,16 @@ public class MMapDirectory extends FSDirectory {
     @Override
     @SuppressForbidden(reason = "Needs access to private APIs in DirectBuffer and sun.misc.Cleaner to enable hack")
     public Boolean run() {
-      // we currently don't support Java 9+, because internal APIs changed
-      // and the checks done here are not complete to detect this:
-      if (Constants.JRE_IS_MINIMUM_JAVA9) {
-        return false;
-      }
       try {
-        Class<?> clazz = Class.forName("java.nio.DirectByteBuffer");
-        Method method = clazz.getMethod("cleaner");
-        method.setAccessible(true);
-        return true;
+        // inspect DirectByteBuffer:
+        final Class<?> dbClazz = Class.forName("java.nio.DirectByteBuffer");
+        final Method cleanerMethod = dbClazz.getMethod("cleaner");
+        cleanerMethod.setAccessible(true);
+        // try to lookup the clean method from sun.misc.Cleaner:
+        final Class<?> cleanerClazz = Class.forName("sun.misc.Cleaner");
+        cleanerClazz.getMethod("clean"); // no setAccessible needed as everything is public!
+        // check return type fits cleaner class return our decision:
+        return Objects.equals(cleanerMethod.getReturnType(), cleanerClazz);
       } catch (Exception e) {
         return false;
       }
