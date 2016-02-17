@@ -54,6 +54,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -101,6 +102,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.BlobHandler;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -178,8 +180,9 @@ public class CollectionsHandler extends RequestHandlerBase {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + a);
       }
       CollectionOperation operation = CollectionOperation.get(action);
-      log.info("Invoked Collection Action :{} with params {} ", action.toLower(), req.getParamString());
+      log.info("Invoked Collection Action :{} with params {} and sendToOCPQueue={}", action.toLower(), req.getParamString(), operation.sendToOCPQueue);
 
+      SolrResponse response = null;
       Map<String, Object> props = operation.call(req, rsp, this);
       String asyncId = req.getParams().get(ASYNC);
       if (props != null) {
@@ -188,8 +191,16 @@ public class CollectionsHandler extends RequestHandlerBase {
         }
         props.put(QUEUE_OPERATION, operation.action.toLower());
         ZkNodeProps zkProps = new ZkNodeProps(props);
-        if (operation.sendToOCPQueue) handleResponse(operation.action.toLower(), zkProps, rsp, operation.timeOut);
+        if (operation.sendToOCPQueue) {
+          response = handleResponse(operation.action.toLower(), zkProps, rsp, operation.timeOut);
+        }
         else Overseer.getInQueue(coreContainer.getZkController().getZkClient()).offer(Utils.toJSON(props));
+        final String collectionName = zkProps.getStr(NAME);
+        if (action.equals(CollectionAction.CREATE) && asyncId == null) {
+          if (rsp.getException() == null) {
+            waitForActiveCollection(collectionName, zkProps, cores, response);
+          }
+        }
       }
     } else {
       throw new SolrException(ErrorCode.BAD_REQUEST, "action is a required param");
@@ -202,18 +213,18 @@ public class CollectionsHandler extends RequestHandlerBase {
 
   static final Set<String> KNOWN_ROLES = ImmutableSet.of("overseer");
 
-  public static long DEFAULT_ZK_TIMEOUT = 180*1000;
+  public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180*1000;
 
   void handleResponse(String operation, ZkNodeProps m,
                               SolrQueryResponse rsp) throws KeeperException, InterruptedException {
-    handleResponse(operation, m, rsp, DEFAULT_ZK_TIMEOUT);
+    handleResponse(operation, m, rsp, DEFAULT_COLLECTION_OP_TIMEOUT);
   }
 
-  private void handleResponse(String operation, ZkNodeProps m,
+  private SolrResponse handleResponse(String operation, ZkNodeProps m,
       SolrQueryResponse rsp, long timeout) throws KeeperException, InterruptedException {
     long time = System.nanoTime();
 
-     if(m.containsKey(ASYNC) && m.get(ASYNC) != null) {
+    if (m.containsKey(ASYNC) && m.get(ASYNC) != null) {
 
        String asyncId = m.getStr(ASYNC);
 
@@ -238,7 +249,7 @@ public class CollectionsHandler extends RequestHandlerBase {
 
        rsp.getValues().addAll(response.getResponse());
 
-       return;
+       return response;
      }
 
     QueueEvent event = coreContainer.getZkController()
@@ -252,6 +263,7 @@ public class CollectionsHandler extends RequestHandlerBase {
         Integer code = (Integer) exp.get("rspCode");
         rsp.setException(new SolrException(code != null && code != -1 ? ErrorCode.getErrorCode(code) : ErrorCode.SERVER_ERROR, (String)exp.get("msg")));
       }
+      return response;
     } else {
       if (System.nanoTime() - time >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
@@ -419,7 +431,7 @@ public class CollectionsHandler extends RequestHandlerBase {
       }
 
     },
-    SPLITSHARD_OP(SPLITSHARD, DEFAULT_ZK_TIMEOUT * 5, true) {
+    SPLITSHARD_OP(SPLITSHARD, DEFAULT_COLLECTION_OP_TIMEOUT * 5, true) {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h)
           throws Exception {
@@ -725,7 +737,7 @@ public class CollectionsHandler extends RequestHandlerBase {
         return null;
       }
     },
-    MODIFYCOLLECTION_OP(MODIFYCOLLECTION, DEFAULT_ZK_TIMEOUT, false) {
+    MODIFYCOLLECTION_OP(MODIFYCOLLECTION, DEFAULT_COLLECTION_OP_TIMEOUT, false) {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
 
@@ -752,7 +764,7 @@ public class CollectionsHandler extends RequestHandlerBase {
     boolean sendToOCPQueue;
 
     CollectionOperation(CollectionAction action) {
-      this(action, DEFAULT_ZK_TIMEOUT, true);
+      this(action, DEFAULT_COLLECTION_OP_TIMEOUT, true);
     }
 
     CollectionOperation(CollectionAction action, long timeOut, boolean sendToOCPQueue) {
@@ -851,6 +863,72 @@ public class CollectionsHandler extends RequestHandlerBase {
     }
   }
 
+  private static void waitForActiveCollection(String collectionName, ZkNodeProps message, CoreContainer cc, SolrResponse response)
+      throws KeeperException, InterruptedException {
+
+    if (response.getResponse().get("exception") != null) {
+      // the main called failed, don't wait
+      log.info("Not waiting for active collection due to exception: " + response.getResponse().get("exception"));
+      return;
+    }
+    
+    if (response.getResponse().get("failure") != null) {
+      // TODO: we should not wait for Replicas we know failed
+    }
+    
+    String replicaNotAlive = null;
+    String replicaState = null;
+    String nodeNotLive = null;
+
+    CloudConfig ccfg = cc.getConfig().getCloudConfig();
+    Integer numRetries = ccfg.getCreateCollectionWaitTimeTillActive();
+    Boolean checkLeaderOnly = ccfg.isCreateCollectionCheckLeaderActive();
+    log.info("Wait for new collection to be active for at most " + numRetries + " seconds. Check all shard "
+        + (checkLeaderOnly ? "leaders" : "replicas"));
+    ZkStateReader zkStateReader = cc.getZkController().getZkStateReader();
+    for (int i = 0; i < numRetries; i++) {
+
+      zkStateReader.updateClusterState();
+      ClusterState clusterState = zkStateReader.getClusterState();
+
+      Collection<Slice> shards = clusterState.getSlices(collectionName);
+      if (shards != null) {
+        replicaNotAlive = null;
+        for (Slice shard : shards) {
+          Collection<Replica> replicas;
+          if (!checkLeaderOnly) replicas = shard.getReplicas();
+          else {
+            replicas = new ArrayList<Replica>();
+            replicas.add(shard.getLeader());
+          }
+          for (Replica replica : replicas) {
+            String state = replica.getStr(ZkStateReader.STATE_PROP);
+            log.debug("Checking replica status, collection={} replica={} state={}", collectionName,
+                replica.getCoreUrl(), state);
+            if (!clusterState.liveNodesContain(replica.getNodeName())
+                || !state.equals(Replica.State.ACTIVE.toString())) {
+              replicaNotAlive = replica.getCoreUrl();
+              nodeNotLive = replica.getNodeName();
+              replicaState = state;
+              break;
+            }
+          }
+          if (replicaNotAlive != null) break;
+        }
+
+        if (replicaNotAlive == null) return;
+      }
+      Thread.sleep(1000);
+    }
+    if (nodeNotLive != null && replicaState != null) {
+      log.error("Timed out waiting for new collection's replicas to become ACTIVE "
+              + (replicaState.equals(Replica.State.ACTIVE.toString()) ? "node " + nodeNotLive + " is not live"
+                  : "replica " + replicaNotAlive + " is in state of " + replicaState.toString()) + " with timeout=" + numRetries);
+    } else {
+      log.error("Timed out waiting for new collection's replicas to become ACTIVE with timeout=" + numRetries);
+    }
+  }
+  
   public static void verifyRuleParams(CoreContainer cc, Map<String, Object> m) {
     List l = (List) m.get(RULE);
     if (l != null) {

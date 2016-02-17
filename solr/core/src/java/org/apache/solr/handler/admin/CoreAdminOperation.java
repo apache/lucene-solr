@@ -110,6 +110,8 @@ enum CoreAdminOperation {
   CREATE_OP(CREATE) {
     @Override
     public void call(CallInfo callInfo) {
+      assert TestInjection.injectRandomDelayInCoreCreation();
+      
       SolrParams params = callInfo.req.getParams();
       log.info("core create command {}", params);
       String coreName = params.required().get(CoreAdminParams.NAME);

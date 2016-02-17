@@ -45,8 +45,15 @@ public class CloudConfig {
   private final String zkCredentialsProviderClass;
 
   private final String zkACLProviderClass;
+  
+  private final int createCollectionWaitTimeTillActive;
+  
+  private final boolean createCollectionCheckLeaderActive;
 
-  CloudConfig(String zkHost, int zkClientTimeout, int hostPort, String hostName, String hostContext, boolean useGenericCoreNames, int leaderVoteWait, int leaderConflictResolveWait, int autoReplicaFailoverWaitAfterExpiration, int autoReplicaFailoverWorkLoopDelay, int autoReplicaFailoverBadNodeExpiration, String zkCredentialsProviderClass, String zkACLProviderClass) {
+  CloudConfig(String zkHost, int zkClientTimeout, int hostPort, String hostName, String hostContext, boolean useGenericCoreNames, 
+              int leaderVoteWait, int leaderConflictResolveWait, int autoReplicaFailoverWaitAfterExpiration, 
+              int autoReplicaFailoverWorkLoopDelay, int autoReplicaFailoverBadNodeExpiration, String zkCredentialsProviderClass, 
+              String zkACLProviderClass, int createCollectionWaitTimeTillActive, boolean createCollectionCheckLeaderActive) {
     this.zkHost = zkHost;
     this.zkClientTimeout = zkClientTimeout;
     this.hostPort = hostPort;
@@ -60,6 +67,8 @@ public class CloudConfig {
     this.autoReplicaFailoverBadNodeExpiration = autoReplicaFailoverBadNodeExpiration;
     this.zkCredentialsProviderClass = zkCredentialsProviderClass;
     this.zkACLProviderClass = zkACLProviderClass;
+    this.createCollectionWaitTimeTillActive = createCollectionWaitTimeTillActive;
+    this.createCollectionCheckLeaderActive = createCollectionCheckLeaderActive;
 
     if (this.hostPort == -1)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "'hostPort' must be configured to run SolrCloud");
@@ -119,12 +128,22 @@ public class CloudConfig {
     return useGenericCoreNames;
   }
 
+  public int getCreateCollectionWaitTimeTillActive() {
+    return createCollectionWaitTimeTillActive;
+  }
+
+  public boolean isCreateCollectionCheckLeaderActive() {
+    return createCollectionCheckLeaderActive;
+  }
+
   public static class CloudConfigBuilder {
 
     private static final int DEFAULT_ZK_CLIENT_TIMEOUT = 15000;
     private static final int DEFAULT_LEADER_VOTE_WAIT = 180000;  // 3 minutes
     private static final int DEFAULT_LEADER_CONFLICT_RESOLVE_WAIT = 180000;
-
+    private static final int DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT = 30;  // 30 seconds
+    private static final boolean DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE = false; 
+ 
     // TODO: tune defaults
     private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WAIT_AFTER_EXPIRATION = 30000;
     private static final int DEFAULT_AUTO_REPLICA_FAILOVER_WORKLOOP_DELAY = 10000;
@@ -143,6 +162,8 @@ public class CloudConfig {
     private int autoReplicaFailoverBadNodeExpiration = DEFAULT_AUTO_REPLICA_FAILOVER_BAD_NODE_EXPIRATION;
     private String zkCredentialsProviderClass;
     private String zkACLProviderClass;
+    private int createCollectionWaitTimeTillActive = DEFAULT_CREATE_COLLECTION_ACTIVE_WAIT;
+    private boolean createCollectionCheckLeaderActive = DEFAULT_CREATE_COLLECTION_CHECK_LEADER_ACTIVE;
 
     public CloudConfigBuilder(String hostName, int hostPort) {
       this(hostName, hostPort, null);
@@ -204,8 +225,21 @@ public class CloudConfig {
       return this;
     }
 
+    public CloudConfigBuilder setCreateCollectionWaitTimeTillActive(int createCollectionWaitTimeTillActive) {
+      this.createCollectionWaitTimeTillActive = createCollectionWaitTimeTillActive;
+      return this;
+    }
+    
+    public CloudConfigBuilder setCreateCollectionCheckLeaderActive(boolean createCollectionCheckLeaderActive) {
+      this.createCollectionCheckLeaderActive = createCollectionCheckLeaderActive;
+      return this;
+    }
+    
     public CloudConfig build() {
-      return new CloudConfig(zkHost, zkClientTimeout, hostPort, hostName, hostContext, useGenericCoreNames, leaderVoteWait, leaderConflictResolveWait, autoReplicaFailoverWaitAfterExpiration, autoReplicaFailoverWorkLoopDelay, autoReplicaFailoverBadNodeExpiration, zkCredentialsProviderClass, zkACLProviderClass);
+      return new CloudConfig(zkHost, zkClientTimeout, hostPort, hostName, hostContext, useGenericCoreNames, leaderVoteWait, 
+                             leaderConflictResolveWait, autoReplicaFailoverWaitAfterExpiration, autoReplicaFailoverWorkLoopDelay, 
+                             autoReplicaFailoverBadNodeExpiration, zkCredentialsProviderClass, zkACLProviderClass, createCollectionWaitTimeTillActive,
+                             createCollectionCheckLeaderActive);
     }
   }
 }

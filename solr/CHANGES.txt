@@ -176,6 +176,9 @@ Bug Fixes
 * SOLR-8683: Always consume the full request on the server, not just in the case of an error.
   (Mark Miller)
 
+* SOLR-8416: The collections create API should return after all replicas are active.
+  (Michael Sun, Mark Miller, Alexey Serba)
+  
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been

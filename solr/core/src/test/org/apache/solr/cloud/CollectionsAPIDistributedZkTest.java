@@ -70,6 +70,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoMBean.Category;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,6 +93,11 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
   // we randomly use a second config set rather than just one
   private boolean secondConfigSet = random().nextBoolean();
+  
+  @BeforeClass
+  public static void beforeCollectionsAPIDistributedZkTest() {
+    TestInjection.randomDelayInCoreCreation = "true:20";
+  }
   
   @Override
   public void distribSetUp() throws Exception {
@@ -155,6 +161,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   @Test
   @ShardsFixed(num = 4)
   public void test() throws Exception {
+    waitForRecoveriesToFinish(false); // we need to fix no core tests still
     testNodesUsedByCreate();
     testNoConfigSetExist();
     testCollectionsAPI();
@@ -1273,8 +1280,9 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
         MAX_SHARDS_PER_NODE, maxShardsPerNode,
         NUM_SLICES, numShards);
     Map<String,List<Integer>> collectionInfos = new HashMap<>();
-    createCollection(collectionInfos, COLL_NAME, props, client,"conf1");
-    waitForRecoveriesToFinish(COLL_NAME, false);
+    createCollection(collectionInfos, COLL_NAME, props, client, "conf1");
+    assertAllActive(COLL_NAME, getCommonCloudSolrClient().getZkStateReader());
+    
   }
   
   private void clusterPropTest() throws Exception {

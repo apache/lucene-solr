@@ -368,6 +368,12 @@ public class SolrXmlConfig {
         case "zkCredentialsProvider":
           builder.setZkCredentialsProviderClass(value);
           break;
+        case "createCollectionWaitTimeTillActive":
+          builder.setCreateCollectionWaitTimeTillActive(parseInt(name, value));
+          break;
+        case "createCollectionCheckLeaderActive":
+          builder.setCreateCollectionCheckLeaderActive(Boolean.parseBoolean(value));
+          break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown configuration parameter in <solrcloud> section of solr.xml: " + name);
       }
