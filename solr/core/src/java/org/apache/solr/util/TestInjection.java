@@ -16,9 +16,9 @@
  */
 package org.apache.solr.util;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashSet;
-
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
@@ -31,13 +31,15 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.core.CoreContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
  * Allows random faults to be injected in running code during test runs.
  */
 public class TestInjection {
-  
+
   public static class TestShutdownFailError extends OutOfMemoryError {
 
     public TestShutdownFailError(String msg) {
@@ -45,6 +47,8 @@ public class TestInjection {
     }
     
   }
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final Pattern ENABLED_PERCENT = Pattern.compile("(true|false)(?:\\:(\\d+))?$", Pattern.CASE_INSENSITIVE);
   private static final Random RANDOM;
@@ -65,9 +69,17 @@ public class TestInjection {
   public static String failReplicaRequests = null;
   
   public static String failUpdateRequests = null;
-  
+
   public static String nonExistentCoreExceptionAfterUnload = null;
+
+  public static String updateLogReplayRandomPause = null;
   
+  public static String updateRandomPause = null;
+
+  public static String randomDelayInCoreCreation = null;
+  
+  public static int randomDelayMaxInCoreCreationInSec = 10;
+
   private static Set<Timer> timers = Collections.synchronizedSet(new HashSet<Timer>());
 
 
@@ -77,10 +89,31 @@ public class TestInjection {
     failReplicaRequests = null;
     failUpdateRequests = null;
     nonExistentCoreExceptionAfterUnload = null;
-    
+    updateLogReplayRandomPause = null;
+    updateRandomPause = null;
+    randomDelayInCoreCreation = null;
+
     for (Timer timer : timers) {
       timer.cancel();
     }
+  }
+  
+  public static boolean injectRandomDelayInCoreCreation() {
+    if (randomDelayInCoreCreation != null) {
+      Pair<Boolean,Integer> pair = parseValue(randomDelayInCoreCreation);
+      boolean enabled = pair.getKey();
+      int chanceIn100 = pair.getValue();
+      if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
+        int delay = RANDOM.nextInt(randomDelayMaxInCoreCreationInSec);
+        log.info("Inject random core creation delay of {}s", delay);
+        try {
+          Thread.sleep(delay * 1000);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
+    }
+    return true;
   }
   
   public static boolean injectNonGracefullClose(CoreContainer cc) {

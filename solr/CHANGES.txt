@@ -74,6 +74,9 @@ Bug Fixes
 * SOLR-8701: CloudSolrClient decides that there are no healthy nodes to handle a request too early.
   (Mark Miller)
 
+* SOLR-8416: The collections create API should return after all replicas are active.
+  (Michael Sun, Mark Miller, Alexey Serba)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

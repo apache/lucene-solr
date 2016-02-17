@@ -75,6 +75,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CloudConfig;
+import org.apache.solr.handler.admin.ClusterStatus;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
@@ -1885,6 +1887,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   private void createCollection(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
     final String collectionName = message.getStr(NAME);
+    log.info("Create collection {}", collectionName);
     if (clusterState.hasCollection(collectionName)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "collection already exists: " + collectionName);
     }
@@ -1995,7 +1998,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
       log.info(formatString("Creating SolrCores for new collection {0}, shardNames {1} , replicationFactor : {2}",
           collectionName, shardNames, repFactor));
-      Map<String ,ShardRequest> coresToCreate = new LinkedHashMap<>();
+      Map<String,ShardRequest> coresToCreate = new LinkedHashMap<>();
       for (Map.Entry<Position, String> e : positionVsNodes.entrySet()) {
         Position position = e.getKey();
         String nodeName = e.getValue();
@@ -2036,6 +2039,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         addPropertyParams(message, params);
 
         ShardRequest sreq = new ShardRequest();
+        sreq.nodeName = nodeName;
         params.set("qt", adminPath);
         sreq.purpose = 1;
         sreq.shards = new String[]{baseUrl};
