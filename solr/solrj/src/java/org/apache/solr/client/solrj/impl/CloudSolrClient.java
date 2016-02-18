@@ -897,11 +897,16 @@ public class CloudSolrClient extends SolrClient {
         }
       }
 
+      if (rootCause instanceof InterruptedException) {
+        log.debug("Request to collection {} has been interrupted.", collection);
+        throw exc;
+      }
+
       int errorCode = (rootCause instanceof SolrException) ?
           ((SolrException)rootCause).code() : SolrException.ErrorCode.UNKNOWN.code;
 
-      log.error("Request to collection {} failed due to ("+errorCode+
-          ") {}, retry? "+retryCount, collection, rootCause.toString());
+      log.error("Request to collection {} failed due to ({}) {}, retry? {}",
+          collection, errorCode, rootCause, retryCount);
 
       boolean wasCommError =
           (rootCause instanceof ConnectException ||
