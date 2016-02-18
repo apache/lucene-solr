@@ -131,9 +131,6 @@ Other
 
 * LUCENE-7035: Upgrade icu4j to 56.1/unicode 8. (Robert Muir)
 
-======================= Lucene 5.6.0 =======================
-(No Changes)
-
 ======================= Lucene 5.5.0 =======================
 
 New Features

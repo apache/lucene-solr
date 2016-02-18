@@ -263,11 +263,6 @@ Other Changes
 
 * SOLR-7339: Upgrade Jetty to v9.3.6.v20151106. (Gregg Donovan, shalin, Mark Miller)
 
-======================= 5.6.0 =======================
-
-New Features
-----------------------
-
 * SOLR-5730: Make Lucene's SortingMergePolicy and EarlyTerminatingSortingCollector configurable in Solr.
   (Christine Poerschke, hossmann, Tomás Fernández Löbbe, Shai Erera)
 
