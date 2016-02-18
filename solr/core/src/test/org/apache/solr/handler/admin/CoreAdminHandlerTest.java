@@ -139,7 +139,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
               resp);
 
     } catch (SolrException se) {
-      assertTrue("Expected error message for bad core name.", se.toString().contains("Invalid name"));
+      assertTrue("Expected error message for bad core name.", se.toString().contains("Invalid core"));
     }
     CoreDescriptor cd = cores.getCoreDescriptor("ugly$core=name");
     assertNull("Should NOT have added this core!", cd);
@@ -228,7 +228,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
               CoreAdminParams.OTHER, "bad$name"),
               resp);
     } catch (SolrException e) { // why the heck does create return a SolrException (admittedly wrapping an IAE)
-      assertTrue("Expected error message for bad core name.", e.getMessage().contains("Invalid name"));
+      assertTrue("Expected error message for bad core name.", e.getMessage().contains("Invalid core"));
     }
 
     cd = cores.getCoreDescriptor("bad$name");

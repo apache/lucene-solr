@@ -16,9 +16,16 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -30,12 +37,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
 
 /**
  * This class is experimental and subject to change.
@@ -122,7 +123,7 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
   protected abstract static class CollectionSpecificAdminRequest <T extends CollectionAdminRequest<T>> extends CollectionAdminRequest<T> {
     protected String collection = null;
 
-    public final T setCollectionName(String collectionName) {
+    public T setCollectionName(String collectionName) {
       this.collection = collectionName;
       return getThis();
     }
@@ -277,7 +278,6 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     public Create setConfigName(String config) { this.configName = config; return this; }
     public Create setCreateNodeSet(String nodeSet) { this.createNodeSet = nodeSet; return this; }
     public Create setRouterName(String routerName) { this.routerName = routerName; return this; }
-    public Create setShards(String shards) { this.shards = shards; return this; }
     public Create setRouterField(String routerField) { this.routerField = routerField; return this; }
     public Create setNumShards(Integer numShards) {this.numShards = numShards; return this; }
     public Create setMaxShardsPerNode(Integer numShards) { this.maxShardsPerNode = numShards; return this; }
@@ -296,6 +296,41 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     public Integer getReplicationFactor() { return replicationFactor; }
     public Boolean getAutoAddReplicas() { return autoAddReplicas; }
     public Integer getStateFormat() { return stateFormat; }
+    
+    /**
+     * Provide the name of the shards to be created, separated by commas
+     * 
+     * Shard names must consist entirely of periods, underscores and alphanumerics.  Other characters are not allowed.
+     * 
+     * @throws IllegalArgumentException if any of the shard names contain invalid characters.
+     */
+    public Create setShards(String shards) {
+      for (String shard : shards.split(",")) {
+        if (!SolrIdentifierValidator.validateShardName(shard)) {
+          throw new IllegalArgumentException("Invalid shard: " + shard
+              + ". Shard names must consist entirely of periods, underscores and alphanumerics");
+        }
+      }
+      this.shards = shards;
+      return this;
+    }
+    
+    /**
+     * Provide the name of the collection to be created.
+     * 
+     * Collection names must consist entirely of periods, underscores and alphanumerics.  Other characters are not allowed.
+     * 
+     * @throws IllegalArgumentException if the collection name contains invalid characters.
+     */
+    @Override
+    public Create setCollectionName(String collectionName) throws SolrException {
+      if (!SolrIdentifierValidator.validateCollectionName(collectionName)) {
+        throw new IllegalArgumentException("Invalid collection: " + collectionName
+            + ". Collection names must consist entirely of periods, underscores, and alphanumerics");
+      }
+      this.collection = collectionName;
+      return this;
+    }
 
     public Properties getProperties() {
       return properties;
@@ -408,6 +443,23 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
 
     public CreateShard() {
       action = CollectionAction.CREATESHARD;
+    }
+    
+    /**
+     * Provide the name of the shard to be created.
+     * 
+     * Shard names must consist entirely of periods, underscores and alphanumerics.  Other characters are not allowed.
+     * 
+     * @throws IllegalArgumentException if the shard name contains invalid characters.
+     */
+    @Override
+    public CreateShard setShardName(String shardName) {
+      if (!SolrIdentifierValidator.validateShardName(shardName)) {
+        throw new IllegalArgumentException("Invalid shard: " + shardName
+            + ". Shard names must consist entirely of periods, underscores and alphanumerics");
+      }
+      this.shardName = shardName;
+      return this;
     }
 
     @Override
@@ -588,7 +640,18 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
       action = CollectionAction.CREATEALIAS;
     }
 
+    /**
+     * Provide the name of the alias to be created.
+     * 
+     * Alias names must consist entirely of periods, underscores and alphanumerics.  Other characters are not allowed.
+     * 
+     * @throws IllegalArgumentException if the alias name contains invalid characters.
+     */
     public CreateAlias setAliasName(String aliasName) {
+      if (!SolrIdentifierValidator.validateCollectionName(aliasName)) {
+        throw new IllegalArgumentException("Invalid alias: " + aliasName
+            + ". Aliases must consist entirely of periods, underscores, and alphanumerics");
+      }
       this.aliasName = aliasName;
       return this;
     }
