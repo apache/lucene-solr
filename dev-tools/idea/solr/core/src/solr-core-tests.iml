@@ -31,5 +31,14 @@
     <orderEntry type="module" scope="TEST" module-name="expressions" />
     <orderEntry type="module" scope="TEST" module-name="icu" />
     <orderEntry type="module" scope="TEST" module-name="analysis-extras" />
+      <orderEntry type="module-library">
+          <library>
+            <CLASSES>
+              <root url="file://$MODULE_DIR$/resources" />
+            </CLASSES>
+            <JAVADOC />
+            <SOURCES />
+          </library>
+        </orderEntry>
   </component>
 </module>

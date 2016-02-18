@@ -170,74 +170,10 @@ public class ConfigOverlay implements MapSerializable {
   private static final Long INT_NODE = 21L;
   private static final Long FLOAT_ATTR = 30L;
   private static final Long FLOAT_NODE = 31L;*/
-
-  private static Map editable_prop_map;
   //The path maps to the xml xpath and value of 1 means it is a tag with a string value and value
   // of 0 means it is an attribute with string value
-  public static final String MAPPING = "{" +
-      "  updateHandler:{" +
-      "    autoCommit:{" +
-      "      maxDocs:20," +
-      "      maxTime:20," +
-      "      openSearcher:11}," +
-      "    autoSoftCommit:{" +
-      "      maxDocs:20," +
-      "      maxTime:20}," +
-      "    commitWithin:{softCommit:11}," +
-      "    indexWriter:{closeWaitsForMerges:11}}," +
-      "  query:{" +
-      "    filterCache:{" +
-      "      class:0," +
-      "      size:0," +
-      "      initialSize:20," +
-      "      autowarmCount:20," +
-      "      maxRamMB:20," +
-      "      regenerator:0}," +
-      "    queryResultCache:{" +
-      "      class:0," +
-      "      size:20," +
-      "      initialSize:20," +
-      "      autowarmCount:20," +
-      "      maxRamMB:20," +
-      "      regenerator:0}," +
-      "    documentCache:{" +
-      "      class:0," +
-      "      size:20," +
-      "      initialSize:20," +
-      "      autowarmCount:20," +
-      "      regenerator:0}," +
-      "    fieldValueCache:{" +
-      "      class:0," +
-      "      size:20," +
-      "      initialSize:20," +
-      "      autowarmCount:20," +
-      "      regenerator:0}," +
-      "    useFilterForSortedQuery:1," +
-      "    queryResultWindowSize:1," +
-      "    queryResultMaxDocsCached:1," +
-      "    enableLazyFieldLoading:1," +
-      "    boolTofilterOptimizer:1," +
-      "    maxBooleanClauses:1}," +
-      "  jmx:{" +
-      "    agentId:0," +
-      "    serviceUrl:0," +
-      "    rootName:0}," +
-      "  requestDispatcher:{" +
-      "    handleSelect:0," +
-      "    requestParsers:{" +
-      "      multipartUploadLimitInKB:0," +
-      "      formdataUploadLimitInKB:0," +
-      "      enableRemoteStreaming:0," +
-      "      addHttpRequestToContext:0}}}";
 
-  static {
-    try {
-      editable_prop_map = (Map) new ObjectBuilder(new JSONParser(new StringReader(
-          MAPPING))).getObject();
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "error parsing mapping ", e);
-    }
-  }
+  private static Map editable_prop_map = (Map) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
 
   public static boolean isEditableProp(String path, boolean isXpath, List<String> hierarchy) {
     return !(checkEditable(path, isXpath, hierarchy) == null);
@@ -331,6 +267,7 @@ public class ConfigOverlay implements MapSerializable {
   public static final String NAME = "overlay";
 
   public static void main(String[] args) {
+    System.out.println(Utils.toJSONString(editable_prop_map));
   }
 
 }

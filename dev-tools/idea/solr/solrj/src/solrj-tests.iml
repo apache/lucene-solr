@@ -29,5 +29,14 @@
     <orderEntry type="module" scope="TEST" module-name="solr-core" />
     <orderEntry type="module" scope="TEST" module-name="analysis-common" />
     <orderEntry type="module" scope="TEST" module-name="lucene-core" />
+     <orderEntry type="module-library">
+          <library>
+            <CLASSES>
+              <root url="file://$MODULE_DIR$/../../core/src/resources" />
+            </CLASSES>
+            <JAVADOC />
+            <SOURCES />
+          </library>
+        </orderEntry>
   </component>
 </module>

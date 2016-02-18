@@ -27,5 +27,14 @@
     <orderEntry type="module" module-name="queryparser" />
     <orderEntry type="module" module-name="join" />
     <orderEntry type="module" module-name="sandbox" />
+      <orderEntry type="module-library">
+          <library>
+            <CLASSES>
+              <root url="file://$MODULE_DIR$/resources" />
+            </CLASSES>
+            <JAVADOC />
+            <SOURCES />
+          </library>
+        </orderEntry>
   </component>
 </module>

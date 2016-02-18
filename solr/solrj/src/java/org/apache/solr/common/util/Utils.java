@@ -18,6 +18,7 @@ package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -118,6 +119,20 @@ public class Utils {
       propMap.put(keyVals[i].toString(), keyVals[i + 1]);
     }
     return propMap;
+  }
+
+  public static Object fromJSON(InputStream is){
+    try {
+      return new ObjectBuilder(new JSONParser(new InputStreamReader(is, StandardCharsets.UTF_8))).getObject();
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
+    }
+  }
+
+  public static Object fromJSONResource(String resourceName){
+   return fromJSON(Thread.currentThread()
+        .getContextClassLoader().getResourceAsStream(resourceName));
+
   }
 
   public static Object fromJSONString(String json)  {

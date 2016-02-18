@@ -81,8 +81,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
 
   @Test
   public void test() throws Exception {
-    Map editable_prop_map = (Map) new ObjectBuilder(new JSONParser(new StringReader(
-        ConfigOverlay.MAPPING))).getObject();
+    Map editable_prop_map = (Map) Utils.fromJSONResource("EditableSolrConfigAttributes.json");
     Map caches = (Map) editable_prop_map.get("query");
 
     setupHarnesses();
