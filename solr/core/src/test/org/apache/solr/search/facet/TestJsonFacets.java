@@ -632,6 +632,21 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "'f1':{ 'buckets':[]} } "
     );
 
+    // test prefix on where field
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{" +
+            " f1:{${terms} type:terms, field:${where_s}, prefix:N  }" +
+            ",f2:{${terms} type:terms, field:${where_s}, prefix:NY }" +
+            ",f3:{${terms} type:terms, field:${where_s}, prefix:NJ }" +
+            "}"
+        )
+        , "facets=={ 'count':6 " +
+            ",f1:{ 'buckets':[ {val:NJ,count:3}, {val:NY,count:2} ]}" +
+            ",f2:{ 'buckets':[ {val:NY,count:2} ]}" +
+            ",f3:{ 'buckets':[ {val:NJ,count:3} ]}" +
+            " } "
+    );
+
     //
     // missing
     //
