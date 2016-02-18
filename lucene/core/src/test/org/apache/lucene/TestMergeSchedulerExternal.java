@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene;
 
+package org.apache.lucene;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,6 +41,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.PrintStreamInfoStream;
+import org.junit.AfterClass;
 
 /**
  * Holds tests cases to verify external APIs are accessible
@@ -99,6 +100,11 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
         }
       }
     }
+  }
+
+  @AfterClass
+  public static void afterClass() {
+    infoStream = null;
   }
 
   public void testSubclassConcurrentMergeScheduler() throws IOException {
