@@ -63,7 +63,7 @@ public class TestCollectionAdminRequest extends LuceneTestCase {
       fail();
     } catch (IllegalArgumentException e) {
       final String exceptionMessage = e.getMessage();
-      assertTrue(exceptionMessage.contains("Invalid collection"));
+      assertTrue(exceptionMessage.contains("Invalid alias"));
       assertTrue(exceptionMessage.contains("invalid$alias@name"));
       assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, and alphanumerics"));
     }
