@@ -141,7 +141,7 @@ public class SyncStrategy {
       if (success) {
         log.info("Sync Success - now sync replicas to me");
         
-        syncToMe(zkController, collection, shardId, leaderProps, core.getCoreDescriptor());
+        syncToMe(zkController, collection, shardId, leaderProps, core.getCoreDescriptor(), core.getUpdateHandler().getUpdateLog().getNumRecordsToKeep());
         
       } else {
         log.info("Leader's attempt to sync with shard failed, moving to the next candidate");
@@ -178,7 +178,8 @@ public class SyncStrategy {
   }
   
   private void syncToMe(ZkController zkController, String collection,
-      String shardId, ZkNodeProps leaderProps, CoreDescriptor cd) {
+                        String shardId, ZkNodeProps leaderProps, CoreDescriptor cd,
+                        int nUpdates) {
     
     // sync everyone else
     // TODO: we should do this in parallel at least
@@ -196,7 +197,7 @@ public class SyncStrategy {
       try {
         log.info(ZkCoreNodeProps.getCoreUrl(leaderProps) + ": try and ask " + node.getCoreUrl() + " to sync");
         
-        requestSync(node.getBaseUrl(), node.getCoreUrl(), zkLeader.getCoreUrl(), node.getCoreName());
+        requestSync(node.getBaseUrl(), node.getCoreUrl(), zkLeader.getCoreUrl(), node.getCoreName(), nUpdates);
         
       } catch (Exception e) {
         SolrException.log(log, "Error syncing replica to leader", e);
@@ -247,7 +248,7 @@ public class SyncStrategy {
     return success;
   }
 
-  private void requestSync(String baseUrl, String replica, String leaderUrl, String coreName) {
+  private void requestSync(String baseUrl, String replica, String leaderUrl, String coreName, int nUpdates) {
     ShardCoreRequest sreq = new ShardCoreRequest();
     sreq.coreName = coreName;
     sreq.baseUrl = baseUrl;
@@ -257,7 +258,7 @@ public class SyncStrategy {
     sreq.params = new ModifiableSolrParams();
     sreq.params.set("qt","/get");
     sreq.params.set("distrib",false);
-    sreq.params.set("getVersions",Integer.toString(100));
+    sreq.params.set("getVersions",Integer.toString(nUpdates));
     sreq.params.set("sync",leaderUrl);
     
     shardHandler.submit(sreq, replica, sreq.params);
