@@ -184,6 +184,9 @@ Bug Fixes
 
 * SOLR-8694: DistributedMap/Queue can create too many Watchers and some code simplification. 
   (Scott Blum via Mark Miller)
+  
+* SOLR-8695: Ensure ZK watchers are not triggering our watch logic on connection events and
+  make this handling more consistent. (Scott Blum via Mark Miller)
 
 Optimizations
 ----------------------

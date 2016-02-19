@@ -154,6 +154,7 @@ class CdcrBufferStateManager extends CdcrStateManager {
       String shard = core.getCoreDescriptor().getCloudDescriptor().getShardId();
 
       log.info("The CDCR buffer state has changed: {} @ {}:{}", event, collectionName, shard);
+      // session events are not change events, and do not remove the watcher
       if (Event.EventType.None.equals(event.getType())) {
         return;
       }

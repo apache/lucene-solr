@@ -367,8 +367,7 @@ public  class LeaderElector {
 
     @Override
     public void process(WatchedEvent event) {
-      // session events are not change events,
-      // and do not remove the watcher
+      // session events are not change events, and do not remove the watcher
       if (EventType.None.equals(event.getType())) {
         return;
       }

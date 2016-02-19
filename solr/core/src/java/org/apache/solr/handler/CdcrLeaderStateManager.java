@@ -137,6 +137,7 @@ class CdcrLeaderStateManager extends CdcrStateManager {
       String shard = core.getCoreDescriptor().getCloudDescriptor().getShardId();
 
       log.debug("The leader state has changed: {} @ {}:{}", event, collectionName, shard);
+      // session events are not change events, and do not remove the watcher
       if (Event.EventType.None.equals(event.getType())) {
         return;
       }

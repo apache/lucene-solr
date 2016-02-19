@@ -129,11 +129,13 @@ public class OverseerTaskQueue extends DistributedQueue {
 
     @Override
     public void process(WatchedEvent event) {
-      Event.EventType eventType = event.getType();
-      // None events are ignored
+      // session events are not change events, and do not remove the watcher
+      if (Event.EventType.None.equals(event.getType())) {
+        return;
+      }
       // If latchEventType is not null, only fire if the type matches
-      LOG.info("{} fired on path {} state {} latchEventType {}", eventType, event.getPath(), event.getState(), latchEventType);
-      if (eventType != Event.EventType.None && (latchEventType == null || eventType == latchEventType)) {
+      LOG.info("{} fired on path {} state {} latchEventType {}", event.getType(), event.getPath(), event.getState(), latchEventType);
+      if (latchEventType == null || event.getType() == latchEventType) {
         synchronized (lock) {
           this.event = event;
           lock.notifyAll();
