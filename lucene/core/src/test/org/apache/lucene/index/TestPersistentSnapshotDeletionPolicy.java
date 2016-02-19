@@ -103,13 +103,12 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Test
   public void testMissingSnapshots() throws Exception {
     Directory dir = newDirectory();
-    try {
+
+    expectThrows(IllegalStateException.class, () -> {
       new PersistentSnapshotDeletionPolicy(
                                            new KeepOnlyLastCommitDeletionPolicy(), dir, OpenMode.APPEND);
-      fail("did not hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
+
     dir.close();
   }
 

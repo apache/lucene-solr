@@ -635,13 +635,11 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     doc.add(new Field("field", "value2", ft2));
     
     // ensure broken doc hits exception
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       iw.addDocument(doc);
-      fail("didn't hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      assertNotNull(iae.getMessage());
-      assertTrue(iae.getMessage().startsWith("all instances of a given field name must have the same term vectors settings"));
-    }
+    });
+    assertNotNull(expected.getMessage());
+    assertTrue(expected.getMessage().startsWith("all instances of a given field name must have the same term vectors settings"));
     
     // ensure good docs are still ok
     IndexReader ir = iw.getReader();
@@ -665,12 +663,11 @@ public class TestTermVectorsWriter extends LuceneTestCase {
     ft.setStoreTermVectors(true);
     ft.freeze();
     doc.add(new Field("field", "value", ft));
-    try {
+
+    expectThrows(IllegalArgumentException.class, () -> {
       iw.addDocument(doc);
-      fail("should have hit exc");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    });
+
     IndexReader r = DirectoryReader.open(iw);
 
     // Make sure the exc didn't lose our first document:

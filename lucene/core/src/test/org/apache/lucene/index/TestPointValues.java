@@ -60,12 +60,10 @@ public class TestPointValues extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new BinaryPoint("dim", new byte[4]));
     doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", iae.getMessage());
-    }
+    });
+    assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
     w.close();
     dir.close();
   }
@@ -77,14 +75,14 @@ public class TestPointValues extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
-    doc = new Document();
-    doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
-    try {
-      w.addDocument(doc);
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", iae.getMessage());
-    }
+
+    Document doc2 = new Document();
+    doc2.add(new BinaryPoint("dim", new byte[4], new byte[4]));
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      w.addDocument(doc2);
+    });
+    assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
+
     w.close();
     dir.close();
   }
@@ -97,14 +95,14 @@ public class TestPointValues extends LuceneTestCase {
     doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     w.commit();
-    doc = new Document();
-    doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
-    try {
-      w.addDocument(doc);
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", iae.getMessage());
-    }
+
+    Document doc2 = new Document();
+    doc2.add(new BinaryPoint("dim", new byte[4], new byte[4]));
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      w.addDocument(doc2);
+    });
+    assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
+
     w.close();
     dir.close();
   }
@@ -118,16 +116,16 @@ public class TestPointValues extends LuceneTestCase {
     w.addDocument(doc);
     w.close();
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    w = new IndexWriter(dir, iwc);
-    doc = new Document();
-    doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
-    try {
-      w.addDocument(doc);
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", iae.getMessage());
-    }
-    w.close();
+
+    IndexWriter w2 = new IndexWriter(dir, iwc);
+    Document doc2 = new Document();
+    doc2.add(new BinaryPoint("dim", new byte[4], new byte[4]));
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      w2.addDocument(doc2);
+    });
+    assertEquals("cannot change point dimension count from 1 to 2 for field=\"dim\"", expected.getMessage());
+
+    w2.close();
     dir.close();
   }
 
@@ -141,17 +139,16 @@ public class TestPointValues extends LuceneTestCase {
     w.close();
 
     Directory dir2 = newDirectory();
-    iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    w = new IndexWriter(dir2, iwc);
+    IndexWriter w2 = new IndexWriter(dir2, new IndexWriterConfig(new MockAnalyzer(random())));
     doc = new Document();
     doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
-    w.addDocument(doc);
-    try {
-      w.addIndexes(new Directory[] {dir});
-    } catch (IllegalArgumentException iae) {
-      assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", iae.getMessage());
-    }
-    IOUtils.close(w, dir, dir2);
+    w2.addDocument(doc);
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      w2.addIndexes(new Directory[] {dir});
+    });
+    assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
+
+    IOUtils.close(w2, dir, dir2);
   }
 
   public void testIllegalDimChangeViaAddIndexesCodecReader() throws Exception {
@@ -164,18 +161,17 @@ public class TestPointValues extends LuceneTestCase {
     w.close();
 
     Directory dir2 = newDirectory();
-    iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    w = new IndexWriter(dir2, iwc);
+    IndexWriter w2 = new IndexWriter(dir2, new IndexWriterConfig(new MockAnalyzer(random())));
     doc = new Document();
     doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
-    w.addDocument(doc);
+    w2.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(dir);
-    try {
-      w.addIndexes(new CodecReader[] {getOnlySegmentReader(r)});
-    } catch (IllegalArgumentException iae) {
-      assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", iae.getMessage());
-    }
-    IOUtils.close(r, w, dir, dir2);
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      w2.addIndexes(new CodecReader[] {getOnlySegmentReader(r)});
+    });
+    assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
+
+    IOUtils.close(r, w2, dir, dir2);
   }
 
   public void testIllegalDimChangeViaAddIndexesSlowCodecReader() throws Exception {
@@ -189,17 +185,17 @@ public class TestPointValues extends LuceneTestCase {
 
     Directory dir2 = newDirectory();
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    w = new IndexWriter(dir2, iwc);
+    IndexWriter w2 = new IndexWriter(dir2, iwc);
     doc = new Document();
     doc.add(new BinaryPoint("dim", new byte[4], new byte[4]));
-    w.addDocument(doc);
+    w2.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(dir);
-    try {
-      TestUtil.addIndexesSlowly(w, r);
-    } catch (IllegalArgumentException iae) {
-      assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", iae.getMessage());
-    }
-    IOUtils.close(r, w, dir, dir2);
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      TestUtil.addIndexesSlowly(w2, r);
+    });
+    assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
+
+    IOUtils.close(r, w2, dir, dir2);
   }
 
   public void testIllegalNumBytesChangeOneDoc() throws Exception {
@@ -209,12 +205,11 @@ public class TestPointValues extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new BinaryPoint("dim", new byte[4]));
     doc.add(new BinaryPoint("dim", new byte[6]));
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertEquals("cannot change point numBytes from 4 to 6 for field=\"dim\"", iae.getMessage());
-    }
+    });
+    assertEquals("cannot change point numBytes from 4 to 6 for field=\"dim\"", expected.getMessage());
+
     w.close();
     dir.close();
   }
@@ -226,14 +221,14 @@ public class TestPointValues extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
-    doc = new Document();
-    doc.add(new BinaryPoint("dim", new byte[6]));
-    try {
-      w.addDocument(doc);
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertEquals("cannot change point numBytes from 4 to 6 for field=\"dim\"", iae.getMessage());
-    }
+
+    Document doc2 = new Document();
+    doc2.add(new BinaryPoint("dim", new byte[6]));
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      w.addDocument(doc2);
+    });
+    assertEquals("cannot change point numBytes from 4 to 6 for field=\"dim\"", expected.getMessage());
+
     w.close();
     dir.close();
   }
@@ -246,14 +241,14 @@ public class TestPointValues extends LuceneTestCase {
     doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     w.commit();
-    doc = new Document();
-    doc.add(new BinaryPoint("dim", new byte[6]));
-    try {
-      w.addDocument(doc);
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertEquals("cannot change point numBytes from 4 to 6 for field=\"dim\"", iae.getMessage());
-    }
+    
+    Document doc2 = new Document();
+    doc2.add(new BinaryPoint("dim", new byte[6]));
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      w.addDocument(doc2);
+    });
+    assertEquals("cannot change point numBytes from 4 to 6 for field=\"dim\"", expected.getMessage());
+
     w.close();
     dir.close();
   }
@@ -266,17 +261,18 @@ public class TestPointValues extends LuceneTestCase {
     doc.add(new BinaryPoint("dim", new byte[4]));
     w.addDocument(doc);
     w.close();
+    
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    w = new IndexWriter(dir, iwc);
-    doc = new Document();
-    doc.add(new BinaryPoint("dim", new byte[6]));
-    try {
-      w.addDocument(doc);
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertEquals("cannot change point numBytes from 4 to 6 for field=\"dim\"", iae.getMessage());
-    }
-    w.close();
+    IndexWriter w2 = new IndexWriter(dir, iwc);
+    Document doc2 = new Document();
+    doc2.add(new BinaryPoint("dim", new byte[6]));
+    
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      w2.addDocument(doc2);
+    });
+    assertEquals("cannot change point numBytes from 4 to 6 for field=\"dim\"", expected.getMessage());
+
+    w2.close();
     dir.close();
   }
 
@@ -291,16 +287,16 @@ public class TestPointValues extends LuceneTestCase {
 
     Directory dir2 = newDirectory();
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    w = new IndexWriter(dir2, iwc);
+    IndexWriter w2 = new IndexWriter(dir2, iwc);
     doc = new Document();
     doc.add(new BinaryPoint("dim", new byte[6]));
-    w.addDocument(doc);
-    try {
-      w.addIndexes(new Directory[] {dir});
-    } catch (IllegalArgumentException iae) {
-      assertEquals("cannot change point numBytes from 6 to 4 for field=\"dim\"", iae.getMessage());
-    }
-    IOUtils.close(w, dir, dir2);
+    w2.addDocument(doc);
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      w2.addIndexes(new Directory[] {dir});
+    });
+    assertEquals("cannot change point numBytes from 6 to 4 for field=\"dim\"", expected.getMessage());
+
+    IOUtils.close(w2, dir, dir2);
   }
 
   public void testIllegalNumBytesChangeViaAddIndexesCodecReader() throws Exception {
@@ -314,17 +310,17 @@ public class TestPointValues extends LuceneTestCase {
 
     Directory dir2 = newDirectory();
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    w = new IndexWriter(dir2, iwc);
+    IndexWriter w2 = new IndexWriter(dir2, iwc);
     doc = new Document();
     doc.add(new BinaryPoint("dim", new byte[6]));
-    w.addDocument(doc);
+    w2.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(dir);
-    try {
-      w.addIndexes(new CodecReader[] {getOnlySegmentReader(r)});
-    } catch (IllegalArgumentException iae) {
-      assertEquals("cannot change point numBytes from 6 to 4 for field=\"dim\"", iae.getMessage());
-    }
-    IOUtils.close(r, w, dir, dir2);
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      w2.addIndexes(new CodecReader[] {getOnlySegmentReader(r)});
+    });
+    assertEquals("cannot change point numBytes from 6 to 4 for field=\"dim\"", expected.getMessage());
+
+    IOUtils.close(r, w2, dir, dir2);
   }
 
   public void testIllegalNumBytesChangeViaAddIndexesSlowCodecReader() throws Exception {
@@ -338,17 +334,17 @@ public class TestPointValues extends LuceneTestCase {
 
     Directory dir2 = newDirectory();
     iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    w = new IndexWriter(dir2, iwc);
+    IndexWriter w2 = new IndexWriter(dir2, iwc);
     doc = new Document();
     doc.add(new BinaryPoint("dim", new byte[6]));
-    w.addDocument(doc);
+    w2.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(dir);
-    try {
-      TestUtil.addIndexesSlowly(w, r);
-    } catch (IllegalArgumentException iae) {
-      assertEquals("cannot change point numBytes from 6 to 4 for field=\"dim\"", iae.getMessage());
-    }
-    IOUtils.close(r, w, dir, dir2);
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      TestUtil.addIndexesSlowly(w2, r);
+    });
+    assertEquals("cannot change point numBytes from 6 to 4 for field=\"dim\"", expected.getMessage());
+
+    IOUtils.close(r, w2, dir, dir2);
   }
 
   public void testIllegalTooManyBytes() throws Exception {
@@ -357,15 +353,13 @@ public class TestPointValues extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new BinaryPoint("dim", new byte[PointValues.MAX_NUM_BYTES+1]));
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-    doc = new Document();
-    doc.add(new IntPoint("dim", 17));
-    w.addDocument(doc);
+    });
+
+    Document doc2 = new Document();
+    doc2.add(new IntPoint("dim", 17));
+    w.addDocument(doc2);
     w.close();
     dir.close();
   }
@@ -380,15 +374,13 @@ public class TestPointValues extends LuceneTestCase {
       values[i] = new byte[4];
     }
     doc.add(new BinaryPoint("dim", values));
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-    doc = new Document();
-    doc.add(new IntPoint("dim", 17));
-    w.addDocument(doc);
+    });
+
+    Document doc2 = new Document();
+    doc2.add(new IntPoint("dim", 17));
+    w.addDocument(doc2);
     w.close();
     dir.close();
   }
@@ -441,69 +433,49 @@ public class TestPointValues extends LuceneTestCase {
 
   public void testInvalidIntPointUsage() throws Exception {
     IntPoint field = new IntPoint("field", 17, 42);
-    try {
-      field.setIntValue(14);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // good
-    }
 
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
+      field.setIntValue(14);
+    });
+    
+    expectThrows(IllegalStateException.class, () -> {
       field.numericValue();
-      fail("did not hit exception");
-    } catch (IllegalStateException ise) {
-      // good
-    }
+    });
   }
 
   public void testInvalidLongPointUsage() throws Exception {
     LongPoint field = new LongPoint("field", 17, 42);
-    try {
-      field.setLongValue(14);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // good
-    }
 
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
+      field.setLongValue(14);
+    });
+
+    expectThrows(IllegalStateException.class, () -> {
       field.numericValue();
-      fail("did not hit exception");
-    } catch (IllegalStateException ise) {
-      // good
-    }
+    });
   }
 
   public void testInvalidFloatPointUsage() throws Exception {
     FloatPoint field = new FloatPoint("field", 17, 42);
-    try {
-      field.setFloatValue(14);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // good
-    }
 
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
+      field.setFloatValue(14);
+    });
+
+    expectThrows(IllegalStateException.class, () -> {
       field.numericValue();
-      fail("did not hit exception");
-    } catch (IllegalStateException ise) {
-      // good
-    }
+    });
   }
 
   public void testInvalidDoublePointUsage() throws Exception {
     DoublePoint field = new DoublePoint("field", 17, 42);
-    try {
-      field.setDoubleValue(14);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // good
-    }
 
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
+      field.setDoubleValue(14);
+    });
+
+    expectThrows(IllegalStateException.class, () -> {
       field.numericValue();
-      fail("did not hit exception");
-    } catch (IllegalStateException ise) {
-      // good
-    }
+    });
   }
 }

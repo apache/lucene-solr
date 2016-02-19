@@ -61,25 +61,19 @@ public class TestArabicFilters extends BaseTokenStreamFactoryTestCase {
   
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {      
       tokenFilterFactory("ArabicNormalization", "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
     
-    try {
+    expected = expectThrows(IllegalArgumentException.class, () -> {      
       tokenFilterFactory("Arabicstem", "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
     
-    try {
+    expected = expectThrows(IllegalArgumentException.class, () -> {      
       charFilterFactory("Persian", "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

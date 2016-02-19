@@ -75,13 +75,9 @@ public class TrecContentSourceTest extends LuceneTestCase {
   }
   
   private void assertNoMoreDataException(StringableTrecSource stdm) throws Exception {
-    boolean thrown = false;
-    try {
+    expectThrows(NoMoreDataException.class, () -> {
       stdm.getNextDocData(null);
-    } catch (NoMoreDataException e) {
-      thrown = true;
-    }
-    assertTrue("Expecting NoMoreDataException", thrown);
+    });
   }
   
   public void testOneDocument() throws Exception {

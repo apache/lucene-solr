@@ -97,13 +97,11 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
 
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexCommit(r.getIndexCommit());
-    try {
+
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new IndexWriter(dir, iwc);
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertEquals("cannot use IndexWriterConfig.setIndexCommit() when index has no commit", iae.getMessage());
-    }
+    });
+    assertEquals("cannot use IndexWriterConfig.setIndexCommit() when index has no commit", expected.getMessage());
       
     r.close();
     dir.close();
@@ -123,13 +121,12 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
 
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexCommit(r.getIndexCommit());
-    try {
+
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new IndexWriter(dir, iwc);
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertTrue(iae.getMessage().contains("the provided reader is stale: its prior commit file"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("the provided reader is stale: its prior commit file"));
+
     r.close();
     dir.close();
   }
@@ -151,13 +148,11 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
 
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexCommit(r.getIndexCommit());
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new IndexWriter(dir, iwc);
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertTrue(iae.getMessage().contains("the provided reader is stale: its prior commit file"));      
-    }
+    });
+    assertTrue(expected.getMessage().contains("the provided reader is stale: its prior commit file"));      
+
     r.close();
     dir.close();
   }
@@ -351,13 +346,11 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
     iwc.setIndexCommit(r.getIndexCommit());
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new IndexWriter(dir, iwc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertEquals("cannot use IndexWriterConfig.setIndexCommit() with OpenMode.CREATE", iae.getMessage());
-    }
+    });
+    assertEquals("cannot use IndexWriterConfig.setIndexCommit() with OpenMode.CREATE", expected.getMessage());
+
     IOUtils.close(r, dir);
   }
 
@@ -375,12 +368,10 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
 
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexCommit(commit);
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {
       new IndexWriter(dir, iwc);
-      fail("did not hit exception");
-    } catch (AlreadyClosedException ace) {
-      // expected
-    }
+    });
+
     IOUtils.close(r, dir);
   }
 

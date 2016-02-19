@@ -648,11 +648,10 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new Field("foo", "bar bar", ft));
     w.addDocument(doc);
-    try {
+    IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
       w.commit();
-    } catch (IllegalStateException ise) {
-      assertEquals("ranges can only be indexed with IndexOptions.DOCS (field: foo)", ise.getMessage());
-    }
+    });
+    assertEquals("ranges can only be indexed with IndexOptions.DOCS (field: foo)", expected.getMessage());
     w.close();
     dir.close();
   }
@@ -668,11 +667,11 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new Field("foo", "bar bar", ft));
     w.addDocument(doc);
-    try {
+    IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
       w.commit();
-    } catch (IllegalStateException ise) {
-      assertEquals("ranges can only be indexed with IndexOptions.DOCS (field: foo)", ise.getMessage());
-    }
+    });
+    assertEquals("ranges can only be indexed with IndexOptions.DOCS (field: foo)", expected.getMessage());
+
     w.close();
     dir.close();
   }
@@ -688,11 +687,11 @@ public class TestAutoPrefixTerms extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new Field("foo", "bar bar", ft));
     w.addDocument(doc);
-    try {
+    IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
       w.commit();
-    } catch (IllegalStateException ise) {
-      assertEquals("ranges can only be indexed with IndexOptions.DOCS (field: foo)", ise.getMessage());
-    }
+    });
+    assertEquals("ranges can only be indexed with IndexOptions.DOCS (field: foo)", expected.getMessage());
+
     w.close();
     dir.close();
   }

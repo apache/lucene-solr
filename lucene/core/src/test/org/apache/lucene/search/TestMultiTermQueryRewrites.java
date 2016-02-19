@@ -215,12 +215,12 @@ public class TestMultiTermQueryRewrites extends LuceneTestCase {
     final MultiTermQuery mtq = TermRangeQuery.newStringRange("data", "2", "7", true, true);
     mtq.setRewriteMethod(method);
     try {
-      multiSearcherDupls.rewrite(mtq);
-      fail("Should throw BooleanQuery.TooManyClauses");
-    } catch (BooleanQuery.TooManyClauses e) {
+      BooleanQuery.TooManyClauses expected = expectThrows(BooleanQuery.TooManyClauses.class, () -> {
+        multiSearcherDupls.rewrite(mtq);
+      });
       //  Maybe remove this assert in later versions, when internal API changes:
       assertEquals("Should throw BooleanQuery.TooManyClauses with a stacktrace containing checkMaxClauseCount()",
-        "checkMaxClauseCount", e.getStackTrace()[0].getMethodName());
+        "checkMaxClauseCount", expected.getStackTrace()[0].getMethodName());
     } finally {
       BooleanQuery.setMaxClauseCount(savedMaxClauseCount);
     }

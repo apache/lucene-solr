@@ -134,13 +134,11 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     DirectoryTaxonomyWriter dtw = new DirectoryTaxonomyWriter(dir);
     dtw.addCategory(new FacetLabel("a"));
     dtw.rollback();
-    try {
+    // should not have succeeded to add a category following rollback.
+    expectThrows(AlreadyClosedException.class, () -> {
       dtw.addCategory(new FacetLabel("a"));
-      fail("should not have succeeded to add a category following rollback.");
-    } catch (AlreadyClosedException e) {
-      // expected
-    }
-    
+    });
+
     dir.close();
   }
   
@@ -162,12 +160,11 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     Directory dir = newDirectory();
     DirectoryTaxonomyWriter dtw = new DirectoryTaxonomyWriter(dir);
     dtw.close();
-    try {
+    // should not succeed to add a category following close.
+    expectThrows(AlreadyClosedException.class, () -> {
       dtw.addCategory(new FacetLabel("a"));
-      fail("should not have succeeded to add a category following close.");
-    } catch (AlreadyClosedException e) {
-      // expected
-    }
+    });
+
     dir.close();
   }
 

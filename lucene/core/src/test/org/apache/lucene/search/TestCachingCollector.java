@@ -99,12 +99,9 @@ public class TestCachingCollector extends LuceneTestCase {
     
     assertFalse("CachingCollector should not be cached due to low memory limit", cc.isCached());
     
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       cc.replay(new NoOpCollector());
-      fail("replay should fail if CachingCollector is not cached");
-    } catch (IllegalStateException e) {
-      // expected
-    }
+    });
   }
   
   public void testCachedArraysAllocation() throws Exception {

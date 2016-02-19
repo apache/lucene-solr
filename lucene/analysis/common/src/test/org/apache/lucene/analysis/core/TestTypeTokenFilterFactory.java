@@ -59,23 +59,19 @@ public class TestTypeTokenFilterFactory extends BaseTokenStreamFactoryTestCase {
   }
 
   public void testMissingTypesParameter() throws Exception {
-    try {
+    // not supplying 'types' parameter should cause an IllegalArgumentException
+    expectThrows(IllegalArgumentException.class, () -> {
       tokenFilterFactory("Type");
-      fail("not supplying 'types' parameter should cause an IllegalArgumentException");
-    } catch (IllegalArgumentException e) {
-      // everything ok
-    }
+    });
   }
   
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenFilterFactory("Type", 
           "types", "stoptypes-1.txt", 
           "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

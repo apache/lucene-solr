@@ -179,12 +179,10 @@ public class CommonTermsQueryTest extends LuceneTestCase {
     Random random = random();
     CommonTermsQuery query = new CommonTermsQuery(randomOccur(random),
         randomOccur(random), random().nextFloat());
-    try {
+    // null values are not supported
+    expectThrows(IllegalArgumentException.class, () -> {
       query.add(null);
-      fail("null values are not supported");
-    } catch (IllegalArgumentException ex) {
-      
-    }
+    });
   }
   
   public void testMinShouldMatch() throws IOException {
@@ -324,23 +322,19 @@ public class CommonTermsQueryTest extends LuceneTestCase {
     IOUtils.close(r, w, dir, analyzer);
   }
   
+  /** MUST_NOT is not supported */
   public void testIllegalOccur() {
     Random random = random();
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       new CommonTermsQuery(Occur.MUST_NOT, randomOccur(random), random()
           .nextFloat());
-      fail("MUST_NOT is not supproted");
-    } catch (IllegalArgumentException ex) {
+    });
       
-    }
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       new CommonTermsQuery(randomOccur(random), Occur.MUST_NOT, random()
           .nextFloat());
-      fail("MUST_NOT is not supproted");
-    } catch (IllegalArgumentException ex) {
-      
-    }
+    });
   }
 
   @Test

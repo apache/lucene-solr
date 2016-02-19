@@ -59,12 +59,9 @@ public class MultiCollectorTest extends LuceneTestCase {
   @Test
   public void testNullCollectors() throws Exception {
     // Tests that the collector rejects all null collectors.
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       MultiCollector.wrap(null, null);
-      fail("only null collectors should not be supported");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+    });
 
     // Tests that the collector handles some null collectors well. If it
     // doesn't, an NPE would be thrown.
@@ -141,12 +138,9 @@ public class MultiCollectorTest extends LuceneTestCase {
     
     final LeafReaderContext ctx = reader.leaves().get(0);
 
-    try {
+    expectThrows(AssertionError.class, () -> {
       collector(false, ScoreCachingWrappingScorer.class).getLeafCollector(ctx).setScorer(new FakeScorer());
-      fail("The collector was configured to expect a ScoreCachingWrappingScorer and did not fail when pass in a FakeScorer");
-    } catch (AssertionError e) {
-      // expected
-    }
+    });
 
     // no collector needs scores => no caching
     Collector c1 = collector(false, FakeScorer.class);

@@ -274,12 +274,9 @@ public class TestSearcherTaxonomyManager extends FacetTestCase {
     tw.replaceTaxonomy(taxoDir2);
     taxoDir2.close();
 
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       mgr.maybeRefresh();
-      fail("should have hit exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
 
     w.close();
     IOUtils.close(mgr, tw, taxoDir, dir);

@@ -709,12 +709,11 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Query q = new TermQuery(new Term("indexname", "test"));
     IndexSearcher searcher = newSearcher(r);
     assertEquals(100, searcher.search(q, 10).totalHits);
-    try {
+
+    expectThrows(AlreadyClosedException.class, () -> {
       DirectoryReader.openIfChanged(r);
-      fail("failed to hit AlreadyClosedException");
-    } catch (AlreadyClosedException ace) {
-      // expected
-    }
+    });
+
     r.close();
     dir1.close();
   }
@@ -1112,14 +1111,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
     // other NRT reader, since it is already marked closed!
     for (int i = 0; i < 2; i++) {
       shouldFail.set(true);
-      try {
+      expectThrows(FakeIOException.class, () -> {
         writer.getReader().close();
-      } catch (FakeIOException e) {
-        // expected
-        if (VERBOSE) {
-          System.out.println("hit expected fake IOE");
-        }
-      }
+      });
     }
     
     writer.close();

@@ -45,28 +45,24 @@ public class TestTruncateTokenFilterFactory extends BaseTokenStreamFactoryTestCa
    * Test that bogus arguments result in exception
    */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenFilterFactory("Truncate",
           TruncateTokenFilterFactory.PREFIX_LENGTH_KEY, "5",
           "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameter(s):"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameter(s):"));
   }
 
   /**
    * Test that negative prefix length result in exception
    */
   public void testNonPositivePrefixLengthArgument() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenFilterFactory("Truncate",
           TruncateTokenFilterFactory.PREFIX_LENGTH_KEY, "-5"
       );
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains(TruncateTokenFilterFactory.PREFIX_LENGTH_KEY + " parameter must be a positive number: -5"));
-    }
+    });
+    assertTrue(expected.getMessage().contains(TruncateTokenFilterFactory.PREFIX_LENGTH_KEY + " parameter must be a positive number: -5"));
   }
 }
 

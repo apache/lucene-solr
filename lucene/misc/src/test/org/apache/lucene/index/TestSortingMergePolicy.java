@@ -192,12 +192,10 @@ public class TestSortingMergePolicy extends BaseMergePolicyTestCase {
   }
   
   public void testBadSort() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new SortingMergePolicy(newMergePolicy(), Sort.RELEVANCE);
-      fail("Didn't get expected exception");
-    } catch (IllegalArgumentException e) {
-      assertEquals("Cannot sort an index with a Sort that refers to the relevance score", e.getMessage());
-    }
+    });
+    assertEquals("Cannot sort an index with a Sort that refers to the relevance score", expected.getMessage());
   }
 
 }

@@ -42,19 +42,13 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
   
   public void testBogusLookupTokenizer() {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       TokenizerFactory.forName("sdfsdfsdfdsfsdfsdf", new HashMap<String,String>());
-      fail();
-    } catch (IllegalArgumentException expected) {
-      //
-    }
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       TokenizerFactory.forName("!(**#$U*#$*", new HashMap<String,String>());
-      fail();
-    } catch (IllegalArgumentException expected) {
-      //
-    }
+    });
   }
 
   public void testLookupTokenizerClass() {
@@ -64,19 +58,13 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
   
   public void testBogusLookupTokenizerClass() {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       TokenizerFactory.lookupClass("sdfsdfsdfdsfsdfsdf");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      //
-    }
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       TokenizerFactory.lookupClass("!(**#$U*#$*");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      //
-    }
+    });
   }
   
   public void testAvailableTokenizers() {
@@ -94,19 +82,13 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
   
   public void testBogusLookupTokenFilter() {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       TokenFilterFactory.forName("sdfsdfsdfdsfsdfsdf", new HashMap<String,String>());
-      fail();
-    } catch (IllegalArgumentException expected) {
-      //
-    }
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       TokenFilterFactory.forName("!(**#$U*#$*", new HashMap<String,String>());
-      fail();
-    } catch (IllegalArgumentException expected) {
-      //
-    }
+    });
   }
 
   public void testLookupTokenFilterClass() {
@@ -120,19 +102,13 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
   
   public void testBogusLookupTokenFilterClass() {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       TokenFilterFactory.lookupClass("sdfsdfsdfdsfsdfsdf");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      //
-    }
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       TokenFilterFactory.lookupClass("!(**#$U*#$*");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      //
-    }
+    });
   }
   
   public void testAvailableTokenFilters() {
@@ -147,19 +123,13 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
   
   public void testBogusLookupCharFilter() {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       CharFilterFactory.forName("sdfsdfsdfdsfsdfsdf", new HashMap<String,String>());
-      fail();
-    } catch (IllegalArgumentException expected) {
-      //
-    }
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       CharFilterFactory.forName("!(**#$U*#$*", new HashMap<String,String>());
-      fail();
-    } catch (IllegalArgumentException expected) {
-      //
-    }
+    });
   }
 
   public void testLookupCharFilterClass() {
@@ -169,19 +139,13 @@ public class TestAnalysisSPILoader extends LuceneTestCase {
   }
   
   public void testBogusLookupCharFilterClass() {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       CharFilterFactory.lookupClass("sdfsdfsdfdsfsdfsdf");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      //
-    }
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       CharFilterFactory.lookupClass("!(**#$U*#$*");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      //
-    }
+    });
   }
   
   public void testAvailableCharFilters() {

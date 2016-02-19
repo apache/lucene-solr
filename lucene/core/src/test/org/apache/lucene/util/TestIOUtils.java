@@ -110,12 +110,9 @@ public class TestIOUtils extends LuceneTestCase {
     
     // exception: file doesn't exist
     Path fake = dir.resolve("nonexistent");
-    try {
+    expectThrows(IOException.class, () -> {
       IOUtils.spins(fake);
-      fail();
-    } catch (IOException expected) {
-      // ok
-    }
+    });
   }
   
   // fake up a filestore to test some underlying methods

@@ -47,19 +47,15 @@ public class SpatialArgsParserTest extends LuceneTestCase {
     out = parser.parse(arg, ctx);
     assertEquals(SpatialOperation.IsDisjointTo, out.getOperation());
 
-    try {
+    // spatial operations need args
+    expectThrows(Exception.class, () -> {
       parser.parse(SpatialOperation.IsDisjointTo + "[ ]", ctx);
-      fail("spatial operations need args");
-    }
-    catch (Exception ex) {//expected
-    }
+    });
 
-    try {
+    // unknown operation
+    expectThrows(Exception.class, () -> {
       parser.parse("XXXX(Envelope(-10, 10, 20, -20))", ctx);
-      fail("unknown operation!");
-    }
-    catch (Exception ex) {//expected
-    }
+    });
 
     assertAlias(SpatialOperation.IsWithin, "CoveredBy");
     assertAlias(SpatialOperation.IsWithin, "COVEREDBY");

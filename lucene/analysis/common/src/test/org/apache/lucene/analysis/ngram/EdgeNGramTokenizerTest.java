@@ -42,33 +42,21 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
   }
 
   public void testInvalidInput() throws Exception {
-    boolean gotException = false;
-    try {        
+    expectThrows(IllegalArgumentException.class, () -> {     
       new EdgeNGramTokenizer(0, 0).setReader(input);
-    } catch (IllegalArgumentException e) {
-      gotException = true;
-    }
-    assertTrue(gotException);
+    });
   }
 
   public void testInvalidInput2() throws Exception {
-    boolean gotException = false;
-    try {        
+    expectThrows(IllegalArgumentException.class, () -> {   
       new EdgeNGramTokenizer(2, 1).setReader(input);
-    } catch (IllegalArgumentException e) {
-      gotException = true;
-    }
-    assertTrue(gotException);
+    });
   }
 
   public void testInvalidInput3() throws Exception {
-    boolean gotException = false;
-    try {        
+    expectThrows(IllegalArgumentException.class, () -> {      
       new EdgeNGramTokenizer(-1, 2).setReader(input);
-    } catch (IllegalArgumentException e) {
-      gotException = true;
-    }
-    assertTrue(gotException);
+    });
   }
 
   public void testFrontUnigram() throws Exception {

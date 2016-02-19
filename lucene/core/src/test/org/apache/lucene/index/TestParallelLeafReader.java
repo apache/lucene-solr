@@ -126,12 +126,10 @@ public class TestParallelLeafReader extends LuceneTestCase {
 
     ir1.close();
     
-    try {
+    // should already be closed because inner reader is closed!
+    expectThrows(AlreadyClosedException.class, () -> {
       pr.document(0);
-      fail("ParallelLeafReader should be already closed because inner reader was closed!");
-    } catch (AlreadyClosedException e) {
-      // pass
-    }
+    });
     
     // noop:
     pr.close();
@@ -154,21 +152,17 @@ public class TestParallelLeafReader extends LuceneTestCase {
     LeafReader ir1 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1));
     LeafReader ir2 = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir2));
 
-    try {
+    // indexes don't have the same number of documents
+    expectThrows(IllegalArgumentException.class, () -> {
       new ParallelLeafReader(ir1, ir2);
-      fail("didn't get exptected exception: indexes don't have same number of documents");
-    } catch (IllegalArgumentException e) {
-      // expected exception
-    }
+    });
 
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       new ParallelLeafReader(random().nextBoolean(),
                                new LeafReader[] {ir1, ir2},
                                new LeafReader[] {ir1, ir2});
-      fail("didn't get expected exception: indexes don't have same number of documents");
-    } catch (IllegalArgumentException e) {
-      // expected exception
-    }
+    });
+
     // check RefCounts
     assertEquals(1, ir1.getRefCount());
     assertEquals(1, ir2.getRefCount());
@@ -230,14 +224,11 @@ public class TestParallelLeafReader extends LuceneTestCase {
     pr.close();
     
     // no main readers
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       new ParallelLeafReader(true,
         new LeafReader[0],
         new LeafReader[] {ir1});
-      fail("didn't get expected exception: need a non-empty main-reader array");
-    } catch (IllegalArgumentException iae) {
-      // pass
-    }
+    });
     
     dir1.close();
     dir2.close();

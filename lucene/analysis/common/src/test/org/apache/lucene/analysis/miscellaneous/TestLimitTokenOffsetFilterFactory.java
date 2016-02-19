@@ -43,26 +43,22 @@ public class TestLimitTokenOffsetFilterFactory extends BaseTokenStreamFactoryTes
 
   public void testRequired() throws Exception {
     // param is required
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenFilterFactory("LimitTokenOffset");
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertTrue("exception doesn't mention param: " + e.getMessage(),
-          0 < e.getMessage().indexOf(LimitTokenOffsetFilterFactory.MAX_START_OFFSET));
-    }
+    });
+    assertTrue("exception doesn't mention param: " + expected.getMessage(),
+          0 < expected.getMessage().indexOf(LimitTokenOffsetFilterFactory.MAX_START_OFFSET));
   }
 
   /**
    * Test that bogus arguments result in exception
    */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenFilterFactory("LimitTokenOffset",
           LimitTokenOffsetFilterFactory.MAX_START_OFFSET, "3",
           "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

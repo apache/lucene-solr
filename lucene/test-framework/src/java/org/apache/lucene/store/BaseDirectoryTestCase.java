@@ -365,32 +365,26 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     output.close();
     
     IndexInput input = dir.openInput("stringset", newIOContext(random()));
-    Set<String> set = input.readSetOfStrings();
-    assertEquals(asSet("test1", "test2"), set);
-    try {
-      set.add("bogus");
-      fail("set should be immutable");
-    } catch (UnsupportedOperationException expected) {
-      // ok
-    }
+    Set<String> set1 = input.readSetOfStrings();
+    assertEquals(asSet("test1", "test2"), set1);
+    // set should be immutable
+    expectThrows(UnsupportedOperationException.class, () -> {
+      set1.add("bogus");
+    });
     
-    set = input.readSetOfStrings();
-    assertEquals(Collections.emptySet(), set);
-    try {
-      set.add("bogus");
-      fail("set should be immutable");
-    } catch (UnsupportedOperationException expected) {
-      // ok
-    }
+    Set<String> set2 = input.readSetOfStrings();
+    assertEquals(Collections.emptySet(), set2);
+    // set should be immutable
+    expectThrows(UnsupportedOperationException.class, () -> {
+      set2.add("bogus");
+    });
     
-    set = input.readSetOfStrings();
-    assertEquals(Collections.singleton("test3"), set);
-    try {
-      set.add("bogus");
-      fail("set should be immutable");
-    } catch (UnsupportedOperationException expected) {
-      // ok
-    }
+    Set<String> set3 = input.readSetOfStrings();
+    assertEquals(Collections.singleton("test3"), set3);
+    // set should be immutable
+    expectThrows(UnsupportedOperationException.class, () -> {
+      set3.add("bogus");
+    });
     
     assertEquals(input.length(), input.getFilePointer());
     input.close();
@@ -410,32 +404,26 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     output.close();
     
     IndexInput input = dir.openInput("stringmap", newIOContext(random()));
-    Map<String,String> map = input.readMapOfStrings();
-    assertEquals(m, map);
-    try {
-      map.put("bogus1", "bogus2");
-      fail("map should be immutable");
-    } catch (UnsupportedOperationException expected) {
-      // ok
-    }
+    Map<String,String> map1 = input.readMapOfStrings();
+    assertEquals(m, map1);
+    // map should be immutable
+    expectThrows(UnsupportedOperationException.class, () -> {
+      map1.put("bogus1", "bogus2");
+    });
     
-    map = input.readMapOfStrings();
-    assertEquals(Collections.emptyMap(), map);
-    try {
-      map.put("bogus1", "bogus2");
-      fail("map should be immutable");
-    } catch (UnsupportedOperationException expected) {
-      // ok
-    }
+    Map<String,String> map2 = input.readMapOfStrings();
+    assertEquals(Collections.emptyMap(), map2);
+    // map should be immutable
+    expectThrows(UnsupportedOperationException.class, () -> {
+      map2.put("bogus1", "bogus2");
+    });
     
-    map = input.readMapOfStrings();
-    assertEquals(Collections.singletonMap("key", "value"), map);
-    try {
-      map.put("bogus1", "bogus2");
-      fail("map should be immutable");
-    } catch (UnsupportedOperationException expected) {
-      // ok
-    }
+    Map<String,String> map3 = input.readMapOfStrings();
+    assertEquals(Collections.singletonMap("key", "value"), map3);
+    // map should be immutable
+    expectThrows(UnsupportedOperationException.class, () -> {
+      map3.put("bogus1", "bogus2");
+    });
     
     assertEquals(input.length(), input.getFilePointer());
     input.close();
@@ -468,12 +456,9 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
   public void testDetectClose() throws Throwable {
     Directory dir = getDirectory(createTempDir("testDetectClose"));
     dir.close();
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {      
       dir.createOutput("test", newIOContext(random()));
-      fail("did not hit expected exception");
-    } catch (AlreadyClosedException ace) {
-      // expected
-    }
+    });
   }
   
   public void testThreadSafety() throws Exception {
@@ -622,13 +607,11 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     o.writeBytes(b, 0, len);
     o.close();
     IndexInput i = dir.openInput("out", newIOContext(random()));
-    try {
+    expectThrows(EOFException.class, () -> {      
       i.seek(len + random().nextInt(2048));
       i.readByte();
-      fail("Did not get EOFException");
-    } catch (EOFException eof) {
-      // pass
-    }
+    });
+
     i.close();
     dir.close();
   }
@@ -641,25 +624,19 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     o.writeBytes(b, 0, len);
     o.close();
     IndexInput i = dir.openInput("out", newIOContext(random()));
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {      
       i.slice("slice1", 0, len + 1);
-      fail("Did not get IllegalArgumentException");
-    } catch (IllegalArgumentException iae) {
-      // pass
-    }
-    try {
+    });
+
+    expectThrows(IllegalArgumentException.class, () -> {      
       i.slice("slice2", -1, len);
-      fail("Did not get IllegalArgumentException");
-    } catch (IllegalArgumentException iae) {
-      // pass
-    }
+    });
+
     IndexInput slice = i.slice("slice3", 4, len / 2);
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {      
       slice.slice("slice3sub", 1, len / 2);
-      fail("Did not get IllegalArgumentException");
-    } catch (IllegalArgumentException iae) {
-      // pass
-    }
+    });
+
     i.close();
     dir.close();    
   }
@@ -1215,12 +1192,9 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       try (IndexInput in = dir.openInput("a", IOContext.DEFAULT)) {
         in.seek(100);
         assertEquals(100, in.getFilePointer());
-        try {
+        expectThrows(EOFException.class, () -> {      
           in.seek(1025);
-          fail("didn't hit expected exception");
-        } catch (EOFException eofe) {
-          // expected
-        }
+        });
       }
     }
   }
@@ -1232,17 +1206,18 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       FSDirectory fsDir = (FSDirectory) dir;
 
       // Keep trying until virus checker refuses to delete:
-      String fileName;
+      final String fileName;
       while (true) {
-        fileName = TestUtil.randomSimpleString(random());
-        if (fileName.length() == 0) {
+        String candidate = TestUtil.randomSimpleString(random());
+        if (candidate.length() == 0) {
           continue;
         }
-        try (IndexOutput out = dir.createOutput(fileName, IOContext.DEFAULT)) {
+        try (IndexOutput out = dir.createOutput(candidate, IOContext.DEFAULT)) {
         }
-        fsDir.deleteFile(fileName);
+        fsDir.deleteFile(candidate);
         if (fsDir.checkPendingDeletions()) {
           // good: virus checker struck and prevented deletion of fileName
+          fileName = candidate;
           break;
         }
       }
@@ -1251,35 +1226,23 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       assertFalse(Arrays.asList(fsDir.listAll()).contains(fileName));
 
       // Make sure fileLength claims it's deleted:
-      try {
+      expectThrows(NoSuchFileException.class, () -> {      
         fsDir.fileLength(fileName);
-        fail("did not hit exception");
-      } catch (NoSuchFileException nsfe) {
-        // expected
-      }
+      });
 
       // Make sure rename fails:
-      try {
+      expectThrows(NoSuchFileException.class, () -> {      
         fsDir.renameFile(fileName, "file2");
-        fail("did not hit exception");
-      } catch (NoSuchFileException nsfe) {
-        // expected
-      }
+      });
 
       // Make sure delete fails:
-      try {
+      expectThrows(NoSuchFileException.class, () -> {      
         fsDir.deleteFile(fileName);
-        fail("did not hit exception");
-      } catch (NoSuchFileException nsfe) {
-        // expected
-      }
+      });
 
-      try {
+      expectThrows(NoSuchFileException.class, () -> {      
         fsDir.openInput(fileName, IOContext.DEFAULT);
-        fail("did not hit exception");
-      } catch (NoSuchFileException nsfe) {
-        // expected
-      }
+      });
 
       if (random().nextBoolean()) {
         try (IndexOutput out = fsDir.createOutput(fileName + "z", IOContext.DEFAULT)) {

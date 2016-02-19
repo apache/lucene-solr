@@ -86,12 +86,9 @@ public class TestCharArrayIterator extends LuceneTestCase {
   public void testSetIndex() {
     CharArrayIterator ci = new CharArrayIterator();
     ci.setText("test".toCharArray(), 0, "test".length());
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       ci.setIndex(5);
-      fail();
-    } catch (Exception e) {
-      assertTrue(e instanceof IllegalArgumentException);
-    }
+    });
   }
   
   public void testClone() {

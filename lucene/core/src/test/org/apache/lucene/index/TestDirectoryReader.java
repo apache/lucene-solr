@@ -718,12 +718,9 @@ public class TestDirectoryReader extends LuceneTestCase {
   public void testNoDir() throws Throwable {
     Path tempDir = createTempDir("doesnotexist");
     Directory dir = newFSDirectory(tempDir);
-    try {
+    expectThrows(IndexNotFoundException.class, () -> {
       DirectoryReader.open(dir);
-      fail("did not hit expected exception");
-    } catch (IndexNotFoundException nsde) {
-      // expected
-    }
+    });
     dir.close();
   }
   
@@ -955,12 +952,9 @@ public class TestDirectoryReader extends LuceneTestCase {
     DirectoryReader r = writer.getReader();
     writer.close();
     r.document(0);
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       r.document(1);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    });
     r.close();
     dir.close();
   }

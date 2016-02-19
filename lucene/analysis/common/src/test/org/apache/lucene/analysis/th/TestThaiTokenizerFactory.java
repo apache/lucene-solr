@@ -40,11 +40,9 @@ public class TestThaiTokenizerFactory extends BaseTokenStreamFactoryTestCase {
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
     assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiTokenizer.DBBI_AVAILABLE);
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenizerFactory("Thai", "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

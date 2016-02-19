@@ -1458,12 +1458,10 @@ public class TestBlockJoin extends LuceneTestCase {
     ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(new Sort(new SortField("parentID", SortField.Type.STRING)),
                                                                   10, true, true);
 
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       newSearcher(r).search(parentQuery.build(), c);
-      fail("should have hit exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
+
 
     r.close();
     d.close();

@@ -40,11 +40,9 @@ public class TestGreekLowerCaseFilterFactory extends BaseTokenStreamFactoryTestC
   
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenFilterFactory("GreekLowerCase", "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

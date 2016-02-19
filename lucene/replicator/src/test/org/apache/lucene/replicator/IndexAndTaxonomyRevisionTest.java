@@ -56,15 +56,13 @@ public class IndexAndTaxonomyRevisionTest extends ReplicatorTestCase {
     
     Directory taxoDir = newDirectory();
     SnapshotDirectoryTaxonomyWriter taxoWriter = new SnapshotDirectoryTaxonomyWriter(taxoDir);
-    try {
-      assertNotNull(new IndexAndTaxonomyRevision(indexWriter, taxoWriter));
-      fail("should have failed when there are no commits to snapshot");
-    } catch (IllegalStateException e) {
-      // expected
-    } finally {
-      indexWriter.close();
-      IOUtils.close(taxoWriter, taxoDir, indexDir);
-    }
+    // should fail when there are no commits to snapshot
+    expectThrows(IllegalStateException.class, () -> {
+      new IndexAndTaxonomyRevision(indexWriter, taxoWriter);
+    });
+
+    indexWriter.close();
+    IOUtils.close(taxoWriter, taxoDir, indexDir);
   }
   
   @Test

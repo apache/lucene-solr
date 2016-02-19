@@ -25,12 +25,9 @@ public class AltPackageTaskTest extends BenchmarkTestCase {
 
   /** Benchmark should fail loading the algorithm when alt is not specified */
   public void testWithoutAlt() throws Exception {
-    try {
+    expectThrows(Exception.class, () -> {
       execBenchmark(altAlg(false));
-      assertFalse("Should have failed to run the algorithm",true);
-    } catch(Exception e) {
-      // expected exception, do nothing
-    }
+    });
   }
 
   /** Benchmark should be able to load the algorithm when alt is specified */

@@ -39,11 +39,9 @@ public class TestFinnishLightStemFilterFactory extends BaseTokenStreamFactoryTes
   
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenFilterFactory("FinnishLightStem", "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

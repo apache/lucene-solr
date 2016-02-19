@@ -693,33 +693,24 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testNegativeSlop() throws Exception {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       new PhraseQuery(-2, "field", "two", "one");
-      fail("didn't get expected exception");
-    } catch (IllegalArgumentException expected) {
-      // expected exception
-    }
+    });
   }
 
   public void testNegativePosition() throws Exception {
     PhraseQuery.Builder builder = new PhraseQuery.Builder();
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       builder.add(new Term("field", "two"), -42);
-      fail("didn't get expected exception");
-    } catch (IllegalArgumentException expected) {
-      // expected exception
-    }
+    });
   }
 
   public void testBackwardPositions() throws Exception {
     PhraseQuery.Builder builder = new PhraseQuery.Builder();
     builder.add(new Term("field", "one"), 1);
     builder.add(new Term("field", "two"), 5);
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       builder.add(new Term("field", "three"), 4);
-      fail("didn't get expected exception");
-    } catch (IllegalArgumentException expected) {
-      // expected exception
-    }
+    });
   }
 }

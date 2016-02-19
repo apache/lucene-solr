@@ -172,13 +172,10 @@ public class BaseTestCheckIndex extends LuceneTestCase {
     iw.addDocument(new Document());
     iw.commit();
     
-    // keep IW open...
-    try {
+    // keep IW open... should not be able to obtain write lock
+    expectThrows(LockObtainFailedException.class, () -> {
       new CheckIndex(dir);
-      fail("should not have obtained write lock");
-    } catch (LockObtainFailedException expected) {
-      // ok
-    }
+    });
     
     iw.close();
   }

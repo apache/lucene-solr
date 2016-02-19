@@ -152,12 +152,9 @@ public class TestMultiCollector extends LuceneTestCase {
     assertFalse(setScorerCalled1.get());
     assertTrue(setScorerCalled2.get());
 
-    try {
+    expectThrows(CollectionTerminatedException.class, () -> {
       leafCollector.collect(1);
-      fail();
-    } catch (CollectionTerminatedException e) {
-      // expected
-    }
+    });
 
     setScorerCalled1.set(false);
     setScorerCalled2.set(false);

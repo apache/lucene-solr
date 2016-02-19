@@ -121,12 +121,10 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     final TokenStream input = analyzer.tokenStream("field", "abc");
     CachingTokenFilter buffer = new CachingTokenFilter(input);
     buffer.reset();//ok
-    try {
+    IllegalStateException e = expectThrows(IllegalStateException.class, () -> {
       buffer.reset();//bad (this used to work which we don't want)
-      fail("didn't get expected exception");
-    } catch (IllegalStateException e) {
-      assertEquals("double reset()", e.getMessage());
-    }
+    });
+    assertEquals("double reset()", e.getMessage());
   }
   
   private void checkTokens(TokenStream stream) throws IOException {

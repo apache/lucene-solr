@@ -181,18 +181,10 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     myHc.setSlowDown(SLOW_DOWN);
     Collector tlCollector = createTimedCollector(myHc, TIME_ALLOWED, greedy);
 
-    // search
-    TimeExceededException timeoutException = null;
-    try {
+    // search: must get exception
+    TimeExceededException timeoutException = expectThrows(TimeExceededException.class, () -> {
       search(tlCollector);
-    } catch (TimeExceededException x) {
-      timeoutException = x;
-    } catch (Exception e) {
-      assertTrue("Unexpected exception: "+e, false); //==fail
-    }
-    
-    // must get exception
-    assertNotNull( "Timeout expected!", timeoutException );
+    });
 
     // greediness affect last doc collected
     int exceptionDoc = timeoutException.getLastDocCollected();
@@ -275,18 +267,13 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   public void testNoHits() throws IOException {
     MyHitCollector myHc = new MyHitCollector();
     Collector collector = createTimedCollector(myHc, -1, random().nextBoolean());
-    // search
-    TimeExceededException timeoutException = null;
-    try {
+    // search: must get exception
+    expectThrows(TimeExceededException.class, () -> {
       BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder(); // won't match - we only test if we check timeout when collectors are pulled
       booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "one")), BooleanClause.Occur.MUST);
       booleanQuery.add(new TermQuery(new Term(FIELD_NAME, "blueberry")), BooleanClause.Occur.MUST);
       searcher.search(booleanQuery.build(), collector);
-    } catch (TimeExceededException x) {
-      timeoutException = x;
-    }
-    // must get exception
-    assertNotNull("Timeout expected!", timeoutException);
+    });
     assertEquals(-1, myHc.getLastDocCollected());
   }
   

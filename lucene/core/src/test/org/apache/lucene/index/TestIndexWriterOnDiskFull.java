@@ -523,21 +523,16 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     ftdm.setDoFail();
     dir.failOn(ftdm);
 
-    try {
+    expectThrows(IOException.class, () -> {
       w.commit();
-      fail("fake disk full IOExceptions not hit");
-    } catch (IOException ioe) {
-      // expected
-      assertTrue(ftdm.didFail1 || ftdm.didFail2);
-    }
+    });
+    assertTrue(ftdm.didFail1 || ftdm.didFail2);
+
     TestUtil.checkIndex(dir);
     ftdm.clearDoFail();
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {
       w.addDocument(doc);
-      fail("writer was not closed by merge exception");
-    } catch (AlreadyClosedException ace) {
-      // expected
-    }
+    });
 
     dir.close();
   }
@@ -556,13 +551,12 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
     final Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", customType));
-    try {
+    expectThrows(IOException.class, () -> {
       writer.addDocument(doc);
-      fail("did not hit disk full");
-    } catch (IOException ioe) {
-      assertTrue(writer.deleter.isClosed());
-      assertTrue(writer.isClosed());
-    }
+    });
+    assertTrue(writer.deleter.isClosed());
+    assertTrue(writer.isClosed());
+
     dir.close();
   }
   

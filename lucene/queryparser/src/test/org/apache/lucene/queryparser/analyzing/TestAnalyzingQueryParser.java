@@ -102,52 +102,31 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
   }
 
   public void testSingleChunkExceptions() {
-    boolean ex = false;
     String termStr = "the*tre";
       
     Analyzer stopsAnalyzer = new MockAnalyzer
         (random(), MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET);
-    try {
-      String q = parseWithAnalyzingQueryParser(termStr, stopsAnalyzer, true);     
-    } catch (ParseException e){
-      if (e.getMessage().contains("returned nothing")){
-        ex = true;
-      }
-    }
-    assertEquals("Should have returned nothing", true, ex);
-    ex = false;
+
+    ParseException expected = expectThrows(ParseException.class, () -> {
+      parseWithAnalyzingQueryParser(termStr, stopsAnalyzer, true);
+    });
+    assertTrue(expected.getMessage().contains("returned nothing"));
      
     AnalyzingQueryParser qp = new AnalyzingQueryParser(FIELD, a);
-    try{
+    expected = expectThrows(ParseException.class, () -> {
       qp.analyzeSingleChunk(FIELD, "", "not a single chunk");
-    } catch (ParseException e){
-      if (e.getMessage().contains("multiple terms")){
-        ex = true;
-      }
-    }
-    assertEquals("Should have produced multiple terms", true, ex);
+    });
+    assertTrue(expected.getMessage().contains("multiple terms"));
   }
    
   public void testWildcardAlone() throws ParseException {
     //seems like crazy edge case, but can be useful in concordance 
-    boolean pex = false;
-    try{
-      Query q = getAnalyzedQuery("*", a, false);
-    } catch (ParseException e){
-      pex = true;
-    }
-    assertEquals("Wildcard alone with allowWildcard=false", true, pex);
+    expectThrows(ParseException.class, () -> {
+      getAnalyzedQuery("*", a, false);
+    });
       
-    pex = false;
-    try {
-      String qString = parseWithAnalyzingQueryParser("*", a, true);
-      assertEquals("Every word", "*", qString);
-    } catch (ParseException e){
-      pex = true;
-    }
-      
-    assertEquals("Wildcard alone with allowWildcard=true", false, pex);
-
+    String qString = parseWithAnalyzingQueryParser("*", a, true);
+    assertEquals("Every word", "*", qString);
   }
   public void testWildCardEscapes() throws ParseException, IOException {
 
@@ -162,15 +141,9 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
 
   }
   public void testWildCardQueryNoLeadingAllowed() {
-    boolean ex = false;
-    try{
-      String q = parseWithAnalyzingQueryParser(wildcardInput[0], a, false);
-
-    } catch (ParseException e){
-      ex = true;
-    }
-    assertEquals("Testing initial wildcard not allowed",
-        true, ex);
+    expectThrows(ParseException.class, () -> {
+      parseWithAnalyzingQueryParser(wildcardInput[0], a, false);
+    });
   }
 
   public void testWildCardQuery() throws ParseException {

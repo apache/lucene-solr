@@ -71,12 +71,10 @@ public class TestAttributeSource extends LuceneTestCase {
     // init a third instance missing one Attribute
     AttributeSource src3 = new AttributeSource();
     termAtt = src3.addAttribute(CharTermAttribute.class);
-    try {
+    // The third instance is missing the TypeAttribute, so restoreState() should throw IllegalArgumentException
+    expectThrows(IllegalArgumentException.class, () -> {
       src3.restoreState(state);
-      fail("The third instance is missing the TypeAttribute, so restoreState() should throw IllegalArgumentException");
-    } catch (IllegalArgumentException iae) {
-      // pass
-    }
+    });
   }
   
   public void testCloneAttributes() {
@@ -133,24 +131,22 @@ public class TestAttributeSource extends LuceneTestCase {
   
   @SuppressWarnings({"rawtypes","unchecked"})
   public void testInvalidArguments() throws Exception {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       AttributeSource src = new AttributeSource();
       src.addAttribute(Token.class);
       fail("Should throw IllegalArgumentException");
-    } catch (IllegalArgumentException iae) {}
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       AttributeSource src = new AttributeSource(Token.TOKEN_ATTRIBUTE_FACTORY);
       src.addAttribute(Token.class);
-      fail("Should throw IllegalArgumentException");
-    } catch (IllegalArgumentException iae) {}
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       AttributeSource src = new AttributeSource();
       // break this by unsafe cast
       src.addAttribute((Class) Iterator.class);
-      fail("Should throw IllegalArgumentException");
-    } catch (IllegalArgumentException iae) {}
+    });
   }
   
   public void testLUCENE_3042() throws Exception {

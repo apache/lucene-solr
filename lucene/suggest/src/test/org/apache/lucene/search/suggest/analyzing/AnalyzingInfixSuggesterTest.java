@@ -41,6 +41,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.suggest.Input;
 import org.apache.lucene.search.suggest.InputArrayIterator;
 import org.apache.lucene.search.suggest.Lookup.LookupResult;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -877,12 +878,11 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     Path tempDir = createTempDir("AIS_NRT_PERSIST_TEST");
     AnalyzingInfixSuggester suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
     Thread[] multiAddThreads = new Thread[10];
-    try {
+    // Cannot call refresh on an suggester when no docs are added to the index
+    expectThrows(IllegalStateException.class, () -> {
       suggester.refresh();
-      fail("Cannot call refresh on an suggester when no docs are added to the index");
-    } catch(IllegalStateException e) {
-      //Expected
-    }
+    });
+
     for(int i=0; i<10; i++) {
       multiAddThreads[i] = new Thread(new IndexDocument(suggester, keys[i]));
     }
@@ -903,12 +903,12 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
     suggester.commit();
     suggester.close();
 
-    suggester = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
-    results = suggester.lookup(TestUtil.stringToCharSequence("python", random()), 10, true, false);
+    AnalyzingInfixSuggester suggester2 = new AnalyzingInfixSuggester(newFSDirectory(tempDir), a, a, 3, false);
+    results = suggester2.lookup(TestUtil.stringToCharSequence("python", random()), 10, true, false);
     assertEquals(1, results.size());
     assertEquals("python", results.get(0).key);
 
-    suggester.close();
+    suggester2.close();
     a.close();
   }
 

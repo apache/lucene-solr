@@ -41,15 +41,13 @@ public class IndexRevisionTest extends ReplicatorTestCase {
     IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     IndexWriter writer = new IndexWriter(dir, conf);
-    try {
-      assertNotNull(new IndexRevision(writer));
-      fail("should have failed when IndexDeletionPolicy is not Snapshot");
-    } catch (IllegalArgumentException e) {
-      // expected
-    } finally {
-      writer.close();
-      IOUtils.close(dir);
-    }
+    // should fail when IndexDeletionPolicy is not Snapshot
+    expectThrows(IllegalArgumentException.class, () -> {
+      new IndexRevision(writer);
+    });
+
+    writer.close();
+    IOUtils.close(dir);
   }
   
   @Test
@@ -58,15 +56,13 @@ public class IndexRevisionTest extends ReplicatorTestCase {
     IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(conf.getIndexDeletionPolicy()));
     IndexWriter writer = new IndexWriter(dir, conf);
-    try {
-      assertNotNull(new IndexRevision(writer));
-      fail("should have failed when there are no commits to snapshot");
-    } catch (IllegalStateException e) {
-      // expected
-    } finally {
-      writer.close();
-      IOUtils.close(dir);
-    }
+    // should fail when there are no commits to snapshot"
+    expectThrows(IllegalStateException.class, () -> {
+      new IndexRevision(writer);
+    });
+
+    writer.close();
+    IOUtils.close(dir);
   }
   
   @Test

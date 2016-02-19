@@ -105,12 +105,10 @@ public class TestFreeTextSuggester extends LuceneTestCase {
     );
     Analyzer analyzer = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(analyzer);
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       sug.build(new InputArrayIterator(keys));
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    });
+
     analyzer.close();
   }
 
@@ -124,12 +122,10 @@ public class TestFreeTextSuggester extends LuceneTestCase {
     FreeTextSuggester sug = new FreeTextSuggester(analyzer);
     sug.build(new InputArrayIterator(keys));
 
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       sug.lookup("foo\u001eb", 10);
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    });
+
     analyzer.close();
   }
 
@@ -234,12 +230,10 @@ public class TestFreeTextSuggester extends LuceneTestCase {
     Analyzer a = new MockAnalyzer(random());
     FreeTextSuggester sug = new FreeTextSuggester(a, a, 2, (byte) 0x20);
     sug.build(new InputArrayIterator(keys));
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       sug.lookup("", 10);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    });
+
     a.close();
   }
 

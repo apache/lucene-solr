@@ -184,23 +184,17 @@ public class TestOfflineSorter extends LuceneTestCase {
     BufferSize.megabytes(2047);
     BufferSize.megabytes(1);
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       BufferSize.megabytes(2048);
-      fail("max mb is 2047");
-    } catch (IllegalArgumentException e) {
-    }
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       BufferSize.megabytes(0);
-      fail("min mb is 0.5");
-    } catch (IllegalArgumentException e) {
-    }
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       BufferSize.megabytes(-1);
-      fail("min mb is 0.5");
-    } catch (IllegalArgumentException e) {
-    }
+    });
   }
 
   public void testThreadSafety() throws Exception {

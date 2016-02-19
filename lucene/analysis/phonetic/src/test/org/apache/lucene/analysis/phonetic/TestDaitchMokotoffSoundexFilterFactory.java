@@ -53,13 +53,11 @@ public class TestDaitchMokotoffSoundexFilterFactory extends BaseTokenStreamTestC
   
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new DaitchMokotoffSoundexFilterFactory(new HashMap<String,String>() {{
         put("bogusArg", "bogusValue");
       }});
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

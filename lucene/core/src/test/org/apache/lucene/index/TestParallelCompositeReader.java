@@ -203,19 +203,13 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     ir1.close();
 
     assertEquals("refCount of synthetic subreader should be unchanged", 1, psub.getRefCount());
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {
       psub.document(0);
-      fail("Subreader should be already closed because inner reader was closed!");
-    } catch (AlreadyClosedException e) {
-      // pass
-    }
+    });
     
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {
       pr.document(0);
-      fail("ParallelCompositeReader should be already closed because inner reader was closed!");
-    } catch (AlreadyClosedException e) {
-      // pass
-    }
+    });
     
     // noop:
     pr.close();
@@ -238,18 +232,15 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     
     DirectoryReader ir1 = DirectoryReader.open(dir1),
         ir2 = DirectoryReader.open(dir2);
-    try {
+
+    expectThrows(IllegalArgumentException.class, () -> {
       new ParallelCompositeReader(ir1, ir2);
-      fail("didn't get expected exception: indexes don't have same number of documents");
-    } catch (IllegalArgumentException e) {
-      // expected exception
-    }
-    try {
+    });
+
+    expectThrows(IllegalArgumentException.class, () -> {
       new ParallelCompositeReader(random().nextBoolean(), ir1, ir2);
-      fail("didn't get expected exception: indexes don't have same number of documents");
-    } catch (IllegalArgumentException e) {
-      // expected exception
-    }
+    });
+
     assertEquals(1, ir1.getRefCount());
     assertEquals(1, ir2.getRefCount());
     ir1.close();
@@ -267,18 +258,14 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     DirectoryReader ir1 = DirectoryReader.open(dir1),
         ir2 = DirectoryReader.open(dir2);
     CompositeReader[] readers = new CompositeReader[] {ir1, ir2};
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       new ParallelCompositeReader(readers);
-      fail("didn't get expected exception: indexes don't have same subreader structure");
-    } catch (IllegalArgumentException e) {
-      // expected exception
-    }
-    try {
+    });
+
+    expectThrows(IllegalArgumentException.class, () -> {
       new ParallelCompositeReader(random().nextBoolean(), readers, readers);
-      fail("didn't get expected exception: indexes don't have same subreader structure");
-    } catch (IllegalArgumentException e) {
-      // expected exception
-    }
+    });
+
     assertEquals(1, ir1.getRefCount());
     assertEquals(1, ir2.getRefCount());
     ir1.close();
@@ -296,18 +283,15 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     CompositeReader ir1 = new MultiReader(DirectoryReader.open(dir1), SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir1))),
         ir2 = new MultiReader(DirectoryReader.open(dir2), DirectoryReader.open(dir2));
     CompositeReader[] readers = new CompositeReader[] {ir1, ir2};
-    try {
+
+    expectThrows(IllegalArgumentException.class, () -> {
       new ParallelCompositeReader(readers);
-      fail("didn't get expected exception: indexes don't have same subreader structure");
-    } catch (IllegalArgumentException e) {
-      // expected exception
-    }
-    try {
+    });
+
+    expectThrows(IllegalArgumentException.class, () -> {
       new ParallelCompositeReader(random().nextBoolean(), readers, readers);
-      fail("didn't get expected exception: indexes don't have same subreader structure");
-    } catch (IllegalArgumentException e) {
-      // expected exception
-    }
+    });
+
     assertEquals(1, ir1.getRefCount());
     assertEquals(1, ir2.getRefCount());
     ir1.close();
@@ -373,14 +357,11 @@ public class TestParallelCompositeReader extends LuceneTestCase {
     pr.close();
     
     // no main readers
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       new ParallelCompositeReader(true,
         new CompositeReader[0],
         new CompositeReader[] {ir1});
-      fail("didn't get expected exception: need a non-empty main-reader array");
-    } catch (IllegalArgumentException iae) {
-      // pass
-    }
+    });
     
     dir1.close();
     dir2.close();

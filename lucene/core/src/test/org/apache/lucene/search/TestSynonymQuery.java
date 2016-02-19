@@ -40,10 +40,9 @@ public class TestSynonymQuery extends LuceneTestCase {
   }
   
   public void testBogusParams() {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       new SynonymQuery(new Term("field1", "a"), new Term("field2", "b"));
-      fail();
-    } catch (IllegalArgumentException expected) {}
+    });
   }
 
   public void testToString() {

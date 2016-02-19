@@ -948,11 +948,10 @@ public class TestPointQueries extends LuceneTestCase {
     // no wrapping, else the exc might happen in executor thread:
     IndexSearcher s = new IndexSearcher(r);
     byte[][] point = new byte[2][];
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       s.count(new PointRangeQuery("value", point, new boolean[] {true, true}, point, new boolean[] {true, true}));
-    } catch (IllegalArgumentException iae) {
-      assertEquals("field=\"value\" was indexed with numDims=1 but this query has numDims=2", iae.getMessage());
-    }
+    });
+    assertEquals("field=\"value\" was indexed with numDims=1 but this query has numDims=2", expected.getMessage());
 
     IOUtils.close(r, w, dir);
   }
@@ -972,11 +971,10 @@ public class TestPointQueries extends LuceneTestCase {
     IndexSearcher s = new IndexSearcher(r);
     byte[][] point = new byte[1][];
     point[0] = new byte[10];
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       s.count(new PointRangeQuery("value", point, new boolean[] {true}, point, new boolean[] {true}));
-    } catch (IllegalArgumentException iae) {
-      assertEquals("field=\"value\" was indexed with bytesPerDim=8 but this query has bytesPerDim=10", iae.getMessage());
-    }
+    });
+    assertEquals("field=\"value\" was indexed with bytesPerDim=8 but this query has bytesPerDim=10", expected.getMessage());
 
     IOUtils.close(r, w, dir);
   }

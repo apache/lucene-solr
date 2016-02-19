@@ -291,18 +291,13 @@ public class TestSlowFuzzyQuery extends LuceneTestCase {
     hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(0, hits.length);
 
-    try {
-      query = new SlowFuzzyQuery(new Term("field", "student"), 1.1f);
-      fail("Expected IllegalArgumentException");
-    } catch (IllegalArgumentException e) {
-      // expecting exception
-    }
-    try {
-      query = new SlowFuzzyQuery(new Term("field", "student"), -0.1f);
-      fail("Expected IllegalArgumentException");
-    } catch (IllegalArgumentException e) {
-      // expecting exception
-    }
+    expectThrows(IllegalArgumentException.class, () -> {
+      new SlowFuzzyQuery(new Term("field", "student"), 1.1f);
+    });
+
+    expectThrows(IllegalArgumentException.class, () -> {
+      new SlowFuzzyQuery(new Term("field", "student"), -0.1f);
+    });
 
     reader.close();
     directory.close();

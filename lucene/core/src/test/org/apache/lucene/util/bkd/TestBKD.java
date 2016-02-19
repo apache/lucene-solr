@@ -429,11 +429,10 @@ public class TestBKD extends LuceneTestCase {
 
   public void testTooLittleHeap() throws Exception { 
     try (Directory dir = getDirectory(0)) {
-      new BKDWriter(dir, "bkd", 1, 16, 1000000, 0.001);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
+      IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+        new BKDWriter(dir, "bkd", 1, 16, 1000000, 0.001);
+      });
+      assertTrue(expected.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
     }
   }
 
@@ -563,11 +562,10 @@ public class TestBKD extends LuceneTestCase {
     Arrays.fill(bytes, (byte) 0xff);
     byte[] one = new byte[4];
     one[3] = 1;
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       NumericUtils.add(4, 0, bytes, one, new byte[4]);
-    } catch (IllegalArgumentException iae) {
-      assertEquals("a + b overflows bytesPerDim=4", iae.getMessage());
-    }
+    });
+    assertEquals("a + b overflows bytesPerDim=4", expected.getMessage());
   }
   
   public void testNumericUtilsSubtract() throws Exception {
@@ -607,11 +605,10 @@ public class TestBKD extends LuceneTestCase {
     v1[3] = (byte) 0xf0;
     byte[] v2 = new byte[4];
     v2[3] = (byte) 0xf1;
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       NumericUtils.subtract(4, 0, v1, v2, new byte[4]);
-    } catch (IllegalArgumentException iae) {
-      assertEquals("a < b", iae.getMessage());
-    }
+    });
+    assertEquals("a < b", expected.getMessage());
   }
 
   /** docIDs can be null, for the single valued case, else it maps value to docID */

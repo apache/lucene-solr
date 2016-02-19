@@ -155,22 +155,18 @@ public class TestStandardQP extends QueryParserTestBase {
   
   @Override
   public void testCollatedRange() throws Exception {
-    try {
+    expectThrows(UnsupportedOperationException.class, () -> {
       setAnalyzeRangeTerms(getParser(null), true);
       super.testCollatedRange();
-    } catch (UnsupportedOperationException e) {
-      // expected
-    }
+    });
   }
   
   @Override
   public void testAutoGeneratePhraseQueriesOn() throws Exception {
-    try {
+    expectThrows(UnsupportedOperationException.class, () -> {
       setAutoGeneratePhraseQueries(getParser(null), true);
       super.testAutoGeneratePhraseQueriesOn();
-    } catch (UnsupportedOperationException e) {
-      // expected
-    }
+    });
   }
   
   @Override

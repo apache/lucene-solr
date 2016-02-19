@@ -33,10 +33,9 @@ public class TestNamedSPILoader extends LuceneTestCase {
   
   // we want an exception if it's not found.
   public void testBogusLookup() {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       Codec.forName("dskfdskfsdfksdfdsf");
-      fail();
-    } catch (IllegalArgumentException expected) {}
+    });
   }
   
   public void testAvailableServices() {

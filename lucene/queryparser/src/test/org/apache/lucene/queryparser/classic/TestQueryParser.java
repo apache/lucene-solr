@@ -259,24 +259,20 @@ public class TestQueryParser extends QueryParserTestBase {
     
   }
   
+  // Wildcard queries should not be allowed
   public void testCustomQueryParserWildcard() {
-    try {
+    expectThrows(ParseException.class, () -> {
       new QPTestParser("contents", new MockAnalyzer(random(),
           MockTokenizer.WHITESPACE, false)).parse("a?t");
-      fail("Wildcard queries should not be allowed");
-    } catch (ParseException expected) {
-      // expected exception
-    }
+    });
   }
   
+  // Fuzzy queries should not be allowed
   public void testCustomQueryParserFuzzy() throws Exception {
-    try {
+    expectThrows(ParseException.class, () -> {
       new QPTestParser("contents", new MockAnalyzer(random(),
           MockTokenizer.WHITESPACE, false)).parse("xunit~");
-      fail("Fuzzy queries should not be allowed");
-    } catch (ParseException expected) {
-      // expected exception
-    }
+    });
   }
   
   /** query parser that doesn't expand synonyms when users use double quotes */
@@ -481,11 +477,8 @@ public class TestQueryParser extends QueryParserTestBase {
   public void testWildcardMaxDeterminizedStates() throws Exception {
     QueryParser qp = new QueryParser("field", new MockAnalyzer(random()));
     qp.setMaxDeterminizedStates(10);
-    try {
+    expectThrows(TooComplexToDeterminizeException.class, () -> {
       qp.parse("a*aaaaaaa");
-      fail("should have hit exception");
-    } catch (TooComplexToDeterminizeException tctde) {
-      // expected
-    }
+    });
   }
 }

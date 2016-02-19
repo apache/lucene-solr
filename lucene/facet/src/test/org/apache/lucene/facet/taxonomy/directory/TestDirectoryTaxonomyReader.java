@@ -110,12 +110,10 @@ public class TestDirectoryTaxonomyReader extends FacetTestCase {
     
     DirectoryTaxonomyReader ltr = new DirectoryTaxonomyReader(dir);
     ltr.close();
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {
       ltr.getSize();
-      fail("An AlreadyClosedException should have been thrown here");
-    } catch (AlreadyClosedException ace) {
-      // good!
-    }
+    });
+
     dir.close();
   }
   

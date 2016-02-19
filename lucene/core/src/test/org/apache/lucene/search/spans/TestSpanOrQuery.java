@@ -45,11 +45,9 @@ public class TestSpanOrQuery extends LuceneTestCase {
   public void testDifferentField() throws Exception {
     SpanTermQuery q1 = new SpanTermQuery(new Term("field1", "foo"));
     SpanTermQuery q2 = new SpanTermQuery(new Term("field2", "bar"));
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new SpanOrQuery(q1, q2);
-      fail("didn't get expected exception");
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("must have same field"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("must have same field"));
   }
 }

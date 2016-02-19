@@ -113,13 +113,10 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
         .setMaxBufferedDocs(2));
 
     // Verify we catch misuse:
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       dp.snapshot();
-      fail("did not hit exception");
-    } catch(IllegalStateException ise) {
-      // expected
-    }
-    dp = (SnapshotDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
+    });
+
     writer.commit();
     
     final Thread t = new Thread() {

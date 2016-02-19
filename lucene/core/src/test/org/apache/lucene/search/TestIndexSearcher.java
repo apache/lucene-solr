@@ -129,14 +129,11 @@ public class TestIndexSearcher extends LuceneTestCase {
     w.close();
 
     IndexSearcher s = new IndexSearcher(r);
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       s.searchAfter(new ScoreDoc(r.maxDoc(), 0.54f), new MatchAllDocsQuery(), 10);
-      fail("should have hit IllegalArgumentException when searchAfter exceeds maxDoc");
-    } catch (IllegalArgumentException e) {
-      // ok
-    } finally {
-      IOUtils.close(r, dir);
-    }
+    });
+
+    IOUtils.close(r, dir);
   }
 
   public void testCount() throws IOException {

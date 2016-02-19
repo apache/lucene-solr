@@ -124,12 +124,9 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
 
     searcher.search(new MatchAllDocsQuery(), c);
 
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       new SortedSetDocValuesFacetCounts(state, c);
-      fail("did not hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
 
     r.close();
     writer.close();

@@ -40,23 +40,18 @@ public class TestCharacterUtils extends LuceneTestCase {
     assertEquals((int) 'A', java4.codePointAt(cpAt3, 0));
     assertEquals((int) '\ud801', java4.codePointAt(cpAt3, 3));
     assertEquals((int) '\ud801', java4.codePointAt(highSurrogateAt3, 3));
-    try {
+    expectThrows(IndexOutOfBoundsException.class, () -> {
       java4.codePointAt(highSurrogateAt3, 4);
-      fail("string index out of bounds");
-    } catch (IndexOutOfBoundsException e) {
-    }
+    });
 
     CharacterUtils java5 = CharacterUtils.getInstance();
     assertEquals((int) 'A', java5.codePointAt(cpAt3, 0));
     assertEquals(Character.toCodePoint('\ud801', '\udc1c'), java5.codePointAt(
         cpAt3, 3));
     assertEquals((int) '\ud801', java5.codePointAt(highSurrogateAt3, 3));
-    try {
+    expectThrows(IndexOutOfBoundsException.class, () -> {
       java5.codePointAt(highSurrogateAt3, 4);
-      fail("string index out of bounds");
-    } catch (IndexOutOfBoundsException e) {
-    }
-
+    });
   }
 
   @Test
@@ -149,11 +144,10 @@ public class TestCharacterUtils extends LuceneTestCase {
     assertEquals(0, newCharacterBuffer.getOffset());
     assertEquals(0, newCharacterBuffer.getLength());
 
-    try {
-      newCharacterBuffer = CharacterUtils.newCharacterBuffer(1);
-      fail("length must be >= 2");
-    } catch (IllegalArgumentException e) {
-    }
+    // length must be >= 2
+    expectThrows(IllegalArgumentException.class, () -> {
+      CharacterUtils.newCharacterBuffer(1);
+    });
   }
 
   @Test

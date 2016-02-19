@@ -50,14 +50,11 @@ public class TestNativeFSLockFactory extends BaseLockFactoryTestCase {
     NativeFSLockFactory.NativeFSLock lock =  (NativeFSLockFactory.NativeFSLock) dir.obtainLock("test.lock");
     lock.ensureValid();
     lock.lock.release();
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {
       lock.ensureValid();
-      fail("no exception");
-    } catch (AlreadyClosedException expected) {
-      // ok
-    } finally {
-      IOUtils.closeWhileHandlingException(lock);
-    }
+    });
+
+    IOUtils.closeWhileHandlingException(lock);
     dir.close();
   }
   
@@ -67,14 +64,11 @@ public class TestNativeFSLockFactory extends BaseLockFactoryTestCase {
     NativeFSLockFactory.NativeFSLock lock =  (NativeFSLockFactory.NativeFSLock) dir.obtainLock("test.lock");
     lock.ensureValid();
     lock.channel.close();
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {
       lock.ensureValid();
-      fail("no exception");
-    } catch (AlreadyClosedException expected) {
-      // ok
-    } finally {
-      IOUtils.closeWhileHandlingException(lock);
-    }
+    });
+
+    IOUtils.closeWhileHandlingException(lock);
     dir.close();
   }
   
@@ -88,14 +82,11 @@ public class TestNativeFSLockFactory extends BaseLockFactoryTestCase {
 
       dir.deleteFile("test.lock");
 
-      try {
+      expectThrows(IOException.class, () -> {
         lock.ensureValid();
-        fail("no exception");
-      } catch (IOException expected) {
-        // ok
-      } finally {
-        IOUtils.closeWhileHandlingException(lock);
-      }
+      });
+      
+      IOUtils.closeWhileHandlingException(lock);
     }
   }
 }

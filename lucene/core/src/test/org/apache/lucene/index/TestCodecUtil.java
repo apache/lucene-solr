@@ -54,23 +54,17 @@ public class TestCodecUtil extends LuceneTestCase {
     }
     RAMFile file = new RAMFile();
     IndexOutput output = new RAMOutputStream(file, true);
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       CodecUtil.writeHeader(output, tooLong.toString(), 5);
-      fail("didn't get expected exception");
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   public void testWriteNonAsciiHeader() throws Exception {
     RAMFile file = new RAMFile();
     IndexOutput output = new RAMOutputStream(file, true);
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       CodecUtil.writeHeader(output, "\u1234", 5);
-      fail("didn't get expected exception");
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   public void testReadHeaderWrongMagic() throws Exception {
@@ -80,12 +74,9 @@ public class TestCodecUtil extends LuceneTestCase {
     output.close();
     
     IndexInput input = new RAMInputStream("file", file);
-    try {
+    expectThrows(CorruptIndexException.class, () -> {
       CodecUtil.checkHeader(input, "bogus", 1, 1);
-      fail("didn't get expected exception");
-    } catch (CorruptIndexException expected) {
-      // expected
-    }
+    });
   }
   
   public void testChecksumEntireFile() throws Exception {
@@ -111,15 +102,13 @@ public class TestCodecUtil extends LuceneTestCase {
     
     ChecksumIndexInput input = new BufferedChecksumIndexInput(new RAMInputStream("file", file));
     Exception mine = new RuntimeException("fake exception");
-    try {
+    RuntimeException expected = expectThrows(RuntimeException.class, () -> {
       CodecUtil.checkFooter(input, mine);
-      fail("didn't get expected exception");
-    } catch (RuntimeException expected) {
-      assertEquals("fake exception", expected.getMessage());
-      Throwable suppressed[] = expected.getSuppressed();
-      assertEquals(1, suppressed.length);
-      assertTrue(suppressed[0].getMessage().contains("checksum passed"));
-    }
+    });
+    assertEquals("fake exception", expected.getMessage());
+    Throwable suppressed[] = expected.getSuppressed();
+    assertEquals(1, suppressed.length);
+    assertTrue(suppressed[0].getMessage().contains("checksum passed"));
     input.close();
   }
   
@@ -135,15 +124,13 @@ public class TestCodecUtil extends LuceneTestCase {
     CodecUtil.checkHeader(input, "FooBar", 5, 5);
     assertEquals("this is the data", input.readString());
     Exception mine = new RuntimeException("fake exception");
-    try {
+    RuntimeException expected = expectThrows(RuntimeException.class, () -> {
       CodecUtil.checkFooter(input, mine);
-      fail("didn't get expected exception");
-    } catch (RuntimeException expected) {
-      assertEquals("fake exception", expected.getMessage());
-      Throwable suppressed[] = expected.getSuppressed();
-      assertEquals(1, suppressed.length);
-      assertTrue(suppressed[0].getMessage().contains("checksum passed"));
-    }
+    });
+    assertEquals("fake exception", expected.getMessage());
+    Throwable suppressed[] = expected.getSuppressed();
+    assertEquals(1, suppressed.length);
+    assertTrue(suppressed[0].getMessage().contains("checksum passed"));
     input.close();
   }
   
@@ -161,15 +148,13 @@ public class TestCodecUtil extends LuceneTestCase {
     // bogusly read a byte too far (can happen)
     input.readByte();
     Exception mine = new RuntimeException("fake exception");
-    try {
+    RuntimeException expected = expectThrows(RuntimeException.class, () -> {
       CodecUtil.checkFooter(input, mine);
-      fail("didn't get expected exception");
-    } catch (RuntimeException expected) {
-      assertEquals("fake exception", expected.getMessage());
-      Throwable suppressed[] = expected.getSuppressed();
-      assertEquals(1, suppressed.length);
-      assertTrue(suppressed[0].getMessage().contains("checksum status indeterminate"));
-    }
+    });
+    assertEquals("fake exception", expected.getMessage());
+    Throwable suppressed[] = expected.getSuppressed();
+    assertEquals(1, suppressed.length);
+    assertTrue(suppressed[0].getMessage().contains("checksum status indeterminate"));
     input.close();
   }
   
@@ -187,15 +172,13 @@ public class TestCodecUtil extends LuceneTestCase {
     CodecUtil.checkHeader(input, "FooBar", 5, 5);
     assertEquals("this is the data", input.readString());
     Exception mine = new RuntimeException("fake exception");
-    try {
+    RuntimeException expected = expectThrows(RuntimeException.class, () -> {
       CodecUtil.checkFooter(input, mine);
-      fail("didn't get expected exception");
-    } catch (RuntimeException expected) {
-      assertEquals("fake exception", expected.getMessage());
-      Throwable suppressed[] = expected.getSuppressed();
-      assertEquals(1, suppressed.length);
-      assertTrue(suppressed[0].getMessage().contains("checksum failed"));
-    }
+    });
+    assertEquals("fake exception", expected.getMessage());
+    Throwable suppressed[] = expected.getSuppressed();
+    assertEquals(1, suppressed.length);
+    assertTrue(suppressed[0].getMessage().contains("checksum failed"));
     input.close();
   }
   
@@ -219,12 +202,9 @@ public class TestCodecUtil extends LuceneTestCase {
     }
     RAMFile file = new RAMFile();
     IndexOutput output = new RAMOutputStream(file, true);
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       CodecUtil.writeIndexHeader(output, "foobar", 5, StringHelper.randomId(), tooLong.toString());
-      fail("didn't get expected exception");
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   public void testWriteVeryLongSuffix() throws Exception {
@@ -248,12 +228,9 @@ public class TestCodecUtil extends LuceneTestCase {
   public void testWriteNonAsciiSuffix() throws Exception {
     RAMFile file = new RAMFile();
     IndexOutput output = new RAMOutputStream(file, true);
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       CodecUtil.writeIndexHeader(output, "foobar", 5, StringHelper.randomId(), "\u1234");
-      fail("didn't get expected exception");
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   public void testReadBogusCRC() throws Exception {
@@ -267,12 +244,9 @@ public class TestCodecUtil extends LuceneTestCase {
     IndexInput input = new RAMInputStream("file", file);
     // read 3 bogus values
     for (int i = 0; i < 3; i++) {
-      try {
+      expectThrows(CorruptIndexException.class, () -> {
         CodecUtil.readCRC(input);
-        fail("didn't get expected exception");
-      } catch (CorruptIndexException expected) {
-        // expected
-      }
+      });
     }
     // good value
     CodecUtil.readCRC(input);
@@ -311,28 +285,19 @@ public class TestCodecUtil extends LuceneTestCase {
     };
     
     fakeChecksum.set(-1L); // bad
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       CodecUtil.writeCRC(fakeOutput);
-      fail("didn't get expected exception");
-    } catch (IllegalStateException expected) {
-      // expected exception
-    }
+    });
     
     fakeChecksum.set(1L << 32); // bad
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       CodecUtil.writeCRC(fakeOutput);
-      fail("didn't get expected exception");
-    } catch (IllegalStateException expected) {
-      // expected exception
-    }
+    });
     
     fakeChecksum.set(-(1L << 32)); // bad
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       CodecUtil.writeCRC(fakeOutput);
-      fail("didn't get expected exception");
-    } catch (IllegalStateException expected) {
-      // expected exception
-    }
+    });
     
     fakeChecksum.set((1L << 32) - 1); // ok
     CodecUtil.writeCRC(fakeOutput);

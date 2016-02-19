@@ -67,13 +67,11 @@ public class TestHyphenationCompoundWordTokenFilterFactory extends BaseTokenStre
   
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {      
       tokenFilterFactory("HyphenationCompoundWord", 
           "hyphenator", "da_UTF8.xml",
           "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

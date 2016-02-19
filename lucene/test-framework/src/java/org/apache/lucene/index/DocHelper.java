@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -190,10 +191,7 @@ class DocHelper {
       buffer.append("Lazily loading lengths of language in lieu of laughing ");
     }
     
-    try {
-      LAZY_FIELD_BINARY_BYTES = "These are some binary field bytes".getBytes("UTF8");
-    } catch (UnsupportedEncodingException e) {
-    }
+    LAZY_FIELD_BINARY_BYTES = "These are some binary field bytes".getBytes(StandardCharsets.UTF_8);
     lazyFieldBinary = new StoredField(LAZY_FIELD_BINARY_KEY, LAZY_FIELD_BINARY_BYTES);
     fields[fields.length - 2] = lazyFieldBinary;
     LARGE_LAZY_FIELD_TEXT = buffer.toString();

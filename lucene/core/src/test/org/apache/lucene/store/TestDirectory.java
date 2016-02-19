@@ -89,12 +89,9 @@ public class TestDirectory extends LuceneTestCase {
       Lock lock = dir.obtainLock(lockname);
 
       for (Directory other : dirs) {
-        try {
+        expectThrows(LockObtainFailedException.class, () -> {
           other.obtainLock(lockname);
-          fail("didnt get exception");
-        } catch (LockObtainFailedException e) {
-          // OK
-        }
+        });
       }
 
       lock.close();
@@ -131,12 +128,9 @@ public class TestDirectory extends LuceneTestCase {
       IndexOutput out = fsDir.createOutput("afile", newIOContext(random()));
       out.close();
       assertTrue(slowFileExists(fsDir, "afile"));
-      try {
+      expectThrows(IOException.class, () -> {
         new SimpleFSDirectory(path.resolve("afile"));
-        fail("did not hit expected exception");
-      } catch (IOException nsde) {
-        // Expected
-      }
+      });
     } finally {
       fsDir.close();
     }

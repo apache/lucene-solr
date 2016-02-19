@@ -133,12 +133,11 @@ public class TestPayloadsOnVectors extends LuceneTestCase {
     customType.setStoreTermVectorPayloads(true);
     customType.setStoreTermVectorOffsets(random().nextBoolean());
     doc.add(new Field("field", "foo", customType));
-    try {
+
+    expectThrows(IllegalArgumentException.class, () -> {
       writer.addDocument(doc);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
+
     writer.close();
     dir.close();
   }

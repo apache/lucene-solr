@@ -52,12 +52,10 @@ public class BytesRefSortersTest extends LuceneTestCase {
     BytesRefIterator i2 = sorter.iterator();
     
     // Verify sorter contract.
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       sorter.add(new BytesRef(new byte [1]));
-      fail("expected contract violation.");
-    } catch (IllegalStateException e) {
-      // Expected.
-    }
+    });
+
     BytesRef spare1;
     BytesRef spare2;
     while ((spare1 = i1.next()) != null && (spare2 = i2.next()) != null) {

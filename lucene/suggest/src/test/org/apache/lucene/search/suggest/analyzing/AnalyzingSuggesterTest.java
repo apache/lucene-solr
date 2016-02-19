@@ -1224,18 +1224,13 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
     suggester.build(new InputArrayIterator(new Input[] {
         new Input("а где Люси?", 7),
     }));
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       suggester.lookup("а\u001E", false, 3);
-      fail("should throw IllegalArgumentException");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       suggester.lookup("а\u001F", false, 3);
-      fail("should throw IllegalArgumentException");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+    });
+
     IOUtils.close(a, tempDir);
   }
 

@@ -165,20 +165,16 @@ public class TestUAX29URLEmailTokenizerFactory extends BaseTokenStreamFactoryTes
   
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenizerFactory("UAX29URLEmail", "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 
- public void testIllegalArguments() throws Exception {
-    try {
+  public void testIllegalArguments() throws Exception {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenizerFactory("UAX29URLEmail", "maxTokenLength", "-1").create();
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("maxTokenLength must be greater than zero"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("maxTokenLength must be greater than zero"));
   }
 }

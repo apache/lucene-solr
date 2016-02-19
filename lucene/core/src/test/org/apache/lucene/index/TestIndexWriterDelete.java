@@ -838,22 +838,17 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     // case, creation of the cfs file happens next so we
     // need the doc (to test that it's okay that we don't
     // lose deletes if failing while creating the cfs file)
-    boolean failed = false;
-    try {
-      if (VERBOSE) {
-        System.out.println("TEST: now commit for failure");
-      }
-      modifier.commit();
-    } catch (RuntimeException ioe) {
-      // expected
-      if (VERBOSE) {
-        System.out.println("TEST: hit exc:");
-        ioe.printStackTrace(System.out);
-      }
-      failed = true;
-    }
 
-    assertTrue(failed);
+    if (VERBOSE) {
+      System.out.println("TEST: now commit for failure");
+    }
+    RuntimeException expected = expectThrows(RuntimeException.class, () -> {
+      modifier.commit();
+    });
+    if (VERBOSE) {
+      System.out.println("TEST: hit exc:");
+      expected.printStackTrace(System.out);
+    }
 
     // The commit above failed, so we need to retry it (which will
     // succeed, because the failure is a one-shot)

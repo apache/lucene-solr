@@ -189,12 +189,9 @@ public class TestBooleanQuery extends LuceneTestCase {
   }
 
   public void testException() {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       BooleanQuery.setMaxClauseCount(0);
-      fail();
-    } catch (IllegalArgumentException e) {
-      // okay
-    }
+    });
   }
 
   // LUCENE-1630

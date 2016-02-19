@@ -81,13 +81,10 @@ public class BuildMaxPositionIndex {
     TestUtil.unzip(resource, path);
     BaseDirectoryWrapper dir = newFSDirectory(path);
     dir.setCheckIndexOnClose(false);
-    try {
+    RuntimeException expected = expectThrows(RuntimeException.class, () -> {
       TestUtil.checkIndex(dir, false, true);
-      fail("corruption was not detected");
-    } catch (RuntimeException re) {
-      // expected
-      assertTrue(re.getMessage().contains("pos 2147483647 > IndexWriter.MAX_POSITION=2147483519"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("pos 2147483647 > IndexWriter.MAX_POSITION=2147483519"));
 
     // Also confirm merging detects this:
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -95,14 +92,13 @@ public class BuildMaxPositionIndex {
     iwc.setMergePolicy(newLogMergePolicy());
     IndexWriter w = new IndexWriter(dir, iwc);
     w.addDocument(new Document());
-    try {
+    CorruptIndexException expectedCorruption = expectThrows(CorruptIndexException.class, () -> {
       w.forceMerge(1);
-    } catch (CorruptIndexException cie) {
-      assertEquals(cie.getMessage(), new CorruptIndexException(cie.getOriginalMessage(), cie.getResourceDescription()).getMessage());
-      // SerialMergeScheduler
-      assertTrue("got message " + cie.getMessage(),
-                 cie.getMessage().contains("position=2147483647 is too large (> IndexWriter.MAX_POSITION=2147483519), field=\"foo\" doc=0 (resource=PerFieldPostings(segment=_0 formats=1)"));
-    }
+    });
+    assertEquals(expectedCorruption.getMessage(), new CorruptIndexException(expectedCorruption.getOriginalMessage(), expectedCorruption.getResourceDescription()).getMessage());
+    // SerialMergeScheduler
+    assertTrue("got message " + expectedCorruption.getMessage(),
+        expectedCorruption.getMessage().contains("position=2147483647 is too large (> IndexWriter.MAX_POSITION=2147483519), field=\"foo\" doc=0 (resource=PerFieldPostings(segment=_0 formats=1)"));
 
     w.close();
     dir.close();

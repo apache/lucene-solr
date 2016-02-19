@@ -104,32 +104,19 @@ public class TestRangeFacetCounts extends FacetTestCase {
     d.close();
   }
 
-  @SuppressWarnings("unused")
   public void testUselessRange() {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       new LongRange("useless", 7, true, 6, true);
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new LongRange("useless", 7, true, 7, false);
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new DoubleRange("useless", 7.0, true, 6.0, true);
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new DoubleRange("useless", 7.0, true, 7.0, false);
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    });
   }
 
   public void testLongMinMax() throws Exception {

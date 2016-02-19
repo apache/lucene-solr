@@ -325,12 +325,9 @@ public class TestAutomaton extends LuceneTestCase {
     int s2 = a.createState();
     a.addTransition(s1, s2, 'a');
     a.addTransition(s2, s2, 'a');
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       a.addTransition(s1, s2, 'b');
-      fail("didn't hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
   }
 
   public void testBuilderRandom() throws Exception {

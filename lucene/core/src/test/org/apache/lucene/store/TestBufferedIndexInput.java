@@ -142,26 +142,24 @@ public class TestBufferedIndexInput extends LuceneTestCase {
      input.seek(pos);
      checkReadBytes(input, 10, pos);  
      input.seek(pos);
-     try {
+     // block read past end of file
+     expectThrows(IOException.class, () -> {
        checkReadBytes(input, 11, pos);
-           fail("Block read past end of file");
-       } catch (IOException e) {
-           /* success */
-       }
+     });
+
      input.seek(pos);
-     try {
+
+     // block read past end of file
+     expectThrows(IOException.class, () -> {
        checkReadBytes(input, 50, pos);
-           fail("Block read past end of file");
-       } catch (IOException e) {
-           /* success */
-       }
+     });
+
      input.seek(pos);
-     try {
+
+     // block read past end of file
+     expectThrows(IOException.class, () -> {
        checkReadBytes(input, 100000, pos);
-           fail("Block read past end of file");
-       } catch (IOException e) {
-           /* success */
-       }
+     });
   }
 
     // byten emulates a file - byten(n) returns the n'th byte in that file.

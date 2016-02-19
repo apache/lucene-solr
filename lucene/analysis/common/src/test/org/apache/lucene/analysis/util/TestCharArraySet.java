@@ -86,6 +86,7 @@ public class TestCharArraySet extends LuceneTestCase {
       assertTrue(set.contains(TEST_STOP_WORDS[i]));
   }
   
+  // TODO: break this up into simpler test methods, vs "telling a story"
   public void testModifyOnUnmodifiable(){
     CharArraySet set=new CharArraySet(10, true);
     set.addAll(Arrays.asList(TEST_STOP_WORDS));
@@ -185,12 +186,9 @@ public class TestCharArraySet extends LuceneTestCase {
     assertTrue(set.contains("1"));
     assertTrue(set.contains(new char[]{'1'}));
     
-    try{
+    expectThrows(NullPointerException.class, () -> {
       CharArraySet.unmodifiableSet(null);
-      fail("can not make null unmodifiable");
-    }catch (NullPointerException e) {
-      // expected
-    }
+    });
   }
   
   public void testSupplementaryChars() {
@@ -408,18 +406,18 @@ public class TestCharArraySet extends LuceneTestCase {
    */
   public void testContainsWithNull() {
     CharArraySet set = new CharArraySet(1, true);
-    try {
+
+    expectThrows(NullPointerException.class, () -> {
       set.contains((char[]) null, 0, 10);
-      fail("null value must raise NPE");
-    } catch (NullPointerException e) {}
-    try {
+    });
+
+    expectThrows(NullPointerException.class, () -> {
       set.contains((CharSequence) null);
-      fail("null value must raise NPE");
-    } catch (NullPointerException e) {}
-    try {
+    });
+
+    expectThrows(NullPointerException.class, () -> {
       set.contains((Object) null);
-      fail("null value must raise NPE");
-    } catch (NullPointerException e) {}
+    });
   }
   
   public void testToString() {

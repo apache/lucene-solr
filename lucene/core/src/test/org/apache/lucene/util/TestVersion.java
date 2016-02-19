@@ -58,34 +58,25 @@ public class TestVersion extends LuceneTestCase {
   }
   
   public void testParseLenientlyExceptions() {
-    try {
+    ParseException expected = expectThrows(ParseException.class, () -> {
       Version.parseLeniently("LUCENE");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("LUCENE"));
-    }
-    try {
+    });
+    assertTrue(expected.getMessage().contains("LUCENE"));
+
+    expected = expectThrows(ParseException.class, () -> {
       Version.parseLeniently("LUCENE_610");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("LUCENE_610"));
-    }
-    try {
+    });
+    assertTrue(expected.getMessage().contains("LUCENE_610"));
+
+    expected = expectThrows(ParseException.class, () -> {
       Version.parseLeniently("LUCENE61");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("LUCENE61"));
-    }
-    try {
+    });
+    assertTrue(expected.getMessage().contains("LUCENE61"));
+
+    expected = expectThrows(ParseException.class, () -> {
       Version.parseLeniently("LUCENE_6.0.0");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("LUCENE_6.0.0"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("LUCENE_6.0.0"));
   }
 
   public void testParseLenientlyOnAllConstants() throws Exception {
@@ -116,101 +107,65 @@ public class TestVersion extends LuceneTestCase {
   }
 
   public void testParseExceptions() {
-    try {
+    ParseException expected = expectThrows(ParseException.class, () -> {
       Version.parse("LUCENE_6_0_0");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("LUCENE_6_0_0"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("LUCENE_6_0_0"));
 
-    try {
+    expected = expectThrows(ParseException.class, () -> {
       Version.parse("6.256");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("6.256"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("6.256"));
 
-    try {
+    expected = expectThrows(ParseException.class, () -> {
       Version.parse("6.-1");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("6.-1"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("6.-1"));
 
-    try {
+    expected = expectThrows(ParseException.class, () -> {
       Version.parse("6.1.256");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("6.1.256"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("6.1.256"));
 
-    try {
+    expected = expectThrows(ParseException.class, () -> {
       Version.parse("6.1.-1");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("6.1.-1"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("6.1.-1"));
 
-    try {
+    expected = expectThrows(ParseException.class, () -> {
       Version.parse("6.1.1.3");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("6.1.1.3"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("6.1.1.3"));
 
-    try {
+    expected = expectThrows(ParseException.class, () -> {
       Version.parse("6.1.1.-1");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("6.1.1.-1"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("6.1.1.-1"));
 
-    try {
+    expected = expectThrows(ParseException.class, () -> {
       Version.parse("6.1.1.1");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("6.1.1.1"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("6.1.1.1"));
 
-    try {
+    expected = expectThrows(ParseException.class, () -> {
       Version.parse("6.1.1.2");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("6.1.1.2"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("6.1.1.2"));
 
-    try {
+    expected = expectThrows(ParseException.class, () -> {
       Version.parse("6.0.0.0");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("6.0.0.0"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("6.0.0.0"));
 
-    try {
+    expected = expectThrows(ParseException.class, () -> {
       Version.parse("6.0.0.1.42");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("6.0.0.1.42"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("6.0.0.1.42"));
 
-    try {
+    expected = expectThrows(ParseException.class, () -> {
       Version.parse("6..0.1");
-      fail();
-    } catch (ParseException pe) {
-      // pass
-      assertTrue(pe.getMessage().contains("6..0.1"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("6..0.1"));
   }
   
   public void testDeprecations() throws Exception {

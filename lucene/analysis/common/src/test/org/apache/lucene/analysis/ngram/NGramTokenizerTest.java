@@ -46,25 +46,16 @@ public class NGramTokenizerTest extends BaseTokenStreamTestCase {
   }
   
   public void testInvalidInput() throws Exception {
-    boolean gotException = false;
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       NGramTokenizer tok = new NGramTokenizer(2, 1);
-      tok.setReader(input);
-    } catch (IllegalArgumentException e) {
-      gotException = true;
-    }
-    assertTrue(gotException);
+    });
   }
   
   public void testInvalidInput2() throws Exception {
-    boolean gotException = false;
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       NGramTokenizer tok = new NGramTokenizer(0, 1);
       tok.setReader(input);
-    } catch (IllegalArgumentException e) {
-      gotException = true;
-    }
-    assertTrue(gotException);
+    });
   }
   
   public void testUnigrams() throws Exception {

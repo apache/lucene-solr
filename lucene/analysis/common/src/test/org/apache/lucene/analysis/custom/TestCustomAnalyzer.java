@@ -203,15 +203,12 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "foo Foo Bar", new String[0]);
     
     // try with unmodifiableMap, should fail
-    try {
+    expectThrows(UnsupportedOperationException.class, () -> {
       CustomAnalyzer.builder()
           .withTokenizer("whitespace")
           .addTokenFilter("stop", stopConfigImmutable)
           .build();
-      fail();
-    } catch (UnsupportedOperationException e) {
-      // pass
-    }
+    });
     a.close();
   }
   
@@ -242,133 +239,101 @@ public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
   // Now test misconfigurations:
 
   public void testIncorrectOrder() throws Exception {
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       CustomAnalyzer.builder()
           .addCharFilter("htmlstrip")
           .withDefaultMatchVersion(Version.LATEST)
           .withTokenizer("whitespace")
           .build();
-      fail();
-    } catch (IllegalStateException e) {
-      // pass
-    }
+    });
   }
 
   public void testMissingSPI() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       CustomAnalyzer.builder()
           .withTokenizer("foobar_nonexistent")
           .build();
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("SPI"));
-      assertTrue(e.getMessage().contains("does not exist"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("SPI"));
+    assertTrue(expected.getMessage().contains("does not exist"));
   }
 
   public void testSetTokenizerTwice() throws Exception {
-    try {
+    expectThrows(AlreadySetException.class, () -> {
       CustomAnalyzer.builder()
           .withTokenizer("whitespace")
           .withTokenizer(StandardTokenizerFactory.class)
           .build();
-      fail();
-    } catch (AlreadySetException e) {
-      // pass
-    }
+    });
   }
 
   public void testSetMatchVersionTwice() throws Exception {
-    try {
+    expectThrows(AlreadySetException.class, () -> {
       CustomAnalyzer.builder()
           .withDefaultMatchVersion(Version.LATEST)
           .withDefaultMatchVersion(Version.LATEST)
           .withTokenizer("standard")
           .build();
-      fail();
-    } catch (AlreadySetException e) {
-      // pass
-    }
+    });
   }
 
   public void testSetPosIncTwice() throws Exception {
-    try {
+    expectThrows(AlreadySetException.class, () -> {
       CustomAnalyzer.builder()
           .withPositionIncrementGap(2)
           .withPositionIncrementGap(3)
           .withTokenizer("standard")
           .build();
-      fail();
-    } catch (AlreadySetException e) {
-      // pass
-    }
+    });
   }
 
   public void testSetOfsGapTwice() throws Exception {
-    try {
+    expectThrows(AlreadySetException.class, () -> {
       CustomAnalyzer.builder()
           .withOffsetGap(2)
           .withOffsetGap(3)
           .withTokenizer("standard")
           .build();
-      fail();
-    } catch (AlreadySetException e) {
-      // pass
-    }
+    });
   }
 
   public void testNoTokenizer() throws Exception {
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       CustomAnalyzer.builder().build();
-      fail();
-    } catch (IllegalStateException e) {
-      assertTrue(e.getMessage().equals("You have to set at least a tokenizer."));
-    }
+    });
   }
 
   public void testNullTokenizer() throws Exception {
-    try {
+    expectThrows(NullPointerException.class, () -> {
       CustomAnalyzer.builder()
         .withTokenizer((String) null)
         .build();
-      fail();
-    } catch (NullPointerException e) {
-      // pass
-    }
+    });
   }
 
   public void testNullTokenizerFactory() throws Exception {
-    try {
+    expectThrows(NullPointerException.class, () -> {
       CustomAnalyzer.builder()
         .withTokenizer((Class<TokenizerFactory>) null)
         .build();
-      fail();
-    } catch (NullPointerException e) {
-      // pass
-    }
+    });
   }
 
   public void testNullParamKey() throws Exception {
-    try {
+    expectThrows(NullPointerException.class, () -> {
       CustomAnalyzer.builder()
         .withTokenizer("whitespace", null, "foo")
         .build();
-      fail();
-    } catch (NullPointerException e) {
-      // pass
-    }
+    });
   }
 
   public void testNullMatchVersion() throws Exception {
-    try {
+    expectThrows(NullPointerException.class, () -> {
       CustomAnalyzer.builder()
         .withDefaultMatchVersion(null)
         .withTokenizer("whitespace")
         .build();
-      fail();
-    } catch (NullPointerException e) {
-      // pass
-    }
+    });
   }
 
 }

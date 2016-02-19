@@ -86,34 +86,25 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
     assertEquals(1, res.sourceFiles.size());
     Entry<String,List<RevisionFile>> entry = res.sourceFiles.entrySet().iterator().next();
     replicator.close();
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {
       replicator.obtainFile(res.id, entry.getKey(), entry.getValue().get(0).fileName);
-      fail("should have failed on AlreadyClosedException");
-    } catch (AlreadyClosedException e) {
-      // expected
-    }
+    });
   }
   
   @Test
   public void testPublishAlreadyClosed() throws IOException {
     replicator.close();
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {
       replicator.publish(createRevision(2));
-      fail("should have failed on AlreadyClosedException");
-    } catch (AlreadyClosedException e) {
-      // expected
-    }
+    });
   }
   
   @Test
   public void testUpdateAlreadyClosed() throws IOException {
     replicator.close();
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {
       replicator.checkForUpdate(null);
-      fail("should have failed on AlreadyClosedException");
-    } catch (AlreadyClosedException e) {
-      // expected
-    }
+    });
   }
   
   @Test
@@ -140,12 +131,10 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
     replicator.publish(createRevision(1));
     Revision old = new IndexRevision(sourceWriter);
     replicator.publish(createRevision(2));
-    try {
+    // should fail to publish an older revision
+    expectThrows(IllegalArgumentException.class, () -> {
       replicator.publish(old);
-      fail("should have failed to publish an older revision");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+    });
     assertEquals(1, DirectoryReader.listCommits(sourceDir).size());
   }
   
@@ -167,12 +156,10 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
     SessionToken session = replicator.checkForUpdate(null);
     replicator.setExpirationThreshold(5); // expire quickly
     Thread.sleep(50); // sufficient for expiration
-    try {
+    // should fail to obtain a file for an expired session
+    expectThrows(SessionExpiredException.class, () -> {
       replicator.obtainFile(session.id, session.sourceFiles.keySet().iterator().next(), session.sourceFiles.values().iterator().next().get(0).fileName);
-      fail("should have failed to obtain a file for an expired session");
-    } catch (SessionExpiredException e) {
-      // expected
-    }
+    });
   }
   
   @Test

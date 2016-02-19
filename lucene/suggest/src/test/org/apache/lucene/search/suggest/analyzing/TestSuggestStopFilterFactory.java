@@ -69,37 +69,33 @@ public class TestSuggestStopFilterFactory extends BaseTokenStreamTestCase {
 
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       createFactory("bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 
   /** Test that bogus arguments result in exception */
   public void testBogusFormats() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       createFactory("words", "stop-snowball.txt",
           "format", "bogus");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      String msg = expected.getMessage();
-      assertTrue(msg, msg.contains("Unknown"));
-      assertTrue(msg, msg.contains("format"));
-      assertTrue(msg, msg.contains("bogus"));
-    }
-    try {
+    });
+
+    String msg = expected.getMessage();
+    assertTrue(msg, msg.contains("Unknown"));
+    assertTrue(msg, msg.contains("format"));
+    assertTrue(msg, msg.contains("bogus"));
+    
+    expected = expectThrows(IllegalArgumentException.class, () -> {
       createFactory(
           // implicit default words file
           "format", "bogus");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      String msg = expected.getMessage();
-      assertTrue(msg, msg.contains("can not be specified"));
-      assertTrue(msg, msg.contains("format"));
-      assertTrue(msg, msg.contains("bogus"));
-    }
+    });
+    msg = expected.getMessage();
+    assertTrue(msg, msg.contains("can not be specified"));
+    assertTrue(msg, msg.contains("format"));
+    assertTrue(msg, msg.contains("bogus"));
   }                                             
 
   private SuggestStopFilterFactory createFactory(String ... params) throws IOException {

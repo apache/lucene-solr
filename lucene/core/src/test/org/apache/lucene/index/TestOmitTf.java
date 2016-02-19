@@ -306,17 +306,15 @@ public class TestOmitTf extends LuceneTestCase {
     TermQuery q4 = new TermQuery(d);
 
     PhraseQuery pq = new PhraseQuery(a.field(), a.bytes(), c.bytes());
-    try {
+    Exception expected = expectThrows(Exception.class, () -> {
       searcher.search(pq, 10);
-      fail("did not hit expected exception");
-    } catch (Exception e) {
-      Throwable cause = e;
-      // If the searcher uses an executor service, the IAE is wrapped into other exceptions
-      while (cause.getCause() != null) {
-        cause = cause.getCause();
-      }
-      assertTrue("Expected an IAE, got " + cause, cause instanceof IllegalStateException);
+    });
+    Throwable cause = expected;
+    // If the searcher uses an executor service, the IAE is wrapped into other exceptions
+    while (cause.getCause() != null) {
+      cause = cause.getCause();
     }
+    assertTrue("Expected an IAE, got " + cause, cause instanceof IllegalStateException);
         
     searcher.search(q1,
                     new CountingHitCollector() {

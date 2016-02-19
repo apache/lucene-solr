@@ -111,14 +111,12 @@ public class TestJapaneseTokenizerFactory extends BaseTokenStreamTestCase {
 
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new JapaneseTokenizerFactory(new HashMap<String,String>() {{
         put("bogusArg", "bogusValue");
       }});
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 
   private TokenStream makeTokenStream(HashMap<String, String> args, String in) throws IOException {

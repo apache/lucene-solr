@@ -440,43 +440,37 @@ public class TestFieldCache extends LuceneTestCase {
     LeafReader ar = getOnlySegmentReader(ir);
     
     // Binary type: can be retrieved via getTerms()
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       FieldCache.DEFAULT.getNumerics(ar, "binary", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
     BinaryDocValues binary = FieldCache.DEFAULT.getTerms(ar, "binary", true);
     final BytesRef term = binary.get(0);
     assertEquals("binary value", term.utf8ToString());
     
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       FieldCache.DEFAULT.getTermsIndex(ar, "binary");
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       FieldCache.DEFAULT.getDocTermOrds(ar, "binary", null);
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       new DocTermOrds(ar, null, "binary");
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
     Bits bits = FieldCache.DEFAULT.getDocsWithField(ar, "binary");
     assertTrue(bits.get(0));
     
     // Sorted type: can be retrieved via getTerms(), getTermsIndex(), getDocTermOrds()
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       FieldCache.DEFAULT.getNumerics(ar, "sorted", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       new DocTermOrds(ar, null, "sorted");
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
     binary = FieldCache.DEFAULT.getTerms(ar, "sorted", true);
     BytesRef scratch = binary.get(0);
@@ -501,49 +495,41 @@ public class TestFieldCache extends LuceneTestCase {
     NumericDocValues numeric = FieldCache.DEFAULT.getNumerics(ar, "numeric", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
     assertEquals(42, numeric.get(0));
     
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       FieldCache.DEFAULT.getTerms(ar, "numeric", true);
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       FieldCache.DEFAULT.getTermsIndex(ar, "numeric");
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       FieldCache.DEFAULT.getDocTermOrds(ar, "numeric", null);
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       new DocTermOrds(ar, null, "numeric");
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
     bits = FieldCache.DEFAULT.getDocsWithField(ar, "numeric");
     assertTrue(bits.get(0));
     
     // SortedSet type: can be retrieved via getDocTermOrds() 
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       FieldCache.DEFAULT.getNumerics(ar, "sortedset", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       FieldCache.DEFAULT.getTerms(ar, "sortedset", true);
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       FieldCache.DEFAULT.getTermsIndex(ar, "sortedset");
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       new DocTermOrds(ar, null, "sortedset");
-      fail();
-    } catch (IllegalStateException expected) {}
+    });
     
     sortedSet = FieldCache.DEFAULT.getDocTermOrds(ar, "sortedset", null);
     sortedSet.setDocument(0);

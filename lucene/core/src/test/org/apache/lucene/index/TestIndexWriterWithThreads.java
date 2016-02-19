@@ -365,22 +365,20 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
 
     dir.failOn(failure);
     failure.setDoFail();
-    try {
+    expectThrows(IOException.class, () -> {
       writer.addDocument(doc);
       writer.addDocument(doc);
       writer.commit();
-      fail("did not hit exception");
-    } catch (IOException ioe) {
-    }
+    });
+
     failure.clearDoFail();
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {
       writer.addDocument(doc);
       writer.commit();
       writer.close();
-    } catch (AlreadyClosedException ace) {
-      // OK: abort closes the writer
-      assertTrue(writer.deleter.isClosed());
-    }
+    });
+
+    assertTrue(writer.deleter.isClosed());
     dir.close();
   }
 

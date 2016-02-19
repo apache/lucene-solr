@@ -357,12 +357,9 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     q.setAccept(s2, true);
     q.addAnyTransition(s0, s1);
     q.addTransition(s1, s2, "b");
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       q.finish();
-      fail("did not hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
   }
 
   public void testInvalidTrailWithAny() throws Exception {
@@ -373,12 +370,9 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     q.setAccept(s2, true);
     q.addTransition(s0, s1, "b");
     q.addAnyTransition(s1, s2);
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       q.finish();
-      fail("did not hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
   }
   
   public void testAnyFromTokenStream() throws Exception {

@@ -486,12 +486,10 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     // new index.
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    try {
+    expectThrows(IndexNotFoundException.class, () -> {
       DirectoryReader.listCommits(dir);
-      fail("listCommits should have thrown an exception over empty index");
-    } catch (IndexNotFoundException e) {
-      // that's expected !
-    }
+    });
+
     // No changes still should generate a commit, because it's a new index.
     writer.close();
     assertEquals("expected 1 commits!", 1, DirectoryReader.listCommits(dir).size());
@@ -673,15 +671,14 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     w.addDocument(new Document());
+
     w.prepareCommit();
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       w.close();
-      fail("didn't hit exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
     w.commit();
     w.close();
+
     DirectoryReader r = DirectoryReader.open(dir);
     assertEquals(1, r.maxDoc());
     r.close();

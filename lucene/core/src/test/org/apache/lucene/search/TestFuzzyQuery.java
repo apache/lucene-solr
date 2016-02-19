@@ -449,52 +449,39 @@ public class TestFuzzyQuery extends LuceneTestCase {
     assertEquals(1, hits.length);
     assertEquals("foobar", searcher.doc(hits[0].doc).get("field"));
     
-    try {
-      q = new FuzzyQuery(new Term("field", "t"), 3);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
-      
+    expectThrows(IllegalArgumentException.class, () -> {
+      new FuzzyQuery(new Term("field", "t"), 3);
+    });
+
     reader.close();
     index.close();
   }
 
   public void testValidation() {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new FuzzyQuery(new Term("field", "foo"), -1, 0, 1, false);
-      fail("Expected error for illegal max edits value");
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("maxEdits"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("maxEdits"));
 
-    try {
+    expected = expectThrows(IllegalArgumentException.class, () -> {
       new FuzzyQuery(new Term("field", "foo"), LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + 1, 0, 1, false);
-      fail("Expected error for illegal max edits value");
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("maxEdits must be between"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("maxEdits must be between"));
 
-    try {
+    expected = expectThrows(IllegalArgumentException.class, () -> {
       new FuzzyQuery(new Term("field", "foo"), 1, -1, 1, false);
-      fail("Expected error for illegal prefix length value");
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("prefixLength cannot be negative"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("prefixLength cannot be negative"));
 
-    try {
+    expected = expectThrows(IllegalArgumentException.class, () -> {
       new FuzzyQuery(new Term("field", "foo"), 1, 0, -1, false);
-      fail("Expected error for illegal max expansions value");
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("maxExpansions must be positive"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("maxExpansions must be positive"));
 
-    try {
+    expected = expectThrows(IllegalArgumentException.class, () -> {
       new FuzzyQuery(new Term("field", "foo"), 1, 0, -1, false);
-      fail("Expected error for illegal max expansions value");
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("maxExpansions must be positive"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("maxExpansions must be positive"));
   }
   
   private void addDoc(String text, RandomIndexWriter writer) throws IOException {

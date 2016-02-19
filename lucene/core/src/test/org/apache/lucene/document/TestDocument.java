@@ -135,12 +135,9 @@ public class TestDocument extends LuceneTestCase {
     ft.setStored(true);
     new Field("name", "value", ft); // okay
     new StringField("name", "value", Field.Store.NO); // okay
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       new Field("name", "value", new FieldType());
-      fail();
-    } catch (IllegalArgumentException e) {
-      // expected exception
-    }
+    });
 
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
@@ -150,12 +147,9 @@ public class TestDocument extends LuceneTestCase {
     ft2.setStored(true);
     ft2.setStoreTermVectors(true);
     doc.add(new Field("name", "value", ft2));
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      fail();
-    } catch (IllegalArgumentException e) {
-      // expected exception
-    }
+    });
     w.close();
     dir.close();
   }
@@ -167,25 +161,18 @@ public class TestDocument extends LuceneTestCase {
     assertEquals(0, doc.getFields().size());
   }
 
+  /** test that Document.getFields() actually returns an immutable list */
   public void testGetFieldsImmutable() {
     Document doc = makeDocumentWithFields();
     assertEquals(10, doc.getFields().size());
     List<IndexableField> fields = doc.getFields();
-    try {
-      fields.add( new StringField("name", "value", Field.Store.NO) );
-      fail("Document.getFields() should return immutable List");
-    }
-    catch (UnsupportedOperationException e) {
-      // OK
-    }
+    expectThrows(UnsupportedOperationException.class, () -> {
+      fields.add(new StringField("name", "value", Field.Store.NO));
+    });
 
-    try {
+    expectThrows(UnsupportedOperationException.class, () -> {
       fields.clear();
-      fail("Document.getFields() should return immutable List");
-    }
-    catch (UnsupportedOperationException e) {
-      // OK
-    }
+    });
   }
   
   /**
@@ -344,14 +331,11 @@ public class TestDocument extends LuceneTestCase {
   
   // LUCENE-3616
   public void testInvalidFields() {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       Tokenizer tok = new MockTokenizer();
       tok.setReader(new StringReader(""));
       new Field("foo", tok, StringField.TYPE_STORED);
-      fail("did not hit expected exc");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    });
   }
   
   public void testNumericFieldAsString() throws Exception {

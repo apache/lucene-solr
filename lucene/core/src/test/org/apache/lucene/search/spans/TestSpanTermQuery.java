@@ -53,12 +53,11 @@ public class TestSpanTermQuery extends LuceneTestCase {
     
     IndexSearcher is = new IndexSearcher(ir);
     SpanTermQuery query = new SpanTermQuery(new Term("foo", "bar"));
-    try {
+    IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
       is.search(query, 5);
-      fail("didn't get expected exception");
-    } catch (IllegalStateException expected) {
-      assertTrue(expected.getMessage().contains("was indexed without position data"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("was indexed without position data"));
+
     ir.close();
     dir.close();
   }

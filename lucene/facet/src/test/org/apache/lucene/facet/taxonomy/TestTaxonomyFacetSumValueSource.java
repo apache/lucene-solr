@@ -229,19 +229,13 @@ public class TestTaxonomyFacetSumValueSource extends FacetTestCase {
     List<FacetResult> results = facets.getAllDims(10);
     assertTrue(results.isEmpty());
 
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       facets.getSpecificValue("a");
-      fail("should have hit exc");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    });
 
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       facets.getTopChildren(10, "a");
-      fail("should have hit exc");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    });
 
     IOUtils.close(searcher.getIndexReader(), taxoReader, dir, taxoDir);
   }

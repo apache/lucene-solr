@@ -125,13 +125,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
                                     // foobar pizza
     
     MultiPhraseQuery query4 = new MultiPhraseQuery();
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       query4.add(new Term("field1", "foo"));
       query4.add(new Term("field2", "foobar"));
-      fail();
-    } catch (IllegalArgumentException e) {
-      // okay, all terms must belong to the same field
-    }
+    });
     
     writer.close();
     reader.close();
@@ -571,12 +568,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     MultiPhraseQuery query = new MultiPhraseQuery();
     query.add(new Term("field", "two"));
     query.add(new Term("field", "one"));
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       query.setSlop(-2);
-      fail("didn't get expected exception");
-    } catch (IllegalArgumentException expected) {
-      // expected exception
-    }
+    });
   }
   
 }

@@ -64,12 +64,10 @@ public class SortingLeafReaderTest extends SorterTestBase {
   }
   
   public void testBadSort() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       SortingLeafReader.wrap(sortedReader, Sort.RELEVANCE);
-      fail("Didn't get expected exception");
-    } catch (IllegalArgumentException e) {
-      assertEquals("Cannot sort an index with a Sort that refers to the relevance score", e.getMessage());
-    }
+    });
+    assertEquals("Cannot sort an index with a Sort that refers to the relevance score", expected.getMessage());
   }
 
 }

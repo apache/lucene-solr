@@ -47,23 +47,15 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
   
   public void testInvalidInput() throws Exception {
-    boolean gotException = false;
-    try {        
+    expectThrows(IllegalArgumentException.class, () -> {
       new NGramTokenFilter(input, 2, 1);
-    } catch (IllegalArgumentException e) {
-      gotException = true;
-    }
-    assertTrue(gotException);
+    });
   }
   
   public void testInvalidInput2() throws Exception {
-    boolean gotException = false;
-    try {        
+    expectThrows(IllegalArgumentException.class, () -> {     
       new NGramTokenFilter(input, 0, 1);
-    } catch (IllegalArgumentException e) {
-      gotException = true;
-    }
-    assertTrue(gotException);
+    });
   }
 
   public void testUnigrams() throws Exception {

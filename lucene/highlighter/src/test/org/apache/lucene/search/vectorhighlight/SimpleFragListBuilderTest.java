@@ -28,13 +28,10 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
   }
   
   public void testTooSmallFragSize() throws Exception {
-    try{
+    expectThrows(IllegalArgumentException.class, () -> {
       SimpleFragListBuilder sflb = new SimpleFragListBuilder();
-      sflb.createFieldFragList( fpl(new TermQuery(new Term(F, "a")), "b c d" ), sflb.minFragCharSize - 1 );
-      fail( "IllegalArgumentException must be thrown" );
-    }
-    catch ( IllegalArgumentException expected ) {
-    }
+      sflb.createFieldFragList(fpl(new TermQuery(new Term(F, "a")), "b c d"), sflb.minFragCharSize - 1);
+    });
   }
   
   public void testSmallerFragSizeThanTermQuery() throws Exception {

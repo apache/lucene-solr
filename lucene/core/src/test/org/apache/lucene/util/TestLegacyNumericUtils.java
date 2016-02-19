@@ -75,12 +75,10 @@ public class TestLegacyNumericUtils extends LuceneTestCase {
       assertEquals( "forward and back conversion should generate same long", vals[i], LegacyNumericUtils.prefixCodedToLong(prefixVals[i].get()) );
 
       // test if decoding values as int fails correctly
-      try {
-        LegacyNumericUtils.prefixCodedToInt(prefixVals[i].get());
-        fail("decoding a prefix coded long value as int should fail");
-      } catch (NumberFormatException e) {
-        // worked
-      }
+      final int index = i;
+      expectThrows(NumberFormatException.class, () -> {
+        LegacyNumericUtils.prefixCodedToInt(prefixVals[index].get());
+      });
     }
     
     // check sort order (prefixVals should be ascending)
@@ -115,12 +113,10 @@ public class TestLegacyNumericUtils extends LuceneTestCase {
       assertEquals( "forward and back conversion should generate same int", vals[i], LegacyNumericUtils.prefixCodedToInt(prefixVals[i].get()) );
       
       // test if decoding values as long fails correctly
-      try {
-        LegacyNumericUtils.prefixCodedToLong(prefixVals[i].get());
-        fail("decoding a prefix coded int value as long should fail");
-      } catch (NumberFormatException e) {
-        // worked
-      }
+      final int index = i;
+      expectThrows(NumberFormatException.class, () -> {
+        LegacyNumericUtils.prefixCodedToLong(prefixVals[index].get());
+      });
     }
     
     // check sort order (prefixVals should be ascending)

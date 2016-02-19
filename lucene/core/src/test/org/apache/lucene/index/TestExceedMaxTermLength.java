@@ -83,21 +83,19 @@ public class TestExceedMaxTermLength extends LuceneTestCase {
       }
       doc.add(f);
       
-      try {
+      IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
         w.addDocument(doc);
-        fail("Did not get an exception from adding a monster term");
-      } catch (IllegalArgumentException e) {
-        final String maxLengthMsg = String.valueOf(IndexWriter.MAX_TERM_LENGTH);
-        final String msg = e.getMessage();
-        assertTrue("IllegalArgumentException didn't mention 'immense term': " + msg,
-                   msg.contains("immense term"));
-        assertTrue("IllegalArgumentException didn't mention max length ("+maxLengthMsg+"): " + msg,
-                   msg.contains(maxLengthMsg));
-        assertTrue("IllegalArgumentException didn't mention field name ("+name+"): " + msg,
-                   msg.contains(name));
-        assertTrue("IllegalArgumentException didn't mention original message: " + msg,
-            msg.contains("bytes can be at most") && msg.contains("in length; got"));
-      }
+      });
+      String maxLengthMsg = String.valueOf(IndexWriter.MAX_TERM_LENGTH);
+      String msg = expected.getMessage();
+      assertTrue("IllegalArgumentException didn't mention 'immense term': " + msg,
+                 msg.contains("immense term"));
+      assertTrue("IllegalArgumentException didn't mention max length ("+maxLengthMsg+"): " + msg,
+                 msg.contains(maxLengthMsg));
+      assertTrue("IllegalArgumentException didn't mention field name ("+name+"): " + msg,
+                 msg.contains(name));
+      assertTrue("IllegalArgumentException didn't mention original message: " + msg,
+                 msg.contains("bytes can be at most") && msg.contains("in length; got"));
     } finally {
       w.close();
     }

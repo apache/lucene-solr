@@ -68,22 +68,20 @@ public class TestIndexReaderClose extends LuceneTestCase {
       if (!faultySet && !throwOnClose) {
         reader.addReaderClosedListener(new FaultyListener());
       }
-      try {
+
+      IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
         reader.close();
-        fail("expected Exception");
-      } catch (IllegalStateException ex) {
-        if (throwOnClose) {
-          assertEquals("BOOM!", ex.getMessage());
-        } else {
-          assertEquals("GRRRRRRRRRRRR!", ex.getMessage());
-        }
+      });
+
+      if (throwOnClose) {
+        assertEquals("BOOM!", expected.getMessage());
+      } else {
+        assertEquals("GRRRRRRRRRRRR!", expected.getMessage());
       }
 
-      try {
+      expectThrows(AlreadyClosedException.class, () -> {
         reader.fields();
-        fail("we are closed");
-      } catch (AlreadyClosedException ex) {
-      }
+      });
 
       if (random().nextBoolean()) {
         reader.close(); // call it again

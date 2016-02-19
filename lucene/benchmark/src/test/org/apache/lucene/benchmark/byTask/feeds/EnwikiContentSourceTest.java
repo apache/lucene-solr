@@ -56,12 +56,9 @@ public class EnwikiContentSourceTest extends LuceneTestCase {
   }
   
   private void assertNoMoreDataException(EnwikiContentSource stdm) throws Exception {
-    try {
+    expectThrows(NoMoreDataException.class, () -> {
       stdm.getNextDocData(null);
-      fail("Expecting NoMoreDataException");
-    } catch (NoMoreDataException e) {
-      // expected
-    }
+    });
   }
   
   private final String PAGE1 = 

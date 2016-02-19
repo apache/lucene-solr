@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -58,10 +59,10 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
     Directory dir = getDirectory(tempPath);
     
     Lock l = dir.obtainLock("commit");
-    try {
+    // shouldn't be able to get the lock twice
+    expectThrows(LockObtainFailedException.class, () -> {      
       dir.obtainLock("commit");
-      fail("succeeded in obtaining lock twice, didn't get exception");
-    } catch (LockObtainFailedException expected) {}
+    });
     l.close();
     
     // Make sure we can obtain first one again:
@@ -101,10 +102,10 @@ public abstract class BaseLockFactoryTestCase extends LuceneTestCase {
     Lock l = dir.obtainLock("commit");
     l.close();
 
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {      
       l.ensureValid();
-      fail("didn't get exception");
-    } catch (AlreadyClosedException expected) {}
+    });
+
     dir.close();
   }
   

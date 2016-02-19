@@ -75,26 +75,22 @@ public class TestMorfologikFilterFactory extends BaseTokenStreamTestCase {
   public void testMissingDictionary() throws Exception {
     final ResourceLoader loader = new ClasspathResourceLoader(TestMorfologikFilterFactory.class);
 
-    try {
+    IOException expected = expectThrows(IOException.class, () -> {
       Map<String,String> params = new HashMap<>();
       params.put(MorfologikFilterFactory.DICTIONARY_ATTRIBUTE, "missing-dictionary-resource.dict");
       MorfologikFilterFactory factory = new MorfologikFilterFactory(params);
       factory.inform(loader);
-      fail();
-    } catch (IOException e) {
-      assertTrue(e.getMessage().contains("Resource not found"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Resource not found"));
   }
 
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       HashMap<String,String> params = new HashMap<String,String>();
       params.put("bogusArg", "bogusValue");
       new MorfologikFilterFactory(params);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

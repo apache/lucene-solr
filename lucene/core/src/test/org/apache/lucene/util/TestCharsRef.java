@@ -74,19 +74,13 @@ public class TestCharsRef extends LuceneTestCase {
     
     assertEquals('b', c.charAt(1));
     
-    try {
+    expectThrows(IndexOutOfBoundsException.class, () -> {
       c.charAt(-1);
-      fail();
-    } catch (IndexOutOfBoundsException expected) {
-      // expected exception
-    }
+    });
     
-    try {
+    expectThrows(IndexOutOfBoundsException.class, () -> {
       c.charAt(3);
-      fail();
-    } catch (IndexOutOfBoundsException expected) {
-      // expected exception
-    }
+    });
   }
   
   // LUCENE-3590: fix off-by-one in subsequence, and fully obey interface
@@ -115,32 +109,20 @@ public class TestCharsRef extends LuceneTestCase {
     // empty subsequence
     assertEquals("", c.subSequence(0, 0).toString());
     
-    try {
+    expectThrows(IndexOutOfBoundsException.class, () -> {
       c.subSequence(-1, 1);
-      fail();
-    } catch (IndexOutOfBoundsException expected) {
-      // expected exception
-    }
+    });
     
-    try {
+    expectThrows(IndexOutOfBoundsException.class, () -> {
       c.subSequence(0, -1);
-      fail();
-    } catch (IndexOutOfBoundsException expected) {
-      // expected exception
-    }
+    });
     
-    try {
+    expectThrows(IndexOutOfBoundsException.class, () -> {
       c.subSequence(0, 4);
-      fail();
-    } catch (IndexOutOfBoundsException expected) {
-      // expected exception
-    }
+    });
     
-    try {
+    expectThrows(IndexOutOfBoundsException.class, () -> {
       c.subSequence(2, 1);
-      fail();
-    } catch (IndexOutOfBoundsException expected) {
-      // expected exception
-    }
+    });
   }
 }

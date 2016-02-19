@@ -39,13 +39,11 @@ public class TestCustomFunctions extends LuceneTestCase {
   /** empty list of methods */
   public void testEmpty() throws Exception {
     Map<String,Method> functions = Collections.emptyMap();
-    try {
+    ParseException expected = expectThrows(ParseException.class, () -> {
       JavascriptCompiler.compile("sqrt(20)", functions, getClass().getClassLoader());
-      fail();
-    } catch (ParseException expected) {
-      assertEquals("Invalid expression 'sqrt(20)': Unrecognized function call (sqrt).", expected.getMessage());
-      assertEquals(expected.getErrorOffset(), 0);
-    }
+    });
+    assertEquals("Invalid expression 'sqrt(20)': Unrecognized function call (sqrt).", expected.getMessage());
+    assertEquals(expected.getErrorOffset(), 0);
   }
   
   /** using the default map explicitly */
@@ -96,38 +94,23 @@ public class TestCustomFunctions extends LuceneTestCase {
 
   /** tests invalid methods that are not allowed to become variables to be mapped */
   public void testInvalidVariableMethods() {
-    try {
+    ParseException expected = expectThrows(ParseException.class, () -> {
       JavascriptCompiler.compile("method()");
-      fail();
-    } catch (IllegalArgumentException exception) {
-      fail();
-    } catch (ParseException expected) {
-      //expected
-      assertEquals("Invalid expression 'method()': Unrecognized function call (method).", expected.getMessage());
-      assertEquals(0, expected.getErrorOffset());
-    }
+    });
+    assertEquals("Invalid expression 'method()': Unrecognized function call (method).", expected.getMessage());
+    assertEquals(0, expected.getErrorOffset());
 
-    try {
+    expected = expectThrows(ParseException.class, () -> {
       JavascriptCompiler.compile("method.method(1)");
-      fail();
-    } catch (IllegalArgumentException exception) {
-      fail();
-    } catch (ParseException expected) {
-      //expected
-      assertEquals("Invalid expression 'method.method(1)': Unrecognized function call (method.method).", expected.getMessage());
-      assertEquals(0, expected.getErrorOffset());
-    }
+    });
+    assertEquals("Invalid expression 'method.method(1)': Unrecognized function call (method.method).", expected.getMessage());
+    assertEquals(0, expected.getErrorOffset());
     
-    try {
+    expected = expectThrows(ParseException.class, () -> {
       JavascriptCompiler.compile("1 + method()");
-      fail();
-    } catch (IllegalArgumentException exception) {
-      fail();
-    } catch (ParseException expected) {
-      //expected
-      assertEquals("Invalid expression '1 + method()': Unrecognized function call (method).", expected.getMessage());
-      assertEquals(4, expected.getErrorOffset());
-    }
+    });
+    assertEquals("Invalid expression '1 + method()': Unrecognized function call (method).", expected.getMessage());
+    assertEquals(4, expected.getErrorOffset());
   }
 
   public static String bogusReturnType() { return "bogus!"; }
@@ -136,12 +119,10 @@ public class TestCustomFunctions extends LuceneTestCase {
   public void testWrongReturnType() throws Exception {
     Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getMethod("bogusReturnType"));
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("does not return a double"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("does not return a double"));
   }
   
   public static double bogusParameterType(String s) { return 0; }
@@ -150,12 +131,10 @@ public class TestCustomFunctions extends LuceneTestCase {
   public void testWrongParameterType() throws Exception {
     Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getMethod("bogusParameterType", String.class));
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       JavascriptCompiler.compile("foo(2)", functions, getClass().getClassLoader());
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("must take only double parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("must take only double parameters"));
   }
   
   public double nonStaticMethod() { return 0; }
@@ -164,12 +143,10 @@ public class TestCustomFunctions extends LuceneTestCase {
   public void testWrongNotStatic() throws Exception {
     Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getMethod("nonStaticMethod"));
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("is not static"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("is not static"));
   }
   
   static double nonPublicMethod() { return 0; }
@@ -178,12 +155,10 @@ public class TestCustomFunctions extends LuceneTestCase {
   public void testWrongNotPublic() throws Exception {
     Map<String,Method> functions = new HashMap<>();
     functions.put("foo", getClass().getDeclaredMethod("nonPublicMethod"));
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("not public"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("not public"));
   }
 
   static class NestedNotPublic {
@@ -194,12 +169,10 @@ public class TestCustomFunctions extends LuceneTestCase {
   public void testWrongNestedNotPublic() throws Exception {
     Map<String,Method> functions = new HashMap<>();
     functions.put("foo", NestedNotPublic.class.getMethod("method"));
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       JavascriptCompiler.compile("foo()", functions, getClass().getClassLoader());
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("not public"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("not public"));
   }
   
   /** Classloader that can be used to create a fake static class that has one method returning a static var */
@@ -250,12 +223,10 @@ public class TestCustomFunctions extends LuceneTestCase {
     assertEquals(2.0, expr.evaluate(0, null), DELTA);
     
     // use our classloader, not the foreign one, which should fail!
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       JavascriptCompiler.compile("bar()", functions, thisLoader);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("is not declared by a class which is accessible by the given parent ClassLoader"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("is not declared by a class which is accessible by the given parent ClassLoader"));
     
     // mix foreign and default functions
     Map<String,Method> mixedFunctions = new HashMap<>(JavascriptCompiler.DEFAULT_FUNCTIONS);
@@ -266,12 +237,10 @@ public class TestCustomFunctions extends LuceneTestCase {
     assertEquals(Math.sqrt(20), expr.evaluate(0, null), DELTA);
     
     // use our classloader, not the foreign one, which should fail!
-    try {
+    expected = expectThrows(IllegalArgumentException.class, () -> {
       JavascriptCompiler.compile("bar()", mixedFunctions, thisLoader);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("is not declared by a class which is accessible by the given parent ClassLoader"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("is not declared by a class which is accessible by the given parent ClassLoader"));
   }
   
   static String MESSAGE = "This should not happen but it happens";
@@ -286,17 +255,15 @@ public class TestCustomFunctions extends LuceneTestCase {
     functions.put("foo", StaticThrowingException.class.getMethod("method"));
     String source = "3 * foo() / 5";
     Expression expr = JavascriptCompiler.compile(source, functions, getClass().getClassLoader());
-    try {
+    ArithmeticException expected = expectThrows(ArithmeticException.class, () -> {
       expr.evaluate(0, null);
-      fail();
-    } catch (ArithmeticException e) {
-      assertEquals(MESSAGE, e.getMessage());
-      StringWriter sw = new StringWriter();
-      PrintWriter pw = new PrintWriter(sw);
-      e.printStackTrace(pw);
-      pw.flush();
-      assertTrue(sw.toString().contains("JavascriptCompiler$CompiledExpression.evaluate(" + source + ")"));
-    }
+    });
+    assertEquals(MESSAGE, expected.getMessage());
+    StringWriter sw = new StringWriter();
+    PrintWriter pw = new PrintWriter(sw);
+    expected.printStackTrace(pw);
+    pw.flush();
+    assertTrue(sw.toString().contains("JavascriptCompiler$CompiledExpression.evaluate(" + source + ")"));
   }
 
   /** test that namespaces work with custom expressions. */

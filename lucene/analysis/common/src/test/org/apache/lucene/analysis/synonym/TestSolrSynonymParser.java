@@ -77,12 +77,9 @@ public class TestSolrSynonymParser extends BaseSynonymParserTestCase {
     String testFile = "a => b => c";
     Analyzer analyzer = new MockAnalyzer(random());
     SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
-    try {
+    expectThrows(ParseException.class, () -> {
       parser.parse(new StringReader(testFile));
-      fail("didn't get expected exception");
-    } catch (ParseException expected) {
-      // expected exc
-    }
+    });
     analyzer.close();
   }
   
@@ -91,12 +88,9 @@ public class TestSolrSynonymParser extends BaseSynonymParserTestCase {
     String testFile = "a => 1"; 
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, false);
     SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
-    try {
+    expectThrows(ParseException.class, () -> {
       parser.parse(new StringReader(testFile));
-      fail("didn't get expected exception");
-    } catch (ParseException expected) {
-      // expected exc
-    }
+    });
     analyzer.close();
   }
   
@@ -105,12 +99,9 @@ public class TestSolrSynonymParser extends BaseSynonymParserTestCase {
     String testFile = "1 => a";
     Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, false);
     SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
-    try {
+    expectThrows(ParseException.class, () -> {
       parser.parse(new StringReader(testFile));
-      fail("didn't get expected exception");
-    } catch (ParseException expected) {
-      // expected exc
-    }
+    });
     analyzer.close();
   }
   
@@ -119,12 +110,9 @@ public class TestSolrSynonymParser extends BaseSynonymParserTestCase {
     String testFile = "testola => the test";
     Analyzer analyzer = new EnglishAnalyzer();
     SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
-    try {
+    expectThrows(ParseException.class, () -> {
       parser.parse(new StringReader(testFile));
-      fail("didn't get expected exception");
-    } catch (ParseException expected) {
-      // expected exc
-    }
+    });
     analyzer.close();
   }
   
@@ -133,12 +121,9 @@ public class TestSolrSynonymParser extends BaseSynonymParserTestCase {
     String testFile = "the test => testola";
     Analyzer analyzer = new EnglishAnalyzer();
     SolrSynonymParser parser = new SolrSynonymParser(true, true, analyzer);
-    try {
+    expectThrows(ParseException.class, () -> {
       parser.parse(new StringReader(testFile));
-      fail("didn't get expected exception");
-    } catch (ParseException expected) {
-      // expected exc
-    }
+    });
     analyzer.close();
   }
   

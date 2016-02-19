@@ -56,12 +56,10 @@ public class TestContextSuggestField extends LuceneTestCase {
 
   @Test
   public void testEmptySuggestion() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new ContextSuggestField("suggest_field", "", 1, "type1");
-      fail("no exception thrown when indexing zero length suggestion");
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("value"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("value"));
   }
 
   @Test
@@ -73,22 +71,24 @@ public class TestContextSuggestField extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     Document document = new Document();
     try (RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "name"))) {
-      document.add(new ContextSuggestField("name", "sugg", 1, charsRefBuilder.toString()));
-      iw.addDocument(document);
-      iw.commit();
-      fail("no exception thrown for context value containing CONTEXT_SEPARATOR:" + ContextSuggestField.CONTEXT_SEPARATOR);
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("[0x1d]"));
+      // exception should be thrown for context value containing CONTEXT_SEPARATOR
+      IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+        document.add(new ContextSuggestField("name", "sugg", 1, charsRefBuilder.toString()));
+        iw.addDocument(document);
+        iw.commit();
+      });
+      assertTrue(expected.getMessage().contains("[0x1d]"));
     }
     document.clear();
 
     try (RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "name"))) {
-      document.add(new ContextSuggestField("name", charsRefBuilder.toString(), 1, "sugg"));
-      iw.addDocument(document);
-      iw.commit();
-      fail("no exception thrown for value containing CONTEXT_SEPARATOR:" + ContextSuggestField.CONTEXT_SEPARATOR);
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("[0x1d]"));
+      // exception should be thrown for context value containing CONTEXT_SEPARATOR
+      IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+        document.add(new ContextSuggestField("name", charsRefBuilder.toString(), 1, "sugg"));
+        iw.addDocument(document);
+        iw.commit();
+      });
+      assertTrue(expected.getMessage().contains("[0x1d]"));
     }
   }
 
@@ -135,10 +135,11 @@ public class TestContextSuggestField extends LuceneTestCase {
 
     try (RandomIndexWriter iw = new RandomIndexWriter(random(), dir,
         iwcWithSuggestField(analyzer, "suggest_field"))) {
-      iw.addDocument(document);
-      iw.commit();
-      fail("mixing suggest field types for same field name should error out");
-    } catch (IllegalArgumentException expected) {
+      // mixing suggest field types for same field name should error out
+      IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+        iw.addDocument(document);
+        iw.commit();
+      });
       assertTrue(expected.getMessage().contains("mixed types"));
     }
   }

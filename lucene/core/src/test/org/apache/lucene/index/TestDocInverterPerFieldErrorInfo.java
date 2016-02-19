@@ -76,14 +76,12 @@ public class TestDocInverterPerFieldErrorInfo extends LuceneTestCase {
     writer = new IndexWriter(dir, c);
     Document doc = new Document();
     doc.add(newField("distinctiveFieldName", "aaa ", storedTextType));
-    try {
+    expectThrows(BadNews.class, () -> {
       writer.addDocument(doc);
-      fail("Failed to fail.");
-    } catch(BadNews badNews) {
-      infoPrintStream.flush();
-      String infoStream = new String(infoBytes.toByteArray(), IOUtils.UTF_8);
-      assertTrue(infoStream.contains("distinctiveFieldName"));
-    }
+    });
+    infoPrintStream.flush();
+    String infoStream = new String(infoBytes.toByteArray(), IOUtils.UTF_8);
+    assertTrue(infoStream.contains("distinctiveFieldName"));
 
     writer.close();
     dir.close();

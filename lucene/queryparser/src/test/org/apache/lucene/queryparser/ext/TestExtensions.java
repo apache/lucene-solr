@@ -68,11 +68,9 @@ public class TestExtensions extends LuceneTestCase {
   public void testEscapeExtension() {
     assertEquals("abc\\:\\?\\{\\}\\[\\]\\\\\\(\\)\\+\\-\\!\\~", ext
         .escapeExtensionField("abc:?{}[]\\()+-!~"));
-    try {
+    // should throw NPE - escape string is null
+    expectThrows(NullPointerException.class, () -> {
       ext.escapeExtensionField(null);
-      fail("should throw NPE - escape string is null");
-    } catch (NullPointerException e) {
-      // 
-    }
+    });
   }
 }

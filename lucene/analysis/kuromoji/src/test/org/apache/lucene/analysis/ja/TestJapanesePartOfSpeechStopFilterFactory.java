@@ -53,14 +53,12 @@ public class TestJapanesePartOfSpeechStopFilterFactory extends BaseTokenStreamTe
   
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new JapanesePartOfSpeechStopFilterFactory(new HashMap<String,String>() {{
         put("luceneMatchVersion", Version.LATEST.toString());
         put("bogusArg", "bogusValue");
       }});
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

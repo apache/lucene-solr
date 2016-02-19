@@ -439,111 +439,75 @@ public class TestField extends LuceneTestCase {
   }
   
   private void trySetByteValue(Field f) {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       f.setByteValue((byte) 10);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
 
   private void trySetBytesValue(Field f) {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       f.setBytesValue(new byte[] { 5, 5 });
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   private void trySetBytesRefValue(Field f) {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       f.setBytesValue(new BytesRef("bogus"));
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   private void trySetDoubleValue(Field f) {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       f.setDoubleValue(Double.MAX_VALUE);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   private void trySetIntValue(Field f) {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       f.setIntValue(Integer.MAX_VALUE);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   private void trySetLongValue(Field f) {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       f.setLongValue(Long.MAX_VALUE);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   private void trySetFloatValue(Field f) {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       f.setFloatValue(Float.MAX_VALUE);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   private void trySetReaderValue(Field f) {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       f.setReaderValue(new StringReader("BOO!"));
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   private void trySetShortValue(Field f) {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       f.setShortValue(Short.MAX_VALUE);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   private void trySetStringValue(Field f) {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       f.setStringValue("BOO!");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   private void trySetTokenStreamValue(Field f) {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       f.setTokenStream(new CannedTokenStream(new Token("foo", 0, 3)));
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
   private void trySetBoost(Field f) {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       f.setBoost(5.0f);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
   }
   
 }

@@ -1239,12 +1239,9 @@ public class RandomPostingsTester {
       }
     }
     assertFalse(iterator.hasNext());
-    try {
+    LuceneTestCase.expectThrows(NoSuchElementException.class, () -> {
       iterator.next();
-      throw new AssertionError("Fields.iterator() doesn't throw NoSuchElementException when past the end");
-    } catch (NoSuchElementException expected) {
-      // expected
-    }
+    });
   }
 
   /** Indexes all fields/terms at the specified

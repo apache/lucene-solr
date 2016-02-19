@@ -39,29 +39,25 @@ public class TestCodepointCountFilterFactory extends BaseTokenStreamFactoryTestC
   
   /** Test that bogus arguments result in exception */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenFilterFactory("CodepointCount", 
           "min", "4", 
           "max", "5", 
           "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 
   /** Test that invalid arguments result in exception */
   public void testInvalidArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       Reader reader = new StringReader("foo foobar super-duper-trooper");
       TokenStream stream = new MockTokenizer(MockTokenizer.WHITESPACE, false);
       ((Tokenizer)stream).setReader(reader);
       tokenFilterFactory("CodepointCount",
           CodepointCountFilterFactory.MIN_KEY, "5",
           CodepointCountFilterFactory.MAX_KEY, "4").create(stream);
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("maximum length must not be greater than minimum length"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("maximum length must not be greater than minimum length"));
   }
 }

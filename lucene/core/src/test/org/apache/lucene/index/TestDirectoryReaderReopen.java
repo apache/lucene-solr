@@ -672,13 +672,9 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
 
     // Now reopen:
     //System.out.println("TEST: now reopen");
-    try {
-      IndexReader r2 = DirectoryReader.openIfChanged(r);
-      //System.out.println("got " + r2);
-      fail("didn't hit exception");
-    } catch (FakeIOException fio) {
-      // expected
-    }
+    expectThrows(FakeIOException.class, () -> {
+      DirectoryReader.openIfChanged(r);
+    });
     
     IndexSearcher s = newSearcher(r);
     assertEquals(1, s.search(new TermQuery(new Term("id", "id")), 1).totalHits);
@@ -726,12 +722,9 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     w.commit();
     w.close();
 
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       DirectoryReader.openIfChanged(r);
-      fail("didn't hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
 
     r.close();
     w.close();
@@ -772,12 +765,9 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     w.commit();
     w.close();
 
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       DirectoryReader.openIfChanged(r);
-      fail("didn't hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
 
     r.close();
     dir.close();

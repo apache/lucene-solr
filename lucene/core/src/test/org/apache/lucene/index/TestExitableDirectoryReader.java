@@ -133,16 +133,12 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
     directoryReader = DirectoryReader.open(directory);
     exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, new QueryTimeoutImpl(1));
     reader = new TestReader(exitableDirectoryReader);
-    searcher = new IndexSearcher(reader);
-    try {
-      searcher.search(query, 10);
-      fail("This query should have led to an ExitingReaderException!");
-    } catch (ExitingReaderException ex) {
-      // Do nothing, we expect this!
-    } finally {
-      reader.close();
-      exitableDirectoryReader.close();
-    }
+    IndexSearcher slowSearcher = new IndexSearcher(reader);
+    expectThrows(ExitingReaderException.class, () -> {
+      slowSearcher.search(query, 10);
+    });
+    reader.close();
+    exitableDirectoryReader.close();
    
     // Set maximum time out and expect the query to complete. 
     // Not checking the validity of the result, all we are bothered about in this test is the timing out.

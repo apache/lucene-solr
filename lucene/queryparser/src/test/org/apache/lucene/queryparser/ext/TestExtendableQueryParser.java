@@ -57,11 +57,9 @@ public class TestExtendableQueryParser extends TestQueryParser {
     Extensions ext = newExtensions(':');
     ext.add("testExt", new ExtensionStub());
     ExtendableQueryParser parser = (ExtendableQueryParser) getParser(null, ext);
-    try {
+    expectThrows(ParseException.class, () -> {
       parser.parse("aField:testExt:\"foo \\& bar\"");
-      fail("extension field delimiter is not escaped");
-    } catch (ParseException e) {
-    }
+    });
   }
 
   public void testExtFieldUnqoted() throws Exception {

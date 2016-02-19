@@ -422,12 +422,10 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
       }
       };
 
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       new SearcherManager(w.w, false, false, theEvilOne);
-      fail("didn't hit expected exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
+
     w.close();
     other.close();
     dir.close();

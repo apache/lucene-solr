@@ -19,6 +19,7 @@ package org.apache.lucene.util.automaton;
 
 import java.util.List;
 
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
@@ -52,22 +53,17 @@ public class LimitedFiniteStringsIteratorTest extends LuceneTestCase {
 
   public void testInvalidLimitNegative() {
     Automaton a = AutomatonTestUtil.randomAutomaton(random());
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       new LimitedFiniteStringsIterator(a, -7);
       fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    });
   }
 
   public void testInvalidLimitNull() {
     Automaton a = AutomatonTestUtil.randomAutomaton(random());
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       new LimitedFiniteStringsIterator(a, 0);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    });
   }
 
   public void testSingleton() {

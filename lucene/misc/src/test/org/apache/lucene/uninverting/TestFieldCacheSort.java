@@ -1033,10 +1033,9 @@ public class TestFieldCacheSort extends LuceneTestCase {
     IndexReader reader = UninvertingReader.wrap(DirectoryReader.open(indexStore),
                          Collections.singletonMap("string", Type.SORTED));
     IndexSearcher searcher = new IndexSearcher(reader);
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       searcher.search(new MatchAllDocsQuery(), 500, sort);
-      fail("didn't get expected exception");
-    } catch (IllegalStateException expected) {}
+    });
     reader.close();
     indexStore.close();
   }

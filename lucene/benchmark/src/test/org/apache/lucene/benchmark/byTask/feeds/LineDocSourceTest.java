@@ -214,12 +214,9 @@ public class LineDocSourceTest extends BenchmarkTestCase {
       writer.write(testCases[i]);
       writer.newLine();
       writer.close();
-      try {
+      expectThrows(Exception.class, () -> {
         doIndexAndSearchTest(file, null, null);
-        fail("Some exception should have been thrown for: [" + testCases[i] + "]");
-      } catch (Exception e) {
-        // expected.
-      }
+      });
     }
   }
   

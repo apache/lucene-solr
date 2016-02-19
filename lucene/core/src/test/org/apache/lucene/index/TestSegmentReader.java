@@ -204,25 +204,21 @@ public class TestSegmentReader extends LuceneTestCase {
   
   public void testOutOfBoundsAccess() throws IOException {
     int numDocs = reader.maxDoc();
-    try {
+
+    expectThrows(IndexOutOfBoundsException.class, () -> {
       reader.document(-1);
-      fail();
-    } catch (IndexOutOfBoundsException expected) {}
+    });
     
-    try {
+    expectThrows(IndexOutOfBoundsException.class, () -> {
       reader.getTermVectors(-1);
-      fail();
-    } catch (IndexOutOfBoundsException expected) {}
+    });
     
-    try {
+    expectThrows(IndexOutOfBoundsException.class, () -> {
       reader.document(numDocs);
-      fail();
-    } catch (IndexOutOfBoundsException expected) {}
+    });
     
-    try {
+    expectThrows(IndexOutOfBoundsException.class, () -> {
       reader.getTermVectors(numDocs);
-      fail();
-    } catch (IndexOutOfBoundsException expected) {}
-    
+    });    
   }
 }

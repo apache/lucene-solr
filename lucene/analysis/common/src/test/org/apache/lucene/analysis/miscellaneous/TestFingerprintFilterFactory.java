@@ -50,13 +50,11 @@ public class TestFingerprintFilterFactory extends BaseTokenStreamFactoryTestCase
    * Test that bogus arguments result in exception
    */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenFilterFactory("Fingerprint",
           FingerprintFilterFactory.MAX_OUTPUT_TOKEN_SIZE_KEY, "3",
           "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

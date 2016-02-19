@@ -48,12 +48,10 @@ public class TestSpanNearQuery extends LuceneTestCase {
   public void testDifferentField() throws Exception {
     SpanTermQuery q1 = new SpanTermQuery(new Term("field1", "foo"));
     SpanTermQuery q2 = new SpanTermQuery(new Term("field2", "bar"));
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new SpanNearQuery(new SpanQuery[] { q1, q2 }, 10, true);
-      fail("didn't get expected exception");
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("must have same field"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("must have same field"));
   }
   
   public void testNoPositions() throws IOException {
@@ -70,12 +68,11 @@ public class TestSpanNearQuery extends LuceneTestCase {
     SpanTermQuery query = new SpanTermQuery(new Term("foo", "bar"));
     SpanTermQuery query2 = new SpanTermQuery(new Term("foo", "baz"));
 
-    try {
+    IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
       is.search(new SpanNearQuery(new SpanQuery[] { query, query2 }, 10, true), 5);
-      fail("didn't get expected exception");
-    } catch (IllegalStateException expected) {
-      assertTrue(expected.getMessage().contains("was indexed without position data"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("was indexed without position data"));
+
     ir.close();
     dir.close();
   }
@@ -83,18 +80,14 @@ public class TestSpanNearQuery extends LuceneTestCase {
   public void testBuilder() throws Exception {
 
     // Can't add subclauses from different fields
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       SpanNearQuery.newOrderedNearQuery("field1").addClause(new SpanTermQuery(new Term("field2", "term")));
-      fail("Expected an error when adding a clause with a different field");
-    }
-    catch (IllegalArgumentException e) {}
+    });
 
     // Can't add gaps to unordered queries
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       SpanNearQuery.newUnorderedNearQuery("field1").addGap(1);
-      fail("Expected an error when adding a gap to an unordered query");
-    }
-    catch (IllegalArgumentException e) {}
+    });
 
   }
 }

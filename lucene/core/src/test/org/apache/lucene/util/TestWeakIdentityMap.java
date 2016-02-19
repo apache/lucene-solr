@@ -141,11 +141,9 @@ public class TestWeakIdentityMap extends LuceneTestCase {
     
     Iterator<String> it = map.keyIterator();
     assertFalse(it.hasNext());
-    try {
+    expectThrows(NoSuchElementException.class, () -> {
       it.next();
-      fail("Should throw NoSuchElementException");
-    } catch (NoSuchElementException nse) {
-    }
+    });
     
     key1 = new String("foo");
     key2 = new String("foo");

@@ -305,16 +305,13 @@ public class TestAddIndexes extends LuceneTestCase {
     addDocs(writer, 100);
     writer.close();
 
-    writer = newWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
-    try {
-      // cannot add self
-      writer.addIndexes(aux, dir);
-      assertTrue(false);
-    }
-    catch (IllegalArgumentException e) {
-      assertEquals(100, writer.maxDoc());
-    }
-    writer.close();
+    // cannot add self
+    IndexWriter writer2 = newWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())).setOpenMode(OpenMode.APPEND));
+    expectThrows(IllegalArgumentException.class, () -> {
+      writer2.addIndexes(aux, dir);
+    });
+    assertEquals(100, writer2.maxDoc());
+    writer2.close();
 
     // make sure the index is correct
     verifyNumDocs(dir, 100);
@@ -1167,12 +1164,9 @@ public class TestAddIndexes extends LuceneTestCase {
       IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
       conf.setCodec(TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat()));
       IndexWriter w = new IndexWriter(dir, conf);
-      try {
+      expectThrows(IllegalArgumentException.class, () -> {
         w.addIndexes(toAdd);
-        fail("no such codec");
-      } catch (IllegalArgumentException ex) {
-        // expected
-      }
+      });
       w.close();
       IndexReader open = DirectoryReader.open(dir);
       assertEquals(0, open.numDocs());
@@ -1180,12 +1174,9 @@ public class TestAddIndexes extends LuceneTestCase {
       dir.close();
     }
 
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       DirectoryReader.open(toAdd);
-      fail("no such codec");
-    } catch (IllegalArgumentException ex) {
-      // expected
-    }
+    });
     toAdd.close();
   }
 
@@ -1282,12 +1273,9 @@ public class TestAddIndexes extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     RandomIndexWriter w2 = new RandomIndexWriter(random(), dest, iwc);
 
-    try {
+    expectThrows(LockObtainFailedException.class, () -> {
       w2.addIndexes(src);
-      fail("did not hit expected exception");
-    } catch (LockObtainFailedException lofe) {
-      // expected
-    }
+    });
 
     w1.close();
     w2.close();

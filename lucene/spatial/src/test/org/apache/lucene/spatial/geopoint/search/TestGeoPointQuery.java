@@ -300,13 +300,11 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     assertEquals("smallTest failed", 2, td.totalHits);
   }
 
+  // GeoBoundingBox should not accept invalid lat/lon
   public void testInvalidBBox() throws Exception {
-    try {
+    expectThrows(Exception.class, () -> {
       bboxQuery(179.0, -92.0, 181.0, -91.0, 20);
-    } catch(Exception e) {
-      return;
-    }
-    throw new Exception("GeoBoundingBox should not accept invalid lat/lon");
+    });
   }
 
   public void testGeoDistanceQuery() throws Exception {
@@ -327,11 +325,10 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   }
 
   public void testTooBigRadius() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       geoDistanceQuery(0.0, 85.0, 4000000, 20);
-    } catch (IllegalArgumentException e) {
-      e.getMessage().contains("exceeds maxRadius");
-    }
+    });
+    assertTrue(expected.getMessage().contains("exceeds maxRadius"));
   }
 
   /**
@@ -347,13 +344,11 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     assertEquals("GeoDistanceQuery failed", 3, td.totalHits);
   }
 
+  // GeoDistanceQuery should not accept invalid lat/lon as origin
   public void testInvalidGeoDistanceQuery() throws Exception {
-    try {
+    expectThrows(Exception.class, () -> {
       geoDistanceQuery(181.0, 92.0, 120000, 20);
-    } catch (Exception e) {
-      return;
-    }
-    throw new Exception("GeoDistanceQuery should not accept invalid lat/lon as origin");
+    });
   }
 
   public void testMaxDistanceRangeQuery() throws Exception {

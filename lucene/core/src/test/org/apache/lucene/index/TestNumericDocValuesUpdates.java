@@ -421,19 +421,13 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     writer.commit();
     writer.addDocument(doc); // in-memory document
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       writer.updateNumericDocValue(new Term("key", "doc"), "ndv", 17L);
-      fail("should not have allowed creating new fields through update");
-    } catch (IllegalArgumentException e) {
-      // ok
-    }
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       writer.updateNumericDocValue(new Term("key", "doc"), "foo", 17L);
-      fail("should not have allowed updating an existing field to numeric-dv");
-    } catch (IllegalArgumentException e) {
-      // ok
-    }
+    });
     
     writer.close();
     dir.close();

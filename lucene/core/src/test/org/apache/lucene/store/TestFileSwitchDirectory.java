@@ -101,12 +101,10 @@ public class TestFileSwitchDirectory extends BaseDirectoryTestCase {
     Path primDir = createTempDir("foo");
     Path secondDir = createTempDir("bar");
     Directory dir = newFSSwitchDirectory(primDir, secondDir, Collections.<String>emptySet());
-    try {
+    expectThrows(IndexNotFoundException.class, () -> {
       DirectoryReader.open(dir);
-      fail("did not hit expected exception");
-    } catch (IndexNotFoundException nsde) {
-      // expected
-    }
+    });
+
     dir.close();
   }
 

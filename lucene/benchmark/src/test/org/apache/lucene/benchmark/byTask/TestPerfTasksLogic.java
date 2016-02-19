@@ -258,13 +258,9 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     CountingHighlighterTestTask.numHighlightedResults = 0;
     CountingHighlighterTestTask.numDocsRetrieved = 0;
     // 3. execute the algorithm  (required in every "logic" test)
-    try {
-      Benchmark benchmark = execBenchmark(algLines);
-      assertTrue("CountingHighlighterTest should have thrown an exception", false);
-      assertNotNull(benchmark); // (avoid compile warning on unused variable)
-    } catch (Exception e) {
-      assertTrue(true);
-    }
+    expectThrows(Exception.class, () -> {
+      execBenchmark(algLines);
+    });
   }
 
   /**

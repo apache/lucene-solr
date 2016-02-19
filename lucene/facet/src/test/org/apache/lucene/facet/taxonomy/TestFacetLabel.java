@@ -155,110 +155,61 @@ public class TestFacetLabel extends FacetTestCase {
       new String[] { "test", null, "foo" }, // null in the middle
     };
 
+    // empty or null components should not be allowed.
     for (String[] components : components_tests) {
-      try {
-        assertNotNull(new FacetLabel(components));
-        fail("empty or null components should not be allowed: " + Arrays.toString(components));
-      } catch (IllegalArgumentException e) {
-        // expected
-      }
-      try {
+      expectThrows(IllegalArgumentException.class, () -> {
+        new FacetLabel(components);
+      });
+      expectThrows(IllegalArgumentException.class, () -> {
         new FacetField("dim", components);
-        fail("empty or null components should not be allowed: " + Arrays.toString(components));
-      } catch (IllegalArgumentException e) {
-        // expected
-      }
-      try {
+      });
+      expectThrows(IllegalArgumentException.class, () -> {
         new AssociationFacetField(new BytesRef(), "dim", components);
-        fail("empty or null components should not be allowed: " + Arrays.toString(components));
-      } catch (IllegalArgumentException e) {
-        // expected
-      }
-      try {
+      });
+      expectThrows(IllegalArgumentException.class, () -> {
         new IntAssociationFacetField(17, "dim", components);
-        fail("empty or null components should not be allowed: " + Arrays.toString(components));
-      } catch (IllegalArgumentException e) {
-        // expected
-      }
-      try {
+      });
+      expectThrows(IllegalArgumentException.class, () -> {
         new FloatAssociationFacetField(17.0f, "dim", components);
-        fail("empty or null components should not be allowed: " + Arrays.toString(components));
-      } catch (IllegalArgumentException e) {
-        // expected
-      }
+      });
     }
-    try {
+
+    expectThrows(IllegalArgumentException.class, () -> {
       new FacetField(null, new String[] {"abc"});
-      fail("empty or null components should not be allowed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new FacetField("", new String[] {"abc"});
-      fail("empty or null components should not be allowed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new IntAssociationFacetField(17, null, new String[] {"abc"});
-      fail("empty or null components should not be allowed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new IntAssociationFacetField(17, "", new String[] {"abc"});
-      fail("empty or null components should not be allowed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new FloatAssociationFacetField(17.0f, null, new String[] {"abc"});
-      fail("empty or null components should not be allowed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new FloatAssociationFacetField(17.0f, "", new String[] {"abc"});
-      fail("empty or null components should not be allowed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new AssociationFacetField(new BytesRef(), null, new String[] {"abc"});
-      fail("empty or null components should not be allowed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new AssociationFacetField(new BytesRef(), "", new String[] {"abc"});
-      fail("empty or null components should not be allowed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new SortedSetDocValuesFacetField(null, "abc");
-      fail("empty or null components should not be allowed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new SortedSetDocValuesFacetField("", "abc");
-      fail("empty or null components should not be allowed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new SortedSetDocValuesFacetField("dim", null);
-      fail("empty or null components should not be allowed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalArgumentException.class, () -> {
       new SortedSetDocValuesFacetField("dim", "");
-      fail("empty or null components should not be allowed");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+    });
   }
 
   @Test
@@ -273,11 +224,10 @@ public class TestFacetLabel extends FacetTestCase {
       break;
     }
 
-    try {
-      assertNotNull(new FacetLabel("dim", bigComp));
-      fail("long paths should not be allowed; len=" + bigComp.length());
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+    // long paths should not be allowed
+    final String longPath = bigComp;
+    expectThrows(IllegalArgumentException.class, () -> {
+      new FacetLabel("dim", longPath);
+    });
   }
 }

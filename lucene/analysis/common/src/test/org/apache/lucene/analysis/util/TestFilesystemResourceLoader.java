@@ -30,18 +30,15 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestFilesystemResourceLoader extends LuceneTestCase {
   
   private void assertNotFound(ResourceLoader rl) throws Exception {
-    try {
+    // the resource does not exist, should fail!
+    expectThrows(IOException.class, () -> {
       IOUtils.closeWhileHandlingException(rl.openResource("this-directory-really-really-really-should-not-exist/foo/bar.txt"));
-      fail("The resource does not exist, should fail!");
-    } catch (IOException ioe) {
-      // pass
-    }
-    try {
+    });
+
+    // the class does not exist, should fail!
+    expectThrows(RuntimeException.class, () -> {
       rl.newInstance("org.apache.lucene.analysis.FooBarFilterFactory", TokenFilterFactory.class);
-      fail("The class does not exist, should fail!");
-    } catch (RuntimeException iae) {
-      // pass
-    }
+    });
   }
   
   private void assertClasspathDelegation(ResourceLoader rl) throws Exception {

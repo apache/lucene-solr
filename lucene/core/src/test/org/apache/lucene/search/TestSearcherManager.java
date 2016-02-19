@@ -280,12 +280,9 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     searcherManager.close();
     awaitClose.countDown();
     thread.join();
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {
       searcherManager.acquire();
-      fail("already closed");
-    } catch (AlreadyClosedException ex) {
-      // expected
-    }
+    });
     assertFalse(success.get());
     assertTrue(triedReopen.get());
     assertNull("" + exc[0], exc[0]);
@@ -325,12 +322,9 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     acquire = sm.acquire();
     acquire.getIndexReader().decRef();
     sm.release(acquire);
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       sm.acquire();
-      fail("acquire should have thrown an IllegalStateException since we modified the refCount outside of the manager");
-    } catch (IllegalStateException ex) {
-      //
-    }
+    });
 
     // sm.close(); -- already closed
     writer.close();
@@ -348,19 +342,16 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     // this should succeed;
     sm.release(s);
     
-    try {
-      // this should fail
+    // this should fail
+    expectThrows(AlreadyClosedException.class, () -> {
       sm.acquire();
-    } catch (AlreadyClosedException e) {
-      // ok
-    }
+    });
     
-    try {
-      // this should fail
+    // this should fail
+    expectThrows(AlreadyClosedException.class, () -> {
       sm.maybeRefresh();
-    } catch (AlreadyClosedException e) {
-      // ok
-    }
+    });
+
     dir.close();
   }
 
@@ -405,16 +396,12 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
       }
       };
 
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       new SearcherManager(dir, theEvilOne);
-    } catch (IllegalStateException ise) {
-      // expected
-    }
-    try {
+    });
+    expectThrows(IllegalStateException.class, () -> {
       new SearcherManager(w.w, random.nextBoolean(), false, theEvilOne);
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
     w.close();
     other.close();
     dir.close();

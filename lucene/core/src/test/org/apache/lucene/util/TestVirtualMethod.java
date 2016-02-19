@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 public class TestVirtualMethod extends LuceneTestCase {
 
   private static final VirtualMethod<TestVirtualMethod> publicTestMethod =
@@ -71,35 +70,26 @@ public class TestVirtualMethod extends LuceneTestCase {
 
   @SuppressWarnings({"rawtypes","unchecked"})
   public void testExceptions() {
-    try {
+    // LuceneTestCase is not a subclass and can never override publicTest(String)
+    expectThrows(IllegalArgumentException.class, () -> {
       // cast to Class to remove generics:
       publicTestMethod.getImplementationDistance((Class) LuceneTestCase.class);
-      fail("LuceneTestCase is not a subclass and can never override publicTest(String)");
-    } catch (IllegalArgumentException arg) {
-      // pass
-    }
+    });
     
-    try {
+    // Method bogus() does not exist, so IAE should be thrown
+    expectThrows(IllegalArgumentException.class, () -> {
       new VirtualMethod<>(TestVirtualMethod.class, "bogus");
-      fail("Method bogus() does not exist, so IAE should be thrown");
-    } catch (IllegalArgumentException arg) {
-      // pass
-    }
+    });
     
-    try {
+    // Method publicTest(String) is not declared in TestClass2, so IAE should be thrown
+    expectThrows(IllegalArgumentException.class, () -> {
       new VirtualMethod<>(TestClass2.class, "publicTest", String.class);
-      fail("Method publicTest(String) is not declared in TestClass2, so IAE should be thrown");
-    } catch (IllegalArgumentException arg) {
-      // pass
-    }
+    });
 
-    try {
-      // try to create a second instance of the same baseClass / method combination
+    // try to create a second instance of the same baseClass / method combination
+    expectThrows(UnsupportedOperationException.class, () -> {
       new VirtualMethod<>(TestVirtualMethod.class, "publicTest", String.class);
-      fail("Violating singleton status succeeded");
-    } catch (UnsupportedOperationException arg) {
-      // pass
-    }
+    });
   }
   
 }

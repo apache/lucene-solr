@@ -191,43 +191,43 @@ public class TestPriorityQueue extends LuceneTestCase {
     }
   }
 
-  public void testIterator() {
+  public void testIteratorEmpty() {
     IntegerQueue queue = new IntegerQueue(3);
     
     Iterator<Integer> it = queue.iterator();
     assertFalse(it.hasNext());
-    try {
+    expectThrows(NoSuchElementException.class, () -> {
       it.next();
-      fail();
-    } catch (NoSuchElementException e) {
-      // ok
-    }
+    });
+  }
+  
+  public void testIteratorOne() {
+    IntegerQueue queue = new IntegerQueue(3);
 
     queue.add(1);
-    it = queue.iterator();
+    Iterator<Integer> it = queue.iterator();
     assertTrue(it.hasNext());
     assertEquals(Integer.valueOf(1), it.next());
     assertFalse(it.hasNext());
-    try {
+    expectThrows(NoSuchElementException.class, () -> {
       it.next();
-      fail();
-    } catch (NoSuchElementException e) {
-      // ok
-    }
+    });
+  }
+  
+  public void testIteratorTwo() {
+    IntegerQueue queue = new IntegerQueue(3);
 
+    queue.add(1);
     queue.add(2);
-    it = queue.iterator();
+    Iterator<Integer> it = queue.iterator();
     assertTrue(it.hasNext());
     assertEquals(Integer.valueOf(1), it.next());
     assertTrue(it.hasNext());
     assertEquals(Integer.valueOf(2), it.next());
     assertFalse(it.hasNext());
-    try {
+    expectThrows(NoSuchElementException.class, () -> {
       it.next();
-      fail();
-    } catch (NoSuchElementException e) {
-      // ok
-    }
+    });
   }
 
   public void testIteratorRandom() {

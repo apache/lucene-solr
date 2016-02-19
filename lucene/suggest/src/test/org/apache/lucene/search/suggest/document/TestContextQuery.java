@@ -56,13 +56,11 @@ public class TestContextQuery extends LuceneTestCase {
 
   @Test
   public void testIllegalInnerQuery() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new ContextQuery(new ContextQuery(
           new PrefixCompletionQuery(new MockAnalyzer(random()), new Term("suggest_field", "sugg"))));
-      fail("should error out trying to nest a Context query within another Context query");
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains(ContextQuery.class.getSimpleName()));
-    }
+    });
+    assertTrue(expected.getMessage().contains(ContextQuery.class.getSimpleName()));
   }
 
   @Test
@@ -125,11 +123,11 @@ public class TestContextQuery extends LuceneTestCase {
     DirectoryReader reader = iw.getReader();
     SuggestIndexSearcher suggestIndexSearcher = new SuggestIndexSearcher(reader);
     ContextQuery query = new ContextQuery(new PrefixCompletionQuery(analyzer, new Term("suggest_field", "ab")));
-    try {
+    IllegalStateException expected = expectThrows(IllegalStateException.class, () -> {
       suggestIndexSearcher.suggest(query, 4);
-    } catch (IllegalStateException expected) {
-      assertTrue(expected.getMessage().contains("SuggestField"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("SuggestField"));
+
     reader.close();
     iw.close();
   }

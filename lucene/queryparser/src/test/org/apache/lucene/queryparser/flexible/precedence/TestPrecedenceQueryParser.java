@@ -314,12 +314,9 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
     fq = (FuzzyQuery) getQuery("term~", null);
     assertEquals(2, fq.getMaxEdits());
     assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
-    try {
+    expectThrows(ParseException.class, () -> {
       getQuery("term~1.1", null); // value > 1, throws exception
-      fail();
-    } catch (ParseException pe) {
-      // expected exception
-    }
+    });
     assertTrue(getQuery("term*germ", null) instanceof WildcardQuery);
 
     /*
@@ -580,21 +577,17 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
   }
 
   public void testException() throws Exception {
-    try {
+    expectThrows(QueryNodeParseException.class, () -> {
       assertQueryEquals("\"some phrase", null, "abc");
-      fail("ParseException expected, not thrown");
-    } catch (QueryNodeParseException expected) {
-    }
+    });
   }
 
+  // ParseException expected due to too many boolean clauses
   public void testBooleanQuery() throws Exception {
     BooleanQuery.setMaxClauseCount(2);
-    try {
+    expectThrows(QueryNodeException.class, () -> {
       getParser(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).parse("one two three", "field");
-      fail("ParseException expected due to too many boolean clauses");
-    } catch (QueryNodeException expected) {
-      // too many boolean clauses, so ParseException is expected
-    }
+    });
   }
   
   // LUCENE-792

@@ -70,21 +70,15 @@ public class TestMemoryIndex extends LuceneTestCase {
     // freeze!
     mi.freeze();
 
-    try {
+    RuntimeException expected = expectThrows(RuntimeException.class, () -> {
       mi.addField("f3", "and yet more", analyzer);
-      fail("Expected an IllegalArgumentException when adding a field after calling freeze()");
-    }
-    catch (RuntimeException e) {
-      assertThat(e.getMessage(), containsString("frozen"));
-    }
+    });
+    assertThat(expected.getMessage(), containsString("frozen"));
 
-    try {
+    expected = expectThrows(RuntimeException.class, () -> {
       mi.setSimilarity(new BM25Similarity(1, 1));
-      fail("Expected an IllegalArgumentException when setting the Similarity after calling freeze()");
-    }
-    catch (RuntimeException e) {
-      assertThat(e.getMessage(), containsString("frozen"));
-    }
+    });
+    assertThat(expected.getMessage(), containsString("frozen"));
 
     assertThat(mi.search(new TermQuery(new Term("f1", "some"))), not(is(0.0f)));
 

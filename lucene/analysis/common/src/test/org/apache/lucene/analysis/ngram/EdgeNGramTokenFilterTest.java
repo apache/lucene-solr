@@ -49,33 +49,21 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   public void testInvalidInput() throws Exception {
-    boolean gotException = false;
-    try {        
+    expectThrows(IllegalArgumentException.class, () -> {
       new EdgeNGramTokenFilter(input, 0, 0);
-    } catch (IllegalArgumentException e) {
-      gotException = true;
-    }
-    assertTrue(gotException);
+    });
   }
 
   public void testInvalidInput2() throws Exception {
-    boolean gotException = false;
-    try {        
+    expectThrows(IllegalArgumentException.class, () -> {   
       new EdgeNGramTokenFilter(input, 2, 1);
-    } catch (IllegalArgumentException e) {
-      gotException = true;
-    }
-    assertTrue(gotException);
+    });
   }
 
   public void testInvalidInput3() throws Exception {
-    boolean gotException = false;
-    try {        
+    expectThrows(IllegalArgumentException.class, () -> {      
       new EdgeNGramTokenFilter(input, -1, 2);
-    } catch (IllegalArgumentException e) {
-      gotException = true;
-    }
-    assertTrue(gotException);
+    });
   }
 
   public void testFrontUnigram() throws Exception {

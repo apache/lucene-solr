@@ -185,15 +185,12 @@ public class TestTermScorer extends LuceneTestCase {
     IndexSearcher indexSearcher = new IndexSearcher(forbiddenNorms);
     
     Weight weight = indexSearcher.createNormalizedWeight(termQuery, true);
-    try {
+    expectThrows(AssertionError.class, () -> {
       weight.scorer(forbiddenNorms.getContext()).iterator().nextDoc();
-      fail("Should load norms");
-    } catch (AssertionError e) {
-      // ok
-    }
+    });
     
-    weight = indexSearcher.createNormalizedWeight(termQuery, false);
+    Weight weight2 = indexSearcher.createNormalizedWeight(termQuery, false);
     // should not fail this time since norms are not necessary
-    weight.scorer(forbiddenNorms.getContext()).iterator().nextDoc();
+    weight2.scorer(forbiddenNorms.getContext()).iterator().nextDoc();
   }
 }

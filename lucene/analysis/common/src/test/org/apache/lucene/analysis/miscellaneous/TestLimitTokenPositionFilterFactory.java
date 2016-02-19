@@ -41,13 +41,11 @@ public class TestLimitTokenPositionFilterFactory extends BaseTokenStreamFactoryT
   }
 
   public void testMissingParam() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenFilterFactory("LimitTokenPosition");
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertTrue("exception doesn't mention param: " + e.getMessage(),
-          0 < e.getMessage().indexOf(LimitTokenPositionFilterFactory.MAX_TOKEN_POSITION_KEY));
-    }
+    });
+    assertTrue("exception doesn't mention param: " + expected.getMessage(),
+        0 < expected.getMessage().indexOf(LimitTokenPositionFilterFactory.MAX_TOKEN_POSITION_KEY));
   }
 
   public void testMaxPosition1WithShingles() throws Exception {
@@ -73,13 +71,11 @@ public class TestLimitTokenPositionFilterFactory extends BaseTokenStreamFactoryT
    * Test that bogus arguments result in exception
    */
   public void testBogusArguments() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       tokenFilterFactory("LimitTokenPosition",
           "maxTokenPosition", "3",
           "bogusArg", "bogusValue");
-      fail();
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("Unknown parameters"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

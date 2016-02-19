@@ -336,7 +336,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     reader.close();
   }
 
-  public void testIllegalIndexableField() throws Exception {
+  public void testIllegalPayloadsWithoutPositions() throws Exception {
     Directory dir = newDirectory();
     MockAnalyzer a = new MockAnalyzer(random());
     a.setEnableChecks(false);
@@ -346,116 +346,149 @@ public class TestTermVectorsReader extends LuceneTestCase {
     ft.setStoreTermVectorPayloads(true);
     Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    try {
-      w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // Expected
-      assertEquals("cannot index term vector payloads without term vector positions (field=\"field\")", iae.getMessage());
-    }
 
-    ft = new FieldType(TextField.TYPE_NOT_STORED);
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      w.addDocument(doc);
+    });
+    assertEquals("cannot index term vector payloads without term vector positions (field=\"field\")", expected.getMessage());
+    
+    w.close();
+    dir.close();
+  }
+  
+  public void testIllegalOffsetsWithoutVectors() throws Exception {
+    Directory dir = newDirectory();
+    MockAnalyzer a = new MockAnalyzer(random());
+    a.setEnableChecks(false);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, a);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setStoreTermVectors(false);
     ft.setStoreTermVectorOffsets(true);
-    doc = new Document();
+    Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    try {
+    
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // Expected
-      assertEquals("cannot index term vector offsets when term vectors are not indexed (field=\"field\")", iae.getMessage());
-    }
+    });
+    assertEquals("cannot index term vector offsets when term vectors are not indexed (field=\"field\")", expected.getMessage());
+    
+    w.close();
+    dir.close();
+  }
 
-    ft = new FieldType(TextField.TYPE_NOT_STORED);
+  public void testIllegalPositionsWithoutVectors() throws Exception {
+    Directory dir = newDirectory();
+    MockAnalyzer a = new MockAnalyzer(random());
+    a.setEnableChecks(false);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, a);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setStoreTermVectors(false);
     ft.setStoreTermVectorPositions(true);
-    doc = new Document();
+    Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    try {
-      w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // Expected
-      assertEquals("cannot index term vector positions when term vectors are not indexed (field=\"field\")", iae.getMessage());
-    }
 
-    ft = new FieldType(TextField.TYPE_NOT_STORED);
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      w.addDocument(doc);
+    });
+    assertEquals("cannot index term vector positions when term vectors are not indexed (field=\"field\")", expected.getMessage());
+    
+    w.close();
+    dir.close();
+  }
+
+  public void testIllegalVectorPayloadsWithoutVectors() throws Exception {
+    Directory dir = newDirectory();
+    MockAnalyzer a = new MockAnalyzer(random());
+    a.setEnableChecks(false);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, a);
+    FieldType ft = new FieldType(TextField.TYPE_NOT_STORED);
     ft.setStoreTermVectors(false);
     ft.setStoreTermVectorPayloads(true);
-    doc = new Document();
+    Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    try {
+    
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // Expected
-      assertEquals("cannot index term vector payloads when term vectors are not indexed (field=\"field\")", iae.getMessage());
-    }
+    });
+    assertEquals("cannot index term vector payloads when term vectors are not indexed (field=\"field\")", expected.getMessage());
+    
+    w.close();
+    dir.close();
+  }
 
-    ft = new FieldType(TextField.TYPE_NOT_STORED);
+  public void testIllegalVectorsWithoutIndexed() throws Exception {
+    Directory dir = newDirectory();
+    MockAnalyzer a = new MockAnalyzer(random());
+    a.setEnableChecks(false);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, a);
+    FieldType ft = new FieldType(StoredField.TYPE);
     ft.setStoreTermVectors(true);
-    ft.setStoreTermVectorPayloads(true);
-    doc = new Document();
+    Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    try {
+    
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // Expected
-      assertEquals("cannot index term vector payloads without term vector positions (field=\"field\")", iae.getMessage());
-    }
+    });
+    assertEquals("cannot store term vectors for a field that is not indexed (field=\"field\")", expected.getMessage());
+    
+    w.close();
+    dir.close();
+  }
 
-    ft = new FieldType(StoredField.TYPE);
-    ft.setStoreTermVectors(true);
-    doc = new Document();
-    doc.add(new Field("field", "value", ft));
-    try {
-      w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // Expected
-      assertEquals("cannot store term vectors for a field that is not indexed (field=\"field\")", iae.getMessage());
-    }
-
-    ft = new FieldType(StoredField.TYPE);
+  public void testIllegalVectorPositionsWithoutIndexed() throws Exception {
+    Directory dir = newDirectory();
+    MockAnalyzer a = new MockAnalyzer(random());
+    a.setEnableChecks(false);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, a);
+    FieldType ft = new FieldType(StoredField.TYPE);
     ft.setStoreTermVectorPositions(true);
-    doc = new Document();
+    Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    try {
+    
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // Expected
-      assertEquals("cannot store term vector positions for a field that is not indexed (field=\"field\")", iae.getMessage());
-    }
+    });
+    assertEquals("cannot store term vector positions for a field that is not indexed (field=\"field\")", expected.getMessage());
+    
+    w.close();
+    dir.close();
+  }
 
-    ft = new FieldType(StoredField.TYPE);
+  public void testIllegalVectorOffsetsWithoutIndexed() throws Exception {
+    Directory dir = newDirectory();
+    MockAnalyzer a = new MockAnalyzer(random());
+    a.setEnableChecks(false);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, a);
+    FieldType ft = new FieldType(StoredField.TYPE);
     ft.setStoreTermVectorOffsets(true);
-    doc = new Document();
+    Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    try {
+    
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // Expected
-      assertEquals("cannot store term vector offsets for a field that is not indexed (field=\"field\")", iae.getMessage());
-    }
-
-    ft = new FieldType(StoredField.TYPE);
+    });
+    assertEquals("cannot store term vector offsets for a field that is not indexed (field=\"field\")", expected.getMessage());
+    
+    w.close();
+    dir.close();
+  }
+  
+  public void testIllegalVectorPayloadsWithoutIndexed() throws Exception {
+    Directory dir = newDirectory();
+    MockAnalyzer a = new MockAnalyzer(random());
+    a.setEnableChecks(false);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, a);
+    FieldType ft = new FieldType(StoredField.TYPE);
     ft.setStoreTermVectorPayloads(true);
-    doc = new Document();
+    Document doc = new Document();
     doc.add(new Field("field", "value", ft));
-    try {
+    
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // Expected
-      assertEquals("cannot store term vector payloads for a field that is not indexed (field=\"field\")", iae.getMessage());
-    }
+    });
+    assertEquals("cannot store term vector payloads for a field that is not indexed (field=\"field\")", expected.getMessage());
 
     w.close();
-    
     dir.close();
   }
 }

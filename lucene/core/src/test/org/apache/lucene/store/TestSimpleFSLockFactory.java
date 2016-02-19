@@ -46,14 +46,10 @@ public class TestSimpleFSLockFactory extends BaseLockFactoryTestCase {
         assumeNoException("test requires the ability to delete a locked file", e);
       }
     
-      try {
+      expectThrows(IOException.class, () -> {
         lock.ensureValid();
-        fail("no exception");
-      } catch (IOException expected) {
-        // ok
-      } finally {
-        IOUtils.closeWhileHandlingException(lock);
-      }
+      });
+      IOUtils.closeWhileHandlingException(lock);
     } finally {
       // Do this in finally clause in case the assumeNoException is false:
       dir.close();

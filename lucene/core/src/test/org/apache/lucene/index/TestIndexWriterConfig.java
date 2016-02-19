@@ -142,12 +142,9 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     new RandomIndexWriter(random(), dir, conf).close();
 
     // this should fail
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       assertNotNull(new RandomIndexWriter(random(), dir, conf));
-      fail("should have hit AlreadySetException");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
 
     dir.close();
   }
@@ -213,96 +210,66 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     assertEquals(KeepOnlyLastCommitDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
     conf.setIndexDeletionPolicy(new SnapshotDeletionPolicy(null));
     assertEquals(SnapshotDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       conf.setIndexDeletionPolicy(null);
-      fail();
-    } catch (IllegalArgumentException e) {
-      // ok
-    }
+    });
 
     // Test MergeScheduler
     assertEquals(ConcurrentMergeScheduler.class, conf.getMergeScheduler().getClass());
     conf.setMergeScheduler(new SerialMergeScheduler());
     assertEquals(SerialMergeScheduler.class, conf.getMergeScheduler().getClass());
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       conf.setMergeScheduler(null);
-      fail();
-    } catch (IllegalArgumentException e) {
-      // ok
-    }
+    });
 
     // Test Similarity: 
     // we shouldnt assert what the default is, just that it's not null.
     assertTrue(IndexSearcher.getDefaultSimilarity() == conf.getSimilarity());
     conf.setSimilarity(new MySimilarity());
     assertEquals(MySimilarity.class, conf.getSimilarity().getClass());
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       conf.setSimilarity(null);
-      fail();
-    } catch (IllegalArgumentException e) {
-      // ok
-    }
+    });
 
     // Test IndexingChain
     assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
 
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       conf.setMaxBufferedDeleteTerms(0);
-      fail("should not have succeeded to set maxBufferedDeleteTerms to 0");
-    } catch (IllegalArgumentException e) {
-      // this is expected
-    }
+    });
 
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       conf.setMaxBufferedDocs(1);
-      fail("should not have succeeded to set maxBufferedDocs to 1");
-    } catch (IllegalArgumentException e) {
-      // this is expected
-    }
+    });
 
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       // Disable both MAX_BUF_DOCS and RAM_SIZE_MB
       conf.setMaxBufferedDocs(4);
       conf.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
       conf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-      fail("should not have succeeded to disable maxBufferedDocs when ramBufferSizeMB is disabled as well");
-    } catch (IllegalArgumentException e) {
-      // this is expected
-    }
+    });
 
     conf.setRAMBufferSizeMB(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);
     conf.setMaxBufferedDocs(IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS);
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       conf.setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH);
-      fail("should not have succeeded to disable ramBufferSizeMB when maxBufferedDocs is disabled as well");
-    } catch (IllegalArgumentException e) {
-      // this is expected
-    }
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       conf.setRAMPerThreadHardLimitMB(2048);
-      fail("should not have succeeded to set RAMPerThreadHardLimitMB to >= 2048");
-    } catch (IllegalArgumentException e) {
-      // this is expected
-    }
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       conf.setRAMPerThreadHardLimitMB(0);
-      fail("should not have succeeded to set RAMPerThreadHardLimitMB to 0");
-    } catch (IllegalArgumentException e) {
-      // this is expected
-    }
+    });
     
     // Test MergePolicy
     assertEquals(TieredMergePolicy.class, conf.getMergePolicy().getClass());
     conf.setMergePolicy(new LogDocMergePolicy());
     assertEquals(LogDocMergePolicy.class, conf.getMergePolicy().getClass());
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       conf.setMergePolicy(null);
-      fail();
-    } catch (IllegalArgumentException e) {
-      // ok
-    }
+    });
   }
 
   public void testLiveChangeToCFS() throws Exception {

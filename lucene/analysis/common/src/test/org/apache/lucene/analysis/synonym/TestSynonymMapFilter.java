@@ -946,12 +946,9 @@ public class TestSynonymMapFilter extends BaseTokenStreamTestCase {
   public void testEmpty() throws Exception {
     Tokenizer tokenizer = new MockTokenizer();
     tokenizer.setReader(new StringReader("aa bb"));
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new SynonymFilter(tokenizer, new SynonymMap.Builder(true).build(), true);
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-      assertEquals("fst must be non-null", iae.getMessage());
-    }
+    });
+    assertEquals("fst must be non-null", expected.getMessage());
   }
 }

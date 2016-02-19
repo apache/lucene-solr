@@ -127,13 +127,9 @@ public class TestUnicodeUtil extends LuceneTestCase {
   }
 
   private void assertcodePointCountThrowsAssertionOn(byte... bytes) {
-    boolean threwAssertion = false;
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       UnicodeUtil.codePointCount(new BytesRef(bytes));
-    } catch (IllegalArgumentException e) {
-      threwAssertion = true;
-    }
-    assertTrue(threwAssertion);
+    });
   }
 
   public void testUTF8toUTF32() {

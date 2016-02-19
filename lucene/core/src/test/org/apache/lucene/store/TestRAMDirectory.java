@@ -175,17 +175,14 @@ public class TestRAMDirectory extends BaseDirectoryTestCase {
       }
 
       try (IndexInput is = dir.openInput("foo", newIOContext(random))) {
-        try {
+        expectThrows(EOFException.class, () -> {
           is.seek(0);
           // Here, I go past EOF.
           is.seek(len + random().nextInt(2048));
           // since EOF is not enforced by the previous call in RAMInputStream
           // this call to readBytes should throw the exception.
           is.readBytes(bytes, 0, 16);
-          fail("Did not get EOFException");
-        } catch (EOFException eof) {
-          // expected!
-        }
+        });
       }
     }
   }

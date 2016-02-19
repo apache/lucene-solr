@@ -79,22 +79,18 @@ public class TestSuggestField extends LuceneTestCase {
 
   @Test
   public void testEmptySuggestion() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new SuggestField("suggest_field", "", 3);
-      fail("no exception thrown when indexing zero length suggestion");
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("value"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("value"));
   }
 
   @Test
   public void testNegativeWeight() throws Exception {
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new SuggestField("suggest_field", "sugg", -1);
-      fail("no exception thrown when indexing suggestion with negative weight");
-    } catch (IllegalArgumentException expected) {
-      assertTrue(expected.getMessage().contains("weight"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("weight"));
   }
 
   @Test
@@ -102,28 +98,22 @@ public class TestSuggestField extends LuceneTestCase {
     CharsRefBuilder charsRefBuilder = new CharsRefBuilder();
     charsRefBuilder.append("sugg");
     charsRefBuilder.setCharAt(2, (char) CompletionAnalyzer.SEP_LABEL);
-    try {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       new SuggestField("name", charsRefBuilder.toString(), 1);
-      fail("no exception thrown for suggestion value containing SEP_LABEL:" + CompletionAnalyzer.SEP_LABEL);
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("[0x1f]"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("[0x1f]"));
 
     charsRefBuilder.setCharAt(2, (char) CompletionAnalyzer.HOLE_CHARACTER);
-    try {
+    expected = expectThrows(IllegalArgumentException.class, () -> {
       new SuggestField("name", charsRefBuilder.toString(), 1);
-      fail("no exception thrown for suggestion value containing HOLE_CHARACTER:" + CompletionAnalyzer.HOLE_CHARACTER);
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("[0x1e]"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("[0x1e]"));
 
     charsRefBuilder.setCharAt(2, (char) NRTSuggesterBuilder.END_BYTE);
-    try {
+    expected = expectThrows(IllegalArgumentException.class, () -> {
       new SuggestField("name", charsRefBuilder.toString(), 1);
-      fail("no exception thrown for suggestion value containing END_BYTE:" + NRTSuggesterBuilder.END_BYTE);
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("[0x0]"));
-    }
+    });
+    assertTrue(expected.getMessage().contains("[0x0]"));
   }
 
   @Test

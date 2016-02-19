@@ -17,6 +17,7 @@
 package org.apache.lucene.util.automaton;
 
 
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
@@ -133,14 +134,11 @@ public class FiniteStringsIteratorTest extends LuceneTestCase {
 
 
   public void testWithCycle() throws Exception {
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       Automaton a = new RegExp("abc.*", RegExp.NONE).toAutomaton();
       FiniteStringsIterator iterator = new FiniteStringsIterator(a);
       getFiniteStrings(iterator);
-      fail("did not hit exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    });
   }
 
   public void testSingletonNoLimit() {

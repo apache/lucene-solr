@@ -619,18 +619,14 @@ public class TestQPHelper extends LuceneTestCase {
     assertWildcardQueryEquals("[A TO C]", true, "[a TO c]");
     assertWildcardQueryEquals("[A TO C]", false, "[A TO C]");
     // Test suffix queries: first disallow
-    try {
+    expectThrows(QueryNodeException.class, () -> {
       assertWildcardQueryEquals("*Term", true, "*term");
-      fail();
-    } catch (QueryNodeException pe) {
-      // expected exception
-    }
-    try {
+    });
+
+    expectThrows(QueryNodeException.class, () -> {
       assertWildcardQueryEquals("?Term", true, "?term");
-      fail();
-    } catch (QueryNodeException pe) {
-      // expected exception
-    }
+    });
+
     // Test suffix queries: then allow
     assertWildcardQueryEquals("*Term", true, "*term", true);
     assertWildcardQueryEquals("?Term", true, "?term", true);
@@ -1001,12 +997,9 @@ public class TestQPHelper extends LuceneTestCase {
   }
 
   public void assertQueryNodeException(String queryString) throws Exception {
-    try {
+    expectThrows(QueryNodeException.class, () -> {
       getQuery(queryString, null);
-    } catch (QueryNodeException expected) {
-      return;
-    }
-    fail("ParseException expected, not thrown");
+    });
   }
 
   public void testException() throws Exception {
@@ -1019,35 +1012,29 @@ public class TestQPHelper extends LuceneTestCase {
     assertQueryNodeException("secret AND illegal) AND access:confidential");    
   }
 
+  // Wildcard queries should not be allowed
   public void testCustomQueryParserWildcard() {
-    try {
+    expectThrows(QueryNodeException.class, () -> {
       new QPTestParser(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).parse("a?t", "contents");
-      fail("Wildcard queries should not be allowed");
-    } catch (QueryNodeException expected) {
-      // expected exception
-    }
+    });
   }
 
+  // Fuzzy queries should not be allowed"
   public void testCustomQueryParserFuzzy() throws Exception {
-    try {
+    expectThrows(QueryNodeException.class, () -> {
       new QPTestParser(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false)).parse("xunit~", "contents");
-      fail("Fuzzy queries should not be allowed");
-    } catch (QueryNodeException expected) {
-      // expected exception
-    }
+    });
   }
 
+  // too many boolean clauses, so ParseException is expected
   public void testBooleanQuery() throws Exception {
     BooleanQuery.setMaxClauseCount(2);
-    try {
+    expectThrows(QueryNodeException.class, () -> {
       StandardQueryParser qp = new StandardQueryParser();
       qp.setAnalyzer(new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false));
 
       qp.parse("one two three", "field");
-      fail("ParseException expected due to too many boolean clauses");
-    } catch (QueryNodeException expected) {
-      // too many boolean clauses, so ParseException is expected
-    }
+    });
   }
 
   /**

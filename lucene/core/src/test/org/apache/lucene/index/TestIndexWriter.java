@@ -229,20 +229,16 @@ public class TestIndexWriter extends LuceneTestCase {
 
   public void testChangesAfterClose() throws IOException {
     Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
 
-    IndexWriter writer = null;
-
-    writer  = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     addDoc(writer);
 
     // close
     writer.close();
-    try {
+    expectThrows(AlreadyClosedException.class, () -> {
       addDoc(writer);
-      fail("did not hit AlreadyClosedException");
-    } catch (AlreadyClosedException e) {
-      // expected
-    }
+    });
+
     dir.close();
   }
 
@@ -801,12 +797,10 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
     doc.add(new TextField("field", tokens));
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       w.addDocument(doc);
-      fail("did not hit expected exception");
-    } catch (IllegalArgumentException iea) {
-      // expected
-    }
+    });
+
     w.close();
     dir.close();
   }
@@ -1564,21 +1558,18 @@ public class TestIndexWriter extends LuceneTestCase {
 
     char[] chars = new char[DocumentsWriterPerThread.MAX_TERM_LENGTH_UTF8];
     Arrays.fill(chars, 'x');
-    Document doc = new Document();
+    Document hugeDoc = new Document();
     final String bigTerm = new String(chars);
 
     // This contents produces a too-long term:
     String contents = "abc xyz x" + bigTerm + " another term";
-    doc.add(new TextField("content", contents, Field.Store.NO));
-    try {
-      w.addDocument(doc);
-      fail("should have hit exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
+    hugeDoc.add(new TextField("content", contents, Field.Store.NO));
+    expectThrows(IllegalArgumentException.class, () -> {
+      w.addDocument(hugeDoc);
+    });
 
     // Make sure we can add another normal document
-    doc = new Document();
+    Document doc = new Document();
     doc.add(new TextField("content", "abc bbb ccc", Field.Store.NO));
     w.addDocument(doc);
 
@@ -1612,22 +1603,22 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(TestUtil.getDefaultCodec());
 
-    w = new RandomIndexWriter(random(), dir, iwc);
+    RandomIndexWriter w2 = new RandomIndexWriter(random(), dir, iwc);
 
     contentField.setStringValue("other");
-    w.addDocument(doc);
+    w2.addDocument(doc);
 
     contentField.setStringValue("term");
-    w.addDocument(doc);
+    w2.addDocument(doc);
 
     contentField.setStringValue(bigTerm);
-    w.addDocument(doc);
+    w2.addDocument(doc);
 
     contentField.setStringValue("zzz");
-    w.addDocument(doc);
+    w2.addDocument(doc);
 
-    reader = w.getReader();
-    w.close();
+    reader = w2.getReader();
+    w2.close();
     assertEquals(1, reader.docFreq(new Term("content", bigTerm)));
 
     reader.close();
@@ -1689,12 +1680,10 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory d = newFSDirectory(createTempDir("TestIndexWriter.testWhetherDeleteAllDeletesWriteLock"), SimpleFSLockFactory.INSTANCE);
     RandomIndexWriter w1 = new RandomIndexWriter(random(), d);
     w1.deleteAll();
-    try {
+    expectThrows(LockObtainFailedException.class, () -> {
       new RandomIndexWriter(random(), d, newIndexWriterConfig(null));
-      fail("should not be able to create another writer");
-    } catch (LockObtainFailedException lofe) {
-      // expected
-    }
+    });
+
     w1.close();
     d.close();
   }
@@ -1742,12 +1731,9 @@ public class TestIndexWriter extends LuceneTestCase {
                                     new IndexWriterConfig(new MockAnalyzer(random())));
 
     w.prepareCommit();
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       w.close();
-      fail("should have hit exception");
-    } catch (IllegalStateException ise) {
-      // expected
-    }
+    });
     w.commit();
     w.close();
     IndexReader r = DirectoryReader.open(dir);
@@ -1969,19 +1955,21 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(null);
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwConf);
+
     // add 3 good docs
     for (int i = 0; i < 3; i++) {
       Document doc = new Document();
       doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
       iw.addDocument(doc);
     }
+
     // add broken doc
-    try {
+    expectThrows(NullPointerException.class, () -> {
       Document broke = new Document();
       broke.add(newTextField("test", "broken", Field.Store.NO));
       iw.addDocument(broke);
-      fail();
-    } catch (NullPointerException expected) {}
+    });
+
     // ensure good docs are still ok
     IndexReader ir = iw.getReader();
     assertEquals(3, ir.numDocs());
@@ -1993,20 +1981,23 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testNullDocument() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+
     // add 3 good docs
     for (int i = 0; i < 3; i++) {
       Document doc = new Document();
       doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
       iw.addDocument(doc);
     }
+
     // add broken doc
-    try {
+    expectThrows(NullPointerException.class, () -> {
       iw.addDocument(null);
-      fail();
-    } catch (NullPointerException expected) {}
+    });
+
     // ensure good docs are still ok
     IndexReader ir = iw.getReader();
     assertEquals(3, ir.numDocs());
+
     ir.close();
     iw.close();
     dir.close();
@@ -2015,20 +2006,23 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testNullDocuments() throws IOException {
     Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+
     // add 3 good docs
     for (int i = 0; i < 3; i++) {
       Document doc = new Document();
       doc.add(new StringField("id", Integer.toString(i), Field.Store.NO));
       iw.addDocument(doc);
     }
+
     // add broken doc block
-    try {
+    expectThrows(NullPointerException.class, () -> {
       iw.addDocuments(null);
-      fail();
-    } catch (NullPointerException expected) {}
+    });
+
     // ensure good docs are still ok
     IndexReader ir = iw.getReader();
     assertEquals(3, ir.numDocs());
+
     ir.close();
     iw.close();
     dir.close();
@@ -2133,7 +2127,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testIterableThrowsException2() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
-    try {
+    Exception expected = expectThrows(Exception.class, () -> {
       w.addDocuments(new Iterable<Document>() {
         @Override
         public Iterator<Document> iterator() {
@@ -2154,10 +2148,9 @@ public class TestIndexWriter extends LuceneTestCase {
           };
         }
       });
-    } catch (Exception e) {
-      assertNotNull(e.getMessage());
-      assertEquals("boom", e.getMessage());
-    }
+    });
+    assertEquals("boom", expected.getMessage());
+
     w.close();
     IOUtils.close(dir);
   }
@@ -2358,12 +2351,10 @@ public class TestIndexWriter extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new SortedDocValuesField("dv", new BytesRef("foo!")));
     doc.add(new SortedDocValuesField("dv", new BytesRef("bar!")));
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       iwriter.addDocument(doc);
-      fail("didn't hit expected exception");
-    } catch (IllegalArgumentException expected) {
-      // expected
-    }
+    });
+
     iwriter.commit();
     assertFalse(iwriter.hasUncommittedChanges());
     iwriter.close();
@@ -2733,19 +2724,15 @@ public class TestIndexWriter extends LuceneTestCase {
       assertTrue(dir.checkPendingDeletions());
 
       // make sure we get NFSF if we try to delete and already-pending-delete file:
-      try {
+      expectThrows(NoSuchFileException.class, () -> {
         dir.deleteFile("segments_1");
-        fail("didn't hit exception");
-      } catch (NoSuchFileException nfse) {
-        // expected
-      }
+      });
 
-      iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-      try {
-        w = new IndexWriter(dir, iwc);
-      } catch (IllegalArgumentException iae) {
-        assertTrue(iae.getMessage().contains("still has pending deleted files; cannot initialize IndexWriter"));
-      }
+      IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+        new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+      });
+      assertTrue(expected.getMessage().contains("still has pending deleted files; cannot initialize IndexWriter"));
+
       in.close();
     }
   }

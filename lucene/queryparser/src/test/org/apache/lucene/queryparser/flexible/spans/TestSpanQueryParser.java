@@ -168,62 +168,33 @@ public class TestSpanQueryParser extends LuceneTestCase {
 
   public void testQueryValidator() throws QueryNodeException {
 
-    try {
-      getSpanQuery("term*");
-      fail("QueryNodeException was expected, wildcard queries should not be supported");
+    expectThrows(QueryNodeException.class, () -> {
+      getSpanQuery("term*"); // wildcard queries should not be supported
+    });
 
-    } catch (QueryNodeException ex) {
-      // expected exception
-    }
+    expectThrows(QueryNodeException.class, () -> {
+      getSpanQuery("[a TO z]"); // range queries should not be supported
+    });
 
-    try {
-      getSpanQuery("[a TO z]");
-      fail("QueryNodeException was expected, range queries should not be supported");
+    expectThrows(QueryNodeException.class, () -> {
+      getSpanQuery("a~0.5"); // boost queries should not be supported
+    });
 
-    } catch (QueryNodeException ex) {
-      // expected exception
-    }
+    expectThrows(QueryNodeException.class, () -> {
+      getSpanQuery("a^0.5"); // fuzzy queries should not be supported
+    });
 
-    try {
-      getSpanQuery("a~0.5");
-      fail("QueryNodeException was expected, boost queries should not be supported");
+    expectThrows(QueryNodeException.class, () -> {
+      getSpanQuery("\"a b\""); // quoted queries should not be supported
+    });
 
-    } catch (QueryNodeException ex) {
-      // expected exception
-    }
+    expectThrows(QueryNodeException.class, () -> {
+      getSpanQuery("(a b)"); // parenthesized queries should not be supported
+    });
 
-    try {
-      getSpanQuery("a^0.5");
-      fail("QueryNodeException was expected, fuzzy queries should not be supported");
-
-    } catch (QueryNodeException ex) {
-      // expected exception
-    }
-
-    try {
-      getSpanQuery("\"a b\"");
-      fail("QueryNodeException was expected, quoted queries should not be supported");
-
-    } catch (QueryNodeException ex) {
-      // expected exception
-    }
-
-    try {
-      getSpanQuery("(a b)");
-      fail("QueryNodeException was expected, parenthesized queries should not be supported");
-
-    } catch (QueryNodeException ex) {
-      // expected exception
-    }
-
-    try {
-      getSpanQuery("a AND b");
-      fail("QueryNodeException was expected, and queries should not be supported");
-
-    } catch (QueryNodeException ex) {
-      // expected exception
-    }
-
+    expectThrows(QueryNodeException.class, () -> {
+      getSpanQuery("a AND b"); // AND queries should not be supported
+    });
   }
 
 }

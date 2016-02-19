@@ -86,14 +86,9 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   private void checkBadQuery(String qString) {
     ComplexPhraseQueryParser qp = new ComplexPhraseQueryParser(defaultFieldName, analyzer);
     qp.setInOrder(inOrder);
-    Throwable expected = null;
-    try {
+    expectThrows(Throwable.class, () -> {
       qp.parse(qString);
-    } catch (Throwable e) {
-      expected = e;
-    }
-    assertNotNull("Expected parse error in " + qString, expected);
-
+    });
   }
 
   private void checkMatches(String qString, String expectedVals)

@@ -431,19 +431,13 @@ public class TestBinaryDocValuesUpdates extends LuceneTestCase {
     writer.commit();
     writer.addDocument(doc); // in-memory document
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       writer.updateBinaryDocValue(new Term("key", "doc"), "bdv", toBytes(17L));
-      fail("should not have allowed creating new fields through update");
-    } catch (IllegalArgumentException e) {
-      // ok
-    }
+    });
     
-    try {
+    expectThrows(IllegalArgumentException.class, () -> {
       writer.updateBinaryDocValue(new Term("key", "doc"), "foo", toBytes(17L));
-      fail("should not have allowed updating an existing field to binary-dv");
-    } catch (IllegalArgumentException e) {
-      // ok
-    }
+    });
     
     writer.close();
     dir.close();

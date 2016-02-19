@@ -81,19 +81,13 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
   public void testNotInitialized() throws Exception {
     final LegacyNumericTokenStream stream=new LegacyNumericTokenStream();
     
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       stream.reset();
-      fail("reset() should not succeed.");
-    } catch (IllegalStateException e) {
-      // pass
-    }
+    });
 
-    try {
+    expectThrows(IllegalStateException.class, () -> {
       stream.incrementToken();
-      fail("incrementToken() should not succeed.");
-    } catch (IllegalStateException e) {
-      // pass
-    }
+    });
     
     stream.close();
   }
@@ -103,18 +97,15 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
   
   public void testCTA() throws Exception {
     final LegacyNumericTokenStream stream=new LegacyNumericTokenStream();
-    try {
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
       stream.addAttribute(CharTermAttribute.class);
-      fail("Succeeded to add CharTermAttribute.");
-    } catch (IllegalArgumentException iae) {
-      assertTrue(iae.getMessage().startsWith("LegacyNumericTokenStream does not support"));
-    }
-    try {
+    });
+    assertTrue(e.getMessage().startsWith("LegacyNumericTokenStream does not support"));
+
+    e = expectThrows(IllegalArgumentException.class, () -> {
       stream.addAttribute(TestAttribute.class);
-      fail("Succeeded to add TestAttribute.");
-    } catch (IllegalArgumentException iae) {
-      assertTrue(iae.getMessage().startsWith("LegacyNumericTokenStream does not support"));
-    }
+    });
+    assertTrue(e.getMessage().startsWith("LegacyNumericTokenStream does not support"));
     stream.close();
   }
   
