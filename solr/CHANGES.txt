@@ -190,6 +190,8 @@ Bug Fixes
 
 * SOLR-8633: DistributedUpdateProcess processCommit/deleteByQuery call finish on DUP and 
   SolrCmdDistributor, which violates the lifecycle and can cause bugs. (hossman via Mark Miller)
+  
+* SOLR-8656: PeerSync should use same nUpdates everywhere. (Ramsey Haddad via Mark Miller)
 
 Optimizations
 ----------------------
