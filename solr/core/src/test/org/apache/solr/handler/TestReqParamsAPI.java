@@ -97,7 +97,7 @@ public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
     compareValues(result, "B val", asList("response", "params", "x", "b"));
 
     payload = "{\n" +
-        "'create-requesthandler' : { 'name' : '/dump', 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
+        "'create-requesthandler' : { 'name' : '/dump0', 'class': 'org.apache.solr.handler.DumpRequestHandler' }\n" +
         "}";
 
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config?wt=json", payload);
@@ -106,13 +106,13 @@ public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
         urls.get(random().nextInt(urls.size())),
         "/config/overlay?wt=json",
         cloudClient,
-        asList("overlay", "requestHandler", "/dump", "name"),
-        "/dump",
+        asList("overlay", "requestHandler", "/dump0", "name"),
+        "/dump0",
         10);
 
     result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
-        "/dump?wt=json&useParams=x",
+        "/dump0?wt=json&useParams=x",
         cloudClient,
         asList("params", "a"),
         "A val",
@@ -121,7 +121,7 @@ public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
 
     TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
-        "/dump?wt=json&useParams=x&a=fomrequest",
+        "/dump0?wt=json&useParams=x&a=fomrequest",
         cloudClient,
         asList("params", "a"),
         "fomrequest",
@@ -176,7 +176,7 @@ public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
 
     result = TestSolrConfigHandler.testForResponseElement(null,
         urls.get(random().nextInt(urls.size())),
-        "/dump?wt=json&useParams=y",
+        "/dump1?wt=json&useParams=y",
         cloudClient,
         asList("params", "c"),
         "CY val",
