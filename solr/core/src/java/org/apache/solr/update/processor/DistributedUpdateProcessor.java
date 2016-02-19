@@ -221,6 +221,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   
   public static final String COMMIT_END_POINT = "commit_end_point";
   public static final String LOG_REPLAY = "log_replay";
+
+  // used to assert we don't call finish more than once, see finish()
+  private boolean finished = false;
   
   private final SolrQueryRequest req;
   private final SolrQueryResponse rsp;
@@ -1414,7 +1417,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       }
 
       if (someReplicas)  {
-        cmdDistrib.finish();
+        cmdDistrib.blockAndDoRetries();
       }
     }
 
@@ -1609,7 +1612,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
             zkController.getBaseUrl(), req.getCore().getName()));
         if (nodes != null) {
           cmdDistrib.distribCommit(cmd, nodes, params);
-          finish();
+          cmdDistrib.blockAndDoRetries();
         }
       }
     }
@@ -1636,6 +1639,9 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   
   @Override
   public void finish() throws IOException {
+    assert ! finished : "lifecycle sanity check";
+    finished = true;
+    
     if (zkEnabled) doFinish();
     
     if (next != null && nodes == null) next.finish();
