@@ -137,6 +137,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   
   @Override
   public void cancelElection() throws InterruptedException, KeeperException {
+    super.cancelElection();
     if (leaderZkNodeParentVersion != null) {
       try {
         // We need to be careful and make sure we *only* delete our own leader registration node.
@@ -163,7 +164,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     } else {
       log.info("No version found for ephemeral leader parent node, won't remove previous leader registration.");
     }
-    super.cancelElection();
   }
   
   @Override
@@ -179,7 +179,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
         
         @Override
         public void execute() throws InterruptedException, KeeperException {
-          log.info("Creating leader registration node", leaderPath);
+          log.info("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
           List<Op> ops = new ArrayList<>(2);
           
           // We use a multi operation to get the parent nodes version, which will

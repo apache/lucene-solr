@@ -157,6 +157,11 @@ public class OverseerTest extends SolrTestCaseJ4 {
         for (int i = 0; i < 120; i++) {
           String shardId = getShardId(collection, coreNodeName);
           if (shardId != null) {
+            ElectionContext prevContext = electionContext.get(coreName);
+            if (prevContext != null) {
+              prevContext.cancelElection();
+            }
+
             try {
               zkClient.makePath("/collections/" + collection + "/leader_elect/"
                   + shardId + "/election", true);
@@ -172,6 +177,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
                 elector, shardId, collection, nodeName + "_" + coreName, props,
                 zkStateReader);
             elector.setup(ctx);
+            electionContext.put(coreName, ctx);
             elector.joinElection(ctx, false);
             return shardId;
           }
