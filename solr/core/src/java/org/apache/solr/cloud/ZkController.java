@@ -2432,7 +2432,8 @@ public final class ZkController {
 
     @Override
     public void process(WatchedEvent event) {
-      if (event.getState() == Event.KeeperState.Disconnected || event.getState() == Event.KeeperState.Expired)  {
+      // session events are not change events, and do not remove the watcher
+      if (Event.EventType.None.equals(event.getType())) {
         return;
       }
 
