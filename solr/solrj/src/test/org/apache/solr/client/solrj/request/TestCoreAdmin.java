@@ -16,17 +16,19 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.Is.is;
+
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -41,8 +43,8 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.core.Is.is;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {SolrIgnoredThreadsFilter.class})
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
@@ -156,6 +158,34 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     }
     
     assertTrue(gotExp);
+  }
+  
+  @Test
+  public void testInvalidCoreNamesAreRejectedWhenCreatingCore() {
+    final Create createRequest = new Create();
+    
+    try {
+      createRequest.setCoreName("invalid$core@name");
+      fail();
+    } catch (IllegalArgumentException e) {
+      final String exceptionMessage = e.getMessage();
+      assertTrue(exceptionMessage.contains("Invalid core"));
+      assertTrue(exceptionMessage.contains("invalid$core@name"));
+      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, and alphanumerics"));
+    }
+  }
+  
+  @Test
+  public void testInvalidCoreNamesAreRejectedWhenRenamingExistingCore() throws Exception {
+    try {
+      CoreAdminRequest.renameCore("validExistingCoreName", "invalid$core@name", null);
+      fail();
+    } catch (IllegalArgumentException e) {
+      final String exceptionMessage = e.getMessage();
+      assertTrue(e.getMessage(), exceptionMessage.contains("Invalid core"));
+      assertTrue(exceptionMessage.contains("invalid$core@name"));
+      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, and alphanumerics"));
+    }
   }
   
   @BeforeClass

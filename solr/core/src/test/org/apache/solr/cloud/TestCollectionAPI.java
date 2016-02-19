@@ -44,6 +44,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ROUTER;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARD_UNIQUE;
 
 public class TestCollectionAPI extends ReplicaPropertiesBase {
@@ -79,8 +80,10 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     replicaPropTest();
     clusterStatusZNodeVersion();
     testClusterStateMigration();
-    testCollectionCreationNameValidation();
+    testCollectionCreationCollectionNameValidation();
+    testCollectionCreationShardNameValidation();
     testAliasCreationNameValidation();
+    testShardCreationNameValidation();
   }
 
   private void clusterStatusWithCollectionAndShard() throws IOException, SolrServerException {
@@ -631,7 +634,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     }
   }
   
-  private void testCollectionCreationNameValidation() throws Exception {
+  private void testCollectionCreationCollectionNameValidation() throws Exception {
     try (CloudSolrClient client = createCloudClient(null)) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.CREATE.toString());
@@ -644,9 +647,32 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
         fail();
       } catch (RemoteSolrException e) {
         final String errorMessage = e.getMessage();
-        assertTrue(errorMessage.contains("Invalid name"));
+        assertTrue(errorMessage.contains("Invalid collection"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
-        assertTrue(errorMessage.contains("Identifiers must consist entirely of"));
+        assertTrue(errorMessage.contains("Collection names must consist entirely of"));
+      }
+    }
+  }
+  
+  private void testCollectionCreationShardNameValidation() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+      params.set("name", "valid_collection_name");
+      params.set("router.name", "implicit");
+      params.set("numShards", "1");
+      params.set("shards", "invalid@name#with$weird%characters");
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      try {
+        client.request(request);
+        fail();
+      } catch (RemoteSolrException e) {
+        final String errorMessage = e.getMessage();
+        assertTrue(errorMessage.contains("Invalid shard"));
+        assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
+        assertTrue(errorMessage.contains("Shard names must consist entirely of"));
       }
     }
   }
@@ -665,9 +691,42 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
         fail();
       } catch (RemoteSolrException e) {
         final String errorMessage = e.getMessage();
-        assertTrue(errorMessage.contains("Invalid name"));
+        assertTrue(errorMessage.contains("Invalid alias"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
-        assertTrue(errorMessage.contains("Identifiers must consist entirely of"));
+        assertTrue(errorMessage.contains("Aliases must consist entirely of"));
+      }
+    }
+  }
+
+  private void testShardCreationNameValidation() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      client.connect();
+      // Create a collection w/ implicit router
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+      params.set("name", "valid_collection_name");
+      params.set("shards", "a");
+      params.set("router.name", "implicit");
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+      client.request(request);
+
+      params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CREATESHARD.toString());
+      params.set("collection", "valid_collection_name");
+      params.set("shard", "invalid@name#with$weird%characters");
+
+      request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      try {
+        client.request(request);
+        fail();
+      } catch (RemoteSolrException e) {
+        final String errorMessage = e.getMessage();
+        assertTrue(errorMessage.contains("Invalid shard"));
+        assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
+        assertTrue(errorMessage.contains("Shard names must consist entirely of"));
       }
     }
   }
