@@ -318,7 +318,7 @@ public class DistributedQueue {
         }
         return orderedChildren;
       } catch (KeeperException.NoNodeException e) {
-        zookeeper.create(dir, new byte[0], CreateMode.PERSISTENT, true);
+        zookeeper.makePath(dir, false, true);
         // go back to the loop and try again
       }
     }
@@ -408,6 +408,10 @@ public class DistributedQueue {
 
     @Override
     public void process(WatchedEvent event) {
+      // session events are not change events, and do not remove the watcher; except for Expired
+      if (Event.EventType.None.equals(event.getType()) && !Event.KeeperState.Expired.equals(event.getState())) {
+        return;
+      }
       updateLock.lock();
       try {
         // this watcher is automatically cleared when fired

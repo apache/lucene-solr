@@ -182,6 +182,9 @@ Bug Fixes
 * SOLR-8701: CloudSolrClient decides that there are no healthy nodes to handle a request too early.
   (Mark Miller)
 
+* SOLR-8694: DistributedMap/Queue can create too many Watchers and some code simplification. 
+  (Scott Blum via Mark Miller)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been

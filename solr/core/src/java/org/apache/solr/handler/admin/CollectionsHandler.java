@@ -564,12 +564,12 @@ public class CollectionsHandler extends RequestHandlerBase {
 
         final NamedList<Object> results = new NamedList<>();
         if (zkController.getOverseerCompletedMap().contains(requestId)) {
-          final DistributedMap.MapEvent mapEvent = zkController.getOverseerCompletedMap().get(requestId);
-          rsp.getValues().addAll(SolrResponse.deserialize(mapEvent.getBytes()).getResponse());
+          final byte[] mapEntry = zkController.getOverseerCompletedMap().get(requestId);
+          rsp.getValues().addAll(SolrResponse.deserialize(mapEntry).getResponse());
           addStatusToResponse(results, COMPLETED, "found [" + requestId + "] in completed tasks");
         } else if (zkController.getOverseerFailureMap().contains(requestId)) {
-          final DistributedMap.MapEvent mapEvent = zkController.getOverseerFailureMap().get(requestId);
-          rsp.getValues().addAll(SolrResponse.deserialize(mapEvent.getBytes()).getResponse());
+          final byte[] mapEntry = zkController.getOverseerFailureMap().get(requestId);
+          rsp.getValues().addAll(SolrResponse.deserialize(mapEntry).getResponse());
           addStatusToResponse(results, FAILED, "found [" + requestId + "] in failed tasks");
         } else if (zkController.getOverseerRunningMap().contains(requestId)) {
           addStatusToResponse(results, RUNNING, "found [" + requestId + "] in running tasks");
