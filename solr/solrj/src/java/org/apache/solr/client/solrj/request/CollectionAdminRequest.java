@@ -300,7 +300,7 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     /**
      * Provide the name of the shards to be created, separated by commas
      * 
-     * Shard names must consist entirely of periods, underscores and alphanumerics.  Other characters are not allowed.
+     * Shard names must consist entirely of periods, underscores, and alphanumerics.  Other characters are not allowed.
      * 
      * @throws IllegalArgumentException if any of the shard names contain invalid characters.
      */
@@ -308,7 +308,7 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
       for (String shard : shards.split(",")) {
         if (!SolrIdentifierValidator.validateShardName(shard)) {
           throw new IllegalArgumentException("Invalid shard: " + shard
-              + ". Shard names must consist entirely of periods, underscores and alphanumerics");
+              + ". Shard names must consist entirely of periods, underscores, and alphanumerics");
         }
       }
       this.shards = shards;
@@ -448,7 +448,7 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     /**
      * Provide the name of the shard to be created.
      * 
-     * Shard names must consist entirely of periods, underscores and alphanumerics.  Other characters are not allowed.
+     * Shard names must consist entirely of periods, underscores, and alphanumerics.  Other characters are not allowed.
      * 
      * @throws IllegalArgumentException if the shard name contains invalid characters.
      */
@@ -456,7 +456,7 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     public CreateShard setShardName(String shardName) {
       if (!SolrIdentifierValidator.validateShardName(shardName)) {
         throw new IllegalArgumentException("Invalid shard: " + shardName
-            + ". Shard names must consist entirely of periods, underscores and alphanumerics");
+            + ". Shard names must consist entirely of periods, underscores, and alphanumerics");
       }
       this.shardName = shardName;
       return this;
