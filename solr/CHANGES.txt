@@ -24,6 +24,9 @@ Jetty 9.2.13.v20150730
 Bug Fixes
 ---------------------
 
+* SOLR-8695: Ensure ZK watchers are not triggering our watch logic on connection events and
+  make this handling more consistent. (Scott Blum via Mark Miller)
+
 * SOLR-9198: config APIs unable to add multiple values with same name (noble)
 
 * SOLR-9191: OverseerTaskQueue.peekTopN() fatally flawed (Scott Blum, Noble Paul)
