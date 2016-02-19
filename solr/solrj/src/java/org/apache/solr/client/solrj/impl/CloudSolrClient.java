@@ -1077,12 +1077,6 @@ public class CloudSolrClient extends SolrClient {
         theUrlList = new ArrayList<>(urlList.size());
         theUrlList.addAll(urlList);
       }
-      if(theUrlList.isEmpty()) {
-        for (String s : collectionNames) {
-          if(s!=null) collectionStateCache.remove(s);
-        }
-        throw new SolrException(SolrException.ErrorCode.INVALID_STATE, "Could not find a healthy node to handle the request.");
-      }
 
       Collections.shuffle(theUrlList, rand);
       if (sendToLeaders) {
@@ -1093,6 +1087,13 @@ public class CloudSolrClient extends SolrClient {
         theUrlList.addAll(theReplicas);
       }
       
+      if (theUrlList.isEmpty()) {
+        for (String s : collectionNames) {
+          if (s != null) collectionStateCache.remove(s);
+        }
+        throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
+            "Could not find a healthy node to handle the request.");
+      }
     }
 
     LBHttpSolrClient.Req req = new LBHttpSolrClient.Req(request, theUrlList);

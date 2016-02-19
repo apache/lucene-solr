@@ -178,7 +178,10 @@ Bug Fixes
 
 * SOLR-8416: The collections create API should return after all replicas are active.
   (Michael Sun, Mark Miller, Alexey Serba)
-  
+
+* SOLR-8701: CloudSolrClient decides that there are no healthy nodes to handle a request too early.
+  (Mark Miller)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
