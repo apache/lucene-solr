@@ -61,6 +61,7 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
                     .withFunctionName("max", MaxMetric.class)
                     .withFunctionName("avg", MeanMetric.class)
                     .withFunctionName("daemon", DaemonStream.class)
+                    .withFunctionName("topic", TopicStream.class)
                     ;
   }
     
@@ -120,7 +121,24 @@ public class StreamExpressionToExpessionTest extends LuceneTestCase {
     assertTrue(expressionString.contains("queueSize=100"));
     assertTrue(expressionString.contains("runInterval=1000"));
   }
-  
+
+  @Test
+  public void testTopicStream() throws Exception {
+
+    TopicStream stream;
+    String expressionString;
+
+    // Basic test
+    stream = new TopicStream(StreamExpressionParser.parse("topic(collection2, collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", id=\"blah\", checkpointEvery=1000)"), factory);
+    expressionString = stream.toExpression(factory).toString();
+    assertTrue(expressionString.contains("topic(collection2,collection1"));
+    assertTrue(expressionString.contains("q=\"*:*\""));
+    assertTrue(expressionString.contains("fl=\"id,a_s,a_i,a_f\""));
+    assertTrue(expressionString.contains("id=blah"));
+    assertTrue(expressionString.contains("checkpointEvery=1000"));
+  }
+
+
   @Test
   public void testStatsStream() throws Exception {
 

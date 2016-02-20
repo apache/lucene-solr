@@ -107,8 +107,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       .withFunctionName("intersect", IntersectStream.class)
       .withFunctionName("complement", ComplementStream.class)
          .withFunctionName("daemon", DaemonStream.class)
-      
-      // metrics
+         .withFunctionName("topic", TopicStream.class)
+
+
+    // metrics
       .withFunctionName("min", MinMetric.class)
       .withFunctionName("max", MaxMetric.class)
       .withFunctionName("avg", MeanMetric.class)
@@ -121,9 +123,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
       
       // stream reduction operations
       .withFunctionName("group", GroupOperation.class)
-      .withFunctionName("distinct", DistinctOperation.class)
-      ;
-    
+      .withFunctionName("distinct", DistinctOperation.class);
+
     // This pulls all the overrides and additions from the config
     Object functionMappingsObj = initArgs.get("streamFunctions");
     if(null != functionMappingsObj){

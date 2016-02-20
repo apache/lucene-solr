@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
@@ -29,11 +30,16 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
 *  Queries a single Solr instance and maps SolrDocs to a Stream of Tuples.
 **/
 
 public class SolrStream extends TupleStream {
+
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long serialVersionUID = 1;
 
@@ -46,6 +52,8 @@ public class SolrStream extends TupleStream {
   private transient JSONTupleStream jsonTupleStream;
   private transient HttpSolrClient client;
   private transient SolrClientCache cache;
+  private String slice;
+  private long checkpoint = -1;
 
   public SolrStream(String baseUrl, Map params) {
     this.baseUrl = baseUrl;
@@ -76,6 +84,7 @@ public class SolrStream extends TupleStream {
 
   public void open() throws IOException {
 
+
     if(cache == null) {
       client = new HttpSolrClient(baseUrl);
     } else {
@@ -97,6 +106,14 @@ public class SolrStream extends TupleStream {
     this.trace = trace;
   }
 
+  public void setSlice(String slice) {
+    this.slice = slice;
+  }
+
+  public void setCheckpoint(long checkpoint) {
+    this.checkpoint = checkpoint;
+  }
+
   private SolrParams loadParams(Map params) throws IOException {
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     if(params.containsKey("partitionKeys")) {
@@ -108,6 +125,10 @@ public class SolrStream extends TupleStream {
       if(numWorkers > 1) {
         throw new IOException("When numWorkers > 1 partitionKeys must be set. Set partitionKeys=none to send the entire stream to each worker.");
       }
+    }
+
+    if(checkpoint > 0) {
+      solrParams.add("fq", "{!frange cost=100 incl=false l="+checkpoint+"}_version_");
     }
 
     Iterator<Map.Entry> it = params.entrySet().iterator();
@@ -166,6 +187,9 @@ public class SolrStream extends TupleStream {
 
         if (trace) {
           fields.put("_CORE_", this.baseUrl);
+          if(slice != null) {
+            fields.put("_SLICE_", slice);
+          }
         }
 
         if (fieldMappings != null) {

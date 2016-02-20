@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
@@ -136,6 +137,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     testRollupStream();
     testStatsStream();
     testNulls();
+    testTopicStream();
     testDaemonStream();
     testParallelUniqueStream();
     testParallelReducerStream();
@@ -224,8 +226,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);
 
     assert(tuples.size() == 5);
-    assertOrder(tuples, 0,2,1,3,4);
-    assertLong(tuples.get(0),"a_i", 0);
+    assertOrder(tuples, 0, 2, 1, 3, 4);
+    assertLong(tuples.get(0), "a_i", 0);
 
     // Basic w/aliases
     expression = StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"a_i=alias.a_i, a_s=name\", zkHost=" + zkServer.getZkAddress() + ")");
@@ -233,8 +235,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);
 
     assert(tuples.size() == 5);
-    assertOrder(tuples, 0,2,1,3,4);
-    assertLong(tuples.get(0),"alias.a_i", 0);
+    assertOrder(tuples, 0, 2, 1, 3, 4);
+    assertLong(tuples.get(0), "alias.a_i", 0);
     assertString(tuples.get(0), "name", "hello0");
 
     // Basic filtered test
@@ -243,7 +245,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);
 
     assert(tuples.size() == 3);
-    assertOrder(tuples, 0,3,4);
+    assertOrder(tuples, 0, 3, 4);
     assertLong(tuples.get(1), "a_i", 3);
     
     del("*:*");
@@ -394,7 +396,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);
     
     assert(tuples.size() == 4);
-    assertOrder(tuples, 0,1,3,4);
+    assertOrder(tuples, 0, 1, 3, 4);
 
     // Basic test desc
     expression = StreamExpressionParser.parse("merge("
@@ -405,7 +407,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);
     
     assert(tuples.size() == 4);
-    assertOrder(tuples, 4,3,1,0);
+    assertOrder(tuples, 4, 3, 1, 0);
     
     // Basic w/multi comp
     expression = StreamExpressionParser.parse("merge("
@@ -565,9 +567,9 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     // basic w/spaces
     expression = StreamExpressionParser.parse("reduce("
-                                              +       "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f       asc\"),"
-                                              +       "by=\"a_s\"," +
-                                                      "group(sort=\"a_i asc\", n=\"2\"))");
+        + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f       asc\"),"
+        + "by=\"a_s\"," +
+        "group(sort=\"a_i asc\", n=\"2\"))");
     stream = factory.constructStream(expression);
     tuples = getTuples(stream);
 
@@ -2217,7 +2219,163 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     del("*:*");
     commit();
   }
-  
+
+  private void testTopicStream() throws Exception{
+    indexr(id, "0", "a_s", "hello", "a_i", "0", "a_f", "1");
+    indexr(id, "2", "a_s", "hello", "a_i", "2", "a_f", "2");
+    indexr(id, "3", "a_s", "hello", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello", "a_i", "1", "a_f", "5");
+    indexr(id, "5", "a_s", "hello", "a_i", "10", "a_f", "6");
+    indexr(id, "6", "a_s", "hello", "a_i", "11", "a_f", "7");
+    indexr(id, "7", "a_s", "hello", "a_i", "12", "a_f", "8");
+    indexr(id, "8", "a_s", "hello", "a_i", "13", "a_f", "9");
+    indexr(id, "9", "a_s", "hello", "a_i", "14", "a_f", "10");
+
+    commit();
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withFunctionName("topic", TopicStream.class)
+        .withFunctionName("search", CloudSolrStream.class)
+        .withFunctionName("daemon", DaemonStream.class);
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+
+    SolrClientCache cache = new SolrClientCache();
+
+    try {
+      //Store checkpoints in the same index as the main documents. This perfectly valid
+      expression = StreamExpressionParser.parse("topic(collection1, collection1, q=\"a_s:hello\", fl=\"id\", id=\"1000000\", checkpointEvery=3)");
+
+      stream = factory.constructStream(expression);
+      StreamContext context = new StreamContext();
+      context.setSolrClientCache(cache);
+      stream.setStreamContext(context);
+      tuples = getTuples(stream);
+
+      //Should be zero because the checkpoints will be set to the highest vesion on the shards.
+      assertEquals(tuples.size(), 0);
+
+      commit();
+      //Now check to see if the checkpoints are present
+
+              expression = StreamExpressionParser.parse("search(collection1, q=\"id:1000000\", fl=\"id, checkpoint_ss, _version_\", sort=\"id asc\")");
+              stream = factory.constructStream(expression);
+              context = new StreamContext();
+              context.setSolrClientCache(cache);
+              stream.setStreamContext(context);
+              tuples = getTuples(stream);
+              assertEquals(tuples.size(), 1);
+              List<String> checkpoints = tuples.get(0).getStrings("checkpoint_ss");
+              assertEquals(checkpoints.size(), 2);
+              Long version1 = tuples.get(0).getLong("_version_");
+
+      //Index a few more documents
+      indexr(id, "10", "a_s", "hello", "a_i", "13", "a_f", "9");
+      indexr(id, "11", "a_s", "hello", "a_i", "14", "a_f", "10");
+
+      commit();
+
+      expression = StreamExpressionParser.parse("topic(collection1, collection1, fl=\"id\", q=\"a_s:hello\", id=\"1000000\", checkpointEvery=2)");
+
+      stream = factory.constructStream(expression);
+      context = new StreamContext();
+      context.setSolrClientCache(cache);
+      stream.setStreamContext(context);
+
+      try {
+        stream.open();
+        Tuple tuple1 = stream.read();
+        assertEquals((long) tuple1.getLong("id"), 10l);
+        commit();
+
+                // Checkpoint should not have changed.
+                expression = StreamExpressionParser.parse("search(collection1, q=\"id:1000000\", fl=\"id, checkpoint_ss, _version_\", sort=\"id asc\")");
+                TupleStream cstream = factory.constructStream(expression);
+                context = new StreamContext();
+                context.setSolrClientCache(cache);
+                cstream.setStreamContext(context);
+                tuples = getTuples(cstream);
+
+                assertEquals(tuples.size(), 1);
+                checkpoints = tuples.get(0).getStrings("checkpoint_ss");
+                assertEquals(checkpoints.size(), 2);
+                Long version2 = tuples.get(0).getLong("_version_");
+                assertEquals(version1, version2);
+
+        Tuple tuple2 = stream.read();
+        commit();
+        assertEquals((long) tuple2.getLong("id"), 11l);
+
+                //Checkpoint should have changed.
+                expression = StreamExpressionParser.parse("search(collection1, q=\"id:1000000\", fl=\"id, checkpoint_ss, _version_\", sort=\"id asc\")");
+                cstream = factory.constructStream(expression);
+                context = new StreamContext();
+                context.setSolrClientCache(cache);
+                cstream.setStreamContext(context);
+                tuples = getTuples(cstream);
+
+                assertEquals(tuples.size(), 1);
+                checkpoints = tuples.get(0).getStrings("checkpoint_ss");
+                assertEquals(checkpoints.size(), 2);
+                Long version3 = tuples.get(0).getLong("_version_");
+                assertTrue(version3 > version2);
+
+        Tuple tuple3 = stream.read();
+        assertTrue(tuple3.EOF);
+      } finally {
+        stream.close();
+      }
+
+      //Test with the DaemonStream
+
+      DaemonStream dstream = null;
+      try {
+        expression = StreamExpressionParser.parse("daemon(topic(collection1, collection1, fl=\"id\", q=\"a_s:hello\", id=\"1000000\", checkpointEvery=2), id=\"test\", runInterval=\"1000\", queueSize=\"9\")");
+        dstream = (DaemonStream) factory.constructStream(expression);
+        context = new StreamContext();
+        context.setSolrClientCache(cache);
+        dstream.setStreamContext(context);
+
+        //Index a few more documents
+        indexr(id, "12", "a_s", "hello", "a_i", "13", "a_f", "9");
+        indexr(id, "13", "a_s", "hello", "a_i", "14", "a_f", "10");
+        commit();
+
+        //Start reading from the DaemonStream
+        Tuple tuple = null;
+
+        dstream.open();
+        tuple = dstream.read();
+        assertEquals(12, (long) tuple.getLong(id));
+        tuple = dstream.read();
+        assertEquals(13, (long) tuple.getLong(id));
+        commit(); // We want to see if the version has been updated after reading two tuples
+
+        //Index a few more documents
+        indexr(id, "14", "a_s", "hello", "a_i", "13", "a_f", "9");
+        indexr(id, "15", "a_s", "hello", "a_i", "14", "a_f", "10");
+        commit();
+
+        //Read from the same DaemonStream stream
+
+        tuple = dstream.read();
+        assertEquals(14, (long) tuple.getLong(id));
+        tuple = dstream.read(); // This should trigger a checkpoint as it's the 4th read from the stream.
+        assertEquals(15, (long) tuple.getLong(id));
+      } finally {
+        dstream.close();
+      }
+    } finally {
+      cache.close();
+      del("*:*");
+      commit();
+    }
+  }
+
   private void testUpdateStream() throws Exception {
     CloudSolrClient destinationCollectionClient = createCloudClient("destinationCollection");
     createCollection("destinationCollection", destinationCollectionClient, 2, 2);
