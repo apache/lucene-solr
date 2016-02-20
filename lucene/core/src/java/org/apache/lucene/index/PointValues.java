@@ -16,14 +16,18 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 
+import org.apache.lucene.document.BinaryPoint;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.util.bkd.BKDWriter;
 
-/** Allows recursively visiting point values indexed with {@link org.apache.lucene.document.IntPoint},
- *  {@link org.apache.lucene.document.FloatPoint}, {@link org.apache.lucene.document.LongPoint}, {@link org.apache.lucene.document.DoublePoint}
- *  or {@link org.apache.lucene.document.BinaryPoint}.
+/** Allows recursively visiting point values indexed with {@link IntPoint},
+ *  {@link FloatPoint}, {@link LongPoint}, {@link DoublePoint}
+ *  or {@link BinaryPoint}.
  *
  *  @lucene.experimental */
 public abstract class PointValues {
@@ -44,7 +48,7 @@ public abstract class PointValues {
     CELL_INSIDE_QUERY,
     /** Return this if the cell and query do not overlap */
     CELL_OUTSIDE_QUERY,
-    /** Return this if the cell partially overlapps the query */
+    /** Return this if the cell partially overlaps the query */
     CELL_CROSSES_QUERY
   };
 
@@ -52,16 +56,16 @@ public abstract class PointValues {
    *
    * @lucene.experimental */
   public interface IntersectVisitor {
-    /** Called for all docs in a leaf cell that's fully contained by the query.  The
+    /** Called for all documents in a leaf cell that's fully contained by the query.  The
      *  consumer should blindly accept the docID. */
     void visit(int docID) throws IOException;
 
-    /** Called for all docs in a leaf cell that crosses the query.  The consumer
+    /** Called for all documents in a leaf cell that crosses the query.  The consumer
      *  should scrutinize the packedValue to decide whether to accept it. */
     void visit(int docID, byte[] packedValue) throws IOException;
 
     /** Called for non-leaf cells to test how the cell relates to the query, to
-     *  determine how to further recurse down the treer. */
+     *  determine how to further recurse down the tree. */
     Relation compare(byte[] minPackedValue, byte[] maxPackedValue);
 
     /** Notifies the caller that this many documents (from one block) are about
@@ -70,7 +74,7 @@ public abstract class PointValues {
   }
 
   /** Finds all documents and points matching the provided visitor.
-   *  This method does not enforce live docs, so it's up to the caller
+   *  This method does not enforce live documents, so it's up to the caller
    *  to test whether each document is deleted, if necessary. */
   public abstract void intersect(String fieldName, IntersectVisitor visitor) throws IOException;
 
