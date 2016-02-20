@@ -343,8 +343,8 @@ public class MMapDirectory extends FSDirectory {
       
       final Method m = directBufferClass.getMethod("cleaner");
       m.setAccessible(true);
-      final MethodHandle directBufferCleanerMethod = lookup.unreflect(m);
-      final Class<?> cleanerClass = directBufferCleanerMethod.type().returnType();
+      MethodHandle directBufferCleanerMethod = lookup.unreflect(m);
+      Class<?> cleanerClass = directBufferCleanerMethod.type().returnType();
       
       final MethodHandle cleanMethod;
       if (Runnable.class.isAssignableFrom(cleanerClass)) {
@@ -353,19 +353,22 @@ public class MMapDirectory extends FSDirectory {
         if (sm != null) {
           sm.checkPackageAccess("jdk.internal.ref");
         }
-        cleanMethod = explicitCastArguments(lookup.findVirtual(Runnable.class, "run", methodType(void.class)),
-            methodType(void.class, cleanerClass));
+        // cast return value of cleaner() to Runnable:
+        directBufferCleanerMethod = directBufferCleanerMethod.asType(directBufferCleanerMethod.type().changeReturnType(Runnable.class));
+        cleanerClass = Runnable.class;
+        // lookup run() method on the interface instead of Cleaner:
+        cleanMethod = lookup.findVirtual(cleanerClass, "run", methodType(void.class));
       } else {
         // can be either the old internal "sun.misc.Cleaner" or
         // the new Java 9 "java.lang.ref.Cleaner$Cleanable":
         cleanMethod = lookup.findVirtual(cleanerClass, "clean", methodType(void.class));
       }
       
-      final MethodHandle nonNullTest = explicitCastArguments(lookup.findStatic(Objects.class, "nonNull", methodType(boolean.class, Object.class)),
-          methodType(boolean.class, cleanerClass));
-      final MethodHandle noop = dropArguments(explicitCastArguments(constant(Void.class, null), methodType(void.class)), 0, cleanerClass);
-      final MethodHandle unmapper = explicitCastArguments(filterReturnValue(directBufferCleanerMethod, guardWithTest(nonNullTest, cleanMethod, noop)),
-          methodType(void.class, ByteBuffer.class));
+      final MethodHandle nonNullTest = lookup.findStatic(Objects.class, "nonNull", methodType(boolean.class, Object.class))
+          .asType(methodType(boolean.class, cleanerClass));
+      final MethodHandle noop = dropArguments(constant(Void.class, null).asType(methodType(void.class)), 0, cleanerClass);
+      final MethodHandle unmapper = filterReturnValue(directBufferCleanerMethod, guardWithTest(nonNullTest, cleanMethod, noop))
+          .asType(methodType(void.class, ByteBuffer.class));
       
       return (BufferCleaner) (ByteBufferIndexInput parent, ByteBuffer buffer) -> {
         if (directBufferClass.isInstance(buffer)) {
