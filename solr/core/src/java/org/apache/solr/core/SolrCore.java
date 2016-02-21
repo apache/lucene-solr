@@ -66,6 +66,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
@@ -117,6 +118,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 /**
@@ -2667,6 +2669,20 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       cleanupThread.setDaemon(true);
       cleanupThread.start();
     }
+  }
+
+  private static final Map implicitPluginsInfo = (Map) Utils.fromJSONResource("ImplicitPlugins.json");
+
+  public List<PluginInfo> getImplicitHandlers() {
+    List<PluginInfo> implicits = new ArrayList<>();
+    Map requestHandlers = (Map) implicitPluginsInfo.get(SolrRequestHandler.TYPE);
+    for (Object o : requestHandlers.entrySet()) {
+      Map.Entry<String, Map> entry = (Map.Entry<String, Map>) o;
+      Map info = Utils.getDeepCopy(entry.getValue(), 4);
+      info.put(NAME, entry.getKey());
+      implicits.add(new PluginInfo(SolrRequestHandler.TYPE, info));
+    }
+    return implicits;
   }
 }
 

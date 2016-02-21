@@ -1,0 +1,102 @@
+{
+  "requestHandler": {
+    "/update": {
+      "class": "solr.UpdateRequestHandler"
+    },
+    "/update/json": {
+      "class": "solr.UpdateRequestHandler",
+      "invariants": {
+        "update.contentType": "application/json"
+      }
+    },
+    "/update/csv": {
+      "class": "solr.UpdateRequestHandler",
+      "invariants": {
+        "update.contentType": "application/csv"
+      }
+    },
+    "/update/json/docs": {
+      "class": "solr.UpdateRequestHandler",
+      "invariants": {
+        "update.contentType": "application/json",
+        "json.command": "false"
+      }
+    },
+    "/config": {
+      "class": "solr.SolrConfigHandler"
+    },
+    "/schema": {
+      "class": "solr.SchemaHandler"
+    },
+    "/replication": {
+      "class": "solr.ReplicationHandler"
+    },
+    "/get": {
+      "class": "solr.RealTimeGetHandler",
+      "defaults": {
+        "omitHeader": true,
+        "wt": "json",
+        "indent": true
+      }
+    },
+    "/admin/ping": {
+      "class": "solr.PingRequestHandler",
+      "invariants": {
+        "echoParams": "all",
+        "q": "{!lucene}*:*"
+      }
+    },
+    "/admin/segments": {
+      "class": "solr.SegmentsInfoRequestHandler"
+    },
+    "/admin/luke": {
+      "class": "solr.LukeRequestHandler"
+    },
+    "/admin/system": {
+      "class": "solr.SystemInfoHandler"
+    },
+    "/admin/mbeans": {
+      "class": "solr.SolrInfoMBeanHandler"
+    },
+    "/admin/plugins": {
+      "class": "solr.PluginInfoHandler"
+    },
+    "/admin/threads": {
+      "class": "solr.ThreadDumpHandler"
+    },
+    "/admin/properties": {
+      "class": "solr.PropertiesRequestHandler"
+    },
+    "/admin/logging": {
+      "class": "solr.LoggingHandler"
+    },
+    "/admin/file": {
+      "class": "solr.ShowFileRequestHandler"
+    },
+    "/export": {
+      "class": "solr.SearchHandler",
+      "components": [
+        "query"
+      ],
+      "invariants": {
+        "rq": "{!xport}",
+        "wt": "xsort",
+        "distrib": false
+      }
+    },
+    "/stream": {
+      "class": "solr.StreamHandler",
+      "invariants": {
+        "wt": "json",
+        "distrib": false
+      }
+    },
+    "/sql": {
+      "class": "solr.SQLHandler",
+      "invariants": {
+        "wt": "json",
+        "distrib": false
+      }
+    }
+  }
+}

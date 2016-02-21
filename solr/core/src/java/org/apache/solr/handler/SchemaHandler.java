@@ -29,6 +29,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -36,21 +37,20 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.schema.ZkIndexSchemaReader;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
 
-public class SchemaHandler extends RequestHandlerBase {
+public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean isImmutableConfigSet = false;
 
   @Override
   public void init(NamedList args) {
     super.init(args);
-    Object immutable = args.get(IMMUTABLE_CONFIGSET_ARG);
-    isImmutableConfigSet = immutable  != null ? Boolean.parseBoolean(immutable.toString()) : false;
   }
 
   @Override
@@ -179,5 +179,10 @@ public class SchemaHandler extends RequestHandlerBase {
   @Override
   public String getDescription() {
     return "CRUD operations over the Solr schema";
+  }
+
+  @Override
+  public void inform(SolrCore core) {
+    isImmutableConfigSet = SolrConfigHandler.getImmutable(core);
   }
 }

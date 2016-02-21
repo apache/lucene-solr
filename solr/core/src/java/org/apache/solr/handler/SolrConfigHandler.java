@@ -48,7 +48,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -59,7 +58,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
-import org.apache.solr.core.ImplicitPlugins;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
@@ -72,6 +70,7 @@ import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.util.CommandOperation;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +86,7 @@ import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
 import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
-public class SolrConfigHandler extends RequestHandlerBase {
+public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String CONFIGSET_EDITING_DISABLED_ARG = "disable.configEdit";
   public static final boolean configEditing_disabled = Boolean.getBoolean(CONFIGSET_EDITING_DISABLED_ARG);
@@ -103,13 +102,6 @@ public class SolrConfigHandler extends RequestHandlerBase {
       }
     }
     namedPlugins = Collections.unmodifiableMap(map);
-  }
-
-  @Override
-  public void init(NamedList args) {
-    super.init(args);
-    Object immutable = args.get(IMMUTABLE_CONFIGSET_ARG);
-    isImmutableConfigSet = immutable  != null ? Boolean.parseBoolean(immutable.toString()) : false;
   }
 
   @Override
@@ -131,6 +123,18 @@ public class SolrConfigHandler extends RequestHandlerBase {
     } else {
       command.handleGET();
     }
+  }
+
+  @Override
+  public void inform(SolrCore core) {
+    isImmutableConfigSet = getImmutable(core);
+  }
+
+  public static boolean getImmutable(SolrCore core) {
+    NamedList configSetProperties = core.getConfigSetProperties();
+    if(configSetProperties == null) return false;
+    Object immutable = configSetProperties.get(IMMUTABLE_CONFIGSET_ARG);
+    return immutable != null ? Boolean.parseBoolean(immutable.toString()) : false;
   }
 
 
@@ -232,7 +236,7 @@ public class SolrConfigHandler extends RequestHandlerBase {
       Map<String, Object> map = req.getCore().getSolrConfig().toMap();
       Map reqHandlers = (Map) map.get(SolrRequestHandler.TYPE);
       if (reqHandlers == null) map.put(SolrRequestHandler.TYPE, reqHandlers = new LinkedHashMap<>());
-      List<PluginInfo> plugins = ImplicitPlugins.getHandlers(req.getCore());
+      List<PluginInfo> plugins = req.getCore().getImplicitHandlers();
       for (PluginInfo plugin : plugins) {
         if (SolrRequestHandler.TYPE.equals(plugin.type)) {
           if (!reqHandlers.containsKey(plugin.name)) {
