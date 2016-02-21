@@ -1440,7 +1440,7 @@ public class UpdateLog implements PluginInfoInitialized {
             loglog.warn("REPLAY_ERR: Exception replaying log", ex);
             // something wrong with the request?
           }
-          TestInjection.injectUpdateLogReplayRandomPause();
+          assert TestInjection.injectUpdateLogReplayRandomPause();
         }
 
         CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
