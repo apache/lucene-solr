@@ -89,4 +89,30 @@ public final class DoublePoint extends Field {
   public DoublePoint(String name, double... point) {
     super(name, pack(point), getType(point.length));
   }
+  
+  // public helper methods (e.g. for queries)
+  // TODO: try to rectify with pack() above, which works on a single concatenated array...
+
+  /** Encode n-dimensional double point into binary encoding */
+  public static byte[][] encode(Double value[]) {
+    byte[][] encoded = new byte[value.length][];
+    for (int i = 0; i < value.length; i++) {
+      if (value[i] != null) {
+        encoded[i] = encodeDimension(value[i]);
+      }
+    }
+    return encoded;
+  }
+  
+  /** Encode single double dimension */
+  public static byte[] encodeDimension(Double value) {
+    byte encoded[] = new byte[Long.BYTES];
+    NumericUtils.longToBytesDirect(NumericUtils.doubleToSortableLong(value), encoded, 0);
+    return encoded;
+  }
+  
+  /** Decode single double value */
+  public static Double decodeDimension(byte value[]) {
+    return NumericUtils.sortableLongToDouble(NumericUtils.bytesToLongDirect(value, 0));
+  }
 }

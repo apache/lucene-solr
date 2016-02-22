@@ -89,4 +89,30 @@ public final class LongPoint extends Field {
   public LongPoint(String name, long... point) {
     super(name, pack(point), getType(point.length));
   }
+  
+  // public helper methods (e.g. for queries)
+  // TODO: try to rectify with pack() above, which works on a single concatenated array...
+
+  /** Encode n-dimensional long values into binary encoding */
+  public static byte[][] encode(Long value[]) {
+    byte[][] encoded = new byte[value.length][];
+    for (int i = 0; i < value.length; i++) {
+      if (value[i] != null) {
+        encoded[i] = encodeDimension(value[i]);
+      }
+    }
+    return encoded;
+  }
+  
+  /** Encode single long dimension */
+  public static byte[] encodeDimension(Long value) {
+    byte encoded[] = new byte[Long.BYTES];
+    NumericUtils.longToBytes(value, encoded, 0);
+    return encoded;
+  }
+  
+  /** Decode single long dimension */
+  public static Long decodeDimension(byte value[]) {
+    return NumericUtils.bytesToLong(value, 0);
+  }
 }

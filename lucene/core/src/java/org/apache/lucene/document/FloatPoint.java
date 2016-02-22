@@ -89,4 +89,30 @@ public final class FloatPoint extends Field {
   public FloatPoint(String name, float... point) {
     super(name, pack(point), getType(point.length));
   }
+  
+  // public helper methods (e.g. for queries)
+  // TODO: try to rectify with pack() above, which works on a single concatenated array...
+
+  /** Encode n-dimensional float values into binary encoding */
+  public static byte[][] encode(Float value[]) {
+    byte[][] encoded = new byte[value.length][];
+    for (int i = 0; i < value.length; i++) {
+      if (value[i] != null) {
+        encoded[i] = encodeDimension(value[i]);
+      }
+    }
+    return encoded;
+  }
+  
+  /** Encode single float dimension */
+  public static byte[] encodeDimension(Float value) {
+    byte encoded[] = new byte[Integer.BYTES];
+    NumericUtils.intToBytesDirect(NumericUtils.floatToSortableInt(value), encoded, 0);
+    return encoded;
+  }
+  
+  /** Decode single float dimension */
+  public static Float decodeDimension(byte value[]) {
+    return NumericUtils.sortableIntToFloat(NumericUtils.bytesToIntDirect(value, 0));
+  }
 }

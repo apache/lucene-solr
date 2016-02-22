@@ -89,4 +89,30 @@ public final class IntPoint extends Field {
   public IntPoint(String name, int... point) {
     super(name, pack(point), getType(point.length));
   }
+
+  // public helper methods (e.g. for queries)
+  // TODO: try to rectify with pack() above, which works on a single concatenated array...
+
+  /** Encode n-dimensional integer values into binary encoding */
+  public static byte[][] encode(Integer value[]) {
+    byte[][] encoded = new byte[value.length][];
+    for (int i = 0; i < value.length; i++) {
+      if (value[i] != null) {
+        encoded[i] = encodeDimension(value[i]);
+      }
+    }
+    return encoded;
+  }
+  
+  /** Encode single integer dimension */
+  public static byte[] encodeDimension(Integer value) {
+    byte encoded[] = new byte[Integer.BYTES];
+    NumericUtils.intToBytes(value, encoded, 0);
+    return encoded;
+  }
+  
+  /** Decode single integer dimension */
+  public static Integer decodeDimension(byte value[]) {
+    return NumericUtils.bytesToInt(value, 0);
+  }
 }

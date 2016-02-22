@@ -56,7 +56,6 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -305,7 +304,7 @@ public class TestPointQueries extends LuceneTestCase {
               }
 
               if (random().nextBoolean()) {
-                query = PointRangeQuery.new1DLongRange("sn_value", lower, includeLower, upper, includeUpper);
+                query = PointRangeQuery.newLongRange("sn_value", lower, includeLower, upper, includeUpper);
               } else {
                 byte[] lowerBytes;
                 if (lower == null) {
@@ -321,7 +320,7 @@ public class TestPointQueries extends LuceneTestCase {
                   upperBytes = new byte[8];
                   NumericUtils.longToBytes(upper, upperBytes, 0);
                 }
-                query = PointRangeQuery.new1DBinaryRange("ss_value", lowerBytes, includeLower, upperBytes, includeUpper);
+                query = PointRangeQuery.newBinaryRange("ss_value", lowerBytes, includeLower, upperBytes, includeUpper);
               }
 
               if (VERBOSE) {
@@ -737,9 +736,9 @@ public class TestPointQueries extends LuceneTestCase {
 
     IndexSearcher s = newSearcher(r);
 
-    assertEquals(1, s.count(PointRangeQuery.new1DLongRange("value", Long.MIN_VALUE, true, 0L, true)));
-    assertEquals(1, s.count(PointRangeQuery.new1DLongRange("value", 0L, true, Long.MAX_VALUE, true)));
-    assertEquals(2, s.count(PointRangeQuery.new1DLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, true)));
+    assertEquals(1, s.count(PointRangeQuery.newLongRange("value", Long.MIN_VALUE, true, 0L, true)));
+    assertEquals(1, s.count(PointRangeQuery.newLongRange("value", 0L, true, Long.MAX_VALUE, true)));
+    assertEquals(2, s.count(PointRangeQuery.newLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, true)));
 
     IOUtils.close(r, w, dir);
   }
@@ -775,47 +774,47 @@ public class TestPointQueries extends LuceneTestCase {
 
     IndexSearcher s = newSearcher(r);
 
-    assertEquals(1, s.count(PointRangeQuery.new1DBinaryRange("value",
+    assertEquals(1, s.count(PointRangeQuery.newBinaryRange("value",
         toUTF8("aaa"),
         true,
         toUTF8("bbb"),
         true)));
-    assertEquals(1, s.count(PointRangeQuery.new1DBinaryRange("value",
+    assertEquals(1, s.count(PointRangeQuery.newBinaryRange("value",
         toUTF8("c", 3),
         true,
         toUTF8("e", 3),
         true)));
-    assertEquals(2, s.count(PointRangeQuery.new1DBinaryRange("value",
+    assertEquals(2, s.count(PointRangeQuery.newBinaryRange("value",
         toUTF8("a", 3),
         true,
         toUTF8("z", 3),
         true)));
-    assertEquals(1, s.count(PointRangeQuery.new1DBinaryRange("value",
+    assertEquals(1, s.count(PointRangeQuery.newBinaryRange("value",
         null,
         true,
         toUTF8("abc"),
         true)));
-    assertEquals(1, s.count(PointRangeQuery.new1DBinaryRange("value",
+    assertEquals(1, s.count(PointRangeQuery.newBinaryRange("value",
         toUTF8("a", 3),
         true,
         toUTF8("abc"),
         true)));
-    assertEquals(0, s.count(PointRangeQuery.new1DBinaryRange("value",
+    assertEquals(0, s.count(PointRangeQuery.newBinaryRange("value",
         toUTF8("a", 3),
         true,
         toUTF8("abc"),
         false)));
-    assertEquals(1, s.count(PointRangeQuery.new1DBinaryRange("value",
+    assertEquals(1, s.count(PointRangeQuery.newBinaryRange("value",
         toUTF8("def"),
         true,
         null,
         false)));
-    assertEquals(1, s.count(PointRangeQuery.new1DBinaryRange("value",
+    assertEquals(1, s.count(PointRangeQuery.newBinaryRange("value",
         toUTF8(("def")),
         true,
         toUTF8("z", 3),
         true)));
-    assertEquals(0, s.count(PointRangeQuery.new1DBinaryRange("value",
+    assertEquals(0, s.count(PointRangeQuery.newBinaryRange("value",
         toUTF8("def"),
         false,
         toUTF8("z", 3),
@@ -840,12 +839,12 @@ public class TestPointQueries extends LuceneTestCase {
 
     IndexSearcher s = newSearcher(r);
 
-    assertEquals(2, s.count(PointRangeQuery.new1DLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, true)));
-    assertEquals(1, s.count(PointRangeQuery.new1DLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, false)));
-    assertEquals(1, s.count(PointRangeQuery.new1DLongRange("value", Long.MIN_VALUE, false, Long.MAX_VALUE, true)));
-    assertEquals(0, s.count(PointRangeQuery.new1DLongRange("value", Long.MIN_VALUE, false, Long.MAX_VALUE, false)));
+    assertEquals(2, s.count(PointRangeQuery.newLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, true)));
+    assertEquals(1, s.count(PointRangeQuery.newLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, false)));
+    assertEquals(1, s.count(PointRangeQuery.newLongRange("value", Long.MIN_VALUE, false, Long.MAX_VALUE, true)));
+    assertEquals(0, s.count(PointRangeQuery.newLongRange("value", Long.MIN_VALUE, false, Long.MAX_VALUE, false)));
 
-    assertEquals(2, s.count(PointRangeQuery.new1DBinaryRange("value", (byte[]) null, true, null, true)));
+    assertEquals(2, s.count(PointRangeQuery.newBinaryRange("value", (byte[]) null, true, null, true)));
 
     IOUtils.close(r, w, dir);
   }
@@ -867,12 +866,12 @@ public class TestPointQueries extends LuceneTestCase {
     // We can't wrap with "exotic" readers because the query must see the RangeTreeDVFormat:
     IndexSearcher s = newSearcher(r, false);
 
-    assertEquals(2, s.count(PointRangeQuery.new1DLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, true)));
-    assertEquals(1, s.count(PointRangeQuery.new1DLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, false)));
-    assertEquals(1, s.count(PointRangeQuery.new1DLongRange("value", Long.MIN_VALUE, false, Long.MAX_VALUE, true)));
-    assertEquals(0, s.count(PointRangeQuery.new1DLongRange("value", Long.MIN_VALUE, false, Long.MAX_VALUE, false)));
+    assertEquals(2, s.count(PointRangeQuery.newLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, true)));
+    assertEquals(1, s.count(PointRangeQuery.newLongRange("value", Long.MIN_VALUE, true, Long.MAX_VALUE, false)));
+    assertEquals(1, s.count(PointRangeQuery.newLongRange("value", Long.MIN_VALUE, false, Long.MAX_VALUE, true)));
+    assertEquals(0, s.count(PointRangeQuery.newLongRange("value", Long.MIN_VALUE, false, Long.MAX_VALUE, false)));
 
-    assertEquals(2, s.count(PointRangeQuery.new1DLongRange("value", (Long) null, true, null, true)));
+    assertEquals(2, s.count(PointRangeQuery.newLongRange("value", (Long) null, true, null, true)));
 
     IOUtils.close(r, w, dir);
   }
@@ -892,9 +891,9 @@ public class TestPointQueries extends LuceneTestCase {
     IndexReader r = w.getReader();
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(0, s.count(PointRangeQuery.new1DBinaryRange("value", toUTF8("m"), true, toUTF8("n"), false)));
+    assertEquals(0, s.count(PointRangeQuery.newBinaryRange("value", toUTF8("m"), true, toUTF8("n"), false)));
 
-    assertEquals(2, s.count(PointRangeQuery.new1DBinaryRange("value", (byte[]) null, true, null, true)));
+    assertEquals(2, s.count(PointRangeQuery.newBinaryRange("value", (byte[]) null, true, null, true)));
 
     IOUtils.close(r, w, dir);
   }
@@ -914,7 +913,7 @@ public class TestPointQueries extends LuceneTestCase {
     IndexReader r = w.getReader();
 
     IndexSearcher s = new IndexSearcher(r);
-    assertEquals(0, s.count(PointRangeQuery.new1DLongRange("value", 17L, true, 13L, false)));
+    assertEquals(0, s.count(PointRangeQuery.newLongRange("value", 17L, true, 13L, false)));
 
     IOUtils.close(r, w, dir);
   }
@@ -929,7 +928,7 @@ public class TestPointQueries extends LuceneTestCase {
     IndexReader r = w.getReader();
 
     IndexSearcher s = newSearcher(r);
-    assertEquals(0, s.count(PointRangeQuery.new1DLongRange("value", 17L, true, 13L, false)));
+    assertEquals(0, s.count(PointRangeQuery.newLongRange("value", 17L, true, 13L, false)));
 
     IOUtils.close(r, w, dir);
   }
@@ -1045,7 +1044,7 @@ public class TestPointQueries extends LuceneTestCase {
     }
   }
 
-  public void testExactPointQuery() throws Exception {
+  public void testExactPoints() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(getCodec());
@@ -1069,19 +1068,50 @@ public class TestPointQueries extends LuceneTestCase {
 
     IndexReader r = DirectoryReader.open(w);
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, s.count(ExactPointQuery.new1DIntExact("int", 42)));
-    assertEquals(0, s.count(ExactPointQuery.new1DIntExact("int", 41)));
+    assertEquals(1, s.count(PointRangeQuery.newIntExact("int", 42)));
+    assertEquals(0, s.count(PointRangeQuery.newIntExact("int", 41)));
 
-    assertEquals(1, s.count(ExactPointQuery.new1DLongExact("long", 5L)));
-    assertEquals(0, s.count(ExactPointQuery.new1DLongExact("long", -1L)));
+    assertEquals(1, s.count(PointRangeQuery.newLongExact("long", 5L)));
+    assertEquals(0, s.count(PointRangeQuery.newLongExact("long", -1L)));
 
-    assertEquals(1, s.count(ExactPointQuery.new1DFloatExact("float", 2.0f)));
-    assertEquals(0, s.count(ExactPointQuery.new1DFloatExact("float", 1.0f)));
+    assertEquals(1, s.count(PointRangeQuery.newFloatExact("float", 2.0f)));
+    assertEquals(0, s.count(PointRangeQuery.newFloatExact("float", 1.0f)));
 
-    assertEquals(1, s.count(ExactPointQuery.new1DDoubleExact("double", 1.0)));
-    assertEquals(0, s.count(ExactPointQuery.new1DDoubleExact("double", 2.0)));
+    assertEquals(1, s.count(PointRangeQuery.newDoubleExact("double", 1.0)));
+    assertEquals(0, s.count(PointRangeQuery.newDoubleExact("double", 2.0)));
     w.close();
     r.close();
     dir.close();
+  }
+
+  public void testToString() throws Exception {
+    
+    // ints
+    assertEquals("field:[1 TO 2}", PointRangeQuery.newIntRange("field", 1, true, 2, false).toString());
+    assertEquals("field:{-2 TO 1]", PointRangeQuery.newIntRange("field", -2, false, 1, true).toString());
+    assertEquals("field:[* TO 2}", PointRangeQuery.newIntRange("field", null, true, 2, false).toString());
+
+    // longs
+    assertEquals("field:[1099511627776 TO 2199023255552}", PointRangeQuery.newLongRange("field", 1L<<40, true, 1L<<41, false).toString());
+    assertEquals("field:{-5 TO 6]", PointRangeQuery.newLongRange("field", -5L, false, 6L, true).toString());
+    assertEquals("field:[* TO 2}", PointRangeQuery.newLongRange("field", null, true, 2L, false).toString());
+    
+    // floats
+    assertEquals("field:[1.3 TO 2.5}", PointRangeQuery.newFloatRange("field", 1.3F, true, 2.5F, false).toString());
+    assertEquals("field:{-2.9 TO 1.0]", PointRangeQuery.newFloatRange("field", -2.9F, false, 1.0F, true).toString());
+    assertEquals("field:{-2.9 TO *]", PointRangeQuery.newFloatRange("field", -2.9F, false, null, true).toString());
+    
+    // doubles
+    assertEquals("field:[1.3 TO 2.5}", PointRangeQuery.newDoubleRange("field", 1.3, true, 2.5, false).toString());
+    assertEquals("field:{-2.9 TO 1.0]", PointRangeQuery.newDoubleRange("field", -2.9, false, 1.0, true).toString());
+    assertEquals("field:{-2.9 TO *]", PointRangeQuery.newDoubleRange("field", -2.9, false, null, true).toString());
+    
+    // n-dimensional double
+    assertEquals("field:[1.3 TO 2.5},{-2.9 TO 1.0]", PointRangeQuery.newMultiDoubleRange("field", 
+                                                                      new Double[] { 1.3, -2.9 }, 
+                                                                      new boolean[] { true, false }, 
+                                                                      new Double[] { 2.5, 1.0 },
+                                                                      new boolean[] { false, true }).toString());
+
   }
 }
