@@ -23,7 +23,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.7
-Carrot2 3.10.4
+Carrot2 3.12.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
@@ -289,6 +289,10 @@ Other Changes
   and in SolrJ.  (Shai Erera, Jason Gerlowski, Anshum Gupta)
 
 * SOLR-8693: Improve ZkStateReader logging. (Scott Blum via Mark Miller)
+
+* SOLR-8710: Upgrade morfologik-stemming to version 2.1.0. (Dawid Weiss)
+
+* SOLR-8711: Upgrade Carrot2 clustering dependency to 3.12.0. (Dawid Weiss)
 
 ======================= 5.5.0 =======================
 
