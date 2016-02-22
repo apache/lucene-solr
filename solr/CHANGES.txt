@@ -297,6 +297,8 @@ Other Changes
 * SOLR-8690: Make peersync fingerprinting optional with solr.disableFingerprint system
   property. (yonik)
 
+* SOLR-8691: Cache index fingerprints per searcher. (yonik)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
