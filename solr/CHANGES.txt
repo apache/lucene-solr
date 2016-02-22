@@ -294,6 +294,9 @@ Other Changes
 
 * SOLR-8711: Upgrade Carrot2 clustering dependency to 3.12.0. (Dawid Weiss)
 
+* SOLR-8690: Make peersync fingerprinting optional with solr.disableFingerprint system
+  property. (yonik)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
