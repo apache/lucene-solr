@@ -1213,6 +1213,7 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
           continue;
         }
         try (IndexOutput out = dir.createOutput(candidate, IOContext.DEFAULT)) {
+          out.getFilePointer(); // just fake access to prevent compiler warning
         }
         fsDir.deleteFile(candidate);
         if (fsDir.checkPendingDeletions()) {
@@ -1246,12 +1247,14 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
 
       if (random().nextBoolean()) {
         try (IndexOutput out = fsDir.createOutput(fileName + "z", IOContext.DEFAULT)) {
+          out.getFilePointer(); // just fake access to prevent compiler warning
         }
         // Make sure we can rename onto the deleted file:
         fsDir.renameFile(fileName + "z", fileName);
       } else {
         // write the file again
         try (IndexOutput out = dir.createOutput(fileName, IOContext.DEFAULT)) {
+          out.getFilePointer(); // just fake access to prevent compiler warning
         }
       }
       assertEquals(0, fsDir.fileLength(fileName));

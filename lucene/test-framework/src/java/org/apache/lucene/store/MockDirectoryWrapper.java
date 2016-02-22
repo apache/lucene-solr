@@ -19,7 +19,6 @@ package org.apache.lucene.store;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.FileSystem;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,8 +45,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.SegmentInfos;
-import org.apache.lucene.mockfile.FilterFileSystem;
-import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -423,6 +420,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         deleteFile(name);
 
         try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
+          out.getFilePointer(); // just fake access to prevent compiler warning
         } catch (IOException ioe) {
           // ignore
         }
