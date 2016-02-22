@@ -47,6 +47,11 @@
   </dependencies>
   <build>
     <sourceDirectory>${module-path}</sourceDirectory>
+    <resources>
+      <resource>
+        <directory>${module-path}/../resources</directory>
+      </resource>
+    </resources>
     <testSourceDirectory/>
     <testResources/>
     <plugins>
