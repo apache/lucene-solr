@@ -672,11 +672,17 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   /** Used for testing */
   void setSuppressExceptions() {
+    if (verbose()) {
+      message("will suppress merge exceptions");
+    }
     suppressExceptions = true;
   }
 
   /** Used for testing */
   void clearSuppressExceptions() {
+    if (verbose()) {
+      message("will not suppress merge exceptions");
+    }
     suppressExceptions = false;
   }
   
