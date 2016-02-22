@@ -142,7 +142,7 @@ Instructions for Building Apache Solr from Source
 3. Download the Apache Solr distribution, linked from the above web site. 
    Unzip the distribution to a folder of your choice, e.g. C:\solr or ~/solr
    Alternately, you can obtain a copy of the latest Apache Solr source code
-   directly from the Subversion repository:
+   directly from the GIT repository:
 
      http://lucene.apache.org/solr/versioncontrol.html
 
