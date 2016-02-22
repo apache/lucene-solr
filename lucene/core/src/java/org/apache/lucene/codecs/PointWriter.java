@@ -37,7 +37,7 @@ public abstract class PointWriter implements Closeable {
   /** Write all values contained in the provided reader */
   public abstract void writeField(FieldInfo fieldInfo, PointReader values) throws IOException;
 
-  /** Default naive merge implemenation for one field: it just re-indexes all the values
+  /** Default naive merge implementation for one field: it just re-indexes all the values
    *  from the incoming segment.  The default codec overrides this for 1D fields and uses
    *  a faster but more complex implementation. */
   protected void mergeOneField(MergeState mergeState, FieldInfo fieldInfo) throws IOException {

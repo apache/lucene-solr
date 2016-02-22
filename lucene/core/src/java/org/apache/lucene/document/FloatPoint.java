@@ -23,7 +23,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 /** A field that is indexed dimensionally such that finding
  *  all documents within an N-dimensional at search time is
- *  efficient.  Muliple values for the same field in one documents
+ *  efficient.  Multiple values for the same field in one documents
  *  is allowed. */
 
 public final class FloatPoint extends Field {

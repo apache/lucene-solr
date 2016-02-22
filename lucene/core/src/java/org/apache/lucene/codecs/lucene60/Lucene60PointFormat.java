@@ -64,10 +64,8 @@ import org.apache.lucene.index.SegmentWriteState;
  *   <li> (fieldNumber (vInt), fieldFilePointer (vLong))<sup>fieldCount</sup>
  * </ul>
  *
- * <p> After that, {@link CodecUtil#writeFooter} writes the checksum.
- *
  * <p>After all fields blocks + index data are written, {@link CodecUtil#writeFooter} writes the checksum.
-
+ *
  * @lucene.experimental
  */
 
