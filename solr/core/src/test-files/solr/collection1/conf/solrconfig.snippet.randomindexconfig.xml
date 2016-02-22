@@ -26,7 +26,8 @@ A solrconfig.xml snippet containing indexConfig settings for randomized testing.
        the RandomMergePolicy in all tests - but some tests expect very specific
        Merge behavior, so those tests can set it as needed.
   -->
-  <mergePolicyFactory class="org.apache.solr.util.RandomMergePolicyFactory" />
+  <mergePolicy enable="${solr.tests.useMergePolicy:true}" class="${solr.tests.mergePolicy:org.apache.solr.util.RandomMergePolicy}" />
+  <mergePolicyFactory enable="${solr.tests.useMergePolicyFactory:true}" class="${solr.tests.mergePolicyFactory:org.apache.solr.util.RandomMergePolicyFactory}" />
   
   <useCompoundFile>${useCompoundFile:false}</useCompoundFile>
 
