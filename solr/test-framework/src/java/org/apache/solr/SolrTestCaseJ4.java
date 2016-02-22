@@ -128,6 +128,16 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static final String DEFAULT_TEST_CORENAME = DEFAULT_TEST_COLLECTION_NAME;
   protected static final String CORE_PROPERTIES_FILENAME = "core.properties";
 
+  // keep solr.tests.mergePolicyFactory use i.e. do not remove with SOLR-8668
+  public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY = "solr.tests.mergePolicyFactory";
+  @Deprecated // remove solr.tests.mergePolicy use with SOLR-8668
+  public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY = "solr.tests.mergePolicy";
+
+  @Deprecated // remove solr.tests.useMergePolicyFactory with SOLR-8668
+  public static final String SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY = "solr.tests.useMergePolicyFactory";
+  @Deprecated // remove solr.tests.useMergePolicy use with SOLR-8668
+  public static final String SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY = "solr.tests.useMergePolicy";
+
   private static String coreName = DEFAULT_TEST_CORENAME;
 
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000;  // default socket connection timeout in ms
@@ -2076,5 +2086,40 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
     registeredSearcher.decref();
     newestSearcher.decref();
+  }
+
+  @BeforeClass
+  public static void chooseMPForMP() throws Exception {
+    if (random().nextBoolean()) {
+      System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
+      System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
+    } else {
+      System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "false");
+      System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "true");
+    }
+  }
+
+  @AfterClass
+  public static void unchooseMPForMP() {
+    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY);
+    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY);
+  }
+
+  @Deprecated // remove with SOLR-8668
+  protected static void systemSetPropertySolrTestsMergePolicy(String value) {
+    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY, value);
+  }
+
+  @Deprecated // remove with SOLR-8668
+  protected static void systemClearPropertySolrTestsMergePolicy() {
+    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY);
+  }
+
+  protected static void systemSetPropertySolrTestsMergePolicyFactory(String value) {
+    System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, value);
+  }
+
+  protected static void systemClearPropertySolrTestsMergePolicyFactory() {
+    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
   }
 }

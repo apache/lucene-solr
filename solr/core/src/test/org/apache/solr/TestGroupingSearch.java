@@ -34,12 +34,14 @@ import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
+import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -61,11 +63,17 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   public static void beforeTests() throws Exception {
     // force LogDocMergePolicy so that we get a predictable doc order
     // when doing unsorted group collection
-    System.setProperty("solr.tests.mergePolicy", 
-                       LogDocMergePolicy.class.getName());
+    systemSetPropertySolrTestsMergePolicy(LogDocMergePolicy.class.getName());
+    systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
 
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
+  }
+
+  @AfterClass
+  public static void afterTests() {
+    systemClearPropertySolrTestsMergePolicy();
+    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Before
