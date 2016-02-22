@@ -114,6 +114,9 @@ Other Changes
 
 * SOLR-8445: fix line separator in log4j.properties files (Ahmet Arslan via Mikhail Khludnev)
 
+* SOLR-8674: Stop ignoring sysprop solr.tests.mergePolicy, and make tests randomly choose between
+  setting <mergePolicy> and <mergePolicyFactory>, which was added in SOLR-8621.  (Christine Poerschke)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes

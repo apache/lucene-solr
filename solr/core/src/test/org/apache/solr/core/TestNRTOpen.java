@@ -23,7 +23,9 @@ import java.util.Set;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
@@ -39,7 +41,8 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     System.setProperty("solr.test.leavedatadir", "true");
     // set these so that merges won't break the test
     System.setProperty("solr.tests.maxBufferedDocs", "100000");
-    System.setProperty("solr.tests.mergePolicy", "org.apache.lucene.index.LogDocMergePolicy");
+    systemSetPropertySolrTestsMergePolicy(LogDocMergePolicy.class.getName());
+    systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
     initCore("solrconfig-basic.xml", "schema-minimal.xml");
     // add a doc
     assertU(adoc("foo", "bar"));
@@ -59,7 +62,8 @@ public class TestNRTOpen extends SolrTestCaseJ4 {
     System.clearProperty("solr.test.leavedatadir");
     System.clearProperty("solr.directoryFactory");
     System.clearProperty("solr.tests.maxBufferedDocs");
-    System.clearProperty("solr.tests.mergePolicy");
+    systemClearPropertySolrTestsMergePolicy();
+    systemClearPropertySolrTestsMergePolicyFactory();
   }
   
   public void setUp() throws Exception {
