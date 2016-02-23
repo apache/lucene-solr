@@ -42,7 +42,6 @@ import org.apache.lucene.util.StringHelper;
 /** Finds all documents whose point value, previously indexed with e.g. {@link org.apache.lucene.document.LongPoint}, is contained in the
  *  specified set */
 
-// nocommit make abstract
 public class PointInSetQuery extends Query {
   // A little bit overkill for us, since all of our "terms" are always in the same field:
   final PrefixCodedTerms sortedPackedPoints;
@@ -54,8 +53,13 @@ public class PointInSetQuery extends Query {
   /** {@code packedPoints} must already be sorted! */
   protected PointInSetQuery(String field, int numDims, int bytesPerDim, BytesRefIterator packedPoints) throws IOException {
     this.field = field;
-    // nocommit validate these:
+    if (bytesPerDim < 1 || bytesPerDim > PointValues.MAX_NUM_BYTES) {
+      throw new IllegalArgumentException("bytesPerDim must be > 0 and <= " + PointValues.MAX_NUM_BYTES + "; got " + bytesPerDim);
+    }
     this.bytesPerDim = bytesPerDim;
+    if (numDims < 1 || bytesPerDim > PointValues.MAX_DIMENSIONS) {
+      throw new IllegalArgumentException("numDims must be > 0 and <= " + PointValues.MAX_DIMENSIONS + "; got " + numDims);
+    }
     this.numDims = numDims;
 
     // In the 1D case this works well (the more points, the more common prefixes they share, typically), but in
@@ -64,9 +68,8 @@ public class PointInSetQuery extends Query {
     BytesRefBuilder previous = null;
     BytesRef current;
     while ((current = packedPoints.next()) != null) {
-      // nocommit make sure a test tests this:
       if (current.length != numDims * bytesPerDim) {
-        throw new IllegalArgumentException("packed point length should be " + (numDims * bytesPerDim) + " but got " + current.length + "; field=\"" + field + "\", numDims=" + numDims + " bytesPerDim=" + bytesPerDim);
+        throw new IllegalArgumentException("packed point length should be " + (numDims * bytesPerDim) + " but got " + current.length + "; field=\"" + field + "\" numDims=" + numDims + " bytesPerDim=" + bytesPerDim);
       }
       if (previous == null) {
         previous = new BytesRefBuilder();
@@ -104,7 +107,7 @@ public class PointInSetQuery extends Query {
         if (fieldInfo.getPointDimensionCount() != numDims) {
           throw new IllegalArgumentException("field=\"" + field + "\" was indexed with numDims=" + fieldInfo.getPointDimensionCount() + " but this query has numDims=" + numDims);
         }
-        if (bytesPerDim != fieldInfo.getPointNumBytes()) {
+        if (fieldInfo.getPointNumBytes() != bytesPerDim) {
           throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + " but this query has bytesPerDim=" + bytesPerDim);
         }
         int bytesPerDim = fieldInfo.getPointNumBytes();

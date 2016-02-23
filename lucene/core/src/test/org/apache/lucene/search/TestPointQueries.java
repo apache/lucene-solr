@@ -22,7 +22,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -57,6 +59,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
@@ -1115,6 +1118,129 @@ public class TestPointQueries extends LuceneTestCase {
 
   }
 
+  private int[] toArray(Set<Integer> valuesSet) {
+    int[] values = new int[valuesSet.size()];
+    int upto = 0;
+    for(Integer value : valuesSet) {
+      values[upto++] = value;
+    }
+    return values;
+  }
+
+  public void testRandomPointInSetQuery() throws Exception {
+    final Set<Integer> valuesSet = new HashSet<>();
+    int numValues = TestUtil.nextInt(random(), 1, 100);
+    while (valuesSet.size() < numValues) {
+      valuesSet.add(random().nextInt());
+    }
+    int[] values = toArray(valuesSet);
+    int numDocs = TestUtil.nextInt(random(), 1, 10000);
+
+    if (VERBOSE) {
+      System.out.println("TEST: numValues=" + numValues + " numDocs=" + numDocs);
+    }
+
+    Directory dir;
+    if (numDocs > 100000) {
+      dir = newFSDirectory(createTempDir("TestPointQueries"));
+    } else {
+      dir = newDirectory();
+    }
+
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+
+    // nocommit multi-valued too
+
+    int[] docValues = new int[numDocs];
+    for(int i=0;i<numDocs;i++) {
+      int x = values[random().nextInt(values.length)];
+      Document doc = new Document();
+      doc.add(new IntPoint("int", x));
+      docValues[i] = x;
+      w.addDocument(doc);
+    }
+
+    if (random().nextBoolean()) {
+      if (VERBOSE) {
+        System.out.println("  forceMerge(1)");
+      }
+      w.forceMerge(1);
+    }
+    final IndexReader r = w.getReader();
+    w.close();
+
+    IndexSearcher s = newSearcher(r);
+
+    int numThreads = TestUtil.nextInt(random(), 2, 5);
+
+    if (VERBOSE) {
+      System.out.println("TEST: use " + numThreads + " query threads; searcher=" + s);
+    }
+
+    List<Thread> threads = new ArrayList<>();
+    final int iters = atLeast(100);
+
+    final CountDownLatch startingGun = new CountDownLatch(1);
+    final AtomicBoolean failed = new AtomicBoolean();
+
+    for(int i=0;i<numThreads;i++) {
+      Thread thread = new Thread() {
+          @Override
+          public void run() {
+            try {
+              _run();
+            } catch (Exception e) {
+              failed.set(true);
+              throw new RuntimeException(e);
+            }
+          }
+
+          private void _run() throws Exception {
+            startingGun.await();
+
+            for (int iter=0;iter<iters && failed.get() == false;iter++) {
+
+              int numValidValuesToQuery = random().nextInt(values.length);
+
+              Set<Integer> valuesToQuery = new HashSet<>();
+              while (valuesToQuery.size() < numValidValuesToQuery) {
+                valuesToQuery.add(values[random().nextInt(values.length)]);
+              }
+
+              int numExtraValuesToQuery = random().nextInt(20);
+              while (valuesToQuery.size() < numValidValuesToQuery + numExtraValuesToQuery) {
+                // nocommit fix test to sometimes use "narrow" range of values
+                valuesToQuery.add(random().nextInt());
+              }
+
+              int expectedCount = 0;
+              for(int value : docValues) {
+                if (valuesToQuery.contains(value)) {
+                  expectedCount++;
+                }
+              }
+
+              if (VERBOSE) {
+                System.out.println("TEST: thread=" + Thread.currentThread() + " values=" + valuesToQuery + " expectedCount=" + expectedCount);
+              }
+
+              assertEquals(expectedCount, s.count(IntPoint.newSetQuery("int", toArray(valuesToQuery))));
+            }
+          }
+        };
+      thread.setName("T" + i);
+      thread.start();
+      threads.add(thread);
+    }
+    startingGun.countDown();
+    for(Thread thread : threads) {
+      thread.join();
+    }
+    IOUtils.close(r, dir);
+  }
+
   // nocommit fix existing randomized tests to sometimes randomly use PointInSet instead
 
   // nocommit need 2D test too
@@ -1206,5 +1332,19 @@ public class TestPointQueries extends LuceneTestCase {
     w.close();
     r.close();
     dir.close();
+  }
+
+  public void testInvalidPointInSetQuery() throws Exception {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
+                                                     () -> {
+                                                       new PointInSetQuery("foo", 3, 4,
+                                                                           new BytesRefIterator() {
+                                                                             @Override
+                                                                             public BytesRef next() {
+                                                                               return new BytesRef(new byte[3]);
+                                                                             }
+                                                                           });
+                                                     });
+    assertEquals("packed point length should be 12 but got 3; field=\"foo\" numDims=3 bytesPerDim=4", expected.getMessage());
   }
 }
