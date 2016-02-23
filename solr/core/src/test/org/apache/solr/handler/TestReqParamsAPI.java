@@ -38,7 +38,6 @@ import org.junit.Test;
 import static java.util.Arrays.asList;
 import static org.apache.solr.handler.TestSolrConfigHandlerCloud.compareValues;
 
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-7362")
 public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
   private List<RestTestHarness> restTestHarnesses = new ArrayList<>();
 
