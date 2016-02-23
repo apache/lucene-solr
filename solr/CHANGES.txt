@@ -211,6 +211,9 @@ Bug Fixes
 
 * SOLR-8599: After a failed connection during construction of SolrZkClient attempt to retry until a connection
   can be made. (Keith Laban, Dennis Gove)
+  
+* SOLR-8497: Merge index does not mark the Directory objects it creates as 'done' and they are retained in the 
+  Directory cache. (Sivlio Sanchez, Mark Miller)
 
 Optimizations
 ----------------------
