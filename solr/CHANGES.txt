@@ -240,6 +240,8 @@ Optimizations
 * SOLR-8669: Non binary responses use chunked encoding because we flush the outputstream early.
   (Mark Miller)
 
+* SOLR-8720: ZkController#publishAndWaitForDownStates should use #publishNodeAsDown. (Mark Miller)
+
 Other Changes
 ----------------------
 
