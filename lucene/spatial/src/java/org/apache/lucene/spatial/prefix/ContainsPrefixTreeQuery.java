@@ -353,7 +353,7 @@ public class ContainsPrefixTreeQuery extends AbstractPrefixTreeQuery {
     public long ramBytesUsed() {
       return RamUsageEstimator.alignObjectSize(
             RamUsageEstimator.NUM_BYTES_OBJECT_REF
-          + RamUsageEstimator.NUM_BYTES_INT)
+          + Integer.BYTES)
           + intSet.ramBytesUsed();
     }
 

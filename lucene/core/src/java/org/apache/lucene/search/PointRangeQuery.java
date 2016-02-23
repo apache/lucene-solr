@@ -194,7 +194,7 @@ public class PointRangeQuery extends Query {
     return new PointRangeQuery(field, IntPoint.encode(lowerValue), lowerInclusive, IntPoint.encode(upperValue), upperInclusive) {
       @Override
       protected String toString(byte[] value) {
-        return IntPoint.decodeDimension(value).toString();
+        return IntPoint.decodeDimension(value, 0).toString();
       }
     };
   }
@@ -264,7 +264,7 @@ public class PointRangeQuery extends Query {
     return new PointRangeQuery(field, LongPoint.encode(lowerValue), lowerInclusive, LongPoint.encode(upperValue), upperInclusive) {
       @Override
       protected String toString(byte[] value) {
-        return LongPoint.decodeDimension(value).toString();
+        return LongPoint.decodeDimension(value, 0).toString();
       }
     };
   }
@@ -334,7 +334,7 @@ public class PointRangeQuery extends Query {
     return new PointRangeQuery(field, FloatPoint.encode(lowerValue), lowerInclusive, FloatPoint.encode(upperValue), upperInclusive) {
       @Override
       protected String toString(byte[] value) {
-        return FloatPoint.decodeDimension(value).toString();
+        return FloatPoint.decodeDimension(value, 0).toString();
       }
     };
   }
@@ -404,7 +404,7 @@ public class PointRangeQuery extends Query {
     return new PointRangeQuery(field, DoublePoint.encode(lowerValue), lowerInclusive, DoublePoint.encode(upperValue), upperInclusive) {
       @Override
       protected String toString(byte[] value) {
-        return DoublePoint.decodeDimension(value).toString();
+        return DoublePoint.decodeDimension(value, 0).toString();
       }
     };
   }

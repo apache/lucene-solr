@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.document;
 
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /** A field that is indexed dimensionally such that finding
  *  all documents within an N-dimensional at search time is
@@ -30,7 +28,7 @@ public final class FloatPoint extends Field {
 
   private static FieldType getType(int numDims) {
     FieldType type = new FieldType();
-    type.setDimensions(numDims, RamUsageEstimator.NUM_BYTES_INT);
+    type.setDimensions(numDims, Float.BYTES);
     type.freeze();
     return type;
   }
@@ -59,8 +57,8 @@ public final class FloatPoint extends Field {
       throw new IllegalStateException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot convert to a single numeric value");
     }
     BytesRef bytes = (BytesRef) fieldsData;
-    assert bytes.length == RamUsageEstimator.NUM_BYTES_INT;
-    return NumericUtils.sortableIntToFloat(NumericUtils.bytesToIntDirect(bytes.bytes, bytes.offset));
+    assert bytes.length == Float.BYTES;
+    return decodeDimension(bytes.bytes, bytes.offset);
   }
 
   private static BytesRef pack(float... point) {
@@ -70,10 +68,10 @@ public final class FloatPoint extends Field {
     if (point.length == 0) {
       throw new IllegalArgumentException("point cannot be 0 dimensions");
     }
-    byte[] packed = new byte[point.length * RamUsageEstimator.NUM_BYTES_INT];
+    byte[] packed = new byte[point.length * Float.BYTES];
     
-    for(int dim=0;dim<point.length;dim++) {
-      NumericUtils.intToBytesDirect(NumericUtils.floatToSortableInt(point[dim]), packed, dim);
+    for (int dim = 0; dim < point.length; dim++) {
+      encodeDimension(point[dim], packed, dim * Float.BYTES);
     }
 
     return new BytesRef(packed);
@@ -91,28 +89,26 @@ public final class FloatPoint extends Field {
   }
   
   // public helper methods (e.g. for queries)
-  // TODO: try to rectify with pack() above, which works on a single concatenated array...
 
   /** Encode n-dimensional float values into binary encoding */
   public static byte[][] encode(Float value[]) {
     byte[][] encoded = new byte[value.length][];
     for (int i = 0; i < value.length; i++) {
       if (value[i] != null) {
-        encoded[i] = encodeDimension(value[i]);
+        encoded[i] = new byte[Float.BYTES];
+        encodeDimension(value[i], encoded[i], 0);
       }
     }
     return encoded;
   }
   
   /** Encode single float dimension */
-  public static byte[] encodeDimension(Float value) {
-    byte encoded[] = new byte[Integer.BYTES];
-    NumericUtils.intToBytesDirect(NumericUtils.floatToSortableInt(value), encoded, 0);
-    return encoded;
+  public static void encodeDimension(Float value, byte dest[], int offset) {
+    NumericUtils.intToBytesDirect(NumericUtils.floatToSortableInt(value), dest, offset);
   }
   
   /** Decode single float dimension */
-  public static Float decodeDimension(byte value[]) {
-    return NumericUtils.sortableIntToFloat(NumericUtils.bytesToIntDirect(value, 0));
+  public static Float decodeDimension(byte value[], int offset) {
+    return NumericUtils.sortableIntToFloat(NumericUtils.bytesToIntDirect(value, offset));
   }
 }

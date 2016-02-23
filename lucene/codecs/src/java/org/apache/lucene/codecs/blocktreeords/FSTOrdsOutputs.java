@@ -228,6 +228,6 @@ final class FSTOrdsOutputs extends Outputs<FSTOrdsOutputs.Output> {
 
   @Override
   public long ramBytesUsed(Output output) {
-    return 2 * RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 2 * RamUsageEstimator.NUM_BYTES_LONG + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + 2 * RamUsageEstimator.NUM_BYTES_INT + output.bytes.length;
+    return 2 * RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 2 * Long.BYTES + 2 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + 2 * Integer.BYTES + output.bytes.length;
   }
 }

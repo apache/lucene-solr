@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.synonym;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -31,11 +30,9 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.fst.FST;
 
 /**
@@ -207,12 +204,12 @@ public final class SynonymFilter extends TokenFilter {
         outputs = Arrays.copyOf(outputs, ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
       }
       if (count == endOffsets.length) {
-        final int[] next = new int[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_INT)];
+        final int[] next = new int[ArrayUtil.oversize(1+count, Integer.BYTES)];
         System.arraycopy(endOffsets, 0, next, 0, count);
         endOffsets = next;
       }
       if (count == posLengths.length) {
-        final int[] next = new int[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_INT)];
+        final int[] next = new int[ArrayUtil.oversize(1+count, Integer.BYTES)];
         System.arraycopy(posLengths, 0, next, 0, count);
         posLengths = next;
       }

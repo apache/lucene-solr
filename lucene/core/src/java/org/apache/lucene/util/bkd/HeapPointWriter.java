@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.util.bkd;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.RamUsageEstimator;
 
 final class HeapPointWriter implements PointWriter {
   int[] docIDs;
@@ -94,7 +92,7 @@ final class HeapPointWriter implements PointWriter {
     assert closed == false;
     assert packedValue.length == packedBytesLength;
     if (ords.length == nextWrite) {
-      int nextSize = Math.min(maxSize, ArrayUtil.oversize(nextWrite+1, RamUsageEstimator.NUM_BYTES_INT));
+      int nextSize = Math.min(maxSize, ArrayUtil.oversize(nextWrite+1, Integer.BYTES));
       assert nextSize > nextWrite: "nextSize=" + nextSize + " vs nextWrite=" + nextWrite;
       ords = growExact(ords, nextSize);
       docIDs = growExact(docIDs, nextSize);

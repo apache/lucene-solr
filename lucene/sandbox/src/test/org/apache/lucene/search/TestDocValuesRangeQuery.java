@@ -83,7 +83,7 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
     if (l == null) {
       return null;
     } else {
-      byte[] bytes = new byte[RamUsageEstimator.NUM_BYTES_LONG];
+      byte[] bytes = new byte[Long.BYTES];
       NumericUtils.longToBytes(l, bytes, 0);
       return new BytesRef(bytes);
     }

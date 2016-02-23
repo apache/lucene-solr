@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSet;
@@ -68,7 +67,7 @@ public final class DocIdSetBuilder {
   private void growBuffer(int minSize) {
     assert minSize < threshold;
     if (buffer.length < minSize) {
-      int nextSize = Math.min(threshold, ArrayUtil.oversize(minSize, RamUsageEstimator.NUM_BYTES_INT));
+      int nextSize = Math.min(threshold, ArrayUtil.oversize(minSize, Integer.BYTES));
       int[] newBuffer = new int[nextSize];
       System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
       buffer = newBuffer;

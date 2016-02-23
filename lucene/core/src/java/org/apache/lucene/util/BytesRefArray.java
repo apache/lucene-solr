@@ -51,8 +51,7 @@ public final class BytesRefArray {
     this.pool = new ByteBlockPool(new ByteBlockPool.DirectTrackingAllocator(
         bytesUsed));
     pool.nextBuffer();
-    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER
-        + RamUsageEstimator.NUM_BYTES_INT);
+    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_ARRAY_HEADER * Integer.BYTES);
     this.bytesUsed = bytesUsed;
   }
  
@@ -75,8 +74,7 @@ public final class BytesRefArray {
     if (lastElement >= offsets.length) {
       int oldLen = offsets.length;
       offsets = ArrayUtil.grow(offsets, offsets.length + 1);
-      bytesUsed.addAndGet((offsets.length - oldLen)
-          * RamUsageEstimator.NUM_BYTES_INT);
+      bytesUsed.addAndGet((offsets.length - oldLen) * Integer.BYTES);
     }
     pool.append(bytes);
     offsets[lastElement++] = currentOffset;

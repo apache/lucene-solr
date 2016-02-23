@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -283,7 +282,7 @@ final class TermVectorsConsumerPerField extends TermsHashPerField {
 
     @Override
     int bytesPerPosting() {
-      return super.bytesPerPosting() + 3 * RamUsageEstimator.NUM_BYTES_INT;
+      return super.bytesPerPosting() + 3 * Integer.BYTES;
     }
   }
 }

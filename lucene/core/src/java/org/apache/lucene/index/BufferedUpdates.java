@@ -52,19 +52,19 @@ class BufferedUpdates {
      Term's text is String (OBJ_HEADER + 4*INT + POINTER +
      OBJ_HEADER + string.length*CHAR).  Integer is
      OBJ_HEADER + INT. */
-  final static int BYTES_PER_DEL_TERM = 9*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 7*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 10*RamUsageEstimator.NUM_BYTES_INT;
+  final static int BYTES_PER_DEL_TERM = 9*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 7*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 10*Integer.BYTES;
 
   /* Rough logic: del docIDs are List<Integer>.  Say list
      allocates ~2X size (2*POINTER).  Integer is OBJ_HEADER
      + int */
-  final static int BYTES_PER_DEL_DOCID = 2*RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT;
+  final static int BYTES_PER_DEL_DOCID = 2*RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + Integer.BYTES;
 
   /* Rough logic: HashMap has an array[Entry] w/ varying
      load factor (say 2 * POINTER).  Entry is object w/
      Query key, Integer val, int hash, Entry next
      (OBJ_HEADER + 3*POINTER + INT).  Query we often
      undercount (say 24 bytes).  Integer is OBJ_HEADER + INT. */
-  final static int BYTES_PER_DEL_QUERY = 5*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 2*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 2*RamUsageEstimator.NUM_BYTES_INT + 24;
+  final static int BYTES_PER_DEL_QUERY = 5*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 2*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 2*Integer.BYTES + 24;
 
   /* Rough logic: NumericUpdate calculates its actual size,
    * including the update Term and DV field (String). The 
@@ -82,7 +82,7 @@ class BufferedUpdates {
    */
   final static int BYTES_PER_NUMERIC_FIELD_ENTRY =
       7*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 3*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 
-      RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + 5*RamUsageEstimator.NUM_BYTES_INT + RamUsageEstimator.NUM_BYTES_FLOAT;
+      RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + 5*Integer.BYTES + Float.BYTES;
       
   /* Rough logic: Incremented when we see another Term for an already updated
    * field.
@@ -93,7 +93,7 @@ class BufferedUpdates {
    * Term (key) is counted only as POINTER.
    * NumericUpdate (val) counts its own size and isn't accounted for here.
    */
-  final static int BYTES_PER_NUMERIC_UPDATE_ENTRY = 7*RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT;
+  final static int BYTES_PER_NUMERIC_UPDATE_ENTRY = 7*RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + Integer.BYTES;
 
   /* Rough logic: BinaryUpdate calculates its actual size,
    * including the update Term and DV field (String). The 
@@ -111,7 +111,7 @@ class BufferedUpdates {
    */
   final static int BYTES_PER_BINARY_FIELD_ENTRY =
       7*RamUsageEstimator.NUM_BYTES_OBJECT_REF + 3*RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 
-      RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + 5*RamUsageEstimator.NUM_BYTES_INT + RamUsageEstimator.NUM_BYTES_FLOAT;
+      RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + 5*Integer.BYTES + Float.BYTES;
       
   /* Rough logic: Incremented when we see another Term for an already updated
    * field.
@@ -122,7 +122,7 @@ class BufferedUpdates {
    * Term (key) is counted only as POINTER.
    * BinaryUpdate (val) counts its own size and isn't accounted for here.
    */
-  final static int BYTES_PER_BINARY_UPDATE_ENTRY = 7*RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + RamUsageEstimator.NUM_BYTES_INT;
+  final static int BYTES_PER_BINARY_UPDATE_ENTRY = 7*RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + Integer.BYTES;
   
   final AtomicInteger numTermDeletes = new AtomicInteger();
   final AtomicInteger numNumericUpdates = new AtomicInteger();
@@ -226,7 +226,7 @@ class BufferedUpdates {
     // is done to respect IndexWriterConfig.setMaxBufferedDeleteTerms.
     numTermDeletes.incrementAndGet();
     if (current == null) {
-      bytesUsed.addAndGet(BYTES_PER_DEL_TERM + term.bytes.length + (RamUsageEstimator.NUM_BYTES_CHAR * term.field().length()));
+      bytesUsed.addAndGet(BYTES_PER_DEL_TERM + term.bytes.length + (Character.BYTES * term.field().length()));
     }
   }
  

@@ -481,7 +481,7 @@ class FieldCacheImpl implements FieldCache {
 
     @Override
     public long ramBytesUsed() {
-      return values.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_LONG;
+      return values.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_OBJECT_REF + Long.BYTES;
     }
   }
 
@@ -599,7 +599,7 @@ class FieldCacheImpl implements FieldCache {
              termOrdToBytesOffset.ramBytesUsed() + 
              docToTermOrd.ramBytesUsed() + 
              3*RamUsageEstimator.NUM_BYTES_OBJECT_REF +
-             RamUsageEstimator.NUM_BYTES_INT;
+             Integer.BYTES;
     }
     
     @Override

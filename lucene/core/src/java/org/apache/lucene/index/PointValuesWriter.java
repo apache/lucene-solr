@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 
 import org.apache.lucene.codecs.PointReader;
@@ -25,7 +24,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /** Buffers up pending byte[][] value(s) per doc, then flushes when segment flushes. */
 class PointValuesWriter {
@@ -41,7 +39,7 @@ class PointValuesWriter {
     this.iwBytesUsed = docWriter.bytesUsed;
     this.bytes = new ByteBlockPool(docWriter.byteBlockAllocator);
     docIDs = new int[16];
-    iwBytesUsed.addAndGet(16 * RamUsageEstimator.NUM_BYTES_INT);
+    iwBytesUsed.addAndGet(16 * Integer.BYTES);
     packedValue = new byte[fieldInfo.getPointDimensionCount() * fieldInfo.getPointNumBytes()];
   }
 
@@ -54,7 +52,7 @@ class PointValuesWriter {
     }
     if (docIDs.length == numDocs) {
       docIDs = ArrayUtil.grow(docIDs, numDocs+1);
-      iwBytesUsed.addAndGet((docIDs.length - numDocs) * RamUsageEstimator.NUM_BYTES_INT);
+      iwBytesUsed.addAndGet((docIDs.length - numDocs) * Integer.BYTES);
     }
     bytes.append(value);
     docIDs[numDocs] = docID;

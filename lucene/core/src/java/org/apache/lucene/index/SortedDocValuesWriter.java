@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
 
 import java.io.IOException;
@@ -29,7 +28,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash.DirectBytesStartArray;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PackedLongValues;
 
@@ -93,7 +91,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
       // 1. when indexing, when hash is 50% full, rehash() suddenly needs 2*size ints.
       //    TODO: can this same OOM happen in THPF?
       // 2. when flushing, we need 1 int per value (slot in the ordMap).
-      iwBytesUsed.addAndGet(2 * RamUsageEstimator.NUM_BYTES_INT);
+      iwBytesUsed.addAndGet(2 * Integer.BYTES);
     }
     
     pending.add(termID);

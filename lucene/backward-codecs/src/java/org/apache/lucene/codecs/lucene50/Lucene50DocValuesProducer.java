@@ -537,7 +537,7 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
       addresses = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, bytes.count+1, false);
       if (!merging) {
         addressInstances.put(field.name, addresses);
-        ramBytesUsed.addAndGet(addresses.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+        ramBytesUsed.addAndGet(addresses.ramBytesUsed() + Integer.BYTES);
       }
     }
     return addresses;
@@ -577,7 +577,7 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
       addresses = MonotonicBlockPackedReader.of(data, bytes.packedIntsVersion, bytes.blockSize, size, false);
       if (!merging) {
         addressInstances.put(field.name, addresses);
-        ramBytesUsed.addAndGet(addresses.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+        ramBytesUsed.addAndGet(addresses.ramBytesUsed() + Integer.BYTES);
       }
     }
     return addresses;
@@ -662,7 +662,7 @@ class Lucene50DocValuesProducer extends DocValuesProducer implements Closeable {
       instance = MonotonicBlockPackedReader.of(data, entry.packedIntsVersion, entry.blockSize, entry.count+1, false);
       if (!merging) {
         ordIndexInstances.put(field.name, instance);
-        ramBytesUsed.addAndGet(instance.ramBytesUsed() + RamUsageEstimator.NUM_BYTES_INT);
+        ramBytesUsed.addAndGet(instance.ramBytesUsed() + Integer.BYTES);
       }
     }
     return instance;

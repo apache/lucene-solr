@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs.memory;
 
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -154,7 +153,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     public long ramBytesUsed() {
       long sizeInBytes = 0;
       for(Map.Entry<String,DirectField> entry: fields.entrySet()) {
-        sizeInBytes += entry.getKey().length() * RamUsageEstimator.NUM_BYTES_CHAR;
+        sizeInBytes += entry.getKey().length() * Character.BYTES;
         sizeInBytes += entry.getValue().ramBytesUsed();
       }
       return sizeInBytes;

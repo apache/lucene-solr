@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,7 +23,6 @@ import java.util.List;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Caches all docs, and optionally also scores, coming from
@@ -233,7 +231,7 @@ public abstract class CachingCollector extends FilterCollector {
           if (docCount >= maxDocsToCache) {
             invalidate();
           } else {
-            final int newLen = Math.min(ArrayUtil.oversize(docCount + 1, RamUsageEstimator.NUM_BYTES_INT), maxDocsToCache);
+            final int newLen = Math.min(ArrayUtil.oversize(docCount + 1, Integer.BYTES), maxDocsToCache);
             grow(newLen);
           }
         }
@@ -329,9 +327,9 @@ public abstract class CachingCollector extends FilterCollector {
    *          scores are cached.
    */
   public static CachingCollector create(Collector other, boolean cacheScores, double maxRAMMB) {
-    int bytesPerDoc = RamUsageEstimator.NUM_BYTES_INT;
+    int bytesPerDoc = Integer.BYTES;
     if (cacheScores) {
-      bytesPerDoc += RamUsageEstimator.NUM_BYTES_FLOAT;
+      bytesPerDoc += Float.BYTES;
     }
     final int maxDocsToCache = (int) ((maxRAMMB * 1024 * 1024) / bytesPerDoc);
     return create(other, cacheScores, maxDocsToCache);

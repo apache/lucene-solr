@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.InPlaceMergeSorter;
-import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -429,7 +428,7 @@ public final class WordDelimiterFilter extends TokenFilter {
     savedType = typeAttribute.type();
 
     if (savedBuffer.length < termAttribute.length()) {
-      savedBuffer = new char[ArrayUtil.oversize(termAttribute.length(), RamUsageEstimator.NUM_BYTES_CHAR)];
+      savedBuffer = new char[ArrayUtil.oversize(termAttribute.length(), Character.BYTES)];
     }
 
     System.arraycopy(termAttribute.buffer(), 0, savedBuffer, 0, termAttribute.length());

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.ja;
 
-
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -1053,7 +1052,7 @@ public final class JapaneseTokenizer extends Tokenizer {
       assert baseOffset <= lastOffset;
       int size = lastOffset - baseOffset + 1;
       if (rootCapacity < size) {
-        int oversize = ArrayUtil.oversize(size, RamUsageEstimator.NUM_BYTES_INT);
+        int oversize = ArrayUtil.oversize(size, Integer.BYTES);
         lRoot = new int[oversize];
         rRoot = new int[oversize];
         rootCapacity = oversize;
@@ -1067,7 +1066,7 @@ public final class JapaneseTokenizer extends Tokenizer {
     // Reserve at least N nodes.
     private void reserve(int n) {
       if (capacity < n) {
-        int oversize = ArrayUtil.oversize(n, RamUsageEstimator.NUM_BYTES_INT);
+        int oversize = ArrayUtil.oversize(n, Integer.BYTES);
         nodeDicType = new Type[oversize];
         nodeWordID = new int[oversize];
         nodeMark = new int[oversize];

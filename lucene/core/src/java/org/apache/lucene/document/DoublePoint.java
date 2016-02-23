@@ -16,10 +16,8 @@
  */
 package org.apache.lucene.document;
 
-
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /** A double field that is indexed dimensionally such that finding
  *  all documents within an N-dimensional shape or range at search time is
@@ -30,7 +28,7 @@ public final class DoublePoint extends Field {
 
   private static FieldType getType(int numDims) {
     FieldType type = new FieldType();
-    type.setDimensions(numDims, RamUsageEstimator.NUM_BYTES_LONG);
+    type.setDimensions(numDims, Double.BYTES);
     type.freeze();
     return type;
   }
@@ -59,8 +57,8 @@ public final class DoublePoint extends Field {
       throw new IllegalStateException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot convert to a single numeric value");
     }
     BytesRef bytes = (BytesRef) fieldsData;
-    assert bytes.length == RamUsageEstimator.NUM_BYTES_LONG;
-    return NumericUtils.sortableLongToDouble(NumericUtils.bytesToLongDirect(bytes.bytes, bytes.offset));
+    assert bytes.length == Double.BYTES;
+    return decodeDimension(bytes.bytes, bytes.offset);
   }
 
   private static BytesRef pack(double... point) {
@@ -70,10 +68,10 @@ public final class DoublePoint extends Field {
     if (point.length == 0) {
       throw new IllegalArgumentException("point cannot be 0 dimensions");
     }
-    byte[] packed = new byte[point.length * RamUsageEstimator.NUM_BYTES_LONG];
+    byte[] packed = new byte[point.length * Double.BYTES];
     
-    for(int dim=0;dim<point.length;dim++) {
-      NumericUtils.longToBytesDirect(NumericUtils.doubleToSortableLong(point[dim]), packed, dim);
+    for (int dim = 0; dim < point.length ; dim++) {
+      encodeDimension(point[dim], packed, dim * Double.BYTES);
     }
 
     return new BytesRef(packed);
@@ -91,28 +89,26 @@ public final class DoublePoint extends Field {
   }
   
   // public helper methods (e.g. for queries)
-  // TODO: try to rectify with pack() above, which works on a single concatenated array...
 
   /** Encode n-dimensional double point into binary encoding */
   public static byte[][] encode(Double value[]) {
     byte[][] encoded = new byte[value.length][];
     for (int i = 0; i < value.length; i++) {
       if (value[i] != null) {
-        encoded[i] = encodeDimension(value[i]);
+        encoded[i] = new byte[Double.BYTES];
+        encodeDimension(value[i], encoded[i], 0);
       }
     }
     return encoded;
   }
   
   /** Encode single double dimension */
-  public static byte[] encodeDimension(Double value) {
-    byte encoded[] = new byte[Long.BYTES];
-    NumericUtils.longToBytesDirect(NumericUtils.doubleToSortableLong(value), encoded, 0);
-    return encoded;
+  public static void encodeDimension(Double value, byte dest[], int offset) {
+    NumericUtils.longToBytesDirect(NumericUtils.doubleToSortableLong(value), dest, offset);
   }
   
-  /** Decode single double value */
-  public static Double decodeDimension(byte value[]) {
-    return NumericUtils.sortableLongToDouble(NumericUtils.bytesToLongDirect(value, 0));
+  /** Decode single double dimension */
+  public static Double decodeDimension(byte value[], int offset) {
+    return NumericUtils.sortableLongToDouble(NumericUtils.bytesToLongDirect(value, offset));
   }
 }

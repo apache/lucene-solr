@@ -149,7 +149,7 @@ public class SentinelIntSet {
   /** Return the memory footprint of this class in bytes. */
   public long ramBytesUsed() {
     return RamUsageEstimator.alignObjectSize(
-          RamUsageEstimator.NUM_BYTES_INT * 3
+          Integer.BYTES * 3
         + RamUsageEstimator.NUM_BYTES_OBJECT_REF)
         + RamUsageEstimator.sizeOf(keys);
   }

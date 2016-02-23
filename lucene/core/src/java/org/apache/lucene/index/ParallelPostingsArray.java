@@ -16,12 +16,10 @@
  */
 package org.apache.lucene.index;
 
-
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.RamUsageEstimator;
 
 class ParallelPostingsArray {
-  final static int BYTES_PER_POSTING = 3 * RamUsageEstimator.NUM_BYTES_INT;
+  final static int BYTES_PER_POSTING = 3 * Integer.BYTES;
 
   final int size;
   final int[] textStarts;
