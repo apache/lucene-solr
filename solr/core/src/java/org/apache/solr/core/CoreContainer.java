@@ -134,7 +134,7 @@ public class CoreContainer {
 
   private String hostName;
 
-  private final JarRepository jarRepository = new JarRepository(this);
+  private final BlobRepository blobRepository = new BlobRepository(this);
 
   private PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
@@ -1098,8 +1098,8 @@ public class CoreContainer {
     return core;
   }
 
-  public JarRepository getJarRepository(){
-    return jarRepository;
+  public BlobRepository getBlobRepository(){
+    return blobRepository;
   }
   
   /**
