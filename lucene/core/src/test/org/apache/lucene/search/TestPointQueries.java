@@ -515,8 +515,7 @@ public class TestPointQueries extends LuceneTestCase {
 
     IndexSearcher s = newSearcher(r);
 
-    // int numThreads = TestUtil.nextInt(random(), 2, 5);
-    int numThreads = 1;
+    int numThreads = TestUtil.nextInt(random(), 2, 5);
 
     if (VERBOSE) {
       System.out.println("TEST: use " + numThreads + " query threads; searcher=" + s);
