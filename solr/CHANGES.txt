@@ -78,6 +78,8 @@ Upgrading from Solr 5.x
 * SolrIndexSearcher.QueryCommand and QueryResult were moved to their own classes. If you reference them
   in your code, you should import them under o.a.s.search (or use your IDE's "Organize Imports").
 
+* SOLR-8698: 'useParams' attribute specified in request handler cannot be overridden from request params
+
 Detailed Change List
 ----------------------
 
@@ -154,6 +156,9 @@ New Features
   from. (Keith Laban, Dennis Gove)
 
 * SOLR-8522: Make it possible to use ip fragments in replica placement rules , such as ip_1, ip_2 etc (Arcadius Ahouansou, noble)
+
+* SOLR-8698: params.json can now specify 'appends' and 'invariants' (noble)
+
 
 Bug Fixes
 ----------------------

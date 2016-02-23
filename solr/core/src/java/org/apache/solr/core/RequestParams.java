@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
@@ -37,6 +38,9 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.Collections.singletonMap;
+import static org.apache.solr.common.util.Utils.getDeepCopy;
+
 /**
  * The class encapsulates the request time parameters . This is immutable and any changes performed
  * returns a copy of the Object with the changed values
@@ -45,7 +49,7 @@ public class RequestParams implements MapSerializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map data;
-  private final Map<String, VersionedParams> paramsets = new LinkedHashMap<>();
+  private final Map<String, ParamSet> paramsets = new LinkedHashMap<>();
   private final int znodeVersion;
 
   public RequestParams(Map data, int znodeVersion) {
@@ -57,15 +61,28 @@ public class RequestParams implements MapSerializable {
         Map.Entry e = (Map.Entry) o;
         if (e.getValue() instanceof Map) {
           Map value = (Map) e.getValue();
-          Map copy = getMapCopy(value);
-          Map meta = (Map) copy.remove("");
-          this.paramsets.put((String) e.getKey(), new VersionedParams(Collections.unmodifiableMap(copy), meta));
+          this.paramsets.put((String) e.getKey(), createParamSet(value, 0l));
         }
       }
     }
     this.znodeVersion = znodeVersion;
   }
 
+  public static ParamSet createParamSet(Map map, Long version) {
+    Map copy = getDeepCopy(map, 3);
+    Map meta = (Map) copy.remove("");
+    if (meta == null && version != null) {
+      meta = Collections.singletonMap("v", version);
+    }
+    Map invariants = (Map) copy.remove(INVARIANTS);
+    Map appends = (Map) copy.remove(APPENDS);
+    return new ParamSet(copy, invariants, appends, meta);
+  }
+
+  /**
+   * This converts Lists to arrays of strings. Because Solr expects
+   * params to be String[]
+   */
   private static Map getMapCopy(Map value) {
     Map copy = new LinkedHashMap<>();
     for (Object o1 : value.entrySet()) {
@@ -92,8 +109,13 @@ public class RequestParams implements MapSerializable {
     return copy;
   }
 
-  public VersionedParams getParams(String name) {
+  public ParamSet getParams(String name) {
     return paramsets.get(name);
+  }
+
+  public VersionedParams getParams(String name, String type) {
+    ParamSet paramSet = paramsets.get(name);
+    return paramSet == null ? null : paramSet.getParams(type);
   }
 
   public int getZnodeVersion() {
@@ -112,32 +134,12 @@ public class RequestParams implements MapSerializable {
     return result;
   }
 
-  public RequestParams setParams(String name, Map values) {
-    Map deepCopy = Utils.getDeepCopy(data, 3);
+  public RequestParams setParams(String name, ParamSet paramSet) {
+    Map deepCopy = getDeepCopy(data, 3);
     Map p = (Map) deepCopy.get(NAME);
     if (p == null) deepCopy.put(NAME, p = new LinkedHashMap());
-    if (values == null) {
-      p.remove(name);
-    } else {
-      Map old = (Map) p.get(name);
-      long version = 0;
-      Map meta = null;
-      if (old != null) {
-        meta = (Map) old.get("");
-        if (meta != null) {
-          Long oldVersion = (Long) old.get("v");
-          if (oldVersion != null) version = oldVersion.longValue() + 1;
-        }
-        meta = new LinkedHashMap<>(meta);
-      } else {
-        meta = new LinkedHashMap<>();
-      }
-
-      meta.put("v", version);
-      values = new LinkedHashMap<>(values);
-      values.put("", meta);
-      p.put(name, values);
-    }
+    if (paramSet == null) p.remove(name);
+    else p.put(name, paramSet.toMap());
     return new RequestParams(deepCopy, znodeVersion);
   }
 
@@ -146,7 +148,7 @@ public class RequestParams implements MapSerializable {
       ZkSolrResourceLoader resourceLoader = (ZkSolrResourceLoader) loader;
       try {
         Stat stat = resourceLoader.getZkController().getZkClient().exists(resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, null, true);
-        log.debug("latest version of {} in ZK  is : {}", resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, stat == null ? "": stat.getVersion());
+        log.debug("latest version of {} in ZK  is : {}", resourceLoader.getConfigSetZkPath() + "/" + RequestParams.RESOURCE, stat == null ? "" : stat.getVersion());
         if (stat == null) {
           requestParams = new RequestParams(Collections.EMPTY_MAP, -1);
         } else if (requestParams == null || stat.getVersion() > requestParams.getZnodeVersion()) {
@@ -199,22 +201,70 @@ public class RequestParams implements MapSerializable {
   public static final String USEPARAM = "useParams";
   public static final String NAME = "params";
   public static final String RESOURCE = "params.json";
+  public static final String APPENDS = "_appends_";
+  public static final String INVARIANTS = "_invariants_";
 
-  public static class VersionedParams extends MapSolrParams {
-    Map meta;
+  public static class ParamSet implements MapSerializable {
+    private final Map defaults, appends, invariants;
+    Map<String, VersionedParams> paramsMap;
+    public final Map meta;
 
-    public VersionedParams(Map<String, String> map, Map meta) {
-      super(map);
+    ParamSet(Map defaults, Map invariants, Map appends, Map meta) {
+      this.defaults = defaults;
+      this.invariants = invariants;
+      this.appends = appends;
+      ImmutableMap.Builder<String, VersionedParams> builder = ImmutableMap.<String, VersionedParams>builder().put(PluginInfo.DEFAULTS,
+          new VersionedParams(defaults, this));
+      if (appends != null) builder.put(PluginInfo.APPENDS, new VersionedParams(appends, this));
+      if (invariants != null) builder.put(PluginInfo.INVARIANTS, new VersionedParams(invariants, this));
+      paramsMap = builder.build();
       this.meta = meta;
     }
 
-    public Map getRawMap() {
-      return meta;
+    public Long getVersion() {
+      return meta == null ? 0l : (Long) meta.get("v");
+    }
+
+    @Override
+    public Map<String, Object> toMap() {
+      LinkedHashMap result = new LinkedHashMap();
+      result.putAll(defaults);
+      if (appends != null) result.put(APPENDS, appends);
+      if (invariants != null) result.put(INVARIANTS, invariants);
+      if(meta != null) result.put("", meta);
+      return result;
     }
 
 
-    public Long getVersion() {
-      return meta == null ? 0l : (Long) meta.get("v");
+    public ParamSet update(Map map) {
+      ParamSet p = createParamSet(map, null);
+      return new ParamSet(
+          mergeMaps(getDeepCopy(defaults, 2), p.defaults),
+          mergeMaps(getDeepCopy(invariants, 2), p.invariants),
+          mergeMaps(getDeepCopy(appends, 2), p.appends),
+          mergeMaps(getDeepCopy(meta, 2), singletonMap("v", getVersion() + 1))
+      );
+    }
+
+    private static Map mergeMaps(Map m1, Map m2) {
+      if (m1 == null && m2 == null) return null;
+      if (m1 == null) return m2;
+      if (m2 == null) return m1;
+      m1.putAll(m2);
+      return m1;
+    }
+
+    public VersionedParams getParams(String type) {
+      return paramsMap.get(type);
+    }
+  }
+
+  public static class VersionedParams extends MapSolrParams {
+    final ParamSet paramSet;
+
+    public VersionedParams(Map map, ParamSet paramSet) {
+      super(getMapCopy(map));
+      this.paramSet = paramSet;
     }
   }
 }
