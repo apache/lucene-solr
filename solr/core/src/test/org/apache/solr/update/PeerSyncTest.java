@@ -181,6 +181,14 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     // client0 now has an additional add beyond our window and the fingerprint should cause this to fail
     assertSync(client1, numVersions, false, shardsArr[0]);
 
+    // if we turn of fingerprinting, it should succeed
+    System.setProperty("solr.disableFingerprint", "true");
+    try {
+      assertSync(client1, numVersions, true, shardsArr[0]);
+    } finally {
+      System.clearProperty("solr.disableFingerprint");
+    }
+
     // lets add the missing document and verify that order doesn't matter
     add(client1, seenLeader, sdoc("id",Integer.toString((int)v),"_version_",v));
     assertSync(client1, numVersions, true, shardsArr[0]);

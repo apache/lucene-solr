@@ -1352,7 +1352,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         max = x;
       }
 
-      TopDocs hits = s.search(PointRangeQuery.new1DLongRange("number", min, true, max, true), 100);
+      TopDocs hits = s.search(PointRangeQuery.newLongRange("number", min, true, max, true), 100);
       for(ScoreDoc scoreDoc : hits.scoreDocs) {
         long value = Long.parseLong(s.doc(scoreDoc.doc).get("text").split(" ")[1]);
         assertTrue(value >= min);

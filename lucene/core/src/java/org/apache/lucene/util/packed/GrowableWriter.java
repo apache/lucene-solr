@@ -131,8 +131,8 @@ public class GrowableWriter extends PackedInts.Mutable {
     return RamUsageEstimator.alignObjectSize(
         RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
         + RamUsageEstimator.NUM_BYTES_OBJECT_REF
-        + RamUsageEstimator.NUM_BYTES_LONG
-        + RamUsageEstimator.NUM_BYTES_FLOAT)
+        + Long.BYTES
+        + Float.BYTES)
         + current.ramBytesUsed();
   }
 

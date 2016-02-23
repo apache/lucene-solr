@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
@@ -168,7 +167,7 @@ public abstract class ScoringRewrite<B> extends TermCollectingRewrite<B> {
     @Override
     public int[] init() {
       final int[] ord = super.init();
-      boost = new float[ArrayUtil.oversize(ord.length, RamUsageEstimator.NUM_BYTES_FLOAT)];
+      boost = new float[ArrayUtil.oversize(ord.length, Float.BYTES)];
       termState = new TermContext[ArrayUtil.oversize(ord.length, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
       assert termState.length >= ord.length && boost.length >= ord.length;
       return ord;

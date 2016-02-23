@@ -584,7 +584,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   public void testDimensionalRangeQuery() throws Exception {
     // doesn't currently highlight, but make sure it doesn't cause exception either
-    query = PointRangeQuery.new1DIntRange(NUMERIC_FIELD_NAME, 2, true, 6, true);
+    query = PointRangeQuery.newIntRange(NUMERIC_FIELD_NAME, 2, true, 6, true);
     searcher = newSearcher(reader);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;

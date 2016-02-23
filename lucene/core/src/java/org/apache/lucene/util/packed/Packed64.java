@@ -246,8 +246,8 @@ class Packed64 extends PackedInts.MutableImpl {
   public long ramBytesUsed() {
     return RamUsageEstimator.alignObjectSize(
         RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
-        + 3 * RamUsageEstimator.NUM_BYTES_INT     // bpvMinusBlockSize,valueCount,bitsPerValue
-        + RamUsageEstimator.NUM_BYTES_LONG        // maskRight
+        + 3 * Integer.BYTES   // bpvMinusBlockSize,valueCount,bitsPerValue
+        + Long.BYTES          // maskRight
         + RamUsageEstimator.NUM_BYTES_OBJECT_REF) // blocks ref
         + RamUsageEstimator.sizeOf(blocks);
   }

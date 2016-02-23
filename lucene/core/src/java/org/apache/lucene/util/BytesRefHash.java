@@ -90,7 +90,7 @@ public final class BytesRefHash {
     this.bytesStartArray = bytesStartArray;
     bytesStart = bytesStartArray.init();
     bytesUsed = bytesStartArray.bytesUsed() == null? Counter.newCounter() : bytesStartArray.bytesUsed();
-    bytesUsed.addAndGet(hashSize * RamUsageEstimator.NUM_BYTES_INT);
+    bytesUsed.addAndGet(hashSize * Integer.BYTES);
   }
 
   /**
@@ -213,7 +213,7 @@ public final class BytesRefHash {
       newSize /= 2;
     }
     if (newSize != hashSize) {
-      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * -(hashSize - newSize));
+      bytesUsed.addAndGet(Integer.BYTES * -(hashSize - newSize));
       hashSize = newSize;
       ids = new int[hashSize];
       Arrays.fill(ids, -1);
@@ -252,7 +252,7 @@ public final class BytesRefHash {
   public void close() {
     clear(true);
     ids = null;
-    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * -hashSize);
+    bytesUsed.addAndGet(Integer.BYTES * -hashSize);
   }
 
   /**
@@ -408,7 +408,7 @@ public final class BytesRefHash {
    */
   private void rehash(final int newSize, boolean hashOnData) {
     final int newMask = newSize - 1;
-    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * (newSize));
+    bytesUsed.addAndGet(Integer.BYTES * (newSize));
     final int[] newHash = new int[newSize];
     Arrays.fill(newHash, -1);
     for (int i = 0; i < hashSize; i++) {
@@ -449,7 +449,7 @@ public final class BytesRefHash {
     }
 
     hashMask = newMask;
-    bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * (-ids.length));
+    bytesUsed.addAndGet(Integer.BYTES * (-ids.length));
     ids = newHash;
     hashSize = newSize;
     hashHalfSize = newSize / 2;
@@ -472,7 +472,7 @@ public final class BytesRefHash {
     
     if (ids == null) {
       ids = new int[hashSize];
-      bytesUsed.addAndGet(RamUsageEstimator.NUM_BYTES_INT * hashSize);
+      bytesUsed.addAndGet(Integer.BYTES * hashSize);
     }
   }
 
@@ -570,8 +570,7 @@ public final class BytesRefHash {
 
     @Override
     public int[] init() {
-      return bytesStart = new int[ArrayUtil.oversize(initSize,
-          RamUsageEstimator.NUM_BYTES_INT)];
+      return bytesStart = new int[ArrayUtil.oversize(initSize, Integer.BYTES)];
     }
 
     @Override

@@ -155,16 +155,15 @@ public final class NumericUtils {
     return true;
   }
 
-  public static void intToBytes(int x, byte[] dest, int index) {
+  public static void intToBytes(int x, byte[] dest, int offset) {
     // Flip the sign bit, so negative ints sort before positive ints correctly:
     x ^= 0x80000000;
-    intToBytesDirect(x, dest, index);
+    intToBytesDirect(x, dest, offset);
   }
 
-  public static void intToBytesDirect(int x, byte[] dest, int index) {
-    // Flip the sign bit, so negative ints sort before positive ints correctly:
-    for(int i=0;i<4;i++) {
-      dest[4*index+i] = (byte) (x >> 24-i*8);
+  public static void intToBytesDirect(int x, byte[] dest, int offset) {
+    for (int i = 0; i < 4; i++) {
+      dest[offset+i] = (byte) (x >> 24-i*8);
     }
   }
 
@@ -174,22 +173,21 @@ public final class NumericUtils {
     return x ^ 0x80000000;
   }
 
-  public static int bytesToIntDirect(byte[] src, int index) {
+  public static int bytesToIntDirect(byte[] src, int offset) {
     int x = 0;
-    for(int i=0;i<4;i++) {
-      x |= (src[4*index+i] & 0xff) << (24-i*8);
+    for (int i = 0; i < 4; i++) {
+      x |= (src[offset+i] & 0xff) << (24-i*8);
     }
     return x;
   }
 
-  public static void longToBytes(long v, byte[] bytes, int dim) {
+  public static void longToBytes(long v, byte[] bytes, int offset) {
     // Flip the sign bit so negative longs sort before positive longs:
     v ^= 0x8000000000000000L;
-    longToBytesDirect(v, bytes, dim);
+    longToBytesDirect(v, bytes, offset);
   }
 
-  public static void longToBytesDirect(long v, byte[] bytes, int dim) {
-    int offset = 8 * dim;
+  public static void longToBytesDirect(long v, byte[] bytes, int offset) {
     bytes[offset] = (byte) (v >> 56);
     bytes[offset+1] = (byte) (v >> 48);
     bytes[offset+2] = (byte) (v >> 40);
@@ -200,15 +198,14 @@ public final class NumericUtils {
     bytes[offset+7] = (byte) v;
   }
 
-  public static long bytesToLong(byte[] bytes, int index) {
-    long v = bytesToLongDirect(bytes, index);
+  public static long bytesToLong(byte[] bytes, int offset) {
+    long v = bytesToLongDirect(bytes, offset);
     // Flip the sign bit back
     v ^= 0x8000000000000000L;
     return v;
   }
 
-  public static long bytesToLongDirect(byte[] bytes, int index) {
-    int offset = 8 * index;
+  public static long bytesToLongDirect(byte[] bytes, int offset) {
     long v = ((bytes[offset] & 0xffL) << 56) |
       ((bytes[offset+1] & 0xffL) << 48) |
       ((bytes[offset+2] & 0xffL) << 40) |

@@ -48,7 +48,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.FileInputStream;
 
-import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_CHAR;
 import org.apache.lucene.util.ArrayUtil;
 
 /**
@@ -453,7 +452,7 @@ class PorterStemmer
   public boolean stem(char[] wordBuffer, int offset, int wordLen) {
     reset();
     if (b.length < wordLen) {
-      b = new char[ArrayUtil.oversize(wordLen, NUM_BYTES_CHAR)];
+      b = new char[ArrayUtil.oversize(wordLen, Character.BYTES)];
     }
     System.arraycopy(wordBuffer, offset, b, 0, wordLen);
     i = wordLen;

@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.util.packed;
 
-
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.packed.PackedInts.Mutable;
 
 /**
@@ -65,7 +63,7 @@ public final class PagedGrowableWriter extends AbstractPagedMutable<PagedGrowabl
 
   @Override
   protected long baseRamBytesUsed() {
-    return super.baseRamBytesUsed() + RamUsageEstimator.NUM_BYTES_FLOAT;
+    return super.baseRamBytesUsed() + Float.BYTES;
   }
 
 }

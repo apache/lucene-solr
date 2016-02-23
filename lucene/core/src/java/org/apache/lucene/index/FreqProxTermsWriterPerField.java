@@ -16,13 +16,11 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.RamUsageEstimator;
 
 // TODO: break into separate freq and prox writers as
 // codecs; make separate container (tii/tis/skip/*) that can
@@ -257,15 +255,15 @@ final class FreqProxTermsWriterPerField extends TermsHashPerField {
 
     @Override
     int bytesPerPosting() {
-      int bytes = ParallelPostingsArray.BYTES_PER_POSTING + 2 * RamUsageEstimator.NUM_BYTES_INT;
+      int bytes = ParallelPostingsArray.BYTES_PER_POSTING + 2 * Integer.BYTES;
       if (lastPositions != null) {
-        bytes += RamUsageEstimator.NUM_BYTES_INT;
+        bytes += Integer.BYTES;
       }
       if (lastOffsets != null) {
-        bytes += RamUsageEstimator.NUM_BYTES_INT;
+        bytes += Integer.BYTES;
       }
       if (termFreqs != null) {
-        bytes += RamUsageEstimator.NUM_BYTES_INT;
+        bytes += Integer.BYTES;
       }
 
       return bytes;

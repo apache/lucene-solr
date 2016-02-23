@@ -28,6 +28,7 @@ import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.minikdc.MiniKdc;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
@@ -43,6 +44,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.index.TieredMergePolicyFactory;
 import org.apache.solr.util.BadZookeeperThreadsFilter;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.junit.BeforeClass;
@@ -185,7 +187,15 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
       properties.put("solr.tests.maxBufferedDocs", "100000");
       properties.put("solr.tests.ramBufferSizeMB", "100");
       // use non-test classes so RandomizedRunner isn't necessary
-      properties.put("solr.tests.mergePolicy", "org.apache.lucene.index.TieredMergePolicy");
+      if (random().nextBoolean()) {
+        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY, TieredMergePolicy.class.getName());
+        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "true");
+        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "false");
+      } else {
+        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, TieredMergePolicyFactory.class.getName());
+        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
+        properties.put(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
+      }
       properties.put("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
       properties.put("solr.directoryFactory", "solr.RAMDirectoryFactory");
       createRequest.setProperties(properties);

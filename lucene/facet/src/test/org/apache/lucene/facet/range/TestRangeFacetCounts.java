@@ -281,7 +281,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
     // Third search, drill down on "less than or equal to 10":
     ddq = new DrillDownQuery(config);
-    ddq.add("field", PointRangeQuery.new1DLongRange("field", 0L, true, 10L, true));
+    ddq.add("field", PointRangeQuery.newLongRange("field", 0L, true, 10L, true));
     dsr = ds.search(null, ddq, 10);
 
     assertEquals(11, dsr.hits.totalHits);
@@ -461,9 +461,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
       Query fastMatchQuery;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchQuery = PointRangeQuery.new1DLongRange("field", minValue, true, maxValue, true);
+          fastMatchQuery = PointRangeQuery.newLongRange("field", minValue, true, maxValue, true);
         } else {
-          fastMatchQuery = PointRangeQuery.new1DLongRange("field", minAcceptedValue, true, maxAcceptedValue, true);
+          fastMatchQuery = PointRangeQuery.newLongRange("field", minAcceptedValue, true, maxAcceptedValue, true);
         }
       } else {
         fastMatchQuery = null;
@@ -485,7 +485,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(config);
         if (random().nextBoolean()) {
-          ddq.add("field", PointRangeQuery.new1DLongRange("field", range.min, range.minInclusive, range.max, range.maxInclusive));
+          ddq.add("field", PointRangeQuery.newLongRange("field", range.min, range.minInclusive, range.max, range.maxInclusive));
         } else {
           ddq.add("field", range.getQuery(fastMatchQuery, vs));
         }
@@ -616,9 +616,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
       Query fastMatchQuery;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchQuery = PointRangeQuery.new1DFloatRange("field", minValue, true, maxValue, true);
+          fastMatchQuery = PointRangeQuery.newFloatRange("field", minValue, true, maxValue, true);
         } else {
-          fastMatchQuery = PointRangeQuery.new1DFloatRange("field", minAcceptedValue, true, maxAcceptedValue, true);
+          fastMatchQuery = PointRangeQuery.newFloatRange("field", minAcceptedValue, true, maxAcceptedValue, true);
         }
       } else {
         fastMatchQuery = null;
@@ -640,7 +640,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(config);
         if (random().nextBoolean()) {
-          ddq.add("field", PointRangeQuery.new1DFloatRange("field", (float) range.min, range.minInclusive, (float) range.max, range.maxInclusive));
+          ddq.add("field", PointRangeQuery.newFloatRange("field", (float) range.min, range.minInclusive, (float) range.max, range.maxInclusive));
         } else {
           ddq.add("field", range.getQuery(fastMatchQuery, vs));
         }
@@ -755,9 +755,9 @@ public class TestRangeFacetCounts extends FacetTestCase {
       Query fastMatchFilter;
       if (random().nextBoolean()) {
         if (random().nextBoolean()) {
-          fastMatchFilter = PointRangeQuery.new1DDoubleRange("field", minValue, true, maxValue, true);
+          fastMatchFilter = PointRangeQuery.newDoubleRange("field", minValue, true, maxValue, true);
         } else {
-          fastMatchFilter = PointRangeQuery.new1DDoubleRange("field", minAcceptedValue, true, maxAcceptedValue, true);
+          fastMatchFilter = PointRangeQuery.newDoubleRange("field", minAcceptedValue, true, maxAcceptedValue, true);
         }
       } else {
         fastMatchFilter = null;
@@ -779,7 +779,7 @@ public class TestRangeFacetCounts extends FacetTestCase {
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(config);
         if (random().nextBoolean()) {
-          ddq.add("field", PointRangeQuery.new1DDoubleRange("field", range.min, range.minInclusive, range.max, range.maxInclusive));
+          ddq.add("field", PointRangeQuery.newDoubleRange("field", range.min, range.minInclusive, range.max, range.maxInclusive));
         } else {
           ddq.add("field", range.getQuery(fastMatchFilter, vs));
         }

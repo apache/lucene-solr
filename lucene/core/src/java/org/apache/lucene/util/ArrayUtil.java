@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -248,7 +247,7 @@ public final class ArrayUtil {
   public static short[] grow(short[] array, int minSize) {
     assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      short[] newArray = new short[oversize(minSize, RamUsageEstimator.NUM_BYTES_SHORT)];
+      short[] newArray = new short[oversize(minSize, Short.BYTES)];
       System.arraycopy(array, 0, newArray, 0, array.length);
       return newArray;
     } else
@@ -262,7 +261,7 @@ public final class ArrayUtil {
   public static float[] grow(float[] array, int minSize) {
     assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      float[] newArray = new float[oversize(minSize, RamUsageEstimator.NUM_BYTES_FLOAT)];
+      float[] newArray = new float[oversize(minSize, Float.BYTES)];
       System.arraycopy(array, 0, newArray, 0, array.length);
       return newArray;
     } else
@@ -276,7 +275,7 @@ public final class ArrayUtil {
   public static double[] grow(double[] array, int minSize) {
     assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      double[] newArray = new double[oversize(minSize, RamUsageEstimator.NUM_BYTES_DOUBLE)];
+      double[] newArray = new double[oversize(minSize, Double.BYTES)];
       System.arraycopy(array, 0, newArray, 0, array.length);
       return newArray;
     } else
@@ -289,7 +288,7 @@ public final class ArrayUtil {
 
   public static short[] shrink(short[] array, int targetSize) {
     assert targetSize >= 0: "size must be positive (got " + targetSize + "): likely integer overflow?";
-    final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_SHORT);
+    final int newSize = getShrinkSize(array.length, targetSize, Short.BYTES);
     if (newSize != array.length) {
       short[] newArray = new short[newSize];
       System.arraycopy(array, 0, newArray, 0, newSize);
@@ -301,7 +300,7 @@ public final class ArrayUtil {
   public static int[] grow(int[] array, int minSize) {
     assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      int[] newArray = new int[oversize(minSize, RamUsageEstimator.NUM_BYTES_INT)];
+      int[] newArray = new int[oversize(minSize, Integer.BYTES)];
       System.arraycopy(array, 0, newArray, 0, array.length);
       return newArray;
     } else
@@ -314,7 +313,7 @@ public final class ArrayUtil {
 
   public static int[] shrink(int[] array, int targetSize) {
     assert targetSize >= 0: "size must be positive (got " + targetSize + "): likely integer overflow?";
-    final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_INT);
+    final int newSize = getShrinkSize(array.length, targetSize, Integer.BYTES);
     if (newSize != array.length) {
       int[] newArray = new int[newSize];
       System.arraycopy(array, 0, newArray, 0, newSize);
@@ -326,7 +325,7 @@ public final class ArrayUtil {
   public static long[] grow(long[] array, int minSize) {
     assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      long[] newArray = new long[oversize(minSize, RamUsageEstimator.NUM_BYTES_LONG)];
+      long[] newArray = new long[oversize(minSize, Long.BYTES)];
       System.arraycopy(array, 0, newArray, 0, array.length);
       return newArray;
     } else
@@ -339,7 +338,7 @@ public final class ArrayUtil {
 
   public static long[] shrink(long[] array, int targetSize) {
     assert targetSize >= 0: "size must be positive (got " + targetSize + "): likely integer overflow?";
-    final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_LONG);
+    final int newSize = getShrinkSize(array.length, targetSize, Long.BYTES);
     if (newSize != array.length) {
       long[] newArray = new long[newSize];
       System.arraycopy(array, 0, newArray, 0, newSize);
@@ -401,7 +400,7 @@ public final class ArrayUtil {
   public static char[] grow(char[] array, int minSize) {
     assert minSize >= 0: "size must be positive (got " + minSize + "): likely integer overflow?";
     if (array.length < minSize) {
-      char[] newArray = new char[oversize(minSize, RamUsageEstimator.NUM_BYTES_CHAR)];
+      char[] newArray = new char[oversize(minSize, Character.BYTES)];
       System.arraycopy(array, 0, newArray, 0, array.length);
       return newArray;
     } else
@@ -414,7 +413,7 @@ public final class ArrayUtil {
 
   public static char[] shrink(char[] array, int targetSize) {
     assert targetSize >= 0: "size must be positive (got " + targetSize + "): likely integer overflow?";
-    final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_CHAR);
+    final int newSize = getShrinkSize(array.length, targetSize, Character.BYTES);
     if (newSize != array.length) {
       char[] newArray = new char[newSize];
       System.arraycopy(array, 0, newArray, 0, newSize);

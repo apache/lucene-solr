@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import java.io.IOException;
 import java.util.Objects;
 
@@ -27,7 +26,6 @@ import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Prefix codes term instances (prefixes are shared)
@@ -45,7 +43,7 @@ public class PrefixCodedTerms implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return buffer.ramBytesUsed() + 2 * RamUsageEstimator.NUM_BYTES_LONG;
+    return buffer.ramBytesUsed() + 2 * Long.BYTES;
   }
 
   /** Records del gen for this packet. */

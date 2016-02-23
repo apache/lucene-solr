@@ -24,7 +24,7 @@ import org.apache.lucene.spatial.util.GeoUtils;
 public class LatLonPoint extends Field {
   public static final FieldType TYPE = new FieldType();
   static {
-    TYPE.setDimensions(2, 4);
+    TYPE.setDimensions(2, Integer.BYTES);
     TYPE.freeze();
   }
 
@@ -45,7 +45,7 @@ public class LatLonPoint extends Field {
     }
     byte[] bytes = new byte[8];
     NumericUtils.intToBytes(encodeLat(lat), bytes, 0);
-    NumericUtils.intToBytes(encodeLon(lon), bytes, 1);
+    NumericUtils.intToBytes(encodeLon(lon), bytes, Integer.BYTES);
     fieldsData = new BytesRef(bytes);
   }
 

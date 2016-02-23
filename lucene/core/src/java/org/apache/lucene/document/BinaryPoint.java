@@ -21,7 +21,7 @@ import org.apache.lucene.util.BytesRef;
 
 /** A binary field that is indexed dimensionally such that finding
  *  all documents within an N-dimensional shape or range at search time is
- *  efficient.  Muliple values for the same field in one documents
+ *  efficient.  Multiple values for the same field in one documents
  *  is allowed. */
 
 public final class BinaryPoint extends Field {

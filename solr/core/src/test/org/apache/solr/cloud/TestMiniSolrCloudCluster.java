@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.solr.SolrTestCaseJ4;
@@ -48,6 +49,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.index.TieredMergePolicyFactory;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -105,7 +107,15 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
     collectionProperties.putIfAbsent("solr.tests.maxBufferedDocs", "100000");
     collectionProperties.putIfAbsent("solr.tests.ramBufferSizeMB", "100");
     // use non-test classes so RandomizedRunner isn't necessary
-    collectionProperties.putIfAbsent("solr.tests.mergePolicy", "org.apache.lucene.index.TieredMergePolicy");
+    if (random().nextBoolean()) {
+      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICY, TieredMergePolicy.class.getName());
+      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "true");
+      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "false");
+    } else {
+      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, TieredMergePolicyFactory.class.getName());
+      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICYFACTORY, "true");
+      collectionProperties.putIfAbsent(SolrTestCaseJ4.SYSTEM_PROPERTY_SOLR_TESTS_USEMERGEPOLICY, "false");
+    }
     collectionProperties.putIfAbsent("solr.tests.mergeScheduler", "org.apache.lucene.index.ConcurrentMergeScheduler");
     collectionProperties.putIfAbsent("solr.directoryFactory", (persistIndex ? "solr.StandardDirectoryFactory" : "solr.RAMDirectoryFactory"));
     

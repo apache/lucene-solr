@@ -106,8 +106,8 @@ public class PointInGeo3DShapeQuery extends Query {
                            public void visit(int docID, byte[] packedValue) {
                              assert packedValue.length == 12;
                              double x = Geo3DUtil.decodeValueCenter(planetMax, NumericUtils.bytesToInt(packedValue, 0));
-                             double y = Geo3DUtil.decodeValueCenter(planetMax, NumericUtils.bytesToInt(packedValue, 1));
-                             double z = Geo3DUtil.decodeValueCenter(planetMax, NumericUtils.bytesToInt(packedValue, 2));
+                             double y = Geo3DUtil.decodeValueCenter(planetMax, NumericUtils.bytesToInt(packedValue, 1 * Integer.BYTES));
+                             double z = Geo3DUtil.decodeValueCenter(planetMax, NumericUtils.bytesToInt(packedValue, 2 * Integer.BYTES));
                              if (shape.isWithin(x, y, z)) {
                                result.add(docID);
                                hitCount[0]++;
@@ -122,10 +122,10 @@ public class PointInGeo3DShapeQuery extends Query {
                              // a Math.round from double to long, so e.g. 1.4 -> 1, and -1.4 -> -1:
                              double xMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.bytesToInt(minPackedValue, 0));
                              double xMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.bytesToInt(maxPackedValue, 0));
-                             double yMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.bytesToInt(minPackedValue, 1));
-                             double yMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.bytesToInt(maxPackedValue, 1));
-                             double zMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.bytesToInt(minPackedValue, 2));
-                             double zMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.bytesToInt(maxPackedValue, 2));
+                             double yMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.bytesToInt(minPackedValue, 1 * Integer.BYTES));
+                             double yMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.bytesToInt(maxPackedValue, 1 * Integer.BYTES));
+                             double zMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.bytesToInt(minPackedValue, 2 * Integer.BYTES));
+                             double zMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.bytesToInt(maxPackedValue, 2 * Integer.BYTES));
 
                              //System.out.println("  compare: x=" + cellXMin + "-" + cellXMax + " y=" + cellYMin + "-" + cellYMax + " z=" + cellZMin + "-" + cellZMax);
                              assert xMin <= xMax;

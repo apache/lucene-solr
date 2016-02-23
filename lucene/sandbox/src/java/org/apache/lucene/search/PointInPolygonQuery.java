@@ -124,7 +124,7 @@ public class PointInPolygonQuery extends Query {
                            public void visit(int docID, byte[] packedValue) {
                              assert packedValue.length == 8;
                              double lat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(packedValue, 0));
-                             double lon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(packedValue, 1));
+                             double lon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(packedValue, Integer.BYTES));
                              if (GeoRelationUtils.pointInPolygon(polyLons, polyLats, lat, lon)) {
                                hitCount[0]++;
                                result.add(docID);
@@ -134,9 +134,9 @@ public class PointInPolygonQuery extends Query {
                            @Override
                            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
                              double cellMinLat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(minPackedValue, 0));
-                             double cellMinLon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(minPackedValue, 1));
+                             double cellMinLon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(minPackedValue, Integer.BYTES));
                              double cellMaxLat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(maxPackedValue, 0));
-                             double cellMaxLon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(maxPackedValue, 1));
+                             double cellMaxLon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(maxPackedValue, Integer.BYTES));
 
                              if (cellMinLat <= minLat && cellMaxLat >= maxLat && cellMinLon <= minLon && cellMaxLon >= maxLon) {
                                // Cell fully encloses the query

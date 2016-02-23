@@ -55,15 +55,6 @@ public final class RamUsageEstimator {
   /** No instantiation. */
   private RamUsageEstimator() {}
 
-  public final static int NUM_BYTES_BOOLEAN = 1;
-  public final static int NUM_BYTES_BYTE = 1;
-  public final static int NUM_BYTES_CHAR = 2;
-  public final static int NUM_BYTES_SHORT = 2;
-  public final static int NUM_BYTES_INT = 4;
-  public final static int NUM_BYTES_FLOAT = 4;
-  public final static int NUM_BYTES_LONG = 8;
-  public final static int NUM_BYTES_DOUBLE = 8;
-
   /** 
    * True, iff compressed references (oops) are enabled by this JVM 
    */
@@ -95,14 +86,14 @@ public final class RamUsageEstimator {
    */
   private static final Map<Class<?>,Integer> primitiveSizes = new IdentityHashMap<>();
   static {
-    primitiveSizes.put(boolean.class, Integer.valueOf(NUM_BYTES_BOOLEAN));
-    primitiveSizes.put(byte.class, Integer.valueOf(NUM_BYTES_BYTE));
-    primitiveSizes.put(char.class, Integer.valueOf(NUM_BYTES_CHAR));
-    primitiveSizes.put(short.class, Integer.valueOf(NUM_BYTES_SHORT));
-    primitiveSizes.put(int.class, Integer.valueOf(NUM_BYTES_INT));
-    primitiveSizes.put(float.class, Integer.valueOf(NUM_BYTES_FLOAT));
-    primitiveSizes.put(double.class, Integer.valueOf(NUM_BYTES_DOUBLE));
-    primitiveSizes.put(long.class, Integer.valueOf(NUM_BYTES_LONG));
+    primitiveSizes.put(boolean.class, 1);
+    primitiveSizes.put(byte.class, 1);
+    primitiveSizes.put(char.class, Integer.valueOf(Character.BYTES));
+    primitiveSizes.put(short.class, Integer.valueOf(Short.BYTES));
+    primitiveSizes.put(int.class, Integer.valueOf(Integer.BYTES));
+    primitiveSizes.put(float.class, Integer.valueOf(Float.BYTES));
+    primitiveSizes.put(double.class, Integer.valueOf(Double.BYTES));
+    primitiveSizes.put(long.class, Integer.valueOf(Long.BYTES));
   }
 
   /**
@@ -165,7 +156,7 @@ public final class RamUsageEstimator {
       // "best guess" based on reference size:
       NUM_BYTES_OBJECT_HEADER = 8 + NUM_BYTES_OBJECT_REF;
       // array header is NUM_BYTES_OBJECT_HEADER + NUM_BYTES_INT, but aligned (object alignment):
-      NUM_BYTES_ARRAY_HEADER = (int) alignObjectSize(NUM_BYTES_OBJECT_HEADER + NUM_BYTES_INT);
+      NUM_BYTES_ARRAY_HEADER = (int) alignObjectSize(NUM_BYTES_OBJECT_HEADER + Integer.BYTES);
     } else {
       JVM_IS_HOTSPOT_64BIT = false;
       COMPRESSED_REFS_ENABLED = false;
@@ -173,7 +164,7 @@ public final class RamUsageEstimator {
       NUM_BYTES_OBJECT_REF = 4;
       NUM_BYTES_OBJECT_HEADER = 8;
       // For 32 bit JVMs, no extra alignment of array header:
-      NUM_BYTES_ARRAY_HEADER = NUM_BYTES_OBJECT_HEADER + NUM_BYTES_INT;
+      NUM_BYTES_ARRAY_HEADER = NUM_BYTES_OBJECT_HEADER + Integer.BYTES;
     }
 
     // get min/max value of cached Long class instances:
@@ -223,32 +214,32 @@ public final class RamUsageEstimator {
   
   /** Returns the size in bytes of the char[] object. */
   public static long sizeOf(char[] arr) {
-    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) NUM_BYTES_CHAR * arr.length);
+    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) Character.BYTES * arr.length);
   }
 
   /** Returns the size in bytes of the short[] object. */
   public static long sizeOf(short[] arr) {
-    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) NUM_BYTES_SHORT * arr.length);
+    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) Short.BYTES * arr.length);
   }
   
   /** Returns the size in bytes of the int[] object. */
   public static long sizeOf(int[] arr) {
-    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) NUM_BYTES_INT * arr.length);
+    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) Integer.BYTES * arr.length);
   }
   
   /** Returns the size in bytes of the float[] object. */
   public static long sizeOf(float[] arr) {
-    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) NUM_BYTES_FLOAT * arr.length);
+    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) Float.BYTES * arr.length);
   }
   
   /** Returns the size in bytes of the long[] object. */
   public static long sizeOf(long[] arr) {
-    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) NUM_BYTES_LONG * arr.length);
+    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) Long.BYTES * arr.length);
   }
   
   /** Returns the size in bytes of the double[] object. */
   public static long sizeOf(double[] arr) {
-    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) NUM_BYTES_DOUBLE * arr.length);
+    return alignObjectSize((long) NUM_BYTES_ARRAY_HEADER + (long) Double.BYTES * arr.length);
   }
 
   /** Returns the shallow size in bytes of the Object[] object. */

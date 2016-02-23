@@ -29,11 +29,9 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
  */
 
-
 package org.tartarus.snowball;
 
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * This is the rev 502 of the Snowball SVN trunk,
@@ -397,7 +395,7 @@ public abstract class SnowballProgram {
     final int newLength = limit + adjustment;
     //resize if necessary
     if (newLength > current.length) {
-      char newBuffer[] = new char[ArrayUtil.oversize(newLength, RamUsageEstimator.NUM_BYTES_CHAR)];
+      char newBuffer[] = new char[ArrayUtil.oversize(newLength, Character.BYTES)];
       System.arraycopy(current, 0, newBuffer, 0, limit);
       current = newBuffer;
     }

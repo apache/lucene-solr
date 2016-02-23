@@ -74,6 +74,9 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     @Override
     protected void handleMergeException(Directory dir, Throwable t) {
       excCalled = true;
+      if (infoStream.isEnabled("IW")) {
+        infoStream.message("IW", "TEST: now handleMergeException");
+      }
     }
 
     @Override

@@ -42,11 +42,13 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestIndexSearcher extends SolrTestCaseJ4 {
@@ -56,11 +58,18 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
 
     // we need a consistent segmentation because reopen test validation
     // dependso n merges not happening when it doesn't expect
-    System.setProperty("solr.tests.mergePolicy", LogDocMergePolicy.class.getName());
+    systemSetPropertySolrTestsMergePolicy(LogDocMergePolicy.class.getName());
+    systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
 
     initCore("solrconfig.xml","schema.xml");
   }
   
+  @AfterClass
+  public static void afterClass() {
+    systemClearPropertySolrTestsMergePolicy();
+    systemClearPropertySolrTestsMergePolicyFactory();
+  }
+
   @Override
   public void setUp() throws Exception {
     System.getProperties().remove("tests.solr.useColdSearcher");

@@ -101,8 +101,8 @@ abstract class AbstractPagedMutable<T extends AbstractPagedMutable<T>> extends L
   protected long baseRamBytesUsed() {
     return RamUsageEstimator.NUM_BYTES_OBJECT_HEADER
         + RamUsageEstimator.NUM_BYTES_OBJECT_REF
-        + RamUsageEstimator.NUM_BYTES_LONG
-        + 3 * RamUsageEstimator.NUM_BYTES_INT;
+        + Long.BYTES
+        + 3 * Integer.BYTES;
   }
 
   @Override
