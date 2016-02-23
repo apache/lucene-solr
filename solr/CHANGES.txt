@@ -149,6 +149,10 @@ New Features
 
 * SOLR-8588: Add TopicStream to the streaming API to support publish/subscribe messaging (Joel Bernstein, Kevin Risden)
 
+* SOLR-8666: Adds header 'zkConnected' to response of SearchHandler and PingRequestHandler to notify the client when
+  a connection to zookeeper has been lost and there is a possibility of stale data on the node the request is coming
+  from. (Keith Laban, Dennis Gove)
+
 Bug Fixes
 ----------------------
 * SOLR-8386: Add field option in the new admin UI schema page loads up even when no schemaFactory has been
@@ -200,10 +204,6 @@ Bug Fixes
 
 * SOLR-8599: After a failed connection during construction of SolrZkClient attempt to retry until a connection
   can be made. (Keith Laban, Dennis Gove)
-
-* SOLR-8666: Adds header 'zkConnected' to response of SearchHandler and PingRequestHandler to notify the client when
-  a connection to zookeeper has been lost and there is a possibility of stale data on the node the request is coming
-  from. (Keith Laban, Dennis Gove)
 
 Optimizations
 ----------------------
