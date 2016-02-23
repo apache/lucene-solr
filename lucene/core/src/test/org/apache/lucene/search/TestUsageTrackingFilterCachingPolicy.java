@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.search;
 
-
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
@@ -26,7 +26,7 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
 
   public void testCostlyFilter() {
     assertTrue(UsageTrackingQueryCachingPolicy.isCostly(new PrefixQuery(new Term("field", "prefix"))));
-    assertTrue(UsageTrackingQueryCachingPolicy.isCostly(PointRangeQuery.newIntRange("intField", 1, true, 1000, true)));
+    assertTrue(UsageTrackingQueryCachingPolicy.isCostly(IntPoint.newRangeQuery("intField", 1, true, 1000, true)));
     assertFalse(UsageTrackingQueryCachingPolicy.isCostly(new TermQuery(new Term("field", "value"))));
   }
 

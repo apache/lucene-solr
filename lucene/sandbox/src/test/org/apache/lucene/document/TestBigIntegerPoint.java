@@ -41,8 +41,8 @@ public class TestBigIntegerPoint extends LuceneTestCase {
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(1, searcher.count(BigIntegerPoint.newBigIntegerExact("field", large)));
-    assertEquals(1, searcher.count(BigIntegerPoint.newBigIntegerRange("field", large.subtract(BigInteger.ONE), false, large.add(BigInteger.ONE), false)));
+    assertEquals(1, searcher.count(BigIntegerPoint.newExactQuery("field", large)));
+    assertEquals(1, searcher.count(BigIntegerPoint.newRangeQuery("field", large.subtract(BigInteger.ONE), false, large.add(BigInteger.ONE), false)));
 
     reader.close();
     writer.close();
@@ -63,8 +63,8 @@ public class TestBigIntegerPoint extends LuceneTestCase {
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(1, searcher.count(BigIntegerPoint.newBigIntegerExact("field", negative)));
-    assertEquals(1, searcher.count(BigIntegerPoint.newBigIntegerRange("field", negative.subtract(BigInteger.ONE), false, negative.add(BigInteger.ONE), false)));
+    assertEquals(1, searcher.count(BigIntegerPoint.newExactQuery("field", negative)));
+    assertEquals(1, searcher.count(BigIntegerPoint.newRangeQuery("field", negative.subtract(BigInteger.ONE), false, negative.add(BigInteger.ONE), false)));
 
     reader.close();
     writer.close();

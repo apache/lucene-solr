@@ -36,7 +36,6 @@ import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.ScoreDoc;
@@ -1352,7 +1351,7 @@ public class TestDemoParallelLeafReader extends LuceneTestCase {
         max = x;
       }
 
-      TopDocs hits = s.search(PointRangeQuery.newLongRange("number", min, true, max, true), 100);
+      TopDocs hits = s.search(LongPoint.newRangeQuery("number", min, true, max, true), 100);
       for(ScoreDoc scoreDoc : hits.scoreDocs) {
         long value = Long.parseLong(s.doc(scoreDoc.doc).get("text").split(" ")[1]);
         assertTrue(value >= min);

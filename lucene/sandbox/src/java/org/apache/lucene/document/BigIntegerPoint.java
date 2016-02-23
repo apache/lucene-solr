@@ -22,13 +22,23 @@ import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
-/** A 128-bit integer field that is indexed dimensionally such that finding
- *  all documents within an N-dimensional shape or range at search time is
- *  efficient.  Multiple values for the same field in one documents
- *  is allowed. */
+/** 
+ * A 128-bit integer field that is indexed dimensionally such that finding
+ * all documents within an N-dimensional shape or range at search time is
+ * efficient.  Multiple values for the same field in one documents
+ * is allowed. 
+ * <p>
+ * This field defines static factory methods for creating common queries:
+ * <ul>
+ *   <li>{@link #newExactQuery newExactQuery()} for matching an exact 1D point.
+ *   <li>{@link #newRangeQuery newRangeQuery()} for matching a 1D range.
+ *   <li>{@link #newMultiRangeQuery newMultiRangeQuery()} for matching points/ranges in n-dimensional space.
+ * </ul>
+ */
 public class BigIntegerPoint extends Field {
 
-  static final int BYTES = 16;
+  /** The number of bytes per dimension: 128 bits. */
+  public static final int BYTES = 16;
 
   private static FieldType getType(int numDims) {
     FieldType type = new FieldType();
@@ -107,10 +117,8 @@ public class BigIntegerPoint extends Field {
     return result.toString();
   }
   
-  // public helper methods (e.g. for queries)
-
-  /** Encode n-dimensional BigInteger values into binary encoding */
-  public static byte[][] encode(BigInteger value[]) {
+  /** sugar: Encode n-dimensional BigInteger values into binary encoding */
+  private static byte[][] encode(BigInteger value[]) {
     byte[][] encoded = new byte[value.length][];
     for (int i = 0; i < value.length; i++) {
       if (value[i] != null) {
@@ -120,6 +128,8 @@ public class BigIntegerPoint extends Field {
     }
     return encoded;
   }
+
+  // public helper methods (e.g. for queries)
   
   /** Encode single BigInteger dimension */
   public static void encodeDimension(BigInteger value, byte dest[], int offset) {
@@ -134,25 +144,25 @@ public class BigIntegerPoint extends Field {
   // static methods for generating queries
 
   /** 
-   * Create a range query for matching an exact big integer value.
+   * Create a query for matching an exact big integer value.
    * <p>
    * This is for simple one-dimension points, for multidimensional points use
-   * {@link #newMultiBigIntegerRange newMultiBigIntegerRange()} instead.
+   * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
    *
    * @param field field name. must not be {@code null}.
    * @param value exact value
    * @throws IllegalArgumentException if {@code field} is null.
    * @return a query matching documents with this exact value
    */
-  public static PointRangeQuery newBigIntegerExact(String field, BigInteger value) {
-    return newBigIntegerRange(field, value, true, value, true);
+  public static PointRangeQuery newExactQuery(String field, BigInteger value) {
+    return newRangeQuery(field, value, true, value, true);
   }
 
   /** 
-   * Create a range query for big integer values indexed with {@link BigIntegerPoint}.
+   * Create a range query for big integer values.
    * <p>
    * This is for simple one-dimension ranges, for multidimensional ranges use
-   * {@link #newMultiBigIntegerRange newMultiBigIntegerRange()} instead.
+   * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting the {@code lowerValue} or {@code upperValue} to {@code null}. 
@@ -168,16 +178,16 @@ public class BigIntegerPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null.
    * @return a query matching documents within this range.
    */
-  public static PointRangeQuery newBigIntegerRange(String field, BigInteger lowerValue, boolean lowerInclusive, BigInteger upperValue, boolean upperInclusive) {
-    return newMultiBigIntegerRange(field, 
-                                   new BigInteger[] { lowerValue },
-                                   new boolean[] { lowerInclusive }, 
-                                   new BigInteger[] { upperValue },
-                                   new boolean[] { upperInclusive });
+  public static PointRangeQuery newRangeQuery(String field, BigInteger lowerValue, boolean lowerInclusive, BigInteger upperValue, boolean upperInclusive) {
+    return newMultiRangeQuery(field, 
+                              new BigInteger[] { lowerValue },
+                              new boolean[] { lowerInclusive }, 
+                              new BigInteger[] { upperValue },
+                              new boolean[] { upperInclusive });
   }
 
   /** 
-   * Create a multidimensional range query for big integer values indexed with {@link BigIntegerPoint}.
+   * Create a multidimensional range query for big integer values.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting a {@code lowerValue} element or {@code upperValue} element to {@code null}. 
@@ -193,7 +203,7 @@ public class BigIntegerPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
    * @return a query matching documents within this range.
    */
-  public static PointRangeQuery newMultiBigIntegerRange(String field, BigInteger[] lowerValue, boolean lowerInclusive[], BigInteger[] upperValue, boolean upperInclusive[]) {
+  public static PointRangeQuery newMultiRangeQuery(String field, BigInteger[] lowerValue, boolean lowerInclusive[], BigInteger[] upperValue, boolean upperInclusive[]) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
     return new PointRangeQuery(field, BigIntegerPoint.encode(lowerValue), lowerInclusive, BigIntegerPoint.encode(upperValue), upperInclusive) {
       @Override

@@ -16,14 +16,23 @@
  */
 package org.apache.lucene.document;
 
+import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
-/** A double field that is indexed dimensionally such that finding
- *  all documents within an N-dimensional shape or range at search time is
- *  efficient.  Multiple values for the same field in one documents
- *  is allowed. */
-
+/** 
+ * A double field that is indexed dimensionally such that finding
+ * all documents within an N-dimensional shape or range at search time is
+ * efficient.  Multiple values for the same field in one documents
+ * is allowed.
+ * <p>
+ * This field defines static factory methods for creating common queries:
+ * <ul>
+ *   <li>{@link #newExactQuery newExactQuery()} for matching an exact 1D point.
+ *   <li>{@link #newRangeQuery newRangeQuery()} for matching a 1D range.
+ *   <li>{@link #newMultiRangeQuery newMultiRangeQuery()} for matching points/ranges in n-dimensional space.
+ * </ul> 
+ */
 public final class DoublePoint extends Field {
 
   private static FieldType getType(int numDims) {
@@ -78,7 +87,7 @@ public final class DoublePoint extends Field {
   }
 
   /** Creates a new DoublePoint, indexing the
-   *  provided N-dimensional int point.
+   *  provided N-dimensional double point.
    *
    *  @param name field name
    *  @param point double[] value
@@ -108,10 +117,8 @@ public final class DoublePoint extends Field {
     return result.toString();
   }
   
-  // public helper methods (e.g. for queries)
-
   /** Encode n-dimensional double point into binary encoding */
-  public static byte[][] encode(Double value[]) {
+  private static byte[][] encode(Double value[]) {
     byte[][] encoded = new byte[value.length][];
     for (int i = 0; i < value.length; i++) {
       if (value[i] != null) {
@@ -122,6 +129,8 @@ public final class DoublePoint extends Field {
     return encoded;
   }
   
+  // public helper methods (e.g. for queries)
+  
   /** Encode single double dimension */
   public static void encodeDimension(Double value, byte dest[], int offset) {
     NumericUtils.longToBytesDirect(NumericUtils.doubleToSortableLong(value), dest, offset);
@@ -130,5 +139,77 @@ public final class DoublePoint extends Field {
   /** Decode single double dimension */
   public static Double decodeDimension(byte value[], int offset) {
     return NumericUtils.sortableLongToDouble(NumericUtils.bytesToLongDirect(value, offset));
+  }
+  
+  // static methods for generating queries
+
+  /** 
+   * Create a query for matching an exact double value.
+   * <p>
+   * This is for simple one-dimension points, for multidimensional points use
+   * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
+   *
+   * @param field field name. must not be {@code null}.
+   * @param value double value
+   * @throws IllegalArgumentException if {@code field} is null.
+   * @return a query matching documents with this exact value
+   */
+  public static PointRangeQuery newExactQuery(String field, double value) {
+    return newRangeQuery(field, value, true, value, true);
+  }
+  
+  /** 
+   * Create a range query for double values.
+   * <p>
+   * This is for simple one-dimension ranges, for multidimensional ranges use
+   * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
+   * <p>
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting the {@code lowerValue} or {@code upperValue} to {@code null}. 
+   * <p>
+   * By setting inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   *
+   * @param field field name. must not be {@code null}.
+   * @param lowerValue lower portion of the range. {@code null} means "open".
+   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
+   * @param upperValue upper portion of the range. {@code null} means "open".
+   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
+   * @throws IllegalArgumentException if {@code field} is null.
+   * @return a query matching documents within this range.
+   */
+  public static PointRangeQuery newRangeQuery(String field, Double lowerValue, boolean lowerInclusive, Double upperValue, boolean upperInclusive) {
+    return newMultiRangeQuery(field, 
+                              new Double[] { lowerValue },
+                              new boolean[] { lowerInclusive }, 
+                              new Double[] { upperValue },
+                              new boolean[] { upperInclusive });
+  }
+
+  /** 
+   * Create a multidimensional range query for double values.
+   * <p>
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting a {@code lowerValue} element or {@code upperValue} element to {@code null}. 
+   * <p>
+   * By setting a dimension's inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   *
+   * @param field field name. must not be {@code null}.
+   * @param lowerValue lower portion of the range. {@code null} values mean "open" for that dimension.
+   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
+   * @param upperValue upper portion of the range. {@code null} values mean "open" for that dimension.
+   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
+   * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
+   * @return a query matching documents within this range.
+   */
+  public static PointRangeQuery newMultiRangeQuery(String field, Double[] lowerValue, boolean lowerInclusive[], Double[] upperValue, boolean upperInclusive[]) {
+    PointRangeQuery.checkArgs(field, lowerValue, upperValue);
+    return new PointRangeQuery(field, DoublePoint.encode(lowerValue), lowerInclusive, DoublePoint.encode(upperValue), upperInclusive) {
+      @Override
+      protected String toString(byte[] value) {
+        return DoublePoint.decodeDimension(value, 0).toString();
+      }
+    };
   }
 }

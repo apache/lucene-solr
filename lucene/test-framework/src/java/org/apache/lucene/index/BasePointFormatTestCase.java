@@ -34,7 +34,6 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.Bits;
@@ -847,8 +846,8 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
 
     DirectoryReader r = w.getReader();
     IndexSearcher s = newSearcher(r);
-    assertEquals(2, s.count(PointRangeQuery.newIntExact("int1", 17)));
-    assertEquals(2, s.count(PointRangeQuery.newIntExact("int2", 42)));
+    assertEquals(2, s.count(IntPoint.newExactQuery("int1", 17)));
+    assertEquals(2, s.count(IntPoint.newExactQuery("int2", 42)));
     r.close();
     w.close();
     dir.close();
