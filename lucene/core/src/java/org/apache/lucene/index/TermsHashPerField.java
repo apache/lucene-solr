@@ -93,7 +93,10 @@ abstract class TermsHashPerField implements Comparable<TermsHashPerField> {
   /** Collapse the hash table and sort in-place; also sets
    * this.sortedTermIDs to the results */
   public int[] sortPostings() {
+    long t0 = System.nanoTime();
     sortedTermIDs = bytesHash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+    // nocommit
+    System.out.println("MKM: field " + fieldInfo.name + " has " + bytesHash.size() + " unique terms " + ((System.nanoTime()-t0)/1000000.0) + " msec to sort");
     return sortedTermIDs;
   }
 

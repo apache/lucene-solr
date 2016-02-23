@@ -1114,4 +1114,39 @@ public class TestPointQueries extends LuceneTestCase {
                                                                       new boolean[] { false, true }).toString());
 
   }
+
+  // nocommit fix existing randomized tests to sometimes randomly use PointInSet instead
+
+  // nocommit need 2D test too
+
+  public void testBasicPointInSetQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    Document doc = new Document();
+    doc.add(new IntPoint("int", 17));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new IntPoint("int", 42));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new IntPoint("int", 97));
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+    assertEquals(0, s.count(PointInSetQuery.newIntSet("int", 16)));
+    assertEquals(1, s.count(PointInSetQuery.newIntSet("int", 17)));
+    assertEquals(3, s.count(PointInSetQuery.newIntSet("int", 17, 97, 42)));
+    assertEquals(3, s.count(PointInSetQuery.newIntSet("int", -7, 17, 42, 97)));
+    assertEquals(3, s.count(PointInSetQuery.newIntSet("int", 17, 20, 42, 97)));
+    assertEquals(3, s.count(PointInSetQuery.newIntSet("int", 17, 105, 42, 97)));
+    w.close();
+    r.close();
+    dir.close();
+  }
 }
