@@ -29,9 +29,6 @@
 
     <dependency org="org.simpleframework" name="simple-xml" rev="${/org.simpleframework/simple-xml}" conf="compile"/>
 
-    <dependency org="org.apache.mahout" name="mahout-math"        rev="${/org.apache.mahout/mahout-math}"        conf="compile"/>
-    <dependency org="org.apache.mahout" name="mahout-collections" rev="${/org.apache.mahout/mahout-collections}" conf="compile"/>
-
     <dependency org="com.fasterxml.jackson.core" name="jackson-annotations"  rev="${/com.fasterxml.jackson.core/jackson-annotations}"   conf="compile"/>
     <dependency org="com.fasterxml.jackson.core" name="jackson-databind"     rev="${/com.fasterxml.jackson.core/jackson-databind}"      conf="compile"/>
 
