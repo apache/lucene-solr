@@ -49,6 +49,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
@@ -79,6 +80,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
+
+import static org.apache.solr.core.PluginInfo.APPENDS;
+import static org.apache.solr.core.PluginInfo.DEFAULTS;
+import static org.apache.solr.core.PluginInfo.INVARIANTS;
+import static org.apache.solr.core.RequestParams.USEPARAM;
 
 /**
  * <p>Utilities that may be of use to RequestHandlers.</p>
@@ -125,7 +131,7 @@ public class SolrPluginUtils {
   }
 
   private static final MapSolrParams maskUseParams = new MapSolrParams(ImmutableMap.<String, String>builder()
-      .put(RequestParams.USEPARAM, "")
+      .put(USEPARAM, "")
       .build());
 
   /**
@@ -145,10 +151,16 @@ public class SolrPluginUtils {
 
   public static void setDefaults(SolrRequestHandler handler, SolrQueryRequest req, SolrParams defaults,
                                  SolrParams appends, SolrParams invariants) {
-
-    List<String> paramNames = null;
-    String useParams = req.getParams().get(RequestParams.USEPARAM);
+    String useParams = (String) req.getContext().get(USEPARAM);
+    if(useParams != null) {
+      RequestParams rp = req.getCore().getSolrConfig().getRequestParams();
+      defaults = applyParamSet(rp, defaults, useParams, DEFAULTS);
+      appends = applyParamSet(rp, appends, useParams, APPENDS);
+      invariants = applyParamSet(rp, invariants, useParams, INVARIANTS);
+    }
+    useParams = req.getParams().get(USEPARAM);
     if (useParams != null && !useParams.isEmpty()) {
+      RequestParams rp = req.getCore().getSolrConfig().getRequestParams();
       // now that we have expanded the request macro useParams with the actual values
       // it makes no sense to keep it visible now on.
       // distrib request sends all params to the nodes down the line and
@@ -157,19 +169,27 @@ public class SolrPluginUtils {
       // value as an empty string to other nodes we get the desired benefit of
       // overriding the useParams specified in the requestHandler directly
       req.setParams(SolrParams.wrapDefaults(maskUseParams, req.getParams()));
+      defaults = applyParamSet(rp, defaults, useParams, DEFAULTS);
+      appends = applyParamSet(rp, appends, useParams, APPENDS);
+      invariants = applyParamSet(rp, invariants, useParams, INVARIANTS);
     }
-    if (useParams == null) useParams = (String) req.getContext().get(RequestParams.USEPARAM);
-    if (useParams != null && !useParams.isEmpty()) paramNames = StrUtils.splitSmart(useParams, ',');
-    if (paramNames != null) {
-      for (String name : paramNames) {
-        SolrParams requestParams = req.getCore().getSolrConfig().getRequestParams().getParams(name);
-        if (requestParams != null) {
-          defaults = SolrParams.wrapDefaults(requestParams, defaults);
-        }
+    RequestUtil.processParams(handler, req, defaults, appends, invariants);
+  }
+
+  private static SolrParams applyParamSet(RequestParams requestParams,
+                                          SolrParams defaults, String paramSets, String type) {
+    if (paramSets == null) return defaults;
+    for (String name : StrUtils.splitSmart(paramSets, ',')) {
+      RequestParams.VersionedParams params = requestParams.getParams(name, type);
+      if (type.equals(DEFAULTS)) {
+        defaults = SolrParams.wrapDefaults(params, defaults);
+      } else if (type.equals(INVARIANTS)) {
+        defaults = SolrParams.wrapAppended(params, defaults);
+      } else {
+        defaults = SolrParams.wrapAppended(params, defaults);
       }
     }
-
-    RequestUtil.processParams(handler, req, defaults, appends, invariants);
+    return defaults;
   }
 
 
@@ -323,14 +343,14 @@ public class SolrPluginUtils {
           DocList results,
           boolean dbgQuery,
           boolean dbgResults)
-          throws IOException 
+          throws IOException
   {
     NamedList dbg = new SimpleOrderedMap();
     doStandardQueryDebug(req, userQuery, query, dbgQuery, dbg);
     doStandardResultsDebug(req, query, results, dbgResults, dbg);
     return dbg;
   }
-  
+
 
   public static void doStandardQueryDebug(
           SolrQueryRequest req,
@@ -352,7 +372,7 @@ public class SolrPluginUtils {
       dbg.add("parsedquery_toString", query.toString());
     }
   }
-  
+
   public static void doStandardResultsDebug(
           SolrQueryRequest req,
           Query query,
@@ -520,7 +540,7 @@ public class SolrPluginUtils {
       if(in.length()==0) {
         continue;
       }
-      
+
       String[] bb = whitespacePattern.split(in);
       for (String s : bb) {
         String[] bbb = caratPattern.split(s);
@@ -530,7 +550,7 @@ public class SolrPluginUtils {
     return out;
   }
   /**
-  
+
   /**
    * Like {@link #parseFieldBoosts}, but allows for an optional slop value prefixed by "~".
    *
@@ -788,10 +808,10 @@ public class SolrPluginUtils {
     }
     return s.toString().replace("\"","");
   }
-  
+
   /**
    * Adds to {@code dest} all the not-null elements of {@code entries} that have non-null names
-   * 
+   *
    * @param entries The array of entries to be added to the {@link NamedList} {@code dest}
    * @param dest The {@link NamedList} instance where the not-null elements of entries are added
    * @return Returns The {@code dest} input object
@@ -883,7 +903,7 @@ public class SolrPluginUtils {
      */
     @Override
     protected Query getFieldQuery(String field, String queryText, boolean quoted)
-      throws SyntaxError {
+        throws SyntaxError {
 
       if (aliases.containsKey(field)) {
 
@@ -1018,7 +1038,7 @@ public class SolrPluginUtils {
 
       Document luceneDoc = searcher.doc(docid, fields);
       SolrDocument doc = new SolrDocument();
-      
+
       for( IndexableField field : luceneDoc) {
         if (null == fields || fields.contains(field.name())) {
           SchemaField sf = schema.getField( field.name() );
@@ -1065,9 +1085,9 @@ public class SolrPluginUtils {
   }
 
    /**
-   * Given the integer purpose of a request generates a readable value corresponding 
-   * the request purposes (there can be more than one on a single request). If 
-   * there is a purpose parameter present that's not known this method will 
+   * Given the integer purpose of a request generates a readable value corresponding
+   * the request purposes (there can be more than one on a single request). If
+   * there is a purpose parameter present that's not known this method will
    * return {@value #UNKNOWN_VALUE}
    * @param reqPurpose Numeric request purpose
    * @return a comma separated list of purposes or {@value #UNKNOWN_VALUE}
@@ -1088,7 +1108,7 @@ public class SolrPluginUtils {
       }
       return UNKNOWN_VALUE;
   }
-  
+
 }
 
 

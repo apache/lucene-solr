@@ -386,7 +386,7 @@ public class PluginBag<T> implements AutoCloseable {
    */
   public static class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
     private String name, version, sig;
-    private JarRepository.JarContentRef jarContent;
+    private BlobRepository.BlobContentRef jarContent;
     private final CoreContainer coreContainer;
     private boolean verified = false;
 
@@ -410,7 +410,7 @@ public class PluginBag<T> implements AutoCloseable {
       if (jarContent != null) return;
       synchronized (this) {
         if (jarContent != null) return;
-        jarContent = coreContainer.getJarRepository().getJarIncRef(name + "/" + version);
+        jarContent = coreContainer.getBlobRepository().getBlobIncRef(name + "/" + version);
       }
     }
 
@@ -430,13 +430,13 @@ public class PluginBag<T> implements AutoCloseable {
     public ByteBuffer getFileContent(String entryName) throws IOException {
       if (jarContent == null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jar not available: " + name + "/" + version);
-      return jarContent.jar.getFileContent(entryName);
+      return BlobRepository.getFileContent(jarContent.blob, entryName);
 
     }
 
     @Override
     public void close() throws Exception {
-      if (jarContent != null) coreContainer.getJarRepository().decrementJarRefCount(jarContent);
+      if (jarContent != null) coreContainer.getBlobRepository().decrementBlobRefCount(jarContent);
     }
 
     public static List<RuntimeLib> getLibObjects(SolrCore core, List<PluginInfo> libs) {
@@ -472,7 +472,7 @@ public class PluginBag<T> implements AutoCloseable {
       }
 
       try {
-        String matchedKey = jarContent.jar.checkSignature(sig, new CryptoKeys(keys));
+        String matchedKey = jarContent.blob.checkSignature(sig, new CryptoKeys(keys));
         if (matchedKey == null)
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No key matched signature for jar : " + name + " version: " + version);
         log.info("Jar {} signed with {} successfully verified", name, matchedKey);

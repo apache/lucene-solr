@@ -266,11 +266,8 @@ public final class ZkController {
 
               // seems we dont need to do this again...
               // Overseer.createClientNodes(zkClient, getNodeName());
-
-              cc.cancelCoreRecoveries();
-
-              registerAllCoresAsDown(registerOnReconnect, false);
-
+              
+              // start the overseer first as following code may need it's processing
               if (!zkRunOnly) {
                 ElectionContext context = new OverseerElectionContext(zkClient,
                     overseer, getNodeName());
@@ -283,6 +280,10 @@ public final class ZkController {
                 overseerElector.setup(context);
                 overseerElector.joinElection(context, true);
               }
+
+              cc.cancelCoreRecoveries();
+
+              registerAllCoresAsDown(registerOnReconnect, false);
 
               zkStateReader.createClusterStateWatchersAndUpdate();
 
@@ -620,26 +621,12 @@ public final class ZkController {
   private void init(CurrentCoreDescriptorProvider registerOnReconnect) {
 
     try {
-      boolean createdWatchesAndUpdated = false;
-      Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
-      if (stat != null && stat.getNumChildren() > 0) {
-        zkStateReader.createClusterStateWatchersAndUpdate();
-        createdWatchesAndUpdated = true;
-        publishAndWaitForDownStates();
-      }
-
       createClusterZkNodes(zkClient);
 
-      createEphemeralLiveNode();
-
-      ShardHandler shardHandler;
-      UpdateShardHandler updateShardHandler;
-      shardHandler = cc.getShardHandlerFactory().getShardHandler();
-      updateShardHandler = cc.getUpdateShardHandler();
-
+      // start the overseer first as following code may need it's processing
       if (!zkRunOnly) {
         overseerElector = new LeaderElector(zkClient);
-        this.overseer = new Overseer(shardHandler, updateShardHandler,
+        this.overseer = new Overseer(cc.getShardHandlerFactory().getShardHandler(), cc.getUpdateShardHandler(),
             CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
         ElectionContext context = new OverseerElectionContext(zkClient,
             overseer, getNodeName());
@@ -647,10 +634,15 @@ public final class ZkController {
         overseerElector.joinElection(context, false);
       }
 
-      if (!createdWatchesAndUpdated) {
+      zkStateReader.createClusterStateWatchersAndUpdate();
+      Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
+      if (stat != null && stat.getNumChildren() > 0) {
         zkStateReader.createClusterStateWatchersAndUpdate();
+        publishAndWaitForDownStates();
       }
 
+      // Do this last to signal we're up.
+      createEphemeralLiveNode();
     } catch (IOException e) {
       log.error("", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -672,40 +664,16 @@ public final class ZkController {
   public void publishAndWaitForDownStates() throws KeeperException,
       InterruptedException {
 
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> collections = clusterState.getCollections();
-    Set<String> updatedCoreNodeNames = new HashSet<>();
-    for (String collectionName : collections) {
-      DocCollection collection = clusterState.getCollection(collectionName);
-      Collection<Slice> slices = collection.getSlices();
-      for (Slice slice : slices) {
-        Collection<Replica> replicas = slice.getReplicas();
-        for (Replica replica : replicas) {
-          if (getNodeName().equals(replica.getNodeName())
-              && replica.getState() != Replica.State.DOWN) {
-            ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, "state",
-                ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
-                ZkStateReader.BASE_URL_PROP, getBaseUrl(),
-                ZkStateReader.CORE_NAME_PROP,
-                replica.getStr(ZkStateReader.CORE_NAME_PROP),
-                ZkStateReader.ROLES_PROP,
-                replica.getStr(ZkStateReader.ROLES_PROP),
-                ZkStateReader.NODE_NAME_PROP, getNodeName(),
-                ZkStateReader.SHARD_ID_PROP,
-                replica.getStr(ZkStateReader.SHARD_ID_PROP),
-                ZkStateReader.COLLECTION_PROP, collectionName,
-                ZkStateReader.CORE_NODE_NAME_PROP, replica.getName());
-            updatedCoreNodeNames.add(replica.getName());
-            overseerJobQueue.offer(Utils.toJSON(m));
-          }
-        }
-      }
-    }
+    publishNodeAsDown(getNodeName());
 
+    
     // now wait till the updates are in our state
     long now = System.nanoTime();
     long timeout = now + TimeUnit.NANOSECONDS.convert(WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-    boolean foundStates = false;
+    boolean foundStates = true;
+    ClusterState clusterState = zkStateReader.getClusterState();
+    Set<String> collections = clusterState.getCollections();
+    
     while (System.nanoTime() < timeout) {
       clusterState = zkStateReader.getClusterState();
       collections = clusterState.getCollections();
@@ -715,16 +683,14 @@ public final class ZkController {
         for (Slice slice : slices) {
           Collection<Replica> replicas = slice.getReplicas();
           for (Replica replica : replicas) {
-            if (replica.getState() == Replica.State.DOWN) {
-              updatedCoreNodeNames.remove(replica.getName());
-
+            if (getNodeName().equals(replica.getNodeName()) && replica.getState() != Replica.State.DOWN) {
+              foundStates = false;
             }
           }
         }
       }
 
-      if (updatedCoreNodeNames.size() == 0) {
-        foundStates = true;
+      if (foundStates) {
         Thread.sleep(1000);
         break;
       }

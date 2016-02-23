@@ -585,7 +585,7 @@ public class TestSolrConfigHandler extends RestTestBase {
         "/dump1?wt=json&useParams=y",
         null,
         Arrays.asList("params", "a"),
-        null,
+        "A val",
         5);
 
     TestSolrConfigHandler.testForResponseElement(

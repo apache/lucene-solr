@@ -23,31 +23,31 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
-public class BlobStoreTestRequestHandler extends DumpRequestHandler implements Runnable, SolrCoreAware{
+public class BlobStoreTestRequestHandler extends DumpRequestHandler implements Runnable, SolrCoreAware {
 
   private SolrCore core;
 
-  private long version = 1;
+  private long version = 0;
   private String watchedVal = null;
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     super.handleRequestBody(req, rsp);
     rsp.add("class", this.getClass().getName());
-    rsp.add("x",watchedVal);
+    rsp.add("x", watchedVal);
   }
 
   @Override
   public void run() {
     RequestParams p = core.getSolrConfig().getRequestParams();
-    RequestParams.VersionedParams v = p.getParams("watched");
-    if(v== null){
+    RequestParams.ParamSet v = p.getParams("watched");
+    if (v == null) {
       watchedVal = null;
-      version=-1;
+      version = -1;
       return;
     }
-    if(v.getVersion() != version){
-      watchedVal =  v.getMap().get("x");
+    if (v.getVersion() != version) {
+      watchedVal = v.getParams(PluginInfo.DEFAULTS).get("x");
     }
   }
 

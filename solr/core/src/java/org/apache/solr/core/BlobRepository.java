@@ -21,6 +21,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -46,13 +47,14 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.SimplePostTool;
+import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * The purpose of this class is to store the Jars loaded in memory and to keep only one copy of the Jar in a single node.
  */
-public class JarRepository {
+public class BlobRepository {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final Random RANDOM;
 
@@ -68,10 +70,33 @@ public class JarRepository {
   }
 
   private final CoreContainer coreContainer;
-  private Map<String, JarContent> jars = new ConcurrentHashMap<>();
+  private Map<String, BlobContent> blobs = new ConcurrentHashMap<>();
 
-  public JarRepository(CoreContainer coreContainer) {
+  public BlobRepository(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
+  }
+
+  public static ByteBuffer getFileContent(BlobContent blobContent, String entryName) throws IOException {
+    ByteArrayInputStream zipContents = new ByteArrayInputStream(blobContent.buffer.array(), blobContent.buffer.arrayOffset(), blobContent.buffer.limit());
+    ZipInputStream zis = new ZipInputStream(zipContents);
+    try {
+      ZipEntry entry;
+      while ((entry = zis.getNextEntry()) != null) {
+        if (entryName == null || entryName.equals(entry.getName())) {
+          SimplePostTool.BAOS out = new SimplePostTool.BAOS();
+          byte[] buffer = new byte[2048];
+          int size;
+          while ((size = zis.read(buffer, 0, buffer.length)) != -1) {
+            out.write(buffer, 0, size);
+          }
+          out.close();
+          return out.getByteBuffer();
+        }
+      }
+    } finally {
+      zis.closeEntry();
+    }
+    return null;
   }
 
   /**
@@ -80,9 +105,9 @@ public class JarRepository {
    * @param key it is a combination of blobname and version like blobName/version
    * @return The reference of a jar
    */
-  public JarContentRef getJarIncRef(String key) {
-    JarContent jar = jars.get(key);
-    if (jar == null) {
+  public BlobContentRef getBlobIncRef(String key) {
+    BlobContent aBlob = blobs.get(key);
+    if (aBlob == null) {
       if (this.coreContainer.isZooKeeperAware()) {
         Replica replica = getSystemCollReplica();
         String url = replica.getStr(BASE_URL_PROP) + "/.system/blob/" + key + "?wt=filestream";
@@ -106,7 +131,7 @@ public class JarRepository {
         } finally {
           httpGet.releaseConnection();
         }
-        jars.put(key, jar = new JarContent(key, b));
+        blobs.put(key, aBlob = new BlobContent(key, b));
       } else {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Jar loading is not supported in non-cloud mode");
         // todo
@@ -114,9 +139,9 @@ public class JarRepository {
 
     }
 
-    JarContentRef ref = new JarContentRef(jar);
-    synchronized (jar.references) {
-      jar.references.add(ref);
+    BlobContentRef ref = new BlobContentRef(aBlob);
+    synchronized (aBlob.references) {
+      aBlob.references.add(ref);
     }
     return ref;
 
@@ -157,52 +182,54 @@ public class JarRepository {
    *
    * @param ref The reference that is already there. Doing multiple calls with same ref will not matter
    */
-  public void decrementJarRefCount(JarContentRef ref) {
+  public void decrementBlobRefCount(BlobContentRef ref) {
     if (ref == null) return;
-    synchronized (ref.jar.references) {
-      if (!ref.jar.references.remove(ref)) {
+    synchronized (ref.blob.references) {
+      if (!ref.blob.references.remove(ref)) {
         log.error("Multiple releases for the same reference");
       }
-      if (ref.jar.references.isEmpty()) {
-        jars.remove(ref.jar.key);
+      if (ref.blob.references.isEmpty()) {
+        blobs.remove(ref.blob.key);
       }
     }
 
   }
 
-  public static class JarContent {
+  public static class BlobContent {
     private final String key;
+    private Map<String, Object> decodedObjects = null;
     // TODO move this off-heap
     private final ByteBuffer buffer;
     // ref counting mechanism
-    private final Set<JarContentRef> references = new HashSet<>();
+    private final Set<BlobContentRef> references = new HashSet<>();
 
-    public JarContent(String key, ByteBuffer buffer) {
+
+    public BlobContent(String key, ByteBuffer buffer) {
       this.key = key;
       this.buffer = buffer;
     }
 
-    public ByteBuffer getFileContent(String entryName) throws IOException {
-      ByteArrayInputStream zipContents = new ByteArrayInputStream(buffer.array(), buffer.arrayOffset(), buffer.limit());
-      ZipInputStream zis = new ZipInputStream(zipContents);
-      try {
-        ZipEntry entry;
-        while ((entry = zis.getNextEntry()) != null) {
-          if (entryName == null || entryName.equals(entry.getName())) {
-            SimplePostTool.BAOS out = new SimplePostTool.BAOS();
-            byte[] buffer = new byte[2048];
-            int size;
-            while ((size = zis.read(buffer, 0, buffer.length)) != -1) {
-              out.write(buffer, 0, size);
-            }
-            out.close();
-            return out.getByteBuffer();
-          }
+    /**
+     * This method decodes the byte[] to a custom Object
+     *
+     * @param key     The key is used to store the decoded Object. it is possible to have multiple
+     *                decoders for the same blob (may be unusual).
+     * @param decoder A decoder instance
+     * @return the decoded Object . If it was already decoded, then return from the cache
+     */
+    public <T> T decodeAndCache(String key, Decoder<T> decoder) {
+      if (decodedObjects == null) {
+        synchronized (this) {
+          if (decodedObjects == null) decodedObjects = new ConcurrentHashMap<>();
         }
-      } finally {
-        zis.closeEntry();
       }
-      return null;
+
+      Object t = decodedObjects.get(key);
+      if (t != null) return (T) t;
+      t = decoder.decode(new ByteBufferInputStream(buffer));
+      decodedObjects.put(key, t);
+      return (T) t;
+
     }
 
     public String checkSignature(String base64Sig, CryptoKeys keys) {
@@ -211,11 +238,16 @@ public class JarRepository {
 
   }
 
-  public static class JarContentRef {
-    public final JarContent jar;
+  public interface Decoder<T> {
 
-    private JarContentRef(JarContent jar) {
-      this.jar = jar;
+    T decode(InputStream inputStream);
+  }
+
+  public static class BlobContentRef {
+    public final BlobContent blob;
+
+    private BlobContentRef(BlobContent blob) {
+      this.blob = blob;
     }
   }
 

@@ -20,8 +20,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
@@ -171,6 +171,7 @@ public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
         "CY val",
         10);
     compareValues(result, 20l, asList("response", "params", "y", "i"));
+    compareValues(result, null, asList("response", "params", "y", "a"));
 
 
     result = TestSolrConfigHandler.testForResponseElement(null,
@@ -181,7 +182,7 @@ public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
         "CY val",
         5);
     compareValues(result, "BY val", asList("params", "b"));
-    compareValues(result, null, asList("params", "a"));
+    compareValues(result, "A val", asList("params", "a"));
     compareValues(result, Arrays.asList("val 1", "val 2"), asList("params", "d"));
     compareValues(result, "20", asList("params", "i"));
     payload = " {\n" +
@@ -226,6 +227,37 @@ public class TestReqParamsAPI extends AbstractFullDistribZkTestBase {
         "P val",
         10);
     compareValues(result, null, asList("response", "params", "y", "c"));
+    compareValues(result, 2l, asList("response", "params", "y", "","v"));
+    compareValues(result, 0l, asList("response", "params", "x", "","v"));
+
+    payload = "{update :{x : {_appends_ :{ add : 'first' },  _invariants_ : {fixed: f }}}}";
+    TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params?wt=json", payload);
+
+    result = TestSolrConfigHandler.testForResponseElement(
+        null,
+        urls.get(random().nextInt(urls.size())),
+        "/config/params?wt=json",
+        cloudClient,
+        asList("response", "params", "x", "_appends_", "add"),
+        "first",
+        10);
+    compareValues(result, "f", asList("response", "params", "x", "_invariants_", "fixed"));
+
+
+    result = TestSolrConfigHandler.testForResponseElement(null,
+        urls.get(random().nextInt(urls.size())),
+        "/dump1?wt=json&fixed=changeit&add=second",
+        cloudClient,
+        asList("params", "fixed"),
+        "f",
+        5);
+    compareValues(result, new Predicate() {
+      @Override
+      public boolean test(Object o) {
+        List l = (List) o;
+        return l.contains("first") && l.contains("second");
+      }
+    }, asList("params", "add"));
 
     payload = " {'delete' : 'y'}";
     TestSolrConfigHandler.runConfigCommand(writeHarness, "/config/params?wt=json", payload);

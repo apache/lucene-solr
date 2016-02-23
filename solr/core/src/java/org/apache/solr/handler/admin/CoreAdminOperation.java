@@ -297,6 +297,7 @@ enum CoreAdminOperation {
           IOUtils.closeWhileHandlingException(readersToBeClosed);
           for (Directory dir : dirsToBeReleased) {
             DirectoryFactory dirFactory = core.getDirectoryFactory();
+            dirFactory.doneWithDirectory(dir);
             dirFactory.release(dir);
           }
           if (wrappedReq != null) wrappedReq.close();

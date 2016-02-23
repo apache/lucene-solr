@@ -16,15 +16,17 @@
  */
 package org.apache.lucene.document;
 
+import java.math.BigInteger;
+
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 /** 
- * An int field that is indexed dimensionally such that finding
+ * A 128-bit integer field that is indexed dimensionally such that finding
  * all documents within an N-dimensional shape or range at search time is
  * efficient.  Multiple values for the same field in one documents
- * is allowed.
+ * is allowed. 
  * <p>
  * This field defines static factory methods for creating common queries:
  * <ul>
@@ -33,22 +35,20 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>{@link #newMultiRangeQuery newMultiRangeQuery()} for matching points/ranges in n-dimensional space.
  * </ul>
  */
-public final class IntPoint extends Field {
+public class BigIntegerPoint extends Field {
+
+  /** The number of bytes per dimension: 128 bits. */
+  public static final int BYTES = 16;
 
   private static FieldType getType(int numDims) {
     FieldType type = new FieldType();
-    type.setDimensions(numDims, Integer.BYTES);
+    type.setDimensions(numDims, BYTES);
     type.freeze();
     return type;
   }
 
-  @Override
-  public void setIntValue(int value) {
-    setIntValues(value);
-  }
-
   /** Change the values of this field */
-  public void setIntValues(int... point) {
+  public void setBigIntegerValues(BigInteger... point) {
     if (type.pointDimensionCount() != point.length) {
       throw new IllegalArgumentException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot change to (incoming) " + point.length + " dimensions");
     }
@@ -57,7 +57,7 @@ public final class IntPoint extends Field {
 
   @Override
   public void setBytesValue(BytesRef bytes) {
-    throw new IllegalArgumentException("cannot change value type from int to BytesRef");
+    throw new IllegalArgumentException("cannot change value type from BigInteger to BytesRef");
   }
 
   @Override
@@ -66,34 +66,34 @@ public final class IntPoint extends Field {
       throw new IllegalStateException("this field (name=" + name + ") uses " + type.pointDimensionCount() + " dimensions; cannot convert to a single numeric value");
     }
     BytesRef bytes = (BytesRef) fieldsData;
-    assert bytes.length == Integer.BYTES;
+    assert bytes.length == BYTES;
     return decodeDimension(bytes.bytes, bytes.offset);
   }
 
-  private static BytesRef pack(int... point) {
+  private static BytesRef pack(BigInteger... point) {
     if (point == null) {
       throw new IllegalArgumentException("point cannot be null");
     }
     if (point.length == 0) {
       throw new IllegalArgumentException("point cannot be 0 dimensions");
     }
-    byte[] packed = new byte[point.length * Integer.BYTES];
+    byte[] packed = new byte[point.length * BYTES];
     
     for (int dim = 0; dim < point.length; dim++) {
-      encodeDimension(point[dim], packed, dim * Integer.BYTES);
+      encodeDimension(point[dim], packed, dim * BYTES);
     }
 
     return new BytesRef(packed);
   }
 
-  /** Creates a new IntPoint, indexing the
-   *  provided N-dimensional int point.
+  /** Creates a new BigIntegerPoint, indexing the
+   *  provided N-dimensional big integer point.
    *
    *  @param name field name
-   *  @param point int[] value
+   *  @param point BigInteger[] value
    *  @throws IllegalArgumentException if the field name or value is null.
    */
-  public IntPoint(String name, int... point) {
+  public BigIntegerPoint(String name, BigInteger... point) {
     super(name, pack(point), getType(point.length));
   }
   
@@ -110,41 +110,41 @@ public final class IntPoint extends Field {
       if (dim > 0) {
         result.append(',');
       }
-      result.append(decodeDimension(bytes.bytes, bytes.offset + dim * Integer.BYTES));
+      result.append(decodeDimension(bytes.bytes, bytes.offset + dim * BYTES));
     }
 
     result.append('>');
     return result.toString();
   }
-
-  /** Encode n-dimensional integer values into binary encoding */
-  private static byte[][] encode(Integer value[]) {
+  
+  /** sugar: Encode n-dimensional BigInteger values into binary encoding */
+  private static byte[][] encode(BigInteger value[]) {
     byte[][] encoded = new byte[value.length][];
     for (int i = 0; i < value.length; i++) {
       if (value[i] != null) {
-        encoded[i] = new byte[Integer.BYTES];
+        encoded[i] = new byte[BYTES];
         encodeDimension(value[i], encoded[i], 0);
       }
     }
     return encoded;
   }
-  
+
   // public helper methods (e.g. for queries)
   
-  /** Encode single integer dimension */
-  public static void encodeDimension(Integer value, byte dest[], int offset) {
-    NumericUtils.intToBytes(value, dest, offset);
+  /** Encode single BigInteger dimension */
+  public static void encodeDimension(BigInteger value, byte dest[], int offset) {
+    NumericUtils.bigIntToBytes(value, BYTES, dest, offset);
   }
   
-  /** Decode single integer dimension */
-  public static Integer decodeDimension(byte value[], int offset) {
-    return NumericUtils.bytesToInt(value, offset);
+  /** Decode single BigInteger dimension */
+  public static BigInteger decodeDimension(byte value[], int offset) {
+    return NumericUtils.bytesToBigInt(value, offset, BYTES);
   }
-  
+
   // static methods for generating queries
-  
+
   /** 
-   * Create a query for matching an exact integer value.
+   * Create a query for matching an exact big integer value.
    * <p>
    * This is for simple one-dimension points, for multidimensional points use
    * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
@@ -154,12 +154,12 @@ public final class IntPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null.
    * @return a query matching documents with this exact value
    */
-  public static PointRangeQuery newExactQuery(String field, int value) {
+  public static PointRangeQuery newExactQuery(String field, BigInteger value) {
     return newRangeQuery(field, value, true, value, true);
   }
 
   /** 
-   * Create a range query for integer values.
+   * Create a range query for big integer values.
    * <p>
    * This is for simple one-dimension ranges, for multidimensional ranges use
    * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
@@ -178,16 +178,16 @@ public final class IntPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null.
    * @return a query matching documents within this range.
    */
-  public static PointRangeQuery newRangeQuery(String field, Integer lowerValue, boolean lowerInclusive, Integer upperValue, boolean upperInclusive) {
+  public static PointRangeQuery newRangeQuery(String field, BigInteger lowerValue, boolean lowerInclusive, BigInteger upperValue, boolean upperInclusive) {
     return newMultiRangeQuery(field, 
-                              new Integer[] { lowerValue },
+                              new BigInteger[] { lowerValue },
                               new boolean[] { lowerInclusive }, 
-                              new Integer[] { upperValue },
+                              new BigInteger[] { upperValue },
                               new boolean[] { upperInclusive });
   }
 
   /** 
-   * Create a multidimensional range query for integer values.
+   * Create a multidimensional range query for big integer values.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting a {@code lowerValue} element or {@code upperValue} element to {@code null}. 
@@ -203,12 +203,12 @@ public final class IntPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
    * @return a query matching documents within this range.
    */
-  public static PointRangeQuery newMultiRangeQuery(String field, Integer[] lowerValue, boolean lowerInclusive[], Integer[] upperValue, boolean upperInclusive[]) {
+  public static PointRangeQuery newMultiRangeQuery(String field, BigInteger[] lowerValue, boolean lowerInclusive[], BigInteger[] upperValue, boolean upperInclusive[]) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, IntPoint.encode(lowerValue), lowerInclusive, IntPoint.encode(upperValue), upperInclusive) {
+    return new PointRangeQuery(field, BigIntegerPoint.encode(lowerValue), lowerInclusive, BigIntegerPoint.encode(upperValue), upperInclusive) {
       @Override
       protected String toString(byte[] value) {
-        return IntPoint.decodeDimension(value, 0).toString();
+        return BigIntegerPoint.decodeDimension(value, 0).toString();
       }
     };
   }

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -288,8 +289,12 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
   }
 
   public static void compareValues(Map result, Object expected, List<String> jsonPath) {
+    Object val = Utils.getObjectByPath(result, false, jsonPath);
     assertTrue(StrUtils.formatString("Could not get expected value  {0} for path {1} full output {2}", expected, jsonPath, getAsString(result)),
-        Objects.equals(expected, Utils.getObjectByPath(result, false, jsonPath)));
+        expected instanceof Predicate ?
+            ((Predicate)expected ).test(val) :
+            Objects.equals(expected, val)
+        );
   }
 
 }

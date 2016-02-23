@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -74,6 +75,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.singletonList;
 import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
@@ -169,11 +171,11 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         } else if (RequestParams.NAME.equals(parts.get(1))) {
           if (parts.size() == 3) {
             RequestParams params = req.getCore().getSolrConfig().getRequestParams();
-            MapSolrParams p = params.getParams(parts.get(2));
+            RequestParams.ParamSet p = params.getParams(parts.get(2));
             Map m = new LinkedHashMap<>();
             m.put(ZNODEVER, params.getZnodeVersion());
             if (p != null) {
-              m.put(RequestParams.NAME, makeMap(parts.get(2), p.getMap()));
+              m.put(RequestParams.NAME, makeMap(parts.get(2), p.toMap()));
             }
             resp.add(SolrQueryResponse.NAME, m);
           } else {
@@ -289,7 +291,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
               Map val = null;
               String key = entry.getKey();
-              if (key == null || key.trim().isEmpty()) {
+              if (isNullOrEmpty(key)) {
                 op.addError("null key ");
                 continue;
               }
@@ -312,13 +314,17 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                 continue;
               }
 
-              MapSolrParams old = params.getParams(key);
+              RequestParams.ParamSet old = params.getParams(key);
               if (op.name.equals(UPDATE)) {
-                LinkedHashMap m = new LinkedHashMap(old.getMap());
-                m.putAll(val);
-                val = m;
+                if (old == null) {
+                  op.addError(formatString("unknown paramset {} cannot update ", key));
+                  continue;
+                }
+                params = params.setParams(key, old.update(val));
+              } else {
+                Long version = old == null ? 0 : old.getVersion() + 1;
+                params = params.setParams(key, RequestParams.createParamSet(val, version));
               }
-              params = params.setParams(key, val);
 
             }
             break;
@@ -350,7 +356,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         if (ops.isEmpty()) {
           ZkController.touchConfDir(zkLoader);
         } else {
-          log.info("persisting params version : {}", params.toMap());
+          log.debug("persisting params version : {}", Utils.toJSONString(params.toMap()));
           int latestVersion = ZkController.persistConfigResourceToZooKeeper(zkLoader,
               params.getZnodeVersion(),
               RequestParams.RESOURCE,

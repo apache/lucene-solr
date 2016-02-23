@@ -78,6 +78,8 @@ Upgrading from Solr 5.x
 * SolrIndexSearcher.QueryCommand and QueryResult were moved to their own classes. If you reference them
   in your code, you should import them under o.a.s.search (or use your IDE's "Organize Imports").
 
+* SOLR-8698: 'useParams' attribute specified in request handler cannot be overridden from request params
+
 Detailed Change List
 ----------------------
 
@@ -155,6 +157,9 @@ New Features
 
 * SOLR-8522: Make it possible to use ip fragments in replica placement rules , such as ip_1, ip_2 etc (Arcadius Ahouansou, noble)
 
+* SOLR-8698: params.json can now specify 'appends' and 'invariants' (noble)
+
+
 Bug Fixes
 ----------------------
 * SOLR-8386: Add field option in the new admin UI schema page loads up even when no schemaFactory has been
@@ -206,6 +211,12 @@ Bug Fixes
 
 * SOLR-8599: After a failed connection during construction of SolrZkClient attempt to retry until a connection
   can be made. (Keith Laban, Dennis Gove)
+  
+* SOLR-8497: Merge index does not mark the Directory objects it creates as 'done' and they are retained in the 
+  Directory cache. (Sivlio Sanchez, Mark Miller)
+
+* SOLR-8696: Start the Overseer before actions that need the overseer on init and when reconnecting after 
+  zk expiration and improve init logic. (Scott Blum, Mark Miller)
 
 Optimizations
 ----------------------
@@ -228,6 +239,8 @@ Optimizations
 
 * SOLR-8669: Non binary responses use chunked encoding because we flush the outputstream early.
   (Mark Miller)
+
+* SOLR-8720: ZkController#publishAndWaitForDownStates should use #publishNodeAsDown. (Mark Miller)
 
 Other Changes
 ----------------------

@@ -16,14 +16,23 @@
  */
 package org.apache.lucene.document;
 
+import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
-/** A field that is indexed dimensionally such that finding
- *  all documents within an N-dimensional at search time is
- *  efficient.  Multiple values for the same field in one documents
- *  is allowed. */
-
+/** 
+ * A float field that is indexed dimensionally such that finding
+ * all documents within an N-dimensional at search time is
+ * efficient.  Multiple values for the same field in one documents
+ * is allowed.
+ * <p>
+ * This field defines static factory methods for creating common queries:
+ * <ul>
+ *   <li>{@link #newExactQuery newExactQuery()} for matching an exact 1D point.
+ *   <li>{@link #newRangeQuery newRangeQuery()} for matching a 1D range.
+ *   <li>{@link #newMultiRangeQuery newMultiRangeQuery()} for matching points/ranges in n-dimensional space.
+ * </ul>
+ */
 public final class FloatPoint extends Field {
 
   private static FieldType getType(int numDims) {
@@ -81,17 +90,35 @@ public final class FloatPoint extends Field {
    *  provided N-dimensional float point.
    *
    *  @param name field name
-   *  @param point int[] value
+   *  @param point float[] value
    *  @throws IllegalArgumentException if the field name or value is null.
    */
   public FloatPoint(String name, float... point) {
     super(name, pack(point), getType(point.length));
   }
   
-  // public helper methods (e.g. for queries)
+  @Override
+  public String toString() {
+    StringBuilder result = new StringBuilder();
+    result.append(type.toString());
+    result.append('<');
+    result.append(name);
+    result.append(':');
 
+    BytesRef bytes = (BytesRef) fieldsData;
+    for (int dim = 0; dim < type.pointDimensionCount(); dim++) {
+      if (dim > 0) {
+        result.append(',');
+      }
+      result.append(decodeDimension(bytes.bytes, bytes.offset + dim * Float.BYTES));
+    }
+
+    result.append('>');
+    return result.toString();
+  }
+  
   /** Encode n-dimensional float values into binary encoding */
-  public static byte[][] encode(Float value[]) {
+  private static byte[][] encode(Float value[]) {
     byte[][] encoded = new byte[value.length][];
     for (int i = 0; i < value.length; i++) {
       if (value[i] != null) {
@@ -102,6 +129,8 @@ public final class FloatPoint extends Field {
     return encoded;
   }
   
+  // public helper methods (e.g. for queries)
+  
   /** Encode single float dimension */
   public static void encodeDimension(Float value, byte dest[], int offset) {
     NumericUtils.intToBytesDirect(NumericUtils.floatToSortableInt(value), dest, offset);
@@ -110,5 +139,77 @@ public final class FloatPoint extends Field {
   /** Decode single float dimension */
   public static Float decodeDimension(byte value[], int offset) {
     return NumericUtils.sortableIntToFloat(NumericUtils.bytesToIntDirect(value, offset));
+  }
+  
+  // static methods for generating queries
+
+  /** 
+   * Create a query for matching an exact float value.
+   * <p>
+   * This is for simple one-dimension points, for multidimensional points use
+   * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
+   *
+   * @param field field name. must not be {@code null}.
+   * @param value float value
+   * @throws IllegalArgumentException if {@code field} is null.
+   * @return a query matching documents with this exact value
+   */
+  public static PointRangeQuery newExactQuery(String field, float value) {
+    return newRangeQuery(field, value, true, value, true);
+  }
+  
+  /** 
+   * Create a range query for float values.
+   * <p>
+   * This is for simple one-dimension ranges, for multidimensional ranges use
+   * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
+   * <p>
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting the {@code lowerValue} or {@code upperValue} to {@code null}. 
+   * <p>
+   * By setting inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   *
+   * @param field field name. must not be {@code null}.
+   * @param lowerValue lower portion of the range. {@code null} means "open".
+   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
+   * @param upperValue upper portion of the range. {@code null} means "open".
+   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
+   * @throws IllegalArgumentException if {@code field} is null.
+   * @return a query matching documents within this range.
+   */
+  public static PointRangeQuery newRangeQuery(String field, Float lowerValue, boolean lowerInclusive, Float upperValue, boolean upperInclusive) {
+    return newMultiRangeQuery(field, 
+                              new Float[] { lowerValue },
+                              new boolean[] { lowerInclusive }, 
+                              new Float[] { upperValue },
+                              new boolean[] { upperInclusive });
+  }
+
+  /** 
+   * Create a multidimensional range query for float values.
+   * <p>
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting a {@code lowerValue} element or {@code upperValue} element to {@code null}. 
+   * <p>
+   * By setting a dimension's inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   *
+   * @param field field name. must not be {@code null}.
+   * @param lowerValue lower portion of the range. {@code null} values mean "open" for that dimension.
+   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
+   * @param upperValue upper portion of the range. {@code null} values mean "open" for that dimension.
+   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
+   * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
+   * @return a query matching documents within this range.
+   */
+  public static PointRangeQuery newMultiRangeQuery(String field, Float[] lowerValue, boolean lowerInclusive[], Float[] upperValue, boolean upperInclusive[]) {
+    PointRangeQuery.checkArgs(field, lowerValue, upperValue);
+    return new PointRangeQuery(field, FloatPoint.encode(lowerValue), lowerInclusive, FloatPoint.encode(upperValue), upperInclusive) {
+      @Override
+      protected String toString(byte[] value) {
+        return FloatPoint.decodeDimension(value, 0).toString();
+      }
+    };
   }
 }
