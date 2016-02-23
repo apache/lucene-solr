@@ -17,21 +17,29 @@
 package org.apache.solr.cloud.rule;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.InetAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.request.SolrQueryRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final Pattern hostAndPortPattern = Pattern.compile("(?:https?://)?([^:]+):(\\d+)");
 
@@ -42,8 +50,10 @@ public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable
   public static final String CORES = "cores";
   public static final String DISK = "freedisk";
   public static final String SYSPROP = "sysprop.";
+  public static final List<String> IP_SNITCHES = ImmutableList.of("ip_1", "ip_2", "ip_3", "ip_4");
 
-  public static final Set<String> tags = ImmutableSet.of(NODE, PORT, HOST, CORES, DISK);
+  public static final Set<String> tags = ImmutableSet.<String>builder().add(NODE, PORT, HOST, CORES, DISK).addAll(IP_SNITCHES).build();
+
 
 
   @Override
@@ -57,6 +67,9 @@ public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable
       Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
       if (hostAndPortMatcher.find()) ctx.getTags().put(PORT, hostAndPortMatcher.group(2));
     }
+
+    addIpTags(solrNode, requestedTags, ctx);
+
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (requestedTags.contains(CORES)) params.add(CORES, "1");
     if (requestedTags.contains(DISK)) params.add(DISK, "1");
@@ -71,7 +84,7 @@ public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable
     long spaceInGB = space / 1024 / 1024 / 1024;
     return spaceInGB;
   }
-  
+
   public Map<String, Object> invoke(SolrQueryRequest req) {
     Map<String, Object> result = new HashMap<>();
     if (req.getParams().getInt(CORES, -1) == 1) {
@@ -88,16 +101,75 @@ public class ImplicitSnitch extends Snitch implements CoreAdminHandler.Invocable
     }
     String[] sysProps = req.getParams().getParams(SYSPROP);
     if (sysProps != null && sysProps.length > 0) {
-      for (String prop : sysProps) result.put(SYSPROP+prop, System.getProperty(prop));
+      for (String prop : sysProps) result.put(SYSPROP + prop, System.getProperty(prop));
     }
     return result;
   }
 
+  private static final String HOST_FRAG_SEPARATOR_REGEX = "\\.";
 
   @Override
   public boolean isKnownTag(String tag) {
     return tags.contains(tag) ||
-        tag.startsWith(SYSPROP);//a system property
+        tag.startsWith(SYSPROP);
+  }
+
+  private void addIpTags(String solrNode, Set<String> requestedTags, SnitchContext context) {
+
+    List<String> requestedHostTags = new ArrayList<>();
+    for (String tag : requestedTags) {
+      if (IP_SNITCHES.contains(tag)) {
+        requestedHostTags.add(tag);
+      }
+    }
+
+    if (requestedHostTags.isEmpty()) {
+      return;
+    }
+
+    String[] ipFragments = getIpFragments(solrNode);
+
+    if (ipFragments == null) {
+      return;
+    }
+
+    int ipSnitchCount = IP_SNITCHES.size();
+    for (int i = 0; i < ipSnitchCount; i++) {
+      String currentTagValue = ipFragments[i];
+      String currentTagKey = IP_SNITCHES.get(ipSnitchCount - i - 1);
+
+      if (requestedHostTags.contains(currentTagKey)) {
+        context.getTags().put(currentTagKey, currentTagValue);
+      }
+
+    }
+
+  }
+
+  private String[] getIpFragments(String solrNode) {
+    Matcher hostAndPortMatcher = hostAndPortPattern.matcher(solrNode);
+    if (hostAndPortMatcher.find()) {
+      String host = hostAndPortMatcher.group(1);
+      if (host != null) {
+        String ip = getHostIp(host);
+        if (ip != null) {
+          return ip.split(HOST_FRAG_SEPARATOR_REGEX); //IPv6 support will be provided by SOLR-8523
+        }
+      }
+    }
+
+    log.warn("Failed to match host IP address from node URL [{}] using regex [{}]", solrNode, hostAndPortPattern.pattern());
+    return null;
+  }
+
+  protected String getHostIp(String host) {
+    try {
+      InetAddress address = InetAddress.getByName(host);
+      return address.getHostAddress();
+    } catch (Exception e) {
+      log.warn("Failed to get IP address from host [{}], with exception [{}] ", host, e);
+      return null;
+    }
   }
 
 }
