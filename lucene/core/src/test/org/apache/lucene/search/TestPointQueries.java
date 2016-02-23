@@ -1139,12 +1139,70 @@ public class TestPointQueries extends LuceneTestCase {
 
     IndexReader r = DirectoryReader.open(w);
     IndexSearcher s = newSearcher(r);
-    assertEquals(0, s.count(PointInSetQuery.newIntSet("int", 16)));
-    assertEquals(1, s.count(PointInSetQuery.newIntSet("int", 17)));
-    assertEquals(3, s.count(PointInSetQuery.newIntSet("int", 17, 97, 42)));
-    assertEquals(3, s.count(PointInSetQuery.newIntSet("int", -7, 17, 42, 97)));
-    assertEquals(3, s.count(PointInSetQuery.newIntSet("int", 17, 20, 42, 97)));
-    assertEquals(3, s.count(PointInSetQuery.newIntSet("int", 17, 105, 42, 97)));
+    assertEquals(0, s.count(IntPoint.newSetQuery("int", 16)));
+    assertEquals(1, s.count(IntPoint.newSetQuery("int", 17)));
+    assertEquals(3, s.count(IntPoint.newSetQuery("int", 17, 97, 42)));
+    assertEquals(3, s.count(IntPoint.newSetQuery("int", -7, 17, 42, 97)));
+    assertEquals(3, s.count(IntPoint.newSetQuery("int", 17, 20, 42, 97)));
+    assertEquals(3, s.count(IntPoint.newSetQuery("int", 17, 105, 42, 97)));
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testPointInSetQueryManyEqualValues() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    int zeroCount = 0;
+    for(int i=0;i<10000;i++) {
+      int x = random().nextInt(2);
+      if (x == 0) {
+        zeroCount++;
+      }
+      Document doc = new Document();
+      doc.add(new IntPoint("int", x));
+      w.addDocument(doc);
+    }
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+    assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 0)));
+    assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 0, -7)));
+    assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(IntPoint.newSetQuery("int", 1)));
+    assertEquals(0, s.count(IntPoint.newSetQuery("int", 2)));
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testPointInSetQueryManyEqualValuesBigGap() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    int zeroCount = 0;
+    for(int i=0;i<10000;i++) {
+      int x = 200 * random().nextInt(2);
+      if (x == 0) {
+        zeroCount++;
+      }
+      Document doc = new Document();
+      doc.add(new IntPoint("int", x));
+      w.addDocument(doc);
+    }
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+    assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 0)));
+    assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 0, -7)));
+    assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(IntPoint.newSetQuery("int", 200)));
+    assertEquals(0, s.count(IntPoint.newSetQuery("int", 2)));
     w.close();
     r.close();
     dir.close();

@@ -16,7 +16,12 @@
  */
 package org.apache.lucene.document;
 
+import java.io.IOException;
+import java.util.Arrays;
+
+import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.NumericUtils;
 
 /** An int field that is indexed dimensionally such that finding
@@ -88,6 +93,41 @@ public final class IntPoint extends Field {
     super(name, pack(point), getType(point.length));
   }
   
+  /** Returns a query efficiently finding all documents that indexed the provided 1D int values */
+  public static PointInSetQuery newSetQuery(String field, int... valuesIn) throws IOException {
+
+    // Don't unexpectedly change the user's incoming array:
+    int[] values = valuesIn.clone();
+
+    Arrays.sort(values);
+
+    final BytesRef value = new BytesRef(new byte[Integer.BYTES]);
+    value.length = Integer.BYTES;
+
+    return new PointInSetQuery(field, 1, Integer.BYTES,
+                               new BytesRefIterator() {
+
+                                 int upto;
+
+                                 @Override
+                                 public BytesRef next() {
+                                   if (upto == values.length) {
+                                     return null;
+                                   } else {
+                                     IntPoint.encodeDimension(values[upto], value.bytes, 0);
+                                     upto++;
+                                     return value;
+                                   }
+                                 }
+                               }) {
+      @Override
+      protected String toString(byte[] value) {
+        assert value.length == Integer.BYTES;
+        return Integer.toString(decodeDimension(value, 0));
+      }
+    };
+  }
+
   @Override
   public String toString() {
     StringBuilder result = new StringBuilder();

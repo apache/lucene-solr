@@ -80,40 +80,6 @@ public class PointInSetQuery extends Query {
     sortedPackedPointsHashCode = sortedPackedPoints.hashCode();
   }
 
-  /** Use in the 1D case when you indexed 1D int values using {@link org.apache.lucene.document.IntPoint} */
-  public static PointInSetQuery newIntSet(String field, int... valuesIn) {
-
-    // Don't unexpectedly change the user's incoming array:
-    int[] values = valuesIn.clone();
-
-    Arrays.sort(values);
-
-    final BytesRef value = new BytesRef(new byte[Integer.BYTES]);
-    value.length = Integer.BYTES;
-
-    try {
-      return new PointInSetQuery(field, 1, Integer.BYTES,
-                                 new BytesRefIterator() {
-
-                                   int upto;
-
-                                   @Override
-                                   public BytesRef next() {
-                                     if (upto == values.length) {
-                                       return null;
-                                     } else {
-                                       IntPoint.encodeDimension(values[upto], value.bytes, 0);
-                                       upto++;
-                                       return value;
-                                     }
-                                   }
-                                 });
-    } catch (IOException bogus) {
-      // Should never happen ;)
-      throw new RuntimeException(bogus);
-    }
-  }
-
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
 
@@ -354,18 +320,44 @@ public class PointInSetQuery extends Query {
     sb.append(getClass().getSimpleName());
     sb.append(':');
     if (this.field.equals(field) == false) {
-      sb.append("field=");
+      sb.append(" field=");
       sb.append(this.field);
       sb.append(':');
     }
 
+    sb.append(" points:");
+
     TermIterator iterator = sortedPackedPoints.iterator();
+    byte[] pointBytes = new byte[numDims * bytesPerDim];
     for (BytesRef point = iterator.next(); point != null; point = iterator.next()) {
       sb.append(' ');
-      // nocommit fix me to convert back to the numbers/etc.:
-      sb.append(point);
+      System.arraycopy(point.bytes, point.offset, pointBytes, 0, pointBytes.length);
+      sb.append(toString(pointBytes));
     }
 
+    return sb.toString();
+  }
+
+  /**
+   * Returns a string of a single value in a human-readable format for debugging.
+   * This is used by {@link #toString()}.
+   *
+   * The default implementation encodes the individual byte values.
+   *
+   * @param value single value, never null
+   * @return human readable value for debugging
+   */
+  protected String toString(byte[] value) {
+    assert value != null;
+    StringBuilder sb = new StringBuilder();
+    sb.append("binary(");
+    for (int i = 0; i < value.length; i++) {
+      if (i > 0) {
+        sb.append(' ');
+      }
+      sb.append(Integer.toHexString(value[i] & 0xFF));
+    }
+    sb.append(')');
     return sb.toString();
   }
 }
