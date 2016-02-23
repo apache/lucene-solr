@@ -88,6 +88,26 @@ public final class DoublePoint extends Field {
     super(name, pack(point), getType(point.length));
   }
   
+  @Override
+  public String toString() {
+    StringBuilder result = new StringBuilder();
+    result.append(type.toString());
+    result.append('<');
+    result.append(name);
+    result.append(':');
+
+    BytesRef bytes = (BytesRef) fieldsData;
+    for (int dim = 0; dim < type.pointDimensionCount(); dim++) {
+      if (dim > 0) {
+        result.append(',');
+      }
+      result.append(decodeDimension(bytes.bytes, bytes.offset + dim * Double.BYTES));
+    }
+
+    result.append('>');
+    return result.toString();
+  }
+  
   // public helper methods (e.g. for queries)
 
   /** Encode n-dimensional double point into binary encoding */

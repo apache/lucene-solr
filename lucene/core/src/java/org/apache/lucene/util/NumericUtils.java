@@ -218,37 +218,36 @@ public final class NumericUtils {
   }
 
   public static void sortableBigIntBytes(byte[] bytes) {
+    // Flip the sign bit so negative bigints sort before positive bigints:
     bytes[0] ^= 0x80;
-    for(int i=1;i<bytes.length;i++)  {
-      bytes[i] ^= 0;
-    }
   }
 
-  public static void bigIntToBytes(BigInteger bigInt, byte[] result, int dim, int numBytesPerDim) {
+  public static void bigIntToBytes(BigInteger bigInt, int bigIntSize, byte[] result, int offset) {
     byte[] bigIntBytes = bigInt.toByteArray();
     byte[] fullBigIntBytes;
 
-    if (bigIntBytes.length < numBytesPerDim) {
-      fullBigIntBytes = new byte[numBytesPerDim];
-      System.arraycopy(bigIntBytes, 0, fullBigIntBytes, numBytesPerDim-bigIntBytes.length, bigIntBytes.length);
+    if (bigIntBytes.length < bigIntSize) {
+      fullBigIntBytes = new byte[bigIntSize];
+      System.arraycopy(bigIntBytes, 0, fullBigIntBytes, bigIntSize-bigIntBytes.length, bigIntBytes.length);
       if ((bigIntBytes[0] & 0x80) != 0) {
         // sign extend
-        Arrays.fill(fullBigIntBytes, 0, numBytesPerDim-bigIntBytes.length, (byte) 0xff);
+        Arrays.fill(fullBigIntBytes, 0, bigIntSize-bigIntBytes.length, (byte) 0xff);
       }
-    } else {
-      assert bigIntBytes.length == numBytesPerDim;
+    } else if (bigIntBytes.length == bigIntSize) {
       fullBigIntBytes = bigIntBytes;
+    } else {
+      throw new IllegalArgumentException("BigInteger: " + bigInt + " requires more than " + bigIntSize + " bytes storage");
     }
     sortableBigIntBytes(fullBigIntBytes);
 
-    System.arraycopy(fullBigIntBytes, 0, result, dim * numBytesPerDim, numBytesPerDim);
+    System.arraycopy(fullBigIntBytes, 0, result, offset, bigIntSize);
 
-    assert bytesToBigInt(result, dim, numBytesPerDim).equals(bigInt): "bigInt=" + bigInt + " converted=" + bytesToBigInt(result, dim, numBytesPerDim);
+    assert bytesToBigInt(result, offset, bigIntSize).equals(bigInt): "bigInt=" + bigInt + " converted=" + bytesToBigInt(result, offset, bigIntSize);
   }
 
-  public static BigInteger bytesToBigInt(byte[] bytes, int dim, int numBytesPerDim) {
-    byte[] bigIntBytes = new byte[numBytesPerDim];
-    System.arraycopy(bytes, dim*numBytesPerDim, bigIntBytes, 0, numBytesPerDim);
+  public static BigInteger bytesToBigInt(byte[] bytes, int offset, int length) {
+    byte[] bigIntBytes = new byte[length];
+    System.arraycopy(bytes, offset, bigIntBytes, 0, length);
     sortableBigIntBytes(bigIntBytes);
     return new BigInteger(bigIntBytes);
   }

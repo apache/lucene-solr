@@ -348,7 +348,7 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
         for(int dim=0;dim<numDims;dim++) {
           values[dim] = randomBigInt(numBytesPerDim);
           bytes[dim] = new byte[numBytesPerDim];
-          NumericUtils.bigIntToBytes(values[dim], bytes[dim], 0, numBytesPerDim);
+          NumericUtils.bigIntToBytes(values[dim], numBytesPerDim, bytes[dim], 0);
           if (VERBOSE) {
             System.out.println("    " + dim + " -> " + values[dim]);
           }
@@ -398,7 +398,7 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
             public void visit(int docID, byte[] packedValue) {
               //System.out.println("visit check docID=" + docID);
               for(int dim=0;dim<numDims;dim++) {
-                BigInteger x = NumericUtils.bytesToBigInt(packedValue, dim, numBytesPerDim);
+                BigInteger x = NumericUtils.bytesToBigInt(packedValue, dim * numBytesPerDim, numBytesPerDim);
                 if (x.compareTo(queryMin[dim]) < 0 || x.compareTo(queryMax[dim]) > 0) {
                   //System.out.println("  no");
                   return;
@@ -413,8 +413,8 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
             public Relation compare(byte[] minPacked, byte[] maxPacked) {
               boolean crosses = false;
               for(int dim=0;dim<numDims;dim++) {
-                BigInteger min = NumericUtils.bytesToBigInt(minPacked, dim, numBytesPerDim);
-                BigInteger max = NumericUtils.bytesToBigInt(maxPacked, dim, numBytesPerDim);
+                BigInteger min = NumericUtils.bytesToBigInt(minPacked, dim * numBytesPerDim, numBytesPerDim);
+                BigInteger max = NumericUtils.bytesToBigInt(maxPacked, dim * numBytesPerDim, numBytesPerDim);
                 assert max.compareTo(min) >= 0;
 
                 if (max.compareTo(queryMin[dim]) < 0 || min.compareTo(queryMax[dim]) > 0) {

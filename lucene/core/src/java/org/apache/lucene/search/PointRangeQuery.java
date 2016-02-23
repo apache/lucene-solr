@@ -116,8 +116,11 @@ public class PointRangeQuery extends Query {
     }
   }
 
-  /** Check preconditions for all factory methods */
-  private static void checkArgs(String field, Object lowerPoint, Object upperPoint) {
+  /** 
+   * Check preconditions for all factory methods
+   * @throws IllegalArgumentException if {@code field}, {@code lowerPoint} or {@code upperPoint} are null.
+   */
+  public static void checkArgs(String field, Object lowerPoint, Object upperPoint) {
     if (field == null) {
       throw new IllegalArgumentException("field must not be null");
     }
