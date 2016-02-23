@@ -22,20 +22,29 @@ import java.net.UnknownHostException;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.util.BytesRef;
 
-/** A field indexing {@link InetAddress} dimensionally such that finding
- *  all documents within a range at search time is
- *  efficient.  Multiple values for the same field in one document
- *  is allowed. 
- *  <p>
- *  This field supports both IPv4 and IPv6 addresses: IPv4 addresses are converted
- *  to <a href="https://tools.ietf.org/html/rfc4291#section-2.5.5">IPv4-Mapped IPv6 Addresses</a>:
- *  indexing {@code 1.2.3.4} is the same as indexing {@code ::FFFF:1.2.3.4}.
+/** 
+ * A field indexing {@link InetAddress} dimensionally such that finding
+ * all documents within a range at search time is
+ * efficient.  Multiple values for the same field in one document
+ * is allowed. 
+ * <p>
+ * This field defines static factory methods for creating common queries:
+ * <ul>
+ *   <li>{@link #newExactQuery newExactQuery()} for matching an exact network address.
+ *   <li>{@link #newPrefixQuery newPrefixQuery()} for matching a network based on CIDR prefix.
+ *   <li>{@link #newRangeQuery newRangeQuery()} for matching arbitrary network address ranges.
+ * </ul>
+ * <p>
+ * This field supports both IPv4 and IPv6 addresses: IPv4 addresses are converted
+ * to <a href="https://tools.ietf.org/html/rfc4291#section-2.5.5">IPv4-Mapped IPv6 Addresses</a>:
+ * indexing {@code 1.2.3.4} is the same as indexing {@code ::FFFF:1.2.3.4}.
  */
 public class InetAddressPoint extends Field {
 
   // implementation note: we convert all addresses to IPv6: we expect prefix compression of values,
   // so its not wasteful, but allows one field to handle both IPv4 and IPv6.
-  static final int BYTES = 16;
+  /** The number of bytes per dimension: 128 bits */
+  public static final int BYTES = 16;
   
   // rfc4291 prefix
   static final byte[] IPV4_PREFIX = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1 }; 
@@ -80,8 +89,16 @@ public class InetAddressPoint extends Field {
     result.append(name);
     result.append(':');
 
+    // IPv6 addresses are bracketed, to not cause confusion with historic field:value representation
     BytesRef bytes = (BytesRef) fieldsData;
-    result.append(decodeToString(BytesRef.deepCopyOf(bytes).bytes));
+    InetAddress address = decode(BytesRef.deepCopyOf(bytes).bytes);
+    if (address.getAddress().length == 16) {
+      result.append('[');
+      result.append(address.getHostAddress());
+      result.append(']');
+    } else {
+      result.append(address.getHostAddress());
+    }
 
     result.append('>');
     return result.toString();
@@ -113,34 +130,23 @@ public class InetAddressPoint extends Field {
       throw new IllegalArgumentException("encoded bytes are of incorrect length", e);
     }
   }
-  
-  /** decodes from binary encoding to a friendly format: IPv6 addresses are bracketed, 
-   *  to not cause confusion with historic field:value representation, etc */
-  public static String decodeToString(byte value[]) {
-    InetAddress address = decode(value);
-    if (address.getAddress().length == 16) {
-      return "[" + address.getHostAddress() + "]";
-    } else {
-      return address.getHostAddress();
-    }
-  }
 
   // static methods for generating queries
 
   /** 
-   * Create a range query for matching an address.
+   * Create a query for matching a network address.
    *
    * @param field field name. must not be {@code null}.
    * @param value exact value
    * @throws IllegalArgumentException if {@code field} is null.
    * @return a query matching documents with this exact value
    */
-  public static PointRangeQuery newInetAddressExact(String field, InetAddress value) {
-    return newInetAddressRange(field, value, true, value, true);
+  public static PointRangeQuery newExactQuery(String field, InetAddress value) {
+    return newRangeQuery(field, value, true, value, true);
   }
   
   /** 
-   * Create a range query for matching a CIDR network range.
+   * Create a prefix query for matching a CIDR network range.
    *
    * @param field field name. must not be {@code null}.
    * @param value any host address
@@ -148,7 +154,7 @@ public class InetAddressPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null, or prefixLength is invalid.
    * @return a query matching documents with addresses contained within this network
    */
-  public static PointRangeQuery newInetAddressPrefix(String field, InetAddress value, int prefixLength) {
+  public static PointRangeQuery newPrefixQuery(String field, InetAddress value, int prefixLength) {
     if (prefixLength < 0 || prefixLength > 8 * value.getAddress().length) {
       throw new IllegalArgumentException("illegal prefixLength '" + prefixLength + "'. Must be 0-32 for IPv4 ranges, 0-128 for IPv6 ranges");
     }
@@ -160,14 +166,14 @@ public class InetAddressPoint extends Field {
       upper[i >> 3] |= 1 << (i & 7);
     }
     try {
-      return newInetAddressRange(field, InetAddress.getByAddress(lower), true, InetAddress.getByAddress(upper), true);
+      return newRangeQuery(field, InetAddress.getByAddress(lower), true, InetAddress.getByAddress(upper), true);
     } catch (UnknownHostException e) {
       throw new AssertionError(e); // values are coming from InetAddress
     }
   }
 
   /** 
-   * Create a range query for addresses indexed with {@link InetAddressPoint}.
+   * Create a range query for network addresses.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting the {@code lowerValue} or {@code upperValue} to {@code null}. 
@@ -183,7 +189,7 @@ public class InetAddressPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null.
    * @return a query matching documents within this range.
    */
-  public static PointRangeQuery newInetAddressRange(String field, InetAddress lowerValue, boolean lowerInclusive, InetAddress upperValue, boolean upperInclusive) {
+  public static PointRangeQuery newRangeQuery(String field, InetAddress lowerValue, boolean lowerInclusive, InetAddress upperValue, boolean upperInclusive) {
     byte[][] lowerBytes = new byte[1][];
     if (lowerValue != null) {
       lowerBytes[0] = InetAddressPoint.encode(lowerValue);

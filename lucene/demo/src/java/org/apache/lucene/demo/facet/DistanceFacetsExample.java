@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.demo.facet;
 
-
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Document;
@@ -40,7 +39,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
@@ -181,7 +179,7 @@ public class DistanceFacetsExample implements Closeable {
     BooleanQuery.Builder f = new BooleanQuery.Builder();
 
     // Add latitude range filter:
-    f.add(PointRangeQuery.newDoubleRange("latitude", Math.toDegrees(minLat), true, Math.toDegrees(maxLat), true),
+    f.add(DoublePoint.newRangeQuery("latitude", Math.toDegrees(minLat), true, Math.toDegrees(maxLat), true),
           BooleanClause.Occur.FILTER);
 
     // Add longitude range filter:
@@ -189,13 +187,13 @@ public class DistanceFacetsExample implements Closeable {
       // The bounding box crosses the international date
       // line:
       BooleanQuery.Builder lonF = new BooleanQuery.Builder();
-      lonF.add(PointRangeQuery.newDoubleRange("longitude", Math.toDegrees(minLng), true, null, true),
+      lonF.add(DoublePoint.newRangeQuery("longitude", Math.toDegrees(minLng), true, null, true),
                BooleanClause.Occur.SHOULD);
-      lonF.add(PointRangeQuery.newDoubleRange("longitude", null, true, Math.toDegrees(maxLng), true),
+      lonF.add(DoublePoint.newRangeQuery("longitude", null, true, Math.toDegrees(maxLng), true),
                BooleanClause.Occur.SHOULD);
       f.add(lonF.build(), BooleanClause.Occur.MUST);
     } else {
-      f.add(PointRangeQuery.newDoubleRange("longitude", Math.toDegrees(minLng), true, Math.toDegrees(maxLng), true),
+      f.add(DoublePoint.newRangeQuery("longitude", Math.toDegrees(minLng), true, Math.toDegrees(maxLng), true),
             BooleanClause.Occur.FILTER);
     }
 

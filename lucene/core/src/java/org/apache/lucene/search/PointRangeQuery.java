@@ -24,11 +24,11 @@ import java.util.Objects;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.document.BinaryPoint;
-import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.FloatPoint;
-import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.BinaryPoint; // javadocs
+import org.apache.lucene.document.DoublePoint; // javadocs
+import org.apache.lucene.document.FloatPoint;  // javadocs
+import org.apache.lucene.document.IntPoint;    // javadocs
+import org.apache.lucene.document.LongPoint;   // javadocs
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -36,11 +36,23 @@ import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 
-/** Searches for ranges in fields previously indexed using points e.g.
- *  {@link org.apache.lucene.document.LongPoint}.  In a 1D field this is
- *  a simple range query; in a multi-dimensional field it's a box shape. */
-// TODO: enhance this and add simple example
-public class PointRangeQuery extends Query {
+/** 
+ * Abstract class for range queries against single or multidimensional points such as
+ * {@link IntPoint}.
+ * <p>
+ * This is for subclasses and works on the underlying binary encoding: to
+ * create range queries for lucene's standard {@code Point} types, refer to factory
+ * methods on those classes, e.g. {@link IntPoint#newRangeQuery IntPoint.newRangeQuery()} for 
+ * fields indexed with {@link IntPoint}.
+ * <p>
+ * For a single-dimensional field this query is a simple range query; in a multi-dimensional field it's a box shape.
+ * @see IntPoint
+ * @see LongPoint
+ * @see FloatPoint
+ * @see DoublePoint
+ * @see BinaryPoint 
+ */
+public abstract class PointRangeQuery extends Query {
   final String field;
   final int numDims;
   final byte[][] lowerPoint;
@@ -52,16 +64,6 @@ public class PointRangeQuery extends Query {
 
   /** 
    * Expert: create a multidimensional range query for point values.
-   * <p>
-   * This is for subclasses and works on the underlying binary encoding: to
-   * create range queries for lucene's standard {@code Point} types, refer to these factory methods:
-   * <ul>
-   *   <li>{@link #newIntRange newIntRange()}/{@link #newMultiIntRange newMultiIntRange()} for fields indexed with {@link IntPoint}
-   *   <li>{@link #newIntRange newLongRange()}/{@link #newMultiIntRange newMultiLongRange()} for fields indexed with {@link LongPoint}
-   *   <li>{@link #newIntRange newFloatRange()}/{@link #newMultiIntRange newMultiFloatRange()} for fields indexed with {@link FloatPoint}
-   *   <li>{@link #newIntRange newDoubleRange()}/{@link #newMultiIntRange newMultiDoubleRange()} for fields indexed with {@link DoublePoint}
-   *   <li>{@link #newIntRange newBinaryRange()}/{@link #newMultiIntRange newMultiBinaryRange()} for fields indexed with {@link BinaryPoint}
-   * </ul>
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting a {@code lowerValue} element or {@code upperValue} element to {@code null}. 
@@ -130,350 +132,6 @@ public class PointRangeQuery extends Query {
     if (upperPoint == null) {
       throw new IllegalArgumentException("upperPoint must not be null");
     }
-  }
-
-  /** 
-   * Create a range query for matching an exact integer value.
-   * <p>
-   * This is for simple one-dimension points, for multidimensional points use
-   * {@link #newMultiIntRange newMultiIntRange()} instead.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param value exact value
-   * @throws IllegalArgumentException if {@code field} is null.
-   * @return a query matching documents with this exact value
-   */
-  public static PointRangeQuery newIntExact(String field, int value) {
-    return newIntRange(field, value, true, value, true);
-  }
-
-  /** 
-   * Create a range query for integer values indexed with {@link IntPoint}.
-   * <p>
-   * This is for simple one-dimension ranges, for multidimensional ranges use
-   * {@link #newMultiIntRange newMultiIntRange()} instead.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting the {@code lowerValue} or {@code upperValue} to {@code null}. 
-   * <p>
-   * By setting inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} means "open".
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} means "open".
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null.
-   * @return a query matching documents within this range.
-   */
-  public static PointRangeQuery newIntRange(String field, Integer lowerValue, boolean lowerInclusive, Integer upperValue, boolean upperInclusive) {
-    return newMultiIntRange(field, 
-                            new Integer[] { lowerValue },
-                            new boolean[] { lowerInclusive }, 
-                            new Integer[] { upperValue },
-                            new boolean[] { upperInclusive });
-  }
-
-  /** 
-   * Create a multidimensional range query for integer values indexed with {@link IntPoint}.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting a {@code lowerValue} element or {@code upperValue} element to {@code null}. 
-   * <p>
-   * By setting a dimension's inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} values mean "open" for that dimension.
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} values mean "open" for that dimension.
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
-   * @return a query matching documents within this range.
-   */
-  public static PointRangeQuery newMultiIntRange(String field, Integer[] lowerValue, boolean lowerInclusive[], Integer[] upperValue, boolean upperInclusive[]) {
-    checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, IntPoint.encode(lowerValue), lowerInclusive, IntPoint.encode(upperValue), upperInclusive) {
-      @Override
-      protected String toString(byte[] value) {
-        return IntPoint.decodeDimension(value, 0).toString();
-      }
-    };
-  }
-
-  /** 
-   * Create a range query for matching an exact long value.
-   * <p>
-   * This is for simple one-dimension points, for multidimensional points use
-   * {@link #newMultiLongRange newMultiLongRange()} instead.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param value exact value
-   * @throws IllegalArgumentException if {@code field} is null.
-   * @return a query matching documents with this exact value
-   */
-  public static PointRangeQuery newLongExact(String field, long value) {
-    return newLongRange(field, value, true, value, true);
-  }
-
-  /** 
-   * Create a range query for long values indexed with {@link LongPoint}.
-   * <p>
-   * This is for simple one-dimension ranges, for multidimensional ranges use
-   * {@link #newMultiLongRange newMultiLongRange()} instead.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting the {@code lowerValue} or {@code upperValue} to {@code null}. 
-   * <p>
-   * By setting inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} means "open".
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} means "open".
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null.
-   * @return a query matching documents within this range.
-   */
-  public static PointRangeQuery newLongRange(String field, Long lowerValue, boolean lowerInclusive, Long upperValue, boolean upperInclusive) {
-    return newMultiLongRange(field, 
-                             new Long[] { lowerValue },
-                             new boolean[] { lowerInclusive }, 
-                             new Long[] { upperValue },
-                             new boolean[] { upperInclusive });
-  }
-
-  /** 
-   * Create a multidimensional range query for long values indexed with {@link LongPoint}.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting a {@code lowerValue} element or {@code upperValue} element to {@code null}. 
-   * <p>
-   * By setting a dimension's inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} values mean "open" for that dimension.
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} values mean "open" for that dimension.
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
-   * @return a query matching documents within this range.
-   */
-  public static PointRangeQuery newMultiLongRange(String field, Long[] lowerValue, boolean lowerInclusive[], Long[] upperValue, boolean upperInclusive[]) {
-    checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, LongPoint.encode(lowerValue), lowerInclusive, LongPoint.encode(upperValue), upperInclusive) {
-      @Override
-      protected String toString(byte[] value) {
-        return LongPoint.decodeDimension(value, 0).toString();
-      }
-    };
-  }
-
-  /** 
-   * Create a range query for matching an exact float value.
-   * <p>
-   * This is for simple one-dimension points, for multidimensional points use
-   * {@link #newMultiFloatRange newMultiFloatRange()} instead.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param value float value
-   * @throws IllegalArgumentException if {@code field} is null.
-   * @return a query matching documents with this exact value
-   */
-  public static PointRangeQuery newFloatExact(String field, float value) {
-    return newFloatRange(field, value, true, value, true);
-  }
-  
-  /** 
-   * Create a range query for float values indexed with {@link FloatPoint}.
-   * <p>
-   * This is for simple one-dimension ranges, for multidimensional ranges use
-   * {@link #newMultiFloatRange newMultiFloatRange()} instead.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting the {@code lowerValue} or {@code upperValue} to {@code null}. 
-   * <p>
-   * By setting inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} means "open".
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} means "open".
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null.
-   * @return a query matching documents within this range.
-   */
-  public static PointRangeQuery newFloatRange(String field, Float lowerValue, boolean lowerInclusive, Float upperValue, boolean upperInclusive) {
-    return newMultiFloatRange(field, 
-                            new Float[] { lowerValue },
-                            new boolean[] { lowerInclusive }, 
-                            new Float[] { upperValue },
-                            new boolean[] { upperInclusive });
-  }
-
-  /** 
-   * Create a multidimensional range query for float values indexed with {@link FloatPoint}.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting a {@code lowerValue} element or {@code upperValue} element to {@code null}. 
-   * <p>
-   * By setting a dimension's inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} values mean "open" for that dimension.
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} values mean "open" for that dimension.
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
-   * @return a query matching documents within this range.
-   */
-  public static PointRangeQuery newMultiFloatRange(String field, Float[] lowerValue, boolean lowerInclusive[], Float[] upperValue, boolean upperInclusive[]) {
-    checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, FloatPoint.encode(lowerValue), lowerInclusive, FloatPoint.encode(upperValue), upperInclusive) {
-      @Override
-      protected String toString(byte[] value) {
-        return FloatPoint.decodeDimension(value, 0).toString();
-      }
-    };
-  }
-
-  /** 
-   * Create a range query for matching an exact double value.
-   * <p>
-   * This is for simple one-dimension points, for multidimensional points use
-   * {@link #newMultiDoubleRange newMultiDoubleRange()} instead.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param value double value
-   * @throws IllegalArgumentException if {@code field} is null.
-   * @return a query matching documents with this exact value
-   */
-  public static PointRangeQuery newDoubleExact(String field, double value) {
-    return newDoubleRange(field, value, true, value, true);
-  }
-  
-  /** 
-   * Create a range query for double values indexed with {@link DoublePoint}.
-   * <p>
-   * This is for simple one-dimension ranges, for multidimensional ranges use
-   * {@link #newMultiDoubleRange newMultiDoubleRange()} instead.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting the {@code lowerValue} or {@code upperValue} to {@code null}. 
-   * <p>
-   * By setting inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} means "open".
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} means "open".
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null.
-   * @return a query matching documents within this range.
-   */
-  public static PointRangeQuery newDoubleRange(String field, Double lowerValue, boolean lowerInclusive, Double upperValue, boolean upperInclusive) {
-    return newMultiDoubleRange(field, 
-                            new Double[] { lowerValue },
-                            new boolean[] { lowerInclusive }, 
-                            new Double[] { upperValue },
-                            new boolean[] { upperInclusive });
-  }
-
-  /** 
-   * Create a multidimensional range query for double values indexed with {@link DoublePoint}.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting a {@code lowerValue} element or {@code upperValue} element to {@code null}. 
-   * <p>
-   * By setting a dimension's inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} values mean "open" for that dimension.
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} values mean "open" for that dimension.
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
-   * @return a query matching documents within this range.
-   */
-  public static PointRangeQuery newMultiDoubleRange(String field, Double[] lowerValue, boolean lowerInclusive[], Double[] upperValue, boolean upperInclusive[]) {
-    checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, DoublePoint.encode(lowerValue), lowerInclusive, DoublePoint.encode(upperValue), upperInclusive) {
-      @Override
-      protected String toString(byte[] value) {
-        return DoublePoint.decodeDimension(value, 0).toString();
-      }
-    };
-  }
-
-  /** 
-   * Create a range query for matching an exact binary value.
-   * <p>
-   * This is for simple one-dimension points, for multidimensional points use
-   * {@link #newMultiBinaryRange newMultiBinaryRange()} instead.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param value binary value
-   * @throws IllegalArgumentException if {@code field} is null or {@code value} is null
-   * @return a query matching documents with this exact value
-   */
-  public static PointRangeQuery newBinaryExact(String field, byte[] value) {
-    if (value == null) {
-      throw new IllegalArgumentException("value cannot be null");
-    }
-    return newBinaryRange(field, value, true, value, true);
-  }
-
-  /** 
-   * Create a range query for binary values indexed with {@link BinaryPoint}.
-   * <p>
-   * This is for simple one-dimension ranges, for multidimensional ranges use
-   * {@link #newMultiBinaryRange newMultiBinaryRange()} instead.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting the {@code lowerValue} or {@code upperValue} to {@code null}. 
-   * <p>
-   * By setting inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} means "open".
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} means "open".
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null.
-   * @return a query matching documents within this range.
-   */
-  public static PointRangeQuery newBinaryRange(String field, byte[] lowerValue, boolean lowerInclusive, byte[] upperValue, boolean upperInclusive) {
-    return newMultiBinaryRange(field, new byte[][] {lowerValue}, new boolean[] {lowerInclusive}, new byte[][] {upperValue}, new boolean[] {upperInclusive});
-  }
-  
-  /** 
-   * Create a multidimensional range query for binary values indexed with {@link BinaryPoint}.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting a {@code lowerValue} element or {@code upperValue} element to {@code null}. 
-   * <p>
-   * By setting a dimension's inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
-   *
-   * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} values mean "open" for that dimension.
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} values mean "open" for that dimension.
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
-   * @return a query matching documents within this range.
-   */
-  public static PointRangeQuery newMultiBinaryRange(String field, byte[][] lowerValue, boolean[] lowerInclusive, byte[][] upperValue, boolean[] upperInclusive) {
-    checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, lowerValue, lowerInclusive, upperValue, upperInclusive);
   }
 
   @Override
@@ -695,22 +353,8 @@ public class PointRangeQuery extends Query {
    * Returns a string of a single value in a human-readable format for debugging.
    * This is used by {@link #toString()}.
    *
-   * The default implementation encodes the individual byte values.
-   *
    * @param value single value, never null
    * @return human readable value for debugging
    */
-  protected String toString(byte[] value) {
-    assert value != null;
-    StringBuilder sb = new StringBuilder();
-    sb.append("binary(");
-    for (int i = 0; i < value.length; i++) {
-      if (i > 0) {
-        sb.append(' ');
-      }
-      sb.append(Integer.toHexString(value[i] & 0xFF));
-    }
-    sb.append(')');
-    return sb.toString();
-  }
+  protected abstract String toString(byte[] value);
 }

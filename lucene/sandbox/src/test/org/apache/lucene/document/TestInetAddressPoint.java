@@ -41,9 +41,9 @@ public class TestInetAddressPoint extends LuceneTestCase {
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(1, searcher.count(InetAddressPoint.newInetAddressExact("field", address)));
-    assertEquals(1, searcher.count(InetAddressPoint.newInetAddressPrefix("field", address, 24)));
-    assertEquals(1, searcher.count(InetAddressPoint.newInetAddressRange("field", InetAddress.getByName("1.2.3.3"), false, InetAddress.getByName("1.2.3.5"), false)));
+    assertEquals(1, searcher.count(InetAddressPoint.newExactQuery("field", address)));
+    assertEquals(1, searcher.count(InetAddressPoint.newPrefixQuery("field", address, 24)));
+    assertEquals(1, searcher.count(InetAddressPoint.newRangeQuery("field", InetAddress.getByName("1.2.3.3"), false, InetAddress.getByName("1.2.3.5"), false)));
 
     reader.close();
     writer.close();
@@ -64,9 +64,9 @@ public class TestInetAddressPoint extends LuceneTestCase {
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(1, searcher.count(InetAddressPoint.newInetAddressExact("field", address)));
-    assertEquals(1, searcher.count(InetAddressPoint.newInetAddressPrefix("field", address, 64)));
-    assertEquals(1, searcher.count(InetAddressPoint.newInetAddressRange("field", InetAddress.getByName("fec0::f66c"), false, InetAddress.getByName("fec0::f66e"), false)));
+    assertEquals(1, searcher.count(InetAddressPoint.newExactQuery("field", address)));
+    assertEquals(1, searcher.count(InetAddressPoint.newPrefixQuery("field", address, 64)));
+    assertEquals(1, searcher.count(InetAddressPoint.newRangeQuery("field", InetAddress.getByName("fec0::f66c"), false, InetAddress.getByName("fec0::f66e"), false)));
 
     reader.close();
     writer.close();
@@ -78,10 +78,10 @@ public class TestInetAddressPoint extends LuceneTestCase {
     assertEquals("<field:1.2.3.4>", new InetAddressPoint("field", InetAddress.getByName("::FFFF:1.2.3.4")).toString());
     assertEquals("<field:[fdc8:57ed:f042:ad1:f66d:4ff:fe90:ce0c]>", new InetAddressPoint("field", InetAddress.getByName("fdc8:57ed:f042:0ad1:f66d:4ff:fe90:ce0c")).toString());
     
-    assertEquals("field:[1.2.3.4 TO 1.2.3.4]", InetAddressPoint.newInetAddressExact("field", InetAddress.getByName("1.2.3.4")).toString());
-    assertEquals("field:[0:0:0:0:0:0:0:1 TO 0:0:0:0:0:0:0:1]", InetAddressPoint.newInetAddressExact("field", InetAddress.getByName("::1")).toString());
+    assertEquals("field:[1.2.3.4 TO 1.2.3.4]", InetAddressPoint.newExactQuery("field", InetAddress.getByName("1.2.3.4")).toString());
+    assertEquals("field:[0:0:0:0:0:0:0:1 TO 0:0:0:0:0:0:0:1]", InetAddressPoint.newExactQuery("field", InetAddress.getByName("::1")).toString());
     
-    assertEquals("field:[1.2.3.0 TO 1.2.3.255]", InetAddressPoint.newInetAddressPrefix("field", InetAddress.getByName("1.2.3.4"), 24).toString());
-    assertEquals("field:[fdc8:57ed:f042:ad1:0:0:0:0 TO fdc8:57ed:f042:ad1:ffff:ffff:ffff:ffff]", InetAddressPoint.newInetAddressPrefix("field", InetAddress.getByName("fdc8:57ed:f042:0ad1:f66d:4ff:fe90:ce0c"), 64).toString());
+    assertEquals("field:[1.2.3.0 TO 1.2.3.255]", InetAddressPoint.newPrefixQuery("field", InetAddress.getByName("1.2.3.4"), 24).toString());
+    assertEquals("field:[fdc8:57ed:f042:ad1:0:0:0:0 TO fdc8:57ed:f042:ad1:ffff:ffff:ffff:ffff]", InetAddressPoint.newPrefixQuery("field", InetAddress.getByName("fdc8:57ed:f042:0ad1:f66d:4ff:fe90:ce0c"), 64).toString());
   }
 }
