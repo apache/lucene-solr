@@ -266,11 +266,8 @@ public final class ZkController {
 
               // seems we dont need to do this again...
               // Overseer.createClientNodes(zkClient, getNodeName());
-
-              cc.cancelCoreRecoveries();
-
-              registerAllCoresAsDown(registerOnReconnect, false);
-
+              
+              // start the overseer first as following code may need it's processing
               if (!zkRunOnly) {
                 ElectionContext context = new OverseerElectionContext(zkClient,
                     overseer, getNodeName());
@@ -283,6 +280,10 @@ public final class ZkController {
                 overseerElector.setup(context);
                 overseerElector.joinElection(context, true);
               }
+
+              cc.cancelCoreRecoveries();
+
+              registerAllCoresAsDown(registerOnReconnect, false);
 
               zkStateReader.createClusterStateWatchersAndUpdate();
 
@@ -620,26 +621,12 @@ public final class ZkController {
   private void init(CurrentCoreDescriptorProvider registerOnReconnect) {
 
     try {
-      boolean createdWatchesAndUpdated = false;
-      Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
-      if (stat != null && stat.getNumChildren() > 0) {
-        zkStateReader.createClusterStateWatchersAndUpdate();
-        createdWatchesAndUpdated = true;
-        publishAndWaitForDownStates();
-      }
-
       createClusterZkNodes(zkClient);
 
-      createEphemeralLiveNode();
-
-      ShardHandler shardHandler;
-      UpdateShardHandler updateShardHandler;
-      shardHandler = cc.getShardHandlerFactory().getShardHandler();
-      updateShardHandler = cc.getUpdateShardHandler();
-
+      // start the overseer first as following code may need it's processing
       if (!zkRunOnly) {
         overseerElector = new LeaderElector(zkClient);
-        this.overseer = new Overseer(shardHandler, updateShardHandler,
+        this.overseer = new Overseer(cc.getShardHandlerFactory().getShardHandler(), cc.getUpdateShardHandler(),
             CommonParams.CORES_HANDLER_PATH, zkStateReader, this, cloudConfig);
         ElectionContext context = new OverseerElectionContext(zkClient,
             overseer, getNodeName());
@@ -647,10 +634,15 @@ public final class ZkController {
         overseerElector.joinElection(context, false);
       }
 
-      if (!createdWatchesAndUpdated) {
+      zkStateReader.createClusterStateWatchersAndUpdate();
+      Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
+      if (stat != null && stat.getNumChildren() > 0) {
         zkStateReader.createClusterStateWatchersAndUpdate();
+        publishAndWaitForDownStates();
       }
 
+      // Do this last to signal we're up.
+      createEphemeralLiveNode();
     } catch (IOException e) {
       log.error("", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

@@ -215,6 +215,9 @@ Bug Fixes
 * SOLR-8497: Merge index does not mark the Directory objects it creates as 'done' and they are retained in the 
   Directory cache. (Sivlio Sanchez, Mark Miller)
 
+* SOLR-8696: Start the Overseer before actions that need the overseer on init and when reconnecting after 
+  zk expiration and improve init logic. (Scott Blum, Mark Miller)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
