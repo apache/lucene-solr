@@ -45,14 +45,14 @@ public class EchoTokensClusteringAlgorithm extends ProcessingComponentBase
   @Input
   @Processing
   @Attribute(key = AttributeNames.DOCUMENTS)
-  private List<Document> documents;
+  public List<Document> documents;
   
   @Output
   @Processing
   @Attribute(key = AttributeNames.CLUSTERS)
-  private List<Cluster> clusters;
+  public List<Cluster> clusters;
   
-  BasicPreprocessingPipeline preprocessing = new BasicPreprocessingPipeline();
+  public BasicPreprocessingPipeline preprocessing = new BasicPreprocessingPipeline();
   
   @Override
   public void process() throws ProcessingException {

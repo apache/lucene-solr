@@ -48,14 +48,14 @@ public class EchoStemsClusteringAlgorithm extends ProcessingComponentBase
   @Input
   @Processing
   @Attribute(key = AttributeNames.DOCUMENTS)
-  private List<Document> documents;
+  public List<Document> documents;
   
   @Output
   @Processing
   @Attribute(key = AttributeNames.CLUSTERS)
-  private List<Cluster> clusters;
-  
-  BasicPreprocessingPipeline preprocessing = new BasicPreprocessingPipeline();
+  public List<Cluster> clusters;
+
+  public BasicPreprocessingPipeline preprocessing = new BasicPreprocessingPipeline();
   
   @Override
   public void process() throws ProcessingException {

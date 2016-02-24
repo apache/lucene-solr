@@ -57,12 +57,12 @@ public class SolrStopwordsCarrot2LexicalDataFactory implements ILexicalDataFacto
   @Init
   @Input
   @Attribute(key = "solrCore")
-  private SolrCore core;
+  public SolrCore core;
 
   @Processing
   @Input
   @Attribute(key = "solrFieldNames")
-  private Set<String> fieldNames;
+  public Set<String> fieldNames;
 
   /**
    * A lazily-built cache of stop words per field.
@@ -73,7 +73,7 @@ public class SolrStopwordsCarrot2LexicalDataFactory implements ILexicalDataFacto
    * Carrot2's default lexical resources to use in addition to Solr's stop
    * words.
    */
-  private DefaultLexicalDataFactory carrot2LexicalDataFactory = new DefaultLexicalDataFactory();
+  public DefaultLexicalDataFactory carrot2LexicalDataFactory = new DefaultLexicalDataFactory();
 
   /**
    * Obtains stop words for a field from the associated
