@@ -49,6 +49,7 @@ import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 
 import java.nio.charset.StandardCharsets;
@@ -63,6 +64,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -375,13 +377,19 @@ public class CollectionsHandler extends RequestHandlerBase {
         cmdExecutor.ensureExists(ZkStateReader.CONFIGS_ZKNODE, zk);
         cmdExecutor.ensureExists(ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL, zk);
 
-        String path = ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/schema.xml";
-        byte[] data = BlobHandler.SCHEMA.replaceAll("'", "\"").getBytes(StandardCharsets.UTF_8);
-        cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
+        try {
+          String path = ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/schema.xml";
+          byte[] data = IOUtils.toByteArray(Thread.currentThread().getContextClassLoader().getResourceAsStream("SystemCollectionSchema.xml"));
+          cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
+          path = ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/solrconfig.xml";
+          data = IOUtils.toByteArray(Thread.currentThread().getContextClassLoader().getResourceAsStream("SystemCollectionSolrCOnfig.xml"));
+          cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, e);
 
-        path = ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/solrconfig.xml";
-        data = BlobHandler.CONF.replaceAll("'", "\"").getBytes(StandardCharsets.UTF_8);
-        cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
+        }
+
+
       }
     },
     DELETE_OP(DELETE) {

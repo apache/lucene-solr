@@ -252,44 +252,6 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
     return "Load Jars into a system index";
   }
 
-  public static final String SCHEMA = "<?xml version='1.0' ?>\n" +
-      "<schema name='_system collection or core' version='1.1'>\n" +
-      "  <fieldtype name='string'  class='solr.StrField' sortMissingLast='true' omitNorms='true'/>\n" +
-      "  <fieldType name='long' class='solr.TrieLongField' precisionStep='0' positionIncrementGap='0'/>\n" +
-      "  <fieldType name='bytes' class='solr.BinaryField'/>\n" +
-      "  <fieldType name='date' class='solr.TrieDateField'/>\n" +
-      "  <field name='id'   type='string'   indexed='true'  stored='true'  multiValued='false' required='true'/>\n" +
-      "  <field name='md5'   type='string'   indexed='true'  stored='true'  multiValued='false' required='true'/>\n" +
-      "  <field name='blob'      type='bytes'   indexed='false' stored='true'  multiValued='false' />\n" +
-      "  <field name='size'      type='long'   indexed='true' stored='true'  multiValued='false' />\n" +
-      "  <field name='version'   type='long'     indexed='true'  stored='true'  multiValued='false' />\n" +
-      "  <field name='timestamp'   type='date'   indexed='true'  stored='true'  multiValued='false' />\n" +
-      "  <field name='blobName'      type='string'   indexed='true'  stored='true'  multiValued='false' />\n" +
-      "  <field name='_version_' type='long'     indexed='true'  stored='true'/>\n" +
-      "  <uniqueKey>id</uniqueKey>\n" +
-      "</schema>";
-
-  public static final String CONF = "<?xml version='1.0' ?>\n" +
-      "<config>\n" +
-      "<luceneMatchVersion>LATEST</luceneMatchVersion>\n" +
-      "<directoryFactory name='DirectoryFactory' class='${solr.directoryFactory:solr.StandardDirectoryFactory}'/>\n" +
-      "<updateHandler class='solr.DirectUpdateHandler2'>\n" +
-      "  <updateLog>\n" +
-      "    <str name='dir'>${solr.ulog.dir:}</str>\n" +
-      "  </updateLog>\n     " +
-      "  <autoCommit> \n" +
-      "       <maxDocs>1</maxDocs> \n" +
-      "       <openSearcher>true</openSearcher> \n" +
-      "  </autoCommit>" +
-      "</updateHandler>\n" +
-      "<requestHandler name='standard' class='solr.StandardRequestHandler' default='true' />\n" +
-      "<requestHandler name='/analysis/field' startup='lazy' class='solr.FieldAnalysisRequestHandler' />\n" +
-      "<requestHandler name='/blob' class='solr.BlobHandler'>\n" +
-      "  <lst name='invariants'>\n" +
-      "<str name='maxSize'>${blob.max.size.mb:5}</str>\n" +
-      "</lst>\n" +
-      "</requestHandler>\n" +
-      "</config>";
 
   @Override
   public void init(PluginInfo info) {

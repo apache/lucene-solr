@@ -1,0 +1,20 @@
+<?xml version="1.0" ?>
+<config>
+  <luceneMatchVersion>LATEST</luceneMatchVersion>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
+  <updateHandler class="solr.DirectUpdateHandler2">
+    <updateLog>
+      <str name="dir">${solr.ulog.dir:}</str>
+    </updateLog>
+    <autoCommit>
+      <maxDocs>1</maxDocs>
+      <openSearcher>true</openSearcher>
+    </autoCommit></updateHandler>
+  <requestHandler name="standard" class="solr.StandardRequestHandler" default="true" />
+  <requestHandler name="/analysis/field" startup="lazy" class="solr.FieldAnalysisRequestHandler" />
+  <requestHandler name="/blob" class="solr.BlobHandler">
+    <lst name="invariants">
+      <str name="maxSize">${blob.max.size.mb:5}</str>
+    </lst>
+  </requestHandler>
+</config>
