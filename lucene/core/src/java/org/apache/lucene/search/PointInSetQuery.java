@@ -320,24 +320,25 @@ public class PointInSetQuery extends Query {
   @Override
   public String toString(String field) {
     final StringBuilder sb = new StringBuilder();
-    sb.append(getClass().getSimpleName());
-    sb.append(':');
     if (this.field.equals(field) == false) {
-      sb.append(" field=");
       sb.append(this.field);
       sb.append(':');
     }
 
-    sb.append(" points:");
+    sb.append("{");
 
     TermIterator iterator = sortedPackedPoints.iterator();
     byte[] pointBytes = new byte[numDims * bytesPerDim];
+    boolean first = true;
     for (BytesRef point = iterator.next(); point != null; point = iterator.next()) {
-      sb.append(' ');
+      if (first == false) {
+        sb.append(" ");
+      }
+      first = false;
       System.arraycopy(point.bytes, point.offset, pointBytes, 0, pointBytes.length);
       sb.append(toString(pointBytes));
     }
-
+    sb.append("}");
     return sb.toString();
   }
 

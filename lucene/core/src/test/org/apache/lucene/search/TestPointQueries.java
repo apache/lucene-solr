@@ -1127,11 +1127,31 @@ public class TestPointQueries extends LuceneTestCase {
     return values;
   }
 
+  private static int randomIntValue(Integer min, Integer max) {
+    if (min == null) {
+      return random().nextInt();
+    } else {
+      return TestUtil.nextInt(random(), min, max);
+    }
+  }
+
   public void testRandomPointInSetQuery() throws Exception {
+
+    boolean useNarrowRange = random().nextBoolean();
+    final Integer valueMin;
+    final Integer valueMax;
+    if (useNarrowRange) {
+      int gap = random().nextInt(100);
+      valueMin = random().nextInt(Integer.MAX_VALUE-gap);
+      valueMax = valueMin + gap;
+    } else {
+      valueMin = null;
+      valueMax = null;
+    }
     final Set<Integer> valuesSet = new HashSet<>();
     int numValues = TestUtil.nextInt(random(), 1, 100);
     while (valuesSet.size() < numValues) {
-      valuesSet.add(random().nextInt());
+      valuesSet.add(randomIntValue(valueMin, valueMax));
     }
     int[] values = toArray(valuesSet);
     int numDocs = TestUtil.nextInt(random(), 1, 10000);
@@ -1211,8 +1231,7 @@ public class TestPointQueries extends LuceneTestCase {
 
               int numExtraValuesToQuery = random().nextInt(20);
               while (valuesToQuery.size() < numValidValuesToQuery + numExtraValuesToQuery) {
-                // nocommit fix test to sometimes use "narrow" range of values
-                valuesToQuery.add(random().nextInt());
+                valuesToQuery.add(randomIntValue(valueMin, valueMax));
               }
 
               int expectedCount = 0;
@@ -1241,8 +1260,6 @@ public class TestPointQueries extends LuceneTestCase {
     IOUtils.close(r, dir);
   }
 
-  // nocommit fix existing randomized tests to sometimes randomly use PointInSet instead
-
   // nocommit need 2D test too
 
   public void testBasicPointInSetQuery() throws Exception {
@@ -1253,14 +1270,17 @@ public class TestPointQueries extends LuceneTestCase {
 
     Document doc = new Document();
     doc.add(new IntPoint("int", 17));
+    doc.add(new LongPoint("long", 17));
     w.addDocument(doc);
 
     doc = new Document();
     doc.add(new IntPoint("int", 42));
+    doc.add(new LongPoint("long", 42));
     w.addDocument(doc);
 
     doc = new Document();
     doc.add(new IntPoint("int", 97));
+    doc.add(new LongPoint("long", 97));
     w.addDocument(doc);
 
     IndexReader r = DirectoryReader.open(w);
@@ -1271,6 +1291,46 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(3, s.count(IntPoint.newSetQuery("int", -7, 17, 42, 97)));
     assertEquals(3, s.count(IntPoint.newSetQuery("int", 17, 20, 42, 97)));
     assertEquals(3, s.count(IntPoint.newSetQuery("int", 17, 105, 42, 97)));
+
+    assertEquals(0, s.count(LongPoint.newSetQuery("long", 16)));
+    assertEquals(1, s.count(LongPoint.newSetQuery("long", 17)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("long", 17, 97, 42)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("long", -7, 17, 42, 97)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("long", 17, 20, 42, 97)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("long", 17, 105, 42, 97)));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testBasicMultiValuedPointInSetQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    Document doc = new Document();
+    doc.add(new IntPoint("int", 17));
+    doc.add(new IntPoint("int", 42));
+    doc.add(new LongPoint("long", 17));
+    doc.add(new LongPoint("long", 42));
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+    assertEquals(0, s.count(IntPoint.newSetQuery("int", 16)));
+    assertEquals(1, s.count(IntPoint.newSetQuery("int", 17)));
+    assertEquals(1, s.count(IntPoint.newSetQuery("int", 17, 97, 42)));
+    assertEquals(1, s.count(IntPoint.newSetQuery("int", -7, 17, 42, 97)));
+    assertEquals(0, s.count(IntPoint.newSetQuery("int", 16, 20, 41, 97)));
+
+    assertEquals(0, s.count(LongPoint.newSetQuery("long", 16)));
+    assertEquals(1, s.count(LongPoint.newSetQuery("long", 17)));
+    assertEquals(1, s.count(LongPoint.newSetQuery("long", 17, 97, 42)));
+    assertEquals(1, s.count(LongPoint.newSetQuery("long", -7, 17, 42, 97)));
+    assertEquals(0, s.count(LongPoint.newSetQuery("long", 16, 20, 41, 97)));
+
     w.close();
     r.close();
     dir.close();
@@ -1290,6 +1350,7 @@ public class TestPointQueries extends LuceneTestCase {
       }
       Document doc = new Document();
       doc.add(new IntPoint("int", x));
+      doc.add(new LongPoint("long", x));
       w.addDocument(doc);
     }
 
@@ -1300,12 +1361,18 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 7, 0)));
     assertEquals(10000-zeroCount, s.count(IntPoint.newSetQuery("int", 1)));
     assertEquals(0, s.count(IntPoint.newSetQuery("int", 2)));
+
+    assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 0)));
+    assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 0, -7)));
+    assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(LongPoint.newSetQuery("long", 1)));
+    assertEquals(0, s.count(LongPoint.newSetQuery("long", 2)));
     w.close();
     r.close();
     dir.close();
   }
 
-  public void testPointInSetQueryManyEqualValuesBigGap() throws Exception {
+  public void testPointInSetQueryManyEqualValuesWithBigGap() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setCodec(getCodec());
@@ -1319,6 +1386,7 @@ public class TestPointQueries extends LuceneTestCase {
       }
       Document doc = new Document();
       doc.add(new IntPoint("int", x));
+      doc.add(new LongPoint("long", x));
       w.addDocument(doc);
     }
 
@@ -1329,6 +1397,12 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 7, 0)));
     assertEquals(10000-zeroCount, s.count(IntPoint.newSetQuery("int", 200)));
     assertEquals(0, s.count(IntPoint.newSetQuery("int", 2)));
+
+    assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 0)));
+    assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 0, -7)));
+    assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(LongPoint.newSetQuery("long", 200)));
+    assertEquals(0, s.count(LongPoint.newSetQuery("long", 2)));
     w.close();
     r.close();
     dir.close();
@@ -1346,5 +1420,13 @@ public class TestPointQueries extends LuceneTestCase {
                                                                            });
                                                      });
     assertEquals("packed point length should be 12 but got 3; field=\"foo\" numDims=3 bytesPerDim=4", expected.getMessage());
+  }
+
+  public void testPointInSetQueryToString() throws Exception {
+    // int
+    assertEquals("int:{-42 18}", IntPoint.newSetQuery("int", -42, 18).toString());
+
+    // long
+    assertEquals("long:{-42 18}", LongPoint.newSetQuery("long", -42L, 18L).toString());
   }
 }

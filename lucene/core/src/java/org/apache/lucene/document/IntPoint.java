@@ -219,14 +219,14 @@ public final class IntPoint extends Field {
   }
 
   /**
-   * Returns a query efficiently finding all documents indexed with any of the specified 1D values.
+   * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
    * 
    * @param field field name. must not be {@code null}.
-   * @param valuesIn all int values to search for
+   * @param valuesIn all int values to match
    */
   public static PointInSetQuery newSetQuery(String field, int... valuesIn) throws IOException {
 
-    // Don't unexpectedly change the user's incoming array:
+    // Don't unexpectedly change the user's incoming values array:
     int[] values = valuesIn.clone();
 
     Arrays.sort(values);
