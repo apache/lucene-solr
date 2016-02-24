@@ -42,7 +42,6 @@ import org.apache.lucene.util.StringHelper;
 /** Finds all documents whose point value, previously indexed with e.g. {@link org.apache.lucene.document.LongPoint}, is contained in the
  *  specified set */
 
-// nocommit explain that the 1D case must be pre-sorted
 public class PointInSetQuery extends Query {
   // A little bit overkill for us, since all of our "terms" are always in the same field:
   final PrefixCodedTerms sortedPackedPoints;
@@ -51,7 +50,7 @@ public class PointInSetQuery extends Query {
   final int numDims;
   final int bytesPerDim;
 
-  /** {@code packedPoints} must already be sorted! */
+  /** In the 1D case, the {@code packedPoints} iterator must be in sorted order. */
   protected PointInSetQuery(String field, int numDims, int bytesPerDim, BytesRefIterator packedPoints) throws IOException {
     this.field = field;
     if (bytesPerDim < 1 || bytesPerDim > PointValues.MAX_NUM_BYTES) {
@@ -61,6 +60,7 @@ public class PointInSetQuery extends Query {
     if (numDims < 1 || numDims > PointValues.MAX_DIMENSIONS) {
       throw new IllegalArgumentException("numDims must be > 0 and <= " + PointValues.MAX_DIMENSIONS + "; got " + numDims);
     }
+
     this.numDims = numDims;
 
     // In the 1D case this works well (the more points, the more common prefixes they share, typically), but in
@@ -74,9 +74,13 @@ public class PointInSetQuery extends Query {
       }
       if (previous == null) {
         previous = new BytesRefBuilder();
-      // nocommit detect out-of-order 1D case
-      } else if (previous.get().equals(current)) {
-        continue; // deduplicate
+      } else {
+        int cmp = previous.get().compareTo(current);
+        if (cmp == 0) {
+          continue; // deduplicate
+        } else if (numDims == 1 && cmp > 0) {
+          throw new IllegalArgumentException("numDims=1 and values are out of order: saw " + previous + " before " + current);
+        }
       }
       builder.add(field, current);
       previous.copyBytes(current);
