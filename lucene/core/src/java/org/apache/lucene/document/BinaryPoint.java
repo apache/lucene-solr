@@ -16,9 +16,16 @@
  */
 package org.apache.lucene.document;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
+
+import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
+import org.apache.lucene.util.StringHelper;
 
 /** 
  * A binary field that is indexed dimensionally such that finding
@@ -31,6 +38,7 @@ import org.apache.lucene.util.BytesRef;
  *   <li>{@link #newExactQuery newExactQuery()} for matching an exact 1D point.
  *   <li>{@link #newRangeQuery newRangeQuery()} for matching a 1D range.
  *   <li>{@link #newMultiRangeQuery newMultiRangeQuery()} for matching points/ranges in n-dimensional space.
+ *   <li>{@link #newSetQuery newSetQuery()} for matching a set of 1D values.
  * </ul> 
  */
 public final class BinaryPoint extends Field {
@@ -194,6 +202,66 @@ public final class BinaryPoint extends Field {
         }
         sb.append(')');
         return sb.toString();
+      }
+    };
+  }
+
+  /**
+   * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
+   * 
+   * @param field field name. must not be {@code null}.
+   * @param valuesIn all values to match
+   */
+  public static Query newSetQuery(String field, byte[]... valuesIn) throws IOException {
+
+    // Make sure all byte[] have the same length
+    int bytesPerDim = -1;
+    for(byte[] value : valuesIn) {
+      if (bytesPerDim == -1) {
+        bytesPerDim = value.length;
+      } else if (value.length != bytesPerDim) {
+        throw new IllegalArgumentException("all byte[] must be the same length, but saw " + bytesPerDim + " and " + value.length);
+      }
+    }
+
+    // Don't unexpectedly change the user's incoming values array:
+    byte[][] values = valuesIn.clone();
+
+    Arrays.sort(values,
+                new Comparator<byte[]>() {
+                  @Override
+                  public int compare(byte[] a, byte[] b) {
+                    return StringHelper.compare(a.length, a, 0, b, 0);
+                  }
+                });
+
+    // Silliness:
+    if (bytesPerDim == -1) {
+      // nocommit make sure this is tested
+      bytesPerDim = 1;
+    }
+
+    final BytesRef value = new BytesRef(new byte[bytesPerDim]);
+    
+    return new PointInSetQuery(field, 1, bytesPerDim,
+                               new BytesRefIterator() {
+
+                                 int upto;
+
+                                 @Override
+                                 public BytesRef next() {
+                                   if (upto == values.length) {
+                                     return null;
+                                   } else {
+                                     value.bytes = values[upto];
+                                     upto++;
+                                     return value;
+                                   }
+                                 }
+                               }) {
+      @Override
+      protected String toString(byte[] value) {
+        return new BytesRef(value).toString();
       }
     };
   }

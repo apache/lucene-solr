@@ -1383,6 +1383,7 @@ public class TestPointQueries extends LuceneTestCase {
     doc.add(new LongPoint("long", 17L));
     doc.add(new FloatPoint("float", 17.0f));
     doc.add(new DoublePoint("double", 17.0));
+    doc.add(new BinaryPoint("bytes", new byte[] {0, 17}));
     w.addDocument(doc);
 
     doc = new Document();
@@ -1390,6 +1391,7 @@ public class TestPointQueries extends LuceneTestCase {
     doc.add(new LongPoint("long", 42L));
     doc.add(new FloatPoint("float", 42.0f));
     doc.add(new DoublePoint("double", 42.0));
+    doc.add(new BinaryPoint("bytes", new byte[] {0, 42}));
     w.addDocument(doc);
 
     doc = new Document();
@@ -1397,6 +1399,7 @@ public class TestPointQueries extends LuceneTestCase {
     doc.add(new LongPoint("long", 97L));
     doc.add(new FloatPoint("float", 97.0f));
     doc.add(new DoublePoint("double", 97.0));
+    doc.add(new BinaryPoint("bytes", new byte[] {0, 97}));
     w.addDocument(doc);
 
     IndexReader r = DirectoryReader.open(w);
@@ -1415,19 +1418,27 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(3, s.count(LongPoint.newSetQuery("long", 17, 20, 42, 97)));
     assertEquals(3, s.count(LongPoint.newSetQuery("long", 17, 105, 42, 97)));
 
-    assertEquals(0, s.count(LongPoint.newSetQuery("float", 16)));
-    assertEquals(1, s.count(LongPoint.newSetQuery("float", 17)));
-    assertEquals(3, s.count(LongPoint.newSetQuery("float", 17, 97, 42)));
-    assertEquals(3, s.count(LongPoint.newSetQuery("float", -7, 17, 42, 97)));
-    assertEquals(3, s.count(LongPoint.newSetQuery("float", 17, 20, 42, 97)));
-    assertEquals(3, s.count(LongPoint.newSetQuery("float", 17, 105, 42, 97)));
+    assertEquals(0, s.count(FloatPoint.newSetQuery("float", 16)));
+    assertEquals(1, s.count(FloatPoint.newSetQuery("float", 17)));
+    assertEquals(3, s.count(FloatPoint.newSetQuery("float", 17, 97, 42)));
+    assertEquals(3, s.count(FloatPoint.newSetQuery("float", -7, 17, 42, 97)));
+    assertEquals(3, s.count(FloatPoint.newSetQuery("float", 17, 20, 42, 97)));
+    assertEquals(3, s.count(FloatPoint.newSetQuery("float", 17, 105, 42, 97)));
 
-    assertEquals(0, s.count(LongPoint.newSetQuery("double", 16)));
-    assertEquals(1, s.count(LongPoint.newSetQuery("double", 17)));
-    assertEquals(3, s.count(LongPoint.newSetQuery("double", 17, 97, 42)));
-    assertEquals(3, s.count(LongPoint.newSetQuery("double", -7, 17, 42, 97)));
-    assertEquals(3, s.count(LongPoint.newSetQuery("double", 17, 20, 42, 97)));
-    assertEquals(3, s.count(LongPoint.newSetQuery("double", 17, 105, 42, 97)));
+    assertEquals(0, s.count(DoublePoint.newSetQuery("double", 16)));
+    assertEquals(1, s.count(DoublePoint.newSetQuery("double", 17)));
+    assertEquals(3, s.count(DoublePoint.newSetQuery("double", 17, 97, 42)));
+    assertEquals(3, s.count(DoublePoint.newSetQuery("double", -7, 17, 42, 97)));
+    assertEquals(3, s.count(DoublePoint.newSetQuery("double", 17, 20, 42, 97)));
+    assertEquals(3, s.count(DoublePoint.newSetQuery("double", 17, 105, 42, 97)));
+
+    // nocommit make sure invalid bytes length hits iae
+    assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 16})));
+    assertEquals(1, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17})));
+    assertEquals(3, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17}, new byte[] {0, 97}, new byte[] {0, 42})));
+    assertEquals(3, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, -7}, new byte[] {0, 17}, new byte[] {0, 42}, new byte[] {0, 97})));
+    assertEquals(3, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17}, new byte[] {0, 20}, new byte[] {0, 42}, new byte[] {0, 97})));
+    assertEquals(3, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17}, new byte[] {0, 105}, new byte[] {0, 42}, new byte[] {0, 97})));
 
     w.close();
     r.close();
@@ -1449,6 +1460,8 @@ public class TestPointQueries extends LuceneTestCase {
     doc.add(new FloatPoint("float", 42.0f));
     doc.add(new DoublePoint("double", 17.0));
     doc.add(new DoublePoint("double", 42.0));
+    doc.add(new BinaryPoint("bytes", new byte[] {0, 17}));
+    doc.add(new BinaryPoint("bytes", new byte[] {0, 42}));
     w.addDocument(doc);
 
     IndexReader r = DirectoryReader.open(w);
@@ -1477,6 +1490,12 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(1, s.count(DoublePoint.newSetQuery("double", -7, 17, 42, 97)));
     assertEquals(0, s.count(DoublePoint.newSetQuery("double", 16, 20, 41, 97)));
 
+    assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 16})));
+    assertEquals(1, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17})));
+    assertEquals(1, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17}, new byte[] {0, 97}, new byte[] {0, 42})));
+    assertEquals(1, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, -7}, new byte[] {0, 17}, new byte[] {0, 42}, new byte[] {0, 97})));
+    assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 16}, new byte[] {0, 20}, new byte[] {0, 41}, new byte[] {0, 97})));
+
     w.close();
     r.close();
     dir.close();
@@ -1499,6 +1518,7 @@ public class TestPointQueries extends LuceneTestCase {
       doc.add(new LongPoint("long", (long) x));
       doc.add(new FloatPoint("float", (float) x));
       doc.add(new DoublePoint("double", (double) x));
+      doc.add(new BinaryPoint("bytes", new byte[] {(byte) x}));
       w.addDocument(doc);
     }
 
@@ -1528,6 +1548,12 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(10000-zeroCount, s.count(DoublePoint.newSetQuery("double", 1)));
     assertEquals(0, s.count(DoublePoint.newSetQuery("double", 2)));
 
+    assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0})));
+    assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0}, new byte[] {-7})));
+    assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {7}, new byte[] {0})));
+    assertEquals(10000-zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {1})));
+    assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {2})));
+
     w.close();
     r.close();
     dir.close();
@@ -1550,6 +1576,7 @@ public class TestPointQueries extends LuceneTestCase {
       doc.add(new LongPoint("long", (long) x));
       doc.add(new FloatPoint("float", (float) x));
       doc.add(new DoublePoint("double", (double) x));
+      doc.add(new BinaryPoint("bytes", new byte[] {(byte) x}));
       w.addDocument(doc);
     }
 
@@ -1579,6 +1606,12 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(10000-zeroCount, s.count(DoublePoint.newSetQuery("double", 200)));
     assertEquals(0, s.count(DoublePoint.newSetQuery("double", 2)));
 
+    assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0})));
+    assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0}, new byte[] {-7})));
+    assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {7}, new byte[] {0})));
+    assertEquals(10000-zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {(byte) 200})));
+    assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {2})));
+
     w.close();
     r.close();
     dir.close();
@@ -1598,6 +1631,14 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals("packed point length should be 12 but got 3; field=\"foo\" numDims=3 bytesPerDim=4", expected.getMessage());
   }
 
+  public void testInvalidPointInSetBinaryQuery() throws Exception {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
+                                                     () -> {
+                                                       BinaryPoint.newSetQuery("bytes", new byte[] {2}, new byte[0]);
+                                                     });
+    assertEquals("all byte[] must be the same length, but saw 1 and 0", expected.getMessage());
+  }
+
   public void testPointInSetQueryToString() throws Exception {
     // int
     assertEquals("int:{-42 18}", IntPoint.newSetQuery("int", -42, 18).toString());
@@ -1610,5 +1651,8 @@ public class TestPointQueries extends LuceneTestCase {
 
     // double
     assertEquals("double:{-42.0 18.0}", DoublePoint.newSetQuery("double", -42.0, 18.0).toString());
+
+    // binary
+    assertEquals("bytes:{[12] [2a]}", BinaryPoint.newSetQuery("bytes", new byte[] {42}, new byte[] {18}).toString());
   }
 }
