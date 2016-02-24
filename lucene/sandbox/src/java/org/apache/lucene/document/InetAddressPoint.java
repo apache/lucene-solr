@@ -34,6 +34,7 @@ import org.apache.lucene.util.BytesRef;
  *   <li>{@link #newExactQuery newExactQuery()} for matching an exact network address.
  *   <li>{@link #newPrefixQuery newPrefixQuery()} for matching a network based on CIDR prefix.
  *   <li>{@link #newRangeQuery newRangeQuery()} for matching arbitrary network address ranges.
+ *   <li>{@link #newSetQuery newSetQuery()} for matching a set of addresses.
  * </ul>
  * <p>
  * This field supports both IPv4 and IPv6 addresses: IPv4 addresses are converted
@@ -193,11 +194,11 @@ public class InetAddressPoint extends Field {
   public static Query newRangeQuery(String field, InetAddress lowerValue, boolean lowerInclusive, InetAddress upperValue, boolean upperInclusive) {
     byte[][] lowerBytes = new byte[1][];
     if (lowerValue != null) {
-      lowerBytes[0] = InetAddressPoint.encode(lowerValue);
+      lowerBytes[0] = encode(lowerValue);
     }
     byte[][] upperBytes = new byte[1][];
     if (upperValue != null) {
-      upperBytes[0] = InetAddressPoint.encode(upperValue);
+      upperBytes[0] = encode(upperValue);
     }
     return new PointRangeQuery(field, lowerBytes, new boolean[] { lowerInclusive }, upperBytes, new boolean[] { upperInclusive }) {
       @Override
@@ -207,5 +208,42 @@ public class InetAddressPoint extends Field {
     };
   }
 
-  // nocommit newSetQuery
+  /**
+   * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
+   * 
+   * @param field field name. must not be {@code null}.
+   * @param valuesIn all int values to match
+   */
+  public static Query newSetQuery(String field, InetAddress... valuesIn) throws IOException {
+
+    // Don't unexpectedly change the user's incoming values array:
+    InetAddress[] values = valuesIn.clone();
+
+    Arrays.sort(values);
+
+    final BytesRef value = new BytesRef(new byte[BYTES]);
+
+    return new PointInSetQuery(field, 1, BYTES,
+                               new BytesRefIterator() {
+
+                                 int upto;
+
+                                 @Override
+                                 public BytesRef next() {
+                                   if (upto == values.length) {
+                                     return null;
+                                   } else {
+                                     encode(values[upto], value.bytes, 0);
+                                     upto++;
+                                     return value;
+                                   }
+                                 }
+                               }) {
+      @Override
+      protected String toString(byte[] value) {
+        assert value.length == BYTES;
+        return decode(value).getHostAddress();
+      }
+    };
+  }
 }
