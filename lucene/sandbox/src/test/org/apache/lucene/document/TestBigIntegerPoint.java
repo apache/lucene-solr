@@ -81,7 +81,7 @@ public class TestBigIntegerPoint extends LuceneTestCase {
   }
   
   public void testToString() throws Exception {
-    assertEquals("<field:1>", new BigIntegerPoint("field", BigInteger.ONE).toString());
-    assertEquals("<field:1,-2>", new BigIntegerPoint("field", BigInteger.ONE, BigInteger.valueOf(-2)).toString());
+    assertEquals("BigIntegerPoint <field:1>", new BigIntegerPoint("field", BigInteger.ONE).toString());
+    assertEquals("BigIntegerPoint <field:1,-2>", new BigIntegerPoint("field", BigInteger.ONE, BigInteger.valueOf(-2)).toString());
   }
 }

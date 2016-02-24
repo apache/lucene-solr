@@ -106,8 +106,8 @@ public final class DoublePoint extends Field {
   @Override
   public String toString() {
     StringBuilder result = new StringBuilder();
-    result.append(type.toString());
-    result.append('<');
+    result.append(getClass().getSimpleName());
+    result.append(" <");
     result.append(name);
     result.append(':');
 
@@ -138,12 +138,12 @@ public final class DoublePoint extends Field {
   // public helper methods (e.g. for queries)
   
   /** Encode single double dimension */
-  public static void encodeDimension(Double value, byte dest[], int offset) {
+  public static void encodeDimension(double value, byte dest[], int offset) {
     NumericUtils.longToBytesDirect(NumericUtils.doubleToSortableLong(value), dest, offset);
   }
   
   /** Decode single double dimension */
-  public static Double decodeDimension(byte value[], int offset) {
+  public static double decodeDimension(byte value[], int offset) {
     return NumericUtils.sortableLongToDouble(NumericUtils.bytesToLongDirect(value, offset));
   }
   
@@ -214,7 +214,7 @@ public final class DoublePoint extends Field {
     return new PointRangeQuery(field, DoublePoint.encode(lowerValue), lowerInclusive, DoublePoint.encode(upperValue), upperInclusive) {
       @Override
       protected String toString(int dimension, byte[] value) {
-        return DoublePoint.decodeDimension(value, 0).toString();
+        return Double.toString(DoublePoint.decodeDimension(value, 0));
       }
     };
   }

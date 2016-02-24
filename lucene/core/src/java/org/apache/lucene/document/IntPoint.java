@@ -106,8 +106,8 @@ public final class IntPoint extends Field {
   @Override
   public String toString() {
     StringBuilder result = new StringBuilder();
-    result.append(type.toString());
-    result.append('<');
+    result.append(getClass().getSimpleName());
+    result.append(" <");
     result.append(name);
     result.append(':');
 
@@ -138,12 +138,12 @@ public final class IntPoint extends Field {
   // public helper methods (e.g. for queries)
   
   /** Encode single integer dimension */
-  public static void encodeDimension(Integer value, byte dest[], int offset) {
+  public static void encodeDimension(int value, byte dest[], int offset) {
     NumericUtils.intToBytes(value, dest, offset);
   }
   
   /** Decode single integer dimension */
-  public static Integer decodeDimension(byte value[], int offset) {
+  public static int decodeDimension(byte value[], int offset) {
     return NumericUtils.bytesToInt(value, offset);
   }
   
@@ -214,7 +214,7 @@ public final class IntPoint extends Field {
     return new PointRangeQuery(field, IntPoint.encode(lowerValue), lowerInclusive, IntPoint.encode(upperValue), upperInclusive) {
       @Override
       protected String toString(int dimension, byte[] value) {
-        return IntPoint.decodeDimension(value, 0).toString();
+        return Integer.toString(IntPoint.decodeDimension(value, 0));
       }
     };
   }

@@ -38,7 +38,7 @@ import org.apache.lucene.util.NumericUtils;
  *
  * @lucene.experimental */
 
-public class PointInGeo3DShapeQuery extends Query {
+class PointInGeo3DShapeQuery extends Query {
   final String field;
   final PlanetModel planetModel;
   final GeoShape shape;
@@ -105,9 +105,9 @@ public class PointInGeo3DShapeQuery extends Query {
                            @Override
                            public void visit(int docID, byte[] packedValue) {
                              assert packedValue.length == 12;
-                             double x = Geo3DUtil.decodeValueCenter(planetMax, NumericUtils.bytesToInt(packedValue, 0));
-                             double y = Geo3DUtil.decodeValueCenter(planetMax, NumericUtils.bytesToInt(packedValue, 1 * Integer.BYTES));
-                             double z = Geo3DUtil.decodeValueCenter(planetMax, NumericUtils.bytesToInt(packedValue, 2 * Integer.BYTES));
+                             double x = Geo3DPoint.decodeDimension(planetModel, packedValue, 0);
+                             double y = Geo3DPoint.decodeDimension(planetModel, packedValue, Integer.BYTES);
+                             double z = Geo3DPoint.decodeDimension(planetModel, packedValue, 2 * Integer.BYTES);
                              if (shape.isWithin(x, y, z)) {
                                result.add(docID);
                                hitCount[0]++;
@@ -195,7 +195,7 @@ public class PointInGeo3DShapeQuery extends Query {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("PlanetModel: ");
+    sb.append(" PlanetModel: ");
     sb.append(planetModel);
     sb.append(" Shape: ");
     sb.append(shape);
