@@ -16,14 +16,22 @@
  */
 package org.apache.lucene.document;
 
-
+import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.util.BytesRef;
 
-/** A binary field that is indexed dimensionally such that finding
- *  all documents within an N-dimensional shape or range at search time is
- *  efficient.  Multiple values for the same field in one documents
- *  is allowed. */
-
+/** 
+ * A binary field that is indexed dimensionally such that finding
+ * all documents within an N-dimensional shape or range at search time is
+ * efficient.  Multiple values for the same field in one documents
+ * is allowed.
+ * <p>
+ * This field defines static factory methods for creating common queries:
+ * <ul>
+ *   <li>{@link #newExactQuery newExactQuery()} for matching an exact 1D point.
+ *   <li>{@link #newRangeQuery newRangeQuery()} for matching a 1D range.
+ *   <li>{@link #newMultiRangeQuery newMultiRangeQuery()} for matching points/ranges in n-dimensional space.
+ * </ul> 
+ */
 public final class BinaryPoint extends Field {
 
   private static FieldType getType(byte[][] point) {
@@ -106,5 +114,86 @@ public final class BinaryPoint extends Field {
     if (packedPoint.length != type.pointDimensionCount() * type.pointNumBytes()) {
       throw new IllegalArgumentException("packedPoint is length=" + packedPoint.length + " but type.pointDimensionCount()=" + type.pointDimensionCount() + " and type.pointNumBytes()=" + type.pointNumBytes());
     }
+  }
+  
+  // static methods for generating queries
+
+  /** 
+   * Create a query for matching an exact binary value.
+   * <p>
+   * This is for simple one-dimension points, for multidimensional points use
+   * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
+   *
+   * @param field field name. must not be {@code null}.
+   * @param value binary value
+   * @throws IllegalArgumentException if {@code field} is null or {@code value} is null
+   * @return a query matching documents with this exact value
+   */
+  public static PointRangeQuery newExactQuery(String field, byte[] value) {
+    if (value == null) {
+      throw new IllegalArgumentException("value cannot be null");
+    }
+    return newRangeQuery(field, value, true, value, true);
+  }
+
+  /** 
+   * Create a range query for binary values.
+   * <p>
+   * This is for simple one-dimension ranges, for multidimensional ranges use
+   * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
+   * <p>
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting the {@code lowerValue} or {@code upperValue} to {@code null}. 
+   * <p>
+   * By setting inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   *
+   * @param field field name. must not be {@code null}.
+   * @param lowerValue lower portion of the range. {@code null} means "open".
+   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
+   * @param upperValue upper portion of the range. {@code null} means "open".
+   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
+   * @throws IllegalArgumentException if {@code field} is null.
+   * @return a query matching documents within this range.
+   */
+  public static PointRangeQuery newRangeQuery(String field, byte[] lowerValue, boolean lowerInclusive, byte[] upperValue, boolean upperInclusive) {
+    return newMultiRangeQuery(field, new byte[][] {lowerValue}, new boolean[] {lowerInclusive}, new byte[][] {upperValue}, new boolean[] {upperInclusive});
+  }
+  
+  /** 
+   * Create a multidimensional range query for binary values.
+   * <p>
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting a {@code lowerValue} element or {@code upperValue} element to {@code null}. 
+   * <p>
+   * By setting a dimension's inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
+   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   *
+   * @param field field name. must not be {@code null}.
+   * @param lowerValue lower portion of the range. {@code null} values mean "open" for that dimension.
+   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
+   * @param upperValue upper portion of the range. {@code null} values mean "open" for that dimension.
+   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
+   * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
+   * @return a query matching documents within this range.
+   */
+  public static PointRangeQuery newMultiRangeQuery(String field, byte[][] lowerValue, boolean[] lowerInclusive, byte[][] upperValue, boolean[] upperInclusive) {
+    PointRangeQuery.checkArgs(field, lowerValue, upperValue);
+    return new PointRangeQuery(field, lowerValue, lowerInclusive, upperValue, upperInclusive) {
+      @Override
+      protected String toString(byte[] value) {
+        assert value != null;
+        StringBuilder sb = new StringBuilder();
+        sb.append("binary(");
+        for (int i = 0; i < value.length; i++) {
+          if (i > 0) {
+            sb.append(' ');
+          }
+          sb.append(Integer.toHexString(value[i] & 0xFF));
+        }
+        sb.append(')');
+        return sb.toString();
+      }
+    };
   }
 }

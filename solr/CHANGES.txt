@@ -211,6 +211,12 @@ Bug Fixes
 
 * SOLR-8599: After a failed connection during construction of SolrZkClient attempt to retry until a connection
   can be made. (Keith Laban, Dennis Gove)
+  
+* SOLR-8497: Merge index does not mark the Directory objects it creates as 'done' and they are retained in the 
+  Directory cache. (Sivlio Sanchez, Mark Miller)
+
+* SOLR-8696: Start the Overseer before actions that need the overseer on init and when reconnecting after 
+  zk expiration and improve init logic. (Scott Blum, Mark Miller)
 
 Optimizations
 ----------------------
@@ -233,6 +239,8 @@ Optimizations
 
 * SOLR-8669: Non binary responses use chunked encoding because we flush the outputstream early.
   (Mark Miller)
+
+* SOLR-8720: ZkController#publishAndWaitForDownStates should use #publishNodeAsDown. (Mark Miller)
 
 Other Changes
 ----------------------

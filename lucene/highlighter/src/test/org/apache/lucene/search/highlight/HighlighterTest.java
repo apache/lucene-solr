@@ -62,7 +62,6 @@ import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
@@ -584,7 +583,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   
   public void testDimensionalRangeQuery() throws Exception {
     // doesn't currently highlight, but make sure it doesn't cause exception either
-    query = PointRangeQuery.newIntRange(NUMERIC_FIELD_NAME, 2, true, 6, true);
+    query = IntPoint.newRangeQuery(NUMERIC_FIELD_NAME, 2, true, 6, true);
     searcher = newSearcher(reader);
     hits = searcher.search(query, 100);
     int maxNumFragmentsRequired = 2;
