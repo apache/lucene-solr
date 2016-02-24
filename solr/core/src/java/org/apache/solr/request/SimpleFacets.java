@@ -642,7 +642,7 @@ public class SimpleFacets {
 
   static final Executor facetExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
           0,
-          Integer.MAX_VALUE,
+          128,
           10, TimeUnit.SECONDS, // terminate idle threads after 10 sec
           new SynchronousQueue<Runnable>()  // directly hand off tasks
           , new DefaultSolrThreadFactory("facetExecutor")

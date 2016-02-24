@@ -15,6 +15,20 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.component;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
@@ -35,19 +49,6 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-
 
 public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.apache.solr.util.plugin.PluginInfoInitialized {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -61,7 +62,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   // requests at some point (or should we simply return failure?)
   private ThreadPoolExecutor commExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(
       0,
-      Integer.MAX_VALUE,
+      128,
       5, TimeUnit.SECONDS, // terminate idle threads after 5 sec
       new SynchronousQueue<Runnable>(),  // directly hand off tasks
       new DefaultSolrThreadFactory("httpShardExecutor")
@@ -75,7 +76,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   int maxConnectionsPerHost = 20;
   int maxConnections = 10000;
   int corePoolSize = 0;
-  int maximumPoolSize = Integer.MAX_VALUE;
+  int maximumPoolSize = 128;
   int keepAliveTime = 5;
   int queueSize = -1;
   boolean accessPolicy = false;
