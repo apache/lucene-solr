@@ -64,7 +64,7 @@ public class PointInPolygonQuery extends Query {
     this.polyLats = polyLats;
     this.polyLons = polyLons;
 
-    // TODO: we could also compute the maximal innner bounding box, to make relations faster to compute?
+    // TODO: we could also compute the maximal inner bounding box, to make relations faster to compute?
 
     double minLon = Double.POSITIVE_INFINITY;
     double minLat = Double.POSITIVE_INFINITY;

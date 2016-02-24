@@ -49,14 +49,14 @@ public class LexicalResourcesCheckClusteringAlgorithm extends
   @Output
   @Processing
   @Attribute(key = AttributeNames.CLUSTERS)
-  private List<Cluster> clusters;
+  public List<Cluster> clusters;
 
   @Input
   @Processing
   @Attribute
-  private String wordsToCheck;
+  public String wordsToCheck;
 
-  private BasicPreprocessingPipeline preprocessing = new BasicPreprocessingPipeline();
+  public BasicPreprocessingPipeline preprocessing = new BasicPreprocessingPipeline();
 
   @Override
   public void process() throws ProcessingException {

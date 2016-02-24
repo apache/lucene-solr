@@ -20,6 +20,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 
 import org.apache.lucene.search.PointRangeQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 
 /** 
@@ -141,7 +142,7 @@ public class InetAddressPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null.
    * @return a query matching documents with this exact value
    */
-  public static PointRangeQuery newExactQuery(String field, InetAddress value) {
+  public static Query newExactQuery(String field, InetAddress value) {
     return newRangeQuery(field, value, true, value, true);
   }
   
@@ -154,7 +155,7 @@ public class InetAddressPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null, or prefixLength is invalid.
    * @return a query matching documents with addresses contained within this network
    */
-  public static PointRangeQuery newPrefixQuery(String field, InetAddress value, int prefixLength) {
+  public static Query newPrefixQuery(String field, InetAddress value, int prefixLength) {
     if (prefixLength < 0 || prefixLength > 8 * value.getAddress().length) {
       throw new IllegalArgumentException("illegal prefixLength '" + prefixLength + "'. Must be 0-32 for IPv4 ranges, 0-128 for IPv6 ranges");
     }
@@ -189,7 +190,7 @@ public class InetAddressPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null.
    * @return a query matching documents within this range.
    */
-  public static PointRangeQuery newRangeQuery(String field, InetAddress lowerValue, boolean lowerInclusive, InetAddress upperValue, boolean upperInclusive) {
+  public static Query newRangeQuery(String field, InetAddress lowerValue, boolean lowerInclusive, InetAddress upperValue, boolean upperInclusive) {
     byte[][] lowerBytes = new byte[1][];
     if (lowerValue != null) {
       lowerBytes[0] = InetAddressPoint.encode(lowerValue);
@@ -200,7 +201,7 @@ public class InetAddressPoint extends Field {
     }
     return new PointRangeQuery(field, lowerBytes, new boolean[] { lowerInclusive }, upperBytes, new boolean[] { upperInclusive }) {
       @Override
-      protected String toString(byte[] value) {
+      protected String toString(int dimension, byte[] value) {
         return decode(value).getHostAddress(); // for ranges, the range itself is already bracketed
       }
     };

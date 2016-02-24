@@ -356,11 +356,12 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         if (ops.isEmpty()) {
           ZkController.touchConfDir(zkLoader);
         } else {
-          log.debug("persisting params version : {}", Utils.toJSONString(params.toMap()));
+          log.info("persisting params data : {}", Utils.toJSONString(params.toMap()));
           int latestVersion = ZkController.persistConfigResourceToZooKeeper(zkLoader,
               params.getZnodeVersion(),
               RequestParams.RESOURCE,
               params.toByteArray(), true);
+          log.info("persisted to version : {} ", latestVersion);
           waitForAllReplicasState(req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName(),
               req.getCore().getCoreDescriptor().getCoreContainer().getZkController(),
               RequestParams.NAME,

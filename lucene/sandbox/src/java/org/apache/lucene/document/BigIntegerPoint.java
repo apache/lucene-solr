@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.math.BigInteger;
 
 import org.apache.lucene.search.PointRangeQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
@@ -154,7 +155,7 @@ public class BigIntegerPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null.
    * @return a query matching documents with this exact value
    */
-  public static PointRangeQuery newExactQuery(String field, BigInteger value) {
+  public static Query newExactQuery(String field, BigInteger value) {
     return newRangeQuery(field, value, true, value, true);
   }
 
@@ -178,7 +179,7 @@ public class BigIntegerPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null.
    * @return a query matching documents within this range.
    */
-  public static PointRangeQuery newRangeQuery(String field, BigInteger lowerValue, boolean lowerInclusive, BigInteger upperValue, boolean upperInclusive) {
+  public static Query newRangeQuery(String field, BigInteger lowerValue, boolean lowerInclusive, BigInteger upperValue, boolean upperInclusive) {
     return newMultiRangeQuery(field, 
                               new BigInteger[] { lowerValue },
                               new boolean[] { lowerInclusive }, 
@@ -203,11 +204,11 @@ public class BigIntegerPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
    * @return a query matching documents within this range.
    */
-  public static PointRangeQuery newMultiRangeQuery(String field, BigInteger[] lowerValue, boolean lowerInclusive[], BigInteger[] upperValue, boolean upperInclusive[]) {
+  public static Query newMultiRangeQuery(String field, BigInteger[] lowerValue, boolean lowerInclusive[], BigInteger[] upperValue, boolean upperInclusive[]) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
     return new PointRangeQuery(field, BigIntegerPoint.encode(lowerValue), lowerInclusive, BigIntegerPoint.encode(upperValue), upperInclusive) {
       @Override
-      protected String toString(byte[] value) {
+      protected String toString(int dimension, byte[] value) {
         return BigIntegerPoint.decodeDimension(value, 0).toString();
       }
     };

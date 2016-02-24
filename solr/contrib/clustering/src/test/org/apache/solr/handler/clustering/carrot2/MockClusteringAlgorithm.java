@@ -30,35 +30,35 @@ public class MockClusteringAlgorithm extends ProcessingComponentBase implements
   @Input
   @Processing
   @Attribute(key = AttributeNames.DOCUMENTS)
-  private List<Document> documents;
+  public List<Document> documents;
 
   @Output
   @Processing
   @Attribute(key = AttributeNames.CLUSTERS)
-  private List<Cluster> clusters;
+  public List<Cluster> clusters;
 
   @Input
   @Processing
   @Attribute
   @IntRange(min = 1, max = 5)
-  private int depth = 2;
+  public int depth = 2;
 
   @Input
   @Processing
   @Attribute
   @IntRange(min = 1, max = 5)
-  private int labels = 1;
+  public int labels = 1;
 
   @Input
   @Processing
   @Attribute
   @IntRange(min = 0)
-  private int maxClusters = 0;
+  public int maxClusters = 0;
 
   @Input
   @Processing
   @Attribute
-  private int otherTopicsModulo = 0;
+  public int otherTopicsModulo = 0;
 
   @Override
   public void process() throws ProcessingException {

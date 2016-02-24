@@ -17,6 +17,7 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.search.PointRangeQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 
 /** 
@@ -129,7 +130,7 @@ public final class BinaryPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null or {@code value} is null
    * @return a query matching documents with this exact value
    */
-  public static PointRangeQuery newExactQuery(String field, byte[] value) {
+  public static Query newExactQuery(String field, byte[] value) {
     if (value == null) {
       throw new IllegalArgumentException("value cannot be null");
     }
@@ -156,7 +157,7 @@ public final class BinaryPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null.
    * @return a query matching documents within this range.
    */
-  public static PointRangeQuery newRangeQuery(String field, byte[] lowerValue, boolean lowerInclusive, byte[] upperValue, boolean upperInclusive) {
+  public static Query newRangeQuery(String field, byte[] lowerValue, boolean lowerInclusive, byte[] upperValue, boolean upperInclusive) {
     return newMultiRangeQuery(field, new byte[][] {lowerValue}, new boolean[] {lowerInclusive}, new byte[][] {upperValue}, new boolean[] {upperInclusive});
   }
   
@@ -177,11 +178,11 @@ public final class BinaryPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
    * @return a query matching documents within this range.
    */
-  public static PointRangeQuery newMultiRangeQuery(String field, byte[][] lowerValue, boolean[] lowerInclusive, byte[][] upperValue, boolean[] upperInclusive) {
+  public static Query newMultiRangeQuery(String field, byte[][] lowerValue, boolean[] lowerInclusive, byte[][] upperValue, boolean[] upperInclusive) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
     return new PointRangeQuery(field, lowerValue, lowerInclusive, upperValue, upperInclusive) {
       @Override
-      protected String toString(byte[] value) {
+      protected String toString(int dimension, byte[] value) {
         assert value != null;
         StringBuilder sb = new StringBuilder();
         sb.append("binary(");

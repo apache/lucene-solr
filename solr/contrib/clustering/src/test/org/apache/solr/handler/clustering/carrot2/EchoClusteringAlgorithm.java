@@ -41,17 +41,17 @@ public class EchoClusteringAlgorithm extends ProcessingComponentBase implements
   @Input
   @Processing
   @Attribute(key = AttributeNames.DOCUMENTS)
-  private List<Document> documents;
+  public List<Document> documents;
 
   @Output
   @Processing
   @Attribute(key = AttributeNames.CLUSTERS)
-  private List<Cluster> clusters;
+  public List<Cluster> clusters;
 
   @Input
   @Processing
   @Attribute(key = "custom-fields")
-  private String customFields = "";
+  public String customFields = "";
 
   
   @Override

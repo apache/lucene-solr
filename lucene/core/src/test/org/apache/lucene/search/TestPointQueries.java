@@ -518,8 +518,7 @@ public class TestPointQueries extends LuceneTestCase {
 
     IndexSearcher s = newSearcher(r);
 
-    // int numThreads = TestUtil.nextInt(random(), 2, 5);
-    int numThreads = 1;
+    int numThreads = TestUtil.nextInt(random(), 2, 5);
 
     if (VERBOSE) {
       System.out.println("TEST: use " + numThreads + " query threads; searcher=" + s);
@@ -1021,7 +1020,7 @@ public class TestPointQueries extends LuceneTestCase {
   private static Codec getCodec() {
     if (Codec.getDefault().getName().equals("Lucene60")) {
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 16, 2048);
-      double maxMBSortInHeap = 3.0 + (3*random().nextDouble());
+      double maxMBSortInHeap = 4.0 + (3*random().nextDouble());
       if (VERBOSE) {
         System.out.println("TEST: using Lucene60PointFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
