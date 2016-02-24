@@ -42,6 +42,7 @@ import org.apache.lucene.util.StringHelper;
 /** Finds all documents whose point value, previously indexed with e.g. {@link org.apache.lucene.document.LongPoint}, is contained in the
  *  specified set */
 
+// nocommit explain that the 1D case must be pre-sorted
 public class PointInSetQuery extends Query {
   // A little bit overkill for us, since all of our "terms" are always in the same field:
   final PrefixCodedTerms sortedPackedPoints;
@@ -57,7 +58,7 @@ public class PointInSetQuery extends Query {
       throw new IllegalArgumentException("bytesPerDim must be > 0 and <= " + PointValues.MAX_NUM_BYTES + "; got " + bytesPerDim);
     }
     this.bytesPerDim = bytesPerDim;
-    if (numDims < 1 || bytesPerDim > PointValues.MAX_DIMENSIONS) {
+    if (numDims < 1 || numDims > PointValues.MAX_DIMENSIONS) {
       throw new IllegalArgumentException("numDims must be > 0 and <= " + PointValues.MAX_DIMENSIONS + "; got " + numDims);
     }
     this.numDims = numDims;
@@ -73,6 +74,7 @@ public class PointInSetQuery extends Query {
       }
       if (previous == null) {
         previous = new BytesRefBuilder();
+      // nocommit detect out-of-order 1D case
       } else if (previous.get().equals(current)) {
         continue; // deduplicate
       }

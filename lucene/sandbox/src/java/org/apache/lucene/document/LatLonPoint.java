@@ -129,8 +129,6 @@ public class LatLonPoint extends Field {
     return x / LON_SCALE;
   }
 
-  // nocommit newSetQuery
-  
   /** Turns quantized value from byte array back into a double. */
   public static double decodeLon(byte[] src, int offset) {
     return decodeLon(NumericUtils.bytesToInt(src, offset));

@@ -43,6 +43,8 @@ public class TestBigIntegerPoint extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     assertEquals(1, searcher.count(BigIntegerPoint.newExactQuery("field", large)));
     assertEquals(1, searcher.count(BigIntegerPoint.newRangeQuery("field", large.subtract(BigInteger.ONE), false, large.add(BigInteger.ONE), false)));
+    assertEquals(1, searcher.count(BigIntegerPoint.newSetQuery("field", large)));
+    assertEquals(0, searcher.count(BigIntegerPoint.newSetQuery("field", large.subtract(BigInteger.ONE))));
 
     reader.close();
     writer.close();
@@ -83,5 +85,13 @@ public class TestBigIntegerPoint extends LuceneTestCase {
   public void testToString() throws Exception {
     assertEquals("BigIntegerPoint <field:1>", new BigIntegerPoint("field", BigInteger.ONE).toString());
     assertEquals("BigIntegerPoint <field:1,-2>", new BigIntegerPoint("field", BigInteger.ONE, BigInteger.valueOf(-2)).toString());
+    assertEquals("field:[1 TO 1]", BigIntegerPoint.newExactQuery("field", BigInteger.ONE).toString());
+    assertEquals("field:{1 TO 17]", BigIntegerPoint.newRangeQuery("field", BigInteger.ONE, false, BigInteger.valueOf(17), true).toString());
+    assertEquals("field:{1 TO 17],[0 TO 42}", BigIntegerPoint.newMultiRangeQuery("field",
+                                                                                 new BigInteger[] {BigInteger.ONE, BigInteger.ZERO},
+                                                                                 new boolean[] {false, true},
+                                                                                 new BigInteger[] {BigInteger.valueOf(17), BigInteger.valueOf(42)},
+                                                                                 new boolean[] {true, false}).toString());
+    assertEquals("field:{1}", BigIntegerPoint.newSetQuery("field", BigInteger.ONE).toString());
   }
 }

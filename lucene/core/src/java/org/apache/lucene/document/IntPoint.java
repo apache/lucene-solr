@@ -37,6 +37,7 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>{@link #newExactQuery newExactQuery()} for matching an exact 1D point.
  *   <li>{@link #newRangeQuery newRangeQuery()} for matching a 1D range.
  *   <li>{@link #newMultiRangeQuery newMultiRangeQuery()} for matching points/ranges in n-dimensional space.
+ *   <li>{@link #newSetQuery newSetQuery()} for matching a set of 1D values.
  * </ul>
  */
 public final class IntPoint extends Field {
@@ -223,7 +224,7 @@ public final class IntPoint extends Field {
    * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
    * 
    * @param field field name. must not be {@code null}.
-   * @param valuesIn all int values to match
+   * @param valuesIn all values to match
    */
   public static Query newSetQuery(String field, int... valuesIn) throws IOException {
 

@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PointFormat;
@@ -93,6 +94,60 @@ public class TestPointQueries extends LuceneTestCase {
         System.out.println("TEST: will generate all long values");
       }
     }
+  }
+
+  public void testBasicFloats() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+
+    Document doc = new Document();
+    doc.add(new FloatPoint("point", -7.0f));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new FloatPoint("point", 0.0f));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new FloatPoint("point", 3.0f));
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w);
+    IndexSearcher s = new IndexSearcher(r);
+    assertEquals(2, s.count(FloatPoint.newRangeQuery("point", -8.0f, false, 1.0f, false)));
+    assertEquals(3, s.count(FloatPoint.newRangeQuery("point", -7.0f, true, 3.0f, true)));
+    assertEquals(1, s.count(FloatPoint.newExactQuery("point", -7.0f)));
+    assertEquals(0, s.count(FloatPoint.newExactQuery("point", -6.0f)));
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testBasicDoubles() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+
+    Document doc = new Document();
+    doc.add(new DoublePoint("point", -7.0));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new DoublePoint("point", 0.0));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new DoublePoint("point", 3.0));
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w);
+    IndexSearcher s = new IndexSearcher(r);
+    assertEquals(2, s.count(DoublePoint.newRangeQuery("point", -8.0, false, 1.0, false)));
+    assertEquals(3, s.count(DoublePoint.newRangeQuery("point", -7.0, true, 3.0, true)));
+    assertEquals(1, s.count(DoublePoint.newExactQuery("point", -7.0)));
+    assertEquals(0, s.count(DoublePoint.newExactQuery("point", -6.0)));
+    w.close();
+    r.close();
+    dir.close();
   }
 
   public void testAllEqual() throws Exception {

@@ -37,6 +37,7 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>{@link #newExactQuery newExactQuery()} for matching an exact 1D point.
  *   <li>{@link #newRangeQuery newRangeQuery()} for matching a 1D range.
  *   <li>{@link #newMultiRangeQuery newMultiRangeQuery()} for matching points/ranges in n-dimensional space.
+ *   <li>{@link #newSetQuery newSetQuery()} for matching a set of 1D values.
  * </ul>
  */
 public final class FloatPoint extends Field {
@@ -139,12 +140,12 @@ public final class FloatPoint extends Field {
   
   /** Encode single float dimension */
   public static void encodeDimension(float value, byte dest[], int offset) {
-    NumericUtils.intToBytesDirect(NumericUtils.floatToSortableInt(value), dest, offset);
+    NumericUtils.intToBytes(NumericUtils.floatToSortableInt(value), dest, offset);
   }
   
   /** Decode single float dimension */
   public static float decodeDimension(byte value[], int offset) {
-    return NumericUtils.sortableIntToFloat(NumericUtils.bytesToIntDirect(value, offset));
+    return NumericUtils.sortableIntToFloat(NumericUtils.bytesToInt(value, offset));
   }
   
   // static methods for generating queries
@@ -223,7 +224,7 @@ public final class FloatPoint extends Field {
    * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
    * 
    * @param field field name. must not be {@code null}.
-   * @param valuesIn all int values to match
+   * @param valuesIn all values to match
    */
   public static Query newSetQuery(String field, float... valuesIn) throws IOException {
 
@@ -231,8 +232,6 @@ public final class FloatPoint extends Field {
     float[] values = valuesIn.clone();
 
     Arrays.sort(values);
-
-    System.out.println("VALUES: " + Arrays.toString(values));
 
     final BytesRef value = new BytesRef(new byte[Float.BYTES]);
 
@@ -248,7 +247,6 @@ public final class FloatPoint extends Field {
                                    } else {
                                      encodeDimension(values[upto], value.bytes, 0);
                                      upto++;
-                                     System.out.println("ret: " + value);
                                      return value;
                                    }
                                  }
