@@ -205,4 +205,6 @@ public class InetAddressPoint extends Field {
       }
     };
   }
+
+  // nocommit newSetQuery
 }

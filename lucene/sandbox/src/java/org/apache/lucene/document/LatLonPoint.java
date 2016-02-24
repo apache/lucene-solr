@@ -83,4 +83,6 @@ public class LatLonPoint extends Field {
   public static double decodeLon(int x) {
     return x / LON_SCALE;
   }
+
+  // nocommit newSetQuery
 }

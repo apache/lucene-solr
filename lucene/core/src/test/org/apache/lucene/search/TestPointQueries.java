@@ -1270,17 +1270,23 @@ public class TestPointQueries extends LuceneTestCase {
 
     Document doc = new Document();
     doc.add(new IntPoint("int", 17));
-    doc.add(new LongPoint("long", 17));
+    doc.add(new LongPoint("long", 17L));
+    doc.add(new FloatPoint("float", 17.0f));
+    doc.add(new DoublePoint("double", 17.0));
     w.addDocument(doc);
 
     doc = new Document();
     doc.add(new IntPoint("int", 42));
-    doc.add(new LongPoint("long", 42));
+    doc.add(new LongPoint("long", 42L));
+    doc.add(new FloatPoint("float", 42.0f));
+    doc.add(new DoublePoint("double", 42.0));
     w.addDocument(doc);
 
     doc = new Document();
     doc.add(new IntPoint("int", 97));
-    doc.add(new LongPoint("long", 97));
+    doc.add(new LongPoint("long", 97L));
+    doc.add(new FloatPoint("float", 97.0f));
+    doc.add(new DoublePoint("double", 97.0));
     w.addDocument(doc);
 
     IndexReader r = DirectoryReader.open(w);
@@ -1299,6 +1305,20 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(3, s.count(LongPoint.newSetQuery("long", 17, 20, 42, 97)));
     assertEquals(3, s.count(LongPoint.newSetQuery("long", 17, 105, 42, 97)));
 
+    assertEquals(0, s.count(LongPoint.newSetQuery("float", 16)));
+    assertEquals(1, s.count(LongPoint.newSetQuery("float", 17)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("float", 17, 97, 42)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("float", -7, 17, 42, 97)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("float", 17, 20, 42, 97)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("float", 17, 105, 42, 97)));
+
+    assertEquals(0, s.count(LongPoint.newSetQuery("double", 16)));
+    assertEquals(1, s.count(LongPoint.newSetQuery("double", 17)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("double", 17, 97, 42)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("double", -7, 17, 42, 97)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("double", 17, 20, 42, 97)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("double", 17, 105, 42, 97)));
+
     w.close();
     r.close();
     dir.close();
@@ -1313,8 +1333,12 @@ public class TestPointQueries extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new IntPoint("int", 17));
     doc.add(new IntPoint("int", 42));
-    doc.add(new LongPoint("long", 17));
-    doc.add(new LongPoint("long", 42));
+    doc.add(new LongPoint("long", 17L));
+    doc.add(new LongPoint("long", 42L));
+    doc.add(new FloatPoint("float", 17.0f));
+    doc.add(new FloatPoint("float", 42.0f));
+    doc.add(new DoublePoint("double", 17.0));
+    doc.add(new DoublePoint("double", 42.0));
     w.addDocument(doc);
 
     IndexReader r = DirectoryReader.open(w);
@@ -1330,6 +1354,18 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(1, s.count(LongPoint.newSetQuery("long", 17, 97, 42)));
     assertEquals(1, s.count(LongPoint.newSetQuery("long", -7, 17, 42, 97)));
     assertEquals(0, s.count(LongPoint.newSetQuery("long", 16, 20, 41, 97)));
+
+    assertEquals(0, s.count(FloatPoint.newSetQuery("float", 16)));
+    assertEquals(1, s.count(FloatPoint.newSetQuery("float", 17)));
+    assertEquals(1, s.count(FloatPoint.newSetQuery("float", 17, 97, 42)));
+    assertEquals(1, s.count(FloatPoint.newSetQuery("float", -7, 17, 42, 97)));
+    assertEquals(0, s.count(FloatPoint.newSetQuery("float", 16, 20, 41, 97)));
+
+    assertEquals(0, s.count(DoublePoint.newSetQuery("double", 16)));
+    assertEquals(1, s.count(DoublePoint.newSetQuery("double", 17)));
+    assertEquals(1, s.count(DoublePoint.newSetQuery("double", 17, 97, 42)));
+    assertEquals(1, s.count(DoublePoint.newSetQuery("double", -7, 17, 42, 97)));
+    assertEquals(0, s.count(DoublePoint.newSetQuery("double", 16, 20, 41, 97)));
 
     w.close();
     r.close();
@@ -1350,7 +1386,9 @@ public class TestPointQueries extends LuceneTestCase {
       }
       Document doc = new Document();
       doc.add(new IntPoint("int", x));
-      doc.add(new LongPoint("long", x));
+      doc.add(new LongPoint("long", (long) x));
+      doc.add(new FloatPoint("float", (float) x));
+      doc.add(new DoublePoint("double", (double) x));
       w.addDocument(doc);
     }
 
@@ -1367,6 +1405,19 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 7, 0)));
     assertEquals(10000-zeroCount, s.count(LongPoint.newSetQuery("long", 1)));
     assertEquals(0, s.count(LongPoint.newSetQuery("long", 2)));
+
+    assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 0)));
+    assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 0, -7)));
+    assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(FloatPoint.newSetQuery("float", 1)));
+    assertEquals(0, s.count(FloatPoint.newSetQuery("float", 2)));
+
+    assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 0)));
+    assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 0, -7)));
+    assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(DoublePoint.newSetQuery("double", 1)));
+    assertEquals(0, s.count(DoublePoint.newSetQuery("double", 2)));
+
     w.close();
     r.close();
     dir.close();
@@ -1386,7 +1437,9 @@ public class TestPointQueries extends LuceneTestCase {
       }
       Document doc = new Document();
       doc.add(new IntPoint("int", x));
-      doc.add(new LongPoint("long", x));
+      doc.add(new LongPoint("long", (long) x));
+      doc.add(new FloatPoint("float", (float) x));
+      doc.add(new DoublePoint("double", (double) x));
       w.addDocument(doc);
     }
 
@@ -1403,6 +1456,19 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 7, 0)));
     assertEquals(10000-zeroCount, s.count(LongPoint.newSetQuery("long", 200)));
     assertEquals(0, s.count(LongPoint.newSetQuery("long", 2)));
+
+    assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 0)));
+    assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 0, -7)));
+    assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(FloatPoint.newSetQuery("float", 200)));
+    assertEquals(0, s.count(FloatPoint.newSetQuery("float", 2)));
+
+    assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 0)));
+    assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 0, -7)));
+    assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(DoublePoint.newSetQuery("double", 200)));
+    assertEquals(0, s.count(DoublePoint.newSetQuery("double", 2)));
+
     w.close();
     r.close();
     dir.close();
@@ -1428,5 +1494,11 @@ public class TestPointQueries extends LuceneTestCase {
 
     // long
     assertEquals("long:{-42 18}", LongPoint.newSetQuery("long", -42L, 18L).toString());
+
+    // float
+    assertEquals("float:{-42.0 18.0}", FloatPoint.newSetQuery("float", -42.0f, 18.0f).toString());
+
+    // double
+    assertEquals("double:{-42.0 18.0}", DoublePoint.newSetQuery("double", -42.0, 18.0).toString());
   }
 }

@@ -212,4 +212,6 @@ public class BigIntegerPoint extends Field {
       }
     };
   }
+
+  // nocommit newSetQuery
 }

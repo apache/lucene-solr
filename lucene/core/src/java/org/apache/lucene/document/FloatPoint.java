@@ -16,8 +16,13 @@
  */
 package org.apache.lucene.document;
 
+import java.io.IOException;
+import java.util.Arrays;
+
+import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.NumericUtils;
 
 /** 
@@ -209,6 +214,48 @@ public final class FloatPoint extends Field {
       @Override
       protected String toString(byte[] value) {
         return FloatPoint.decodeDimension(value, 0).toString();
+      }
+    };
+  }
+
+  /**
+   * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
+   * 
+   * @param field field name. must not be {@code null}.
+   * @param valuesIn all int values to match
+   */
+  public static Query newSetQuery(String field, float... valuesIn) throws IOException {
+
+    // Don't unexpectedly change the user's incoming values array:
+    float[] values = valuesIn.clone();
+
+    Arrays.sort(values);
+
+    System.out.println("VALUES: " + Arrays.toString(values));
+
+    final BytesRef value = new BytesRef(new byte[Float.BYTES]);
+
+    return new PointInSetQuery(field, 1, Float.BYTES,
+                               new BytesRefIterator() {
+
+                                 int upto;
+
+                                 @Override
+                                 public BytesRef next() {
+                                   if (upto == values.length) {
+                                     return null;
+                                   } else {
+                                     encodeDimension(values[upto], value.bytes, 0);
+                                     upto++;
+                                     System.out.println("ret: " + value);
+                                     return value;
+                                   }
+                                 }
+                               }) {
+      @Override
+      protected String toString(byte[] value) {
+        assert value.length == Float.BYTES;
+        return Float.toString(decodeDimension(value, 0));
       }
     };
   }

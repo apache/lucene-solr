@@ -224,7 +224,7 @@ public final class LongPoint extends Field {
    * @param field field name. must not be {@code null}.
    * @param valuesIn all int values to match
    */
-  public static PointInSetQuery newSetQuery(String field, long... valuesIn) throws IOException {
+  public static Query newSetQuery(String field, long... valuesIn) throws IOException {
 
     // Don't unexpectedly change the user's incoming values array:
     long[] values = valuesIn.clone();
@@ -232,7 +232,6 @@ public final class LongPoint extends Field {
     Arrays.sort(values);
 
     final BytesRef value = new BytesRef(new byte[Long.BYTES]);
-    value.length = Long.BYTES;
 
     return new PointInSetQuery(field, 1, Long.BYTES,
                                new BytesRefIterator() {
@@ -244,7 +243,7 @@ public final class LongPoint extends Field {
                                    if (upto == values.length) {
                                      return null;
                                    } else {
-                                     LongPoint.encodeDimension(values[upto], value.bytes, 0);
+                                     encodeDimension(values[upto], value.bytes, 0);
                                      upto++;
                                      return value;
                                    }
