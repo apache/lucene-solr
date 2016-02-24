@@ -101,8 +101,8 @@ public final class LongPoint extends Field {
   @Override
   public String toString() {
     StringBuilder result = new StringBuilder();
-    result.append(type.toString());
-    result.append('<');
+    result.append(getClass().getSimpleName());
+    result.append(" <");
     result.append(name);
     result.append(':');
 
@@ -133,12 +133,12 @@ public final class LongPoint extends Field {
   // public helper methods (e.g. for queries)
   
   /** Encode single long dimension */
-  public static void encodeDimension(Long value, byte dest[], int offset) {
+  public static void encodeDimension(long value, byte dest[], int offset) {
     NumericUtils.longToBytes(value, dest, offset);
   }
   
   /** Decode single long dimension */
-  public static Long decodeDimension(byte value[], int offset) {
+  public static long decodeDimension(byte value[], int offset) {
     return NumericUtils.bytesToLong(value, offset);
   }
   
@@ -209,7 +209,7 @@ public final class LongPoint extends Field {
     return new PointRangeQuery(field, LongPoint.encode(lowerValue), lowerInclusive, LongPoint.encode(upperValue), upperInclusive) {
       @Override
       protected String toString(int dimension, byte[] value) {
-        return LongPoint.decodeDimension(value, 0).toString();
+        return Long.toString(LongPoint.decodeDimension(value, 0));
       }
     };
   }

@@ -101,8 +101,8 @@ public final class FloatPoint extends Field {
   @Override
   public String toString() {
     StringBuilder result = new StringBuilder();
-    result.append(type.toString());
-    result.append('<');
+    result.append(getClass().getSimpleName());
+    result.append(" <");
     result.append(name);
     result.append(':');
 
@@ -133,12 +133,12 @@ public final class FloatPoint extends Field {
   // public helper methods (e.g. for queries)
   
   /** Encode single float dimension */
-  public static void encodeDimension(Float value, byte dest[], int offset) {
+  public static void encodeDimension(float value, byte dest[], int offset) {
     NumericUtils.intToBytesDirect(NumericUtils.floatToSortableInt(value), dest, offset);
   }
   
   /** Decode single float dimension */
-  public static Float decodeDimension(byte value[], int offset) {
+  public static float decodeDimension(byte value[], int offset) {
     return NumericUtils.sortableIntToFloat(NumericUtils.bytesToIntDirect(value, offset));
   }
   
@@ -209,7 +209,7 @@ public final class FloatPoint extends Field {
     return new PointRangeQuery(field, FloatPoint.encode(lowerValue), lowerInclusive, FloatPoint.encode(upperValue), upperInclusive) {
       @Override
       protected String toString(int dimension, byte[] value) {
-        return FloatPoint.decodeDimension(value, 0).toString();
+        return Float.toString(FloatPoint.decodeDimension(value, 0));
       }
     };
   }

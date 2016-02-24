@@ -433,12 +433,15 @@ public class FieldType implements IndexableFieldType  {
         result.append(",numericPrecisionStep=");
         result.append(numericPrecisionStep);
       }
-      if (dimensionCount != 0) {
-        result.append(",pointDimensionCount=");
-        result.append(dimensionCount);
-        result.append(",pointNumBytes=");
-        result.append(dimensionNumBytes);
+    }
+    if (dimensionCount != 0) {
+      if (result.length() > 0) {
+        result.append(",");
       }
+      result.append("pointDimensionCount=");
+      result.append(dimensionCount);
+      result.append(",pointNumBytes=");
+      result.append(dimensionNumBytes);
     }
     if (docValuesType != DocValuesType.NONE) {
       if (result.length() > 0) {
@@ -514,4 +517,5 @@ public class FieldType implements IndexableFieldType  {
     if (tokenized != other.tokenized) return false;
     return true;
   }
+
 }

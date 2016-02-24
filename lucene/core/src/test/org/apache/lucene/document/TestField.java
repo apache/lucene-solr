@@ -52,7 +52,7 @@ public class TestField extends LuceneTestCase {
     trySetTokenStreamValue(field);
 
     assertEquals(6d, field.numericValue().doubleValue(), 0.0d);
-    assertEquals("<foo:6.0>", field.toString());
+    assertEquals("DoublePoint <foo:6.0>", field.toString());
   }
   
   public void testDoublePoint2D() throws Exception {
@@ -76,7 +76,7 @@ public class TestField extends LuceneTestCase {
       field.numericValue();
     });
     assertTrue(expected.getMessage().contains("cannot convert to a single numeric value"));
-    assertEquals("<foo:6.0,7.0>", field.toString());
+    assertEquals("DoublePoint <foo:6.0,7.0>", field.toString());
   }
   
   public void testLegacyDoubleField() throws Exception {
@@ -158,7 +158,7 @@ public class TestField extends LuceneTestCase {
     trySetTokenStreamValue(field);
 
     assertEquals(6f, field.numericValue().floatValue(), 0.0f);
-    assertEquals("<foo:6.0>", field.toString());
+    assertEquals("FloatPoint <foo:6.0>", field.toString());
   }
   
   public void testFloatPoint2D() throws Exception {
@@ -182,7 +182,7 @@ public class TestField extends LuceneTestCase {
       field.numericValue();
     });
     assertTrue(expected.getMessage().contains("cannot convert to a single numeric value"));
-    assertEquals("<foo:6.0,7.0>", field.toString());
+    assertEquals("FloatPoint <foo:6.0,7.0>", field.toString());
   }
   
   public void testLegacyFloatField() throws Exception {
@@ -226,7 +226,7 @@ public class TestField extends LuceneTestCase {
     trySetTokenStreamValue(field);
 
     assertEquals(6, field.numericValue().intValue());
-    assertEquals("<foo:6>", field.toString());
+    assertEquals("IntPoint <foo:6>", field.toString());
   }
   
   public void testIntPoint2D() throws Exception {
@@ -250,7 +250,7 @@ public class TestField extends LuceneTestCase {
       field.numericValue();
     });
     assertTrue(expected.getMessage().contains("cannot convert to a single numeric value"));
-    assertEquals("<foo:6,7>", field.toString());
+    assertEquals("IntPoint <foo:6,7>", field.toString());
   }
   
   public void testLegacyIntField() throws Exception {
@@ -313,7 +313,7 @@ public class TestField extends LuceneTestCase {
     trySetTokenStreamValue(field);
 
     assertEquals(6, field.numericValue().intValue());
-    assertEquals("<foo:6>", field.toString());
+    assertEquals("LongPoint <foo:6>", field.toString());
   }
   
   public void testLongPoint2D() throws Exception {
@@ -337,7 +337,7 @@ public class TestField extends LuceneTestCase {
       field.numericValue();
     });
     assertTrue(expected.getMessage().contains("cannot convert to a single numeric value"));
-    assertEquals("<foo:6,7>", field.toString());
+    assertEquals("LongPoint <foo:6,7>", field.toString());
   }
   
   public void testLegacyLongField() throws Exception {

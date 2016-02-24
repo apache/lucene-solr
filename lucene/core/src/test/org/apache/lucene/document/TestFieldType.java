@@ -72,6 +72,12 @@ public class TestFieldType extends LuceneTestCase {
     assertFalse(ft10.equals(ft));
   }
 
+  public void testPointsToString() {
+    FieldType ft = new FieldType();
+    ft.setDimensions(1, Integer.BYTES);
+    assertEquals("pointDimensionCount=1,pointNumBytes=4", ft.toString());
+  }
+
   private static Object randomValue(Class<?> clazz) {
     if (clazz.isEnum()) {
       return RandomPicks.randomFrom(random(), clazz.getEnumConstants());
