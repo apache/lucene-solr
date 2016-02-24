@@ -328,7 +328,7 @@ public abstract class PointRangeQuery extends Query {
       if (lowerPoint[i] == null) {
         sb.append('*');
       } else {
-        sb.append(toString(lowerPoint[i]));
+        sb.append(toString(i, lowerPoint[i]));
       }
 
       sb.append(" TO ");
@@ -336,7 +336,7 @@ public abstract class PointRangeQuery extends Query {
       if (upperPoint[i] == null) {
         sb.append('*');
       } else {
-        sb.append(toString(upperPoint[i]));
+        sb.append(toString(i, upperPoint[i]));
       }
 
       if (upperInclusive[i]) {
@@ -353,8 +353,9 @@ public abstract class PointRangeQuery extends Query {
    * Returns a string of a single value in a human-readable format for debugging.
    * This is used by {@link #toString()}.
    *
+   * @param dimension dimension of the particular value
    * @param value single value, never null
    * @return human readable value for debugging
    */
-  protected abstract String toString(byte[] value);
+  protected abstract String toString(int dimension, byte[] value);
 }

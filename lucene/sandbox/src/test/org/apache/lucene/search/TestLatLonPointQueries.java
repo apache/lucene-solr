@@ -25,6 +25,7 @@ import org.apache.lucene.spatial.util.GeoRect;
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   // todo deconflict GeoPoint and BKD encoding methods and error tolerance
   public static final double BKD_TOLERANCE = 1e-7;
+  public static final double ENCODING_TOLERANCE = 1e-7;
 
   @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
@@ -33,7 +34,7 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
   @Override
   protected Query newRectQuery(String field, GeoRect rect) {
-    return new PointInRectQuery(field, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+    return LatLonPoint.newBoxQuery(field, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
   }
 
   @Override
@@ -49,7 +50,7 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
   @Override
   protected Query newPolygonQuery(String field, double[] lats, double[] lons) {
-    return new PointInPolygonQuery(FIELD_NAME, lats, lons);
+    return LatLonPoint.newPolygonQuery(FIELD_NAME, lats, lons);
   }
 
   @Override
@@ -119,11 +120,11 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
     for(int iter=0;iter<iters;iter++) {
       double lat = randomLat(small);
       double latEnc = LatLonPoint.decodeLat(LatLonPoint.encodeLat(lat));
-      assertEquals("lat=" + lat + " latEnc=" + latEnc + " diff=" + (lat - latEnc), lat, latEnc, LatLonPoint.TOLERANCE);
+      assertEquals("lat=" + lat + " latEnc=" + latEnc + " diff=" + (lat - latEnc), lat, latEnc, ENCODING_TOLERANCE);
 
       double lon = randomLon(small);
       double lonEnc = LatLonPoint.decodeLon(LatLonPoint.encodeLon(lon));
-      assertEquals("lon=" + lon + " lonEnc=" + lonEnc + " diff=" + (lon - lonEnc), lon, lonEnc, LatLonPoint.TOLERANCE);
+      assertEquals("lon=" + lon + " lonEnc=" + lonEnc + " diff=" + (lon - lonEnc), lon, lonEnc, ENCODING_TOLERANCE);
     }
   }
 
