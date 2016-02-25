@@ -45,7 +45,7 @@ public class TestBigIntegerPoint extends LuceneTestCase {
     assertEquals(1, searcher.count(BigIntegerPoint.newRangeQuery("field", large.subtract(BigInteger.ONE), false, large.add(BigInteger.ONE), false)));
     assertEquals(1, searcher.count(BigIntegerPoint.newSetQuery("field", large)));
     assertEquals(0, searcher.count(BigIntegerPoint.newSetQuery("field", large.subtract(BigInteger.ONE))));
-    assertEquals(0, searcher.count(BigIntegerPoint.newSetQuery("field"));
+    assertEquals(0, searcher.count(BigIntegerPoint.newSetQuery("field")));
 
     reader.close();
     writer.close();

@@ -46,7 +46,7 @@ public class TestInetAddressPoint extends LuceneTestCase {
     assertEquals(1, searcher.count(InetAddressPoint.newRangeQuery("field", InetAddress.getByName("1.2.3.3"), false, InetAddress.getByName("1.2.3.5"), false)));
     assertEquals(1, searcher.count(InetAddressPoint.newSetQuery("field", InetAddress.getByName("1.2.3.4"))));
     assertEquals(0, searcher.count(InetAddressPoint.newSetQuery("field", InetAddress.getByName("1.2.3.3"))));
-    assertEquals(0, searcher.count(InetAddressPoint.newSetQuery("field"));
+    assertEquals(0, searcher.count(InetAddressPoint.newSetQuery("field")));
 
     reader.close();
     writer.close();
