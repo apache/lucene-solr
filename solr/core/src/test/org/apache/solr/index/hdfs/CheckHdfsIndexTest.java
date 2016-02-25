@@ -96,6 +96,8 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
 
   @Test
   public void doTest() throws Exception {
+    waitForRecoveriesToFinish(false);
+
     indexr(id, 1);
     commit();
 
