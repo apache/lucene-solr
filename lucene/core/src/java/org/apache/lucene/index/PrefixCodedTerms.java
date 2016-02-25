@@ -67,7 +67,7 @@ public class PrefixCodedTerms implements Accountable {
       add(term.field(), term.bytes());
     }
 
-    /** add a term */
+    /** add a term.  This fully consumes in the incoming {@link BytesRef}. */
     public void add(String field, BytesRef bytes) {
       assert lastTerm.equals(new Term("")) || new Term(field, bytes).compareTo(lastTerm) > 0;
 

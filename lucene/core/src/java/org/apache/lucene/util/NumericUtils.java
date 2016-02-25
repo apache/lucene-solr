@@ -158,27 +158,18 @@ public final class NumericUtils {
   public static void intToBytes(int x, byte[] dest, int offset) {
     // Flip the sign bit, so negative ints sort before positive ints correctly:
     x ^= 0x80000000;
-    intToBytesDirect(x, dest, offset);
-  }
-
-  public static void intToBytesDirect(int x, byte[] dest, int offset) {
     for (int i = 0; i < 4; i++) {
       dest[offset+i] = (byte) (x >> 24-i*8);
     }
   }
 
-  public static int bytesToInt(byte[] src, int index) {
-    int x = bytesToIntDirect(src, index);
-    // Re-flip the sign bit to restore the original value:
-    return x ^ 0x80000000;
-  }
-
-  public static int bytesToIntDirect(byte[] src, int offset) {
+  public static int bytesToInt(byte[] src, int offset) {
     int x = 0;
     for (int i = 0; i < 4; i++) {
       x |= (src[offset+i] & 0xff) << (24-i*8);
     }
-    return x;
+    // Re-flip the sign bit to restore the original value:
+    return x ^ 0x80000000;
   }
 
   public static void longToBytes(long v, byte[] bytes, int offset) {

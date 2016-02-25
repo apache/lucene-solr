@@ -129,7 +129,7 @@ public class LatLonPoint extends Field {
   public static double decodeLon(int x) {
     return x / LON_SCALE;
   }
-  
+
   /** Turns quantized value from byte array back into a double. */
   public static double decodeLon(byte[] src, int offset) {
     return decodeLon(NumericUtils.bytesToInt(src, offset));

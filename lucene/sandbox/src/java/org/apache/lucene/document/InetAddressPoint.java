@@ -16,12 +16,16 @@
  */
 package org.apache.lucene.document;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 
+import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 
 /** 
  * An indexed 128-bit {@code InetAddress} field.
@@ -35,6 +39,7 @@ import org.apache.lucene.util.BytesRef;
  *   <li>{@link #newExactQuery newExactQuery()} for matching an exact network address.
  *   <li>{@link #newPrefixQuery newPrefixQuery()} for matching a network based on CIDR prefix.
  *   <li>{@link #newRangeQuery newRangeQuery()} for matching arbitrary network address ranges.
+ *   <li>{@link #newSetQuery newSetQuery()} for matching a set of 1D values.
  * </ul>
  * <p>
  * This field supports both IPv4 and IPv6 addresses: IPv4 addresses are converted
@@ -194,16 +199,56 @@ public class InetAddressPoint extends Field {
   public static Query newRangeQuery(String field, InetAddress lowerValue, boolean lowerInclusive, InetAddress upperValue, boolean upperInclusive) {
     byte[][] lowerBytes = new byte[1][];
     if (lowerValue != null) {
-      lowerBytes[0] = InetAddressPoint.encode(lowerValue);
+      lowerBytes[0] = encode(lowerValue);
     }
     byte[][] upperBytes = new byte[1][];
     if (upperValue != null) {
-      upperBytes[0] = InetAddressPoint.encode(upperValue);
+      upperBytes[0] = encode(upperValue);
     }
     return new PointRangeQuery(field, lowerBytes, new boolean[] { lowerInclusive }, upperBytes, new boolean[] { upperInclusive }) {
       @Override
       protected String toString(int dimension, byte[] value) {
         return decode(value).getHostAddress(); // for ranges, the range itself is already bracketed
+      }
+    };
+  }
+
+  /**
+   * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
+   * 
+   * @param field field name. must not be {@code null}.
+   * @param valuesIn all values to match
+   */
+  public static Query newSetQuery(String field, InetAddress... valuesIn) throws IOException {
+
+    // Don't unexpectedly change the user's incoming values array:
+    InetAddress[] values = valuesIn.clone();
+
+    Arrays.sort(values);
+
+    final BytesRef value = new BytesRef(new byte[BYTES]);
+
+    return new PointInSetQuery(field, 1, BYTES,
+                               new BytesRefIterator() {
+
+                                 int upto;
+
+                                 @Override
+                                 public BytesRef next() {
+                                   if (upto == values.length) {
+                                     return null;
+                                   } else {
+                                     value.bytes = encode(values[upto]);
+                                     assert value.bytes.length == value.length;
+                                     upto++;
+                                     return value;
+                                   }
+                                 }
+                               }) {
+      @Override
+      protected String toString(byte[] value) {
+        assert value.length == BYTES;
+        return decode(value).getHostAddress();
       }
     };
   }

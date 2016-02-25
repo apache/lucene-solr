@@ -22,10 +22,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PointFormat;
@@ -57,9 +61,11 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
@@ -90,6 +96,114 @@ public class TestPointQueries extends LuceneTestCase {
         System.out.println("TEST: will generate all long values");
       }
     }
+  }
+
+  public void testBasicInts() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+
+    Document doc = new Document();
+    doc.add(new IntPoint("point", -7));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new IntPoint("point", 0));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new IntPoint("point", 3));
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w);
+    IndexSearcher s = new IndexSearcher(r);
+    assertEquals(2, s.count(IntPoint.newRangeQuery("point", -8, false, 1, false)));
+    assertEquals(3, s.count(IntPoint.newRangeQuery("point", -7, true, 3, true)));
+    assertEquals(1, s.count(IntPoint.newExactQuery("point", -7)));
+    assertEquals(0, s.count(IntPoint.newExactQuery("point", -6)));
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testBasicFloats() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+
+    Document doc = new Document();
+    doc.add(new FloatPoint("point", -7.0f));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new FloatPoint("point", 0.0f));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new FloatPoint("point", 3.0f));
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w);
+    IndexSearcher s = new IndexSearcher(r);
+    assertEquals(2, s.count(FloatPoint.newRangeQuery("point", -8.0f, false, 1.0f, false)));
+    assertEquals(3, s.count(FloatPoint.newRangeQuery("point", -7.0f, true, 3.0f, true)));
+    assertEquals(1, s.count(FloatPoint.newExactQuery("point", -7.0f)));
+    assertEquals(0, s.count(FloatPoint.newExactQuery("point", -6.0f)));
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testBasicLongs() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+
+    Document doc = new Document();
+    doc.add(new LongPoint("point", -7));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new LongPoint("point", 0));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new LongPoint("point", 3));
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w);
+    IndexSearcher s = new IndexSearcher(r);
+    assertEquals(2, s.count(LongPoint.newRangeQuery("point", -8L, false, 1L, false)));
+    assertEquals(3, s.count(LongPoint.newRangeQuery("point", -7L, true, 3L, true)));
+    assertEquals(1, s.count(LongPoint.newExactQuery("point", -7L)));
+    assertEquals(0, s.count(LongPoint.newExactQuery("point", -6L)));
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testBasicDoubles() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+
+    Document doc = new Document();
+    doc.add(new DoublePoint("point", -7.0));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new DoublePoint("point", 0.0));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new DoublePoint("point", 3.0));
+    w.addDocument(doc);
+
+    DirectoryReader r = DirectoryReader.open(w);
+    IndexSearcher s = new IndexSearcher(r);
+    assertEquals(2, s.count(DoublePoint.newRangeQuery("point", -8.0, false, 1.0, false)));
+    assertEquals(3, s.count(DoublePoint.newRangeQuery("point", -7.0, true, 3.0, true)));
+    assertEquals(1, s.count(DoublePoint.newExactQuery("point", -7.0)));
+    assertEquals(0, s.count(DoublePoint.newExactQuery("point", -6.0)));
+    w.close();
+    r.close();
+    dir.close();
   }
 
   public void testAllEqual() throws Exception {
@@ -1112,5 +1226,602 @@ public class TestPointQueries extends LuceneTestCase {
                                                                       new Double[] { 2.5, 1.0 },
                                                                       new boolean[] { false, true }).toString());
 
+  }
+
+  private int[] toArray(Set<Integer> valuesSet) {
+    int[] values = new int[valuesSet.size()];
+    int upto = 0;
+    for(Integer value : valuesSet) {
+      values[upto++] = value;
+    }
+    return values;
+  }
+
+  private static int randomIntValue(Integer min, Integer max) {
+    if (min == null) {
+      return random().nextInt();
+    } else {
+      return TestUtil.nextInt(random(), min, max);
+    }
+  }
+
+  public void testRandomPointInSetQuery() throws Exception {
+
+    boolean useNarrowRange = random().nextBoolean();
+    final Integer valueMin;
+    final Integer valueMax;
+    int numValues;
+    if (useNarrowRange) {
+      int gap = random().nextInt(100);
+      valueMin = random().nextInt(Integer.MAX_VALUE-gap);
+      valueMax = valueMin + gap;
+      numValues = TestUtil.nextInt(random(), 1, gap+1);
+    } else {
+      valueMin = null;
+      valueMax = null;
+      numValues = TestUtil.nextInt(random(), 1, 100);
+    }
+    final Set<Integer> valuesSet = new HashSet<>();
+    while (valuesSet.size() < numValues) {
+      valuesSet.add(randomIntValue(valueMin, valueMax));
+    }
+    int[] values = toArray(valuesSet);
+    int numDocs = TestUtil.nextInt(random(), 1, 10000);
+
+    if (VERBOSE) {
+      System.out.println("TEST: numValues=" + numValues + " numDocs=" + numDocs);
+    }
+
+    Directory dir;
+    if (numDocs > 100000) {
+      dir = newFSDirectory(createTempDir("TestPointQueries"));
+    } else {
+      dir = newDirectory();
+    }
+
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+
+    int[] docValues = new int[numDocs];
+    for(int i=0;i<numDocs;i++) {
+      int x = values[random().nextInt(values.length)];
+      Document doc = new Document();
+      doc.add(new IntPoint("int", x));
+      docValues[i] = x;
+      w.addDocument(doc);
+    }
+
+    if (random().nextBoolean()) {
+      if (VERBOSE) {
+        System.out.println("  forceMerge(1)");
+      }
+      w.forceMerge(1);
+    }
+    final IndexReader r = w.getReader();
+    w.close();
+
+    IndexSearcher s = newSearcher(r);
+
+    int numThreads = TestUtil.nextInt(random(), 2, 5);
+
+    if (VERBOSE) {
+      System.out.println("TEST: use " + numThreads + " query threads; searcher=" + s);
+    }
+
+    List<Thread> threads = new ArrayList<>();
+    final int iters = atLeast(100);
+
+    final CountDownLatch startingGun = new CountDownLatch(1);
+    final AtomicBoolean failed = new AtomicBoolean();
+
+    for(int i=0;i<numThreads;i++) {
+      Thread thread = new Thread() {
+          @Override
+          public void run() {
+            try {
+              _run();
+            } catch (Exception e) {
+              failed.set(true);
+              throw new RuntimeException(e);
+            }
+          }
+
+          private void _run() throws Exception {
+            startingGun.await();
+
+            for (int iter=0;iter<iters && failed.get() == false;iter++) {
+
+              int numValidValuesToQuery = random().nextInt(values.length);
+
+              Set<Integer> valuesToQuery = new HashSet<>();
+              while (valuesToQuery.size() < numValidValuesToQuery) {
+                valuesToQuery.add(values[random().nextInt(values.length)]);
+              }
+
+              int numExtraValuesToQuery = random().nextInt(20);
+              while (valuesToQuery.size() < numValidValuesToQuery + numExtraValuesToQuery) {
+                valuesToQuery.add(random().nextInt());
+              }
+
+              int expectedCount = 0;
+              for(int value : docValues) {
+                if (valuesToQuery.contains(value)) {
+                  expectedCount++;
+                }
+              }
+
+              if (VERBOSE) {
+                System.out.println("TEST: thread=" + Thread.currentThread() + " values=" + valuesToQuery + " expectedCount=" + expectedCount);
+              }
+
+              assertEquals(expectedCount, s.count(IntPoint.newSetQuery("int", toArray(valuesToQuery))));
+            }
+          }
+        };
+      thread.setName("T" + i);
+      thread.start();
+      threads.add(thread);
+    }
+    startingGun.countDown();
+    for(Thread thread : threads) {
+      thread.join();
+    }
+    IOUtils.close(r, dir);
+  }
+
+  // TODO: in the future, if there is demand for real usage, we can "graduate" this test-only query factory as IntPoint.newMultiSetQuery or
+  // something (and same for other XXXPoint classes):
+  private static Query newMultiDimIntSetQuery(String field, final int numDims, int... valuesIn) throws IOException {
+    if (valuesIn.length % numDims != 0) {
+      throw new IllegalArgumentException("incongruent number of values: valuesIn.length=" + valuesIn.length + " but numDims=" + numDims);
+    }
+
+    // Pack all values:
+    byte[][] packedValues = new byte[valuesIn.length / numDims][];
+    for(int i=0;i<packedValues.length;i++) {
+      byte[] packedValue = new byte[numDims * Integer.BYTES];
+      packedValues[i] = packedValue;
+      for(int dim=0;dim<numDims;dim++) {
+        IntPoint.encodeDimension(valuesIn[i*numDims+dim], packedValue, dim*Integer.BYTES);
+      }
+    }
+
+    // Sort:
+    Arrays.sort(packedValues,
+                new Comparator<byte[]>() {
+                  @Override
+                  public int compare(byte[] a, byte[] b) {
+                    return StringHelper.compare(a.length, a, 0, b, 0);
+                  }
+                });
+
+    final BytesRef value = new BytesRef();
+    value.length = numDims * Integer.BYTES;
+
+    return new PointInSetQuery(field,
+                               numDims,
+                               Integer.BYTES,
+                               new BytesRefIterator() {
+                                 int upto;
+                                 @Override
+                                 public BytesRef next() {
+                                   if (upto >= packedValues.length) {
+                                     return null;
+                                   }
+                                   value.bytes = packedValues[upto];
+                                   upto++;
+                                   return value;
+                                 }
+                               }) {
+      @Override
+      protected String toString(byte[] value) {
+        assert value.length == numDims * Integer.BYTES;
+        StringBuilder sb = new StringBuilder();
+        for(int dim=0;dim<numDims;dim++) {
+          if (dim > 0) {
+            sb.append(',');
+          }
+          sb.append(Integer.toString(IntPoint.decodeDimension(value, dim*Integer.BYTES)));
+        }
+
+        return sb.toString();
+      }
+    };
+  }
+
+  public void testBasicMultiDimPointInSetQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    Document doc = new Document();
+    doc.add(new IntPoint("int", 17, 42));
+    w.addDocument(doc);
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+
+    assertEquals(0, s.count(newMultiDimIntSetQuery("int", 2, 17, 41)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, 17, 42)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, -7, -7, 17, 42)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, 17, 42, -14, -14)));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testBasicMultiValueMultiDimPointInSetQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    Document doc = new Document();
+    doc.add(new IntPoint("int", 17, 42));
+    doc.add(new IntPoint("int", 34, 79));
+    w.addDocument(doc);
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+
+    assertEquals(0, s.count(newMultiDimIntSetQuery("int", 2, 17, 41)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, 17, 42)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, 17, 42, 34, 79)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, -7, -7, 17, 42)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, -7, -7, 34, 79)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, 17, 42, -14, -14)));
+
+    assertEquals("int:{-14,-14 17,42}", newMultiDimIntSetQuery("int", 2, 17, 42, -14, -14).toString());
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testManyEqualValuesMultiDimPointInSetQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    int zeroCount = 0;
+    for(int i=0;i<10000;i++) {
+      int x = random().nextInt(2);
+      if (x == 0) {
+        zeroCount++;
+      }
+      Document doc = new Document();
+      doc.add(new IntPoint("int", x, x));
+      w.addDocument(doc);
+    }
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+
+    assertEquals(zeroCount, s.count(newMultiDimIntSetQuery("int", 2, 0, 0)));
+    assertEquals(10000-zeroCount, s.count(newMultiDimIntSetQuery("int", 2, 1, 1)));
+    assertEquals(0, s.count(newMultiDimIntSetQuery("int", 2, 2, 2)));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testInvalidMultiDimPointInSetQuery() throws Exception {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
+                                                     () -> {
+                                                       newMultiDimIntSetQuery("int", 2, 3, 4, 5);
+                                                     });
+    assertEquals("incongruent number of values: valuesIn.length=3 but numDims=2", expected.getMessage());
+  }
+
+  public void testBasicPointInSetQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    Document doc = new Document();
+    doc.add(new IntPoint("int", 17));
+    doc.add(new LongPoint("long", 17L));
+    doc.add(new FloatPoint("float", 17.0f));
+    doc.add(new DoublePoint("double", 17.0));
+    doc.add(new BinaryPoint("bytes", new byte[] {0, 17}));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new IntPoint("int", 42));
+    doc.add(new LongPoint("long", 42L));
+    doc.add(new FloatPoint("float", 42.0f));
+    doc.add(new DoublePoint("double", 42.0));
+    doc.add(new BinaryPoint("bytes", new byte[] {0, 42}));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new IntPoint("int", 97));
+    doc.add(new LongPoint("long", 97L));
+    doc.add(new FloatPoint("float", 97.0f));
+    doc.add(new DoublePoint("double", 97.0));
+    doc.add(new BinaryPoint("bytes", new byte[] {0, 97}));
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+    assertEquals(0, s.count(IntPoint.newSetQuery("int", 16)));
+    assertEquals(1, s.count(IntPoint.newSetQuery("int", 17)));
+    assertEquals(3, s.count(IntPoint.newSetQuery("int", 17, 97, 42)));
+    assertEquals(3, s.count(IntPoint.newSetQuery("int", -7, 17, 42, 97)));
+    assertEquals(3, s.count(IntPoint.newSetQuery("int", 17, 20, 42, 97)));
+    assertEquals(3, s.count(IntPoint.newSetQuery("int", 17, 105, 42, 97)));
+
+    assertEquals(0, s.count(LongPoint.newSetQuery("long", 16)));
+    assertEquals(1, s.count(LongPoint.newSetQuery("long", 17)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("long", 17, 97, 42)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("long", -7, 17, 42, 97)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("long", 17, 20, 42, 97)));
+    assertEquals(3, s.count(LongPoint.newSetQuery("long", 17, 105, 42, 97)));
+
+    assertEquals(0, s.count(FloatPoint.newSetQuery("float", 16)));
+    assertEquals(1, s.count(FloatPoint.newSetQuery("float", 17)));
+    assertEquals(3, s.count(FloatPoint.newSetQuery("float", 17, 97, 42)));
+    assertEquals(3, s.count(FloatPoint.newSetQuery("float", -7, 17, 42, 97)));
+    assertEquals(3, s.count(FloatPoint.newSetQuery("float", 17, 20, 42, 97)));
+    assertEquals(3, s.count(FloatPoint.newSetQuery("float", 17, 105, 42, 97)));
+
+    assertEquals(0, s.count(DoublePoint.newSetQuery("double", 16)));
+    assertEquals(1, s.count(DoublePoint.newSetQuery("double", 17)));
+    assertEquals(3, s.count(DoublePoint.newSetQuery("double", 17, 97, 42)));
+    assertEquals(3, s.count(DoublePoint.newSetQuery("double", -7, 17, 42, 97)));
+    assertEquals(3, s.count(DoublePoint.newSetQuery("double", 17, 20, 42, 97)));
+    assertEquals(3, s.count(DoublePoint.newSetQuery("double", 17, 105, 42, 97)));
+
+    assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 16})));
+    assertEquals(1, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17})));
+    assertEquals(3, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17}, new byte[] {0, 97}, new byte[] {0, 42})));
+    assertEquals(3, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, -7}, new byte[] {0, 17}, new byte[] {0, 42}, new byte[] {0, 97})));
+    assertEquals(3, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17}, new byte[] {0, 20}, new byte[] {0, 42}, new byte[] {0, 97})));
+    assertEquals(3, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17}, new byte[] {0, 105}, new byte[] {0, 42}, new byte[] {0, 97})));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testBasicMultiValuedPointInSetQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    Document doc = new Document();
+    doc.add(new IntPoint("int", 17));
+    doc.add(new IntPoint("int", 42));
+    doc.add(new LongPoint("long", 17L));
+    doc.add(new LongPoint("long", 42L));
+    doc.add(new FloatPoint("float", 17.0f));
+    doc.add(new FloatPoint("float", 42.0f));
+    doc.add(new DoublePoint("double", 17.0));
+    doc.add(new DoublePoint("double", 42.0));
+    doc.add(new BinaryPoint("bytes", new byte[] {0, 17}));
+    doc.add(new BinaryPoint("bytes", new byte[] {0, 42}));
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+    assertEquals(0, s.count(IntPoint.newSetQuery("int", 16)));
+    assertEquals(1, s.count(IntPoint.newSetQuery("int", 17)));
+    assertEquals(1, s.count(IntPoint.newSetQuery("int", 17, 97, 42)));
+    assertEquals(1, s.count(IntPoint.newSetQuery("int", -7, 17, 42, 97)));
+    assertEquals(0, s.count(IntPoint.newSetQuery("int", 16, 20, 41, 97)));
+
+    assertEquals(0, s.count(LongPoint.newSetQuery("long", 16)));
+    assertEquals(1, s.count(LongPoint.newSetQuery("long", 17)));
+    assertEquals(1, s.count(LongPoint.newSetQuery("long", 17, 97, 42)));
+    assertEquals(1, s.count(LongPoint.newSetQuery("long", -7, 17, 42, 97)));
+    assertEquals(0, s.count(LongPoint.newSetQuery("long", 16, 20, 41, 97)));
+
+    assertEquals(0, s.count(FloatPoint.newSetQuery("float", 16)));
+    assertEquals(1, s.count(FloatPoint.newSetQuery("float", 17)));
+    assertEquals(1, s.count(FloatPoint.newSetQuery("float", 17, 97, 42)));
+    assertEquals(1, s.count(FloatPoint.newSetQuery("float", -7, 17, 42, 97)));
+    assertEquals(0, s.count(FloatPoint.newSetQuery("float", 16, 20, 41, 97)));
+
+    assertEquals(0, s.count(DoublePoint.newSetQuery("double", 16)));
+    assertEquals(1, s.count(DoublePoint.newSetQuery("double", 17)));
+    assertEquals(1, s.count(DoublePoint.newSetQuery("double", 17, 97, 42)));
+    assertEquals(1, s.count(DoublePoint.newSetQuery("double", -7, 17, 42, 97)));
+    assertEquals(0, s.count(DoublePoint.newSetQuery("double", 16, 20, 41, 97)));
+
+    assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 16})));
+    assertEquals(1, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17})));
+    assertEquals(1, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17}, new byte[] {0, 97}, new byte[] {0, 42})));
+    assertEquals(1, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, -7}, new byte[] {0, 17}, new byte[] {0, 42}, new byte[] {0, 97})));
+    assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 16}, new byte[] {0, 20}, new byte[] {0, 41}, new byte[] {0, 97})));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testEmptyPointInSetQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    Document doc = new Document();
+    doc.add(new IntPoint("int", 17));
+    doc.add(new LongPoint("long", 17L));
+    doc.add(new FloatPoint("float", 17.0f));
+    doc.add(new DoublePoint("double", 17.0));
+    doc.add(new BinaryPoint("bytes", new byte[] {0, 17}));
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+    assertEquals(0, s.count(IntPoint.newSetQuery("int")));
+    assertEquals(0, s.count(LongPoint.newSetQuery("long")));
+    assertEquals(0, s.count(FloatPoint.newSetQuery("float")));
+    assertEquals(0, s.count(DoublePoint.newSetQuery("double")));
+    assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes")));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testPointInSetQueryManyEqualValues() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    int zeroCount = 0;
+    for(int i=0;i<10000;i++) {
+      int x = random().nextInt(2);
+      if (x == 0) {
+        zeroCount++;
+      }
+      Document doc = new Document();
+      doc.add(new IntPoint("int", x));
+      doc.add(new LongPoint("long", (long) x));
+      doc.add(new FloatPoint("float", (float) x));
+      doc.add(new DoublePoint("double", (double) x));
+      doc.add(new BinaryPoint("bytes", new byte[] {(byte) x}));
+      w.addDocument(doc);
+    }
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+    assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 0)));
+    assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 0, -7)));
+    assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(IntPoint.newSetQuery("int", 1)));
+    assertEquals(0, s.count(IntPoint.newSetQuery("int", 2)));
+
+    assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 0)));
+    assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 0, -7)));
+    assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(LongPoint.newSetQuery("long", 1)));
+    assertEquals(0, s.count(LongPoint.newSetQuery("long", 2)));
+
+    assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 0)));
+    assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 0, -7)));
+    assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(FloatPoint.newSetQuery("float", 1)));
+    assertEquals(0, s.count(FloatPoint.newSetQuery("float", 2)));
+
+    assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 0)));
+    assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 0, -7)));
+    assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(DoublePoint.newSetQuery("double", 1)));
+    assertEquals(0, s.count(DoublePoint.newSetQuery("double", 2)));
+
+    assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0})));
+    assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0}, new byte[] {-7})));
+    assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {7}, new byte[] {0})));
+    assertEquals(10000-zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {1})));
+    assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {2})));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testPointInSetQueryManyEqualValuesWithBigGap() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    int zeroCount = 0;
+    for(int i=0;i<10000;i++) {
+      int x = 200 * random().nextInt(2);
+      if (x == 0) {
+        zeroCount++;
+      }
+      Document doc = new Document();
+      doc.add(new IntPoint("int", x));
+      doc.add(new LongPoint("long", (long) x));
+      doc.add(new FloatPoint("float", (float) x));
+      doc.add(new DoublePoint("double", (double) x));
+      doc.add(new BinaryPoint("bytes", new byte[] {(byte) x}));
+      w.addDocument(doc);
+    }
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+    assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 0)));
+    assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 0, -7)));
+    assertEquals(zeroCount, s.count(IntPoint.newSetQuery("int", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(IntPoint.newSetQuery("int", 200)));
+    assertEquals(0, s.count(IntPoint.newSetQuery("int", 2)));
+
+    assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 0)));
+    assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 0, -7)));
+    assertEquals(zeroCount, s.count(LongPoint.newSetQuery("long", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(LongPoint.newSetQuery("long", 200)));
+    assertEquals(0, s.count(LongPoint.newSetQuery("long", 2)));
+
+    assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 0)));
+    assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 0, -7)));
+    assertEquals(zeroCount, s.count(FloatPoint.newSetQuery("float", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(FloatPoint.newSetQuery("float", 200)));
+    assertEquals(0, s.count(FloatPoint.newSetQuery("float", 2)));
+
+    assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 0)));
+    assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 0, -7)));
+    assertEquals(zeroCount, s.count(DoublePoint.newSetQuery("double", 7, 0)));
+    assertEquals(10000-zeroCount, s.count(DoublePoint.newSetQuery("double", 200)));
+    assertEquals(0, s.count(DoublePoint.newSetQuery("double", 2)));
+
+    assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0})));
+    assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0}, new byte[] {-7})));
+    assertEquals(zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {7}, new byte[] {0})));
+    assertEquals(10000-zeroCount, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {(byte) 200})));
+    assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {2})));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testInvalidPointInSetQuery() throws Exception {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
+                                                     () -> {
+                                                       new PointInSetQuery("foo", 3, 4,
+                                                                           new BytesRefIterator() {
+                                                                             @Override
+                                                                             public BytesRef next() {
+                                                                               return new BytesRef(new byte[3]);
+                                                                             }
+                                                                           });
+                                                     });
+    assertEquals("packed point length should be 12 but got 3; field=\"foo\" numDims=3 bytesPerDim=4", expected.getMessage());
+  }
+
+  public void testInvalidPointInSetBinaryQuery() throws Exception {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
+                                                     () -> {
+                                                       BinaryPoint.newSetQuery("bytes", new byte[] {2}, new byte[0]);
+                                                     });
+    assertEquals("all byte[] must be the same length, but saw 1 and 0", expected.getMessage());
+  }
+
+  public void testPointInSetQueryToString() throws Exception {
+    // int
+    assertEquals("int:{-42 18}", IntPoint.newSetQuery("int", -42, 18).toString());
+
+    // long
+    assertEquals("long:{-42 18}", LongPoint.newSetQuery("long", -42L, 18L).toString());
+
+    // float
+    assertEquals("float:{-42.0 18.0}", FloatPoint.newSetQuery("float", -42.0f, 18.0f).toString());
+
+    // double
+    assertEquals("double:{-42.0 18.0}", DoublePoint.newSetQuery("double", -42.0, 18.0).toString());
+
+    // binary
+    assertEquals("bytes:{[12] [2a]}", BinaryPoint.newSetQuery("bytes", new byte[] {42}, new byte[] {18}).toString());
   }
 }
