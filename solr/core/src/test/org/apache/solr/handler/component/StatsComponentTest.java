@@ -54,7 +54,6 @@ import org.apache.solr.util.AbstractSolrTestCase;
 
 import org.apache.commons.math3.util.Combinations;
 import com.tdunning.math.stats.AVLTreeDigest;
-import com.google.common.hash.Hashing; 
 import com.google.common.hash.HashFunction;
 import org.apache.solr.util.hll.HLL;
 
@@ -463,6 +462,47 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             req("q","*:*", "stats", "true", "stats.field", "{!cardinality=true}active_dt")
             , "//lst[@name='active_dt']/long[@name='cardinality'][.='2']");
 
+  }
+
+  // Check for overflow of sumOfSquares
+  public void testFieldStatisticsResultsDateFieldOverflow() throws Exception {
+    SolrCore core = h.getCore();
+
+    assertU(adoc("id", "1", "active_dt", "2015-12-14T09:00:00Z"));
+    assertU(commit());
+
+    Map<String, String> args = new HashMap<>();
+    args.put(CommonParams.Q, "*:*");
+    args.put(StatsParams.STATS, "true");
+    args.put(StatsParams.STATS_FIELD, "active_dt");
+    args.put("indent", "true");
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
+
+    assertQ("test date statistics values", req,
+            "//long[@name='count'][.='1']",
+            "//date[@name='min'][.='2015-12-14T09:00:00Z']",
+            "//date[@name='max'][.='2015-12-14T09:00:00Z']",
+            "//date[@name='sum'][.='2015-12-14T09:00:00Z']",
+            "//date[@name='mean'][.='2015-12-14T09:00:00Z']",
+            "//double[@name='sumOfSquares'][.='" + Double.toString(2102742446988960000000000.0)+"']"
+            );
+
+    assertU(adoc("id", "2", "active_dt", "2115-12-14T09:00:00Z"));
+    assertU(adoc("id", "3", "active_dt", "2215-12-14T09:00:00Z"));
+    assertU(commit());
+
+    assertQ("test date statistics values", req,
+        "//long[@name='count'][.='3']",
+        "//date[@name='min'][.='2015-12-14T09:00:00Z']",
+        "//date[@name='max'][.='2215-12-14T09:00:00Z']",
+        "//date[@name='sum'][.='2407-11-08T03:00:00Z']",
+        "//date[@name='mean'][.='2115-12-14T09:00:00Z']",
+        "//double[@name='sumOfSquares'][.='" + Double.toString(83555549895529430000000000.0)+"']",
+        // The following number matches the number returned by the current solr
+        // implementation of standard deviation. Should be 3155673600000.
+        // That number is not precise, and the implementation should be fixed.
+        "//double[@name='stddev'][.='" + Double.toString(3155673599999.999)+"']"
+        );
   }
 
 

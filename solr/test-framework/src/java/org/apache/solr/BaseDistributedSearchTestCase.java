@@ -240,6 +240,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   public static int SKIP = 2;
   public static int SKIPVAL = 4;
   public static int UNORDERED = 8;
+  
+  /**
+   * When this flag is set, Double values will be allowed a difference ratio of 1E-8
+   * between the non-distributed and the distributed returned values
+   */
+  public static int FUZZY = 16;
+  private static final double DOUBLE_RATIO_LIMIT = 1E-8;
 
   protected int flags;
   protected Map<String, Integer> handle = new HashMap<>();
@@ -874,6 +881,31 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     if (a instanceof List && b instanceof List) {
       return compare(((List) a).toArray(), ((List) b).toArray(), flags, handle);
 
+    }
+
+    if ((flags & FUZZY) != 0) {
+      if ((a instanceof Double && b instanceof Double)) {
+        double aaa = ((Double) a).doubleValue();
+        double bbb = ((Double) b).doubleValue();
+        if (aaa == bbb || ((Double) a).isNaN() && ((Double) b).isNaN()) {
+          return null;
+        }
+        if ((aaa == 0.0) || (bbb == 0.0)) {
+            return ":" + a + "!=" + b;
+        }
+
+        double diff = Math.abs(aaa - bbb);
+        // When stats computations are done on multiple shards, there may
+        // be small differences in the results. Allow a small difference
+        // between the result of the computations.
+
+        double ratio = Math.max(Math.abs(diff / aaa), Math.abs(diff / bbb));
+        if (ratio > DOUBLE_RATIO_LIMIT) {
+          return ":" + a + "!=" + b;
+        } else {
+          return null;// close enough.
+        }
+      }
     }
 
     if (!(a.equals(b))) {

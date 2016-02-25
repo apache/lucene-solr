@@ -218,6 +218,9 @@ Bug Fixes
 * SOLR-8696: Start the Overseer before actions that need the overseer on init and when reconnecting after 
   zk expiration and improve init logic. (Scott Blum, Mark Miller)
 
+* SOLR-8420: Fix long overflow in sumOfSquares for Date statistics. (Tom Hill, Christine Poerschke, 
+  Tomás Fernández Löbbe)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
