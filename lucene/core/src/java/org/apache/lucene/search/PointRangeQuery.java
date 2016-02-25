@@ -87,6 +87,12 @@ public abstract class PointRangeQuery extends Query {
     if (upperPoint.length != numDims) {
       throw new IllegalArgumentException("lowerPoint has length=" + numDims + " but upperPoint has different length=" + upperPoint.length);
     }
+    if (lowerInclusive.length != numDims) {
+      throw new IllegalArgumentException("lowerInclusive has length=" + lowerInclusive.length + " but expected=" + numDims);
+    }
+    if (upperInclusive.length != numDims) {
+      throw new IllegalArgumentException("upperInclusive has length=" + upperInclusive.length + " but expected=" + numDims);
+    }
     this.lowerPoint = lowerPoint;
     this.lowerInclusive = lowerInclusive;
     this.upperPoint = upperPoint;

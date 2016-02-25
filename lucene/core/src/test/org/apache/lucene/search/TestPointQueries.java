@@ -1068,6 +1068,33 @@ public class TestPointQueries extends LuceneTestCase {
     IOUtils.close(r, w, dir);
   }
 
+  /** ensure good exception when boolean[]s for inclusive have wrong length */
+  public void testWrongNumBooleans() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    Document doc = new Document();
+    doc.add(new LongPoint("value", 1L, 2L));
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+
+    // no wrapping, else the exc might happen in executor thread:
+    IndexSearcher s = new IndexSearcher(r);
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      s.count(LongPoint.newMultiRangeQuery("value", new Long[] { 1L, 2L }, new boolean[] {true}, new Long[] { 1L, 2L }, new boolean[] {true, true}));
+    });
+    assertEquals("lowerInclusive has length=1 but expected=2", expected.getMessage());
+
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      s.count(LongPoint.newMultiRangeQuery("value", new Long[] { 1L, 2L }, new boolean[] {true, true}, new Long[] { 1L, 2L }, new boolean[] {true}));
+    });
+    assertEquals("upperInclusive has length=1 but expected=2", expected.getMessage());
+
+    IOUtils.close(r, w, dir);
+  }
+
   public void testWrongNumBytes() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
