@@ -24,8 +24,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 
 /** 
- * A field indexing {@link InetAddress} dimensionally such that finding
- * all documents within a range at search time is
+ * An indexed 128-bit {@code InetAddress} field.
+ * <p>
+ * Finding all documents within a range at search time is
  * efficient.  Multiple values for the same field in one document
  * is allowed. 
  * <p>

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.document;
 
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
@@ -27,8 +26,10 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.StoredFieldVisitor;
 
 /** A {@link StoredFieldVisitor} that creates a {@link
- *  Document} containing all stored fields, or only specific
- *  requested fields provided to {@link #DocumentStoredFieldVisitor(Set)}.
+ *  Document} from stored fields.
+ *  <p>
+ *  This visitor supports loading all stored fields, or only specific
+ *  requested fields provided from a {@link Set}.
  *  <p>
  *  This is used by {@link IndexReader#document(int)} to load a
  *  document.

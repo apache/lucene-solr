@@ -28,8 +28,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.util.GeoUtils;
 
 /** 
- * A field indexing geographic coordinates dimensionally such that finding
- * all documents within a range at search time is
+ * An indexed location field.
+ * <p>
+ * Finding all documents within a range at search time is
  * efficient.  Multiple values for the same field in one document
  * is allowed. 
  * <p>

@@ -16,14 +16,12 @@
  */
 package org.apache.lucene.document;
 
-
 import org.apache.lucene.index.IndexReader; // javadocs
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.IndexSearcher; // javadocs
 import org.apache.lucene.util.BytesRef;
 
 /** A field whose value is stored so that {@link
- *  IndexSearcher#doc} and {@link IndexReader#document} will
+ *  IndexSearcher#doc} and {@link IndexReader#document IndexReader.document()} will
  *  return the field and its value. */
 public class StoredField extends Field {
 

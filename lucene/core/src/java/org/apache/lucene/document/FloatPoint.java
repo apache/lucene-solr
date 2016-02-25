@@ -22,9 +22,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 /** 
- * A float field that is indexed dimensionally such that finding
- * all documents within an N-dimensional at search time is
- * efficient.  Multiple values for the same field in one documents
+ * An indexed {@code float} field.
+ * <p>
+ * Finding all documents within an N-dimensional at search time is
+ * efficient.  Multiple values for the same field in one document
  * is allowed.
  * <p>
  * This field defines static factory methods for creating common queries:
