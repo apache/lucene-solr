@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -64,6 +65,7 @@ import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
@@ -1281,8 +1283,6 @@ public class TestPointQueries extends LuceneTestCase {
     iwc.setCodec(getCodec());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
-    // nocommit multi-valued too
-
     int[] docValues = new int[numDocs];
     for(int i=0;i<numDocs;i++) {
       int x = values[random().nextInt(values.length)];
@@ -1370,7 +1370,150 @@ public class TestPointQueries extends LuceneTestCase {
     IOUtils.close(r, dir);
   }
 
-  // nocommit need 2D test too
+  // TODO: in the future, if there is demand for real usage, we can "graduate" this test-only query factory as IntPoint.newMultiSetQuery or
+  // something (and same for other XXXPoint classes):
+  private static Query newMultiDimIntSetQuery(String field, final int numDims, int... valuesIn) throws IOException {
+    if (valuesIn.length % numDims != 0) {
+      throw new IllegalArgumentException("incongruent number of values: valuesIn.length=" + valuesIn.length + " but numDims=" + numDims);
+    }
+
+    // Pack all values:
+    byte[][] packedValues = new byte[valuesIn.length / numDims][];
+    for(int i=0;i<packedValues.length;i++) {
+      byte[] packedValue = new byte[numDims * Integer.BYTES];
+      packedValues[i] = packedValue;
+      for(int dim=0;dim<numDims;dim++) {
+        IntPoint.encodeDimension(valuesIn[i*numDims+dim], packedValue, dim*Integer.BYTES);
+      }
+    }
+
+    // Sort:
+    Arrays.sort(packedValues,
+                new Comparator<byte[]>() {
+                  @Override
+                  public int compare(byte[] a, byte[] b) {
+                    return StringHelper.compare(a.length, a, 0, b, 0);
+                  }
+                });
+
+    final BytesRef value = new BytesRef();
+    value.length = numDims * Integer.BYTES;
+
+    return new PointInSetQuery(field,
+                               numDims,
+                               Integer.BYTES,
+                               new BytesRefIterator() {
+                                 int upto;
+                                 @Override
+                                 public BytesRef next() {
+                                   if (upto >= packedValues.length) {
+                                     return null;
+                                   }
+                                   value.bytes = packedValues[upto];
+                                   upto++;
+                                   return value;
+                                 }
+                               }) {
+      @Override
+      protected String toString(byte[] value) {
+        assert value.length == numDims * Integer.BYTES;
+        StringBuilder sb = new StringBuilder();
+        for(int dim=0;dim<numDims;dim++) {
+          if (dim > 0) {
+            sb.append(',');
+          }
+          sb.append(Integer.toString(IntPoint.decodeDimension(value, dim*Integer.BYTES)));
+        }
+
+        return sb.toString();
+      }
+    };
+  }
+
+  public void testBasicMultiDimPointInSetQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    Document doc = new Document();
+    doc.add(new IntPoint("int", 17, 42));
+    w.addDocument(doc);
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+
+    assertEquals(0, s.count(newMultiDimIntSetQuery("int", 2, 17, 41)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, 17, 42)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, -7, -7, 17, 42)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, 17, 42, -14, -14)));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testBasicMultiValueMultiDimPointInSetQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    Document doc = new Document();
+    doc.add(new IntPoint("int", 17, 42));
+    doc.add(new IntPoint("int", 34, 79));
+    w.addDocument(doc);
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+
+    assertEquals(0, s.count(newMultiDimIntSetQuery("int", 2, 17, 41)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, 17, 42)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, 17, 42, 34, 79)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, -7, -7, 17, 42)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, -7, -7, 34, 79)));
+    assertEquals(1, s.count(newMultiDimIntSetQuery("int", 2, 17, 42, -14, -14)));
+
+    assertEquals("int:{-14,-14 17,42}", newMultiDimIntSetQuery("int", 2, 17, 42, -14, -14).toString());
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testManyEqualValuesMultiDimPointInSetQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    int zeroCount = 0;
+    for(int i=0;i<10000;i++) {
+      int x = random().nextInt(2);
+      if (x == 0) {
+        zeroCount++;
+      }
+      Document doc = new Document();
+      doc.add(new IntPoint("int", x, x));
+      w.addDocument(doc);
+    }
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+
+    assertEquals(zeroCount, s.count(newMultiDimIntSetQuery("int", 2, 0, 0)));
+    assertEquals(10000-zeroCount, s.count(newMultiDimIntSetQuery("int", 2, 1, 1)));
+    assertEquals(0, s.count(newMultiDimIntSetQuery("int", 2, 2, 2)));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testInvalidMultiDimPointInSetQuery() throws Exception {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class,
+                                                     () -> {
+                                                       newMultiDimIntSetQuery("int", 2, 3, 4, 5);
+                                                     });
+    assertEquals("incongruent number of values: valuesIn.length=3 but numDims=2", expected.getMessage());
+  }
 
   public void testBasicPointInSetQuery() throws Exception {
     Directory dir = newDirectory();
@@ -1432,7 +1575,6 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(3, s.count(DoublePoint.newSetQuery("double", 17, 20, 42, 97)));
     assertEquals(3, s.count(DoublePoint.newSetQuery("double", 17, 105, 42, 97)));
 
-    // nocommit make sure invalid bytes length hits iae
     assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 16})));
     assertEquals(1, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17})));
     assertEquals(3, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17}, new byte[] {0, 97}, new byte[] {0, 42})));
@@ -1495,6 +1637,33 @@ public class TestPointQueries extends LuceneTestCase {
     assertEquals(1, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 17}, new byte[] {0, 97}, new byte[] {0, 42})));
     assertEquals(1, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, -7}, new byte[] {0, 17}, new byte[] {0, 42}, new byte[] {0, 97})));
     assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes", new byte[] {0, 16}, new byte[] {0, 20}, new byte[] {0, 41}, new byte[] {0, 97})));
+
+    w.close();
+    r.close();
+    dir.close();
+  }
+
+  public void testEmptyPointInSetQuery() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setCodec(getCodec());
+    IndexWriter w = new IndexWriter(dir, iwc);
+
+    Document doc = new Document();
+    doc.add(new IntPoint("int", 17));
+    doc.add(new LongPoint("long", 17L));
+    doc.add(new FloatPoint("float", 17.0f));
+    doc.add(new DoublePoint("double", 17.0));
+    doc.add(new BinaryPoint("bytes", new byte[] {0, 17}));
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher s = newSearcher(r);
+    assertEquals(0, s.count(IntPoint.newSetQuery("int")));
+    assertEquals(0, s.count(LongPoint.newSetQuery("long")));
+    assertEquals(0, s.count(FloatPoint.newSetQuery("float")));
+    assertEquals(0, s.count(DoublePoint.newSetQuery("double")));
+    assertEquals(0, s.count(BinaryPoint.newSetQuery("bytes")));
 
     w.close();
     r.close();

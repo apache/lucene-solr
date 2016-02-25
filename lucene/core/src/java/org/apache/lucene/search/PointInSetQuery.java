@@ -50,7 +50,7 @@ public class PointInSetQuery extends Query {
   final int numDims;
   final int bytesPerDim;
 
-  /** In the 1D case, the {@code packedPoints} iterator must be in sorted order. */
+  /** The {@code packedPoints} iterator must be in sorted order. */
   protected PointInSetQuery(String field, int numDims, int bytesPerDim, BytesRefIterator packedPoints) throws IOException {
     this.field = field;
     if (bytesPerDim < 1 || bytesPerDim > PointValues.MAX_NUM_BYTES) {
@@ -78,8 +78,8 @@ public class PointInSetQuery extends Query {
         int cmp = previous.get().compareTo(current);
         if (cmp == 0) {
           continue; // deduplicate
-        } else if (numDims == 1 && cmp > 0) {
-          throw new IllegalArgumentException("numDims=1 and values are out of order: saw " + previous + " before " + current);
+        } else if (cmp > 0) {
+          throw new IllegalArgumentException("values are out of order: saw " + previous + " before " + current);
         }
       }
       builder.add(field, current);
@@ -230,7 +230,6 @@ public class PointInSetQuery extends Query {
 
     private final DocIdSetBuilder result;
     private final int[] hitCount;
-    public BytesRef point;
     private final byte[] pointBytes;
 
     public SinglePointVisitor(int[] hitCount, DocIdSetBuilder result) {
@@ -258,7 +257,7 @@ public class PointInSetQuery extends Query {
 
     @Override
     public void visit(int docID, byte[] packedValue) {
-      assert packedValue.length == point.length;
+      assert packedValue.length == pointBytes.length;
       if (Arrays.equals(packedValue, pointBytes)) {
         // The point for this doc matches the point we are querying on
         hitCount[0]++;
@@ -292,7 +291,6 @@ public class PointInSetQuery extends Query {
       if (crosses) {
         return Relation.CELL_CROSSES_QUERY;
       } else {
-        // nocommit make sure tests hit this case:
         // NOTE: we only hit this if we are on a cell whose min and max values are exactly equal to our point,
         // which can easily happen if many docs share this one value
         return Relation.CELL_INSIDE_QUERY;

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
@@ -224,6 +225,11 @@ public final class BinaryPoint extends Field {
       }
     }
 
+    if (bytesPerDim == -1) {
+      // There are no points, and we cannot guess the bytesPerDim here, so we return an equivalent query:
+      return new MatchNoDocsQuery();
+    }
+
     // Don't unexpectedly change the user's incoming values array:
     byte[][] values = valuesIn.clone();
 
@@ -234,12 +240,6 @@ public final class BinaryPoint extends Field {
                     return StringHelper.compare(a.length, a, 0, b, 0);
                   }
                 });
-
-    // Silliness:
-    if (bytesPerDim == -1) {
-      // nocommit make sure this is tested
-      bytesPerDim = 1;
-    }
 
     final BytesRef value = new BytesRef(new byte[bytesPerDim]);
     
