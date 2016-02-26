@@ -22,6 +22,16 @@ Other Changes
 * SOLR-8677: Prevent shards containing invalid characters from being created.  Checks added server-side
   and in SolrJ.  (Shai Erera, Jason Gerlowski, Anshum Gupta)
 
+======================= 5.5.1 =======================
+
+Bug Fixes
+----------------------
+
+* SOLR-8734: fix (maxMergeDocs|mergeFactor) deprecation warnings: in solrconfig.xml
+  <maxMergeDocs|mergeFactor> may not be combined with <mergePolicyFactory> and
+  <maxMergeDocs|mergeFactor> on their own or combined with <mergePolicy> is a warning.
+  (Christine Poerschke, Shai Erera)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
