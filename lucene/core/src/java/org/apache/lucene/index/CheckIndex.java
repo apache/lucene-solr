@@ -948,7 +948,7 @@ public final class CheckIndex implements Closeable {
         lastTerm.copyBytes(term);
       } else {
         if (lastTerm.get().compareTo(term) >= 0) {
-          throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
+          throw new RuntimeException("terms out of order: lastTerm=" + lastTerm.get() + " term=" + term);
         }
         lastTerm.copyBytes(term);
       }
@@ -1076,7 +1076,7 @@ public final class CheckIndex implements Closeable {
           lastTerm.copyBytes(term);
         } else {
           if (lastTerm.get().compareTo(term) >= 0) {
-            throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
+            throw new RuntimeException("terms out of order: lastTerm=" + lastTerm.get() + " term=" + term);
           }
           lastTerm.copyBytes(term);
         }
@@ -1233,7 +1233,7 @@ public final class CheckIndex implements Closeable {
           lastTerm.copyBytes(term);
         } else {
           if (lastTerm.get().compareTo(term) >= 0) {
-            throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
+            throw new RuntimeException("terms out of order: lastTerm=" + lastTerm.get() + " term=" + term);
           }
           lastTerm.copyBytes(term);
         }
@@ -1540,7 +1540,7 @@ public final class CheckIndex implements Closeable {
         // Test seek to last term:
         if (lastTerm != null) {
           if (termsEnum.seekCeil(lastTerm.get()) != TermsEnum.SeekStatus.FOUND) { 
-            throw new RuntimeException("seek to last term " + lastTerm + " failed");
+            throw new RuntimeException("seek to last term " + lastTerm.get() + " failed");
           }
           if (termsEnum.term().equals(lastTerm.get()) == false) {
             throw new RuntimeException("seek to last term " + lastTerm.get() + " returned FOUND but seeked to the wrong term " + termsEnum.term());
@@ -1553,7 +1553,7 @@ public final class CheckIndex implements Closeable {
             docFreq++;
           }
           if (docFreq != expectedDocFreq) {
-            throw new RuntimeException("docFreq for last term " + lastTerm.toBytesRef() + "=" + expectedDocFreq + " != recomputed docFreq=" + docFreq);
+            throw new RuntimeException("docFreq for last term " + lastTerm.get() + "=" + expectedDocFreq + " != recomputed docFreq=" + docFreq);
           }
         }
         
