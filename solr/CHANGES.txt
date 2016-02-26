@@ -8,17 +8,12 @@ caching, replication, and a web administration interface.
 
 See http://lucene.apache.org/solr for more information.
 
-==================  5.5.1 ==================
+======================= 5.5.1 =======================
 
 Bug Fixes
 ----------------------
 
 * SOLR-8737: Managed synonym lists do not include the original term in the expand (janhoy)
-
-======================= 5.5.1 =======================
-
-Bug Fixes
-----------------------
 
 * SOLR-8734: fix (maxMergeDocs|mergeFactor) deprecation warnings: in solrconfig.xml
   <maxMergeDocs|mergeFactor> may not be combined with <mergePolicyFactory> and
