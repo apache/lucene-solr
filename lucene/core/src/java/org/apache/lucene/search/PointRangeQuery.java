@@ -51,6 +51,8 @@ import org.apache.lucene.util.StringHelper;
  * @see FloatPoint
  * @see DoublePoint
  * @see BinaryPoint 
+ *
+ * @lucene.experimental
  */
 public abstract class PointRangeQuery extends Query {
   final String field;

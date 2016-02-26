@@ -40,7 +40,9 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
 /** Finds all documents whose point value, previously indexed with e.g. {@link org.apache.lucene.document.LongPoint}, is contained in the
- *  specified set */
+ *  specified set.
+ *
+ * @lucene.experimental */
 
 public class PointInSetQuery extends Query {
   // A little bit overkill for us, since all of our "terms" are always in the same field:
@@ -124,7 +126,7 @@ public class PointInSetQuery extends Query {
         if (numDims == 1) {
 
           // We optimize this common case, effectively doing a merge sort of the indexed values vs the queried set:
-          values.intersect(field, new MergePointVisitor(sortedPackedPoints.iterator(), hitCount, result));
+          values.intersect(field, new MergePointVisitor(sortedPackedPoints, hitCount, result));
 
         } else {
           // NOTE: this is naive implementation, where for each point we re-walk the KD tree to intersect.  We could instead do a similar
@@ -150,16 +152,24 @@ public class PointInSetQuery extends Query {
 
     private final DocIdSetBuilder result;
     private final int[] hitCount;
-    private final TermIterator iterator;
+    private TermIterator iterator;
     private BytesRef nextQueryPoint;
+    private final byte[] lastMaxPackedValue;
     private final BytesRef scratch = new BytesRef();
+    private final PrefixCodedTerms sortedPackedPoints;
 
-    public MergePointVisitor(TermIterator iterator, int[] hitCount, DocIdSetBuilder result) throws IOException {
+    public MergePointVisitor(PrefixCodedTerms sortedPackedPoints, int[] hitCount, DocIdSetBuilder result) throws IOException {
       this.hitCount = hitCount;
       this.result = result;
-      this.iterator = iterator;
-      nextQueryPoint = iterator.next();
+      this.sortedPackedPoints = sortedPackedPoints;
+      lastMaxPackedValue = new byte[bytesPerDim];
       scratch.length = bytesPerDim;
+      resetIterator();
+    }
+
+    private void resetIterator() {
+      this.iterator = sortedPackedPoints.iterator();
+      nextQueryPoint = iterator.next();
     }
 
     @Override
@@ -195,6 +205,14 @@ public class PointInSetQuery extends Query {
 
     @Override
     public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+      
+      // NOTE: this is messy ... we need it in cases where a single vistor (us) is shared across multiple leaf readers
+      // (e.g. SlowCompositeReaderWrapper), in which case we need to reset our iterator to re-start the merge sort.  Maybe we should instead
+      // add an explicit .start() to IntersectVisitor, and clarify the semantics that in the 1D case all cells will be visited in order?
+      if (StringHelper.compare(bytesPerDim, lastMaxPackedValue, 0, minPackedValue, 0) > 0) {    
+        resetIterator();
+      }
+      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, bytesPerDim);
 
       while (nextQueryPoint != null) {
         scratch.bytes = minPackedValue;
