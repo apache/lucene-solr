@@ -2120,7 +2120,7 @@ public final class ZkController {
     // we use this version and multi to ensure *only* the current zk registered leader
     // for a shard can put a replica into LIR
     
-    Integer leaderZkNodeParentVersion = ((ShardLeaderElectionContextBase)context).leaderZkNodeParentVersion;
+    Integer leaderZkNodeParentVersion = ((ShardLeaderElectionContextBase)context).getLeaderZkNodeParentVersion();
     
     // TODO: should we do this optimistically to avoid races?
     if (zkClient.exists(znodePath, retryOnConnLoss)) {
