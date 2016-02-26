@@ -287,12 +287,12 @@ public abstract class PointRangeQuery extends Query {
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash += Arrays.hashCode(lowerPoint)^0x14fa55fb;
-    hash += Arrays.hashCode(upperPoint)^0x733fa5fe;
-    hash += Arrays.hashCode(lowerInclusive)^0x14fa55fb;
-    hash += Arrays.hashCode(upperInclusive)^0x733fa5fe;
-    hash += numDims^0x14fa55fb;
-    hash += Objects.hashCode(bytesPerDim);
+    hash = 31 * hash + Arrays.hashCode(lowerPoint);
+    hash = 31 * hash + Arrays.hashCode(upperPoint);
+    hash = 31 * hash + Arrays.hashCode(lowerInclusive);
+    hash = 31 * hash + Arrays.hashCode(upperInclusive);
+    hash = 31 * hash + numDims;
+    hash = 31 * hash + Objects.hashCode(bytesPerDim);
     return hash;
   }
 

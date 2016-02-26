@@ -348,12 +348,12 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
   @Override
   public final int hashCode() {
     int hash = super.hashCode();
-    hash += precisionStep^0x64365465;
-    if (min != null) hash += min.hashCode()^0x14fa55fb;
-    if (max != null) hash += max.hashCode()^0x733fa5fe;
-    return hash +
-      (Boolean.valueOf(minInclusive).hashCode()^0x14fa55fb)+
-      (Boolean.valueOf(maxInclusive).hashCode()^0x733fa5fe);
+    hash = 31 * hash + precisionStep;
+    hash = 31 * hash + Objects.hashCode(min);
+    hash = 31 * hash + Objects.hashCode(max);
+    hash = 31 * hash + Objects.hashCode(minInclusive);
+    hash = 31 * hash + Objects.hashCode(maxInclusive);
+    return hash;
   }
 
   // members (package private, to be also fast accessible by NumericRangeTermEnum)

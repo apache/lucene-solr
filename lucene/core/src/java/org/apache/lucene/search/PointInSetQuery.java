@@ -301,9 +301,9 @@ public class PointInSetQuery extends Query {
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash += sortedPackedPointsHashCode^0x14fa55fb;
-    hash += numDims^0x14fa55fb;
-    hash += bytesPerDim^0x14fa55fb;
+    hash = 31 * hash + sortedPackedPointsHashCode;
+    hash = 31 * hash + numDims;
+    hash = 31 * hash + bytesPerDim;
     return hash;
   }
 

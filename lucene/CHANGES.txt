@@ -115,6 +115,9 @@ Optimizations
   merging to merge sort the already sorted segments instead of
   re-indexing (Mike McCandless)
 
+* LUCENE-6793: LegacyNumericRangeQuery.hashCode() is now less subject to hash
+  collisions. (J.B. Langston via Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-6789: IndexSearcher's default Similarity is changed to BM25Similarity.
