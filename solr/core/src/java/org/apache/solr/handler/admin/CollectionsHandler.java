@@ -382,7 +382,7 @@ public class CollectionsHandler extends RequestHandlerBase {
           byte[] data = IOUtils.toByteArray(Thread.currentThread().getContextClassLoader().getResourceAsStream("SystemCollectionSchema.xml"));
           cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
           path = ZkStateReader.CONFIGS_ZKNODE + "/" + SYSTEM_COLL + "/solrconfig.xml";
-          data = IOUtils.toByteArray(Thread.currentThread().getContextClassLoader().getResourceAsStream("SystemCollectionSolrCOnfig.xml"));
+          data = IOUtils.toByteArray(Thread.currentThread().getContextClassLoader().getResourceAsStream("SystemCollectionSolrConfig.xml"));
           cmdExecutor.ensureExists(path, data, CreateMode.PERSISTENT, zk);
         } catch (IOException e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
