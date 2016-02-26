@@ -487,11 +487,10 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   }
   
   /**
-   * Test only method for inspecting the cache
+   * Method for inspecting the cache
    * @return paths in the cache which have not been marked "done"
    *
    * @see #doneWithDirectory
-   * @lucene.internal
    */
   public synchronized Set<String> getLivePaths() {
     HashSet<String> livePaths = new HashSet<>();

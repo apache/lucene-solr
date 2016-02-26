@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.Future;
 
 import com.google.common.collect.Lists;
@@ -52,6 +54,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
@@ -236,7 +239,7 @@ enum CoreAdminOperation {
       List<RefCounted<SolrIndexSearcher>> searchers = Lists.newArrayList();
       // stores readers created from indexDir param values
       List<DirectoryReader> readersToBeClosed = Lists.newArrayList();
-      List<Directory> dirsToBeReleased = Lists.newArrayList();
+      Map<Directory,Boolean> dirsToBeReleased = new HashMap<>();
       if (core != null) {
         try {
           String[] dirNames = params.getParams(CoreAdminParams.INDEX_DIR);
@@ -257,8 +260,14 @@ enum CoreAdminOperation {
           } else {
             DirectoryFactory dirFactory = core.getDirectoryFactory();
             for (int i = 0; i < dirNames.length; i++) {
+              boolean markAsDone = false;
+              if (dirFactory instanceof CachingDirectoryFactory) {
+                if (!((CachingDirectoryFactory)dirFactory).getLivePaths().contains(dirNames[i])) {
+                  markAsDone = true;
+                }
+              }
               Directory dir = dirFactory.get(dirNames[i], DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-              dirsToBeReleased.add(dir);
+              dirsToBeReleased.put(dir, markAsDone);
               // TODO: why doesn't this use the IR factory? what is going on here?
               readersToBeClosed.add(DirectoryReader.open(dir));
             }
@@ -295,9 +304,14 @@ enum CoreAdminOperation {
             if (solrCore != null) solrCore.close();
           }
           IOUtils.closeWhileHandlingException(readersToBeClosed);
-          for (Directory dir : dirsToBeReleased) {
+          Set<Entry<Directory,Boolean>> entries = dirsToBeReleased.entrySet();
+          for (Entry<Directory,Boolean> entry : entries) {
             DirectoryFactory dirFactory = core.getDirectoryFactory();
-            dirFactory.doneWithDirectory(dir);
+            Directory dir = entry.getKey();
+            boolean markAsDone = entry.getValue();
+            if (markAsDone) {
+              dirFactory.doneWithDirectory(dir);
+            }
             dirFactory.release(dir);
           }
           if (wrappedReq != null) wrappedReq.close();
