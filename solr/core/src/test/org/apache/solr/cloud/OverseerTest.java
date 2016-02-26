@@ -121,6 +121,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
     }
 
     public void close() {
+      for (ElectionContext ec : electionContext.values()) {
+        try {
+          ec.cancelElection();
+        } catch (Exception e) {
+          log.warn(String.format("Error cancelling election for %s", ec.id), e);
+        }
+      }
       deleteNode(ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName);
       zkClient.close();
     }
