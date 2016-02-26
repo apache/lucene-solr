@@ -185,7 +185,6 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
 
         Set<String> treeTerms = new TreeSet<>();
         treeTerms.addAll(jsonList);
-        treeTerms.remove(origTerm);
         cpsm.mappings.put(origTerm, treeTerms);
         madeChanges = true;
         // only add the cpsm to the synonymMappings if it has valid data

@@ -324,6 +324,13 @@ Other Changes
 
 * SOLR-8691: Cache index fingerprints per searcher. (yonik)
 
+==================  5.5.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-8737: Managed synonym lists do not include the original term in the expand (janhoy)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
