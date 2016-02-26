@@ -143,17 +143,23 @@ public class SolrIndexConfig implements MapSerializable {
 
     mergeSchedulerInfo = getPluginInfo(prefix + "/mergeScheduler", solrConfig, def.mergeSchedulerInfo);
     mergePolicyInfo = getPluginInfo(prefix + "/mergePolicy", solrConfig, def.mergePolicyInfo);
-    mergePolicyFactoryInfo = getPluginInfo(prefix + "/mergePolicyFactory", solrConfig, def.mergePolicyInfo);
+    mergePolicyFactoryInfo = getPluginInfo(prefix + "/mergePolicyFactory", solrConfig, def.mergePolicyFactoryInfo);
     if (mergePolicyInfo != null && mergePolicyFactoryInfo != null) {
       throw new IllegalArgumentException("<mergePolicy> and <mergePolicyFactory> are mutually exclusive.");
+    }
+    if (maxMergeDocs != def.maxMergeDocs && mergePolicyFactoryInfo != null) {
+      throw new IllegalArgumentException("<maxMergeDocs> and <mergePolicyFactory> are mutually exclusive.");
+    }
+    if (mergeFactor != def.mergeFactor && mergePolicyFactoryInfo != null) {
+      throw new IllegalArgumentException("<mergeFactor> and <mergePolicyFactory> are mutually exclusive.");
     }
 
     assertWarnOrFail("Beginning with Solr 5.5, <mergePolicy> is deprecated, use <mergePolicyFactory> instead.",
         (mergePolicyInfo == null), false);
     assertWarnOrFail("Beginning with Solr 5.5, <maxMergeDocs> is deprecated, configure it on the relevant <mergePolicyFactory> instead.",
-        (mergePolicyFactoryInfo != null && maxMergeDocs == def.maxMergeDocs), false);
+        (maxMergeDocs == def.maxMergeDocs), false);
     assertWarnOrFail("Beginning with Solr 5.5, <mergeFactor> is deprecated, configure it on the relevant <mergePolicyFactory> instead.",
-        (mergePolicyFactoryInfo != null && mergeFactor == def.mergeFactor), false);
+        (mergeFactor == def.mergeFactor), false);
 
     String val = solrConfig.get(prefix + "/termIndexInterval", null);
     if (val != null) {

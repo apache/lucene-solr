@@ -331,6 +331,11 @@ Bug Fixes
 
 * SOLR-8737: Managed synonym lists do not include the original term in the expand (janhoy)
 
+* SOLR-8734: fix (maxMergeDocs|mergeFactor) deprecation warnings: in solrconfig.xml
+  <maxMergeDocs|mergeFactor> may not be combined with <mergePolicyFactory> and
+  <maxMergeDocs|mergeFactor> on their own or combined with <mergePolicy> is a warning.
+  (Christine Poerschke, Shai Erera)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
