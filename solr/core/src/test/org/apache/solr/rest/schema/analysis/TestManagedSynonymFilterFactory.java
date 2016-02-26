@@ -207,13 +207,13 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
     assertJPut(endpoint, JSONUtil.toJSON(m2mSyns), "/responseHeader/status==0");
 
     assertJQ(endpoint + "/funny",
-        "/funny==['entertaining','jocular','whimiscal']");
+        "/funny==['entertaining','funny','jocular','whimiscal']");
     assertJQ(endpoint + "/entertaining",
-        "/entertaining==['funny','jocular','whimiscal']");
+        "/entertaining==['entertaining','funny','jocular','whimiscal']");
     assertJQ(endpoint + "/jocular",
-        "/jocular==['entertaining','funny','whimiscal']");
+        "/jocular==['entertaining','funny','jocular','whimiscal']");
     assertJQ(endpoint + "/whimiscal",
-        "/whimiscal==['entertaining','funny','jocular']");
+        "/whimiscal==['entertaining','funny','jocular','whimiscal']");
   }
 
   /**
