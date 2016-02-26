@@ -655,13 +655,18 @@ IF "%STOP_KEY%"=="" set STOP_KEY=solrrocks
 
 @REM This is quite hacky, but examples rely on a different log4j.properties
 @REM so that we can write logs for examples to %SOLR_HOME%\..\logs
-set "SOLR_LOGS_DIR=%SOLR_SERVER_DIR%\logs"
 set "EXAMPLE_DIR=%SOLR_TIP%\example"
 set LOG4J_CONFIG=
 set TMP=!SOLR_HOME:%EXAMPLE_DIR%=!
 IF NOT "%TMP%"=="%SOLR_HOME%" (
-  set "SOLR_LOGS_DIR=%SOLR_HOME%\..\logs"
+  IF "%SOLR_LOGS_DIR%"=="" (
+    set "SOLR_LOGS_DIR=%SOLR_HOME%\..\logs"
+  )
   set "LOG4J_CONFIG=file:%EXAMPLE_DIR%\resources\log4j.properties"
+) ELSE (
+  IF "%SOLR_LOGS_DIR%"=="" (
+    set "SOLR_LOGS_DIR=%SOLR_SERVER_DIR%\logs"
+  )
 )
 
 set IS_RESTART=0
