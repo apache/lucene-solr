@@ -95,6 +95,9 @@ Bug Fixes
 * SOLR-8420: Fix long overflow in sumOfSquares for Date statistics. (Tom Hill, Christine Poerschke,
   Tomás Fernández Löbbe)
 
+* SOLR-8748: OverseerTaskProcessor limits number of concurrent tasks to just 10 even though the thread pool
+  size is 100. The limit has now been increased to 100. (Scott Blum, shalin)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
