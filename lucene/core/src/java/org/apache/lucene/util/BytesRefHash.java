@@ -156,11 +156,9 @@ public final class BytesRefHash {
    * Note: This is a destructive operation. {@link #clear()} must be called in
    * order to reuse this {@link BytesRefHash} instance.
    * </p>
-   * 
-   * @param comp
-   *          the {@link Comparator} used for sorting
    */
-  public int[] sort(final Comparator<BytesRef> comp) {
+  public int[] sort() {
+    final Comparator<BytesRef> comp = BytesRef.getUTF8SortedAsUnicodeComparator();
     final int[] compact = compact();
     new IntroSorter() {
       @Override

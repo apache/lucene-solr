@@ -205,7 +205,7 @@ public final class StemmerOverrideFilter extends TokenFilter {
       ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
       org.apache.lucene.util.fst.Builder<BytesRef> builder = new org.apache.lucene.util.fst.Builder<>(
           FST.INPUT_TYPE.BYTE4, outputs);
-      final int[] sort = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+      final int[] sort = hash.sort();
       IntsRefBuilder intsSpare = new IntsRefBuilder();
       final int size = hash.size();
       BytesRef spare = new BytesRef();

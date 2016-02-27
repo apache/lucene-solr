@@ -758,7 +758,7 @@ public class MemoryIndex {
      */
     public void sortTerms() {
       if (sortedTerms == null) {
-        sortedTerms = terms.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+        sortedTerms = terms.sort();
       }
     }
 

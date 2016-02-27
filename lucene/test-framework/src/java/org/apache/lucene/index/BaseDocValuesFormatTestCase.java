@@ -1144,7 +1144,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     w.commit();
     IndexReader reader = w.getReader();
     SortedDocValues docValues = MultiDocValues.getSortedValues(reader, "field");
-    int[] sort = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+    int[] sort = hash.sort();
     BytesRef expected = new BytesRef();
     assertEquals(hash.size(), docValues.getValueCount());
     for (int i = 0; i < hash.size(); i++) {

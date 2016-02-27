@@ -17,14 +17,16 @@
 package org.apache.lucene.util;
 
 
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map.Entry;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.Map.Entry;
 
 import org.apache.lucene.util.BytesRefHash.MaxBytesLengthExceededException;
 import org.junit.Before;
@@ -166,16 +168,41 @@ public class TestBytesRefHash extends LuceneTestCase {
     }
   }
 
+  private static int[] codePoints(String input) {
+    int length = Character.codePointCount(input, 0, input.length());
+    int word[] = new int[length];
+    for (int i = 0, j = 0, cp = 0; i < input.length(); i += Character.charCount(cp)) {
+      word[j++] = cp = input.codePointAt(i);
+    }
+    return word;
+  }
+
   /**
    * Test method for
-   * {@link org.apache.lucene.util.BytesRefHash#sort(java.util.Comparator)}.
+   * {@link org.apache.lucene.util.BytesRefHash#sort()}.
    */
   @Test
   public void testSort() {
     BytesRefBuilder ref = new BytesRefBuilder();
     int num = atLeast(2);
     for (int j = 0; j < num; j++) {
-      SortedSet<String> strings = new TreeSet<>();
+
+      // Sorts by unicode code point order (is there a simple way, e.g. a Collator?)
+      SortedSet<String> strings = new TreeSet<>(new Comparator<String>() {
+          @Override
+          public int compare(String a, String b) {
+            int[] aCodePoints = codePoints(a);
+            int[] bCodePoints = codePoints(b);
+            for(int i=0;i<Math.min(aCodePoints.length, bCodePoints.length);i++) {
+              if (aCodePoints[i] < bCodePoints[i]) {
+                return -1;
+              } else if (aCodePoints[i] > bCodePoints[i]) {
+                return 1;
+              }
+            }
+            return aCodePoints.length - bCodePoints.length;
+          }
+        });
       for (int i = 0; i < 797; i++) {
         String str;
         do {
@@ -185,9 +212,7 @@ public class TestBytesRefHash extends LuceneTestCase {
         hash.add(ref.get());
         strings.add(str);
       }
-      // We use the UTF-16 comparator here, because we need to be able to
-      // compare to native String.compareTo() [UTF-16]:
-      int[] sort = hash.sort(BytesRef.getUTF8SortedAsUTF16Comparator());
+      int[] sort = hash.sort();
       assertTrue(strings.size() < sort.length);
       int i = 0;
       BytesRef scratch = new BytesRef();
