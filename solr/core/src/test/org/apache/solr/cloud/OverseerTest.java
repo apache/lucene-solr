@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -125,7 +126,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         try {
           ec.cancelElection();
         } catch (Exception e) {
-          log.warn(String.format("Error cancelling election for %s", ec.id), e);
+          log.warn(String.format(Locale.ROOT, "Error cancelling election for %s", ec.id), e);
         }
       }
       deleteNode(ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName);
