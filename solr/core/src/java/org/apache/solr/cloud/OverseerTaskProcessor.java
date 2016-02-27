@@ -58,9 +58,13 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
  */
 public class OverseerTaskProcessor implements Runnable, Closeable {
 
-  public int maxParallelThreads = 10;
+  /**
+   * Maximum number of overseer collection operations which can be
+   * executed concurrently
+   */
+  public static final int MAX_PARALLEL_TASKS = 100;
 
-  public ExecutorService tpe ;
+  public ExecutorService tpe;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -162,7 +166,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     // TODO: Make maxThreads configurable.
 
-    this.tpe = new ExecutorUtil.MDCAwareThreadPoolExecutor(5, 100, 0L, TimeUnit.MILLISECONDS,
+    this.tpe = new ExecutorUtil.MDCAwareThreadPoolExecutor(5, MAX_PARALLEL_TASKS, 0L, TimeUnit.MILLISECONDS,
         new SynchronousQueue<Runnable>(),
         new DefaultSolrThreadFactory("OverseerThreadFactory"));
     try {
@@ -183,7 +187,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
           boolean waited = false;
 
-          while (runningTasks.size() > maxParallelThreads) {
+          while (runningTasks.size() > MAX_PARALLEL_TASKS) {
             synchronized (waitLock) {
               waitLock.wait(100);//wait for 100 ms or till a task is complete
             }
@@ -193,7 +197,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           if (waited)
             cleanUpWorkQueue();
 
-          List<QueueEvent> heads = workQueue.peekTopN(maxParallelThreads, runningZKTasks, 2000L);
+          List<QueueEvent> heads = workQueue.peekTopN(MAX_PARALLEL_TASKS, runningZKTasks, 2000L);
 
           if (heads == null)
             continue;
