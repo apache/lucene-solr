@@ -332,6 +332,9 @@ Other Changes
 
 * SOLR-8752: Add a test for SizeLimitedDistributedMap and improve javadocs. (shalin)
 
+* SOLR-8671: Date statistics: make "sum" a double instead of a long/date (Tom Hill, Christine Poerschke,
+  Tommás Fernández Löbbe)
+
 ==================  5.5.1 ==================
 
 Bug Fixes
