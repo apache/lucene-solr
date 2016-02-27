@@ -16,32 +16,59 @@
  */
 package org.apache.solr.core;
 
+import java.util.Properties;
+
 import org.apache.solr.SolrTestCaseJ4;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestImplicitCoreProperties extends SolrTestCaseJ4 {
 
+  private static CoreContainer cc;
+
+  @BeforeClass
+  public static void setupContainer() {
+    cc = createCoreContainer("collection1", "data", "solrconfig-implicitproperties.xml", "schema.xml");
+  }
+
+  @AfterClass
+  public static void teardownContainer() {
+    if (cc != null)
+      cc.shutdown();
+  }
+
   @Test
   public void testImplicitPropertiesAreSubstitutedInSolrConfig() {
+    assertQ(req("q", "*:*")
+        , "//str[@name='dummy1'][.='collection1']"
+        , "//str[@name='dummy2'][.='data']"
+        , "//str[@name='dummy3'][.='solrconfig-implicitproperties.xml']"
+        , "//str[@name='dummy4'][.='schema.xml']"
+        , "//str[@name='dummy5'][.='false']"
+    );
+  }
 
-    CoreContainer cc
-        = createCoreContainer("collection1", "data", "solrconfig-implicitproperties.xml", "schema.xml");
-    
-    try {
-      assertQ(req("q", "*:*")
-              , "//str[@name='dummy1'][.='collection1']"
-              , "//str[@name='dummy2'][.='data']"
-              , "//str[@name='dummy3'][.='solrconfig-implicitproperties.xml']"
-              , "//str[@name='dummy4'][.='schema.xml']"
-              , "//str[@name='dummy5'][.='false']"
-              );
-      // Test for SOLR-5279 - make sure properties are there on core reload
-      cc.reload("collection1");
-    }
-    finally {
-      cc.shutdown();
-    }
+  // SOLR-5279
+  @Test
+  public void testPropertiesArePersistedAcrossReload() {
+    cc.reload("collection1");
+    assertQ(req("q", "*:*")
+        , "//str[@name='dummy1'][.='collection1']"
+        , "//str[@name='dummy2'][.='data']"
+        , "//str[@name='dummy3'][.='solrconfig-implicitproperties.xml']"
+        , "//str[@name='dummy4'][.='schema.xml']"
+        , "//str[@name='dummy5'][.='false']"
+    );
+  }
 
+  // SOLR-8712
+  @Test
+  public void testDefaultProperties() {
+    Properties props = cc.getCoreDescriptor("collection1").getSubstitutableProperties();
+    assertEquals("collection1", props.getProperty("solr.core.name"));
+    assertTrue("solr.core.instanceDir not set correctly",
+        props.getProperty("solr.core.instanceDir").contains("collection1"));
   }
 
 }

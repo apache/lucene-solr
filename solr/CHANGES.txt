@@ -342,6 +342,9 @@ Bug Fixes
   <maxMergeDocs|mergeFactor> on their own or combined with <mergePolicy> is a warning.
   (Christine Poerschke, Shai Erera)
 
+* SOLR-8712: Variable solr.core.instanceDir was not being resolved (Kristine
+  Jetzke, Shawn Heisey, Alan Woodward)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
