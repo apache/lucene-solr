@@ -75,8 +75,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CloudConfig;
-import org.apache.solr.handler.admin.ClusterStatus;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.handler.component.ShardRequest;
@@ -272,7 +270,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
           processRebalanceLeaders(message);
           break;
         case MODIFYCOLLECTION:
-          overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+          overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
           break;
         case MIGRATESTATEFORMAT:
           migrateStateFormat(message, results);
@@ -345,7 +343,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   private void processReplicaAddPropertyCommand(ZkNodeProps message) throws KeeperException, InterruptedException {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP, PROPERTY_VALUE_PROP);
     SolrZkClient zkClient = zkStateReader.getZkClient();
-    DistributedQueue inQueue = Overseer.getInQueue(zkClient);
+    DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkClient);
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICAPROP.toLower());
     propMap.putAll(message.getProperties());
@@ -356,7 +354,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   private void processReplicaDeletePropertyCommand(ZkNodeProps message) throws KeeperException, InterruptedException {
     checkRequired(message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
     SolrZkClient zkClient = zkStateReader.getZkClient();
-    DistributedQueue inQueue = Overseer.getInQueue(zkClient);
+    DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkClient);
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, DELETEREPLICAPROP.toLower());
     propMap.putAll(message.getProperties());
@@ -371,7 +369,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
               "' parameters are required for the BALANCESHARDUNIQUE operation, no action taken");
     }
     SolrZkClient zkClient = zkStateReader.getZkClient();
-    DistributedQueue inQueue = Overseer.getInQueue(zkClient);
+    DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkClient);
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, BALANCESHARDUNIQUE.toLower());
     propMap.putAll(message.getProperties());
@@ -755,7 +753,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         ZkStateReader.NODE_NAME_PROP, replica.getStr(ZkStateReader.NODE_NAME_PROP),
         ZkStateReader.COLLECTION_PROP, collectionName,
         ZkStateReader.CORE_NODE_NAME_PROP, replicaName);
-    Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
+    Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
   }
 
   private void checkRequired(ZkNodeProps message, String... props) {
@@ -795,7 +793,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       collectionCmd(message, params, results, null, asyncId, requestMap, okayExceptions);
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collection);
-      Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
+      Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
 
       // wait for a while until we don't see the collection
       TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
@@ -855,7 +853,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         // Actually queue the migration command.
         firstLoop = false;
         ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, MIGRATESTATEFORMAT.toLower(), COLLECTION_PROP, collectionName);
-        Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
+        Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
       }
       Thread.sleep(100);
     }
@@ -976,7 +974,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     List<ReplicaCount> sortedNodeList = getNodesForNewReplicas(clusterState, collectionName, sliceName, repFactor,
         createNodeSetStr, overseer.getZkController().getCoreContainer());
         
-    Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+    Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
     // wait for a while until we see the shard
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
     boolean created = false;
@@ -1192,7 +1190,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         propMap.put(ZkStateReader.SHARD_RANGE_PROP, subRange.toString());
         propMap.put(ZkStateReader.SHARD_STATE_PROP, Slice.State.CONSTRUCTION.toString());
         propMap.put(ZkStateReader.SHARD_PARENT_PROP, parentSlice.getName());
-        DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
+        DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkStateReader.getZkClient());
         inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
         
         // wait until we are able to see the new shard in cluster state
@@ -1328,7 +1326,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
               ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
               ZkStateReader.BASE_URL_PROP, zkStateReader.getBaseUrlForNodeName(subShardNodeName),
               ZkStateReader.NODE_NAME_PROP, subShardNodeName);
-          Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
+          Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
 
           HashMap<String,Object> propMap = new HashMap<>();
           propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
@@ -1360,7 +1358,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       if (repFactor == 1) {
         // switch sub shard states to 'active'
         log.info("Replication factor is 1 so switching shard states");
-        DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
+        DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkStateReader.getZkClient());
         Map<String,Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
         propMap.put(slice, Slice.State.INACTIVE.toString());
@@ -1372,7 +1370,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         inQueue.offer(Utils.toJSON(m));
       } else {
         log.info("Requesting shard state be set to 'recovery'");
-        DistributedQueue inQueue = Overseer.getInQueue(zkStateReader.getZkClient());
+        DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkStateReader.getZkClient());
         Map<String,Object> propMap = new HashMap<>();
         propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
         for (String subSlice : subSlices) {
@@ -1526,7 +1524,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETESHARD.toLower(), ZkStateReader.COLLECTION_PROP,
           collection, ZkStateReader.SHARD_ID_PROP, sliceId);
-      Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
+      Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
       
       // wait for a while until we don't see the shard
       TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS);
@@ -1657,7 +1655,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         "targetCollection", targetCollection.getName(),
         "expireAt", RoutingRule.makeExpiryAt(timeout));
     log.info("Adding routing rule: " + m);
-    Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
+    Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
 
     // wait for a while until we see the new rule
     log.info("Waiting to see routing rule updated in clusterstate");
@@ -1974,7 +1972,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
       createConfNode(configName, collectionName, isLegacyCloud);
 
-      Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
+      Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(message));
 
       // wait for a while until we don't see the collection
       TimeOut waitUntil = new TimeOut(30, TimeUnit.SECONDS);
@@ -2018,7 +2016,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
               ZkStateReader.CORE_NAME_PROP, coreName,
               ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(),
               ZkStateReader.BASE_URL_PROP, baseUrl);
-          Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
+          Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
         }
 
         // Need to create new params for each request
@@ -2190,7 +2188,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
             collection, ZkStateReader.SHARD_ID_PROP, shard, ZkStateReader.CORE_NAME_PROP, coreName,
             ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(), ZkStateReader.BASE_URL_PROP,
             zkStateReader.getBaseUrlForNodeName(node), ZkStateReader.NODE_NAME_PROP, node);
-        Overseer.getInQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
+        Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(props));
       }
       params.set(CoreAdminParams.CORE_NODE_NAME,
           waitToSeeReplicasInState(collection, Collections.singletonList(coreName)).get(coreName).getName());

@@ -87,7 +87,7 @@ public class OverseerRolesTest  extends AbstractFullDistribZkTestBase{
     Map m = (Map) Utils.fromJSON(data);
     String s = (String) m.get("id");
     String leader = LeaderElector.getNodeName(s);
-    Overseer.getInQueue(zk).offer(Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower())));
+    Overseer.getStateUpdateQueue(zk).offer(Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower())));
     final TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS);
     String newLeader=null;
     for(;! timeout.hasTimedOut();){

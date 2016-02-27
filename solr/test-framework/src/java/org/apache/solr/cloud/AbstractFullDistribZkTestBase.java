@@ -377,7 +377,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       log.info("Creating collection1 with stateFormat=2");
       SolrZkClient zkClient = new SolrZkClient(zkServer.getZkAddress(),
           AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT);
-      Overseer.getInQueue(zkClient).offer(
+      Overseer.getStateUpdateQueue(zkClient).offer(
           Utils.toJSON(Utils.makeMap(Overseer.QUEUE_OPERATION,
               CollectionParams.CollectionAction.CREATE.toLower(), "name",
               DEFAULT_COLLECTION, "numShards", String.valueOf(sliceCount),

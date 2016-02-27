@@ -110,8 +110,8 @@ public class Overseer implements Closeable {
     public ClusterStateUpdater(final ZkStateReader reader, final String myId, Stats zkStats) {
       this.zkClient = reader.getZkClient();
       this.zkStats = zkStats;
-      this.stateUpdateQueue = getInQueue(zkClient, zkStats);
-      this.workQueue = getInternalQueue(zkClient, zkStats);
+      this.stateUpdateQueue = getStateUpdateQueue(zkClient, zkStats);
+      this.workQueue = getInternalWorkQueue(zkClient, zkStats);
       this.failureMap = getFailureMap(zkClient);
       this.runningMap = getRunningMap(zkClient);
       this.completedMap = getCompletedMap(zkClient);
@@ -893,18 +893,55 @@ public class Overseer implements Closeable {
 
   /**
    * Get queue that can be used to send messages to Overseer.
+   * <p>
+   * Any and all modifications to the cluster state must be sent to
+   * the overseer via this queue. The complete list of overseer actions
+   * supported by this queue are documented inside the {@link OverseerAction} enum.
+   * <p>
+   * Performance statistics on the returned queue
+   * are <em>not</em> tracked by the Overseer Stats API,
+   * see {@link org.apache.solr.common.params.CollectionParams.CollectionAction#OVERSEERSTATUS}.
+   * Therefore, this method should be used only by clients for writing to the overseer queue.
+   * <p>
+   * This method will create the /overseer znode in ZooKeeper if it does not exist already.
+   *
+   * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
+   * @return a {@link DistributedQueue} object
    */
-  public static DistributedQueue getInQueue(final SolrZkClient zkClient) {
-    return getInQueue(zkClient, new Stats());
+  public static DistributedQueue getStateUpdateQueue(final SolrZkClient zkClient) {
+    return getStateUpdateQueue(zkClient, new Stats());
   }
 
-  static DistributedQueue getInQueue(final SolrZkClient zkClient, Stats zkStats)  {
+  /**
+   * The overseer uses the returned queue to read any operations submitted by clients.
+   * This method should not be used directly by anyone other than the Overseer itself.
+   * This method will create the /overseer znode in ZooKeeper if it does not exist already.
+   *
+   * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
+   * @param zkStats  a {@link Overseer.Stats} object which tracks statistics for all zookeeper operations performed by this queue
+   * @return a {@link DistributedQueue} object
+   */
+  static DistributedQueue getStateUpdateQueue(final SolrZkClient zkClient, Stats zkStats) {
     createOverseerNode(zkClient);
     return new DistributedQueue(zkClient, "/overseer/queue", zkStats);
   }
 
-  /* Internal queue, not to be used outside of Overseer */
-  static DistributedQueue getInternalQueue(final SolrZkClient zkClient, Stats zkStats) {
+  /**
+   * Internal overseer work queue. This should not be used outside of Overseer.
+   * <p>
+   * This queue is used to store overseer operations that have been removed from the
+   * state update queue but are being executed as part of a batch. Once
+   * the result of the batch is persisted to zookeeper, these items are removed from the
+   * work queue. If the overseer dies while processing a batch then a new overseer always
+   * operates from the work queue first and only then starts processing operations from the
+   * state update queue.
+   * This method will create the /overseer znode in ZooKeeper if it does not exist already.
+   *
+   * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
+   * @param zkStats  a {@link Overseer.Stats} object which tracks statistics for all zookeeper operations performed by this queue
+   * @return a {@link DistributedQueue} object
+   */
+  static DistributedQueue getInternalWorkQueue(final SolrZkClient zkClient, Stats zkStats) {
     createOverseerNode(zkClient);
     return new DistributedQueue(zkClient, "/overseer/queue-work", zkStats);
   }
@@ -926,23 +963,84 @@ public class Overseer implements Closeable {
     createOverseerNode(zkClient);
     return new SizeLimitedDistributedMap(zkClient, "/overseer/collection-map-failure", NUM_RESPONSES_TO_STORE);
   }
-  
-  /* Collection creation queue */
+
+  /**
+   * Get queue that can be used to submit collection API tasks to the Overseer.
+   * <p>
+   * This queue is used internally by the {@link CollectionsHandler} to submit collection API
+   * tasks which are executed by the {@link OverseerCollectionMessageHandler}. The actions supported
+   * by this queue are listed in the {@link org.apache.solr.common.params.CollectionParams.CollectionAction}
+   * enum.
+   * <p>
+   * Performance statistics on the returned queue
+   * are <em>not</em> tracked by the Overseer Stats API,
+   * see {@link org.apache.solr.common.params.CollectionParams.CollectionAction#OVERSEERSTATUS}.
+   *
+   * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
+   * @return a {@link DistributedQueue} object
+   */
   static OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient) {
     return getCollectionQueue(zkClient, new Stats());
   }
 
-  static OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient, Stats zkStats)  {
+  /**
+   * Get queue that can be used to read collection API tasks to the Overseer.
+   * <p>
+   * This queue is used internally by the {@link OverseerCollectionMessageHandler} to read collection API
+   * tasks submitted by the {@link CollectionsHandler}. The actions supported
+   * by this queue are listed in the {@link org.apache.solr.common.params.CollectionParams.CollectionAction}
+   * enum.
+   * <p>
+   * Performance statistics on the returned queue are tracked by the Overseer Stats API,
+   * see {@link org.apache.solr.common.params.CollectionParams.CollectionAction#OVERSEERSTATUS}.
+   *
+   * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
+   * @return a {@link DistributedQueue} object
+   */
+  static OverseerTaskQueue getCollectionQueue(final SolrZkClient zkClient, Stats zkStats) {
     createOverseerNode(zkClient);
     return new OverseerTaskQueue(zkClient, "/overseer/collection-queue-work", zkStats);
   }
 
-  /* The queue for ConfigSet related operations */
+  /**
+   * Get queue that can be used to submit configset API tasks to the Overseer.
+   * <p>
+   * This queue is used internally by the {@link org.apache.solr.handler.admin.ConfigSetsHandler} to submit
+   * tasks which are executed by the {@link OverseerConfigSetMessageHandler}. The actions supported
+   * by this queue are listed in the {@link org.apache.solr.common.params.ConfigSetParams.ConfigSetAction}
+   * enum.
+   * <p>
+   * Performance statistics on the returned queue
+   * are <em>not</em> tracked by the Overseer Stats API,
+   * see {@link org.apache.solr.common.params.CollectionParams.CollectionAction#OVERSEERSTATUS}.
+   *
+   * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
+   * @return a {@link DistributedQueue} object
+   */
   static OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient)  {
     return getConfigSetQueue(zkClient, new Stats());
   }
 
-  static OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient, Stats zkStats)  {
+  /**
+   * Get queue that can be used to read configset API tasks to the Overseer.
+   * <p>
+   * This queue is used internally by the {@link OverseerConfigSetMessageHandler} to read configset API
+   * tasks submitted by the {@link org.apache.solr.handler.admin.ConfigSetsHandler}. The actions supported
+   * by this queue are listed in the {@link org.apache.solr.common.params.ConfigSetParams.ConfigSetAction}
+   * enum.
+   * <p>
+   * Performance statistics on the returned queue are tracked by the Overseer Stats API,
+   * see {@link org.apache.solr.common.params.CollectionParams.CollectionAction#OVERSEERSTATUS}.
+   * <p>
+   * For now, this internally returns the same queue as {@link #getCollectionQueue(SolrZkClient, Stats)}.
+   * It is the responsibility of the client to ensure that configset API actions are prefixed with
+   * {@link OverseerConfigSetMessageHandler#CONFIGSETS_ACTION_PREFIX} so that it is processed by
+   * {@link OverseerConfigSetMessageHandler}.
+   *
+   * @param zkClient the {@link SolrZkClient} to be used for reading/writing to the queue
+   * @return a {@link DistributedQueue} object
+   */
+  static OverseerTaskQueue getConfigSetQueue(final SolrZkClient zkClient, Stats zkStats) {
     // For now, we use the same queue as the collection queue, but ensure
     // that the actions are prefixed with a unique string.
     createOverseerNode(zkClient);

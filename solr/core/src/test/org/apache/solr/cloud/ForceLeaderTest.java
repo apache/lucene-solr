@@ -213,7 +213,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
   }
 
   protected void unsetLeader(String collection, String slice) throws Exception {
-    DistributedQueue inQueue = Overseer.getInQueue(cloudClient.getZkStateReader().getZkClient());
+    DistributedQueue inQueue = Overseer.getStateUpdateQueue(cloudClient.getZkStateReader().getZkClient());
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
 
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.LEADER.toLower(),
@@ -242,7 +242,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
   protected void setReplicaState(String collection, String slice, Replica replica, Replica.State state) throws SolrServerException, IOException,
       KeeperException, InterruptedException {
-    DistributedQueue inQueue = Overseer.getInQueue(cloudClient.getZkStateReader().getZkClient());
+    DistributedQueue inQueue = Overseer.getStateUpdateQueue(cloudClient.getZkStateReader().getZkClient());
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
 
     String baseUrl = zkStateReader.getBaseUrlForNodeName(replica.getNodeName());
