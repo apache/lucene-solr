@@ -261,6 +261,7 @@ public class CoreDescriptor {
         propName = SOLR_CORE_PROP_PREFIX + propName;
       substitutableProperties.setProperty(propName, propValue);
     }
+    substitutableProperties.setProperty("solr.core.instanceDir", instanceDir.toAbsolutePath().toString());
   }
 
   /**
