@@ -50,6 +50,10 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
   public void testBasicInterface() throws Exception {
     //make sure the basics are in place
     assertQ(req("q", "*:*", CommonParams.DEBUG_QUERY, "true"),
+            "count(//str[@name='solr-spec-version'])=1",
+            "count(//str[@name='solr-impl-version'])=1",
+            "count(//str[@name='lucene-spec-version'])=1",
+            "count(//str[@name='lucene-impl-version'])=1",
             "//str[@name='rawquerystring']='*:*'",
             "//str[@name='querystring']='*:*'",
             "//str[@name='parsedquery']='MatchAllDocsQuery(*:*)'",
@@ -74,6 +78,10 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
   public void testPerItemInterface() throws Exception {
     //Same as debugQuery = true
     assertQ(req("q", "*:*", "debug", "true"),
+            "count(//str[@name='solr-spec-version'])=1",
+            "count(//str[@name='solr-impl-version'])=1",
+            "count(//str[@name='lucene-spec-version'])=1",
+            "count(//str[@name='lucene-impl-version'])=1",
             "//str[@name='rawquerystring']='*:*'",
             "//str[@name='querystring']='*:*'",
             "//str[@name='parsedquery']='MatchAllDocsQuery(*:*)'",
@@ -92,6 +100,10 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
     );
     //timing only
     assertQ(req("q", "*:*", "debug", CommonParams.TIMING),
+            "count(//str[@name='solr-spec-version'])=0",
+            "count(//str[@name='solr-impl-version'])=0",
+            "count(//str[@name='lucene-spec-version'])=0",
+            "count(//str[@name='lucene-impl-version'])=0",
             "count(//str[@name='rawquerystring'])=0",
             "count(//str[@name='querystring'])=0",
             "count(//str[@name='parsedquery'])=0",
@@ -107,6 +119,10 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
     );
     //query only
     assertQ(req("q", "*:*", "debug", CommonParams.QUERY),
+            "count(//str[@name='solr-spec-version'])=0",
+            "count(//str[@name='solr-impl-version'])=0",
+            "count(//str[@name='lucene-spec-version'])=0",
+            "count(//str[@name='lucene-impl-version'])=0",
             "//str[@name='rawquerystring']='*:*'",
             "//str[@name='querystring']='*:*'",
             "//str[@name='parsedquery']='MatchAllDocsQuery(*:*)'",
@@ -119,6 +135,10 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
 
     //explains
     assertQ(req("q", "*:*", "debug", CommonParams.RESULTS),
+            "count(//str[@name='solr-spec-version'])=0",
+            "count(//str[@name='solr-impl-version'])=0",
+            "count(//str[@name='lucene-spec-version'])=0",
+            "count(//str[@name='lucene-impl-version'])=0",
             "count(//str[@name='rawquerystring'])=0",
             "count(//str[@name='querystring'])=0",
             "count(//str[@name='parsedquery'])=0",
@@ -133,6 +153,10 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "*:*", "debug", CommonParams.RESULTS,
             "debug", CommonParams.QUERY),
+            "count(//str[@name='solr-spec-version'])=0",
+            "count(//str[@name='solr-impl-version'])=0",
+            "count(//str[@name='lucene-spec-version'])=0",
+            "count(//str[@name='lucene-impl-version'])=0",
             "//str[@name='rawquerystring']='*:*'",
             "//str[@name='querystring']='*:*'",
             "//str[@name='parsedquery']='MatchAllDocsQuery(*:*)'",

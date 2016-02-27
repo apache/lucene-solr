@@ -97,9 +97,9 @@ public class DebugComponent extends SearchComponent
         results = rb.getResults().docList;
       }
 
-      NamedList stdinfo = SolrPluginUtils.doStandardDebug( rb.req,
-          rb.getQueryString(), rb.wrap(rb.getQuery()), results, rb.isDebugQuery(), rb.isDebugResults());
-      
+      NamedList stdinfo = SolrPluginUtils.doStandardDebug(rb.req,
+          rb.getQueryString(), rb.wrap(rb.getQuery()), results, rb.isDebugQuery(), rb.isDebugResults(), rb.isDebugAll());
+
       NamedList info = rb.getDebugInfo();
       if( info == null ) {
         rb.setDebugInfo( stdinfo );
@@ -137,7 +137,6 @@ public class DebugComponent extends SearchComponent
       }
     }
   }
-
 
   private void doDebugTrack(ResponseBuilder rb) {
     SolrQueryRequest req = rb.req;
@@ -177,7 +176,7 @@ public class DebugComponent extends SearchComponent
         }
       }
     } else {
-      sreq.params.set(CommonParams.DEBUG_QUERY, "false");
+      sreq.params.set(CommonParams.DEBUG_QUERY, rb.isDebugAll() ? "true" : "false");
       sreq.params.set(CommonParams.DEBUG, "false");
     }
     if (rb.isDebugTimings()) {
