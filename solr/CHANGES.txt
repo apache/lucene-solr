@@ -327,6 +327,9 @@ Other Changes
 
 * SOLR-8691: Cache index fingerprints per searcher. (yonik)
 
+* SOLR-8746: Renamed Overseer.getInQueue to getStateUpdateQueue, getInternalQueue to getInternalWorkQueue
+  and added javadocs. (Scott Blum, shalin)
+
 ==================  5.5.1 ==================
 
 Bug Fixes
