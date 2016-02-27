@@ -21,7 +21,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 
+import org.apache.lucene.document.BinaryPoint;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
@@ -39,12 +43,25 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
-/** Finds all documents whose point value, previously indexed with e.g. {@link org.apache.lucene.document.LongPoint}, is contained in the
- *  specified set.
+/**
+ * Abstract query class to find all documents whose single or multi-dimensional point values, previously indexed with e.g. {@link IntPoint},
+ * is contained in the specified set.
+ *
+ * <p>
+ * This is for subclasses and works on the underlying binary encoding: to
+ * create range queries for lucene's standard {@code Point} types, refer to factory
+ * methods on those classes, e.g. {@link IntPoint#newSetQuery IntPoint.newSetQuery()} for 
+ * fields indexed with {@link IntPoint}.
+
+ * @see IntPoint
+ * @see LongPoint
+ * @see FloatPoint
+ * @see DoublePoint
+ * @see BinaryPoint 
  *
  * @lucene.experimental */
 
-public class PointInSetQuery extends Query {
+public abstract class PointInSetQuery extends Query {
   // A little bit overkill for us, since all of our "terms" are always in the same field:
   final PrefixCodedTerms sortedPackedPoints;
   final int sortedPackedPointsHashCode;
@@ -372,17 +389,5 @@ public class PointInSetQuery extends Query {
    * @param value single value, never null
    * @return human readable value for debugging
    */
-  protected String toString(byte[] value) {
-    assert value != null;
-    StringBuilder sb = new StringBuilder();
-    sb.append("binary(");
-    for (int i = 0; i < value.length; i++) {
-      if (i > 0) {
-        sb.append(' ');
-      }
-      sb.append(Integer.toHexString(value[i] & 0xFF));
-    }
-    sb.append(')');
-    return sb.toString();
-  }
+  protected abstract String toString(byte[] value);
 }
