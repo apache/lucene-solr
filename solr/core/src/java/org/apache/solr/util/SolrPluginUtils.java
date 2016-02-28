@@ -285,16 +285,12 @@ public class SolrPluginUtils {
     Package p = SolrCore.class.getPackage();
     String specificationVersion = p.getSpecificationVersion();
     dbg.add("solr-spec-version", specificationVersion == null ? "" : specificationVersion);
-    String implementationVersion = p.getImplementationVersion();
-    dbg.add("solr-impl-version", implementationVersion == null ? "" : implementationVersion);
   }
 
   public static void doLuceneVersionDebug(NamedList dbg) {
     Package p = LucenePackage.class.getPackage();
     String specificationVersion = p.getSpecificationVersion();
     dbg.add("lucene-spec-version", specificationVersion == null ? "" : specificationVersion);
-    String implementationVersion = p.getImplementationVersion();
-    dbg.add("lucene-impl-version", implementationVersion == null ? "" : implementationVersion);
   }
 
   /**

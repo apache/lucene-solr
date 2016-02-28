@@ -111,9 +111,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ("morelike this - harrison ford", mltreq
         , "count(//str[@name='solr-spec-version'])=1"
-        , "count(//str[@name='solr-impl-version'])=1"
         , "count(//str[@name='lucene-spec-version'])=1"
-        , "count(//str[@name='lucene-impl-version'])=1"
         , "//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='rawMLTQuery']"
         , "//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='boostedMLTQuery']"
         , "//lst[@name='debug']/lst[@name='moreLikeThis']/lst[@name='44']/str[@name='realMLTQuery']"
@@ -127,9 +125,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ(mltreq
         , "count(//str[@name='solr-spec-version'])=0"
-        , "count(//str[@name='solr-impl-version'])=0"
         , "count(//str[@name='lucene-spec-version'])=0"
-        , "count(//str[@name='lucene-impl-version'])=0"
         , "//result/doc[1]/int[@name='id'][.='45']");
 
     params.set(CommonParams.Q, "id:42");
@@ -156,9 +152,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     mltreq = new LocalSolrQueryRequest(h.getCore(), params);
     assertQ(mltreq
         , "count(//str[@name='solr-spec-version'])=1"
-        , "count(//str[@name='solr-impl-version'])=1"
         , "count(//str[@name='lucene-spec-version'])=1"
-        , "count(//str[@name='lucene-impl-version'])=1"
         , "//result/doc[1]/int[@name='id'][.='45']"
         , "//lst[@name='debug']/lst[@name='explain']"
     );
