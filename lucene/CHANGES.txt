@@ -124,6 +124,9 @@ Optimizations
 * LUCENE-6793: LegacyNumericRangeQuery.hashCode() is now less subject to hash
   collisions. (J.B. Langston via Adrien Grand)
 
+* LUCENE-7050: TermsQuery is now cached more aggressively by the default
+  query caching policy. (Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-6789: IndexSearcher's default Similarity is changed to BM25Similarity.
