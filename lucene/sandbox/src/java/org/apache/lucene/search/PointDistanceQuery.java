@@ -82,12 +82,10 @@ public class PointDistanceQuery extends Query {
         }
         
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
-        int[] hitCount = new int[1];
         values.intersect(field,
                          new IntersectVisitor() {
                            @Override
                            public void visit(int docID) {
-                             hitCount[0]++;
                              result.add(docID);
                            }
 
@@ -130,7 +128,7 @@ public class PointDistanceQuery extends Query {
                            }
                          });
 
-        return new ConstantScoreScorer(this, score(), result.build(hitCount[0]).iterator());
+        return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
     };
   }
