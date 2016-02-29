@@ -18,7 +18,6 @@ package org.apache.lucene.util;
 
 
 import java.util.Arrays;
-import java.util.Comparator;
 
 /** Represents byte[], as a slice (offset + length) into an
  *  existing byte[].  The {@link #bytes} member should never be null;
@@ -30,6 +29,10 @@ import java.util.Comparator;
  * Using code like {@code new String(bytes, offset, length)} to do this
  * is <b>wrong</b>, as it does not respect the correct character set
  * and may return wrong results (depending on the platform's defaults)!
+ * 
+ * <p>{@code BytesRef} implements {@link Comparable}. The underlying byte arrays
+ * are sorted lexicographically, numerically treating elements as unsigned.
+ * This is identical to Unicode codepoint order.
  */
 public final class BytesRef implements Comparable<BytesRef>,Cloneable {
   /** An empty byte array for convenience */
@@ -169,106 +172,29 @@ public final class BytesRef implements Comparable<BytesRef>,Cloneable {
   /** Unsigned byte order comparison */
   @Override
   public int compareTo(BytesRef other) {
-    return utf8SortedAsUnicodeSortOrder.compare(this, other);
-  }
-  
-  private final static Comparator<BytesRef> utf8SortedAsUnicodeSortOrder = new UTF8SortedAsUnicodeComparator();
+    // TODO: Once we are on Java 9 replace this by java.util.Arrays#compareUnsigned()
+    // which is implemented by a Hotspot intrinsic! Also consider building a
+    // Multi-Release-JAR!
+    final byte[] aBytes = this.bytes;
+    int aUpto = this.offset;
+    final byte[] bBytes = other.bytes;
+    int bUpto = other.offset;
+    
+    final int aStop = aUpto + Math.min(this.length, other.length);
+    while(aUpto < aStop) {
+      int aByte = aBytes[aUpto++] & 0xff;
+      int bByte = bBytes[bUpto++] & 0xff;
 
-  public static Comparator<BytesRef> getUTF8SortedAsUnicodeComparator() {
-    return utf8SortedAsUnicodeSortOrder;
-  }
-
-  private static class UTF8SortedAsUnicodeComparator implements Comparator<BytesRef> {
-    // Only singleton
-    private UTF8SortedAsUnicodeComparator() {};
-
-    @Override
-    public int compare(BytesRef a, BytesRef b) {
-      final byte[] aBytes = a.bytes;
-      int aUpto = a.offset;
-      final byte[] bBytes = b.bytes;
-      int bUpto = b.offset;
-      
-      final int aStop = aUpto + Math.min(a.length, b.length);
-      while(aUpto < aStop) {
-        int aByte = aBytes[aUpto++] & 0xff;
-        int bByte = bBytes[bUpto++] & 0xff;
-
-        int diff = aByte - bByte;
-        if (diff != 0) {
-          return diff;
-        }
+      int diff = aByte - bByte;
+      if (diff != 0) {
+        return diff;
       }
-
-      // One is a prefix of the other, or, they are equal:
-      return a.length - b.length;
-    }    
-  }
-
-  /** @deprecated This comparator is only a transition mechanism */
-  @Deprecated
-  private final static Comparator<BytesRef> utf8SortedAsUTF16SortOrder = new UTF8SortedAsUTF16Comparator();
-
-  /** @deprecated This comparator is only a transition mechanism */
-  @Deprecated
-  public static Comparator<BytesRef> getUTF8SortedAsUTF16Comparator() {
-    return utf8SortedAsUTF16SortOrder;
-  }
-
-  /** @deprecated This comparator is only a transition mechanism */
-  @Deprecated
-  private static class UTF8SortedAsUTF16Comparator implements Comparator<BytesRef> {
-    // Only singleton
-    private UTF8SortedAsUTF16Comparator() {};
-
-    @Override
-    public int compare(BytesRef a, BytesRef b) {
-
-      final byte[] aBytes = a.bytes;
-      int aUpto = a.offset;
-      final byte[] bBytes = b.bytes;
-      int bUpto = b.offset;
-      
-      final int aStop;
-      if (a.length < b.length) {
-        aStop = aUpto + a.length;
-      } else {
-        aStop = aUpto + b.length;
-      }
-
-      while(aUpto < aStop) {
-        int aByte = aBytes[aUpto++] & 0xff;
-        int bByte = bBytes[bUpto++] & 0xff;
-
-        if (aByte != bByte) {
-
-          // See http://icu-project.org/docs/papers/utf16_code_point_order.html#utf-8-in-utf-16-order
-
-          // We know the terms are not equal, but, we may
-          // have to carefully fixup the bytes at the
-          // difference to match UTF16's sort order:
-          
-          // NOTE: instead of moving supplementary code points (0xee and 0xef) to the unused 0xfe and 0xff, 
-          // we move them to the unused 0xfc and 0xfd [reserved for future 6-byte character sequences]
-          // this reserves 0xff for preflex's term reordering (surrogate dance), and if unicode grows such
-          // that 6-byte sequences are needed we have much bigger problems anyway.
-          if (aByte >= 0xee && bByte >= 0xee) {
-            if ((aByte & 0xfe) == 0xee) {
-              aByte += 0xe;
-            }
-            if ((bByte&0xfe) == 0xee) {
-              bByte += 0xe;
-            }
-          }
-          return aByte - bByte;
-        }
-      }
-
-      // One is a prefix of the other, or, they are equal:
-      return a.length - b.length;
     }
+
+    // One is a prefix of the other, or, they are equal:
+    return this.length - other.length;
   }
-  
+    
   /**
    * Creates a new BytesRef that points to a copy of the bytes from 
    * <code>other</code>

@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.util;
 
-
+import java.util.Comparator;
 
 public class TestIntroSorter extends BaseSortTestCase {
 
@@ -26,7 +26,7 @@ public class TestIntroSorter extends BaseSortTestCase {
 
   @Override
   public Sorter newSorter(Entry[] arr) {
-    return new ArrayIntroSorter<>(arr, ArrayUtil.<Entry>naturalComparator());
+    return new ArrayIntroSorter<>(arr, Comparator.naturalOrder());
   }
 
 }

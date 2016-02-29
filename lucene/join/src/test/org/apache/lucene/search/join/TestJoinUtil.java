@@ -1130,7 +1130,7 @@ public class TestJoinUtil extends LuceneTestCase {
         Terms terms = slowCompositeReader.terms(toField);
         if (terms != null) {
           PostingsEnum postingsEnum = null;
-          SortedSet<BytesRef> joinValues = new TreeSet<>(BytesRef.getUTF8SortedAsUnicodeComparator());
+          SortedSet<BytesRef> joinValues = new TreeSet<>();
           joinValues.addAll(joinValueToJoinScores.keySet());
           for (BytesRef joinValue : joinValues) {
             TermsEnum termsEnum = terms.iterator();

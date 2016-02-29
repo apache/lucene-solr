@@ -316,7 +316,7 @@ public class SortField {
     return Objects.hash(field, type, reverse, comparatorSource, missingValue);
   }
 
-  private Comparator<BytesRef> bytesComparator = BytesRef.getUTF8SortedAsUnicodeComparator();
+  private Comparator<BytesRef> bytesComparator = Comparator.naturalOrder();
 
   public void setBytesComparator(Comparator<BytesRef> b) {
     bytesComparator = b;

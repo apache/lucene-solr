@@ -98,11 +98,17 @@ API Changes
 * LUCENE-6917: Deprecate and rename NumericXXX classes to
   LegacyNumericXXX in favor of points (Mike McCandless)
 
-* LUCENE-6947: SortField.missingValue is now protected. You can read its value
-  using the new SortField.getMissingValue getter. (Adrien Grand)
+* LUCENE-6947: SortField.missingValue is now protected. You can read its
+  value using the new SortField.getMissingValue getter. (Adrien Grand)
 
 * LUCENE-7028: Remove duplicate method in LegacyNumericUtils.
   (Uwe Schindler)
+
+* LUCENE-7052, LUCENE-7053: Remove custom comparators from BytesRef
+  class and solely use natural byte[] comparator throughout codebase.
+  This also simplifies API of BytesRefHash. It also replaces the natural
+  comparator in ArrayUtil by Java 8's Comparator#naturalOrder().
+  (Mike McCandless, Uwe Schindler, Robert Muir)
 
 Optimizations
 

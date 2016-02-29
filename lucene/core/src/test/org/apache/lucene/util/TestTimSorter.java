@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.util;
 
+import java.util.Comparator;
 
 public class TestTimSorter extends BaseSortTestCase {
 
@@ -25,6 +26,6 @@ public class TestTimSorter extends BaseSortTestCase {
 
   @Override
   public Sorter newSorter(Entry[] arr) {
-    return new ArrayTimSorter<>(arr, ArrayUtil.<Entry>naturalComparator(), TestUtil.nextInt(random(), 0, arr.length));
+    return new ArrayTimSorter<>(arr, Comparator.naturalOrder(), TestUtil.nextInt(random(), 0, arr.length));
   }
 }

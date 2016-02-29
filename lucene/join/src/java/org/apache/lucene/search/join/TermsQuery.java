@@ -26,7 +26,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 
 import java.io.IOException;
-import java.util.Comparator;
 
 /**
  * A query that has an array of terms from a specific field. This query will match documents have one or more terms in
@@ -100,7 +99,6 @@ class TermsQuery extends MultiTermQuery {
 
     private final BytesRef lastTerm;
     private final BytesRef spare = new BytesRef();
-    private final Comparator<BytesRef> comparator;
 
     private BytesRef seekTerm;
     private int upto = 0;
@@ -109,7 +107,6 @@ class TermsQuery extends MultiTermQuery {
       super(tenum);
       this.terms = terms;
       this.ords = ords;
-      comparator = BytesRef.getUTF8SortedAsUnicodeComparator();
       lastElement = terms.size() - 1;
       lastTerm = terms.get(ords[lastElement], new BytesRef());
       seekTerm = terms.get(ords[upto], spare);
@@ -124,12 +121,12 @@ class TermsQuery extends MultiTermQuery {
 
     @Override
     protected AcceptStatus accept(BytesRef term) throws IOException {
-      if (comparator.compare(term, lastTerm) > 0) {
+      if (term.compareTo(lastTerm) > 0) {
         return AcceptStatus.END;
       }
 
       BytesRef currentTerm = terms.get(ords[upto], spare);
-      if (comparator.compare(term, currentTerm) == 0) {
+      if (term.compareTo(currentTerm) == 0) {
         if (upto == lastElement) {
           return AcceptStatus.YES;
         } else {
@@ -148,7 +145,7 @@ class TermsQuery extends MultiTermQuery {
             // typically the terms dict is a superset of query's terms so it's unusual that we have to skip many of
             // our terms so we don't do a binary search here
             seekTerm = terms.get(ords[++upto], spare);
-          } while ((cmp = comparator.compare(seekTerm, term)) < 0);
+          } while ((cmp = seekTerm.compareTo(term)) < 0);
           if (cmp == 0) {
             if (upto == lastElement) {
               return AcceptStatus.YES;

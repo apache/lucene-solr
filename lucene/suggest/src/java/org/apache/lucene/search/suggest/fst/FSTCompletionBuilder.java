@@ -18,6 +18,7 @@ package org.apache.lucene.search.suggest.fst;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Comparator;
 
 import org.apache.lucene.search.suggest.InMemorySorter;
 import org.apache.lucene.util.BytesRef;
@@ -148,10 +149,10 @@ public class FSTCompletionBuilder {
   /**
    * Creates an {@link FSTCompletion} with default options: 10 buckets, exact match
    * promoted to first position and {@link InMemorySorter} with a comparator obtained from
-   * {@link BytesRef#getUTF8SortedAsUnicodeComparator()}.
+   * {@link Comparator#naturalOrder()}.
    */
   public FSTCompletionBuilder() {
-    this(DEFAULT_BUCKETS, new InMemorySorter(BytesRef.getUTF8SortedAsUnicodeComparator()), Integer.MAX_VALUE);
+    this(DEFAULT_BUCKETS, new InMemorySorter(Comparator.naturalOrder()), Integer.MAX_VALUE);
   }
 
   /**

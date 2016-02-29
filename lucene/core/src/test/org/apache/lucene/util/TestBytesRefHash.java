@@ -17,9 +17,7 @@
 package org.apache.lucene.util;
 
 
-import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map.Entry;
@@ -168,15 +166,6 @@ public class TestBytesRefHash extends LuceneTestCase {
     }
   }
 
-  private static int[] codePoints(String input) {
-    int length = Character.codePointCount(input, 0, input.length());
-    int word[] = new int[length];
-    for (int i = 0, j = 0, cp = 0; i < input.length(); i += Character.charCount(cp)) {
-      word[j++] = cp = input.codePointAt(i);
-    }
-    return word;
-  }
-
   /**
    * Test method for
    * {@link org.apache.lucene.util.BytesRefHash#sort()}.
@@ -188,21 +177,7 @@ public class TestBytesRefHash extends LuceneTestCase {
     for (int j = 0; j < num; j++) {
 
       // Sorts by unicode code point order (is there a simple way, e.g. a Collator?)
-      SortedSet<String> strings = new TreeSet<>(new Comparator<String>() {
-          @Override
-          public int compare(String a, String b) {
-            int[] aCodePoints = codePoints(a);
-            int[] bCodePoints = codePoints(b);
-            for(int i=0;i<Math.min(aCodePoints.length, bCodePoints.length);i++) {
-              if (aCodePoints[i] < bCodePoints[i]) {
-                return -1;
-              } else if (aCodePoints[i] > bCodePoints[i]) {
-                return 1;
-              }
-            }
-            return aCodePoints.length - bCodePoints.length;
-          }
-        });
+      SortedSet<String> strings = new TreeSet<>(TestUtil.STRING_CODEPOINT_COMPARATOR);
       for (int i = 0; i < 797; i++) {
         String str;
         do {

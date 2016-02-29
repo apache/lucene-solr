@@ -18,7 +18,6 @@ package org.apache.lucene.util;
 
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
@@ -158,7 +157,6 @@ public final class BytesRefHash {
    * </p>
    */
   public int[] sort() {
-    final Comparator<BytesRef> comp = BytesRef.getUTF8SortedAsUnicodeComparator();
     final int[] compact = compact();
     new IntroSorter() {
       @Override
@@ -174,7 +172,7 @@ public final class BytesRefHash {
         assert bytesStart.length > id1 && bytesStart.length > id2;
         pool.setBytesRef(scratch1, bytesStart[id1]);
         pool.setBytesRef(scratch2, bytesStart[id2]);
-        return comp.compare(scratch1, scratch2);
+        return scratch1.compareTo(scratch2);
       }
 
       @Override
@@ -189,7 +187,7 @@ public final class BytesRefHash {
         final int id = compact[j];
         assert bytesStart.length > id;
         pool.setBytesRef(scratch2, bytesStart[id]);
-        return comp.compare(pivot, scratch2);
+        return pivot.compareTo(scratch2);
       }
       
       private final BytesRef pivot = new BytesRef(),

@@ -90,9 +90,8 @@ public class TestBytesRefArray extends LuceneTestCase {
         stringList.add(randomRealisticUnicodeString);
       }
       
-      Collections.sort(stringList);
-      BytesRefIterator iter = list.iterator(BytesRef
-          .getUTF8SortedAsUTF16Comparator());
+      Collections.sort(stringList, TestUtil.STRING_CODEPOINT_COMPARATOR);
+      BytesRefIterator iter = list.iterator(Comparator.naturalOrder());
       int i = 0;
       BytesRef next;
       while ((next = iter.next()) != null) {

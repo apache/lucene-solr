@@ -17,6 +17,8 @@
 package org.apache.lucene.util;
 
 
+import java.util.Comparator;
+
 import org.junit.runner.RunWith;
 
 import com.carrotsearch.randomizedtesting.RandomizedRunner;
@@ -30,7 +32,7 @@ public class TestInPlaceMergeSorter extends BaseSortTestCase {
 
   @Override
   public Sorter newSorter(Entry[] arr) {
-    return new ArrayInPlaceMergeSorter<>(arr, ArrayUtil.<Entry>naturalComparator());
+    return new ArrayInPlaceMergeSorter<>(arr, Comparator.naturalOrder());
   }
 
 }

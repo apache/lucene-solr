@@ -174,7 +174,7 @@ public class OfflineSorter {
   private final Comparator<BytesRef> comparator;
   
   /** Default comparator: sorts in binary (codepoint) order */
-  public static final Comparator<BytesRef> DEFAULT_COMPARATOR = BytesRef.getUTF8SortedAsUnicodeComparator();
+  public static final Comparator<BytesRef> DEFAULT_COMPARATOR = Comparator.naturalOrder();
 
   /**
    * Defaults constructor.

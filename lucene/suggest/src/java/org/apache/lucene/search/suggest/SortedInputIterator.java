@@ -57,11 +57,10 @@ public class SortedInputIterator implements InputIterator {
   private Set<BytesRef> contexts = null;
   
   /**
-   * Creates a new sorted wrapper, using {@link
-   * BytesRef#getUTF8SortedAsUnicodeComparator} for
-   * sorting. */
+   * Creates a new sorted wrapper, using {@linkplain Comparator#naturalOrder() natural order}
+   * for sorting. */
   public SortedInputIterator(Directory tempDir, String tempFileNamePrefix, InputIterator source) throws IOException {
-    this(tempDir, tempFileNamePrefix, source, BytesRef.getUTF8SortedAsUnicodeComparator());
+    this(tempDir, tempFileNamePrefix, source, Comparator.naturalOrder());
   }
 
   /**
