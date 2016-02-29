@@ -254,6 +254,8 @@ public final class ZkController {
             log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
 
             try {
+              zkStateReader.createClusterStateWatchersAndUpdate();
+
               // this is troublesome - we dont want to kill anything the old
               // leader accepted
               // though I guess sync will likely get those updates back? But
@@ -282,8 +284,6 @@ public final class ZkController {
               cc.cancelCoreRecoveries();
 
               registerAllCoresAsDown(registerOnReconnect, false);
-
-              zkStateReader.createClusterStateWatchersAndUpdate();
 
               // we have to register as live first to pick up docs in the buffer
               createEphemeralLiveNode();
@@ -620,6 +620,7 @@ public final class ZkController {
 
     try {
       createClusterZkNodes(zkClient);
+      zkStateReader.createClusterStateWatchersAndUpdate();
 
       // start the overseer first as following code may need it's processing
       if (!zkRunOnly) {
@@ -632,10 +633,8 @@ public final class ZkController {
         overseerElector.joinElection(context, false);
       }
 
-      zkStateReader.createClusterStateWatchersAndUpdate();
       Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
       if (stat != null && stat.getNumChildren() > 0) {
-        zkStateReader.createClusterStateWatchersAndUpdate();
         publishAndWaitForDownStates();
       }
 
