@@ -323,7 +323,7 @@ public class MMapDirectory extends FSDirectory {
   private static final BufferCleaner CLEANER;
   
   static {
-    final Object hack = AccessController.doPrivileged((PrivilegedAction<Object>) MMapDirectory::initUnmapHack);
+    final Object hack = AccessController.doPrivileged((PrivilegedAction<Object>) MMapDirectory::unmapHackImpl);
     if (hack instanceof BufferCleaner) {
       CLEANER = (BufferCleaner) hack;
       UNMAP_SUPPORTED = true;
@@ -336,7 +336,7 @@ public class MMapDirectory extends FSDirectory {
   }
   
   @SuppressForbidden(reason = "Needs access to private APIs in DirectBuffer and sun.misc.Cleaner to enable hack")
-  private static Object initUnmapHack() {
+  private static Object unmapHackImpl() {
     final Lookup lookup = lookup();
     try {
       final Class<?> directBufferClass = Class.forName("java.nio.DirectByteBuffer");
@@ -388,10 +388,10 @@ public class MMapDirectory extends FSDirectory {
     } catch (ReflectiveOperationException e) {
       return "Unmapping is not supported on this platform, because internal Java APIs are not compatible to this Lucene version: " + e; 
     } catch (SecurityException e) {
-      return "Unmapping is not supported, because not all required permissions are given to the Lucene JAR file. " +
-          "Please grant at least the following permissions: RuntimePermission(\"accessClassInPackage.sun.misc\"), " +
+      return "Unmapping is not supported, because not all required permissions are given to the Lucene JAR file: " + e +
+          " [Please grant at least the following permissions: RuntimePermission(\"accessClassInPackage.sun.misc\"), " +
           "RuntimePermission(\"accessClassInPackage.jdk.internal.ref\"), and " +
-          "ReflectPermission(\"suppressAccessChecks\")";
+          "ReflectPermission(\"suppressAccessChecks\")]";
     }
   }
   
