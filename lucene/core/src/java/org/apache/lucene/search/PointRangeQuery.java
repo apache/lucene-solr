@@ -221,7 +221,6 @@ public abstract class PointRangeQuery extends Query {
 
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
 
-        int[] hitCount = new int[1];
         values.intersect(field,
                          new IntersectVisitor() {
 
@@ -232,7 +231,6 @@ public abstract class PointRangeQuery extends Query {
 
                            @Override
                            public void visit(int docID) {
-                             hitCount[0]++;
                              result.add(docID);
                            }
 
@@ -251,7 +249,6 @@ public abstract class PointRangeQuery extends Query {
                              }
 
                              // Doc is in-bounds
-                             hitCount[0]++;
                              result.add(docID);
                            }
 
@@ -280,8 +277,7 @@ public abstract class PointRangeQuery extends Query {
                            }
                          });
 
-        // NOTE: hitCount[0] will be over-estimate in multi-valued case
-        return new ConstantScoreScorer(this, score(), result.build(hitCount[0]).iterator());
+        return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
     };
   }

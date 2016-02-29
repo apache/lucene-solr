@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Objects;
 
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.DoublePoint;
@@ -27,7 +26,6 @@ import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
@@ -39,8 +37,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
 /**
@@ -138,18 +134,16 @@ public abstract class PointInSetQuery extends Query {
 
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
 
-        int[] hitCount = new int[1];
-
         if (numDims == 1) {
 
           // We optimize this common case, effectively doing a merge sort of the indexed values vs the queried set:
-          values.intersect(field, new MergePointVisitor(sortedPackedPoints, hitCount, result));
+          values.intersect(field, new MergePointVisitor(sortedPackedPoints, result));
 
         } else {
           // NOTE: this is naive implementation, where for each point we re-walk the KD tree to intersect.  We could instead do a similar
           // optimization as the 1D case, but I think it'd mean building a query-time KD tree so we could efficiently intersect against the
           // index, which is probably tricky!
-          SinglePointVisitor visitor = new SinglePointVisitor(hitCount, result);
+          SinglePointVisitor visitor = new SinglePointVisitor(result);
           TermIterator iterator = sortedPackedPoints.iterator();
           for (BytesRef point = iterator.next(); point != null; point = iterator.next()) {
             visitor.setPoint(point);
@@ -157,8 +151,7 @@ public abstract class PointInSetQuery extends Query {
           }
         }
 
-        // NOTE: hitCount[0] will be over-estimate in multi-valued case
-        return new ConstantScoreScorer(this, score(), result.build(hitCount[0]).iterator());
+        return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
     };
   }
@@ -168,15 +161,13 @@ public abstract class PointInSetQuery extends Query {
   private class MergePointVisitor implements IntersectVisitor {
 
     private final DocIdSetBuilder result;
-    private final int[] hitCount;
     private TermIterator iterator;
     private BytesRef nextQueryPoint;
     private final byte[] lastMaxPackedValue;
     private final BytesRef scratch = new BytesRef();
     private final PrefixCodedTerms sortedPackedPoints;
 
-    public MergePointVisitor(PrefixCodedTerms sortedPackedPoints, int[] hitCount, DocIdSetBuilder result) throws IOException {
-      this.hitCount = hitCount;
+    public MergePointVisitor(PrefixCodedTerms sortedPackedPoints, DocIdSetBuilder result) throws IOException {
       this.result = result;
       this.sortedPackedPoints = sortedPackedPoints;
       lastMaxPackedValue = new byte[bytesPerDim];
@@ -196,7 +187,6 @@ public abstract class PointInSetQuery extends Query {
 
     @Override
     public void visit(int docID) {
-      hitCount[0]++;
       result.add(docID);
     }
 
@@ -207,7 +197,6 @@ public abstract class PointInSetQuery extends Query {
         int cmp = nextQueryPoint.compareTo(scratch);
         if (cmp == 0) {
           // Query point equals index point, so collect and return
-          hitCount[0]++;
           result.add(docID);
           break;
         } else if (cmp < 0) {
@@ -264,11 +253,9 @@ public abstract class PointInSetQuery extends Query {
   private class SinglePointVisitor implements IntersectVisitor {
 
     private final DocIdSetBuilder result;
-    private final int[] hitCount;
     private final byte[] pointBytes;
 
-    public SinglePointVisitor(int[] hitCount, DocIdSetBuilder result) {
-      this.hitCount = hitCount;
+    public SinglePointVisitor(DocIdSetBuilder result) {
       this.result = result;
       this.pointBytes = new byte[bytesPerDim * numDims];
     }
@@ -286,7 +273,6 @@ public abstract class PointInSetQuery extends Query {
 
     @Override
     public void visit(int docID) {
-      hitCount[0]++;
       result.add(docID);
     }
 
@@ -295,7 +281,6 @@ public abstract class PointInSetQuery extends Query {
       assert packedValue.length == pointBytes.length;
       if (Arrays.equals(packedValue, pointBytes)) {
         // The point for this doc matches the point we are querying on
-        hitCount[0]++;
         result.add(docID);
       }
     }

@@ -111,12 +111,10 @@ public class PointInPolygonQuery extends Query {
         }
 
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
-        int[] hitCount = new int[1];
         values.intersect(field,
                          new IntersectVisitor() {
                            @Override
                            public void visit(int docID) {
-                             hitCount[0]++;
                              result.add(docID);
                            }
 
@@ -126,7 +124,6 @@ public class PointInPolygonQuery extends Query {
                              double lat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(packedValue, 0));
                              double lon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(packedValue, Integer.BYTES));
                              if (GeoRelationUtils.pointInPolygon(polyLons, polyLats, lat, lon)) {
-                               hitCount[0]++;
                                result.add(docID);
                              }
                            }
@@ -155,8 +152,7 @@ public class PointInPolygonQuery extends Query {
                            }
                          });
 
-        // NOTE: hitCount[0] will be over-estimate in multi-valued case
-        return new ConstantScoreScorer(this, score(), result.build(hitCount[0]).iterator());
+        return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
     };
   }
