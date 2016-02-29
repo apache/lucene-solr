@@ -340,6 +340,9 @@ Other Changes
 * SOLR-8713: new UI and example solrconfig files point to Reference Guide for Solr Query Syntax instead 
   of the wiki. (Marius Grama via Tomás Fernández Löbbe)
 
+* SOLR-8758: Add a new SolrCloudTestCase class, using MiniSolrCloudCluster (Alan
+  Woodward)
+
 ==================  5.5.1 ==================
 
 Bug Fixes
