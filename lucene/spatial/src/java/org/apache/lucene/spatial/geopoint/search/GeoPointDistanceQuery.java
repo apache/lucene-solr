@@ -57,6 +57,11 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
     this(field, TermEncoding.PREFIX, centerLon, centerLat, radiusMeters);
   }
 
+  /**
+   * Constructs a Query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types within a
+   * distance (in meters) from a given point. Accepts optional
+   * {@link org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding} parameter
+   **/
   public GeoPointDistanceQuery(final String field, final TermEncoding termEncoding, final double centerLon, final double centerLat, final double radiusMeters) {
     this(field, termEncoding, GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters), centerLon, centerLat, radiusMeters);
   }

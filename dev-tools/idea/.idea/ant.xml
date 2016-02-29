@@ -31,6 +31,7 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/replicator/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/sandbox/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/spatial/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/spatial-extras/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/suggest/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/test-framework/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/tools/build.xml" />

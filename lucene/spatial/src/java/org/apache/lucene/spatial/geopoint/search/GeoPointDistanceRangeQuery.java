@@ -30,6 +30,7 @@ import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
  *    @lucene.experimental
  */
 public final class GeoPointDistanceRangeQuery extends GeoPointDistanceQuery {
+  /** minimum distance range (in meters) from lon, lat center location, maximum is inherited */
   protected final double minRadiusMeters;
 
   /**
@@ -41,6 +42,11 @@ public final class GeoPointDistanceRangeQuery extends GeoPointDistanceQuery {
     this(field, TermEncoding.PREFIX, centerLon, centerLat, minRadiusMeters, maxRadiusMeters);
   }
 
+  /**
+   * Constructs a query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types within a minimum / maximum
+   * distance (in meters) range from a given point. Accepts an optional
+   * {@link org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding}
+   */
   public GeoPointDistanceRangeQuery(final String field, final TermEncoding termEncoding, final double centerLon, final double centerLat,
                                     final double minRadiusMeters, final double maxRadius) {
     super(field, termEncoding, centerLon, centerLat, maxRadius);

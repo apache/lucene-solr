@@ -45,11 +45,17 @@ import org.apache.lucene.spatial.util.GeoUtils;
  * @lucene.experimental
  */
 public class GeoPointInBBoxQuery extends Query {
+  /** field name */
   protected final String field;
+  /** minimum longitude value (in degrees) */
   protected final double minLon;
+  /** minimum latitude value (in degrees) */
   protected final double minLat;
+  /** maximum longitude value (in degrees) */
   protected final double maxLon;
+  /** maximum latitude value (in degrees) */
   protected final double maxLat;
+  /** term encoding enum to define how the points are encoded (PREFIX or NUMERIC) */
   protected final TermEncoding termEncoding;
 
   /**
@@ -60,6 +66,10 @@ public class GeoPointInBBoxQuery extends Query {
     this(field, TermEncoding.PREFIX, minLon, minLat, maxLon, maxLat);
   }
 
+  /**
+   * Constructs a query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types that fall within a
+   * defined bounding box. Accepts optional {@link org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding} parameter
+   */
   public GeoPointInBBoxQuery(final String field, final TermEncoding termEncoding, final double minLon, final double minLat, final double maxLon, final double maxLat) {
     this.field = field;
     this.minLon = minLon;

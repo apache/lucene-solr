@@ -47,9 +47,15 @@ import org.apache.lucene.spatial.util.GeoUtils;
 public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
   // polygon position arrays - this avoids the use of any objects or
   // or geo library dependencies
+  /** array of x (longitude) values (in degrees) */
   protected final double[] x;
+  /** array of y (latitude) values (in degrees) */
   protected final double[] y;
 
+  /**
+   * Constructs a new GeoPolygonQuery that will match encoded {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} terms
+   * that fall within or on the boundary of the polygon defined by the input parameters.
+   */
   public GeoPointInPolygonQuery(final String field, final double[] polyLons, final double[] polyLats) {
     this(field, TermEncoding.PREFIX, GeoUtils.polyToBBox(polyLons, polyLats), polyLons, polyLats);
   }

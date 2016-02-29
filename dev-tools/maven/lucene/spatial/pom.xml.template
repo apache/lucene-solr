@@ -31,7 +31,7 @@
   <packaging>jar</packaging>
   <name>Lucene Spatial</name>
   <description>    
-  	Spatial Strategies for Apache Lucene
+	Geospatial Indexing and Query for Apache Lucene
   </description>
   <properties>
     <module-directory>lucene/spatial</module-directory>
