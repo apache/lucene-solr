@@ -22,6 +22,7 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.PointDistanceQuery;
 import org.apache.lucene.search.PointInPolygonQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
@@ -37,6 +38,7 @@ import org.apache.lucene.spatial.util.GeoUtils;
  * This field defines static factory methods for creating common queries:
  * <ul>
  *   <li>{@link #newBoxQuery newBoxQuery()} for matching points within a bounding box.
+ *   <li>{@link #newDistanceQuery newDistanceQuery()} for matching points within a specified distance.
  *   <li>{@link #newPolygonQuery newPolygonQuery()} for matching points within an arbitrary polygon.
  * </ul>
  * <p>
@@ -204,6 +206,13 @@ public class LatLonPoint extends Field {
         }
       }
     };
+  }
+  
+  /**
+   * Create a query for matching points within the specified distance of the supplied location.
+   */
+  public static Query newDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
+    return new PointDistanceQuery(field, latitude, longitude, radiusMeters);
   }
   
   /** 
