@@ -117,6 +117,26 @@ public final class TestUtil {
   }
 
   /** 
+   * A comparator that compares UTF-16 strings / char sequences according to Unicode
+   * code point order. This can be used to verify {@link BytesRef} order. 
+   * <p>
+   * <b>Warning:</b> This comparator is rather inefficient, because
+   * it converts the strings to a {@code int[]} array on each invocation.
+   * */
+  public static final Comparator<CharSequence> STRING_CODEPOINT_COMPARATOR = (a, b) -> {
+    final int[] aCodePoints = a.codePoints().toArray();
+    final int[] bCodePoints = b.codePoints().toArray();
+    for(int i = 0, c = Math.min(aCodePoints.length, bCodePoints.length); i < c; i++) {
+      if (aCodePoints[i] < bCodePoints[i]) {
+        return -1;
+      } else if (aCodePoints[i] > bCodePoints[i]) {
+        return 1;
+      }
+    }
+    return aCodePoints.length - bCodePoints.length;
+  };
+  
+  /** 
    * Convenience method unzipping zipName into destDir. You must pass it a clean destDir.
    *
    * Closes the given InputStream after extracting! 
@@ -771,26 +791,6 @@ public final class TestUtil {
     0x2A6DF, 0x2B73F, 0x2FA1F, 0xE007F, 0xE01EF, 0xFFFFF, 0x10FFFF
   };
 
-  /** 
-   * A comparator that compares strings according to Unicode code point order.
-   * This can be used to verify {@link BytesRef} order. 
-   * <p>
-   * <b>Warning:</b> This comparator is rather inefficient, because
-   * it converts the strings to a {@code int[]} array on each invocation.
-   * */
-  public static final Comparator<String> STRING_CODEPOINT_COMPARATOR = (a, b) -> {
-    final int[] aCodePoints = a.codePoints().toArray();
-    final int[] bCodePoints = b.codePoints().toArray();
-    for(int i = 0, c = Math.min(aCodePoints.length, bCodePoints.length); i < c; i++) {
-      if (aCodePoints[i] < bCodePoints[i]) {
-        return -1;
-      } else if (aCodePoints[i] > bCodePoints[i]) {
-        return 1;
-      }
-    }
-    return aCodePoints.length - bCodePoints.length;
-  };
-  
   /** Returns random string of length between 0-20 codepoints, all codepoints within the same unicode block. */
   public static String randomRealisticUnicodeString(Random r) {
     return randomRealisticUnicodeString(r, 20);
