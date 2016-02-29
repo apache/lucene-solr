@@ -80,6 +80,8 @@ Upgrading from Solr 5.x
 
 * SOLR-8698: 'useParams' attribute specified in request handler cannot be overridden from request params
 
+* When requesting stats in date fields, "sum" is now a double value instead of a date. See SOLR-8671
+
 Detailed Change List
 ----------------------
 
