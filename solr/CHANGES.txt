@@ -333,7 +333,10 @@ Other Changes
 * SOLR-8752: Add a test for SizeLimitedDistributedMap and improve javadocs. (shalin)
 
 * SOLR-8671: Date statistics: make "sum" a double instead of a long/date (Tom Hill, Christine Poerschke,
-  Tommás Fernández Löbbe)
+  Tomás Fernández Löbbe)
+
+* SOLR-8713: new UI and example solrconfig files point to Reference Guide for Solr Query Syntax instead 
+  of the wiki. (Marius Grama via Tomás Fernández Löbbe)
 
 ==================  5.5.1 ==================
 
