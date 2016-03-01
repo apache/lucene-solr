@@ -52,10 +52,8 @@ import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.update.UpdateLog;
-import org.apache.solr.update.UpdateShardHandler;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
@@ -256,6 +254,8 @@ public final class ZkController {
             log.info("ZooKeeper session re-connected ... refreshing core states after session expiration.");
 
             try {
+              zkStateReader.createClusterStateWatchersAndUpdate();
+
               // this is troublesome - we dont want to kill anything the old
               // leader accepted
               // though I guess sync will likely get those updates back? But
@@ -284,8 +284,6 @@ public final class ZkController {
               cc.cancelCoreRecoveries();
 
               registerAllCoresAsDown(registerOnReconnect, false);
-
-              zkStateReader.createClusterStateWatchersAndUpdate();
 
               // we have to register as live first to pick up docs in the buffer
               createEphemeralLiveNode();
@@ -353,7 +351,7 @@ public final class ZkController {
       }
     }, zkACLProvider);
 
-    this.overseerJobQueue = Overseer.getInQueue(zkClient);
+    this.overseerJobQueue = Overseer.getStateUpdateQueue(zkClient);
     this.overseerCollectionQueue = Overseer.getCollectionQueue(zkClient);
     this.overseerConfigSetQueue = Overseer.getConfigSetQueue(zkClient);
     this.overseerRunningMap = Overseer.getRunningMap(zkClient);
@@ -622,6 +620,7 @@ public final class ZkController {
 
     try {
       createClusterZkNodes(zkClient);
+      zkStateReader.createClusterStateWatchersAndUpdate();
 
       // start the overseer first as following code may need it's processing
       if (!zkRunOnly) {
@@ -634,10 +633,8 @@ public final class ZkController {
         overseerElector.joinElection(context, false);
       }
 
-      zkStateReader.createClusterStateWatchersAndUpdate();
       Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
       if (stat != null && stat.getNumChildren() > 0) {
-        zkStateReader.createClusterStateWatchersAndUpdate();
         publishAndWaitForDownStates();
       }
 
@@ -2120,7 +2117,7 @@ public final class ZkController {
     // we use this version and multi to ensure *only* the current zk registered leader
     // for a shard can put a replica into LIR
     
-    Integer leaderZkNodeParentVersion = ((ShardLeaderElectionContextBase)context).leaderZkNodeParentVersion;
+    Integer leaderZkNodeParentVersion = ((ShardLeaderElectionContextBase)context).getLeaderZkNodeParentVersion();
     
     // TODO: should we do this optimistically to avoid races?
     if (zkClient.exists(znodePath, retryOnConnLoss)) {
@@ -2462,7 +2459,7 @@ public final class ZkController {
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.DOWNNODE.toLower(),
         ZkStateReader.NODE_NAME_PROP, nodeName);
     try {
-      Overseer.getInQueue(getZkClient()).offer(Utils.toJSON(m));
+      Overseer.getStateUpdateQueue(getZkClient()).offer(Utils.toJSON(m));
     } catch (InterruptedException e) {
       Thread.interrupted();
       log.info("Publish node as down was interrupted.");

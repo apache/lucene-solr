@@ -422,7 +422,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     } else {
       result = -90 + 180.0 * random().nextDouble();
     }
-    return result;
+    return quantizeLat(result);
   }
 
   public double randomLon(boolean small) {
@@ -432,7 +432,19 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     } else {
       result = -180 + 360.0 * random().nextDouble();
     }
-    return result;
+    return quantizeLon(result);
+  }
+
+  /** Override this to quantize randomly generated lat, so the test won't fail due to quantization errors, which are 1) annoying to debug,
+   *  and 2) should never affect "real" usage terribly. */
+  protected double quantizeLat(double lat) {
+    return lat;
+  }
+
+  /** Override this to quantize randomly generated lon, so the test won't fail due to quantization errors, which are 1) annoying to debug,
+   *  and 2) should never affect "real" usage terribly. */
+  protected double quantizeLon(double lon) {
+    return lon;
   }
 
   protected GeoRect randomRect(boolean small, boolean canCrossDateLine) {
@@ -694,9 +706,9 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
                     @Override
                     protected void describe(int docID, double pointLat, double pointLon) {
-                      double distanceKM = SloppyMath.haversin(centerLat, centerLon, pointLat, pointLon);
+                      double distanceMeters = GeoDistanceUtils.haversin(centerLat, centerLon, pointLat, pointLon);
                       System.out.println("  docID=" + docID + " centerLon=" + centerLon + " centerLat=" + centerLat
-                          + " pointLon=" + pointLon + " pointLat=" + pointLat + " distanceMeters=" + (distanceKM * 1000)
+                          + " pointLon=" + pointLon + " pointLat=" + pointLat + " distanceMeters=" + distanceMeters
                           + " vs" + ((rangeQuery == true) ? " minRadiusMeters=" + minRadiusMeters : "") + " radiusMeters=" + radiusMeters);
                     }
                    };

@@ -482,7 +482,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             "//long[@name='count'][.='1']",
             "//date[@name='min'][.='2015-12-14T09:00:00Z']",
             "//date[@name='max'][.='2015-12-14T09:00:00Z']",
-            "//date[@name='sum'][.='2015-12-14T09:00:00Z']",
+            "//double[@name='sum'][.='1.4500836E12']",
             "//date[@name='mean'][.='2015-12-14T09:00:00Z']",
             "//double[@name='sumOfSquares'][.='" + Double.toString(2102742446988960000000000.0)+"']"
             );
@@ -495,7 +495,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
         "//long[@name='count'][.='3']",
         "//date[@name='min'][.='2015-12-14T09:00:00Z']",
         "//date[@name='max'][.='2215-12-14T09:00:00Z']",
-        "//date[@name='sum'][.='2407-11-08T03:00:00Z']",
+        "//double[@name='sum'][.='1.38172716E13']",
         "//date[@name='mean'][.='2115-12-14T09:00:00Z']",
         "//double[@name='sumOfSquares'][.='" + Double.toString(83555549895529430000000000.0)+"']",
         // The following number matches the number returned by the current solr
@@ -826,7 +826,7 @@ public class StatsComponentTest extends AbstractSolrTestCase {
             ,"//lst[@name='active_dt']/null[@name='min']"
             ,"//lst[@name='active_dt']/null[@name='max']"
             ,"//lst[@name='active_dt']/null[@name='mean']"
-            ,"//lst[@name='active_dt']/date[@name='sum'][.='1970-01-01T00:00:00Z']"
+            ,"//lst[@name='active_dt']/double[@name='sum'][.='0.0']"
             ,"//lst[@name='active_dt']/double[@name='sumOfSquares'][.='0.0']"
             ,"//lst[@name='active_dt']/double[@name='stddev'][.='0.0']"
 

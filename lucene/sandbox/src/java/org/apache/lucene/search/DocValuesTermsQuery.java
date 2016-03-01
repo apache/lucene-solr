@@ -98,7 +98,7 @@ public class DocValuesTermsQuery extends Query {
     this.field = Objects.requireNonNull(field);
     Objects.requireNonNull(terms, "Collection of terms must not be null");
     this.terms = terms.toArray(new BytesRef[terms.size()]);
-    ArrayUtil.timSort(this.terms, BytesRef.getUTF8SortedAsUnicodeComparator());
+    ArrayUtil.timSort(this.terms);
   }
 
   public DocValuesTermsQuery(String field, BytesRef... terms) {

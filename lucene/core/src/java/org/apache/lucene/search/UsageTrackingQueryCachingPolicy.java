@@ -37,13 +37,27 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
   // the hash code that we use as a sentinel in the ring buffer.
   private static final int SENTINEL = Integer.MIN_VALUE;
 
+  private static boolean isPointQuery(Query query) {
+    // we need to check for super classes because we occasionally use anonymous
+    // sub classes of eg. PointRangeQuery
+    for (Class<?> clazz = query.getClass(); clazz != Query.class; clazz = clazz.getSuperclass()) {
+      final String simpleName = clazz.getSimpleName();
+      if (simpleName.startsWith("Point") && simpleName.endsWith("Query")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   static boolean isCostly(Query query) {
     // This does not measure the cost of iterating over the filter (for this we
     // already have the DocIdSetIterator#cost API) but the cost to build the
     // DocIdSet in the first place
     return query instanceof MultiTermQuery ||
         query instanceof MultiTermQueryConstantScoreWrapper ||
-        query instanceof PointRangeQuery;
+        isPointQuery(query) ||
+        // can't refer to TermsQuery directly as it is in another module
+        "TermsQuery".equals(query.getClass().getSimpleName());
   }
 
   static boolean isCheap(Query query) {

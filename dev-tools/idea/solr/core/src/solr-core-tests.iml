@@ -25,7 +25,7 @@
     <orderEntry type="module" scope="TEST" module-name="queryparser" />
     <orderEntry type="module" scope="TEST" module-name="queries" />
     <orderEntry type="module" scope="TEST" module-name="suggest" />
-    <orderEntry type="module" scope="TEST" module-name="spatial" />
+    <orderEntry type="module" scope="TEST" module-name="spatial-extras" />
     <orderEntry type="module" scope="TEST" module-name="misc" />
     <orderEntry type="module" scope="TEST" module-name="join" />
     <orderEntry type="module" scope="TEST" module-name="expressions" />

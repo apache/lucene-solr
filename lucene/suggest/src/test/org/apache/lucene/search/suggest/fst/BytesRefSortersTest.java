@@ -16,9 +16,10 @@
  */
 package org.apache.lucene.search.suggest.fst;
 
+import java.util.Comparator;
+
 import org.apache.lucene.search.suggest.InMemorySorter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOUtils;
@@ -37,7 +38,7 @@ public class BytesRefSortersTest extends LuceneTestCase {
 
   @Test
   public void testInMemorySorter() throws Exception {
-    check(new InMemorySorter(BytesRef.getUTF8SortedAsUnicodeComparator()));
+    check(new InMemorySorter(Comparator.naturalOrder()));
   }
 
   private void check(BytesRefSorter sorter) throws Exception {

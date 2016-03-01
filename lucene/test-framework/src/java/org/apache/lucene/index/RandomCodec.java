@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.index;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,15 +28,21 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.PointFormat;
+import org.apache.lucene.codecs.PointReader;
+import org.apache.lucene.codecs.PointWriter;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
+import org.apache.lucene.codecs.asserting.AssertingPointFormat;
 import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapDocFreqInterval;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucenePostings;
+import org.apache.lucene.codecs.lucene60.Lucene60PointReader;
+import org.apache.lucene.codecs.lucene60.Lucene60PointWriter;
 import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
@@ -80,6 +87,28 @@ public class RandomCodec extends AssertingCodec {
   private Map<String,DocValuesFormat> previousDVMappings = Collections.synchronizedMap(new HashMap<String,DocValuesFormat>());
   private final int perFieldSeed;
 
+  // a little messy: randomize the default codec's parameters here.
+  // with the default values, we have e,g, 1024 points in leaf nodes,
+  // which is less effective for testing.
+  // TODO: improve how we randomize this...
+  private final int maxPointsInLeafNode;
+  private final double maxMBSortInHeap;
+
+  @Override
+  public PointFormat pointFormat() {
+    return new AssertingPointFormat(new PointFormat() {
+      @Override
+      public PointWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
+        return new Lucene60PointWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
+      }
+
+      @Override
+      public PointReader fieldsReader(SegmentReadState readState) throws IOException {
+        return new Lucene60PointReader(readState);
+      }
+    });
+  }
+
   @Override
   public PostingsFormat getPostingsFormatForField(String name) {
     PostingsFormat codec = previousMappings.get(name);
@@ -120,6 +149,9 @@ public class RandomCodec extends AssertingCodec {
     int minItemsPerBlock = TestUtil.nextInt(random, 2, 100);
     int maxItemsPerBlock = 2*(Math.max(2, minItemsPerBlock-1)) + random.nextInt(100);
     int lowFreqCutoff = TestUtil.nextInt(random, 2, 100);
+
+    maxPointsInLeafNode = TestUtil.nextInt(random, 16, 2048);
+    maxMBSortInHeap = 4.0 + (3*random.nextDouble());
 
     add(avoidCodecs,
         TestUtil.getDefaultPostingsFormat(minItemsPerBlock, maxItemsPerBlock),
@@ -184,6 +216,9 @@ public class RandomCodec extends AssertingCodec {
 
   @Override
   public String toString() {
-    return super.toString() + ": " + previousMappings.toString() + ", docValues:" + previousDVMappings.toString();
+    return super.toString() + ": " + previousMappings.toString() +
+           ", docValues:" + previousDVMappings.toString() +
+           ", maxPointsInLeafNode=" + maxPointsInLeafNode +
+           ", maxMBSortInHeap=" + maxMBSortInHeap;
   }
 }

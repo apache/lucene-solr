@@ -59,9 +59,6 @@ public class FuzzyTermsEnum extends TermsEnum {
   
   private float bottom;
   private BytesRef bottomTerm;
-
-  // TODO: chicken-and-egg
-  private final Comparator<BytesRef> termComparator = BytesRef.getUTF8SortedAsUnicodeComparator();
   
   protected final float minSimilarity;
   protected final float scale_factor;
@@ -193,7 +190,7 @@ public class FuzzyTermsEnum extends TermsEnum {
     int oldMaxEdits = maxEdits;
     
     // true if the last term encountered is lexicographically equal or after the bottom term in the PQ
-    boolean termAfter = bottomTerm == null || (lastTerm != null && termComparator.compare(lastTerm, bottomTerm) >= 0);
+    boolean termAfter = bottomTerm == null || (lastTerm != null && lastTerm.compareTo(bottomTerm) >= 0);
 
     // as long as the max non-competitive boost is >= the max boost
     // for some edit distance, keep dropping the max edit distance.

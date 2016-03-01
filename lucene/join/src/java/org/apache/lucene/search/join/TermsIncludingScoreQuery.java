@@ -55,7 +55,7 @@ class TermsIncludingScoreQuery extends Query {
     this.terms = terms;
     this.scores = scores;
     this.originalQuery = originalQuery;
-    this.ords = terms.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+    this.ords = terms.sort();
     this.unwrittenOriginalQuery = originalQuery;
   }
 

@@ -124,7 +124,7 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
 
   protected void setSliceState(String slice, State state) throws SolrServerException, IOException,
       KeeperException, InterruptedException {
-    DistributedQueue inQueue = Overseer.getInQueue(cloudClient.getZkStateReader().getZkClient());
+    DistributedQueue inQueue = Overseer.getStateUpdateQueue(cloudClient.getZkStateReader().getZkClient());
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
     propMap.put(slice, state.toString());

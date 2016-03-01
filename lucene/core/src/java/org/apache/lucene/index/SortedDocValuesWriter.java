@@ -112,7 +112,7 @@ class SortedDocValuesWriter extends DocValuesWriter {
     final int valueCount = hash.size();
     final PackedLongValues ords = pending.build();
 
-    final int[] sortedValues = hash.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+    final int[] sortedValues = hash.sort();
     final int[] ordMap = new int[valueCount];
 
     for(int ord=0;ord<valueCount;ord++) {

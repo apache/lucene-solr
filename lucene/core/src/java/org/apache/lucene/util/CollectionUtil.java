@@ -146,7 +146,7 @@ public final class CollectionUtil {
   public static <T extends Comparable<? super T>> void introSort(List<T> list) {
     final int size = list.size();
     if (size <= 1) return;
-    introSort(list, ArrayUtil.<T>naturalComparator());
+    introSort(list, Comparator.naturalOrder());
   }
 
   // Tim sorts:
@@ -172,7 +172,7 @@ public final class CollectionUtil {
   public static <T extends Comparable<? super T>> void timSort(List<T> list) {
     final int size = list.size();
     if (size <= 1) return;
-    timSort(list, ArrayUtil.<T>naturalComparator());
+    timSort(list, Comparator.naturalOrder());
   }
 
 }

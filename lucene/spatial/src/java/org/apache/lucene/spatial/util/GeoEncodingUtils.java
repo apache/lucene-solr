@@ -49,52 +49,52 @@ public final class GeoEncodingUtils {
   private GeoEncodingUtils() {
   }
 
+  /**
+   * encode longitude, latitude geopoint values using morton encoding method
+   * https://en.wikipedia.org/wiki/Z-order_curve
+   */
   public static final Long mortonHash(final double lon, final double lat) {
     return BitUtil.interleave(scaleLon(lon), scaleLat(lat));
   }
 
+  /** decode longitude value from morton encoded geo point */
   public static final double mortonUnhashLon(final long hash) {
     return unscaleLon(BitUtil.deinterleave(hash));
   }
 
+  /** decode latitude value from morton encoded geo point */
   public static final double mortonUnhashLat(final long hash) {
     return unscaleLat(BitUtil.deinterleave(hash >>> 1));
   }
 
-  protected static final long scaleLon(final double val) {
+  private static final long scaleLon(final double val) {
     return (long) ((val-MIN_LON_INCL) * LON_SCALE);
   }
 
-  protected static final long scaleLat(final double val) {
+  private static final long scaleLat(final double val) {
     return (long) ((val-MIN_LAT_INCL) * LAT_SCALE);
   }
 
-  protected static final double unscaleLon(final long val) {
+  private static final double unscaleLon(final long val) {
     return (val / LON_SCALE) + MIN_LON_INCL;
   }
 
-  protected static final double unscaleLat(final long val) {
+  private static final double unscaleLat(final long val) {
     return (val / LAT_SCALE) + MIN_LAT_INCL;
   }
 
-  /**
-   * Compare two position values within a {@link GeoEncodingUtils#TOLERANCE} factor
-   */
+  /** Compare two position values within a {@link GeoEncodingUtils#TOLERANCE} factor */
   public static double compare(final double v1, final double v2) {
     final double delta = v1-v2;
     return Math.abs(delta) <= TOLERANCE ? 0 : delta;
   }
 
-  /**
-   * Convert a geocoded morton long into a prefix coded geo term
-   */
+  /** Convert a geocoded morton long into a prefix coded geo term */
   public static void geoCodedToPrefixCoded(long hash, int shift, BytesRefBuilder bytes) {
     geoCodedToPrefixCodedBytes(hash, shift, bytes);
   }
 
-  /**
-   * Convert a prefix coded geo term back into the geocoded morton long
-   */
+  /** Convert a prefix coded geo term back into the geocoded morton long */
   public static long prefixCodedToGeoCoded(final BytesRef val) {
     final long result = fromBytes((byte)0, (byte)0, (byte)0, (byte)0,
         val.bytes[val.offset+0], val.bytes[val.offset+1], val.bytes[val.offset+2], val.bytes[val.offset+3]);

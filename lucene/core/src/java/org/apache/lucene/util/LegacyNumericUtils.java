@@ -53,10 +53,6 @@ import org.apache.lucene.index.TermsEnum;
  * {@link org.apache.lucene.search.LegacyNumericRangeQuery} implements the query part
  * for the same data types.
  *
- * <p>This class can also be used, to generate lexicographically sortable (according to
- * {@link BytesRef#getUTF8SortedAsUTF16Comparator()}) representations of numeric data
- * types for other usages (e.g. sorting).
- *
  * @lucene.internal
  *
  * @deprecated Please use {@link org.apache.lucene.index.PointValues} instead.

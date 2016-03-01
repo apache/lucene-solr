@@ -24,7 +24,7 @@
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
     <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
     <orderEntry type="module" scope="TEST" module-name="benchmark-conf" />
-    <orderEntry type="module" module-name="spatial" />
+    <orderEntry type="module" module-name="spatial-extras" />
     <orderEntry type="module" module-name="facet" />
     <orderEntry type="module" module-name="highlighter" />
     <orderEntry type="module" module-name="icu" />

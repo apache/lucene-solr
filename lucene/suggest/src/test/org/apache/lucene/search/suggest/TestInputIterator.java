@@ -17,7 +17,6 @@
 package org.apache.lucene.search.suggest;
 
 import java.util.AbstractMap.SimpleEntry;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -26,7 +25,6 @@ import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -36,7 +34,7 @@ public class TestInputIterator extends LuceneTestCase {
   public void testEmpty() throws Exception {
     InputArrayIterator iterator = new InputArrayIterator(new Input[0]);
     try (Directory dir = getDirectory()) {
-      InputIterator wrapper = new SortedInputIterator(dir, "sorted", iterator, BytesRef.getUTF8SortedAsUnicodeComparator());
+      InputIterator wrapper = new SortedInputIterator(dir, "sorted", iterator);
       assertNull(wrapper.next());
       wrapper = new UnsortedInputIterator(iterator);
       assertNull(wrapper.next());
@@ -47,11 +45,10 @@ public class TestInputIterator extends LuceneTestCase {
     Random random = random();
     int num = atLeast(10000);
     
-    Comparator<BytesRef> comparator = random.nextBoolean() ? BytesRef.getUTF8SortedAsUnicodeComparator() : BytesRef.getUTF8SortedAsUTF16Comparator();
-    TreeMap<BytesRef, SimpleEntry<Long, BytesRef>> sorted = new TreeMap<>(comparator);
-    TreeMap<BytesRef, Long> sortedWithoutPayload = new TreeMap<>(comparator);
-    TreeMap<BytesRef, SimpleEntry<Long, Set<BytesRef>>> sortedWithContext = new TreeMap<>(comparator);
-    TreeMap<BytesRef, SimpleEntry<Long, SimpleEntry<BytesRef, Set<BytesRef>>>> sortedWithPayloadAndContext = new TreeMap<>(comparator);
+    TreeMap<BytesRef, SimpleEntry<Long, BytesRef>> sorted = new TreeMap<>();
+    TreeMap<BytesRef, Long> sortedWithoutPayload = new TreeMap<>();
+    TreeMap<BytesRef, SimpleEntry<Long, Set<BytesRef>>> sortedWithContext = new TreeMap<>();
+    TreeMap<BytesRef, SimpleEntry<Long, SimpleEntry<BytesRef, Set<BytesRef>>>> sortedWithPayloadAndContext = new TreeMap<>();
     Input[] unsorted = new Input[num];
     Input[] unsortedWithoutPayload = new Input[num];
     Input[] unsortedWithContexts = new Input[num];
@@ -81,7 +78,7 @@ public class TestInputIterator extends LuceneTestCase {
     
     // test the sorted iterator wrapper with payloads
     try (Directory tempDir = getDirectory()) {
-      InputIterator wrapper = new SortedInputIterator(tempDir, "sorted", new InputArrayIterator(unsorted), comparator);
+      InputIterator wrapper = new SortedInputIterator(tempDir, "sorted", new InputArrayIterator(unsorted));
       Iterator<Map.Entry<BytesRef, SimpleEntry<Long, BytesRef>>> expected = sorted.entrySet().iterator();
       while (expected.hasNext()) {
         Map.Entry<BytesRef,SimpleEntry<Long, BytesRef>> entry = expected.next();
@@ -95,7 +92,7 @@ public class TestInputIterator extends LuceneTestCase {
     
     // test the sorted iterator wrapper with contexts
     try (Directory tempDir = getDirectory()) {
-      InputIterator wrapper = new SortedInputIterator(tempDir, "sorted", new InputArrayIterator(unsortedWithContexts), comparator);
+      InputIterator wrapper = new SortedInputIterator(tempDir, "sorted", new InputArrayIterator(unsortedWithContexts));
       Iterator<Map.Entry<BytesRef, SimpleEntry<Long, Set<BytesRef>>>> actualEntries = sortedWithContext.entrySet().iterator();
       while (actualEntries.hasNext()) {
         Map.Entry<BytesRef, SimpleEntry<Long, Set<BytesRef>>> entry = actualEntries.next();
@@ -109,7 +106,7 @@ public class TestInputIterator extends LuceneTestCase {
 
     // test the sorted iterator wrapper with contexts and payload
     try (Directory tempDir = getDirectory()) {
-      InputIterator wrapper = new SortedInputIterator(tempDir, "sorter", new InputArrayIterator(unsortedWithPayloadAndContext), comparator);
+      InputIterator wrapper = new SortedInputIterator(tempDir, "sorter", new InputArrayIterator(unsortedWithPayloadAndContext));
       Iterator<Map.Entry<BytesRef, SimpleEntry<Long, SimpleEntry<BytesRef, Set<BytesRef>>>>> expectedPayloadContextEntries = sortedWithPayloadAndContext.entrySet().iterator();
       while (expectedPayloadContextEntries.hasNext()) {
         Map.Entry<BytesRef, SimpleEntry<Long, SimpleEntry<BytesRef, Set<BytesRef>>>> entry = expectedPayloadContextEntries.next();
@@ -136,7 +133,7 @@ public class TestInputIterator extends LuceneTestCase {
 
     // test the sorted iterator wrapper without payloads
     try (Directory tempDir = getDirectory()) {
-      InputIterator wrapperWithoutPayload = new SortedInputIterator(tempDir, "sorted", new InputArrayIterator(unsortedWithoutPayload), comparator);
+      InputIterator wrapperWithoutPayload = new SortedInputIterator(tempDir, "sorted", new InputArrayIterator(unsortedWithoutPayload));
       Iterator<Map.Entry<BytesRef, Long>> expectedWithoutPayload = sortedWithoutPayload.entrySet().iterator();
       while (expectedWithoutPayload.hasNext()) {
         Map.Entry<BytesRef, Long> entry = expectedWithoutPayload.next();

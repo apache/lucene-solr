@@ -1,0 +1,67 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<html>
+  <head>
+    <title>Apache Lucene Spatial-Extras Module</title>
+  </head>
+  <body>
+
+  <h1>The Spatial-Extras Module for Apache Lucene</h1>
+
+  <p>
+    The spatial-extras module, new to Lucene 6.5, is the new home for the original
+    lucene <a href="../spatial/overview-summary.html">spatial</a> module.
+    The principle interface to this module is a {@link org.apache.lucene.spatial.SpatialStrategy}
+    which encapsulates an approach to indexing and searching
+    based on shapes.  Different Strategies have different features and
+    performance profiles, which are documented at each Strategy implementation
+    class level.
+  </p>
+  <p>
+    For some sample code showing how to use the API, see
+      SpatialExample.java in the tests.
+  </p>
+<p>
+    The spatial-extras module uses
+    <a href="https://github.com/spatial4j/spatial4j">Spatial4j</a>
+    heavily.  Spatial4j is an ASL licensed library with these capabilities:
+    <ul>
+    <li>Provides shape implementations, namely point, rectangle,
+      and circle.  Both geospatial contexts and plain 2D Euclidean/Cartesian contexts
+      are supported.
+      With an additional dependency, it adds polygon and other geometry shape
+      support via integration with
+      <a href="http://sourceforge.net/projects/jts-topo-suite/">JTS Topology Suite</a>.
+      This includes dateline wrap support.</li>
+    <li>Shape parsing and serialization, including
+      <a href="http://en.wikipedia.org/wiki/Well-known_text">Well-Known Text (WKT)</a>
+      (via JTS).</li>
+    <li>Distance and other spatial related math calculations.</li>
+    </ul>
+  </p>
+  <p>
+    Historical note: The new spatial-extras module was once known as
+    Lucene Spatial Playground (LSP) as an external project.  In ~March 2012, LSP
+    split into the spatial module as part of Lucene and Spatial4j externally. A
+    large chunk of the LSP implementation originated as SOLR-2155 which uses
+    trie/prefix-tree algorithms with a geohash encoding.  That approach is
+    implemented in {@link org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy}
+    today.
+  </p>
+
+  </body>
+</html>

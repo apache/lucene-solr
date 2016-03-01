@@ -88,7 +88,7 @@ public class OverseerNodePrioritizer {
       invokeOverseerOp(electionNodes.get(1), "rejoin");//ask second inline to go behind
     }
     //now ask the current leader to QUIT , so that the designate can takeover
-    Overseer.getInQueue(zkStateReader.getZkClient()).offer(
+    Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(
         Utils.toJSON(new ZkNodeProps(Overseer.QUEUE_OPERATION, OverseerAction.QUIT.toLower(),
             "id", OverseerTaskProcessor.getLeaderId(zkStateReader.getZkClient()))));
 

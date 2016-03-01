@@ -169,21 +169,9 @@ public final class DocIdSetBuilder {
    * Build a {@link DocIdSet} from the accumulated doc IDs.
    */
   public DocIdSet build() {
-    return build(-1);
-  }
-
-  /**
-   * Expert: build a {@link DocIdSet} with a hint on the cost that the resulting
-   * {@link DocIdSet} would have.
-   */
-  public DocIdSet build(long costHint) {
     try {
       if (bitSet != null) {
-        if (costHint == -1) {
-          return new BitDocIdSet(bitSet);
-        } else {
-          return new BitDocIdSet(bitSet, costHint);
-        }
+        return new BitDocIdSet(bitSet);
       } else {
         LSBRadixSorter sorter = new LSBRadixSorter();
         sorter.sort(buffer, 0, bufferSize);

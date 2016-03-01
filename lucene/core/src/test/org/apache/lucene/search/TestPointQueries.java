@@ -1822,7 +1822,12 @@ public class TestPointQueries extends LuceneTestCase {
                                                                              public BytesRef next() {
                                                                                return new BytesRef(new byte[3]);
                                                                              }
-                                                                           });
+                                                                           }) {
+                                                         @Override
+                                                         protected String toString(byte[] point) {
+                                                           return Arrays.toString(point);
+                                                         }
+                                                       };
                                                      });
     assertEquals("packed point length should be 12 but got 3; field=\"foo\" numDims=3 bytesPerDim=4", expected.getMessage());
   }

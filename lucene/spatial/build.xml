@@ -24,34 +24,4 @@
 
   <import file="../module-build.xml"/>
 
-  <path id="spatialjar">
-     <fileset dir="lib"/>
-  </path>
-
-  <path id="classpath">
-    <path refid="base.classpath"/>
-    <path refid="spatialjar"/>
-    <pathelement path="${queries.jar}" />
-    <pathelement path="${misc.jar}" />
-    <pathelement path="${spatial3d.jar}" />
-  </path>
-
-  <path id="test.classpath">
-    <path refid="test.base.classpath" />
-    <path refid="spatialjar"/>
-    <pathelement path="src/test-files" />
-  </path>
-
-  <target name="compile-core" depends="jar-queries,jar-misc,jar-spatial3d,common.compile-core" />
-
-  <target name="javadocs" depends="javadocs-queries,javadocs-misc,javadocs-spatial3d,compile-core,check-javadocs-uptodate"
-          unless="javadocs-uptodate-${name}">
-    <invoke-module-javadoc>
-      <links>
-        <link href="../queries"/>
-        <link href="../misc"/>
-        <link href="../spatial3d"/>
-      </links>
-    </invoke-module-javadoc>
-  </target>
 </project>

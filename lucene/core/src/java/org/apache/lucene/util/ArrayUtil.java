@@ -620,22 +620,6 @@ public final class ArrayUtil {
     return result;
   }
 
-  private static class NaturalComparator<T extends Comparable<? super T>> implements Comparator<T> {
-    NaturalComparator() {}
-    @Override
-    public int compare(T o1, T o2) {
-      return o1.compareTo(o2);
-    }
-  }
-
-  private static final Comparator<?> NATURAL_COMPARATOR = new NaturalComparator<>();
-
-  /** Get the natural {@link Comparator} for the provided object class. */
-  @SuppressWarnings("unchecked")
-  public static <T extends Comparable<? super T>> Comparator<T> naturalComparator() {
-    return (Comparator<T>) NATURAL_COMPARATOR;
-  }
-
   /** Swap values stored in slots <code>i</code> and <code>j</code> */
   public static <T> void swap(T[] arr, int i, int j) {
     final T tmp = arr[i];
@@ -672,7 +656,7 @@ public final class ArrayUtil {
    */
   public static <T extends Comparable<? super T>> void introSort(T[] a, int fromIndex, int toIndex) {
     if (toIndex-fromIndex <= 1) return;
-    introSort(a, fromIndex, toIndex, ArrayUtil.<T>naturalComparator());
+    introSort(a, fromIndex, toIndex, Comparator.naturalOrder());
   }
   
   /**
@@ -712,7 +696,7 @@ public final class ArrayUtil {
    */
   public static <T extends Comparable<? super T>> void timSort(T[] a, int fromIndex, int toIndex) {
     if (toIndex-fromIndex <= 1) return;
-    timSort(a, fromIndex, toIndex, ArrayUtil.<T>naturalComparator());
+    timSort(a, fromIndex, toIndex, Comparator.naturalOrder());
   }
   
   /**

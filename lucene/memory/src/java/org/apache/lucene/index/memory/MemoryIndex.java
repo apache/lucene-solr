@@ -19,7 +19,6 @@ package org.apache.lucene.index.memory;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedMap;
@@ -758,7 +757,7 @@ public class MemoryIndex {
      */
     public void sortTerms() {
       if (sortedTerms == null) {
-        sortedTerms = terms.sort(BytesRef.getUTF8SortedAsUnicodeComparator());
+        sortedTerms = terms.sort();
       }
     }
 
@@ -950,12 +949,12 @@ public class MemoryIndex {
       }
       
       private final int binarySearch(BytesRef b, BytesRef bytesRef, int low,
-          int high, BytesRefHash hash, int[] ords, Comparator<BytesRef> comparator) {
+          int high, BytesRefHash hash, int[] ords) {
         int mid = 0;
         while (low <= high) {
           mid = (low + high) >>> 1;
           hash.get(ords[mid], bytesRef);
-          final int cmp = comparator.compare(bytesRef, b);
+          final int cmp = bytesRef.compareTo(b);
           if (cmp < 0) {
             low = mid + 1;
           } else if (cmp > 0) {
@@ -964,20 +963,20 @@ public class MemoryIndex {
             return mid;
           }
         }
-        assert comparator.compare(bytesRef, b) != 0;
+        assert bytesRef.compareTo(b) != 0;
         return -(low + 1);
       }
     
 
       @Override
       public boolean seekExact(BytesRef text) {
-        termUpto = binarySearch(text, br, 0, info.terms.size()-1, info.terms, info.sortedTerms, BytesRef.getUTF8SortedAsUnicodeComparator());
+        termUpto = binarySearch(text, br, 0, info.terms.size()-1, info.terms, info.sortedTerms);
         return termUpto >= 0;
       }
 
       @Override
       public SeekStatus seekCeil(BytesRef text) {
-        termUpto = binarySearch(text, br, 0, info.terms.size()-1, info.terms, info.sortedTerms, BytesRef.getUTF8SortedAsUnicodeComparator());
+        termUpto = binarySearch(text, br, 0, info.terms.size()-1, info.terms, info.sortedTerms);
         if (termUpto < 0) { // not found; choose successor
           termUpto = -termUpto-1;
           if (termUpto >= info.terms.size()) {

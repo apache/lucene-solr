@@ -21,47 +21,13 @@
   <body>
 
   <h1>The Spatial Module for Apache Lucene</h1>
-
-  <p>
-    The spatial module is new to Lucene 4, replacing the old "contrib" module
-    that came before it. The principle interface to the module is
-    a {@link org.apache.lucene.spatial.SpatialStrategy}
-    which encapsulates an approach to indexing and searching
-    based on shapes.  Different Strategies have different features and
-    performance profiles, which are documented at each Strategy implementation
-    class level.
-  </p>
-  <p>
-    For some sample code showing how to use the API, see
-      SpatialExample.java in the tests.
-  </p>
-  <p>
-    The spatial module uses
-    <a href="https://github.com/spatial4j/spatial4j">Spatial4j</a>
-    heavily.  Spatial4j is an ASL licensed library with these capabilities:
-    <ul>
-    <li>Provides shape implementations, namely point, rectangle,
-      and circle.  Both geospatial contexts and plain 2D Euclidean/Cartesian contexts
-      are supported.
-      With an additional dependency, it adds polygon and other geometry shape
-      support via integration with
-      <a href="http://sourceforge.net/projects/jts-topo-suite/">JTS Topology Suite</a>.
-      This includes dateline wrap support.</li>
-    <li>Shape parsing and serialization, including
-      <a href="http://en.wikipedia.org/wiki/Well-known_text">Well-Known Text (WKT)</a>
-      (via JTS).</li>
-    <li>Distance and other spatial related math calculations.</li>
-    </ul>
-  </p>
-  <p>
-    Historical note: The new spatial module was once known as
-    Lucene Spatial Playground (LSP) as an external project.  In ~March 2012, LSP
-    split into this new module as part of Lucene and Spatial4j externally. A
-    large chunk of the LSP implementation originated as SOLR-2155 which uses
-    trie/prefix-tree algorithms with a geohash encoding.  That approach is
-    implemented in {@link org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy}
-    today.
-  </p>
-
+    <p>
+      APIs for geospatial indexing and querying. Dependencies for the spatial module are
+      restricted to inner lucene modules only. That is, no third-party dependencies
+      are allowed. The intent is to keep this module free of any integration or
+      licensing issues that might arise as a result of depending on an external library.
+      For adding or leveraging spatial features that require third-party libraries see
+      the <a href="../spatial-extras/overview-summary.html">spatial-extras</a> package.
+    </p>
   </body>
 </html>

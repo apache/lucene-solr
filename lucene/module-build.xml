@@ -640,6 +640,28 @@
     <property name="spatial-javadocs.uptodate" value="true"/>
   </target>
 
+  <property name="spatial-extras.jar" value="${common.dir}/build/spatial-extras/lucene-spatial-extras-${version}.jar"/>
+  <target name="check-spatial-extras-uptodate" unless="spatial-extras.uptodate">
+    <module-uptodate name="spatial-extras" jarfile="${spatial-extras.jar}" property="spatial-extras.uptodate"/>
+  </target>
+  <target name="jar-spatial-extras" unless="spatial-extras.uptodate" depends="check-spatial-extras-uptodate">
+    <ant dir="${common.dir}/spatial-extras" target="jar-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="spatial-extras.uptodate" value="true"/>
+  </target>
+
+  <property name="spatial-extras-javadoc.jar" value="${common.dir}/build/spatial-extras/lucene-spatial-extras-${version}-javadoc.jar"/>
+  <target name="check-spatial-extras-javadocs-uptodate" unless="spatial-extras-javadocs.uptodate">
+    <module-uptodate name="spatial-extras" jarfile="${spatial-extras-javadoc.jar}" property="spatial-extras-javadocs.uptodate"/>
+  </target>
+  <target name="javadocs-spatial-extras" unless="spatial-extras-javadocs.uptodate" depends="check-spatial-extras-javadocs-uptodate">
+    <ant dir="${common.dir}/spatial-extras" target="javadocs" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+    <property name="spatial-extras-javadocs.uptodate" value="true"/>
+  </target>
+
   <property name="suggest.jar" value="${common.dir}/build/suggest/lucene-suggest-${version}.jar"/>
   <target name="check-suggest-uptodate" unless="suggest.uptodate">
     <module-uptodate name="suggest" jarfile="${suggest.jar}" property="suggest.uptodate"/>

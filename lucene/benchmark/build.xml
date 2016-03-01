@@ -171,7 +171,7 @@
       <pathelement path="${analyzers-common.jar}"/>
       <pathelement path="${queryparser.jar}"/>
       <pathelement path="${facet.jar}"/>
-      <pathelement path="${spatial.jar}"/>
+      <pathelement path="${spatial-extras.jar}"/>
       <pathelement path="${queries.jar}"/>
       <pathelement path="${codecs.jar}"/>
       <pathelement path="${join.jar}"/>
@@ -185,7 +185,7 @@
     </path>
 
     <target name="javadocs" depends="javadocs-memory,javadocs-highlighter,javadocs-analyzers-common,
-      javadocs-queryparser,javadocs-facet,javadocs-spatial,compile-core,check-javadocs-uptodate" 
+      javadocs-queryparser,javadocs-facet,javadocs-spatial-extras,compile-core,check-javadocs-uptodate"
             unless="javadocs-uptodate-${name}">
     <invoke-module-javadoc>
       <links>
@@ -194,7 +194,7 @@
         <link href="../analyzers-common"/>
         <link href="../queryparser"/>
         <link href="../facet"/>
-        <link href="../spatial"/>
+        <link href="../spatial-extras"/>
       </links>
     </invoke-module-javadoc>
     </target>
@@ -277,7 +277,7 @@
       <echo>Benchmark output in JIRA table format is in file: ${shingle.jira.output.file}</echo>
     </target>
 
-    <target name="init" depends="module-build.init,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet,jar-spatial,jar-codecs,jar-join"/>
+    <target name="init" depends="module-build.init,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet,jar-spatial-extras,jar-codecs,jar-join"/>
   
     <target name="compile-test" depends="copy-alg-files-for-testing,module-build.compile-test"/>
     <target name="copy-alg-files-for-testing" description="copy .alg files as resources for testing">

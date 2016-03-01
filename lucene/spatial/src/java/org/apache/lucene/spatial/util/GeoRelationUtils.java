@@ -245,6 +245,10 @@ public class GeoRelationUtils {
     return false;
   }
 
+  /**
+   * Computes whether a rectangle is within a polygon (shared boundaries not allowed) with more rigor than the
+   * {@link GeoRelationUtils#rectWithinPolyApprox} counterpart
+   */
   public static boolean rectWithinPolyPrecise(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                        final double[] shapeX, final double[] shapeY, final double sMinX,
                                        final double sMinY, final double sMaxX, final double sMaxY) {

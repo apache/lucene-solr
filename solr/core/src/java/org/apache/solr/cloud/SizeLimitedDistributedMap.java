@@ -27,7 +27,10 @@ import org.apache.zookeeper.data.Stat;
 
 /**
  * A size limited distributed map maintained in zk.
- * Oldest znodes (as per modification time) are evicted as newer ones come in. 
+ * Oldest znodes (as per modification time) are evicted as newer ones come in.
+ *
+ * When the map hits the specified maximum size, the oldest <code>maxSize / 10</code> items
+ * are evicted on the next {@link #put(String, byte[])} invocation.
  */
 public class SizeLimitedDistributedMap extends DistributedMap {
 

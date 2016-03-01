@@ -80,6 +80,8 @@ Upgrading from Solr 5.x
 
 * SOLR-8698: 'useParams' attribute specified in request handler cannot be overridden from request params
 
+* When requesting stats in date fields, "sum" is now a double value instead of a date. See SOLR-8671
+
 Detailed Change List
 ----------------------
 
@@ -221,6 +223,9 @@ Bug Fixes
 * SOLR-8420: Fix long overflow in sumOfSquares for Date statistics. (Tom Hill, Christine Poerschke, 
   Tomás Fernández Löbbe)
 
+* SOLR-8748: OverseerTaskProcessor limits number of concurrent tasks to just 10 even though the thread pool
+  size is 100. The limit has now been increased to 100. (Scott Blum, shalin)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
@@ -324,12 +329,34 @@ Other Changes
 
 * SOLR-8691: Cache index fingerprints per searcher. (yonik)
 
+* SOLR-8746: Renamed Overseer.getInQueue to getStateUpdateQueue, getInternalQueue to getInternalWorkQueue
+  and added javadocs. (Scott Blum, shalin)
+
+* SOLR-8752: Add a test for SizeLimitedDistributedMap and improve javadocs. (shalin)
+
+* SOLR-8671: Date statistics: make "sum" a double instead of a long/date (Tom Hill, Christine Poerschke,
+  Tomás Fernández Löbbe)
+
+* SOLR-8713: new UI and example solrconfig files point to Reference Guide for Solr Query Syntax instead 
+  of the wiki. (Marius Grama via Tomás Fernández Löbbe)
+
+* SOLR-8758: Add a new SolrCloudTestCase class, using MiniSolrCloudCluster (Alan
+  Woodward)
+
 ==================  5.5.1 ==================
 
 Bug Fixes
 ----------------------
 
 * SOLR-8737: Managed synonym lists do not include the original term in the expand (janhoy)
+
+* SOLR-8734: fix (maxMergeDocs|mergeFactor) deprecation warnings: in solrconfig.xml
+  <maxMergeDocs|mergeFactor> may not be combined with <mergePolicyFactory> and
+  <maxMergeDocs|mergeFactor> on their own or combined with <mergePolicy> is a warning.
+  (Christine Poerschke, Shai Erera)
+
+* SOLR-8712: Variable solr.core.instanceDir was not being resolved (Kristine
+  Jetzke, Shawn Heisey, Alan Woodward)
 
 ======================= 5.5.0 =======================
 

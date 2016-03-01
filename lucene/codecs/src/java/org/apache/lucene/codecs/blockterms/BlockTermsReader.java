@@ -372,7 +372,7 @@ public class BlockTermsReader extends FieldsProducer {
         // is after current term but before next index term:
         if (indexIsCurrent) {
 
-          final int cmp = BytesRef.getUTF8SortedAsUnicodeComparator().compare(term.get(), target);
+          final int cmp = term.get().compareTo(target);
 
           if (cmp == 0) {
             // Already at the requested term
@@ -390,7 +390,7 @@ public class BlockTermsReader extends FieldsProducer {
               didIndexNext = true;
             }
 
-            if (nextIndexTerm == null || BytesRef.getUTF8SortedAsUnicodeComparator().compare(target, nextIndexTerm) < 0) {
+            if (nextIndexTerm == null || target.compareTo(nextIndexTerm) < 0) {
               // Optimization: requested term is within the
               // same term block we are now in; skip seeking
               // (but do scanning):

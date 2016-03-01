@@ -104,8 +104,8 @@ public class TestMultiFields extends LuceneTestCase {
 
       if (VERBOSE) {
         List<BytesRef> termsList = new ArrayList<>(uniqueTerms);
-        Collections.sort(termsList, BytesRef.getUTF8SortedAsUTF16Comparator());
-        System.out.println("TEST: terms in UTF16 order:");
+        Collections.sort(termsList);
+        System.out.println("TEST: terms in UTF-8 order:");
         for(BytesRef b : termsList) {
           System.out.println("  " + UnicodeUtil.toHexString(b.utf8ToString()) + " " + b);
           for(int docID : docs.get(b)) {

@@ -19,11 +19,13 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Objects;
 
+import org.apache.lucene.document.BinaryPoint;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
@@ -35,14 +37,27 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
 
-/** Finds all documents whose point value, previously indexed with e.g. {@link org.apache.lucene.document.LongPoint}, is contained in the
- *  specified set */
+/**
+ * Abstract query class to find all documents whose single or multi-dimensional point values, previously indexed with e.g. {@link IntPoint},
+ * is contained in the specified set.
+ *
+ * <p>
+ * This is for subclasses and works on the underlying binary encoding: to
+ * create range queries for lucene's standard {@code Point} types, refer to factory
+ * methods on those classes, e.g. {@link IntPoint#newSetQuery IntPoint.newSetQuery()} for 
+ * fields indexed with {@link IntPoint}.
 
-public class PointInSetQuery extends Query {
+ * @see IntPoint
+ * @see LongPoint
+ * @see FloatPoint
+ * @see DoublePoint
+ * @see BinaryPoint 
+ *
+ * @lucene.experimental */
+
+public abstract class PointInSetQuery extends Query {
   // A little bit overkill for us, since all of our "terms" are always in the same field:
   final PrefixCodedTerms sortedPackedPoints;
   final int sortedPackedPointsHashCode;
@@ -119,18 +134,16 @@ public class PointInSetQuery extends Query {
 
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
 
-        int[] hitCount = new int[1];
-
         if (numDims == 1) {
 
           // We optimize this common case, effectively doing a merge sort of the indexed values vs the queried set:
-          values.intersect(field, new MergePointVisitor(sortedPackedPoints.iterator(), hitCount, result));
+          values.intersect(field, new MergePointVisitor(sortedPackedPoints, result));
 
         } else {
           // NOTE: this is naive implementation, where for each point we re-walk the KD tree to intersect.  We could instead do a similar
           // optimization as the 1D case, but I think it'd mean building a query-time KD tree so we could efficiently intersect against the
           // index, which is probably tricky!
-          SinglePointVisitor visitor = new SinglePointVisitor(hitCount, result);
+          SinglePointVisitor visitor = new SinglePointVisitor(result);
           TermIterator iterator = sortedPackedPoints.iterator();
           for (BytesRef point = iterator.next(); point != null; point = iterator.next()) {
             visitor.setPoint(point);
@@ -138,8 +151,7 @@ public class PointInSetQuery extends Query {
           }
         }
 
-        // NOTE: hitCount[0] will be over-estimate in multi-valued case
-        return new ConstantScoreScorer(this, score(), result.build(hitCount[0]).iterator());
+        return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
     };
   }
@@ -149,17 +161,23 @@ public class PointInSetQuery extends Query {
   private class MergePointVisitor implements IntersectVisitor {
 
     private final DocIdSetBuilder result;
-    private final int[] hitCount;
-    private final TermIterator iterator;
+    private TermIterator iterator;
     private BytesRef nextQueryPoint;
+    private final byte[] lastMaxPackedValue;
     private final BytesRef scratch = new BytesRef();
+    private final PrefixCodedTerms sortedPackedPoints;
 
-    public MergePointVisitor(TermIterator iterator, int[] hitCount, DocIdSetBuilder result) throws IOException {
-      this.hitCount = hitCount;
+    public MergePointVisitor(PrefixCodedTerms sortedPackedPoints, DocIdSetBuilder result) throws IOException {
       this.result = result;
-      this.iterator = iterator;
-      nextQueryPoint = iterator.next();
+      this.sortedPackedPoints = sortedPackedPoints;
+      lastMaxPackedValue = new byte[bytesPerDim];
       scratch.length = bytesPerDim;
+      resetIterator();
+    }
+
+    private void resetIterator() {
+      this.iterator = sortedPackedPoints.iterator();
+      nextQueryPoint = iterator.next();
     }
 
     @Override
@@ -169,7 +187,6 @@ public class PointInSetQuery extends Query {
 
     @Override
     public void visit(int docID) {
-      hitCount[0]++;
       result.add(docID);
     }
 
@@ -180,7 +197,6 @@ public class PointInSetQuery extends Query {
         int cmp = nextQueryPoint.compareTo(scratch);
         if (cmp == 0) {
           // Query point equals index point, so collect and return
-          hitCount[0]++;
           result.add(docID);
           break;
         } else if (cmp < 0) {
@@ -195,6 +211,14 @@ public class PointInSetQuery extends Query {
 
     @Override
     public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+      
+      // NOTE: this is messy ... we need it in cases where a single vistor (us) is shared across multiple leaf readers
+      // (e.g. SlowCompositeReaderWrapper), in which case we need to reset our iterator to re-start the merge sort.  Maybe we should instead
+      // add an explicit .start() to IntersectVisitor, and clarify the semantics that in the 1D case all cells will be visited in order?
+      if (StringHelper.compare(bytesPerDim, lastMaxPackedValue, 0, minPackedValue, 0) > 0) {    
+        resetIterator();
+      }
+      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, bytesPerDim);
 
       while (nextQueryPoint != null) {
         scratch.bytes = minPackedValue;
@@ -229,11 +253,9 @@ public class PointInSetQuery extends Query {
   private class SinglePointVisitor implements IntersectVisitor {
 
     private final DocIdSetBuilder result;
-    private final int[] hitCount;
     private final byte[] pointBytes;
 
-    public SinglePointVisitor(int[] hitCount, DocIdSetBuilder result) {
-      this.hitCount = hitCount;
+    public SinglePointVisitor(DocIdSetBuilder result) {
       this.result = result;
       this.pointBytes = new byte[bytesPerDim * numDims];
     }
@@ -251,7 +273,6 @@ public class PointInSetQuery extends Query {
 
     @Override
     public void visit(int docID) {
-      hitCount[0]++;
       result.add(docID);
     }
 
@@ -260,7 +281,6 @@ public class PointInSetQuery extends Query {
       assert packedValue.length == pointBytes.length;
       if (Arrays.equals(packedValue, pointBytes)) {
         // The point for this doc matches the point we are querying on
-        hitCount[0]++;
         result.add(docID);
       }
     }
@@ -301,9 +321,9 @@ public class PointInSetQuery extends Query {
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash += sortedPackedPointsHashCode^0x14fa55fb;
-    hash += numDims^0x14fa55fb;
-    hash += bytesPerDim^0x14fa55fb;
+    hash = 31 * hash + sortedPackedPointsHashCode;
+    hash = 31 * hash + numDims;
+    hash = 31 * hash + bytesPerDim;
     return hash;
   }
 
@@ -354,17 +374,5 @@ public class PointInSetQuery extends Query {
    * @param value single value, never null
    * @return human readable value for debugging
    */
-  protected String toString(byte[] value) {
-    assert value != null;
-    StringBuilder sb = new StringBuilder();
-    sb.append("binary(");
-    for (int i = 0; i < value.length; i++) {
-      if (i > 0) {
-        sb.append(' ');
-      }
-      sb.append(Integer.toHexString(value[i] & 0xFF));
-    }
-    sb.append(')');
-    return sb.toString();
-  }
+  protected abstract String toString(byte[] value);
 }

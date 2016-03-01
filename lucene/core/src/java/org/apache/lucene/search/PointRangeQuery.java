@@ -51,6 +51,8 @@ import org.apache.lucene.util.StringHelper;
  * @see FloatPoint
  * @see DoublePoint
  * @see BinaryPoint 
+ *
+ * @lucene.experimental
  */
 public abstract class PointRangeQuery extends Query {
   final String field;
@@ -219,7 +221,6 @@ public abstract class PointRangeQuery extends Query {
 
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
 
-        int[] hitCount = new int[1];
         values.intersect(field,
                          new IntersectVisitor() {
 
@@ -230,7 +231,6 @@ public abstract class PointRangeQuery extends Query {
 
                            @Override
                            public void visit(int docID) {
-                             hitCount[0]++;
                              result.add(docID);
                            }
 
@@ -249,7 +249,6 @@ public abstract class PointRangeQuery extends Query {
                              }
 
                              // Doc is in-bounds
-                             hitCount[0]++;
                              result.add(docID);
                            }
 
@@ -278,8 +277,7 @@ public abstract class PointRangeQuery extends Query {
                            }
                          });
 
-        // NOTE: hitCount[0] will be over-estimate in multi-valued case
-        return new ConstantScoreScorer(this, score(), result.build(hitCount[0]).iterator());
+        return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
     };
   }
@@ -287,12 +285,12 @@ public abstract class PointRangeQuery extends Query {
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash += Arrays.hashCode(lowerPoint)^0x14fa55fb;
-    hash += Arrays.hashCode(upperPoint)^0x733fa5fe;
-    hash += Arrays.hashCode(lowerInclusive)^0x14fa55fb;
-    hash += Arrays.hashCode(upperInclusive)^0x733fa5fe;
-    hash += numDims^0x14fa55fb;
-    hash += Objects.hashCode(bytesPerDim);
+    hash = 31 * hash + Arrays.hashCode(lowerPoint);
+    hash = 31 * hash + Arrays.hashCode(upperPoint);
+    hash = 31 * hash + Arrays.hashCode(lowerInclusive);
+    hash = 31 * hash + Arrays.hashCode(upperInclusive);
+    hash = 31 * hash + numDims;
+    hash = 31 * hash + Objects.hashCode(bytesPerDim);
     return hash;
   }
 
