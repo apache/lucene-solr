@@ -122,32 +122,17 @@ public final class NumericUtils {
     }
   }
 
-  /** Returns positive int if a &gt; b, negative int if a &lt; b and 0 if a == b */
-  public static int compare(int bytesPerDim, byte[] a, int aIndex, byte[] b, int bIndex) {
-    assert aIndex >= 0;
-    assert bIndex >= 0;
-    int aOffset = aIndex*bytesPerDim;
-    int bOffset = bIndex*bytesPerDim;
-    for(int i=0;i<bytesPerDim;i++) {
-      int cmp = (a[aOffset+i]&0xff) - (b[bOffset+i]&0xff);
-      if (cmp != 0) {
-        return cmp;
-      }
-    }
-
-    return 0;
-  }
-
   /** Returns true if N-dim rect A contains N-dim rect B */
   public static boolean contains(int bytesPerDim,
                                  byte[] minPackedA, byte[] maxPackedA,
                                  byte[] minPackedB, byte[] maxPackedB) {
     int dims = minPackedA.length / bytesPerDim;
     for(int dim=0;dim<dims;dim++) {
-      if (compare(bytesPerDim, minPackedA, dim, minPackedB, dim) > 0) {
+      int offset = dim * bytesPerDim;
+      if (StringHelper.compare(bytesPerDim, minPackedA, offset, minPackedB, offset) > 0) {
         return false;
       }
-      if (compare(bytesPerDim, maxPackedA, dim, maxPackedB, dim) < 0) {
+      if (StringHelper.compare(bytesPerDim, maxPackedA, offset, maxPackedB, offset) < 0) {
         return false;
       }
     }

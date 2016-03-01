@@ -678,7 +678,7 @@ public class TestPointQueries extends LuceneTestCase {
                   // open-ended on the upper bound
                 }
 
-                if (lower[dim] != null && upper[dim] != null && NumericUtils.compare(bytesPerDim, lower[dim], 0, upper[dim], 0) > 0) {
+                if (lower[dim] != null && upper[dim] != null && StringHelper.compare(bytesPerDim, lower[dim], 0, upper[dim], 0) > 0) {
                   byte[] x = lower[dim];
                   lower[dim] = upper[dim];
                   upper[dim] = x;
@@ -797,7 +797,7 @@ public class TestPointQueries extends LuceneTestCase {
       if (lower[dim] == null) {
         cmp = 1;
       } else {
-        cmp = NumericUtils.compare(bytesPerDim, value[dim], 0, lower[dim], 0);
+        cmp = StringHelper.compare(bytesPerDim, value[dim], 0, lower[dim], 0);
       }
 
       if (cmp < 0 || (cmp == 0 && includeLower[dim] == false)) {
@@ -808,7 +808,7 @@ public class TestPointQueries extends LuceneTestCase {
       if (upper[dim] == null) {
         cmp = -1;
       } else {
-        cmp = NumericUtils.compare(bytesPerDim, value[dim], 0, upper[dim], 0);
+        cmp = StringHelper.compare(bytesPerDim, value[dim], 0, upper[dim], 0);
       }
 
       if (cmp > 0 || (cmp == 0 && includeUpper[dim] == false)) {

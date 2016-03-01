@@ -574,7 +574,7 @@ public class BKDWriter implements Closeable {
         int block = j / writer.valuesPerBlock;
         int index = j % writer.valuesPerBlock;
         assert index >= 0: "index=" + index + " j=" + j;
-        int cmp = NumericUtils.compare(bytesPerDim, pivotPackedValue, 0, writer.blocks.get(block), index*numDims+dim);
+        int cmp = StringHelper.compare(bytesPerDim, pivotPackedValue, 0, writer.blocks.get(block), bytesPerDim*(index*numDims+dim));
         if (cmp != 0) {
           return cmp;
         }
@@ -618,7 +618,7 @@ public class BKDWriter implements Closeable {
         int dimI = i % writer.valuesPerBlock;
         int blockJ = j / writer.valuesPerBlock;
         int dimJ = j % writer.valuesPerBlock;
-        int cmp = NumericUtils.compare(bytesPerDim, writer.blocks.get(blockI), dimI*numDims+dim, writer.blocks.get(blockJ), dimJ*numDims+dim);
+        int cmp = StringHelper.compare(bytesPerDim, writer.blocks.get(blockI), bytesPerDim*(dimI*numDims+dim), writer.blocks.get(blockJ), bytesPerDim*(dimJ*numDims+dim));
         if (cmp != 0) {
           return cmp;
         }
@@ -681,7 +681,7 @@ public class BKDWriter implements Closeable {
           final int docIDB = reader.readVInt();
           final long ordB = reader.readVLong();
 
-          int cmp = NumericUtils.compare(bytesPerDim, scratch1, dim, scratch2, dim);
+          int cmp = StringHelper.compare(bytesPerDim, scratch1, bytesPerDim*dim, scratch2, bytesPerDim*dim);
 
           if (cmp != 0) {
             return cmp;
@@ -967,10 +967,11 @@ public class BKDWriter implements Closeable {
   /** Called only in assert */
   private boolean valueInBounds(byte[] packedValue, byte[] minPackedValue, byte[] maxPackedValue) {
     for(int dim=0;dim<numDims;dim++) {
-      if (NumericUtils.compare(bytesPerDim, packedValue, dim, minPackedValue, dim) < 0) {
+      int offset = bytesPerDim*dim;
+      if (StringHelper.compare(bytesPerDim, packedValue, offset, minPackedValue, offset) < 0) {
         return false;
       }
-      if (NumericUtils.compare(bytesPerDim, packedValue, dim, maxPackedValue, dim) > 0) {
+      if (StringHelper.compare(bytesPerDim, packedValue, offset, maxPackedValue, offset) > 0) {
         return false;
       }
     }
@@ -984,7 +985,7 @@ public class BKDWriter implements Closeable {
     int splitDim = -1;
     for(int dim=0;dim<numDims;dim++) {
       NumericUtils.subtract(bytesPerDim, dim, maxPackedValue, minPackedValue, scratchDiff);
-      if (splitDim == -1 || NumericUtils.compare(bytesPerDim, scratchDiff, 0, scratch1, 0) > 0) {
+      if (splitDim == -1 || StringHelper.compare(bytesPerDim, scratchDiff, 0, scratch1, 0) > 0) {
         System.arraycopy(scratchDiff, 0, scratch1, 0, bytesPerDim);
         splitDim = dim;
       }
@@ -1194,7 +1195,7 @@ public class BKDWriter implements Closeable {
 
   // only called from assert
   private boolean valueInOrder(long ord, byte[] lastPackedValue, byte[] packedValue) {
-    if (ord > 0 && NumericUtils.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0) > 0) {
+    if (ord > 0 && StringHelper.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0) > 0) {
       throw new AssertionError("values out of order: last value=" + new BytesRef(lastPackedValue) + " current value=" + new BytesRef(packedValue) + " ord=" + ord);
     }
     System.arraycopy(packedValue, 0, lastPackedValue, 0, bytesPerDim);

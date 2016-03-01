@@ -701,7 +701,7 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
           random().nextBytes(queryMin[dim]);
           queryMax[dim] = new byte[numBytesPerDim];
           random().nextBytes(queryMax[dim]);
-          if (NumericUtils.compare(numBytesPerDim, queryMin[dim], 0, queryMax[dim], 0) > 0) {
+          if (StringHelper.compare(numBytesPerDim, queryMin[dim], 0, queryMax[dim], 0) > 0) {
             byte[] x = queryMin[dim];
             queryMin[dim] = queryMax[dim];
             queryMax[dim] = x;
@@ -733,8 +733,8 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
               //System.out.println("visit check docID=" + docID + " id=" + idValues.get(docID));
               for(int dim=0;dim<numDims;dim++) {
                 //System.out.println("  dim=" + dim + " value=" + new BytesRef(packedValue, dim*numBytesPerDim, numBytesPerDim));
-                if (NumericUtils.compare(numBytesPerDim, packedValue, dim, queryMin[dim], 0) < 0 ||
-                    NumericUtils.compare(numBytesPerDim, packedValue, dim, queryMax[dim], 0) > 0) {
+                if (StringHelper.compare(numBytesPerDim, packedValue, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
+                    StringHelper.compare(numBytesPerDim, packedValue, dim*numBytesPerDim, queryMax[dim], 0) > 0) {
                   //System.out.println("  no");
                   return;
                 }
@@ -749,12 +749,12 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
               boolean crosses = false;
               //System.out.println("compare");
               for(int dim=0;dim<numDims;dim++) {
-                if (NumericUtils.compare(numBytesPerDim, maxPacked, dim, queryMin[dim], 0) < 0 ||
-                    NumericUtils.compare(numBytesPerDim, minPacked, dim, queryMax[dim], 0) > 0) {
+                if (StringHelper.compare(numBytesPerDim, maxPacked, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
+                    StringHelper.compare(numBytesPerDim, minPacked, dim*numBytesPerDim, queryMax[dim], 0) > 0) {
                   //System.out.println("  query_outside_cell");
                   return Relation.CELL_OUTSIDE_QUERY;
-                } else if (NumericUtils.compare(numBytesPerDim, minPacked, dim, queryMin[dim], 0) < 0 ||
-                           NumericUtils.compare(numBytesPerDim, maxPacked, dim, queryMax[dim], 0) > 0) {
+                } else if (StringHelper.compare(numBytesPerDim, minPacked, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
+                           StringHelper.compare(numBytesPerDim, maxPacked, dim*numBytesPerDim, queryMax[dim], 0) > 0) {
                   crosses = true;
                 }
               }
@@ -774,8 +774,8 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
           boolean matches = true;
           for(int dim=0;dim<numDims;dim++) {
             byte[] x = docValues[ord][dim];
-            if (NumericUtils.compare(numBytesPerDim, x, 0, queryMin[dim], 0) < 0 ||
-                NumericUtils.compare(numBytesPerDim, x, 0, queryMax[dim], 0) > 0) {
+            if (StringHelper.compare(numBytesPerDim, x, 0, queryMin[dim], 0) < 0 ||
+                StringHelper.compare(numBytesPerDim, x, 0, queryMax[dim], 0) > 0) {
               matches = false;
               break;
             }
