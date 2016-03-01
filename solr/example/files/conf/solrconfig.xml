@@ -804,15 +804,8 @@
   </requestHandler>
 
 
-  <requestHandler name="/browse" class="solr.SearchHandler" useParams="query,facets,velocity,browse">
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-    </lst>
-
-    <lst name="appends">
-      <str name="fq">{!switch v=$type tag=type case='*:*' case.all='*:*' case.unknown='-doc_type:[* TO *]' default=$type_fq}</str>
-    </lst>
-  </requestHandler>
+  <!--These useParams values are available in params.json-->
+  <requestHandler name="/browse" class="solr.SearchHandler" useParams="query,facets,velocity,browse"/>
 
 
   <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse">
