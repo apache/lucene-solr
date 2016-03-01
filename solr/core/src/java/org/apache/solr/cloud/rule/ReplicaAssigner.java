@@ -44,11 +44,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Collections.singletonList;
-import static org.apache.solr.cloud.rule.Rule.MatchStatus.NODE_CAN_BE_ASSIGNED;
-import static org.apache.solr.cloud.rule.Rule.Phase.ASSIGN;
-import static org.apache.solr.cloud.rule.Rule.Phase.FUZZY_ASSIGN;
-import static org.apache.solr.cloud.rule.Rule.Phase.FUZZY_VERIFY;
-import static org.apache.solr.cloud.rule.Rule.Phase.VERIFY;
+import static org.apache.solr.cloud.rule.Rule.MatchStatus.*;
+import static org.apache.solr.cloud.rule.Rule.Phase.*;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.common.util.Utils.getDeepCopy;
 
@@ -280,7 +277,7 @@ public class ReplicaAssigner {
         Rule rule = rules.get(rulePermutation[i]);
         Rule.MatchStatus matchStatus = rule.tryAssignNodeToShard(e.getValue(),
             copyOfCurrentState, nodeVsTagsCopy, e.getKey().shard, fuzzyPhase ? FUZZY_VERIFY : VERIFY);
-        if (matchStatus != NODE_CAN_BE_ASSIGNED) return null;
+        if (matchStatus != NODE_CAN_BE_ASSIGNED && matchStatus != NOT_APPLICABLE) return null;
       }
     }
     return result;
