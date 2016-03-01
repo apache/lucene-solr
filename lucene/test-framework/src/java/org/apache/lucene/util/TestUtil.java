@@ -338,6 +338,7 @@ public final class TestUtil {
     CheckIndex.testStoredFields(codecReader, infoStream, true);
     CheckIndex.testTermVectors(codecReader, infoStream, false, crossCheckTermVectors, true);
     CheckIndex.testDocValues(codecReader, infoStream, true);
+    CheckIndex.testPoints(codecReader, infoStream, true);
     
     // some checks really against the reader API
     checkReaderSanity(reader);
