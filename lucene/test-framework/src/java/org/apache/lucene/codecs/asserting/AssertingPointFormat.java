@@ -34,7 +34,22 @@ import org.apache.lucene.util.TestUtil;
  */
 
 public final class AssertingPointFormat extends PointFormat {
-  private final PointFormat in = TestUtil.getDefaultCodec().pointFormat();
+  private final PointFormat in;
+
+  /** Create a new AssertingPointFormat */
+  public AssertingPointFormat() {
+    this(TestUtil.getDefaultCodec().pointFormat());
+  }
+
+  /**
+   * Expert: Create an AssertingPointFormat.
+   * This is only intended to pass special parameters for testing.
+   */
+  // TODO: can we randomize this a cleaner way? e.g. stored fields and vectors do
+  // this with a separate codec...
+  public AssertingPointFormat(PointFormat in) {
+    this.in = in;
+  }
   
   @Override
   public PointWriter fieldsWriter(SegmentWriteState state) throws IOException {
