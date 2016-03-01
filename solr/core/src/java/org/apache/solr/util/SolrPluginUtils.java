@@ -287,10 +287,11 @@ public class SolrPluginUtils {
     dbg.add("solr-spec-version", specificationVersion == null ? "" : specificationVersion);
   }
 
-  public static void doLuceneVersionDebug(NamedList dbg) {
+  public static void doLuceneVersionDebug(SolrQueryRequest req,NamedList dbg) {
     Package p = LucenePackage.class.getPackage();
     String specificationVersion = p.getSpecificationVersion();
     dbg.add("lucene-spec-version", specificationVersion == null ? "" : specificationVersion);
+    dbg.add("lucene-match-version", req.getSchema().getDefaultLuceneMatchVersion().toString());
   }
 
   /**
@@ -344,7 +345,7 @@ public class SolrPluginUtils {
     NamedList dbg = new SimpleOrderedMap();
     if (dbgVersion){
       doSolrVersionDebug(dbg);
-      doLuceneVersionDebug(dbg);
+      doLuceneVersionDebug(req, dbg);
     }
     doStandardQueryDebug(req, userQuery, query, dbgQuery, dbg);
     doStandardResultsDebug(req, query, results, dbgResults, dbg);
