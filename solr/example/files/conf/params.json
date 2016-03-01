@@ -22,6 +22,10 @@
     "debug":"true",
     "hl.simple.pre":"HL_START",
     "hl.simple.post":"HL_END",
+    "echoParams": "explicit",
+    "_appends_": {
+      "fq": "{!switch v=$type tag=type case='*:*' case.all='*:*' case.unknown='-doc_type:[* TO *]' default=$type_fq}"
+    },
     "":{"v":0}},
   "velocity":{
     "wt":"velocity",
