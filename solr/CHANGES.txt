@@ -231,6 +231,8 @@ Bug Fixes
 * SOLR-8738: Fixed false success response when invalid deleteByQuery requests intially hit non-leader
   cloud nodes (hossman)
 
+* SOLR-8771: Multi-threaded core shutdown creates executor per core. (Mike Drob via Mark Miller)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
