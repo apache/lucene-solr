@@ -498,7 +498,7 @@ public class TestPointQueries extends LuceneTestCase {
 
   @Nightly
   public void testRandomBinaryBig() throws Exception {
-    doTestRandomBinary(200000);
+    doTestRandomBinary(100000);
   }
 
   private void doTestRandomBinary(int count) throws Exception {
