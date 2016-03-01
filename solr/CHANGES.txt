@@ -100,6 +100,8 @@ Bug Fixes
 
 * SOLR-8375: ReplicaAssigner rejects valid nodes (Kelvin Tan, noble)
 
+* SOLR-8738: Fixed false success response when invalid deleteByQuery requests intially hit non-leader
+  cloud nodes (hossman)
 
 Other Changes
 ----------------------
