@@ -665,34 +665,35 @@ public class BKDWriter implements Closeable {
       // Offline sort:
       assert tempInput != null;
 
-      final ByteArrayDataInput reader = new ByteArrayDataInput();
       Comparator<BytesRef> cmp = new Comparator<BytesRef>() {
-        private final ByteArrayDataInput readerB = new ByteArrayDataInput();
+ 
+        final ByteArrayDataInput reader = new ByteArrayDataInput();
 
         @Override
         public int compare(BytesRef a, BytesRef b) {
-          reader.reset(a.bytes, a.offset, a.length);
-          reader.readBytes(scratch1, 0, scratch1.length);
-          final int docIDA = reader.readVInt();
-          final long ordA = reader.readVLong();
 
-          reader.reset(b.bytes, b.offset, b.length);
-          reader.readBytes(scratch2, 0, scratch2.length);
-          final int docIDB = reader.readVInt();
-          final long ordB = reader.readVLong();
-
-          int cmp = StringHelper.compare(bytesPerDim, scratch1, bytesPerDim*dim, scratch2, bytesPerDim*dim);
+          // First compare the bytes on the dimension we are sorting on:
+          int cmp = StringHelper.compare(bytesPerDim, a.bytes, a.offset + bytesPerDim*dim, b.bytes, b.offset + bytesPerDim*dim);
 
           if (cmp != 0) {
             return cmp;
           }
 
-          // Tie-break
+          // Tie-break by docID and then ord:
+          reader.reset(a.bytes, a.offset + packedBytesLength, a.length);
+          final int docIDA = reader.readVInt();
+          final long ordA = reader.readVLong();
+
+          reader.reset(b.bytes, b.offset + packedBytesLength, b.length);
+          final int docIDB = reader.readVInt();
+          final long ordB = reader.readVLong();
+
           cmp = Integer.compare(docIDA, docIDB);
           if (cmp != 0) {
             return cmp;
           }
 
+          // TODO: is this really necessary?  If OfflineSorter is stable, we can safely return 0 here, and avoid writing ords?
           return Long.compare(ordA, ordB);
         }
       };
