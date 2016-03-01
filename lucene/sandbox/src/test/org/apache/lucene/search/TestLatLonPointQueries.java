@@ -23,9 +23,8 @@ import org.apache.lucene.spatial.util.GeoDistanceUtils;
 import org.apache.lucene.spatial.util.GeoRect;
 
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
-  // todo deconflict GeoPoint and BKD encoding methods and error tolerance
+  // TODO: remove this!
   public static final double BKD_TOLERANCE = 1e-7;
-  public static final double ENCODING_TOLERANCE = 1e-7;
 
   @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
@@ -57,13 +56,13 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
     assert Double.isNaN(pointLat) == false;
 
-    int rectLatMinEnc = LatLonPoint.encodeLat(rect.minLat);
-    int rectLatMaxEnc = LatLonPoint.encodeLat(rect.maxLat);
-    int rectLonMinEnc = LatLonPoint.encodeLon(rect.minLon);
-    int rectLonMaxEnc = LatLonPoint.encodeLon(rect.maxLon);
+    int rectLatMinEnc = LatLonPoint.encodeLatitude(rect.minLat);
+    int rectLatMaxEnc = LatLonPoint.encodeLatitude(rect.maxLat);
+    int rectLonMinEnc = LatLonPoint.encodeLongitude(rect.minLon);
+    int rectLonMaxEnc = LatLonPoint.encodeLongitude(rect.maxLon);
 
-    int pointLatEnc = LatLonPoint.encodeLat(pointLat);
-    int pointLonEnc = LatLonPoint.encodeLon(pointLon);
+    int pointLatEnc = LatLonPoint.encodeLatitude(pointLat);
+    int pointLonEnc = LatLonPoint.encodeLongitude(pointLon);
 
     if (rect.minLon < rect.maxLon) {
       return pointLatEnc >= rectLatMinEnc &&
@@ -81,12 +80,12 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
   @Override
   protected double quantizeLat(double latRaw) {
-    return LatLonPoint.decodeLat(LatLonPoint.encodeLat(latRaw));
+    return LatLonPoint.decodeLatitude(LatLonPoint.encodeLatitude(latRaw));
   }
 
   @Override
   protected double quantizeLon(double lonRaw) {
-    return LatLonPoint.decodeLon(LatLonPoint.encodeLon(lonRaw));
+    return LatLonPoint.decodeLongitude(LatLonPoint.encodeLongitude(lonRaw));
   }
 
   // todo reconcile with GeoUtils (see LUCENE-6996)
@@ -112,13 +111,13 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
       return null;
     }
 
-    int rectLatMinEnc = LatLonPoint.encodeLat(rect.minLat);
-    int rectLatMaxEnc = LatLonPoint.encodeLat(rect.maxLat);
-    int rectLonMinEnc = LatLonPoint.encodeLon(rect.minLon);
-    int rectLonMaxEnc = LatLonPoint.encodeLon(rect.maxLon);
+    int rectLatMinEnc = LatLonPoint.encodeLatitude(rect.minLat);
+    int rectLatMaxEnc = LatLonPoint.encodeLatitude(rect.maxLat);
+    int rectLonMinEnc = LatLonPoint.encodeLongitude(rect.minLon);
+    int rectLonMaxEnc = LatLonPoint.encodeLongitude(rect.maxLon);
 
-    int pointLatEnc = LatLonPoint.encodeLat(pointLat);
-    int pointLonEnc = LatLonPoint.encodeLon(pointLon);
+    int pointLatEnc = LatLonPoint.encodeLatitude(pointLat);
+    int pointLonEnc = LatLonPoint.encodeLongitude(pointLon);
 
     if (rect.minLon < rect.maxLon) {
       return pointLatEnc >= rectLatMinEnc &&
@@ -146,36 +145,5 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   protected Boolean distanceRangeContainsPoint(double centerLat, double centerLon, double minRadiusMeters, double radiusMeters, double pointLat, double pointLon) {
     final double d = GeoDistanceUtils.haversin(centerLat, centerLon, pointLat, pointLon);
     return d >= minRadiusMeters && d <= radiusMeters;
-  }
-
-  public void testEncodeDecode() throws Exception {
-    int iters = atLeast(10000);
-    boolean small = random().nextBoolean();
-    for(int iter=0;iter<iters;iter++) {
-      double lat = randomLat(small);
-      double latEnc = LatLonPoint.decodeLat(LatLonPoint.encodeLat(lat));
-      assertEquals("lat=" + lat + " latEnc=" + latEnc + " diff=" + (lat - latEnc), lat, latEnc, ENCODING_TOLERANCE);
-
-      double lon = randomLon(small);
-      double lonEnc = LatLonPoint.decodeLon(LatLonPoint.encodeLon(lon));
-      assertEquals("lon=" + lon + " lonEnc=" + lonEnc + " diff=" + (lon - lonEnc), lon, lonEnc, ENCODING_TOLERANCE);
-    }
-  }
-
-  public void testScaleUnscaleIsStable() throws Exception {
-    int iters = atLeast(1000);
-    boolean small = random().nextBoolean();
-    for(int iter=0;iter<iters;iter++) {
-      double lat = randomLat(small);
-      double lon = randomLon(small);
-
-      double latEnc = LatLonPoint.decodeLat(LatLonPoint.encodeLat(lat));
-      double lonEnc = LatLonPoint.decodeLon(LatLonPoint.encodeLon(lon));
-
-      double latEnc2 = LatLonPoint.decodeLat(LatLonPoint.encodeLat(latEnc));
-      double lonEnc2 = LatLonPoint.decodeLon(LatLonPoint.encodeLon(lonEnc));
-      assertEquals(latEnc, latEnc2, 0.0);
-      assertEquals(lonEnc, lonEnc2, 0.0);
-    }
   }
 }

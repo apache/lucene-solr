@@ -14,19 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
 import org.apache.lucene.spatial.util.GeoUtils;
 
@@ -36,7 +41,7 @@ import org.apache.lucene.spatial.util.GeoUtils;
  *
  *  @lucene.experimental */
 
-public class PointInPolygonQuery extends Query {
+final class LatLonPointInPolygonQuery extends Query {
   final String field;
   final double minLat;
   final double maxLat;
@@ -46,8 +51,17 @@ public class PointInPolygonQuery extends Query {
   final double[] polyLons;
 
   /** The lats/lons must be clockwise or counter-clockwise. */
-  public PointInPolygonQuery(String field, double[] polyLats, double[] polyLons) {
+  public LatLonPointInPolygonQuery(String field, double[] polyLats, double[] polyLons) {
     this.field = field;
+    if (field == null) {
+      throw new IllegalArgumentException("field cannot be null");
+    }
+    if (polyLats == null) {
+      throw new IllegalArgumentException("polyLats cannot be null");
+    }
+    if (polyLons == null) {
+      throw new IllegalArgumentException("polyLons cannot be null");
+    }
     if (polyLats.length != polyLons.length) {
       throw new IllegalArgumentException("polyLats and polyLons must be equal length");
     }
@@ -109,6 +123,12 @@ public class PointInPolygonQuery extends Query {
           // No docs in this segment had any points fields
           return null;
         }
+        FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
+        if (fieldInfo == null) {
+          // No docs in this segment indexed this field at all
+          return null;
+        }
+        LatLonPoint.checkCompatible(fieldInfo);
 
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
         values.intersect(field,
@@ -121,8 +141,8 @@ public class PointInPolygonQuery extends Query {
                            @Override
                            public void visit(int docID, byte[] packedValue) {
                              assert packedValue.length == 8;
-                             double lat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(packedValue, 0));
-                             double lon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(packedValue, Integer.BYTES));
+                             double lat = LatLonPoint.decodeLatitude(packedValue, 0);
+                             double lon = LatLonPoint.decodeLongitude(packedValue, Integer.BYTES);
                              if (GeoRelationUtils.pointInPolygon(polyLons, polyLats, lat, lon)) {
                                result.add(docID);
                              }
@@ -130,10 +150,10 @@ public class PointInPolygonQuery extends Query {
 
                            @Override
                            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                             double cellMinLat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(minPackedValue, 0));
-                             double cellMinLon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(minPackedValue, Integer.BYTES));
-                             double cellMaxLat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(maxPackedValue, 0));
-                             double cellMaxLon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(maxPackedValue, Integer.BYTES));
+                             double cellMinLat = LatLonPoint.decodeLatitude(minPackedValue, 0);
+                             double cellMinLon = LatLonPoint.decodeLongitude(minPackedValue, Integer.BYTES);
+                             double cellMaxLat = LatLonPoint.decodeLatitude(maxPackedValue, 0);
+                             double cellMaxLon = LatLonPoint.decodeLongitude(maxPackedValue, Integer.BYTES);
 
                              if (cellMinLat <= minLat && cellMaxLat >= maxLat && cellMinLon <= minLon && cellMaxLon >= maxLon) {
                                // Cell fully encloses the query
@@ -158,13 +178,12 @@ public class PointInPolygonQuery extends Query {
   }
 
   @Override
-  @SuppressWarnings({"unchecked","rawtypes"})
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
 
-    PointInPolygonQuery that = (PointInPolygonQuery) o;
+    LatLonPointInPolygonQuery that = (LatLonPointInPolygonQuery) o;
 
     if (Arrays.equals(polyLons, that.polyLons) == false) {
       return false;

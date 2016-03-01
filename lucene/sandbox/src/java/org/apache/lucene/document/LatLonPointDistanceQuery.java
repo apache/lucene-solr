@@ -14,34 +14,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.document;
 
 import java.io.IOException;
 
-import org.apache.lucene.document.LatLonPoint;
+import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.search.ConstantScoreScorer;
+import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.spatial.util.GeoDistanceUtils;
 import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.NumericUtils;
 
 /**
  * Distance query for {@link LatLonPoint}.
  */
-public class PointDistanceQuery extends Query {
+final class LatLonPointDistanceQuery extends Query {
   final String field;
   final double latitude;
   final double longitude;
   final double radiusMeters;
 
-  public PointDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
+  public LatLonPointDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
     if (field == null) {
       throw new IllegalArgumentException("field cannot be null");
+    }
+    if (Double.isFinite(radiusMeters) == false || radiusMeters < 0) {
+      throw new IllegalArgumentException("radiusMeters: '" + radiusMeters + "' is invalid");
     }
     if (GeoUtils.isValidLat(latitude) == false) {
       throw new IllegalArgumentException("latitude: '" + latitude + "' is invalid");
@@ -80,6 +88,12 @@ public class PointDistanceQuery extends Query {
           // No docs in this segment had any points fields
           return null;
         }
+        FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field);
+        if (fieldInfo == null) {
+          // No docs in this segment indexed this field at all
+          return null;
+        }
+        LatLonPoint.checkCompatible(fieldInfo);
         
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
         values.intersect(field,
@@ -92,8 +106,8 @@ public class PointDistanceQuery extends Query {
                            @Override
                            public void visit(int docID, byte[] packedValue) {
                              assert packedValue.length == 8;
-                             double lat = LatLonPoint.decodeLat(NumericUtils.bytesToInt(packedValue, 0));
-                             double lon = LatLonPoint.decodeLon(NumericUtils.bytesToInt(packedValue, Integer.BYTES));
+                             double lat = LatLonPoint.decodeLatitude(packedValue, 0);
+                             double lon = LatLonPoint.decodeLongitude(packedValue, Integer.BYTES);
                              if (GeoDistanceUtils.haversin(latitude, longitude, lat, lon) <= radiusMeters) {
                                visit(docID);
                              }
@@ -105,10 +119,10 @@ public class PointDistanceQuery extends Query {
                            // 3. recurse naively.
                            @Override
                            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                             double latMin = LatLonPoint.decodeLat(NumericUtils.bytesToInt(minPackedValue, 0));
-                             double lonMin = LatLonPoint.decodeLon(NumericUtils.bytesToInt(minPackedValue, Integer.BYTES));
-                             double latMax = LatLonPoint.decodeLat(NumericUtils.bytesToInt(maxPackedValue, 0));
-                             double lonMax = LatLonPoint.decodeLon(NumericUtils.bytesToInt(maxPackedValue, Integer.BYTES));
+                             double latMin = LatLonPoint.decodeLatitude(minPackedValue, 0);
+                             double lonMin = LatLonPoint.decodeLongitude(minPackedValue, Integer.BYTES);
+                             double latMax = LatLonPoint.decodeLatitude(maxPackedValue, 0);
+                             double lonMax = LatLonPoint.decodeLongitude(maxPackedValue, Integer.BYTES);
                              
                              if ((latMax < box1.minLat || lonMax < box1.minLon || latMin > box1.maxLat || lonMin > box1.maxLon) && 
                                  (box2 == null || latMax < box2.minLat || lonMax < box2.minLon || latMin > box2.maxLat || lonMin > box2.maxLon)) {
@@ -153,7 +167,7 @@ public class PointDistanceQuery extends Query {
     if (this == obj) return true;
     if (!super.equals(obj)) return false;
     if (getClass() != obj.getClass()) return false;
-    PointDistanceQuery other = (PointDistanceQuery) obj;
+    LatLonPointDistanceQuery other = (LatLonPointDistanceQuery) obj;
     if (!field.equals(other.field)) return false;
     if (Double.doubleToLongBits(latitude) != Double.doubleToLongBits(other.latitude)) return false;
     if (Double.doubleToLongBits(longitude) != Double.doubleToLongBits(other.longitude)) return false;
@@ -165,7 +179,7 @@ public class PointDistanceQuery extends Query {
   public String toString(String field) {
     StringBuilder sb = new StringBuilder();
     if (!this.field.equals(field)) {
-      sb.append(field);
+      sb.append(this.field);
       sb.append(':');
     }
     sb.append(latitude);
