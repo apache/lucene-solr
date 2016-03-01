@@ -228,6 +228,9 @@ Bug Fixes
 
 * SOLR-8375: ReplicaAssigner rejects valid nodes (Kelvin Tan, noble)
 
+* SOLR-8738: Fixed false success response when invalid deleteByQuery requests intially hit non-leader
+  cloud nodes (hossman)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been

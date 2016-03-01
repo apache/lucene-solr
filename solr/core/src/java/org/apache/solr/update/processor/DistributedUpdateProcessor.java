@@ -1284,7 +1284,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
           // don't forward to ourself
           leaderForAnyShard = true;
         } else {
-          leaders.add(new StdNode(coreLeaderProps, collection, sliceName));
+          leaders.add(new RetryNode(coreLeaderProps, zkController.getZkStateReader(), collection, sliceName));
         }
       }
 
