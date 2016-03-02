@@ -558,6 +558,7 @@ public class TestPointValues extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     assertEquals(0, r.leaves().get(0).reader().getPointValues().size("int"));
+    assertEquals(0, r.leaves().get(0).reader().getPointValues().getDocCount("int"));
     w.close();
     r.close();
     dir.close();
