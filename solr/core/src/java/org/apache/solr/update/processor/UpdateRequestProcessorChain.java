@@ -220,12 +220,6 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     return last;
   }
 
-
-  @Deprecated
-  public UpdateRequestProcessorFactory[] getFactories() {
-    return chain.toArray(new UpdateRequestProcessorFactory[0]);
-  }
-
   /**
    * Returns the underlying array of factories used in this chain.
    * Modifications to the array will affect future calls to

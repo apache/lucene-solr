@@ -54,7 +54,7 @@ public class CSVStrategy implements Cloneable, Serializable {
 
 
     public CSVStrategy(char delimiter, char encapsulator, char commentStart) {
-        this(delimiter, encapsulator, commentStart, true, false, true);
+        this(delimiter, encapsulator, commentStart, ESCAPE_DISABLED, true, true, false, true);
     }
   
     /**
@@ -87,19 +87,6 @@ public class CSVStrategy implements Cloneable, Serializable {
         setIgnoreTrailingWhitespaces(ignoreTrailingWhitespace);
         setUnicodeEscapeInterpretation(interpretUnicodeEscapes);
         setIgnoreEmptyLines(ignoreEmptyLines);
-    }
-
-    /** @deprecated Use {@link #CSVStrategy(char, char, char, char, boolean, boolean, boolean, boolean)} */
-    public CSVStrategy(
-        char delimiter,
-        char encapsulator,
-        char commentStart,
-        boolean ignoreLeadingWhitespace,
-        boolean interpretUnicodeEscapes,
-        boolean ignoreEmptyLines)
-    {
-        this(delimiter, encapsulator, commentStart, CSVStrategy.ESCAPE_DISABLED, ignoreLeadingWhitespace, 
-             true, interpretUnicodeEscapes, ignoreEmptyLines);
     }
 
     public void setDelimiter(char delimiter) { this.delimiter = delimiter; }

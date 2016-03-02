@@ -41,10 +41,6 @@ public class DistanceUnits {
       DistanceUtils.MILES_TO_KM * DistanceUtils.KM_TO_DEG);
   public final static DistanceUnits DEGREES = new DistanceUnits(DEGREES_PARAM, 180.0/Math.PI, 1.0);
 
-  // Previously, distance based filtering was done with km, but scores were based on degrees
-  @Deprecated
-  public final static DistanceUnits BACKCOMPAT = new DistanceUnits("backcompat", DistanceUtils.EARTH_MEAN_RADIUS_KM, 1.0);
-
   //volatile so other threads see when we replace when copy-on-write
   private static volatile Map<String, DistanceUnits> instances = ImmutableMap.of(
       KILOMETERS_PARAM, KILOMETERS,

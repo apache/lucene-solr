@@ -184,14 +184,6 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
       return this.shardName;
     }
 
-    @Deprecated
-    public ModifiableSolrParams getCommonParams() {
-      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      params.set(CoreAdminParams.COLLECTION, collection);
-      params.set(CoreAdminParams.SHARD, shardName);
-      return params;
-    }
-
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -667,15 +659,6 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
 
     public String getAliasedCollections() {
       return this.aliasedCollections;
-    }
-
-    /**
-     * @param aliasName the alias name
-     * @deprecated use {@link #setAliasName(String)} instead
-     */
-    @Deprecated
-    public void setCollectionName(String aliasName) {
-      this.aliasName = aliasName;
     }
 
     @Override

@@ -32,6 +32,7 @@ import org.junit.Test;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Test for ContentStreamDataSource
@@ -173,8 +174,9 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
   }
 
   private JettySolrRunner createJetty(SolrInstance instance) throws Exception {
-    System.setProperty("solr.data.dir", instance.getDataDir());
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), buildJettyConfig("/solr"));
+    Properties nodeProperties = new Properties();
+    nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
+    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, buildJettyConfig("/solr"));
     jetty.start();
     return jetty;
   }

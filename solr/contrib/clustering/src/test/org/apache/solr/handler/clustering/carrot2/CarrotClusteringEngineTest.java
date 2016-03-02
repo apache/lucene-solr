@@ -199,12 +199,6 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
         "online,customsolrstopwordcustomdir,customsolrstoplabelcustomdir");
   }
 
-  @Test
-  public void testLexicalResourcesFromSolrConfigCustomDirDeprecated() throws Exception {
-    checkLexicalResourcesFromSolrConfig("lexical-resource-check-custom-resource-dir-deprecated",
-        "online,customsolrstopwordcustomdir,customsolrstoplabelcustomdir");
-  }
-
   private void checkLexicalResourcesFromSolrConfig(String engineName, String wordsToCheck)
       throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();

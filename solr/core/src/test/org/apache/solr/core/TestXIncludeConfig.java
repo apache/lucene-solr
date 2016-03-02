@@ -58,10 +58,10 @@ public class TestXIncludeConfig extends AbstractSolrTestCase {
       = core.getUpdateProcessingChain("special-include");
     assertNotNull("chain is missing included processor", chain);
     assertEquals("chain with inclued processor is wrong size", 
-                 1, chain.getFactories().length);
+                 1, chain.getProcessors().size());
     assertEquals("chain has wrong included processor",
                  RegexReplaceProcessorFactory.class,
-                 chain.getFactories()[0].getClass());
+                 chain.getProcessors().get(0).getClass());
 
     IndexSchema schema = core.getLatestSchema();
     

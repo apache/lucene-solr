@@ -197,7 +197,6 @@ public class SolrConfig extends Config implements MapSerializable {
     if (hasDeprecatedIndexConfig) {
       throw new SolrException(ErrorCode.FORBIDDEN, "<indexDefaults> and <mainIndex> configuration sections are discontinued. Use <indexConfig> instead.");
     } else {
-      defaultIndexConfig = mainIndexConfig = null;
       indexConfigPrefix = "indexConfig";
     }
     assertWarnOrFail("The <nrtMode> config has been discontinued and NRT mode is always used by Solr." +
@@ -214,7 +213,7 @@ public class SolrConfig extends Config implements MapSerializable {
                      );
                      
     // Parse indexConfig section, using mainIndex as backup in case old config is used
-    indexConfig = new SolrIndexConfig(this, "indexConfig", mainIndexConfig);
+    indexConfig = new SolrIndexConfig(this, "indexConfig", null);
 
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
     log.info("Using Lucene MatchVersion: " + luceneMatchVersion);
@@ -466,11 +465,6 @@ public class SolrConfig extends Config implements MapSerializable {
   // DocSet
   public final float hashSetInverseLoadFactor;
   public final int hashDocSetMaxSize;
-  // default & main index configurations, deprecated as of 3.6
-  @Deprecated
-  public final SolrIndexConfig defaultIndexConfig;
-  @Deprecated
-  public final SolrIndexConfig mainIndexConfig;
   // IndexConfig settings
   public final SolrIndexConfig indexConfig;
 

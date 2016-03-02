@@ -117,23 +117,8 @@ public class TrieField extends PrimitiveFieldType {
     if (val != null) {
       return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
     } else {
-      // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
-      final BytesRef bytes = f.binaryValue();
-      if (bytes==null) return badFieldString(f);
-      switch (type) {
-        case INTEGER:
-          return toInt(bytes.bytes, bytes.offset);
-        case FLOAT:
-          return Float.intBitsToFloat(toInt(bytes.bytes, bytes.offset));
-        case LONG:
-          return toLong(bytes.bytes, bytes.offset);
-        case DOUBLE:
-          return Double.longBitsToDouble(toLong(bytes.bytes, bytes.offset));
-        case DATE:
-          return new Date(toLong(bytes.bytes, bytes.offset));
-        default:
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
-      }
+      // the old BinaryField encoding is no longer supported
+      return badFieldString(f);
     }
   }
 
@@ -432,18 +417,6 @@ public class TrieField extends PrimitiveFieldType {
     }
   }
 
-  @Deprecated
-  static int toInt(byte[] arr, int offset) {
-    return (arr[offset]<<24) | ((arr[offset+1]&0xff)<<16) | ((arr[offset+2]&0xff)<<8) | (arr[offset+3]&0xff);
-  }
-  
-  @Deprecated
-  static long toLong(byte[] arr, int offset) {
-    int high = (arr[offset]<<24) | ((arr[offset+1]&0xff)<<16) | ((arr[offset+2]&0xff)<<8) | (arr[offset+3]&0xff);
-    int low = (arr[offset+4]<<24) | ((arr[offset+5]&0xff)<<16) | ((arr[offset+6]&0xff)<<8) | (arr[offset+7]&0xff);
-    return (((long)high)<<32) | (low&0x0ffffffffL);
-  }
-
   @Override
   public String storedToReadable(IndexableField f) {
     return toExternal(f);
@@ -596,39 +569,8 @@ public class TrieField extends PrimitiveFieldType {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
       }
     } else {
-      // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
-      final BytesRef bytesRef = f.binaryValue();
-      if (bytesRef==null)
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
-      switch (type) {
-        case INTEGER:
-          LegacyNumericUtils.intToPrefixCoded(toInt(bytesRef.bytes, bytesRef.offset), 0, bytes);
-          break;
-        case FLOAT: {
-          // WARNING: Code Duplication! Keep in sync with o.a.l.util.LegacyNumericUtils!
-          // copied from LegacyNumericUtils to not convert to/from float two times
-          // code in next 2 lines is identical to: int v = LegacyNumericUtils.floatToSortableInt(Float.intBitsToFloat(toInt(arr)));
-          int v = toInt(bytesRef.bytes, bytesRef.offset);
-          if (v<0) v ^= 0x7fffffff;
-          LegacyNumericUtils.intToPrefixCoded(v, 0, bytes);
-          break;
-        }
-        case LONG: //fallthrough!
-        case DATE:
-          LegacyNumericUtils.longToPrefixCoded(toLong(bytesRef.bytes, bytesRef.offset), 0, bytes);
-          break;
-        case DOUBLE: {
-          // WARNING: Code Duplication! Keep in sync with o.a.l.util.LegacyNumericUtils!
-          // copied from LegacyNumericUtils to not convert to/from double two times
-          // code in next 2 lines is identical to: long v = LegacyNumericUtils.doubleToSortableLong(Double.longBitsToDouble(toLong(arr)));
-          long v = toLong(bytesRef.bytes, bytesRef.offset);
-          if (v<0) v ^= 0x7fffffffffffffffL;
-          LegacyNumericUtils.longToPrefixCoded(v, 0, bytes);
-          break;
-        }
-        default:
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
-      }
+      // the old BinaryField encoding is no longer supported
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
     }
   }
   

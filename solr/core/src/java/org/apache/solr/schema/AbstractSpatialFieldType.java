@@ -91,8 +91,6 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   private final Cache<String, T> fieldStrategyCache = CacheBuilder.newBuilder().build();
 
   protected DistanceUnits distanceUnits;
-  @Deprecated
-  protected String units; // for back compat; hopefully null
 
   protected final Set<String> supportedScoreModes;
 
@@ -120,30 +118,11 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
       ctx = SpatialContextFactory.makeSpatialContext(argsWrap, schema.getResourceLoader().getClassLoader());
       args.keySet().removeAll(argsWrap.getSeenKeys());
     }
-    
-    final String unitsErrMsg = "units parameter is deprecated, please use distanceUnits instead for field types with class " +
-        getClass().getSimpleName();
-    this.units = args.remove("units");//deprecated
-    if (units != null) {
-      if ("degrees".equals(units)) {
-        log.warn(unitsErrMsg);
-      } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, unitsErrMsg);
-      }
-    }
 
     final String distanceUnitsStr = args.remove("distanceUnits");
     if (distanceUnitsStr == null) {
-      if (units != null) {
-        this.distanceUnits = DistanceUnits.BACKCOMPAT;
-      } else {
-        this.distanceUnits = ctx.isGeo() ? DistanceUnits.KILOMETERS : DistanceUnits.DEGREES;
-      }
+      this.distanceUnits = ctx.isGeo() ? DistanceUnits.KILOMETERS : DistanceUnits.DEGREES;
     } else {
-      // If both units and distanceUnits was specified
-      if (units != null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, unitsErrMsg);
-      }
       this.distanceUnits = parseDistanceUnits(distanceUnitsStr);
       if (this.distanceUnits == null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

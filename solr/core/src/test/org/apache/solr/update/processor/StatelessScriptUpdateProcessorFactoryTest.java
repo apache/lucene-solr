@@ -75,7 +75,7 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
   public void testSingleScript() throws Exception {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("single-script");
-    final StatelessScriptUpdateProcessorFactory factory = ((StatelessScriptUpdateProcessorFactory) chained.getFactories()[0]);
+    final StatelessScriptUpdateProcessorFactory factory = ((StatelessScriptUpdateProcessorFactory) chained.getProcessors().get(0));
     final List<String> functionMessages = new ArrayList<>();
     factory.setScriptEngineCustomizer(new ScriptEngineCustomizer() {
       @Override
@@ -120,7 +120,7 @@ public class StatelessScriptUpdateProcessorFactoryTest extends UpdateProcessorTe
     
       UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(chain);
       final StatelessScriptUpdateProcessorFactory factory = 
-        ((StatelessScriptUpdateProcessorFactory) chained.getFactories()[0]);
+        ((StatelessScriptUpdateProcessorFactory) chained.getProcessors().get(0));
       final List<String> functionMessages = new ArrayList<>();
       ScriptEngineCustomizer customizer = new ScriptEngineCustomizer() {
           @Override

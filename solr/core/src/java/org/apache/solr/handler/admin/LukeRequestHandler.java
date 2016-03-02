@@ -562,13 +562,6 @@ public class LukeRequestHandler extends RequestHandlerBase
     typeusemap.put( ft.getTypeName(), v );
   }
 
-  /**
-   * @deprecated use {@link #getIndexInfo(DirectoryReader)} since you now have to explicitly pass the "fl" prameter
-   * and this was always called with "false" anyway from CoreAdminHandler
-   */
-  public static SimpleOrderedMap<Object> getIndexInfo(DirectoryReader reader, boolean detail) throws IOException {
-    return getIndexInfo(reader);
-  }
   // This method just gets the top-most level of information. This was conflated with getting detailed info
   // for *all* the fields, called from CoreAdminHandler etc.
 
