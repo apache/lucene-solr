@@ -105,8 +105,7 @@ public class RangeFacetsExample implements Closeable {
     // documents ("browse only"):
     DrillDownQuery q = new DrillDownQuery(getConfig());
 
-    q.add("timestamp", LongPoint.newRangeQuery("timestamp", range.min, range.minInclusive, range.max, range.maxInclusive));
-
+    q.add("timestamp", LongPoint.newRangeQuery("timestamp", range.min, range.max));
     return searcher.search(q, 10);
   }
 

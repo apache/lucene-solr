@@ -233,12 +233,17 @@ public class LatLonPoint extends Field {
       // E.g.: maxLon = -179, minLon = 179
       byte[][] leftOpen = new byte[2][];
       leftOpen[0] = lower[0];
-      // leave longitude open (null)
+      // leave longitude open
+      leftOpen[1] = new byte[Integer.BYTES];
+      NumericUtils.intToBytes(Integer.MIN_VALUE, leftOpen[1], 0);
       Query left = newBoxInternal(field, leftOpen, upper);
       q.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
+
       byte[][] rightOpen = new byte[2][];
       rightOpen[0] = upper[0];
-      // leave longitude open (null)
+      // leave longitude open
+      rightOpen[1] = new byte[Integer.BYTES];
+      NumericUtils.intToBytes(Integer.MAX_VALUE, rightOpen[1], 0);
       Query right = newBoxInternal(field, lower, rightOpen);
       q.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
       return new ConstantScoreQuery(q.build());
@@ -248,7 +253,7 @@ public class LatLonPoint extends Field {
   }
   
   private static Query newBoxInternal(String field, byte[][] min, byte[][] max) {
-    return new PointRangeQuery(field, min, new boolean[] { true, true }, max, new boolean[] { false, false }) {
+    return new PointRangeQuery(field, min, max) {
       @Override
       protected String toString(int dimension, byte[] value) {
         if (dimension == 0) {
