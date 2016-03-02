@@ -519,6 +519,9 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
       boolean fail = false;
 
+      // Change to false to see all wrong hits:
+      boolean failFast = true;
+
       for(int docID=0;docID<maxDoc;docID++) {
         int id = (int) docIDToID.get(docID);
         Boolean expected;
@@ -532,18 +535,26 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
         // null means it's a borderline case which is allowed to be wrong:
         if (expected != null && hits.get(docID) != expected) {
-          if (expected) {
-            System.out.println(Thread.currentThread().getName() + ": id=" + id + " should match but did not");
-          } else {
-            System.out.println(Thread.currentThread().getName() + ": id=" + id + " should not match but did");
+
+          // Print only one failed hit; add a true || in here to see all failures:
+          if (failFast == false || failed.getAndSet(true) == false) {
+            if (expected) {
+              System.out.println(Thread.currentThread().getName() + ": id=" + id + " should match but did not");
+            } else {
+              System.out.println(Thread.currentThread().getName() + ": id=" + id + " should not match but did");
+            }
+            System.out.println("  small=" + small + " query=" + query +
+                               " docID=" + docID + "\n  lat=" + lats[id] + " lon=" + lons[id] +
+                               "\n  deleted?=" + deleted.contains(id));
+            if (Double.isNaN(lats[id]) == false) {
+              describe(docID, lats[id], lons[id]);
+            }
+            if (failFast) {
+              fail("wrong hit (first of possibly more)");
+            } else {
+              fail = true;
+            }
           }
-          System.out.println("  small=" + small + " query=" + query +
-                             " docID=" + docID + "\n  lat=" + lats[id] + " lon=" + lons[id] +
-                             "\n  deleted?=" + deleted.contains(id));
-          if (Double.isNaN(lats[id]) == false) {
-            describe(docID, lats[id], lons[id]);
-          }
-          fail = true;
         }
       }
 
@@ -767,5 +778,46 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     }
     IOUtils.close(r, dir);
     assertFalse(failed.get());
+  }
+
+  public void testRectBoundariesAreInclusive() throws Exception {
+    GeoRect rect = randomRect(random().nextBoolean(), false);
+    Query query = newRectQuery(FIELD_NAME, rect);
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
+    for(int x=0;x<3;x++) {
+      double lat;
+      if (x == 0) {
+        lat = rect.minLat;
+      } else if (x == 1) {
+        lat = quantizeLat((rect.minLat+rect.maxLat)/2.0);
+      } else {
+        lat = rect.maxLat;
+      }
+      for(int y=0;y<3;y++) {
+        double lon;
+        if (y == 0) {
+          lon = rect.minLon;
+        } else if (y == 1) {
+          if (x == 1) {
+            continue;
+          }
+          lon = quantizeLon((rect.minLon+rect.maxLon)/2.0);
+        } else {
+          lon = rect.maxLon;
+        }
+
+        Document doc = new Document();
+        addPointToDoc(FIELD_NAME, doc, lat, lon);
+        w.addDocument(doc);
+      }
+    }
+    IndexReader r = w.getReader();
+    IndexSearcher s = newSearcher(r, false);
+    assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect)));
+    r.close();
+    w.close();
+    dir.close();
   }
 }

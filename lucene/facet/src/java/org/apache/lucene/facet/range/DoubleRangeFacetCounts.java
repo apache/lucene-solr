@@ -88,8 +88,8 @@ public class DoubleRangeFacetCounts extends RangeFacetCounts {
     for(int i=0;i<ranges.length;i++) {
       DoubleRange range = ranges[i];
       longRanges[i] =  new LongRange(range.label,
-                                     LegacyNumericUtils.doubleToSortableLong(range.minIncl), true,
-                                     LegacyNumericUtils.doubleToSortableLong(range.maxIncl), true);
+                                     LegacyNumericUtils.doubleToSortableLong(range.min), true,
+                                     LegacyNumericUtils.doubleToSortableLong(range.max), true);
     }
 
     LongRangeCounter counter = new LongRangeCounter(longRanges);

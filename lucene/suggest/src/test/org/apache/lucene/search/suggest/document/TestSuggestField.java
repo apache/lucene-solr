@@ -301,7 +301,7 @@ public class TestSuggestField extends LuceneTestCase {
       }
     }
 
-    iw.deleteDocuments(IntPoint.newRangeQuery("weight_fld", 2, true, null, false));
+    iw.deleteDocuments(IntPoint.newRangeQuery("weight_fld", 2, Integer.MAX_VALUE));
 
     DirectoryReader reader = DirectoryReader.open(iw);
     SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);

@@ -64,9 +64,18 @@ public abstract class PointInSetQuery extends Query {
   final String field;
   final int numDims;
   final int bytesPerDim;
+  
+  /** 
+   * Iterator of encoded point values.
+   */
+  // TODO: if we want to stream, maybe we should use jdk stream class?
+  public static abstract class Stream implements BytesRefIterator {
+    @Override
+    public abstract BytesRef next();
+  };
 
   /** The {@code packedPoints} iterator must be in sorted order. */
-  protected PointInSetQuery(String field, int numDims, int bytesPerDim, BytesRefIterator packedPoints) throws IOException {
+  protected PointInSetQuery(String field, int numDims, int bytesPerDim, Stream packedPoints) {
     this.field = field;
     if (bytesPerDim < 1 || bytesPerDim > PointValues.MAX_NUM_BYTES) {
       throw new IllegalArgumentException("bytesPerDim must be > 0 and <= " + PointValues.MAX_NUM_BYTES + "; got " + bytesPerDim);
