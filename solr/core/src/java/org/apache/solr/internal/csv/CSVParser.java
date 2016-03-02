@@ -111,41 +111,9 @@ public class CSVParser {
    * @param input a Reader containing "csv-formatted" input
    */
   public CSVParser(Reader input) {
-    // note: must match default-CSV-strategy !!
-    this(input, ',');
+    this(input, CSVStrategy.DEFAULT_STRATEGY);
   }
   
-  /**
-   * Customized value delimiter parser.
-   * 
-   * The parser follows the default {@link CSVStrategy}
-   * except for the delimiter setting.
-   * 
-   * @param input a Reader based on "csv-formatted" input
-   * @param delimiter a Char used for value separation
-   * @deprecated use {@link #CSVParser(Reader,CSVStrategy)}.
-   */
-  public CSVParser(Reader input, char delimiter) {
-    this(input, delimiter, '"', CSVStrategy.COMMENTS_DISABLED);
-  }
-  
-  /**
-   * Customized csv parser.
-   * 
-   * The parser parses according to the given CSV dialect settings.
-   * Leading whitespaces are truncated, unicode escapes are
-   * not interpreted and empty lines are ignored.
-   * 
-   * @param input a Reader based on "csv-formatted" input
-   * @param delimiter a Char used for value separation
-   * @param encapsulator a Char used as value encapsulation marker
-   * @param commentStart a Char used for comment identification
-   * @deprecated use {@link #CSVParser(Reader,CSVStrategy)}.
-   */
-  public CSVParser(Reader input, char delimiter, char encapsulator, char commentStart) {
-    this(input, new CSVStrategy(delimiter, encapsulator, commentStart));
-  }
-
   /**
    * Customized CSV parser using the given {@link CSVStrategy}
    *

@@ -68,7 +68,6 @@ public class RptWithGeometrySpatialField extends AbstractSpatialFieldType<Compos
     rptFieldType.argsParser = argsParser = newSpatialArgsParser();
     this.ctx = rptFieldType.ctx;
     this.distanceUnits = rptFieldType.distanceUnits;
-    this.units = rptFieldType.units;
   }
 
   @Override

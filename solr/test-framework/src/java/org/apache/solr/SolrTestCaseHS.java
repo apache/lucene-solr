@@ -22,6 +22,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
@@ -32,6 +33,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -449,7 +451,16 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
       }
 
       if (jetty == null) {
-        jetty = new JettySolrRunner(baseDir.getAbsolutePath(), "/solr", port, solrconfigFile, schemaFile, true, null, null, null);
+        JettyConfig jettyConfig = JettyConfig.builder()
+            .stopAtShutdown(true)
+            .setContext("/solr")
+            .setPort(port)
+            .withSSLConfig(sslConfig)
+            .build();
+        Properties nodeProperties = new Properties();
+        nodeProperties.setProperty("solrconfig", solrconfigFile);
+        nodeProperties.setProperty(CoreDescriptor.CORE_SCHEMA, schemaFile);
+        jetty = new JettySolrRunner(baseDir.getAbsolutePath(), nodeProperties, jettyConfig);
       }
 
       // silly stuff included from solrconfig.snippet.randomindexconfig.xml

@@ -135,8 +135,6 @@ public class GeoDistValueSourceParser extends ValueSourceParser {
       SpatialStrategy strategy = ((SpatialStrategyMultiValueSource) mv2).strategy;
       DistanceUnits distanceUnits = ((SpatialStrategyMultiValueSource) mv2).distanceUnits;
       Point queryPoint = strategy.getSpatialContext().makePoint(constants[1], constants[0]);
-      if (distanceUnits == DistanceUnits.BACKCOMPAT)
-        distanceUnits = DistanceUnits.KILOMETERS;
       return strategy.makeDistanceValueSource(queryPoint, distanceUnits.multiplierFromDegreesToThisUnit());
     }
 

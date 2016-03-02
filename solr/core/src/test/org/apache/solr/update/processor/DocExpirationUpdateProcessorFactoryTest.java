@@ -28,6 +28,7 @@ import org.apache.solr.update.DeleteUpdateCommand;
 import org.junit.BeforeClass;
 
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -167,13 +168,13 @@ public class DocExpirationUpdateProcessorFactoryTest extends UpdateProcessorTest
 
     assertNotNull(chain);
 
-    UpdateRequestProcessorFactory[] factories = chain.getFactories();
+    List<UpdateRequestProcessorFactory> factories = chain.getProcessors();
     assertEquals("did number of processors configured in chain get changed?", 
-                 5, factories.length);
-    assertTrue("Expected [1] RecordingUpdateProcessorFactory: " + factories[1].getClass(),
-               factories[1] instanceof RecordingUpdateProcessorFactory);
+                 5, factories.size());
+    assertTrue("Expected [1] RecordingUpdateProcessorFactory: " + factories.get(1).getClass(),
+               factories.get(1) instanceof RecordingUpdateProcessorFactory);
     RecordingUpdateProcessorFactory recorder = 
-      (RecordingUpdateProcessorFactory) factories[1];
+      (RecordingUpdateProcessorFactory) factories.get(1);
 
     // now start recording, and monitor for the expected commands
 

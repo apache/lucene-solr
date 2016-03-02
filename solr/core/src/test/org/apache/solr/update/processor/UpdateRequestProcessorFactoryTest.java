@@ -51,10 +51,10 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
     
     // Make sure it got 3 items (4 configured, 1 is enable=false)
     assertEquals("wrong number of (enabled) factories in chain",
-                 3, chained.getFactories().length );
+                 3, chained.getProcessors().size() );
 
     // first one should be log, and it should be configured properly
-    UpdateRequestProcessorFactory first = chained.getFactories()[0];
+    UpdateRequestProcessorFactory first = chained.getProcessors().get(0);
     assertEquals("wrong factory at front of chain",
                  LogUpdateProcessorFactory.class, first.getClass());
     LogUpdateProcessorFactory log = (LogUpdateProcessorFactory)first;
@@ -65,7 +65,7 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
 
 
     UpdateRequestProcessorChain custom = core.getUpdateProcessingChain( null );
-    CustomUpdateRequestProcessorFactory link = (CustomUpdateRequestProcessorFactory) custom.getFactories()[0];
+    CustomUpdateRequestProcessorFactory link = (CustomUpdateRequestProcessorFactory) custom.getProcessors().get(0);
     
     assertEquals( custom, core.getUpdateProcessingChain( "" ) );
     assertEquals( custom, core.getUpdateProcessingChain( "custom" ) );
@@ -99,7 +99,7 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
 
       // either explicitly, or because of injection
       assertEquals(name + " chain length: " + chain.toString(), EXPECTED_CHAIN_LENGTH,
-                   chain.getFactories().length);
+                   chain.getProcessors().size());
 
       // test a basic (non distrib) chain
       proc = chain.createProcessor(req(), new SolrQueryResponse());

@@ -33,14 +33,6 @@ public class PivotField implements Serializable
   final Map<String,Integer> _querycounts;
   final List<RangeFacet> _ranges;
 
-  /**
-   * @deprecated Use {@link #PivotField(String,Object,int,List,Map,Map,List)} with null <code>statsInfo</code>, queryCounts and ranges
-   */
-  @Deprecated
-  public PivotField( String f, Object v, int count, List<PivotField> pivot) {
-    this(f, v, count, pivot, null, null, null);
-  }
-
   public PivotField( String f, Object v, int count, List<PivotField> pivot, Map<String,FieldStatsInfo> statsInfo, Map<String,Integer> queryCounts, List<RangeFacet> ranges)
   {
     _field = f;

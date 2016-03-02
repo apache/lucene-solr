@@ -66,11 +66,6 @@ public class ZkCmdExecutor {
           Thread.currentThread().interrupt();
           throw new InterruptedException();
         }
-        if (Thread.currentThread() instanceof ClosableThread) {
-          if (((ClosableThread) Thread.currentThread()).isClosed()) {
-            throw exception;
-          }
-        }
         if (i != retryCount -1) {
           retryDelay(i);
         }

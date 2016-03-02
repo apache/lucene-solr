@@ -434,23 +434,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase
       return results;
     }
 
-    @Deprecated
-    public NamedList<DocList> getMoreLikeThese( DocList docs, int rows, int flags ) throws IOException
-    {
-      IndexSchema schema = searcher.getSchema();
-      NamedList<DocList> mlt = new SimpleOrderedMap<>();
-      DocIterator iterator = docs.iterator();
-      while( iterator.hasNext() ) {
-        int id = iterator.nextDoc();
-        
-        DocListAndSet sim = getMoreLikeThis( id, 0, rows, null, null, flags );
-        String name = schema.printableUniqueKey( reader.document( id ) );
-
-        mlt.add(name, sim.docList);
-      }
-      return mlt;
-    }
-    
     public NamedList<BooleanQuery> getMoreLikeTheseQuery(DocList docs)
         throws IOException {
       IndexSchema schema = searcher.getSchema();

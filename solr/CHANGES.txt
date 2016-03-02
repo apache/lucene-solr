@@ -352,6 +352,8 @@ Other Changes
 
 * SOLR-8758: Add a new SolrCloudTestCase class, using MiniSolrCloudCluster (Alan
   Woodward)
+  
+* SOLR-8764: Remove all deprecated methods and classes from master prior to the 6.0 release. (Steve Rowe)
 
 ==================  5.5.1 ==================
 
