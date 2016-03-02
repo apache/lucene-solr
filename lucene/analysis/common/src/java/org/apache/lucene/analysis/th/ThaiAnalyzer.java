@@ -98,9 +98,8 @@ public final class ThaiAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new ThaiTokenizer();
     TokenStream result = new LowerCaseFilter(source);
-    if (getVersion().onOrAfter(Version.LUCENE_5_4_0)) {
-      result = new DecimalDigitFilter(result);
-    }
+    result = new DecimalDigitFilter(result);
+
     result = new StopFilter(result, stopwords);
     return new TokenStreamComponents(source, result);
   }

@@ -134,9 +134,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new StandardTokenizer();
     TokenStream result = new LowerCaseFilter(source);
-    if (getVersion().onOrAfter(Version.LUCENE_5_4_0)) {
-      result = new DecimalDigitFilter(result);
-    }
+    result = new DecimalDigitFilter(result);
     // the order here is important: the stopword list is not normalized!
     result = new StopFilter(result, stopwords);
     // TODO maybe we should make ArabicNormalization filter also KeywordAttribute aware?!

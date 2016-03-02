@@ -132,18 +132,6 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
     a.close();
   }
   
-  /**
-   * test that we don't fold digits for back compat behavior
-   * @deprecated remove this test in lucene 7
-   */
-  @Deprecated
-  public void testDigitsBackCompat() throws Exception {
-    ThaiAnalyzer a = new ThaiAnalyzer();
-    a.setVersion(Version.LUCENE_5_3_0);
-    checkOneTerm(a, "๑๒๓๔", "๑๒๓๔");
-    a.close();
-  }
-  
   public void testTwoSentences() throws Exception {
     Analyzer analyzer = new ThaiAnalyzer(CharArraySet.EMPTY_SET);
     assertAnalyzesTo(analyzer, "This is a test. การที่ได้ต้องแสดงว่างานดี",

@@ -32,25 +32,25 @@ public class TestVersion extends LuceneTestCase {
         assertTrue("LATEST must be always onOrAfter("+v+")", Version.LATEST.onOrAfter(v));
       }
     }
-    assertTrue(Version.LUCENE_6_0_0.onOrAfter(Version.LUCENE_5_0_0));;
+    assertTrue(Version.LUCENE_7_0_0.onOrAfter(Version.LUCENE_6_0_0));;
   }
 
   public void testToString() {
-    assertEquals("5.0.0", Version.LUCENE_5_0_0.toString());
     assertEquals("6.0.0", Version.LUCENE_6_0_0.toString());
+    assertEquals("7.0.0", Version.LUCENE_7_0_0.toString());
   }
 
   public void testParseLeniently() throws Exception {
-    assertEquals(Version.LUCENE_5_0_0, Version.parseLeniently("5.0"));
-    assertEquals(Version.LUCENE_5_0_0, Version.parseLeniently("5.0.0"));
-    assertEquals(Version.LUCENE_5_0_0, Version.parseLeniently("LUCENE_50"));
-    assertEquals(Version.LUCENE_5_0_0, Version.parseLeniently("LUCENE_5_0"));
-    assertEquals(Version.LUCENE_5_0_0, Version.parseLeniently("LUCENE_5_0_0"));
     assertEquals(Version.LUCENE_6_0_0, Version.parseLeniently("6.0"));
     assertEquals(Version.LUCENE_6_0_0, Version.parseLeniently("6.0.0"));
     assertEquals(Version.LUCENE_6_0_0, Version.parseLeniently("LUCENE_60"));
     assertEquals(Version.LUCENE_6_0_0, Version.parseLeniently("LUCENE_6_0"));
     assertEquals(Version.LUCENE_6_0_0, Version.parseLeniently("LUCENE_6_0_0"));
+    assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("7.0"));
+    assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("7.0.0"));
+    assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("LUCENE_70"));
+    assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("LUCENE_7_0"));
+    assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("LUCENE_7_0_0"));
     assertEquals(Version.LATEST, Version.parseLeniently("LATEST"));
     assertEquals(Version.LATEST, Version.parseLeniently("latest"));
     assertEquals(Version.LATEST, Version.parseLeniently("LUCENE_CURRENT"));
@@ -95,7 +95,7 @@ public class TestVersion extends LuceneTestCase {
 
   public void testParse() throws Exception {
     assertEquals(Version.LUCENE_6_0_0, Version.parse("6.0.0"));
-    assertEquals(Version.LUCENE_5_0_0, Version.parse("5.0.0"));
+    assertEquals(Version.LUCENE_7_0_0, Version.parse("7.0.0"));
     
     // Version does not pass judgement on the major version:
     assertEquals(1, Version.parse("1.0").major);
@@ -103,7 +103,7 @@ public class TestVersion extends LuceneTestCase {
   }
 
   public void testForwardsCompatibility() throws Exception {
-    assertTrue(Version.parse("5.10.20").onOrAfter(Version.LUCENE_5_0_0));
+    assertTrue(Version.parse("6.10.20").onOrAfter(Version.LUCENE_6_0_0));
   }
 
   public void testParseExceptions() {

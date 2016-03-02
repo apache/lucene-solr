@@ -23,7 +23,6 @@ import org.junit.BeforeClass;
 
 /**
  * Tests per-field similarity support in the schema
- * @see TestPerFieldSimilarityClassic
  */
 public class TestPerFieldSimilarity extends BaseSimilarityTestCase {
 
