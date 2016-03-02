@@ -108,6 +108,11 @@ class PointValuesWriter {
                         public int getBytesPerDimension(String fieldName) {
                           throw new UnsupportedOperationException();
                         }
+
+                        @Override
+                        public long size(String fieldName) {
+                          throw new UnsupportedOperationException();
+                        }
                       });
   }
 }

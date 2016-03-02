@@ -381,6 +381,19 @@ public class ParallelLeafReader extends LeafReader {
         }
         return dimValues.getBytesPerDimension(fieldName);
       }
+
+      @Override
+      public long size(String fieldName) {
+        LeafReader reader = fieldToReader.get(fieldName);
+        if (reader == null) {
+          return 0;
+        }
+        PointValues dimValues = reader.getPointValues();
+        if (dimValues == null) {
+          return 0;
+        }
+        return dimValues.size(fieldName);
+      }
     };
   }
 

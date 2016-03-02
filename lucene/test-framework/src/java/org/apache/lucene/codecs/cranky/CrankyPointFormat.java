@@ -171,5 +171,10 @@ class CrankyPointFormat extends PointFormat {
     public long ramBytesUsed() {
       return delegate.ramBytesUsed();
     }
+
+    @Override
+    public long size(String fieldName) {
+      return delegate.size(fieldName);
+    }
   }
 }

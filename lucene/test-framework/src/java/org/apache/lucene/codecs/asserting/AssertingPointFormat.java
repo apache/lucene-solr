@@ -31,6 +31,7 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
@@ -105,8 +106,8 @@ public final class AssertingPointFormat extends PointFormat {
 
       // This doc's packed value should be contained in the last cell passed to compare:
       for(int dim=0;dim<numDims;dim++) {
-        assert StringHelper.compare(bytesPerDim, lastMinPackedValue, dim*bytesPerDim, packedValue, dim*bytesPerDim) <= 0: "dim=" + dim + " of " +  numDims;
-        assert StringHelper.compare(bytesPerDim, lastMaxPackedValue, dim*bytesPerDim, packedValue, dim*bytesPerDim) >= 0: "dim=" + dim + " of " +  numDims;
+        assert StringHelper.compare(bytesPerDim, lastMinPackedValue, dim*bytesPerDim, packedValue, dim*bytesPerDim) <= 0: "dim=" + dim + " of " +  numDims + " value=" + new BytesRef(packedValue);
+        assert StringHelper.compare(bytesPerDim, lastMaxPackedValue, dim*bytesPerDim, packedValue, dim*bytesPerDim) >= 0: "dim=" + dim + " of " +  numDims + " value=" + new BytesRef(packedValue);
       }
 
       // TODO: we should assert that this "matches" whatever relation the last call to compare had returned
@@ -213,6 +214,12 @@ public final class AssertingPointFormat extends PointFormat {
     @Override
     public int getBytesPerDimension(String fieldName) throws IOException {
       return in.getBytesPerDimension(fieldName);
+    }
+
+    @Override
+    public long size(String fieldName) {
+      // TODO: what to assert?
+      return in.size(fieldName);
     }
   }
 

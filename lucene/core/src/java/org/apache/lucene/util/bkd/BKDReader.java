@@ -42,6 +42,7 @@ public class BKDReader implements Accountable {
   final int maxPointsInLeafNode;
   final byte[] minPackedValue;
   final byte[] maxPackedValue;
+  final long pointCount;
   protected final int packedBytesLength;
 
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned */
@@ -59,8 +60,11 @@ public class BKDReader implements Accountable {
 
     minPackedValue = new byte[packedBytesLength];
     maxPackedValue = new byte[packedBytesLength];
+
     in.readBytes(minPackedValue, 0, packedBytesLength);
     in.readBytes(maxPackedValue, 0, packedBytesLength);
+
+    pointCount = in.readVLong();
 
     splitPackedValues = new byte[(1+bytesPerDim)*numLeaves];
 
@@ -122,7 +126,7 @@ public class BKDReader implements Accountable {
 
   /** Called by consumers that have their own on-disk format for the index (e.g. SimpleText) */
   protected BKDReader(IndexInput in, int numDims, int maxPointsInLeafNode, int bytesPerDim, long[] leafBlockFPs, byte[] splitPackedValues,
-                      byte[] minPackedValue, byte[] maxPackedValue) throws IOException {
+                      byte[] minPackedValue, byte[] maxPackedValue, long pointCount) throws IOException {
     this.in = in;
     this.numDims = numDims;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
@@ -133,6 +137,7 @@ public class BKDReader implements Accountable {
     this.splitPackedValues = splitPackedValues;
     this.minPackedValue = minPackedValue;
     this.maxPackedValue = maxPackedValue;
+    this.pointCount = pointCount;
     assert minPackedValue.length == packedBytesLength;
     assert maxPackedValue.length == packedBytesLength;
   }
@@ -275,10 +280,7 @@ public class BKDReader implements Accountable {
                                               packedBytesLength,
                                               maxPointsInLeafNode,
                                               visitor);
-    byte[] rootMinPacked = new byte[packedBytesLength];
-    byte[] rootMaxPacked = new byte[packedBytesLength];
-    Arrays.fill(rootMaxPacked, (byte) 0xff);
-    intersect(state, 1, rootMinPacked, rootMaxPacked);
+    intersect(state, 1, minPackedValue, maxPackedValue);
   }
 
   /** Fast path: this is called when the query box fully encompasses all cells under this node. */
@@ -429,5 +431,9 @@ public class BKDReader implements Accountable {
 
   public int getBytesPerDimension() {
     return bytesPerDim;
+  }
+
+  public long getPointCount() {
+    return pointCount;
   }
 }

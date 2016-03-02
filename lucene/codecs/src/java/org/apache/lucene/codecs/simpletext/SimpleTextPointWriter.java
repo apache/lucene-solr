@@ -51,6 +51,7 @@ class SimpleTextPointWriter extends PointWriter {
   final static BytesRef FIELD_FP      = new BytesRef("  field fp ");
   final static BytesRef MIN_VALUE     = new BytesRef("min value ");
   final static BytesRef MAX_VALUE     = new BytesRef("max value ");
+  final static BytesRef POINT_COUNT   = new BytesRef("point count ");
 
   private IndexOutput dataOut;
   final BytesRefBuilder scratch = new BytesRefBuilder();
@@ -100,6 +101,10 @@ class SimpleTextPointWriter extends PointWriter {
           write(out, MAX_VALUE);
           br = new BytesRef(maxPackedValue, 0, maxPackedValue.length);
           write(out, br.toString());
+          newline(out);
+
+          write(out, POINT_COUNT);
+          writeLong(out, pointCount);
           newline(out);
 
           for(int i=0;i<leafBlockFPs.length;i++) {

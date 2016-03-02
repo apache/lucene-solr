@@ -123,7 +123,7 @@ public class BKDWriter implements Closeable {
   /** Maximum per-dim values, packed */
   protected final byte[] maxPackedValue;
 
-  private long pointCount;
+  protected long pointCount;
 
   public BKDWriter(Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim) throws IOException {
     this(tempDir, tempFileNamePrefix, numDims, bytesPerDim, DEFAULT_MAX_POINTS_IN_LEAF_NODE, DEFAULT_MAX_MB_SORT_IN_HEAP);
@@ -428,7 +428,8 @@ public class BKDWriter implements Closeable {
       }
       System.arraycopy(reader.state.scratchPackedValue, 0, maxPackedValue, 0, packedBytesLength);
 
-      assert numDims > 1 || valueInOrder(valueCount++, lastPackedValue, reader.state.scratchPackedValue);
+      assert numDims > 1 || valueInOrder(valueCount, lastPackedValue, reader.state.scratchPackedValue);
+      valueCount++;
 
       if (leafCount == 0) {
         if (leafBlockFPs.size() > 0) {
@@ -477,6 +478,8 @@ public class BKDWriter implements Closeable {
         leafCount = 0;
       }
     }
+
+    pointCount = valueCount;
 
     long indexFP = out.getFilePointer();
 
@@ -799,10 +802,6 @@ public class BKDWriter implements Closeable {
     // Sort all docs once by each dimension:
     PathSlice[] sortedPointWriters = new PathSlice[numDims];
 
-    byte[] minPacked = new byte[packedBytesLength];
-    byte[] maxPacked = new byte[packedBytesLength];
-    Arrays.fill(maxPacked, (byte) 0xff);
-
     boolean success = false;
     try {
       //long t0 = System.nanoTime();
@@ -822,7 +821,7 @@ public class BKDWriter implements Closeable {
 
       build(1, numLeaves, sortedPointWriters,
             ordBitSet, out,
-            minPacked, maxPacked,
+            minPackedValue, maxPackedValue,
             splitPackedValues,
             leafBlockFPs);
 
@@ -861,6 +860,8 @@ public class BKDWriter implements Closeable {
     out.writeVInt(leafBlockFPs.length);
     out.writeBytes(minPackedValue, 0, packedBytesLength);
     out.writeBytes(maxPackedValue, 0, packedBytesLength);
+
+    out.writeVLong(pointCount);
 
     // TODO: for 1D case, don't waste the first byte of each split value (it's always 0)
 
