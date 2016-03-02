@@ -34,6 +34,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PointValues;
@@ -538,6 +539,27 @@ public class TestPointValues extends LuceneTestCase {
     
     r.close();
     w.close();
+    dir.close();
+  }
+
+  public void testDeleteAllPointDocs() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.NO));
+    doc.add(new IntPoint("int", 17));
+    w.addDocument(doc);
+    w.addDocument(new Document());
+    w.commit();
+
+    w.deleteDocuments(new Term("id", "0"));
+    
+    w.forceMerge(1);
+    DirectoryReader r = w.getReader();
+    assertEquals(0, r.leaves().get(0).reader().getPointValues().size("int"));
+    w.close();
+    r.close();
     dir.close();
   }
 }

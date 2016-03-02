@@ -1709,17 +1709,19 @@ public final class CheckIndex implements Closeable {
 
             byte[] globalMinPackedValue = values.getMinPackedValue(fieldInfo.name);
             long size = values.size(fieldInfo.name);
-            if (globalMinPackedValue == null && size != 0) {
-              throw new RuntimeException("getMinPackedValue is null points for field \"" + fieldInfo.name + "\" yet size=" + size);
-            }
-            if (globalMinPackedValue.length != packedBytesCount) {
+            if (globalMinPackedValue == null) {
+              if (size != 0) {
+                throw new RuntimeException("getMinPackedValue is null points for field \"" + fieldInfo.name + "\" yet size=" + size);
+              }
+            } else if (globalMinPackedValue.length != packedBytesCount) {
               throw new RuntimeException("getMinPackedValue for field \"" + fieldInfo.name + "\" return length=" + globalMinPackedValue.length + " array, but should be " + packedBytesCount);
             }
             byte[] globalMaxPackedValue = values.getMaxPackedValue(fieldInfo.name);
-            if (globalMaxPackedValue == null && size != 0) {
-              throw new RuntimeException("getMaxPackedValue is null points for field \"" + fieldInfo.name + "\" yet size=" + size);
-            }
-            if (globalMaxPackedValue.length != packedBytesCount) {
+            if (globalMaxPackedValue == null) {
+              if (size != 0) {
+                throw new RuntimeException("getMaxPackedValue is null points for field \"" + fieldInfo.name + "\" yet size=" + size);
+              }
+            } else if (globalMaxPackedValue.length != packedBytesCount) {
               throw new RuntimeException("getMaxPackedValue for field \"" + fieldInfo.name + "\" return length=" + globalMaxPackedValue.length + " array, but should be " + packedBytesCount);
             }
 
