@@ -1625,6 +1625,10 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   public static IndexReader wrapReader(IndexReader r) throws IOException {
+    return wrapReader(r, true);
+  }
+
+  public static IndexReader wrapReader(IndexReader r, boolean allowSlowCompositeReader) throws IOException {
     Random random = random();
       
     // TODO: remove this, and fix those tests to wrap before putting slow around:
@@ -1632,10 +1636,12 @@ public abstract class LuceneTestCase extends Assert {
     for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
       switch(random.nextInt(6)) {
       case 0:
-        if (VERBOSE) {
-          System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with SlowCompositeReaderWrapper.wrap");
+        if (allowSlowCompositeReader) {
+          if (VERBOSE) {
+            System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with SlowCompositeReaderWrapper.wrap");
+          }
+          r = SlowCompositeReaderWrapper.wrap(r);
         }
-        r = SlowCompositeReaderWrapper.wrap(r);
         break;
       case 1:
         // will create no FC insanity in atomic case, as ParallelLeafReader has own cache key:
@@ -1656,22 +1662,24 @@ public abstract class LuceneTestCase extends Assert {
         r = new FCInvisibleMultiReader(r);
         break;
       case 3:
-        final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
-        final List<String> allFields = new ArrayList<>();
-        for (FieldInfo fi : ar.getFieldInfos()) {
-          allFields.add(fi.name);
+        if (allowSlowCompositeReader) {
+          final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
+          final List<String> allFields = new ArrayList<>();
+          for (FieldInfo fi : ar.getFieldInfos()) {
+            allFields.add(fi.name);
+          }
+          Collections.shuffle(allFields, random);
+          final int end = allFields.isEmpty() ? 0 : random.nextInt(allFields.size());
+          final Set<String> fields = new HashSet<>(allFields.subList(0, end));
+          // will create no FC insanity as ParallelLeafReader has own cache key:
+          if (VERBOSE) {
+            System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with ParallelLeafReader(SlowCompositeReaderWapper)");
+          }
+          r = new ParallelLeafReader(
+                                     new FieldFilterLeafReader(ar, fields, false),
+                                     new FieldFilterLeafReader(ar, fields, true)
+                                     );
         }
-        Collections.shuffle(allFields, random);
-        final int end = allFields.isEmpty() ? 0 : random.nextInt(allFields.size());
-        final Set<String> fields = new HashSet<>(allFields.subList(0, end));
-        // will create no FC insanity as ParallelLeafReader has own cache key:
-        if (VERBOSE) {
-          System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with ParallelLeafReader(SlowCompositeReaderWapper)");
-        }
-        r = new ParallelLeafReader(
-                                   new FieldFilterLeafReader(ar, fields, false),
-                                   new FieldFilterLeafReader(ar, fields, true)
-                                   );
         break;
       case 4:
         // Häckidy-Hick-Hack: a standard Reader will cause FC insanity, so we use
@@ -1701,7 +1709,9 @@ public abstract class LuceneTestCase extends Assert {
       }
     }
     if (wasOriginallyAtomic) {
-      r = SlowCompositeReaderWrapper.wrap(r);
+      if (allowSlowCompositeReader) {
+        r = SlowCompositeReaderWrapper.wrap(r);
+      }
     } else if ((r instanceof CompositeReader) && !(r instanceof FCInvisibleMultiReader)) {
       // prevent cache insanity caused by e.g. ParallelCompositeReader, to fix we wrap one more time:
       r = new FCInvisibleMultiReader(r);
@@ -2588,40 +2598,45 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   // naive silly memory heavy uninversion!!  maps docID -> packed values (a Set because a given doc can be multi-valued)
-  private Map<Integer,Set<BytesRef>> uninvert(String fieldName, PointValues points) throws IOException {
+  private Map<Integer,Set<BytesRef>> uninvert(String fieldName, IndexReader reader) throws IOException {
     final Map<Integer,Set<BytesRef>> docValues = new HashMap<>();
-    points.intersect(fieldName, new PointValues.IntersectVisitor() {
-        @Override
-        public void visit(int docID) {
-          throw new UnsupportedOperationException();
-        }
+    for(LeafReaderContext ctx : reader.leaves()) {
 
-        @Override
-        public void visit(int docID, byte[] packedValue) throws IOException {
-          if (docValues.containsKey(docID) == false) {
-            docValues.put(docID, new HashSet<BytesRef>());
-          }
-          docValues.get(docID).add(new BytesRef(packedValue.clone()));
-        }
+      PointValues points = ctx.reader().getPointValues();
+      if (points == null) {
+        continue;
+      }
 
-        @Override
-        public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-          // We pretend our query shape is so hairy that it crosses every single cell:
-          return PointValues.Relation.CELL_CROSSES_QUERY;
-        }
-      });
+      points.intersect(fieldName,
+                       new PointValues.IntersectVisitor() {
+                         @Override
+                         public void visit(int docID) {
+                           throw new UnsupportedOperationException();
+                         }
+
+                         @Override
+                         public void visit(int docID, byte[] packedValue) throws IOException {
+                           int topDocID = ctx.docBase + docID;
+                           if (docValues.containsKey(topDocID) == false) {
+                             docValues.put(topDocID, new HashSet<BytesRef>());
+                           }
+                           docValues.get(topDocID).add(new BytesRef(packedValue.clone()));
+                         }
+
+                         @Override
+                         public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+                           // We pretend our query shape is so hairy that it crosses every single cell:
+                           return PointValues.Relation.CELL_CROSSES_QUERY;
+                         }
+                       });
+    }
+
     return docValues;
   }
 
   public void assertPointsEquals(String info, IndexReader leftReader, IndexReader rightReader) throws IOException {
-    assertPointsEquals(info,
-                       MultiFields.getMergedFieldInfos(leftReader),
-                       MultiPointValues.get(leftReader),
-                       MultiFields.getMergedFieldInfos(rightReader),
-                       MultiPointValues.get(rightReader));
-  }
-
-  public void assertPointsEquals(String info, FieldInfos fieldInfos1, PointValues points1, FieldInfos fieldInfos2, PointValues points2) throws IOException {
+    FieldInfos fieldInfos1 = MultiFields.getMergedFieldInfos(leftReader);
+    FieldInfos fieldInfos2 = MultiFields.getMergedFieldInfos(rightReader);
     for(FieldInfo fieldInfo1 : fieldInfos1) {
       if (fieldInfo1.getPointDimensionCount() != 0) {
         FieldInfo fieldInfo2 = fieldInfos2.fieldInfo(fieldInfo1.name);
@@ -2631,8 +2646,8 @@ public abstract class LuceneTestCase extends Assert {
         assertEquals(info, fieldInfo2.getPointNumBytes(), fieldInfo2.getPointNumBytes());
 
         assertEquals(info + " field=" + fieldInfo1.name,
-                     uninvert(fieldInfo1.name, points1),
-                     uninvert(fieldInfo1.name, points2));
+                     uninvert(fieldInfo1.name, leftReader),
+                     uninvert(fieldInfo1.name, rightReader));
       }
     }
 

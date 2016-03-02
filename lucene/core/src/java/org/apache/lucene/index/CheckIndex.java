@@ -1706,8 +1706,12 @@ public final class CheckIndex implements Closeable {
             lastMaxPacked.length = bytesPerDim;
             lastMinPacked.length = bytesPerDim;
             scratch.length = bytesPerDim;
+            byte[] lastPackedValue = new byte[dimCount*bytesPerDim];
             values.intersect(fieldInfo.name,
                              new PointValues.IntersectVisitor() {
+
+                               private int lastDocID = -1;
+
                                @Override
                                public void visit(int docID) {
                                  throw new RuntimeException("codec called IntersectVisitor.visit without a packed value for docID=" + docID);
@@ -1725,12 +1729,27 @@ public final class CheckIndex implements Closeable {
 
                                    if (scratch.compareTo(lastMinPacked) < 0) {
                                      // This doc's point, in this dimension, is lower than the minimum value of the last cell checked:
-                                     throw new RuntimeException("packed value " + Arrays.toString(packedValue) + " for docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
+                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
                                    }
                                    if (scratch.compareTo(lastMaxPacked) > 0) {
                                      // This doc's point, in this dimension, is greater than the maximum value of the last cell checked:
-                                     throw new RuntimeException("packed value " + Arrays.toString(packedValue) + " for docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
+                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for docID=" + docID + " is out-of-bounds of the last cell min=" + Arrays.toString(lastMinPackedValue) + " max=" + Arrays.toString(lastMaxPackedValue) + " dim=" + dim);
                                    }
+                                 }
+
+                                 // In the 1D case, PointValues must make a single in-order sweep through all values, and tie-break by
+                                 // increasing docID:
+                                 if (dimCount == 1) {
+                                   int cmp = StringHelper.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0);
+                                   if (cmp > 0) {
+                                     throw new RuntimeException("packed points value " + Arrays.toString(packedValue) + " for docID=" + docID + " is out-of-order vs the previous document's value " + Arrays.toString(lastPackedValue));
+                                   } else if (cmp == 0) {
+                                     if (docID < lastDocID) {
+                                       throw new RuntimeException("packed points value is the same, but docID=" + docID + " is out of order vs previous docID=" + lastDocID);
+                                     }
+                                   }
+                                   System.arraycopy(packedValue, 0, lastPackedValue, 0, bytesPerDim);
+                                   lastDocID = docID;
                                  }
 
                                  status.totalValuePoints++;

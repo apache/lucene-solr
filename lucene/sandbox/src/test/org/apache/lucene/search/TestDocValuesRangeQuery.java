@@ -60,7 +60,7 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
       }
       iw.commit();
       final IndexReader reader = iw.getReader();
-      final IndexSearcher searcher = newSearcher(reader);
+      final IndexSearcher searcher = newSearcher(reader, false);
       iw.close();
 
       for (int i = 0; i < 100; ++i) {
@@ -188,7 +188,7 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
     }
     iw.commit();
     final IndexReader reader = iw.getReader();
-    final IndexSearcher searcher = newSearcher(reader);
+    final IndexSearcher searcher = newSearcher(reader, false);
     iw.close();
 
     for (int i = 0; i < 100; ++i) {
