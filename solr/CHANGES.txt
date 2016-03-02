@@ -236,6 +236,9 @@ Bug Fixes
 
 * SOLR-8771: Multi-threaded core shutdown creates executor per core. (Mike Drob via Mark Miller)
 
+* SOLR-8145: Fix position of OOM killer script when starting Solr in the background (Jurian Broertjes via
+  Timothy Potter)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
