@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.document;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -25,7 +24,6 @@ import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.StringHelper;
 
 /** 
@@ -37,10 +35,10 @@ import org.apache.lucene.util.StringHelper;
  * <p>
  * This field defines static factory methods for creating common queries:
  * <ul>
- *   <li>{@link #newExactQuery newExactQuery()} for matching an exact 1D point.
- *   <li>{@link #newRangeQuery newRangeQuery()} for matching a 1D range.
- *   <li>{@link #newMultiRangeQuery newMultiRangeQuery()} for matching points/ranges in n-dimensional space.
- *   <li>{@link #newSetQuery newSetQuery()} for matching a set of 1D values.
+ *   <li>{@link #newExactQuery(String, byte[])} for matching an exact 1D point.
+ *   <li>{@link #newSetQuery(String, byte[][]) newSetQuery(String, byte[]...)} for matching a set of 1D values.
+ *   <li>{@link #newRangeQuery(String, byte[], byte[])} for matching a 1D range.
+ *   <li>{@link #newRangeQuery(String, byte[][], byte[][])} for matching points/ranges in n-dimensional space.
  * </ul> 
  */
 public final class BinaryPoint extends Field {
@@ -133,7 +131,7 @@ public final class BinaryPoint extends Field {
    * Create a query for matching an exact binary value.
    * <p>
    * This is for simple one-dimension points, for multidimensional points use
-   * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
+   * {@link #newRangeQuery(String, byte[][], byte[][])} instead.
    *
    * @param field field name. must not be {@code null}.
    * @param value binary value
@@ -141,56 +139,39 @@ public final class BinaryPoint extends Field {
    * @return a query matching documents with this exact value
    */
   public static Query newExactQuery(String field, byte[] value) {
-    if (value == null) {
-      throw new IllegalArgumentException("value cannot be null");
-    }
-    return newRangeQuery(field, value, true, value, true);
+    return newRangeQuery(field, value, value);
   }
 
   /** 
    * Create a range query for binary values.
    * <p>
    * This is for simple one-dimension ranges, for multidimensional ranges use
-   * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting the {@code lowerValue} or {@code upperValue} to {@code null}. 
-   * <p>
-   * By setting inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   * {@link #newRangeQuery(String, byte[][], byte[][])} instead.
    *
    * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} means "open".
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} means "open".
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null.
+   * @param lowerValue lower portion of the range (inclusive). must not be {@code null}
+   * @param upperValue upper portion of the range (inclusive). must not be {@code null}
+   * @throws IllegalArgumentException if {@code field} is null, if {@code lowerValue} is null,
+   *                                  or if {@code upperValue} is null
    * @return a query matching documents within this range.
    */
-  public static Query newRangeQuery(String field, byte[] lowerValue, boolean lowerInclusive, byte[] upperValue, boolean upperInclusive) {
-    return newMultiRangeQuery(field, new byte[][] {lowerValue}, new boolean[] {lowerInclusive}, new byte[][] {upperValue}, new boolean[] {upperInclusive});
+  public static Query newRangeQuery(String field, byte[] lowerValue, byte[] upperValue) {
+    PointRangeQuery.checkArgs(field, lowerValue, upperValue);
+    return newRangeQuery(field, new byte[][] {lowerValue}, new byte[][] {upperValue});
   }
   
   /** 
-   * Create a multidimensional range query for binary values.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting a {@code lowerValue} element or {@code upperValue} element to {@code null}. 
-   * <p>
-   * By setting a dimension's inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   * Create a range query for n-dimensional binary values.
    *
    * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} values mean "open" for that dimension.
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} values mean "open" for that dimension.
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
+   * @param lowerValue lower portion of the range (inclusive). must not be null.
+   * @param upperValue upper portion of the range (inclusive). must not be null.
+   * @throws IllegalArgumentException if {@code field} is null, if {@code lowerValue} is null, if {@code upperValue} is null, 
+   *                                  or if {@code lowerValue.length != upperValue.length}
    * @return a query matching documents within this range.
    */
-  public static Query newMultiRangeQuery(String field, byte[][] lowerValue, boolean[] lowerInclusive, byte[][] upperValue, boolean[] upperInclusive) {
-    PointRangeQuery.checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, lowerValue, lowerInclusive, upperValue, upperInclusive) {
+  public static Query newRangeQuery(String field, byte[][] lowerValue, byte[][] upperValue) {
+    return new PointRangeQuery(field, lowerValue, upperValue) {
       @Override
       protected String toString(int dimension, byte[] value) {
         assert value != null;
@@ -212,13 +193,13 @@ public final class BinaryPoint extends Field {
    * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
    * 
    * @param field field name. must not be {@code null}.
-   * @param valuesIn all values to match
+   * @param values all values to match
    */
-  public static Query newSetQuery(String field, byte[]... valuesIn) throws IOException {
+  public static Query newSetQuery(String field, byte[]... values) {
 
     // Make sure all byte[] have the same length
     int bytesPerDim = -1;
-    for(byte[] value : valuesIn) {
+    for(byte[] value : values) {
       if (bytesPerDim == -1) {
         bytesPerDim = value.length;
       } else if (value.length != bytesPerDim) {
@@ -232,9 +213,8 @@ public final class BinaryPoint extends Field {
     }
 
     // Don't unexpectedly change the user's incoming values array:
-    byte[][] values = valuesIn.clone();
-
-    Arrays.sort(values,
+    byte[][] sortedValues = values.clone();
+    Arrays.sort(sortedValues,
                 new Comparator<byte[]>() {
                   @Override
                   public int compare(byte[] a, byte[] b) {
@@ -242,21 +222,21 @@ public final class BinaryPoint extends Field {
                   }
                 });
 
-    final BytesRef value = new BytesRef(new byte[bytesPerDim]);
+    final BytesRef encoded = new BytesRef(new byte[bytesPerDim]);
     
     return new PointInSetQuery(field, 1, bytesPerDim,
-                               new BytesRefIterator() {
+                               new PointInSetQuery.Stream() {
 
                                  int upto;
 
                                  @Override
                                  public BytesRef next() {
-                                   if (upto == values.length) {
+                                   if (upto == sortedValues.length) {
                                      return null;
                                    } else {
-                                     value.bytes = values[upto];
+                                     encoded.bytes = sortedValues[upto];
                                      upto++;
-                                     return value;
+                                     return encoded;
                                    }
                                  }
                                }) {

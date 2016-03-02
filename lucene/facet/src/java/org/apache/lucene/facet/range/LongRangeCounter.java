@@ -49,17 +49,17 @@ final class LongRangeCounter {
     endsMap.put(Long.MAX_VALUE, 2);
 
     for(LongRange range : ranges) {
-      Integer cur = endsMap.get(range.minIncl);
+      Integer cur = endsMap.get(range.min);
       if (cur == null) {
-        endsMap.put(range.minIncl, 1);
+        endsMap.put(range.min, 1);
       } else {
-        endsMap.put(range.minIncl, cur.intValue() | 1);
+        endsMap.put(range.min, cur.intValue() | 1);
       }
-      cur = endsMap.get(range.maxIncl);
+      cur = endsMap.get(range.max);
       if (cur == null) {
-        endsMap.put(range.maxIncl, 2);
+        endsMap.put(range.max, 2);
       } else {
-        endsMap.put(range.maxIncl, cur.intValue() | 2);
+        endsMap.put(range.max, cur.intValue() | 2);
       }
     }
 
@@ -276,7 +276,7 @@ final class LongRangeCounter {
 
     /** Recursively assigns range outputs to each node. */
     void addOutputs(int index, LongRange range) {
-      if (start >= range.minIncl && end <= range.maxIncl) {
+      if (start >= range.min && end <= range.max) {
         // Our range is fully included in the incoming
         // range; add to our output list:
         if (outputs == null) {

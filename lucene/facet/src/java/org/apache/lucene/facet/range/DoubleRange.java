@@ -38,42 +38,29 @@ import org.apache.lucene.util.LegacyNumericUtils;
  *
  * @lucene.experimental */
 public final class DoubleRange extends Range {
-  final double minIncl;
-  final double maxIncl;
-
-  /** Minimum. */
+  /** Minimum (inclusive). */
   public final double min;
 
-  /** Maximum. */
+  /** Maximum (inclusive. */
   public final double max;
-
-  /** True if the minimum value is inclusive. */
-  public final boolean minInclusive;
-
-  /** True if the maximum value is inclusive. */
-  public final boolean maxInclusive;
 
   /** Create a DoubleRange. */
   public DoubleRange(String label, double minIn, boolean minInclusive, double maxIn, boolean maxInclusive) {
     super(label);
-    this.min = minIn;
-    this.max = maxIn;
-    this.minInclusive = minInclusive;
-    this.maxInclusive = maxInclusive;
 
     // TODO: if DoubleDocValuesField used
     // LegacyNumericUtils.doubleToSortableLong format (instead of
     // Double.doubleToRawLongBits) we could do comparisons
     // in long space 
 
-    if (Double.isNaN(min)) {
+    if (Double.isNaN(minIn)) {
       throw new IllegalArgumentException("min cannot be NaN");
     }
     if (!minInclusive) {
       minIn = Math.nextUp(minIn);
     }
 
-    if (Double.isNaN(max)) {
+    if (Double.isNaN(maxIn)) {
       throw new IllegalArgumentException("max cannot be NaN");
     }
     if (!maxInclusive) {
@@ -85,24 +72,24 @@ public final class DoubleRange extends Range {
       failNoMatch();
     }
 
-    this.minIncl = minIn;
-    this.maxIncl = maxIn;
+    this.min = minIn;
+    this.max = maxIn;
   }
 
   /** True if this range accepts the provided value. */
   public boolean accept(double value) {
-    return value >= minIncl && value <= maxIncl;
+    return value >= min && value <= max;
   }
 
   LongRange toLongRange() {
     return new LongRange(label,
-                         LegacyNumericUtils.doubleToSortableLong(minIncl), true,
-                         LegacyNumericUtils.doubleToSortableLong(maxIncl), true);
+                         LegacyNumericUtils.doubleToSortableLong(min), true,
+                         LegacyNumericUtils.doubleToSortableLong(max), true);
   }
 
   @Override
   public String toString() {
-    return "DoubleRange(" + minIncl + " to " + maxIncl + ")";
+    return "DoubleRange(" + min + " to " + max + ")";
   }
 
   private static class ValueSourceQuery extends Query {

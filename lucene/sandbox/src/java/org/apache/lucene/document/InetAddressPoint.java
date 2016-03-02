@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.document;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -25,7 +24,6 @@ import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefIterator;
 
 /** 
  * An indexed 128-bit {@code InetAddress} field.
@@ -36,10 +34,10 @@ import org.apache.lucene.util.BytesRefIterator;
  * <p>
  * This field defines static factory methods for creating common queries:
  * <ul>
- *   <li>{@link #newExactQuery newExactQuery()} for matching an exact network address.
- *   <li>{@link #newPrefixQuery newPrefixQuery()} for matching a network based on CIDR prefix.
- *   <li>{@link #newRangeQuery newRangeQuery()} for matching arbitrary network address ranges.
- *   <li>{@link #newSetQuery newSetQuery()} for matching a set of 1D values.
+ *   <li>{@link #newExactQuery(String, InetAddress)} for matching an exact network address.
+ *   <li>{@link #newPrefixQuery(String, InetAddress, int)} for matching a network based on CIDR prefix.
+ *   <li>{@link #newRangeQuery(String, InetAddress, InetAddress)} for matching arbitrary network address ranges.
+ *   <li>{@link #newSetQuery(String, InetAddress...)} for matching a set of 1D values.
  * </ul>
  * <p>
  * This field supports both IPv4 and IPv6 addresses: IPv4 addresses are converted
@@ -149,7 +147,7 @@ public class InetAddressPoint extends Field {
    * @return a query matching documents with this exact value
    */
   public static Query newExactQuery(String field, InetAddress value) {
-    return newRangeQuery(field, value, true, value, true);
+    return newRangeQuery(field, value, value);
   }
   
   /** 
@@ -162,6 +160,9 @@ public class InetAddressPoint extends Field {
    * @return a query matching documents with addresses contained within this network
    */
   public static Query newPrefixQuery(String field, InetAddress value, int prefixLength) {
+    if (value == null) {
+      throw new IllegalArgumentException("InetAddress cannot be null");
+    }
     if (prefixLength < 0 || prefixLength > 8 * value.getAddress().length) {
       throw new IllegalArgumentException("illegal prefixLength '" + prefixLength + "'. Must be 0-32 for IPv4 ranges, 0-128 for IPv6 ranges");
     }
@@ -173,7 +174,7 @@ public class InetAddressPoint extends Field {
       upper[i >> 3] |= 1 << (i & 7);
     }
     try {
-      return newRangeQuery(field, InetAddress.getByAddress(lower), true, InetAddress.getByAddress(upper), true);
+      return newRangeQuery(field, InetAddress.getByAddress(lower), InetAddress.getByAddress(upper));
     } catch (UnknownHostException e) {
       throw new AssertionError(e); // values are coming from InetAddress
     }
@@ -181,31 +182,21 @@ public class InetAddressPoint extends Field {
 
   /** 
    * Create a range query for network addresses.
-   * <p>
-   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting the {@code lowerValue} or {@code upperValue} to {@code null}. 
-   * <p>
-   * By setting inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
    *
    * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} means "open".
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} means "open".
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null.
+   * @param lowerValue lower portion of the range (inclusive). must not be null.
+   * @param upperValue upper portion of the range (inclusive). must not be null.
+   * @throws IllegalArgumentException if {@code field} is null, {@code lowerValue} is null, 
+   *                                  or {@code upperValue} is null
    * @return a query matching documents within this range.
    */
-  public static Query newRangeQuery(String field, InetAddress lowerValue, boolean lowerInclusive, InetAddress upperValue, boolean upperInclusive) {
+  public static Query newRangeQuery(String field, InetAddress lowerValue, InetAddress upperValue) {
+    PointRangeQuery.checkArgs(field, lowerValue, upperValue);
     byte[][] lowerBytes = new byte[1][];
-    if (lowerValue != null) {
-      lowerBytes[0] = encode(lowerValue);
-    }
+    lowerBytes[0] = encode(lowerValue);
     byte[][] upperBytes = new byte[1][];
-    if (upperValue != null) {
-      upperBytes[0] = encode(upperValue);
-    }
-    return new PointRangeQuery(field, lowerBytes, new boolean[] { lowerInclusive }, upperBytes, new boolean[] { upperInclusive }) {
+    upperBytes[0] = encode(upperValue);
+    return new PointRangeQuery(field, lowerBytes, upperBytes) {
       @Override
       protected String toString(int dimension, byte[] value) {
         return decode(value).getHostAddress(); // for ranges, the range itself is already bracketed
@@ -217,31 +208,30 @@ public class InetAddressPoint extends Field {
    * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
    * 
    * @param field field name. must not be {@code null}.
-   * @param valuesIn all values to match
+   * @param values all values to match
    */
-  public static Query newSetQuery(String field, InetAddress... valuesIn) throws IOException {
+  public static Query newSetQuery(String field, InetAddress... values) {
 
     // Don't unexpectedly change the user's incoming values array:
-    InetAddress[] values = valuesIn.clone();
+    InetAddress[] sortedValues = values.clone();
+    Arrays.sort(sortedValues);
 
-    Arrays.sort(values);
-
-    final BytesRef value = new BytesRef(new byte[BYTES]);
+    final BytesRef encoded = new BytesRef(new byte[BYTES]);
 
     return new PointInSetQuery(field, 1, BYTES,
-                               new BytesRefIterator() {
+                               new PointInSetQuery.Stream() {
 
                                  int upto;
 
                                  @Override
                                  public BytesRef next() {
-                                   if (upto == values.length) {
+                                   if (upto == sortedValues.length) {
                                      return null;
                                    } else {
-                                     value.bytes = encode(values[upto]);
-                                     assert value.bytes.length == value.length;
+                                     encoded.bytes = encode(sortedValues[upto]);
+                                     assert encoded.bytes.length == encoded.length;
                                      upto++;
-                                     return value;
+                                     return encoded;
                                    }
                                  }
                                }) {

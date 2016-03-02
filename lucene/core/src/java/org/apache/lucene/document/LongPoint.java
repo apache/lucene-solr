@@ -16,14 +16,12 @@
  */
 package org.apache.lucene.document;
 
-import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.NumericUtils;
 
 /** 
@@ -35,10 +33,10 @@ import org.apache.lucene.util.NumericUtils;
  * <p>
  * This field defines static factory methods for creating common queries:
  * <ul>
- *   <li>{@link #newExactQuery newExactQuery()} for matching an exact 1D point.
- *   <li>{@link #newRangeQuery newRangeQuery()} for matching a 1D range.
- *   <li>{@link #newMultiRangeQuery newMultiRangeQuery()} for matching points/ranges in n-dimensional space.
- *   <li>{@link #newSetQuery newSetQuery()} for matching a set of 1D values.
+ *   <li>{@link #newExactQuery(String, long)} for matching an exact 1D point.
+ *   <li>{@link #newSetQuery(String, long...)} for matching a set of 1D values.
+ *   <li>{@link #newRangeQuery(String, long, long)} for matching a 1D range.
+ *   <li>{@link #newRangeQuery(String, long[], long[])} for matching points/ranges in n-dimensional space.
  * </ul>
  */
 public final class LongPoint extends Field {
@@ -126,13 +124,11 @@ public final class LongPoint extends Field {
   }
   
   /** Encode n-dimensional long values into binary encoding */
-  private static byte[][] encode(Long value[]) {
+  private static byte[][] encode(long value[]) {
     byte[][] encoded = new byte[value.length][];
     for (int i = 0; i < value.length; i++) {
-      if (value[i] != null) {
-        encoded[i] = new byte[Long.BYTES];
-        encodeDimension(value[i], encoded[i], 0);
-      }
+      encoded[i] = new byte[Long.BYTES];
+      encodeDimension(value[i], encoded[i], 0);
     }
     return encoded;
   }
@@ -155,7 +151,7 @@ public final class LongPoint extends Field {
    * Create a query for matching an exact long value.
    * <p>
    * This is for simple one-dimension points, for multidimensional points use
-   * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
+   * {@link #newRangeQuery(String, long[], long[])} instead.
    *
    * @param field field name. must not be {@code null}.
    * @param value exact value
@@ -163,60 +159,51 @@ public final class LongPoint extends Field {
    * @return a query matching documents with this exact value
    */
   public static Query newExactQuery(String field, long value) {
-    return newRangeQuery(field, value, true, value, true);
+    return newRangeQuery(field, value, value);
   }
 
   /** 
    * Create a range query for long values.
    * <p>
    * This is for simple one-dimension ranges, for multidimensional ranges use
-   * {@link #newMultiRangeQuery newMultiRangeQuery()} instead.
+   * {@link #newRangeQuery(String, long[], long[])} instead.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting the {@code lowerValue} or {@code upperValue} to {@code null}. 
+   * by setting {@code lowerValue = Long.MIN_VALUE} or {@code upperValue = Long.MAX_VALUE}. 
    * <p>
-   * By setting inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   * Ranges are inclusive. For exclusive ranges, pass {@code lowerValue + 1} or {@code upperValue - 1}
    *
    * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} means "open".
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} means "open".
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
+   * @param lowerValue lower portion of the range (inclusive).
+   * @param upperValue upper portion of the range (inclusive).
    * @throws IllegalArgumentException if {@code field} is null.
    * @return a query matching documents within this range.
    */
-  public static Query newRangeQuery(String field, Long lowerValue, boolean lowerInclusive, Long upperValue, boolean upperInclusive) {
-    return newMultiRangeQuery(field, 
-                              new Long[] { lowerValue },
-                              new boolean[] { lowerInclusive }, 
-                              new Long[] { upperValue },
-                              new boolean[] { upperInclusive });
+  public static Query newRangeQuery(String field, long lowerValue, long upperValue) {
+    return newRangeQuery(field, new long[] { lowerValue }, new long[] { upperValue });
   }
 
   /** 
-   * Create a multidimensional range query for long values.
+   * Create a range query for n-dimensional long values.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting a {@code lowerValue} element or {@code upperValue} element to {@code null}. 
+   * by setting {@code lowerValue[i] = Long.MIN_VALUE} or {@code upperValue[i] = Long.MAX_VALUE}. 
    * <p>
-   * By setting a dimension's inclusive ({@code lowerInclusive} or {@code upperInclusive}) to false, it will
-   * match all documents excluding the bounds, with inclusive on, the boundaries are hits, too.
+   * Ranges are inclusive. For exclusive ranges, pass {@code lowerValue[i] + 1} or {@code upperValue[i] - 1}
    *
    * @param field field name. must not be {@code null}.
-   * @param lowerValue lower portion of the range. {@code null} values mean "open" for that dimension.
-   * @param lowerInclusive {@code true} if the lower portion of the range is inclusive, {@code false} if it should be excluded.
-   * @param upperValue upper portion of the range. {@code null} values mean "open" for that dimension.
-   * @param upperInclusive {@code true} if the upper portion of the range is inclusive, {@code false} if it should be excluded.
-   * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
+   * @param lowerValue lower portion of the range (inclusive). must not be {@code null}.
+   * @param upperValue upper portion of the range (inclusive). must not be {@code null}.
+   * @throws IllegalArgumentException if {@code field} is null, if {@code lowerValue} is null, if {@code upperValue} is null, 
+   *                                  or if {@code lowerValue.length != upperValue.length}
    * @return a query matching documents within this range.
    */
-  public static Query newMultiRangeQuery(String field, Long[] lowerValue, boolean lowerInclusive[], Long[] upperValue, boolean upperInclusive[]) {
+  public static Query newRangeQuery(String field, long[] lowerValue, long[] upperValue) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, LongPoint.encode(lowerValue), lowerInclusive, LongPoint.encode(upperValue), upperInclusive) {
+    return new PointRangeQuery(field, encode(lowerValue), encode(upperValue)) {
       @Override
       protected String toString(int dimension, byte[] value) {
-        return Long.toString(LongPoint.decodeDimension(value, 0));
+        return Long.toString(decodeDimension(value, 0));
       }
     };
   }
@@ -225,30 +212,29 @@ public final class LongPoint extends Field {
    * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
    * 
    * @param field field name. must not be {@code null}.
-   * @param valuesIn all values to match
+   * @param values all values to match
    */
-  public static Query newSetQuery(String field, long... valuesIn) throws IOException {
+  public static Query newSetQuery(String field, long... values) {
 
     // Don't unexpectedly change the user's incoming values array:
-    long[] values = valuesIn.clone();
+    long[] sortedValues = values.clone();
+    Arrays.sort(sortedValues);
 
-    Arrays.sort(values);
-
-    final BytesRef value = new BytesRef(new byte[Long.BYTES]);
+    final BytesRef encoded = new BytesRef(new byte[Long.BYTES]);
 
     return new PointInSetQuery(field, 1, Long.BYTES,
-                               new BytesRefIterator() {
+                               new PointInSetQuery.Stream() {
 
                                  int upto;
 
                                  @Override
                                  public BytesRef next() {
-                                   if (upto == values.length) {
+                                   if (upto == sortedValues.length) {
                                      return null;
                                    } else {
-                                     encodeDimension(values[upto], value.bytes, 0);
+                                     encodeDimension(sortedValues[upto], encoded.bytes, 0);
                                      upto++;
-                                     return value;
+                                     return encoded;
                                    }
                                  }
                                }) {

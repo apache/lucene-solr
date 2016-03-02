@@ -37,20 +37,11 @@ import org.apache.lucene.search.Weight;
  *
  * @lucene.experimental */
 public final class LongRange extends Range {
-  final long minIncl;
-  final long maxIncl;
-
-  /** Minimum. */
+  /** Minimum (inclusive). */
   public final long min;
 
-  /** Maximum. */
+  /** Maximum (inclusive). */
   public final long max;
-
-  /** True if the minimum value is inclusive. */
-  public final boolean minInclusive;
-
-  /** True if the maximum value is inclusive. */
-  public final boolean maxInclusive;
 
   // TODO: can we require fewer args? (same for
   // Double/FloatRange too)
@@ -58,10 +49,6 @@ public final class LongRange extends Range {
   /** Create a LongRange. */
   public LongRange(String label, long minIn, boolean minInclusive, long maxIn, boolean maxInclusive) {
     super(label);
-    this.min = minIn;
-    this.max = maxIn;
-    this.minInclusive = minInclusive;
-    this.maxInclusive = maxInclusive;
 
     if (!minInclusive) {
       if (minIn != Long.MAX_VALUE) {
@@ -83,18 +70,18 @@ public final class LongRange extends Range {
       failNoMatch();
     }
 
-    this.minIncl = minIn;
-    this.maxIncl = maxIn;
+    this.min = minIn;
+    this.max = maxIn;
   }
 
   /** True if this range accepts the provided value. */
   public boolean accept(long value) {
-    return value >= minIncl && value <= maxIncl;
+    return value >= min && value <= max;
   }
 
   @Override
   public String toString() {
-    return "LongRange(" + minIncl + " to " + maxIncl + ")";
+    return "LongRange(" + min + " to " + max + ")";
   }
 
   private static class ValueSourceQuery extends Query {
