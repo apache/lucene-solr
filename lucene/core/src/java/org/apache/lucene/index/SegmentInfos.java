@@ -304,11 +304,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
     infos.generation = generation;
     infos.lastGeneration = generation;
     if (format >= VERSION_53) {
-      // TODO: in the future (7.0?  sigh) we can use this to throw IndexFormatTooOldException ... or just rely on the
-      // minSegmentLuceneVersion check instead:
       infos.luceneVersion = Version.fromBits(input.readVInt(), input.readVInt(), input.readVInt());
+      if (infos.luceneVersion.onOrAfter(Version.LUCENE_6_0_0) == false) {
+        throw new IndexFormatTooOldException(input, "this index is too old (version: " + infos.luceneVersion + ")");
+      }
     } else {
-      // else compute the min version down below in the for loop
+      throw new IndexFormatTooOldException(input, "this index segments file is too old (segment infos format: " + format + ")");
     }
 
     infos.version = input.readLong();
@@ -319,18 +320,10 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       throw new CorruptIndexException("invalid segment count: " + numSegments, input);
     }
 
-    if (format >= VERSION_53) {
-      if (numSegments > 0) {
-        infos.minSegmentLuceneVersion = Version.fromBits(input.readVInt(), input.readVInt(), input.readVInt());
-        if (infos.minSegmentLuceneVersion.onOrAfter(Version.LUCENE_5_0_0) == false) {
-          throw new IndexFormatTooOldException(input, "this index contains a too-old segment (version: " + infos.minSegmentLuceneVersion + ")");
-        }
-      } else {
-        // else leave as null: no segments
-      }
+    if (numSegments > 0) {
+      infos.minSegmentLuceneVersion = Version.fromBits(input.readVInt(), input.readVInt(), input.readVInt());
     } else {
-      // else we recompute it below as we visit segments; it can't be used for throwing IndexFormatTooOldExc, but consumers of
-      // SegmentInfos can maybe still use it for other reasons
+      // else leave as null: no segments
     }
 
     long totalDocs = 0;
@@ -382,11 +375,8 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       infos.add(siPerCommit);
 
       Version segmentVersion = info.getVersion();
-      if (format < VERSION_53) {
-        if (infos.minSegmentLuceneVersion == null || segmentVersion.onOrAfter(infos.minSegmentLuceneVersion) == false) {
-          infos.minSegmentLuceneVersion = segmentVersion;
-        }
-      } else if (segmentVersion.onOrAfter(infos.minSegmentLuceneVersion) == false) {
+
+      if (segmentVersion.onOrAfter(infos.minSegmentLuceneVersion) == false) {
         throw new CorruptIndexException("segments file recorded minSegmentLuceneVersion=" + infos.minSegmentLuceneVersion + " but segment=" + info + " has older version=" + segmentVersion, input);
       }
     }
