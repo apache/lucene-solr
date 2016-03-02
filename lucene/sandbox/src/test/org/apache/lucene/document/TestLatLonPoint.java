@@ -51,7 +51,7 @@ public class TestLatLonPoint extends LuceneTestCase {
     assertEquals("LatLonPoint <field:18.313693958334625,-65.22744392976165>",(new LatLonPoint("field", 18.313694, -65.227444)).toString());
     
     // looks crazy due to lossiness
-    assertEquals("field:[17.99999997485429 TO 18.999999999068677},[-65.9999999217689 TO -64.99999998137355}", LatLonPoint.newBoxQuery("field", 18, 19, -66, -65).toString());
+    assertEquals("field:[17.99999997485429 TO 18.999999999068677],[-65.9999999217689 TO -64.99999998137355]", LatLonPoint.newBoxQuery("field", 18, 19, -66, -65).toString());
     
     // distance query does not quantize inputs
     assertEquals("field:18.0,19.0 +/- 25.0 meters", LatLonPoint.newDistanceQuery("field", 18, 19, 25).toString());

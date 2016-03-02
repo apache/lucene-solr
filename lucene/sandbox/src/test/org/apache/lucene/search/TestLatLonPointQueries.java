@@ -66,15 +66,15 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
     if (rect.minLon < rect.maxLon) {
       return pointLatEnc >= rectLatMinEnc &&
-        pointLatEnc < rectLatMaxEnc &&
+        pointLatEnc <= rectLatMaxEnc &&
         pointLonEnc >= rectLonMinEnc &&
-        pointLonEnc < rectLonMaxEnc;
+        pointLonEnc <= rectLonMaxEnc;
     } else {
       // Rect crosses dateline:
       return pointLatEnc >= rectLatMinEnc &&
-        pointLatEnc < rectLatMaxEnc &&
+        pointLatEnc <= rectLatMaxEnc &&
         (pointLonEnc >= rectLonMinEnc ||
-         pointLonEnc < rectLonMaxEnc);
+         pointLonEnc <= rectLonMaxEnc);
     }
   }
 
