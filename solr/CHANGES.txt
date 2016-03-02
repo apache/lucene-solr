@@ -383,6 +383,9 @@ Other Changes
 
 * SOLR-8725: Allow hyphen in collection, core, shard, and alias name as the non-first character (Anshum Gupta)
 
+* SOLR-8423: DeleteShard and DeleteReplica should cleanup instance and data directory by default and add
+  support for optionally retaining the directories. (Anshum Gupta)
+
 ==================  5.5.1 ==================
 
 Bug Fixes

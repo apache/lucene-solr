@@ -600,8 +600,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
     params.add(CoreAdminParams.CORE, core);
-    params.add(CoreAdminParams.DELETE_INSTANCE_DIR, "true");
-    params.add(CoreAdminParams.DELETE_DATA_DIR, "true");
+
+    params.set(CoreAdminParams.DELETE_INDEX, message.getBool(CoreAdminParams.DELETE_INDEX, true));
+    params.set(CoreAdminParams.DELETE_INSTANCE_DIR, message.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, true));
+    params.set(CoreAdminParams.DELETE_DATA_DIR, message.getBool(CoreAdminParams.DELETE_DATA_DIR, true));
 
     sendShardRequest(replica.getNodeName(), params, shardHandler, asyncId, requestMap);
 
@@ -1407,7 +1409,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     try {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
-      params.set(CoreAdminParams.DELETE_INDEX, "true");
+      params.set(CoreAdminParams.DELETE_INDEX, message.getBool(CoreAdminParams.DELETE_INDEX, true));
+      params.set(CoreAdminParams.DELETE_INSTANCE_DIR, message.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, true));
+      params.set(CoreAdminParams.DELETE_DATA_DIR, message.getBool(CoreAdminParams.DELETE_DATA_DIR, true));
+
       sliceCmd(clusterState, params, null, slice, shardHandler, asyncId, requestMap);
 
       processResponses(results, shardHandler, true, "Failed to delete shard", asyncId, requestMap, Collections.emptySet());
