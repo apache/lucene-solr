@@ -226,5 +226,16 @@ public class Lucene60PointReader extends PointReader implements Closeable {
     }
     return bkdReader.getPointCount();
   }
+
+  @Override
+  public int getDocCount(String fieldName) {
+    BKDReader bkdReader = getBKDReader(fieldName);
+    if (bkdReader == null) {
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this point field were deleted in this segment:
+      return 0;
+    }
+    return bkdReader.getDocCount();
+  }
 }
   

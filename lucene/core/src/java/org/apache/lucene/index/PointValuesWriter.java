@@ -113,6 +113,11 @@ class PointValuesWriter {
                         public long size(String fieldName) {
                           throw new UnsupportedOperationException();
                         }
+
+                        @Override
+                        public int getDocCount(String fieldName) {
+                          throw new UnsupportedOperationException();
+                        }
                       });
   }
 }

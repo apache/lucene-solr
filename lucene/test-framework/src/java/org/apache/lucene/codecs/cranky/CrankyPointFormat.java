@@ -176,5 +176,10 @@ class CrankyPointFormat extends PointFormat {
     public long size(String fieldName) {
       return delegate.size(fieldName);
     }
+
+    @Override
+    public int getDocCount(String fieldName) {
+      return delegate.getDocCount(fieldName);
+    }
   }
 }

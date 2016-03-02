@@ -82,7 +82,8 @@ public class Lucene60PointWriter extends PointWriter implements Closeable {
   @Override
   public void writeField(FieldInfo fieldInfo, PointReader values) throws IOException {
 
-    try (BKDWriter writer = new BKDWriter(writeState.directory,
+    try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
+                                          writeState.directory,
                                           writeState.segmentInfo.name,
                                           fieldInfo.getPointDimensionCount(),
                                           fieldInfo.getPointNumBytes(),
@@ -129,7 +130,8 @@ public class Lucene60PointWriter extends PointWriter implements Closeable {
           // Optimize the 1D case to use BKDWriter.merge, which does a single merge sort of the
           // already sorted incoming segments, instead of trying to sort all points again as if
           // we were simply reindexing them:
-          try (BKDWriter writer = new BKDWriter(writeState.directory,
+          try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
+                                                writeState.directory,
                                                 writeState.segmentInfo.name,
                                                 fieldInfo.getPointDimensionCount(),
                                                 fieldInfo.getPointNumBytes(),

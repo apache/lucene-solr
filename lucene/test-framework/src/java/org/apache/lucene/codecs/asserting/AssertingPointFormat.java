@@ -221,6 +221,12 @@ public final class AssertingPointFormat extends PointFormat {
       // TODO: what to assert?
       return in.size(fieldName);
     }
+
+    @Override
+    public int getDocCount(String fieldName) {
+      // TODO: what to assert?
+      return in.getDocCount(fieldName);
+    }
   }
 
   static class AssertingPointWriter extends PointWriter {

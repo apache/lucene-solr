@@ -121,6 +121,10 @@ public abstract class PointWriter implements Closeable {
                    throw new UnsupportedOperationException();
                  }
 
+                 @Override
+                 public int getDocCount(String fieldName) {
+                   throw new UnsupportedOperationException();
+                 }
                });
   }
 

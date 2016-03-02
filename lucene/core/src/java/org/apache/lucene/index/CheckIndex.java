@@ -1695,6 +1695,7 @@ public final class CheckIndex implements Closeable {
         }
         for (FieldInfo fieldInfo : fieldInfos) {
           if (fieldInfo.getPointDimensionCount() > 0) {
+            FixedBitSet docsSeen = new FixedBitSet(reader.maxDoc());
             status.totalValueFields++;
             int dimCount = fieldInfo.getPointDimensionCount();
             int bytesPerDim = fieldInfo.getPointNumBytes();
@@ -1709,6 +1710,12 @@ public final class CheckIndex implements Closeable {
 
             byte[] globalMinPackedValue = values.getMinPackedValue(fieldInfo.name);
             long size = values.size(fieldInfo.name);
+            int docCount = values.getDocCount(fieldInfo.name);
+
+            if (docCount > size) {
+              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have size=" + size + " points and inconsistent docCount=" + docCount);
+            }
+
             if (globalMinPackedValue == null) {
               if (size != 0) {
                 throw new RuntimeException("getMinPackedValue is null points for field \"" + fieldInfo.name + "\" yet size=" + size);
@@ -1739,6 +1746,7 @@ public final class CheckIndex implements Closeable {
                                public void visit(int docID, byte[] packedValue) {
                                  checkPackedValue("packed value", packedValue, docID);
                                  pointCountSeen[0]++;
+                                 docsSeen.set(docID);
 
                                  for(int dim=0;dim<dimCount;dim++) {
                                    int offset = bytesPerDim * dim;
@@ -1821,8 +1829,11 @@ public final class CheckIndex implements Closeable {
                              });
 
             if (pointCountSeen[0] != size) {
-              System.out.println("HERE: " + values);
               throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have size=" + size + " points, but in fact has " + pointCountSeen[0]);
+            }
+
+            if (docsSeen.cardinality() != docCount) {
+              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have docCount=" + docCount + " but in fact has " + docsSeen.cardinality());
             }
           }
         }

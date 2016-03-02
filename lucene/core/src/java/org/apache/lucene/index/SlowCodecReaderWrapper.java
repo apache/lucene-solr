@@ -177,6 +177,11 @@ public final class SlowCodecReaderWrapper {
       public long size(String fieldName) {
         return values.size(fieldName);
       }
+
+      @Override
+      public int getDocCount(String fieldName) {
+        return values.getDocCount(fieldName);
+      }
     };
   }
   

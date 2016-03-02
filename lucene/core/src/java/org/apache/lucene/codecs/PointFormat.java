@@ -100,6 +100,11 @@ public abstract class PointFormat {
           public long size(String fieldName) {
             throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
           }
+
+          @Override
+          public int getDocCount(String fieldName) {
+            throw new IllegalArgumentException("field=\"" + fieldName + "\" was not indexed with points");
+          }
         };
       }
     };

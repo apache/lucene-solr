@@ -34,8 +34,8 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.BLOCK_VA
 class SimpleTextBKDReader extends BKDReader {
 
   public SimpleTextBKDReader(IndexInput datIn, int numDims, int maxPointsInLeafNode, int bytesPerDim, long[] leafBlockFPs, byte[] splitPackedValues,
-                             byte[] minPackedValue, byte[] maxPackedValue, long pointCount) throws IOException {
-    super(datIn, numDims, maxPointsInLeafNode, bytesPerDim, leafBlockFPs, splitPackedValues, minPackedValue, maxPackedValue, pointCount);
+                             byte[] minPackedValue, byte[] maxPackedValue, long pointCount, int docCount) throws IOException {
+    super(datIn, numDims, maxPointsInLeafNode, bytesPerDim, leafBlockFPs, splitPackedValues, minPackedValue, maxPackedValue, pointCount, docCount);
   }
 
   @Override

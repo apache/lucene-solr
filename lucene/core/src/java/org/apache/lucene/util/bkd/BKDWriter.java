@@ -34,6 +34,7 @@ import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.LongBitSet;
@@ -110,6 +111,8 @@ public class BKDWriter implements Closeable {
   final byte[] scratch2;
   final int[] commonPrefixLengths;
 
+  protected final FixedBitSet docsSeen;
+
   private OfflinePointWriter offlinePointWriter;
   private HeapPointWriter heapPointWriter;
 
@@ -125,11 +128,11 @@ public class BKDWriter implements Closeable {
 
   protected long pointCount;
 
-  public BKDWriter(Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim) throws IOException {
-    this(tempDir, tempFileNamePrefix, numDims, bytesPerDim, DEFAULT_MAX_POINTS_IN_LEAF_NODE, DEFAULT_MAX_MB_SORT_IN_HEAP);
+  public BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim) throws IOException {
+    this(maxDoc, tempDir, tempFileNamePrefix, numDims, bytesPerDim, DEFAULT_MAX_POINTS_IN_LEAF_NODE, DEFAULT_MAX_MB_SORT_IN_HEAP);
   }
 
-  public BKDWriter(Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim, int maxPointsInLeafNode, double maxMBSortInHeap) throws IOException {
+  public BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim, int maxPointsInLeafNode, double maxMBSortInHeap) throws IOException {
     verifyParams(numDims, maxPointsInLeafNode, maxMBSortInHeap);
     // We use tracking dir to deal with removing files on exception, so each place that
     // creates temp files doesn't need crazy try/finally/sucess logic:
@@ -138,6 +141,7 @@ public class BKDWriter implements Closeable {
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.numDims = numDims;
     this.bytesPerDim = bytesPerDim;
+    docsSeen = new FixedBitSet(maxDoc);
     packedBytesLength = numDims * bytesPerDim;
 
     scratchDiff = new byte[bytesPerDim];
@@ -239,6 +243,7 @@ public class BKDWriter implements Closeable {
     }
 
     pointCount++;
+    docsSeen.set(docID);
   }
 
   /** How many points have been added so far */
@@ -420,8 +425,10 @@ public class BKDWriter implements Closeable {
       // System.out.println("iter reader=" + reader);
 
       // NOTE: doesn't work with subclasses (e.g. SimpleText!)
-      leafBlockDocIDs[leafCount] = reader.docIDBase + reader.docID;
+      int docID = reader.docIDBase + reader.docID;
+      leafBlockDocIDs[leafCount] = docID;
       System.arraycopy(reader.state.scratchPackedValue, 0, leafBlockPackedValues[leafCount], 0, packedBytesLength);
+      docsSeen.set(docID);
 
       if (valueCount == 0) {
         System.arraycopy(reader.state.scratchPackedValue, 0, minPackedValue, 0, packedBytesLength);
@@ -862,6 +869,7 @@ public class BKDWriter implements Closeable {
     out.writeBytes(maxPackedValue, 0, packedBytesLength);
 
     out.writeVLong(pointCount);
+    out.writeVInt(docsSeen.cardinality());
 
     // TODO: for 1D case, don't waste the first byte of each split value (it's always 0)
 

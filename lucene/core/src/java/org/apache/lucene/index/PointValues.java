@@ -95,5 +95,6 @@ public abstract class PointValues {
   /** Returns the total number of indexed points across all documents in this field. */
   public abstract long size(String fieldName);
 
-  // nocommit make "delete all point docs then force merge" and then check stats test
+  /** Returns the total number of documents that have indexed at least one point for this field. */
+  public abstract int getDocCount(String fieldName);
 }

@@ -43,6 +43,7 @@ public class BKDReader implements Accountable {
   final byte[] minPackedValue;
   final byte[] maxPackedValue;
   final long pointCount;
+  final int docCount;
   protected final int packedBytesLength;
 
   /** Caller must pre-seek the provided {@link IndexInput} to the index location that {@link BKDWriter#finish} returned */
@@ -65,6 +66,7 @@ public class BKDReader implements Accountable {
     in.readBytes(maxPackedValue, 0, packedBytesLength);
 
     pointCount = in.readVLong();
+    docCount = in.readVInt();
 
     splitPackedValues = new byte[(1+bytesPerDim)*numLeaves];
 
@@ -126,7 +128,7 @@ public class BKDReader implements Accountable {
 
   /** Called by consumers that have their own on-disk format for the index (e.g. SimpleText) */
   protected BKDReader(IndexInput in, int numDims, int maxPointsInLeafNode, int bytesPerDim, long[] leafBlockFPs, byte[] splitPackedValues,
-                      byte[] minPackedValue, byte[] maxPackedValue, long pointCount) throws IOException {
+                      byte[] minPackedValue, byte[] maxPackedValue, long pointCount, int docCount) throws IOException {
     this.in = in;
     this.numDims = numDims;
     this.maxPointsInLeafNode = maxPointsInLeafNode;
@@ -138,6 +140,7 @@ public class BKDReader implements Accountable {
     this.minPackedValue = minPackedValue;
     this.maxPackedValue = maxPackedValue;
     this.pointCount = pointCount;
+    this.docCount = docCount;
     assert minPackedValue.length == packedBytesLength;
     assert maxPackedValue.length == packedBytesLength;
   }
@@ -435,5 +438,9 @@ public class BKDReader implements Accountable {
 
   public long getPointCount() {
     return pointCount;
+  }
+
+  public int getDocCount() {
+    return docCount;
   }
 }
