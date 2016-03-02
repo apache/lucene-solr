@@ -386,6 +386,9 @@ Other Changes
 
 * SOLR-7010: Remove facet.date client functionality. (Steve Rowe)
 
+* SOLR-8423: DeleteShard and DeleteReplica should cleanup instance and data directory by default and add
+  support for optionally retaining the directories. (Anshum Gupta)
+
 ==================  5.5.1 ==================
 
 Bug Fixes

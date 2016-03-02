@@ -526,6 +526,10 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
 
   // DELETESHARD request
   public static class DeleteShard extends CollectionShardAsyncAdminRequest<DeleteShard> {
+
+    private Boolean deleteInstanceDir;
+    private Boolean deleteDataDir;
+
     public DeleteShard() {
       action = CollectionAction.DELETESHARD;
     }
@@ -533,6 +537,36 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     @Override
     protected DeleteShard getThis() {
       return this;
+    }
+
+    public Boolean getDeleteInstanceDir() {
+      return deleteInstanceDir;
+    }
+
+    public DeleteShard setDeleteInstanceDir(Boolean deleteInstanceDir) {
+      this.deleteInstanceDir = deleteInstanceDir;
+      return this;
+    }
+
+    public Boolean getDeleteDataDir() {
+      return deleteDataDir;
+    }
+
+    public DeleteShard setDeleteDataDir(Boolean deleteDataDir) {
+      this.deleteDataDir = deleteDataDir;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      if (deleteInstanceDir != null) {
+        params.set(CoreAdminParams.DELETE_INSTANCE_DIR, deleteInstanceDir);
+      }
+      if (deleteDataDir != null) {
+        params.set(CoreAdminParams.DELETE_DATA_DIR, deleteDataDir);
+      }
+      return params;
     }
   }
 
@@ -793,6 +827,9 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
   public static class DeleteReplica extends CollectionShardAsyncAdminRequest<DeleteReplica> {
     protected String replica;
     protected Boolean onlyIfDown;
+    private Boolean deleteDataDir;
+    private Boolean deleteInstanceDir;
+    private Boolean deleteIndexDir;
 
     public DeleteReplica() {
       action = CollectionAction.DELETEREPLICA;
@@ -824,11 +861,38 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
       if (onlyIfDown != null) {
         params.set("onlyIfDown", onlyIfDown);
       }
+      if (deleteDataDir != null) {
+        params.set(CoreAdminParams.DELETE_DATA_DIR, deleteDataDir);
+      }
+      if (deleteInstanceDir != null) {
+        params.set(CoreAdminParams.DELETE_INSTANCE_DIR, deleteInstanceDir);
+      }
+      if (deleteIndexDir != null) {
+        params.set(CoreAdminParams.DELETE_INDEX, deleteIndexDir);
+      }
       return params;
     }
 
     @Override
     protected DeleteReplica getThis() {
+      return this;
+    }
+
+    public Boolean getDeleteDataDir() {
+      return deleteDataDir;
+    }
+
+    public DeleteReplica setDeleteDataDir(Boolean deleteDataDir) {
+      this.deleteDataDir = deleteDataDir;
+      return this;
+    }
+
+    public Boolean getDeleteInstanceDir() {
+      return deleteInstanceDir;
+    }
+
+    public DeleteReplica setDeleteInstanceDir(Boolean deleteInstanceDir) {
+      this.deleteInstanceDir = deleteInstanceDir;
       return this;
     }
   }

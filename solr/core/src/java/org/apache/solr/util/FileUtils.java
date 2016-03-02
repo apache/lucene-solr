@@ -93,4 +93,7 @@ public class FileUtils {
       throw exc;
   }
 
+  public static boolean fileExists(String filePathString) {
+    return new File(filePathString).exists();
+  }
 }
