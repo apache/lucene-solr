@@ -163,29 +163,31 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
     w.close();
     DirectoryReader r = DirectoryReader.open(dir);
     assertEquals(1, r.numDocs());
-    PointValues values = MultiPointValues.get(r);
     Bits liveDocs = MultiFields.getLiveDocs(r);
-    NumericDocValues idValues = MultiDocValues.getNumericValues(r, "id");
 
-    if (values != null) {
-      BitSet seen = new BitSet();
-      values.intersect("dim",
-                       new IntersectVisitor() {
-                         @Override
-                         public Relation compare(byte[] minPacked, byte[] maxPacked) {
-                           return Relation.CELL_CROSSES_QUERY;
-                         }
-                         public void visit(int docID) {
-                           throw new IllegalStateException();
-                         }
-                         public void visit(int docID, byte[] packedValue) {
-                           if (liveDocs.get(docID)) {
-                             seen.set(docID);
+    for(LeafReaderContext ctx : r.leaves()) {
+      PointValues values = ctx.reader().getPointValues();
+      NumericDocValues idValues = ctx.reader().getNumericDocValues("id");
+      if (values != null) {
+        BitSet seen = new BitSet();
+        values.intersect("dim",
+                         new IntersectVisitor() {
+                           @Override
+                           public Relation compare(byte[] minPacked, byte[] maxPacked) {
+                             return Relation.CELL_CROSSES_QUERY;
                            }
-                           assertEquals(idValues.get(docID), NumericUtils.bytesToInt(packedValue, 0));
-                         }
-                       });
-      assertEquals(0, seen.cardinality());
+                           public void visit(int docID) {
+                             throw new IllegalStateException();
+                           }
+                           public void visit(int docID, byte[] packedValue) {
+                             if (liveDocs.get(docID)) {
+                               seen.set(docID);
+                             }
+                             assertEquals(idValues.get(docID), NumericUtils.bytesToInt(packedValue, 0));
+                           }
+                         });
+        assertEquals(0, seen.cardinality());
+      }
     }
     IOUtils.close(r, dir);
   }
@@ -361,8 +363,6 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
       DirectoryReader r = w.getReader();
       w.close();
 
-      PointValues dimValues = MultiPointValues.get(r);
-
       int iters = atLeast(100);
       for(int iter=0;iter<iters;iter++) {
         if (VERBOSE) {
@@ -386,50 +386,59 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
         }
 
         final BitSet hits = new BitSet();
-        dimValues.intersect("field", new IntersectVisitor() {
-            @Override
-            public void visit(int docID) {
-              hits.set(docID);
-              //System.out.println("visit docID=" + docID);
-            }
+        for(LeafReaderContext ctx : r.leaves()) {
+          PointValues dimValues = ctx.reader().getPointValues();
+          if (dimValues == null) {
+            continue;
+          }
 
-            @Override
-            public void visit(int docID, byte[] packedValue) {
-              //System.out.println("visit check docID=" + docID);
-              for(int dim=0;dim<numDims;dim++) {
-                BigInteger x = NumericUtils.bytesToBigInt(packedValue, dim * numBytesPerDim, numBytesPerDim);
-                if (x.compareTo(queryMin[dim]) < 0 || x.compareTo(queryMax[dim]) > 0) {
-                  //System.out.println("  no");
-                  return;
+          final int docBase = ctx.docBase;
+          
+          dimValues.intersect("field", new IntersectVisitor() {
+              @Override
+              public void visit(int docID) {
+                hits.set(docBase+docID);
+                //System.out.println("visit docID=" + docID);
+              }
+
+              @Override
+              public void visit(int docID, byte[] packedValue) {
+                //System.out.println("visit check docID=" + docID);
+                for(int dim=0;dim<numDims;dim++) {
+                  BigInteger x = NumericUtils.bytesToBigInt(packedValue, dim * numBytesPerDim, numBytesPerDim);
+                  if (x.compareTo(queryMin[dim]) < 0 || x.compareTo(queryMax[dim]) > 0) {
+                    //System.out.println("  no");
+                    return;
+                  }
+                }
+
+                //System.out.println("  yes");
+                hits.set(docBase+docID);
+              }
+
+              @Override
+              public Relation compare(byte[] minPacked, byte[] maxPacked) {
+                boolean crosses = false;
+                for(int dim=0;dim<numDims;dim++) {
+                  BigInteger min = NumericUtils.bytesToBigInt(minPacked, dim * numBytesPerDim, numBytesPerDim);
+                  BigInteger max = NumericUtils.bytesToBigInt(maxPacked, dim * numBytesPerDim, numBytesPerDim);
+                  assert max.compareTo(min) >= 0;
+
+                  if (max.compareTo(queryMin[dim]) < 0 || min.compareTo(queryMax[dim]) > 0) {
+                    return Relation.CELL_OUTSIDE_QUERY;
+                  } else if (min.compareTo(queryMin[dim]) < 0 || max.compareTo(queryMax[dim]) > 0) {
+                    crosses = true;
+                  }
+                }
+
+                if (crosses) {
+                  return Relation.CELL_CROSSES_QUERY;
+                } else {
+                  return Relation.CELL_INSIDE_QUERY;
                 }
               }
-
-              //System.out.println("  yes");
-              hits.set(docID);
-            }
-
-            @Override
-            public Relation compare(byte[] minPacked, byte[] maxPacked) {
-              boolean crosses = false;
-              for(int dim=0;dim<numDims;dim++) {
-                BigInteger min = NumericUtils.bytesToBigInt(minPacked, dim * numBytesPerDim, numBytesPerDim);
-                BigInteger max = NumericUtils.bytesToBigInt(maxPacked, dim * numBytesPerDim, numBytesPerDim);
-                assert max.compareTo(min) >= 0;
-
-                if (max.compareTo(queryMin[dim]) < 0 || min.compareTo(queryMax[dim]) > 0) {
-                  return Relation.CELL_OUTSIDE_QUERY;
-                } else if (min.compareTo(queryMin[dim]) < 0 || max.compareTo(queryMax[dim]) > 0) {
-                  crosses = true;
-                }
-              }
-
-              if (crosses) {
-                return Relation.CELL_CROSSES_QUERY;
-              } else {
-                return Relation.CELL_INSIDE_QUERY;
-              }
-            }
-          });
+            });
+        }
 
         for(int docID=0;docID<numDocs;docID++) {
           BigInteger[] docValues = docs[docID];
@@ -665,24 +674,39 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
         System.out.println("TEST: reader=" + r);
       }
 
-      PointValues dimValues = MultiPointValues.get(r);
-      if (VERBOSE) {
-        System.out.println("  dimValues=" + dimValues);
-      }
-      assertNotNull(dimValues);
-
       NumericDocValues idValues = MultiDocValues.getNumericValues(r, "id");
       Bits liveDocs = MultiFields.getLiveDocs(r);
 
       // Verify min/max values are correct:
-      byte[] minValues = dimValues.getMinPackedValue("field");
-      byte[] maxValues = dimValues.getMaxPackedValue("field");
+      byte[] minValues = new byte[numDims*numBytesPerDim];
+      Arrays.fill(minValues, (byte) 0xff);
+
+      byte[] maxValues = new byte[numDims*numBytesPerDim];
+
+      for(LeafReaderContext ctx : r.leaves()) {
+        PointValues dimValues = ctx.reader().getPointValues();
+        if (dimValues == null) {
+          continue;
+        }
+
+        byte[] leafMinValues = dimValues.getMinPackedValue("field");
+        byte[] leafMaxValues = dimValues.getMaxPackedValue("field");
+        for(int dim=0;dim<numDims;dim++) {
+          if (StringHelper.compare(numBytesPerDim, leafMinValues, dim*numBytesPerDim, minValues, dim*numBytesPerDim) < 0) {
+            System.arraycopy(leafMinValues, dim*numBytesPerDim, minValues, dim*numBytesPerDim, numBytesPerDim);
+          }
+          if (StringHelper.compare(numBytesPerDim, leafMaxValues, dim*numBytesPerDim, maxValues, dim*numBytesPerDim) > 0) {
+            System.arraycopy(leafMaxValues, dim*numBytesPerDim, maxValues, dim*numBytesPerDim, numBytesPerDim);
+          }
+        }
+      }
+
       byte[] scratch = new byte[numBytesPerDim];
       for(int dim=0;dim<numDims;dim++) {
-        System.arraycopy(minValues, dim*numBytesPerDim, scratch, 0, scratch.length);
+        System.arraycopy(minValues, dim*numBytesPerDim, scratch, 0, numBytesPerDim);
         //System.out.println("dim=" + dim + " expectedMin=" + new BytesRef(expectedMinValues[dim]) + " min=" + new BytesRef(scratch));
         assertTrue(Arrays.equals(expectedMinValues[dim], scratch));
-        System.arraycopy(maxValues, dim*numBytesPerDim, scratch, 0, scratch.length);
+        System.arraycopy(maxValues, dim*numBytesPerDim, scratch, 0, numBytesPerDim);
         //System.out.println("dim=" + dim + " expectedMax=" + new BytesRef(expectedMaxValues[dim]) + " max=" + new BytesRef(scratch));
         assertTrue(Arrays.equals(expectedMaxValues[dim], scratch));
       }
@@ -716,58 +740,68 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
 
         final BitSet hits = new BitSet();
 
-        dimValues.intersect("field", new PointValues.IntersectVisitor() {
-            @Override
-            public void visit(int docID) {
-              if (liveDocs == null || liveDocs.get(docID)) {
-                hits.set((int) idValues.get(docID));
-              }
-              //System.out.println("visit docID=" + docID);
-            }
+        for(LeafReaderContext ctx : r.leaves()) {
+          PointValues dimValues = ctx.reader().getPointValues();
+          if (dimValues == null) {
+            continue;
+          }
 
-            @Override
-            public void visit(int docID, byte[] packedValue) {
-              if (liveDocs != null && liveDocs.get(docID) == false) {
-                return;
+          final int docBase = ctx.docBase;
+
+          dimValues.intersect("field", new PointValues.IntersectVisitor() {
+              @Override
+              public void visit(int docID) {
+                if (liveDocs == null || liveDocs.get(docBase+docID)) {
+                  hits.set((int) idValues.get(docBase+docID));
+                }
+                //System.out.println("visit docID=" + docID);
               }
-              //System.out.println("visit check docID=" + docID + " id=" + idValues.get(docID));
-              for(int dim=0;dim<numDims;dim++) {
-                //System.out.println("  dim=" + dim + " value=" + new BytesRef(packedValue, dim*numBytesPerDim, numBytesPerDim));
-                if (StringHelper.compare(numBytesPerDim, packedValue, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
-                    StringHelper.compare(numBytesPerDim, packedValue, dim*numBytesPerDim, queryMax[dim], 0) > 0) {
-                  //System.out.println("  no");
+
+              @Override
+              public void visit(int docID, byte[] packedValue) {
+                if (liveDocs != null && liveDocs.get(docBase+docID) == false) {
                   return;
                 }
+
+                //System.out.println("visit check docID=" + docID + " id=" + idValues.get(docID));
+                for(int dim=0;dim<numDims;dim++) {
+                  //System.out.println("  dim=" + dim + " value=" + new BytesRef(packedValue, dim*numBytesPerDim, numBytesPerDim));
+                  if (StringHelper.compare(numBytesPerDim, packedValue, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
+                      StringHelper.compare(numBytesPerDim, packedValue, dim*numBytesPerDim, queryMax[dim], 0) > 0) {
+                    //System.out.println("  no");
+                    return;
+                  }
+                }
+
+                //System.out.println("  yes");
+                hits.set((int) idValues.get(docBase+docID));
               }
 
-              //System.out.println("  yes");
-              hits.set((int) idValues.get(docID));
-            }
+              @Override
+              public Relation compare(byte[] minPacked, byte[] maxPacked) {
+                boolean crosses = false;
+                //System.out.println("compare");
+                for(int dim=0;dim<numDims;dim++) {
+                  if (StringHelper.compare(numBytesPerDim, maxPacked, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
+                      StringHelper.compare(numBytesPerDim, minPacked, dim*numBytesPerDim, queryMax[dim], 0) > 0) {
+                    //System.out.println("  query_outside_cell");
+                    return Relation.CELL_OUTSIDE_QUERY;
+                  } else if (StringHelper.compare(numBytesPerDim, minPacked, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
+                             StringHelper.compare(numBytesPerDim, maxPacked, dim*numBytesPerDim, queryMax[dim], 0) > 0) {
+                    crosses = true;
+                  }
+                }
 
-            @Override
-            public Relation compare(byte[] minPacked, byte[] maxPacked) {
-              boolean crosses = false;
-              //System.out.println("compare");
-              for(int dim=0;dim<numDims;dim++) {
-                if (StringHelper.compare(numBytesPerDim, maxPacked, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
-                    StringHelper.compare(numBytesPerDim, minPacked, dim*numBytesPerDim, queryMax[dim], 0) > 0) {
-                  //System.out.println("  query_outside_cell");
-                  return Relation.CELL_OUTSIDE_QUERY;
-                } else if (StringHelper.compare(numBytesPerDim, minPacked, dim*numBytesPerDim, queryMin[dim], 0) < 0 ||
-                           StringHelper.compare(numBytesPerDim, maxPacked, dim*numBytesPerDim, queryMax[dim], 0) > 0) {
-                  crosses = true;
+                if (crosses) {
+                  //System.out.println("  query_crosses_cell");
+                  return Relation.CELL_CROSSES_QUERY;
+                } else {
+                  //System.out.println("  cell_inside_query");
+                  return Relation.CELL_INSIDE_QUERY;
                 }
               }
-
-              if (crosses) {
-                //System.out.println("  query_crosses_cell");
-                return Relation.CELL_CROSSES_QUERY;
-              } else {
-                //System.out.println("  cell_inside_query");
-                return Relation.CELL_INSIDE_QUERY;
-              }
-            }
-          });
+            });
+        }
 
         BitSet expected = new BitSet();
         for(int ord=0;ord<numValues;ord++) {
@@ -845,7 +879,7 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
     w.forceMerge(1);
 
     DirectoryReader r = w.getReader();
-    IndexSearcher s = newSearcher(r);
+    IndexSearcher s = newSearcher(r, false);
     assertEquals(2, s.count(IntPoint.newExactQuery("int1", 17)));
     assertEquals(2, s.count(IntPoint.newExactQuery("int2", 42)));
     r.close();
