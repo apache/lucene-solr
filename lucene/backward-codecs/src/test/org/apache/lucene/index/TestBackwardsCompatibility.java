@@ -216,26 +216,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   final static String[] oldNames = {
-      "5.0.0-cfs",
-      "5.0.0-nocfs",
-      "5.1.0-cfs",
-      "5.1.0-nocfs",
-      "5.2.0-cfs",
-      "5.2.0-nocfs",
-      "5.2.1-cfs",
-      "5.2.1-nocfs",
-      "5.3.0-cfs",
-      "5.3.0-nocfs",
-      "5.3.1-cfs",
-      "5.3.1-nocfs",
-      "5.3.2-cfs",
-      "5.3.2-nocfs",
-      "5.4.0-cfs",
-      "5.4.0-nocfs",
-      "5.4.1-cfs",
-      "5.4.1-nocfs",
-      "5.5.0-cfs",
-      "5.5.0-nocfs"
   };
   
   final String[] unsupportedNames = {
@@ -338,7 +318,27 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "4.10.4-cfs",
       "4.10.4-nocfs",
       "5x-with-4x-segments-cfs",
-      "5x-with-4x-segments-nocfs"
+      "5x-with-4x-segments-nocfs",
+      "5.0.0-cfs",
+      "5.0.0-nocfs",
+      "5.1.0-cfs",
+      "5.1.0-nocfs",
+      "5.2.0-cfs",
+      "5.2.0-nocfs",
+      "5.2.1-cfs",
+      "5.2.1-nocfs",
+      "5.3.0-cfs",
+      "5.3.0-nocfs",
+      "5.3.1-cfs",
+      "5.3.1-nocfs",
+      "5.3.2-cfs",
+      "5.3.2-nocfs",
+      "5.4.0-cfs",
+      "5.4.0-nocfs",
+      "5.4.1-cfs",
+      "5.4.1-nocfs",
+      "5.5.0-cfs",
+      "5.5.0-nocfs"
   };
   
   final static String[] oldSingleSegmentNames = {
