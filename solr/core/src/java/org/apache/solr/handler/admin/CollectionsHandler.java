@@ -45,6 +45,9 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
@@ -478,9 +481,14 @@ public class CollectionsHandler extends RequestHandlerBase {
     DELETESHARD_OP(DELETESHARD) {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler handler) throws Exception {
-        return req.getParams().required().getAll(null,
+        Map<String, Object> map = req.getParams().required().getAll(null,
             COLLECTION_PROP,
             SHARD_ID_PROP);
+        req.getParams().getAll(map,
+            DELETE_INDEX,
+            DELETE_DATA_DIR,
+            DELETE_INSTANCE_DIR);
+        return map;
       }
     },
     FORCELEADER_OP(FORCELEADER) {
@@ -517,6 +525,12 @@ public class CollectionsHandler extends RequestHandlerBase {
             COLLECTION_PROP,
             SHARD_ID_PROP,
             REPLICA_PROP);
+
+        req.getParams().getAll(map,
+            DELETE_INDEX,
+            DELETE_DATA_DIR,
+            DELETE_INSTANCE_DIR);
+
         return req.getParams().getAll(map, ONLY_IF_DOWN);
       }
     },

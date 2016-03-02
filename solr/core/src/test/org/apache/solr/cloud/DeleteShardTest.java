@@ -16,26 +16,33 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Slice.State;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.FileUtils;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 public class DeleteShardTest extends AbstractFullDistribZkTestBase {
 
@@ -150,4 +157,67 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
     }
   }
 
+  @Test
+  public void testDirectoryCleanupAfterDeleteShard() throws InterruptedException, IOException, SolrServerException {
+    CollectionAdminResponse rsp = new CollectionAdminRequest.Create()
+        .setCollectionName("deleteshard_test")
+        .setRouterName("implicit")
+        .setShards("a,b,c")
+        .setReplicationFactor(1)
+        .setConfigName("conf1")
+        .process(cloudClient);
+
+    // Get replica details
+    Replica leader = cloudClient.getZkStateReader().getLeaderRetry("deleteshard_test", "a");
+    String baseUrl = (String) leader.get("base_url");
+    String core = (String) leader.get("core");
+
+    String instanceDir;
+    String dataDir;
+
+    try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
+      CoreAdminResponse statusResp = CoreAdminRequest.getStatus(core, client);
+      NamedList r = statusResp.getCoreStatus().get(core);
+      instanceDir = (String) r.findRecursive("instanceDir");
+      dataDir = (String) r.get("dataDir");
+    }
+
+    assertTrue("Instance directory doesn't exist", FileUtils.fileExists(instanceDir));
+    assertTrue("Data directory doesn't exist", FileUtils.fileExists(dataDir));
+
+    assertEquals(3, cloudClient.getZkStateReader().getClusterState().getActiveSlices("deleteshard_test").size());
+
+    // Delete shard 'a'
+    new CollectionAdminRequest.DeleteShard()
+        .setCollectionName("deleteshard_test")
+        .setShardName("a")
+        .process(cloudClient);
+
+    assertEquals(2, cloudClient.getZkStateReader().getClusterState().getActiveSlices("deleteshard_test").size());
+    assertFalse("Instance directory still exists", FileUtils.fileExists(instanceDir));
+    assertFalse("Data directory still exists", FileUtils.fileExists(dataDir));
+
+    leader = cloudClient.getZkStateReader().getLeaderRetry("deleteshard_test", "b");
+    baseUrl = (String) leader.get("base_url");
+    core = (String) leader.get("core");
+
+    try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
+      CoreAdminResponse statusResp = CoreAdminRequest.getStatus(core, client);
+      NamedList r = statusResp.getCoreStatus().get(core);
+      instanceDir = (String) r.findRecursive("instanceDir");
+      dataDir = (String) r.get("dataDir");
+    }
+
+    // Delete shard 'b'
+    new CollectionAdminRequest.DeleteShard()
+        .setCollectionName("deleteshard_test")
+        .setShardName("b")
+        .setDeleteDataDir(false)
+        .setDeleteInstanceDir(false)
+        .process(cloudClient);
+
+    assertEquals(1, cloudClient.getZkStateReader().getClusterState().getActiveSlices("deleteshard_test").size());
+    assertTrue("Instance directory still exists", FileUtils.fileExists(instanceDir));
+    assertTrue("Data directory still exists", FileUtils.fileExists(dataDir));
+  }
 }

@@ -16,10 +16,19 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -31,24 +40,17 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_IF_DOWN;
-import static org.apache.solr.common.util.Utils.makeMap;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
+import static org.apache.solr.common.util.Utils.makeMap;
 
 public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
 
@@ -169,5 +171,45 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
         NUM_SLICES, numShards);
     Map<String,List<Integer>> collectionInfos = new HashMap<>();
     createCollection(collectionInfos, COLL_NAME, props, client);
+  }
+
+  @Test
+  @ShardsFixed(num = 2)
+  public void deleteReplicaAndVerifyDirectoryCleanup() throws IOException, SolrServerException, InterruptedException {
+    createCollection("deletereplica_test", 1, 2, 4);
+
+    Replica leader = cloudClient.getZkStateReader().getLeaderRetry("deletereplica_test", "shard1");
+    String baseUrl = (String) leader.get("base_url");
+    String core = (String) leader.get("core");
+    String leaderCoreName = leader.getName();
+
+    String instanceDir;
+    String dataDir;
+
+    try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
+      CoreAdminResponse statusResp = CoreAdminRequest.getStatus(core, client);
+      NamedList r = statusResp.getCoreStatus().get(core);
+      instanceDir = (String) r.findRecursive("instanceDir");
+      dataDir = (String) r.get("dataDir");
+    }
+
+    //Confirm that the instance and data directory exist
+    assertTrue("Instance directory doesn't exist", FileUtils.fileExists(instanceDir));
+    assertTrue("DataDirectory doesn't exist", FileUtils.fileExists(dataDir));
+
+    new CollectionAdminRequest.DeleteReplica()
+        .setCollectionName("deletereplica_test")
+        .setShardName("shard1")
+        .setReplica(leaderCoreName)
+        .process(cloudClient);
+
+    Replica newLeader = cloudClient.getZkStateReader().getLeaderRetry("deletereplica_test", "shard1");
+
+    assertFalse(leader.equals(newLeader));
+
+    //Confirm that the instance and data directory were deleted by default
+
+    assertFalse("Instance directory still exists", FileUtils.fileExists(instanceDir));
+    assertFalse("DataDirectory still exists", FileUtils.fileExists(dataDir));
   }
 }
