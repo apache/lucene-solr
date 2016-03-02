@@ -38,7 +38,7 @@ public class TestLatLonPoint extends LuceneTestCase {
     
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = newSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader, false);
     assertEquals(1, searcher.count(LatLonPoint.newBoxQuery("field", 18, 19, -66, -65)));
 
     reader.close();

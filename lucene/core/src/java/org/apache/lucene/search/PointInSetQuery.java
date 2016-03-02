@@ -172,10 +172,6 @@ public abstract class PointInSetQuery extends Query {
       this.sortedPackedPoints = sortedPackedPoints;
       lastMaxPackedValue = new byte[bytesPerDim];
       scratch.length = bytesPerDim;
-      resetIterator();
-    }
-
-    private void resetIterator() {
       this.iterator = sortedPackedPoints.iterator();
       nextQueryPoint = iterator.next();
     }
@@ -211,15 +207,6 @@ public abstract class PointInSetQuery extends Query {
 
     @Override
     public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-      
-      // NOTE: this is messy ... we need it in cases where a single vistor (us) is shared across multiple leaf readers
-      // (e.g. SlowCompositeReaderWrapper), in which case we need to reset our iterator to re-start the merge sort.  Maybe we should instead
-      // add an explicit .start() to IntersectVisitor, and clarify the semantics that in the 1D case all cells will be visited in order?
-      if (StringHelper.compare(bytesPerDim, lastMaxPackedValue, 0, minPackedValue, 0) > 0) {    
-        resetIterator();
-      }
-      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, bytesPerDim);
-
       while (nextQueryPoint != null) {
         scratch.bytes = minPackedValue;
         int cmpMin = nextQueryPoint.compareTo(scratch);

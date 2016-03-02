@@ -17,6 +17,7 @@
 package org.apache.lucene.codecs.asserting;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 
 import org.apache.lucene.codecs.PointFormat;
@@ -24,9 +25,13 @@ import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.PointWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
 /**
@@ -60,6 +65,83 @@ public final class AssertingPointFormat extends PointFormat {
   public PointReader fieldsReader(SegmentReadState state) throws IOException {
     return new AssertingPointReader(in.fieldsReader(state));
   }
+
+  /** Validates in the 1D case that all points are visited in order, and point values are in bounds of the last cell checked */
+  static class AssertingIntersectVisitor implements IntersectVisitor {
+    final IntersectVisitor in;
+    final int numDims;
+    final int bytesPerDim;
+    final byte[] lastDocValue;
+    final byte[] lastMinPackedValue;
+    final byte[] lastMaxPackedValue;
+    private Relation lastCompareResult;
+    private int lastDocID = -1;
+
+    public AssertingIntersectVisitor(int numDims, int bytesPerDim, IntersectVisitor in) {
+      this.in = in;
+      this.numDims = numDims;
+      this.bytesPerDim = bytesPerDim;
+      lastMaxPackedValue = new byte[numDims*bytesPerDim];
+      lastMinPackedValue = new byte[numDims*bytesPerDim];
+      if (numDims == 1) {
+        lastDocValue = new byte[bytesPerDim];
+      } else {
+        lastDocValue = null;
+      }
+    }
+
+    @Override
+    public void visit(int docID) throws IOException {
+      // This method, not filtering each hit, should only be invoked when the cell is inside the query shape:
+      assert lastCompareResult == Relation.CELL_INSIDE_QUERY;
+      in.visit(docID);
+    }
+
+    @Override
+    public void visit(int docID, byte[] packedValue) throws IOException {
+
+      // This method, to filter each doc's value, should only be invoked when the cell crosses the query shape:
+      assert lastCompareResult == PointValues.Relation.CELL_CROSSES_QUERY;
+
+      // This doc's packed value should be contained in the last cell passed to compare:
+      for(int dim=0;dim<numDims;dim++) {
+        assert StringHelper.compare(bytesPerDim, lastMinPackedValue, dim*bytesPerDim, packedValue, dim*bytesPerDim) <= 0: "dim=" + dim + " of " +  numDims;
+        assert StringHelper.compare(bytesPerDim, lastMaxPackedValue, dim*bytesPerDim, packedValue, dim*bytesPerDim) >= 0: "dim=" + dim + " of " +  numDims;
+      }
+
+      // TODO: we should assert that this "matches" whatever relation the last call to compare had returned
+      assert packedValue.length == numDims * bytesPerDim;
+      if (numDims == 1) {
+        int cmp = StringHelper.compare(bytesPerDim, lastDocValue, 0, packedValue, 0);
+        if (cmp < 0) {
+          // ok
+        } else if (cmp == 0) {
+          assert lastDocID <= docID: "doc ids are out of order when point values are the same!";
+        } else {
+          // out of order!
+          assert false: "point values are out of order";
+        }
+        System.arraycopy(packedValue, 0, lastDocValue, 0, bytesPerDim);
+      }
+      in.visit(docID, packedValue);
+    }
+
+    @Override
+    public void grow(int count) {
+      in.grow(count);
+    }
+
+    @Override
+    public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+      for(int dim=0;dim<numDims;dim++) {
+        assert StringHelper.compare(bytesPerDim, minPackedValue, dim*bytesPerDim, maxPackedValue, dim*bytesPerDim) <= 0;
+      }
+      System.arraycopy(maxPackedValue, 0, lastMaxPackedValue, 0, numDims*bytesPerDim);
+      System.arraycopy(minPackedValue, 0, lastMinPackedValue, 0, numDims*bytesPerDim);
+      lastCompareResult = in.compare(minPackedValue, maxPackedValue);
+      return lastCompareResult;
+    }
+  }
   
   static class AssertingPointReader extends PointReader {
     private final PointReader in;
@@ -80,8 +162,8 @@ public final class AssertingPointFormat extends PointFormat {
 
     @Override
     public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
-      // TODO: wrap the visitor and make sure things are being reasonable
-      in.intersect(fieldName, visitor);
+      in.intersect(fieldName,
+                   new AssertingIntersectVisitor(in.getNumDimensions(fieldName), in.getBytesPerDimension(fieldName), visitor));
     }
 
     @Override

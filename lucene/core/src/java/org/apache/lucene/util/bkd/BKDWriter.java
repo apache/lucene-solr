@@ -102,6 +102,7 @@ public class BKDWriter implements Closeable {
 
   final TrackingDirectoryWrapper tempDir;
   final String tempFileNamePrefix;
+  final double maxMBSortInHeap;
 
   final byte[] scratchDiff;
   final byte[] scratchPackedValue;
@@ -169,6 +170,8 @@ public class BKDWriter implements Closeable {
 
     // We write first maxPointsSortInHeap in heap, then cutover to offline for additional points:
     heapPointWriter = new HeapPointWriter(16, maxPointsSortInHeap, packedBytesLength);
+
+    this.maxMBSortInHeap = maxMBSortInHeap;
   }
 
   public static void verifyParams(int numDims, int maxPointsInLeafNode, double maxMBSortInHeap) {
@@ -550,7 +553,7 @@ public class BKDWriter implements Closeable {
     //int[] swapCount = new int[1];
     //int[] cmpCount = new int[1];
 
-    //System.out.println("SORT length=" + length);
+    // System.out.println("SORT length=" + length);
 
     // All buffered points are still in heap; just do in-place sort:
     new IntroSorter() {
@@ -623,13 +626,11 @@ public class BKDWriter implements Closeable {
           return cmp;
         }
 
-        // Tie-break
-        cmp = Integer.compare(writer.docIDs[i], writer.docIDs[j]);
-        if (cmp != 0) {
-          return cmp;
-        }
+        // Tie-break by docID:
 
-        return Long.compare(writer.ords[i], writer.ords[j]);
+        // No need to tie break on ord, for the case where the same doc has the same value in a given dimension indexed more than once: it
+        // can't matter at search time since we don't write ords into the index:
+        return Integer.compare(writer.docIDs[i], writer.docIDs[j]);
       }
     }.sort(start, start+length);
     //System.out.println("LEN=" + length + " SWAP=" + swapCount[0] + " CMP=" + cmpCount[0]);
@@ -679,29 +680,23 @@ public class BKDWriter implements Closeable {
             return cmp;
           }
 
-          // Tie-break by docID and then ord:
-          reader.reset(a.bytes, a.offset + packedBytesLength, a.length);
-          final int docIDA = reader.readVInt();
-          final long ordA = reader.readVLong();
+          // Tie-break by docID:
+          reader.reset(a.bytes, a.offset + packedBytesLength + Long.BYTES, a.length);
+          final int docIDA = reader.readInt();
 
-          reader.reset(b.bytes, b.offset + packedBytesLength, b.length);
-          final int docIDB = reader.readVInt();
-          final long ordB = reader.readVLong();
+          reader.reset(b.bytes, b.offset + packedBytesLength + Long.BYTES, b.length);
+          final int docIDB = reader.readInt();
 
-          cmp = Integer.compare(docIDA, docIDB);
-          if (cmp != 0) {
-            return cmp;
-          }
-
-          // TODO: is this really necessary?  If OfflineSorter is stable, we can safely return 0 here, and avoid writing ords?
-          return Long.compare(ordA, ordB);
+          // No need to tie break on ord, for the case where the same doc has the same value in a given dimension indexed more than once: it
+          // can't matter at search time since we don't write ords into the index:
+          return Integer.compare(docIDA, docIDB);
         }
       };
 
       // TODO: this is sort of sneaky way to get the final OfflinePointWriter from OfflineSorter:
       IndexOutput[] lastWriter = new IndexOutput[1];
 
-      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix, cmp) {
+      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix, cmp, OfflineSorter.BufferSize.megabytes(Math.max(1, (long) maxMBSortInHeap)), OfflineSorter.MAX_TEMPFILES) {
 
           /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
           @Override
@@ -753,7 +748,7 @@ public class BKDWriter implements Closeable {
 
   /** Writes the BKD tree to the provided {@link IndexOutput} and returns the file offset where index was written. */
   public long finish(IndexOutput out) throws IOException {
-    //System.out.println("\nBKDTreeWriter.finish pointCount=" + pointCount + " out=" + out + " heapWriter=" + heapWriter);
+    // System.out.println("\nBKDTreeWriter.finish pointCount=" + pointCount + " out=" + out + " heapWriter=" + heapPointWriter);
 
     // TODO: specialize the 1D case?  it's much faster at indexing time (no partitioning on recruse...)
 

@@ -55,7 +55,7 @@ public class TestLatLonPointDistanceQuery extends LuceneTestCase {
     
     // search within 50km and verify we found our doc
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = newSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader, false);
     assertEquals(1, searcher.count(LatLonPoint.newDistanceQuery("field", 18, -65, 50_000)));
 
     reader.close();

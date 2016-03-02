@@ -61,7 +61,9 @@ public abstract class PointValues {
     void visit(int docID) throws IOException;
 
     /** Called for all documents in a leaf cell that crosses the query.  The consumer
-     *  should scrutinize the packedValue to decide whether to accept it. */
+     *  should scrutinize the packedValue to decide whether to accept it.  In the 1D case,
+     *  values are visited in increasing order, and in the case of ties, in increasing
+     *  docID order. */
     void visit(int docID, byte[] packedValue) throws IOException;
 
     /** Called for non-leaf cells to test how the cell relates to the query, to
