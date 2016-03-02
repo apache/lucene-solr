@@ -100,7 +100,7 @@ public final class IndexUpgrader {
         dirImpl = args[i];
       } else if (path == null) {
         path = arg;
-      }else {
+      } else {
         printUsage();
       }
       i++;

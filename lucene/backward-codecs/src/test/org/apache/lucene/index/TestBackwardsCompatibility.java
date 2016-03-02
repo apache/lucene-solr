@@ -215,6 +215,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
+  // TODO: on 6.0.0 release, gen the indices and add here:
   final static String[] oldNames = {
   };
   
@@ -342,7 +343,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "5.5.0-cfs",
       "5.5.0-nocfs"
   };
-  
+
+  // TODO: on 6.0.0 release, gen the single segment indices and add here:
   final static String[] oldSingleSegmentNames = {
   };
   
@@ -951,6 +953,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // add numeric fields, to test if flex preserves encoding
     doc.add(new LegacyIntField("trieInt", id, Field.Store.NO));
     doc.add(new LegacyLongField("trieLong", (long) id, Field.Store.NO));
+
     // add docvalues fields
     doc.add(new NumericDocValuesField("dvByte", (byte) id));
     byte bytes[] = new byte[] {
