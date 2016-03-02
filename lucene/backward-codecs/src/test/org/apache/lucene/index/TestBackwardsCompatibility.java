@@ -83,7 +83,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   // Backcompat index generation, described below, is mostly automated in: 
   //
-  //    dev-tools/scripts/addBackCompatIndexes.py
+  //    dev-tools/scripts/addBackcompatIndexes.py
   //
   // For usage information, see:
   //
@@ -319,6 +319,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "4.10.4-nocfs",
       "5x-with-4x-segments-cfs",
       "5x-with-4x-segments-nocfs",
+      "5.0.0.singlesegment-cfs",
+      "5.0.0.singlesegment-nocfs",
       "5.0.0-cfs",
       "5.0.0-nocfs",
       "5.1.0-cfs",
@@ -342,8 +344,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   };
   
   final static String[] oldSingleSegmentNames = {
-    "5.0.0.singlesegment-cfs",
-    "5.0.0.singlesegment-nocfs"
   };
   
   static Map<String,Directory> oldIndexDirs;
@@ -407,10 +407,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (java.lang.reflect.Field field : Version.class.getDeclaredFields()) {
       if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
         Version v = (Version)field.get(Version.class);
-        if (v.equals(Version.LATEST)) continue;
+        if (v.equals(Version.LATEST)) {
+          continue;
+        }
 
         Matcher constant = constantPattern.matcher(field.getName());
-        if (constant.matches() == false) continue;
+        if (constant.matches() == false) {
+          continue;
+        }
 
         expectedVersions.add(v.toString() + "-cfs");
       }
@@ -439,7 +443,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // find what versions we are testing
     List<String> testedVersions = new ArrayList<>();
     for (String testedVersion : oldNames) {
-      if (testedVersion.endsWith("-cfs") == false) continue;
+      if (testedVersion.endsWith("-cfs") == false) {
+        continue;
+      }
       testedVersions.add(testedVersion);
     }
     Collections.sort(testedVersions);
@@ -819,9 +825,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void changeIndexWithAdds(Random random, Directory dir, Version nameVersion) throws IOException {
     SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
-    if (nameVersion.onOrAfter(Version.LUCENE_5_3_0)) {
-      assertEquals(nameVersion, infos.getCommitLuceneVersion());
-    }
+    assertEquals(nameVersion, infos.getCommitLuceneVersion());
     assertEquals(nameVersion, infos.getMinSegmentLuceneVersion());
 
     // open writer
@@ -1288,7 +1292,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public static final String emptyIndex = "empty.5.0.0.zip";
+  public static final String emptyIndex = "empty.6.0.0.zip";
 
   public void testUpgradeEmptyOldIndex() throws Exception {
     Path oldIndexDir = createTempDir("emptyIndex");
