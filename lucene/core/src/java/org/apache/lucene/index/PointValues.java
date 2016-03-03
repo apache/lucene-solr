@@ -80,10 +80,10 @@ public abstract class PointValues {
    *  to test whether each document is deleted, if necessary. */
   public abstract void intersect(String fieldName, IntersectVisitor visitor) throws IOException;
 
-  /** Returns minimum value for each dimension, packed, or null if no points were indexed */
+  /** Returns minimum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
   public abstract byte[] getMinPackedValue(String fieldName) throws IOException;
 
-  /** Returns maximum value for each dimension, packed, or null if no points were indexed */
+  /** Returns maximum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
   public abstract byte[] getMaxPackedValue(String fieldName) throws IOException;
 
   /** Returns how many dimensions were indexed */
@@ -91,4 +91,10 @@ public abstract class PointValues {
 
   /** Returns the number of bytes per dimension */
   public abstract int getBytesPerDimension(String fieldName) throws IOException;
+
+  /** Returns the total number of indexed points across all documents in this field. */
+  public abstract long size(String fieldName);
+
+  /** Returns the total number of documents that have indexed at least one point for this field. */
+  public abstract int getDocCount(String fieldName);
 }

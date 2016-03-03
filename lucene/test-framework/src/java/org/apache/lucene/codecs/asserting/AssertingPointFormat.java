@@ -31,6 +31,7 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 
@@ -63,7 +64,7 @@ public final class AssertingPointFormat extends PointFormat {
 
   @Override
   public PointReader fieldsReader(SegmentReadState state) throws IOException {
-    return new AssertingPointReader(in.fieldsReader(state));
+    return new AssertingPointReader(state.segmentInfo.maxDoc(), in.fieldsReader(state));
   }
 
   /** Validates in the 1D case that all points are visited in order, and point values are in bounds of the last cell checked */
@@ -105,8 +106,8 @@ public final class AssertingPointFormat extends PointFormat {
 
       // This doc's packed value should be contained in the last cell passed to compare:
       for(int dim=0;dim<numDims;dim++) {
-        assert StringHelper.compare(bytesPerDim, lastMinPackedValue, dim*bytesPerDim, packedValue, dim*bytesPerDim) <= 0: "dim=" + dim + " of " +  numDims;
-        assert StringHelper.compare(bytesPerDim, lastMaxPackedValue, dim*bytesPerDim, packedValue, dim*bytesPerDim) >= 0: "dim=" + dim + " of " +  numDims;
+        assert StringHelper.compare(bytesPerDim, lastMinPackedValue, dim*bytesPerDim, packedValue, dim*bytesPerDim) <= 0: "dim=" + dim + " of " +  numDims + " value=" + new BytesRef(packedValue);
+        assert StringHelper.compare(bytesPerDim, lastMaxPackedValue, dim*bytesPerDim, packedValue, dim*bytesPerDim) >= 0: "dim=" + dim + " of " +  numDims + " value=" + new BytesRef(packedValue);
       }
 
       // TODO: we should assert that this "matches" whatever relation the last call to compare had returned
@@ -145,9 +146,11 @@ public final class AssertingPointFormat extends PointFormat {
   
   static class AssertingPointReader extends PointReader {
     private final PointReader in;
+    private final int maxDoc;
     
-    AssertingPointReader(PointReader in) {
+    AssertingPointReader(int maxDoc, PointReader in) {
       this.in = in;
+      this.maxDoc = maxDoc;
       // do a few simple checks on init
       assert toString() != null;
       assert ramBytesUsed() >= 0;
@@ -187,7 +190,7 @@ public final class AssertingPointFormat extends PointFormat {
     
     @Override
     public PointReader getMergeInstance() throws IOException {
-      return new AssertingPointReader(in.getMergeInstance());
+      return new AssertingPointReader(maxDoc, in.getMergeInstance());
     }
 
     @Override
@@ -197,22 +200,45 @@ public final class AssertingPointFormat extends PointFormat {
 
     @Override
     public byte[] getMinPackedValue(String fieldName) throws IOException {
+      assertStats(fieldName);
       return in.getMinPackedValue(fieldName);
     }
 
     @Override
     public byte[] getMaxPackedValue(String fieldName) throws IOException {
+      assertStats(fieldName);
       return in.getMaxPackedValue(fieldName);
     }
 
     @Override
     public int getNumDimensions(String fieldName) throws IOException {
+      assertStats(fieldName);
       return in.getNumDimensions(fieldName);
     }
 
     @Override
     public int getBytesPerDimension(String fieldName) throws IOException {
+      assertStats(fieldName);
       return in.getBytesPerDimension(fieldName);
+    }
+
+    @Override
+    public long size(String fieldName) {
+      assertStats(fieldName);
+      return in.size(fieldName);
+    }
+
+    @Override
+    public int getDocCount(String fieldName) {
+      assertStats(fieldName);
+      return in.getDocCount(fieldName);
+    }
+
+    private void assertStats(String fieldName) {
+      assert in.size(fieldName) >= 0;
+      assert in.getDocCount(fieldName) >= 0;
+      assert in.getDocCount(fieldName) <= in.size(fieldName);
+      assert in.getDocCount(fieldName) <= maxDoc;
     }
   }
 
