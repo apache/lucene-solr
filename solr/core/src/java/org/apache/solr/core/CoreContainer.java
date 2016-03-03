@@ -805,8 +805,7 @@ public class CoreContainer {
     try {
       MDCLoggingContext.setCore(core);
       if (!SolrIdentifierValidator.validateCoreName(dcore.getName())) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid core: " + dcore.getName()
-            + ". Core names must consist entirely of periods, underscores, and alphanumerics");
+        throw new SolrException(ErrorCode.BAD_REQUEST, SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.CORE, dcore.getName()));
       }
       if (zkSys.getZkController() != null) {
         zkSys.getZkController().preRegister(dcore);
@@ -1010,9 +1009,9 @@ public class CoreContainer {
   }
 
   public void rename(String name, String toName) {
-    if(!SolrIdentifierValidator.validateCoreName(toName)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid core: " + toName
-          + ". Core names must consist entirely of periods, underscores, and alphanumerics");
+    if (!SolrIdentifierValidator.validateCoreName(toName)) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.CORE,
+          toName));
     }
     try (SolrCore core = getCore(name)) {
       if (core != null) {

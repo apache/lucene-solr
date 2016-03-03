@@ -649,7 +649,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid collection"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
-        assertTrue(errorMessage.contains("Collection names must consist entirely of"));
+        assertTrue(errorMessage.contains("collection names must consist entirely of"));
       }
     }
   }
@@ -672,7 +672,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid shard"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
-        assertTrue(errorMessage.contains("Shard names must consist entirely of"));
+        assertTrue(errorMessage.contains("shard names must consist entirely of"));
       }
     }
   }
@@ -693,7 +693,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid alias"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
-        assertTrue(errorMessage.contains("Aliases must consist entirely of"));
+        assertTrue(errorMessage.contains("alias names must consist entirely of"));
       }
     }
   }
@@ -726,7 +726,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid shard"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
-        assertTrue(errorMessage.contains("Shard names must consist entirely of"));
+        assertTrue(errorMessage.contains("shard names must consist entirely of"));
       }
     }
   }
