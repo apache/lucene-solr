@@ -502,9 +502,12 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
         builder.add(terms[i], positions[i]);
       }
       query = builder.build();
-    }
-    if (query instanceof MultiPhraseQuery) {
-      ((MultiPhraseQuery) query).setSlop(slop);
+    } else if (query instanceof MultiPhraseQuery) {
+      MultiPhraseQuery mpq = (MultiPhraseQuery)query;
+      
+      if (slop != mpq.getSlop()) {
+        query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
+      }
     }
 
     return query;

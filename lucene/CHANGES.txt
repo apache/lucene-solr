@@ -122,6 +122,9 @@ API Changes
 * LUCENE-7058: Add getters to various Query implementations (Guillaume Smet via
   Alan Woodward)
 
+* LUCENE-7064: MultiPhraseQuery is now immutable and should be constructed
+  with MultiPhraseQuery.Builder.
+
 Optimizations
 
 * LUCENE-6891: Use prefix coding when writing points in 
