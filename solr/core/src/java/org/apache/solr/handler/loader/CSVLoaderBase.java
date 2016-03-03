@@ -165,7 +165,7 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
     templateAdd.overwrite=params.getBool(OVERWRITE,true);
     templateAdd.commitWithin = params.getInt(UpdateParams.COMMIT_WITHIN, -1);
     
-    strategy = new CSVStrategy(',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true);
+    strategy = new CSVStrategy(',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true, "\n");
     String sep = params.get(SEPARATOR);
     if (sep!=null) {
       if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid separator:'"+sep+"'");
@@ -274,7 +274,8 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
         String escStr = params.getFieldParam(fname,ESCAPE);
         char fesc = escStr==null || escStr.length()==0 ? CSVStrategy.ESCAPE_DISABLED : escStr.charAt(0);
 
-        CSVStrategy fstrat = new CSVStrategy(fsep,fenc,CSVStrategy.COMMENTS_DISABLED,fesc, false, false, false, false);
+        CSVStrategy fstrat = new CSVStrategy
+            (fsep, fenc, CSVStrategy.COMMENTS_DISABLED, fesc, false, false, false, false, "\n");
         adders[i] = new CSVLoaderBase.FieldSplitter(fstrat, adders[i]);
       }
     }

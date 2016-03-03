@@ -83,7 +83,8 @@ public class CSVPrinterTest extends TestCase {
     doRandom(iter);
 
     // Strategy for MySQL
-    strategy = new CSVStrategy('\t', CSVStrategy.ENCAPSULATOR_DISABLED, CSVStrategy.COMMENTS_DISABLED,'\\',false, false, false, false);
+    strategy = new CSVStrategy
+        ('\t', CSVStrategy.ENCAPSULATOR_DISABLED, CSVStrategy.COMMENTS_DISABLED,'\\',false, false, false, false, "\n");
     doRandom(iter);
   }
 
