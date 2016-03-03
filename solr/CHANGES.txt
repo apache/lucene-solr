@@ -31,6 +31,8 @@ Bug Fixes
 
 Optimizations
 ----------------------
+* SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
+  (Scott Blum via shalin)
 
 Other Changes
 ----------------------
