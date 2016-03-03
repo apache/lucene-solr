@@ -51,6 +51,8 @@ class SimpleTextPointWriter extends PointWriter {
   final static BytesRef FIELD_FP      = new BytesRef("  field fp ");
   final static BytesRef MIN_VALUE     = new BytesRef("min value ");
   final static BytesRef MAX_VALUE     = new BytesRef("max value ");
+  final static BytesRef POINT_COUNT   = new BytesRef("point count ");
+  final static BytesRef DOC_COUNT     = new BytesRef("doc count ");
 
   private IndexOutput dataOut;
   final BytesRefBuilder scratch = new BytesRefBuilder();
@@ -67,12 +69,13 @@ class SimpleTextPointWriter extends PointWriter {
   public void writeField(FieldInfo fieldInfo, PointReader values) throws IOException {
 
     // We use the normal BKDWriter, but subclass to customize how it writes the index and blocks to disk:
-    try (BKDWriter writer = new BKDWriter(writeState.directory,
-                                     writeState.segmentInfo.name,
-                                     fieldInfo.getPointDimensionCount(),
-                                     fieldInfo.getPointNumBytes(),
-                                     BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
-                                     BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP) {
+    try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
+                                          writeState.directory,
+                                          writeState.segmentInfo.name,
+                                          fieldInfo.getPointDimensionCount(),
+                                          fieldInfo.getPointNumBytes(),
+                                          BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
+                                          BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP) {
 
         @Override
         protected void writeIndex(IndexOutput out, long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
@@ -100,6 +103,14 @@ class SimpleTextPointWriter extends PointWriter {
           write(out, MAX_VALUE);
           br = new BytesRef(maxPackedValue, 0, maxPackedValue.length);
           write(out, br.toString());
+          newline(out);
+
+          write(out, POINT_COUNT);
+          writeLong(out, pointCount);
+          newline(out);
+
+          write(out, DOC_COUNT);
+          writeInt(out, docsSeen.cardinality());
           newline(out);
 
           for(int i=0;i<leafBlockFPs.length;i++) {
