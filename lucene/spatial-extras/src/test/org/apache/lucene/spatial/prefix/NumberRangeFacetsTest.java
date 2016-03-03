@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.TermsQuery;

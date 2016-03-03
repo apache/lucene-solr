@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.search.function.distance;
-import com.spatial4j.core.distance.DistanceUtils;
+import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -26,7 +26,7 @@ import org.apache.lucene.search.IndexSearcher;
 import java.io.IOException;
 import java.util.Map;
 
-import static com.spatial4j.core.distance.DistanceUtils.DEGREES_TO_RADIANS;
+import static org.locationtech.spatial4j.distance.DistanceUtils.DEGREES_TO_RADIANS;
 
 /**
  * Haversine function with one point constant

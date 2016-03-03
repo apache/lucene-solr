@@ -18,11 +18,11 @@ package org.apache.solr.util;
 
 import java.text.ParseException;
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.exception.InvalidShapeException;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.exception.InvalidShapeException;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
 import org.apache.solr.common.SolrException;
 
 /** Utility methods pertaining to spatial. */
@@ -32,7 +32,7 @@ public class SpatialUtils {
 
   /**
    * Parses a 'geom' parameter (might also be used to parse shapes for indexing). {@code geomStr} can either be WKT or
-   * a rectangle-range syntax (see {@link #parseRectangle(String, com.spatial4j.core.context.SpatialContext)}.
+   * a rectangle-range syntax (see {@link #parseRectangle(String, org.locationtech.spatial4j.context.SpatialContext)}.
    */
   public static Shape parseGeomSolrException(String geomStr, SpatialContext ctx) {
     if (geomStr.length() == 0) {
@@ -100,7 +100,7 @@ public class SpatialUtils {
     return idx;
   }
 
-  /** Calls {@link #parsePoint(String, com.spatial4j.core.context.SpatialContext)} and wraps
+  /** Calls {@link #parsePoint(String, org.locationtech.spatial4j.context.SpatialContext)} and wraps
    * the exception with {@link org.apache.solr.common.SolrException} with a helpful message. */
   public static Point parsePointSolrException(String externalVal, SpatialContext ctx) throws SolrException {
     try {
@@ -116,7 +116,7 @@ public class SpatialUtils {
   /**
    * Parses {@code str} in the format of '[minPoint TO maxPoint]' where {@code minPoint} is the lower left corner
    * and maxPoint is the upper-right corner of the bounding box.  Both corners may optionally be wrapped with a quote
-   * and then it's parsed via {@link #parsePoint(String, com.spatial4j.core.context.SpatialContext)}.
+   * and then it's parsed via {@link #parsePoint(String, org.locationtech.spatial4j.context.SpatialContext)}.
    * @param str Non-null; may *not* have leading or trailing spaces
    * @param ctx Non-null
    * @return the Rectangle
@@ -140,7 +140,7 @@ public class SpatialUtils {
   }
 
   /**
-   * Calls {@link #parseRectangle(String, com.spatial4j.core.context.SpatialContext)} and wraps the exception with
+   * Calls {@link #parseRectangle(String, org.locationtech.spatial4j.context.SpatialContext)} and wraps the exception with
    * {@link org.apache.solr.common.SolrException} with a helpful message.
    */
   public static Rectangle parseRectangeSolrException(String externalVal, SpatialContext ctx) throws SolrException {

@@ -19,12 +19,12 @@ package org.apache.lucene.spatial.spatial4j;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.spatial4j.core.TestLog;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.shape.Circle;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.RectIntersectionTestHelper;
+import org.locationtech.spatial4j.TestLog;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.shape.Circle;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.RectIntersectionTestHelper;
 import org.apache.lucene.geo3d.LatLonBounds;
 import org.apache.lucene.geo3d.GeoBBox;
 import org.apache.lucene.geo3d.GeoBBoxFactory;
@@ -37,7 +37,7 @@ import org.apache.lucene.geo3d.PlanetModel;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static com.spatial4j.core.distance.DistanceUtils.DEGREES_TO_RADIANS;
+import static org.locationtech.spatial4j.distance.DistanceUtils.DEGREES_TO_RADIANS;
 
 public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTestCase {
   protected final static double RADIANS_PER_DEGREE = Math.PI/180.0;
@@ -110,7 +110,6 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
     }
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6867")
   @Test
   public void testGeoCircleRect() {
     new Geo3dRectIntersectionTestHelper(ctx) {
@@ -133,7 +132,6 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
     }.testRelateWithRectangle();
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6867")
   @Test
   public void testGeoBBoxRect() {
     new Geo3dRectIntersectionTestHelper(ctx) {
@@ -168,7 +166,6 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
     }.testRelateWithRectangle();
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6867")
   @Test
   public void testGeoPolygonRect() {
     new Geo3dRectIntersectionTestHelper(ctx) {
@@ -212,7 +209,6 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
     }.testRelateWithRectangle();
   }
 
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/LUCENE-6867")
   @Test
   public void testGeoPathRect() {
     new Geo3dRectIntersectionTestHelper(ctx) {

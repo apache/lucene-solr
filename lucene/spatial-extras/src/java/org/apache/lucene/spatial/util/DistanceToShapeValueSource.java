@@ -29,15 +29,15 @@ import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.distance.DistanceCalculator;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.distance.DistanceCalculator;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * The distance from a provided Point to a Point retrieved from a ValueSource via
  * {@link org.apache.lucene.queries.function.FunctionValues#objectVal(int)}. The distance
- * is calculated via a {@link com.spatial4j.core.distance.DistanceCalculator}.
+ * is calculated via a {@link org.locationtech.spatial4j.distance.DistanceCalculator}.
  *
  * @lucene.experimental
  */
