@@ -19,6 +19,9 @@ See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 ==================  7.0.0 ==================
 (No Changes)
 
+==================  6.1.0 ==================
+(No Changes)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
