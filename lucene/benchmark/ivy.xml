@@ -26,7 +26,7 @@
     <dependency org="xerces" name="xercesImpl" rev="${/xerces/xercesImpl}" conf="compile"/>
     <dependency org="net.sourceforge.nekohtml" name="nekohtml" rev="${/net.sourceforge.nekohtml/nekohtml}" conf="compile"/>
     <dependency org="com.ibm.icu" name="icu4j" rev="${/com.ibm.icu/icu4j}" conf="compile"/>
-    <dependency org="com.spatial4j" name="spatial4j" rev="${/com.spatial4j/spatial4j}" conf="compile"/>
+    <dependency org="org.locationtech.spatial4j" name="spatial4j" rev="${/org.locationtech.spatial4j/spatial4j}" conf="compile"/>
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>
 </ivy-module>

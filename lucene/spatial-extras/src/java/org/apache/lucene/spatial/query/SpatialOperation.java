@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.spatial.query;
 
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.shape.SpatialRelation;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.SpatialRelation;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -30,7 +30,7 @@ import java.util.Map;
 /**
  * A predicate that compares a stored geometry to a supplied geometry. It's enum-like. For more
  * explanation of each predicate, consider looking at the source implementation
- * of {@link #evaluate(com.spatial4j.core.shape.Shape, com.spatial4j.core.shape.Shape)}. It's important
+ * of {@link #evaluate(org.locationtech.spatial4j.shape.Shape, org.locationtech.spatial4j.shape.Shape)}. It's important
  * to be aware that Lucene-spatial makes no distinction of shape boundaries, unlike many standardized
  * definitions. Nor does it make dimensional distinctions (e.g. line vs polygon).
  * You can lookup a predicate by "Covers" or "Contains", for example, and you will get the

@@ -113,6 +113,9 @@ API Changes
   comparator in ArrayUtil by Java 8's Comparator#naturalOrder().
   (Mike McCandless, Uwe Schindler, Robert Muir)
 
+* LUCENE-7060: Update Spatial4j to 0.6.  The package com.spatial4j.core
+  is now org.locationtech.spatial4j. (David Smiley)
+
 Optimizations
 
 * LUCENE-6891: Use prefix coding when writing points in 

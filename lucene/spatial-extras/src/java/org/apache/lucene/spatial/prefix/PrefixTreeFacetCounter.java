@@ -18,7 +18,7 @@ package org.apache.lucene.spatial.prefix;
 
 import java.io.IOException;
 
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -37,9 +37,9 @@ import org.apache.lucene.util.Bits;
  * of double-counting the document in the facet results.  Since each shape is independently turned into grid cells at
  * a resolution chosen by the shape's size, it's possible they will be indexed at different resolutions.  This means
  * the document could be present in BOTH the postings for a cell in both its prefix and leaf variants.  To avoid this,
- * use a single valued field with a {@link com.spatial4j.core.shape.ShapeCollection} (or WKT equivalent).  Or
+ * use a single valued field with a {@link org.locationtech.spatial4j.shape.ShapeCollection} (or WKT equivalent).  Or
  * calculate a suitable level/distErr to index both and call
- * {@link org.apache.lucene.spatial.prefix.PrefixTreeStrategy#createIndexableFields(com.spatial4j.core.shape.Shape, int)}
+ * {@link org.apache.lucene.spatial.prefix.PrefixTreeStrategy#createIndexableFields(org.locationtech.spatial4j.shape.Shape, int)}
  * with the same value for all shapes for a given document/field.
  *
  * @lucene.experimental
