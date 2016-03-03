@@ -282,18 +282,6 @@ public class SimpleFacets {
   }
 
   /**
-   * Looks at various Params to determining if any simple Facet Constraint count
-   * computations are desired.
-   *
-   * @return a NamedList of Facet Count info or null
-   * @deprecated use {@link org.apache.solr.handler.component.FacetComponent#getFacetCounts(SimpleFacets)} instead
-   */
-  @Deprecated
-  public NamedList<Object> getFacetCounts() {
-    return FacetComponent.getFacetCounts(this);
-  }
-
-  /**
    * Returns a list of facet counts for each of the facet queries
    * specified in the params
    *

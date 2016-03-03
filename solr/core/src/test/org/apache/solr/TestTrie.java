@@ -249,11 +249,7 @@ public class TestTrie extends SolrTestCaseJ4 {
             "facet.field", "tint",
             "facet.field", "tlong",
             "facet.field", "tfloat",
-            "facet.field", "tdouble",
-            "facet.date", "tdate",
-            "facet.date.start", "NOW/DAY",
-            "facet.date.end", "NOW/DAY+6DAYS",
-            "facet.date.gap", "+1DAY");
+            "facet.field", "tdouble");
     testFacetField(req, "tint", "0", "2");
     testFacetField(req, "tint", "5", "1");
     testFacetField(req, "tlong", String.valueOf(Integer.MAX_VALUE), "2");
@@ -262,9 +258,6 @@ public class TestTrie extends SolrTestCaseJ4 {
     testFacetField(req, "tfloat", String.valueOf(5*5*31.11f), "1");
     testFacetField(req, "tdouble", String.valueOf(2.33d), "2");
     testFacetField(req, "tdouble", String.valueOf(5*2.33d), "1");
-
-    testFacetDate(req, "tdate", format.format(dmp.parseMath("/DAY")), "4");
-    testFacetDate(req, "tdate", format.format(dmp.parseMath("/DAY+5DAYS")), "2");
   }
 
   private void checkPrecisionSteps(String fieldType) {
@@ -277,11 +270,6 @@ public class TestTrie extends SolrTestCaseJ4 {
 
   private void testFacetField(SolrQueryRequest req, String field, String value, String count) {
     String xpath = "//lst[@name='facet_fields']/lst[@name='" + field + "']/int[@name='" + value + "'][.='" + count + "']";
-    assertQ(req, xpath);
-  }
-
-  private void testFacetDate(SolrQueryRequest req, String field, String value, String count)  {
-    String xpath = "//lst[@name='facet_dates']/lst[@name='" + field + "']/int[@name='" + value + "'][.='" + count + "']";
     assertQ(req, xpath);
   }
 }

@@ -49,7 +49,7 @@ import org.junit.Test;
 public class NoOpResponseParserTest extends SolrJettyTestBase {
 
   private static InputStream getResponse() throws IOException {
-    return new SolrResourceLoader().openResource("solrj/sampleDateFacetResponse.xml");
+    return new SolrResourceLoader().openResource("solrj/sampleRangeFacetResponse.xml");
   }
 
   @BeforeClass
