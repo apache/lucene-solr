@@ -384,6 +384,8 @@ Other Changes
 
 * SOLR-8725: Allow hyphen in collection, core, shard, and alias name as the non-first character (Anshum Gupta)
 
+* SOLR-7010: Remove facet.date client functionality. (Steve Rowe)
+
 ==================  5.5.1 ==================
 
 Bug Fixes
