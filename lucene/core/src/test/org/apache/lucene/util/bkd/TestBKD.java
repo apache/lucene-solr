@@ -693,7 +693,6 @@ public class TestBKD extends LuceneTestCase {
       long indexFP;
 
       if (toMerge != null) {
-        System.out.println("merge " + toMerge.size());
         if (segCount > 0) {
           docIDBases.add(lastDocIDBase);
           toMerge.add(w.finish(out));
