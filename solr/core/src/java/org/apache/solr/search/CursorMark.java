@@ -62,11 +62,6 @@ public final class CursorMark {
   private List<Object> values = null;
 
   /**
-   * for serializing this CursorMark as a String
-   */
-  private final JavaBinCodec codec = new JavaBinCodec();
-
-  /**
    * Generates an empty CursorMark bound for use with the 
    * specified schema and {@link SortSpec}.
    *
@@ -190,7 +185,7 @@ public final class CursorMark {
       final byte[] rawData = Base64.base64ToByteArray(serialized);
       ByteArrayInputStream in = new ByteArrayInputStream(rawData);
       try {
-        pieces = (List<Object>) codec.unmarshal(in);
+        pieces = (List<Object>) new JavaBinCodec().unmarshal(in);
         boolean b = false;
         for (Object o : pieces) {
           if (o instanceof BytesRefBuilder || o instanceof BytesRef || o instanceof String) {
@@ -199,7 +194,7 @@ public final class CursorMark {
         }
         if (b) {
           in.reset();
-          pieces = (List<Object>) codec.unmarshal(in);
+          pieces = (List<Object>) new JavaBinCodec().unmarshal(in);
         }
       } finally {
         in.close();
@@ -267,7 +262,7 @@ public final class CursorMark {
     try {
       ByteArrayOutputStream out = new ByteArrayOutputStream(256);
       try {
-        codec.marshal(marshalledValues, out);
+        new JavaBinCodec().marshal(marshalledValues, out);
         byte[] rawData = out.toByteArray();
         return Base64.byteArrayToBase64(rawData, 0, rawData.length);
       } finally {
