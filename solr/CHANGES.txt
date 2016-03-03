@@ -20,7 +20,20 @@ See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 (No Changes)
 
 ==================  6.1.0 ==================
-(No Changes)
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+Bug Fixes
+----------------------
+
+Optimizations
+----------------------
+
+Other Changes
+----------------------
 
 ==================  6.0.0 ==================
 
