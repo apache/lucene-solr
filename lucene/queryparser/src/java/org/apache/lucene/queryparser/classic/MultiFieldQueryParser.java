@@ -134,7 +134,11 @@ public class MultiFieldQueryParser extends QueryParser
       }
       q = builder.build();
     } else if (q instanceof MultiPhraseQuery) {
-      ((MultiPhraseQuery) q).setSlop(slop);
+      MultiPhraseQuery mpq = (MultiPhraseQuery)q;
+      
+      if (slop != mpq.getSlop()) {
+        q = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
+      }
     }
     return q;
   }
