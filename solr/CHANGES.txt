@@ -379,6 +379,8 @@ Other Changes
 
 * SOLR-8778: Deprecate CSVStrategy's setters, and make its pre-configured strategies immutable. (Steve Rowe)
 
+* SOLR-7010: Remove facet.date client functionality. (Steve Rowe)
+
 ==================  5.5.1 ==================
 
 Bug Fixes

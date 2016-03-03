@@ -439,7 +439,6 @@ In your terminal, you'll see:
             "uk",1,
             "viewsonic",1,
             "samsung",0]},
-        "facet_dates":{},
         "facet_ranges":{},
         "facet_intervals":{}}}
 
@@ -482,7 +481,6 @@ In your terminal you will see:
       "facet_counts":{
         "facet_queries":{},
         "facet_fields":{},
-        "facet_dates":{},
         "facet_ranges":{
           "price":{
             "counts":[

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">0</int>
+    <lst name="params">
+      <str name="facet">true</str>
+      <str name="q">*:*</str>
+      <str name="rows">0</str>
+    </lst>
+  </lst>
+  <result name="response" numFound="16" start="0"/>
+  <lst name="facet_counts">
+    <lst name="facet_queries"/>
+    <lst name="facet_fields"/>
+    <lst name="facet_ranges">
+      <lst name="price">
+        <lst name="counts">
+          <int name="0.0">3</int>
+          <int name="1.0">0</int>
+          <int name="2.0">0</int>
+          <int name="3.0">0</int>
+          <int name="4.0">0</int>
+        </lst>
+        <float name="gap">1.0</float>
+        <float name="start">0.0</float>
+        <float name="end">5.0</float>
+      </lst>
+      <lst name="manufacturedate_dt">
+        <lst name="counts">
+          <int name="2005-02-13T15:26:37Z">4</int>
+          <int name="2006-02-13T15:26:37Z">7</int>
+          <int name="2007-02-13T15:26:37Z">0</int>
+        </lst>
+        <str name="gap">+1YEAR</str>
+        <date name="start">2005-02-13T15:26:37Z</date>
+        <date name="end">2008-02-13T15:26:37Z</date>
+        <int name="before">90</int>
+        <int name="after">1</int>
+        <int name="between">11</int>
+      </lst>
+    </lst>
+  </lst>
+</response>
