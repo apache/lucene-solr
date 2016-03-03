@@ -179,7 +179,8 @@ class CSVWriter extends TextResponseWriter {
   public void writeResponse() throws IOException {
     SolrParams params = req.getParams();
 
-    strategy = new CSVStrategy(',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true);
+    strategy = new CSVStrategy
+        (',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true, "\n");
     CSVStrategy strat = strategy;
 
     String sep = params.get(CSV_SEPARATOR);
@@ -218,7 +219,8 @@ class CSVWriter extends TextResponseWriter {
     printer = new CSVPrinter(writer, strategy);
     
 
-    CSVStrategy mvStrategy = new CSVStrategy(strategy.getDelimiter(), CSVStrategy.ENCAPSULATOR_DISABLED, CSVStrategy.COMMENTS_DISABLED, '\\', false, false, false, false);
+    CSVStrategy mvStrategy = new CSVStrategy(strategy.getDelimiter(), CSVStrategy.ENCAPSULATOR_DISABLED, 
+        CSVStrategy.COMMENTS_DISABLED, '\\', false, false, false, false, "\n");
     strat = mvStrategy;
 
     sep = params.get(MV_SEPARATOR);
