@@ -380,6 +380,8 @@ Other Changes
 
 * SOLR-8780: Remove unused OverseerCollectionMessageHandler#getClusterStatus method. (Varun Thacker)
 
+* SOLR-8778: Deprecate CSVStrategy's setters, and make its pre-configured strategies immutable. (Steve Rowe)
+
 ==================  5.5.1 ==================
 
 Bug Fixes
