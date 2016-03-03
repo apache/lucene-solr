@@ -23,11 +23,15 @@ import java.util.regex.Pattern;
  * Ensures that provided identifiers align with Solr's recommendations/requirements for choosing
  * collection, core, etc identifiers.
  *  
- * Identifiers are allowed to contain underscores, periods, and alphanumeric characters. 
+ * Identifiers are allowed to contain underscores, periods, hyphens, and alphanumeric characters.
  */
 public class SolrIdentifierValidator {
-  final static Pattern identifierPattern = Pattern.compile("^[\\._A-Za-z0-9]*$");
-  
+  final static Pattern identifierPattern = Pattern.compile("^(?!\\-)[\\._A-Za-z0-9\\-]*$");
+
+  public enum IdentifierType {
+    SHARD, COLLECTION, CORE, ALIAS
+  }
+
   public static boolean validateShardName(String shardName) {
     return validateIdentifier(shardName);
   }
@@ -45,6 +49,12 @@ public class SolrIdentifierValidator {
       return false;
     }
     return true;
+  }
+
+  public static String getIdentifierMessage(IdentifierType identifierType, String name) {
+      return "Invalid " + identifierType.toString().toLowerCase() + ": " + name + ". " + identifierType.toString().toLowerCase()
+          + " names must consist entirely of periods, underscores, hyphens, and alphanumerics";
+
   }
 }
 
