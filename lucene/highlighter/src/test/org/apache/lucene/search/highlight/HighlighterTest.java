@@ -793,29 +793,29 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
 
   public void testQueryScorerMultiPhraseQueryHighlighting() throws Exception {
-    MultiPhraseQuery mpq = new MultiPhraseQuery();
+    MultiPhraseQuery.Builder mpqb = new MultiPhraseQuery.Builder();
 
-    mpq.add(new Term[] { new Term(FIELD_NAME, "wordx"), new Term(FIELD_NAME, "wordb") });
-    mpq.add(new Term(FIELD_NAME, "wordy"));
+    mpqb.add(new Term[] { new Term(FIELD_NAME, "wordx"), new Term(FIELD_NAME, "wordb") });
+    mpqb.add(new Term(FIELD_NAME, "wordy"));
 
-    doSearching(mpq);
+    doSearching(mpqb.build());
 
     final int maxNumFragmentsRequired = 2;
     assertExpectedHighlightCount(maxNumFragmentsRequired, 6);
   }
 
   public void testQueryScorerMultiPhraseQueryHighlightingWithGap() throws Exception {
-    MultiPhraseQuery mpq = new MultiPhraseQuery();
+    MultiPhraseQuery.Builder mpqb = new MultiPhraseQuery.Builder();
 
     /*
      * The toString of MultiPhraseQuery doesn't work so well with these
      * out-of-order additions, but the Query itself seems to match accurately.
      */
 
-    mpq.add(new Term[] { new Term(FIELD_NAME, "wordz") }, 2);
-    mpq.add(new Term[] { new Term(FIELD_NAME, "wordx") }, 0);
+    mpqb.add(new Term[] { new Term(FIELD_NAME, "wordz") }, 2);
+    mpqb.add(new Term[] { new Term(FIELD_NAME, "wordx") }, 0);
 
-    doSearching(mpq);
+    doSearching(mpqb.build());
 
     final int maxNumFragmentsRequired = 1;
     final int expectedHighlights = 2;

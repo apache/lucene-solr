@@ -175,9 +175,9 @@ public class TestPositionIncrement extends LuceneTestCase {
 
     // multi-phrase query should succed for non existing searched term
     // because there exist another searched terms in the same searched position. 
-    MultiPhraseQuery mq = new MultiPhraseQuery();
-    mq.add(new Term[]{new Term("field", "3"),new Term("field", "9")},0);
-    hits = searcher.search(mq, 1000).scoreDocs;
+    MultiPhraseQuery.Builder mqb = new MultiPhraseQuery.Builder();
+    mqb.add(new Term[]{new Term("field", "3"),new Term("field", "9")},0);
+    hits = searcher.search(mqb.build(), 1000).scoreDocs;
     assertEquals(1, hits.length);
 
     q = new PhraseQuery("field", "2", "4");

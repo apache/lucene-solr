@@ -522,15 +522,15 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
           }
         }
         String string = sb.toString();
-        MultiPhraseQuery mpq = new MultiPhraseQuery();
+        MultiPhraseQuery.Builder mpqb = new MultiPhraseQuery.Builder();
         for(int j=0;j<string.length();j++) {
           if (string.charAt(j) == '*') {
-            mpq.add(allTerms);
+            mpqb.add(allTerms);
           } else {
-            mpq.add(new Term("field", ""+string.charAt(j)));
+            mpqb.add(new Term("field", ""+string.charAt(j)));
           }
         }
-        bq.add(mpq, BooleanClause.Occur.SHOULD);
+        bq.add(mpqb.build(), BooleanClause.Occur.SHOULD);
         strings.add(new BytesRef(string));
       }
 
