@@ -16,14 +16,14 @@
  */
 package org.apache.lucene.spatial.prefix.tree;
 
-import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.shape.SpatialRelation;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.SpatialRelation;
 import org.apache.lucene.util.BytesRef;
 
 /**
  * Represents a grid cell. Cell instances are generally very transient and may be re-used
  * internally.  To get an instance, you could start with {@link SpatialPrefixTree#getWorldCell()}.
- * And from there you could either traverse down the tree with {@link #getNextLevelCells(com.spatial4j.core.shape.Shape)},
+ * And from there you could either traverse down the tree with {@link #getNextLevelCells(org.locationtech.spatial4j.shape.Shape)},
  * or you could read an indexed term via {@link SpatialPrefixTree#readCell(org.apache.lucene.util.BytesRef,Cell)}.
  * When a cell is read from a term, it is comprised of just the base bytes plus optionally a leaf flag.
  *

@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.spatial.query;
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.exception.InvalidShapeException;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.exception.InvalidShapeException;
+import org.locationtech.spatial4j.shape.Shape;
 
 import java.text.ParseException;
 import java.util.HashMap;
@@ -29,8 +29,8 @@ import java.util.StringTokenizer;
 /**
  * Parses a string that usually looks like "OPERATION(SHAPE)" into a {@link SpatialArgs}
  * object. The set of operations supported are defined in {@link SpatialOperation}, such
- * as "Intersects" being a common one. The shape portion is defined by WKT {@link com.spatial4j.core.io.WktShapeParser},
- * but it can be overridden/customized via {@link #parseShape(String, com.spatial4j.core.context.SpatialContext)}.
+ * as "Intersects" being a common one. The shape portion is defined by WKT {@link org.locationtech.spatial4j.io.WktShapeParser},
+ * but it can be overridden/customized via {@link #parseShape(String, org.locationtech.spatial4j.context.SpatialContext)}.
  * There are some optional name-value pair parameters that follow the closing parenthesis.  Example:
  * <pre>
  *   Intersects(ENVELOPE(-10,-8,22,20)) distErrPct=0.025

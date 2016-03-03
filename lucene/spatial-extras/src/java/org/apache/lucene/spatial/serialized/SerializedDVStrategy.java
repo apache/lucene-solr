@@ -24,10 +24,10 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.util.Map;
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.io.BinaryCodec;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.io.BinaryCodec;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.BinaryDocValues;
@@ -55,7 +55,7 @@ import org.apache.lucene.util.BytesRefBuilder;
  * SpatialStrategy that is approximated (like {@link org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy})
  * to add precision or eventually make more specific / advanced calculations on the per-document
  * geometry.
- * The serialization uses Spatial4j's {@link com.spatial4j.core.io.BinaryCodec}.
+ * The serialization uses Spatial4j's {@link org.locationtech.spatial4j.io.BinaryCodec}.
  *
  * @lucene.experimental
  */

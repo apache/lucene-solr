@@ -22,8 +22,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Shape;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -36,7 +36,7 @@ import org.apache.lucene.search.IndexSearcher;
  * The area of a Shape retrieved from a ValueSource via
  * {@link org.apache.lucene.queries.function.FunctionValues#objectVal(int)}.
  *
- * @see Shape#getArea(com.spatial4j.core.context.SpatialContext)
+ * @see Shape#getArea(org.locationtech.spatial4j.context.SpatialContext)
  *
  * @lucene.experimental
  */

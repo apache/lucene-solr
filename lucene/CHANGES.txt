@@ -6,6 +6,9 @@ http://s.apache.org/luceneversions
 ======================= Lucene 7.0.0 =======================
 (No Changes)
 
+======================= Lucene 6.1.0 =======================
+(No Changes)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
@@ -112,6 +115,9 @@ API Changes
   This also simplifies API of BytesRefHash. It also replaces the natural
   comparator in ArrayUtil by Java 8's Comparator#naturalOrder().
   (Mike McCandless, Uwe Schindler, Robert Muir)
+
+* LUCENE-7060: Update Spatial4j to 0.6.  The package com.spatial4j.core
+  is now org.locationtech.spatial4j. (David Smiley)
 
 Optimizations
 
