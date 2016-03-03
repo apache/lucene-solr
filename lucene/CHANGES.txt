@@ -119,6 +119,9 @@ API Changes
 * LUCENE-7060: Update Spatial4j to 0.6.  The package com.spatial4j.core
   is now org.locationtech.spatial4j. (David Smiley)
 
+* LUCENE-7058: Add getters to various Query implementations (Guillaume Smet via
+  Alan Woodward)
+
 Optimizations
 
 * LUCENE-6891: Use prefix coding when writing points in 

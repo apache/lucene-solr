@@ -147,6 +147,22 @@ final class LatLonPointDistanceQuery extends Query {
     };
   }
 
+  public String getField() {
+    return field;
+  }
+
+  public double getLatitude() {
+    return latitude;
+  }
+
+  public double getLongitude() {
+    return longitude;
+  }
+
+  public double getRadiusMeters() {
+    return radiusMeters;
+  }
+
   @Override
   public int hashCode() {
     final int prime = 31;

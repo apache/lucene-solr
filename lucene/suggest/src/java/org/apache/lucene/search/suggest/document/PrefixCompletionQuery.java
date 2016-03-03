@@ -70,4 +70,11 @@ public class PrefixCompletionQuery extends CompletionQuery {
     CompletionTokenStream stream = (CompletionTokenStream) analyzer.tokenStream(getField(), getTerm().text());
     return new CompletionWeight(this, stream.toAutomaton());
   }
+
+  /**
+   * Gets the analyzer used to analyze the prefix.
+   */
+  public Analyzer getAnalyzer() {
+    return analyzer;
+  }
 }

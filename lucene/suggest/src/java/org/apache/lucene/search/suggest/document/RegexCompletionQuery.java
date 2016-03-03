@@ -91,4 +91,19 @@ public class RegexCompletionQuery extends CompletionQuery {
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     return new CompletionWeight(this, new RegExp(getTerm().text(), flags).toAutomaton(maxDeterminizedStates));
   }
+
+  /**
+   * Get the regex flags
+   */
+  public int getFlags() {
+    return flags;
+  }
+
+  /**
+   * Get the maximum number of states permitted in the determinized automaton
+   */
+  public int getMaxDeterminizedStates() {
+    return maxDeterminizedStates;
+  }
+
 }

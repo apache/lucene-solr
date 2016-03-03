@@ -38,6 +38,10 @@ public final class FieldValueQuery extends Query {
     this.field = Objects.requireNonNull(field);
   }
 
+  public String getField() {
+    return field;
+  }
+
   @Override
   public boolean equals(Object obj) {
     if (super.equals(obj) == false) {

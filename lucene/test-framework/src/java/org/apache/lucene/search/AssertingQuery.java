@@ -62,6 +62,14 @@ public final class AssertingQuery extends Query {
     return -in.hashCode();
   }
 
+  public Random getRandom() {
+    return random;
+  }
+
+  public Query getIn() {
+    return in;
+  }
+
   @Override
   public Query rewrite(IndexReader reader) throws IOException {
     final Query rewritten = in.rewrite(reader);

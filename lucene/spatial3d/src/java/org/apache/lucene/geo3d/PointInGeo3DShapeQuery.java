@@ -161,6 +161,18 @@ class PointInGeo3DShapeQuery extends Query {
     };
   }
 
+  public String getField() {
+    return field;
+  }
+
+  public PlanetModel getPlanetModel() {
+    return planetModel;
+  }
+
+  public GeoShape getShape() {
+    return shape;
+  }
+
   @Override
   @SuppressWarnings({"unchecked","rawtypes"})
   public boolean equals(Object o) {

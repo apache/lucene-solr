@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -67,6 +68,10 @@ public final class SynonymQuery extends Query {
     Arrays.sort(this.terms);
   }
 
+  public List<Term> getTerms() {
+    return Collections.unmodifiableList(Arrays.asList(terms));
+  }
+  
   @Override
   public String toString(String field) {
     StringBuilder builder = new StringBuilder("Synonym(");

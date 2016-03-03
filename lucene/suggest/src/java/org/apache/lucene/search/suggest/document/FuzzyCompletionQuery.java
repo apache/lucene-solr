@@ -196,6 +196,48 @@ public class FuzzyCompletionQuery extends PrefixCompletionQuery {
     }
   }
 
+  /**
+   * Get the maximum edit distance for fuzzy matches
+   */
+  public int getMaxEdits() {
+    return maxEdits;
+  }
+
+  /**
+   * Return whether transpositions count as a single edit
+   */
+  public boolean isTranspositions() {
+    return transpositions;
+  }
+
+  /**
+   * Get the length of a prefix where no edits are permitted
+   */
+  public int getNonFuzzyPrefix() {
+    return nonFuzzyPrefix;
+  }
+
+  /**
+   * Get the minimum length of a term considered for matching
+   */
+  public int getMinFuzzyLength() {
+    return minFuzzyLength;
+  }
+
+  /**
+   * Return true if lengths are measured in unicode code-points rather than bytes
+   */
+  public boolean isUnicodeAware() {
+    return unicodeAware;
+  }
+
+  /**
+   * Get the maximum number of determinized states permitted
+   */
+  public int getMaxDeterminizedStates() {
+    return maxDeterminizedStates;
+  }
+
   @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();

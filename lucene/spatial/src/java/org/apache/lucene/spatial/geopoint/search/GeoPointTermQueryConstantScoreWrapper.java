@@ -54,6 +54,13 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointMultiTermQu
     this.query = query;
   }
 
+  /**
+   * Returns the encapsulated query.
+   */
+  public Q getQuery() {
+    return query;
+  }
+
   @Override
   public String toString(String field) {
     return query.toString();

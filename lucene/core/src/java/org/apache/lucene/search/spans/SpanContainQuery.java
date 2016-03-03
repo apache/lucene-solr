@@ -47,6 +47,14 @@ abstract class SpanContainQuery extends SpanQuery implements Cloneable {
 
   @Override
   public String getField() { return big.getField(); }
+  
+  public SpanQuery getBig() {
+    return big;
+  }
+
+  public SpanQuery getLittle() {
+    return little;
+  }
 
   public abstract class SpanContainWeight extends SpanWeight {
 

@@ -75,6 +75,14 @@ public class DocValuesNumbersQuery extends Query {
     return 31 * super.hashCode() + Objects.hash(field, numbers);
   }
 
+  public String getField() {
+    return field;
+  }
+
+  public Set<Long> getNumbers() {
+    return numbers;
+  }
+
   @Override
   public String toString(String defaultField) {
     StringBuilder sb = new StringBuilder();

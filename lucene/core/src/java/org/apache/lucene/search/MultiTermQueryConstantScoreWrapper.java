@@ -104,6 +104,9 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
     return 31 * super.hashCode() + query.hashCode();
   }
 
+  /** Returns the encapsulated query */
+  public Q getQuery() { return query; }
+  
   /** Returns the field name for this query */
   public final String getField() { return query.getField(); }
 
