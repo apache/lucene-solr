@@ -1236,7 +1236,7 @@ public class ExtendedDismaxQParser extends QParser {
               query = builder.build();
             } else if (query instanceof MultiPhraseQuery) {
               MultiPhraseQuery mpq = (MultiPhraseQuery)query;
-              if (minClauseSize > 1 && mpq.getTermArrays().size() < minClauseSize) return null;
+              if (minClauseSize > 1 && mpq.getTermArrays().length < minClauseSize) return null;
               if (slop != mpq.getSlop()) {
                 query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
               }
