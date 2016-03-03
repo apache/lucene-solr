@@ -31,11 +31,11 @@ of filters as they have been optimized for the filtering case. And you can
 construct a BooleanQuery with one MUST clause for the query, and one FILTER
 clause for the filter in order to have similar behaviour to FilteredQuery.
 
-## PhraseQuery and BooleanQuery made immutable (LUCENE-6531 LUCENE-6570)
+## PhraseQuery, MultiPhraseQuery, and BooleanQuery made immutable (LUCENE-6531 LUCENE-7064 LUCENE-6570)
 
-PhraseQuery and BooleanQuery are now immutable and have a builder API to help
-construct them. For instance a BooleanQuery that used to be constructed like
-this:
+PhraseQuery, MultiPhraseQuery, and BooleanQuery are now immutable and have a
+builder API to help construct them. For instance a BooleanQuery that used to
+be constructed like this:
 
   BooleanQuery bq = new BooleanQuery();
   bq.add(q1, Occur.SHOULD);

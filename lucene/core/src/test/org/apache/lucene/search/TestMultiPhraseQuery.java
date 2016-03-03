@@ -62,11 +62,11 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     
     // search for "blueberry pi*":
-    MultiPhraseQuery query1 = new MultiPhraseQuery();
+    MultiPhraseQuery.Builder query1builder = new MultiPhraseQuery.Builder();
     // search for "strawberry pi*":
-    MultiPhraseQuery query2 = new MultiPhraseQuery();
-    query1.add(new Term("body", "blueberry"));
-    query2.add(new Term("body", "strawberry"));
+    MultiPhraseQuery.Builder query2builder = new MultiPhraseQuery.Builder();
+    query1builder.add(new Term("body", "blueberry"));
+    query2builder.add(new Term("body", "strawberry"));
     
     LinkedList<Term> termsWithPrefix = new LinkedList<>();
     
@@ -83,11 +83,13 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
       }
     } while (te.next() != null);
     
-    query1.add(termsWithPrefix.toArray(new Term[0]));
+    query1builder.add(termsWithPrefix.toArray(new Term[0]));
+    MultiPhraseQuery query1 = query1builder.build();
     assertEquals("body:\"blueberry (piccadilly pie pizza)\"", query1.toString());
-    query2.add(termsWithPrefix.toArray(new Term[0]));
-    assertEquals("body:\"strawberry (piccadilly pie pizza)\"", query2
-        .toString());
+    
+    query2builder.add(termsWithPrefix.toArray(new Term[0]));
+    MultiPhraseQuery query2 = query2builder.build();
+    assertEquals("body:\"strawberry (piccadilly pie pizza)\"", query2.toString());
     
     ScoreDoc[] result;
     result = searcher.search(query1, 1000).scoreDocs;
@@ -96,7 +98,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     assertEquals(0, result.length);
     
     // search for "blue* pizza":
-    MultiPhraseQuery query3 = new MultiPhraseQuery();
+    MultiPhraseQuery.Builder query3builder = new MultiPhraseQuery.Builder();
     termsWithPrefix.clear();
     prefix = "blue";
     te.seekCeil(new BytesRef(prefix));
@@ -107,15 +109,18 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
       }
     } while (te.next() != null);
     
-    query3.add(termsWithPrefix.toArray(new Term[0]));
-    query3.add(new Term("body", "pizza"));
+    query3builder.add(termsWithPrefix.toArray(new Term[0]));
+    query3builder.add(new Term("body", "pizza"));
+    
+    MultiPhraseQuery query3 = query3builder.build();
     
     result = searcher.search(query3, 1000).scoreDocs;
     assertEquals(2, result.length); // blueberry pizza, bluebird pizza
     assertEquals("body:\"(blueberry bluebird) pizza\"", query3.toString());
     
     // test slop:
-    query3.setSlop(1);
+    query3builder.setSlop(1);
+    query3 = query3builder.build();
     result = searcher.search(query3, 1000).scoreDocs;
     
     // just make sure no exc:
@@ -124,10 +129,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     assertEquals(3, result.length); // blueberry pizza, bluebird pizza, bluebird
                                     // foobar pizza
     
-    MultiPhraseQuery query4 = new MultiPhraseQuery();
+    MultiPhraseQuery.Builder query4builder = new MultiPhraseQuery.Builder();
     expectThrows(IllegalArgumentException.class, () -> {
-      query4.add(new Term("field1", "foo"));
-      query4.add(new Term("field2", "foobar"));
+      query4builder.add(new Term("field1", "foo"));
+      query4builder.add(new Term("field2", "foobar"));
     });
     
     writer.close();
@@ -145,11 +150,11 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     writer.close();
 
     IndexSearcher searcher = newSearcher(r);
-    MultiPhraseQuery q = new MultiPhraseQuery();
-    q.add(new Term("body", "blueberry"));
-    q.add(new Term("body", "chocolate"));
-    q.add(new Term[] {new Term("body", "pie"), new Term("body", "tart")});
-    assertEquals(2, searcher.search(q, 1).totalHits);
+    MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
+    qb.add(new Term("body", "blueberry"));
+    qb.add(new Term("body", "chocolate"));
+    qb.add(new Term[] {new Term("body", "pie"), new Term("body", "tart")});
+    assertEquals(2, searcher.search(qb.build(), 1).totalHits);
     r.close();
     indexStore.close();
   }
@@ -164,12 +169,12 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     
     IndexSearcher searcher = newSearcher(r);
     
-    MultiPhraseQuery q = new MultiPhraseQuery();
+    MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
     // this will fail, when the scorer would propagate [a] rather than [a,b],
-    q.add(new Term[] {new Term("body", "a"), new Term("body", "b")});
-    q.add(new Term[] {new Term("body", "a")});
-    q.setSlop(6);
-    assertEquals(1, searcher.search(q, 1).totalHits); // should match on "a b"
+    qb.add(new Term[] {new Term("body", "a"), new Term("body", "b")});
+    qb.add(new Term[] {new Term("body", "a")});
+    qb.setSlop(6);
+    assertEquals(1, searcher.search(qb.build(), 1).totalHits); // should match on "a b"
     
     r.close();
     indexStore.close();
@@ -183,10 +188,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     writer.close();
     
     IndexSearcher searcher = newSearcher(r);
-    MultiPhraseQuery q = new MultiPhraseQuery();
-    q.add(new Term[] {new Term("body", "a"), new Term("body", "d")}, 0);
-    q.add(new Term[] {new Term("body", "a"), new Term("body", "f")}, 2);
-    assertEquals(1, searcher.search(q, 1).totalHits); // should match on "a b"
+    MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
+    qb.add(new Term[] {new Term("body", "a"), new Term("body", "d")}, 0);
+    qb.add(new Term[] {new Term("body", "a"), new Term("body", "f")}, 2);
+    assertEquals(1, searcher.search(qb.build(), 1).totalHits); // should match on "a b"
     r.close();
     indexStore.close();
   }
@@ -215,10 +220,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     BooleanQuery.Builder q = new BooleanQuery.Builder();
     q.add(new TermQuery(new Term("body", "pie")), BooleanClause.Occur.MUST);
     
-    MultiPhraseQuery trouble = new MultiPhraseQuery();
-    trouble.add(new Term[] {new Term("body", "blueberry"),
+    MultiPhraseQuery.Builder troubleBuilder = new MultiPhraseQuery.Builder();
+    troubleBuilder.add(new Term[] {new Term("body", "blueberry"),
         new Term("body", "blue")});
-    q.add(trouble, BooleanClause.Occur.MUST);
+    q.add(troubleBuilder.build(), BooleanClause.Occur.MUST);
     
     // exception will be thrown here without fix
     ScoreDoc[] hits = searcher.search(q.build(), 1000).scoreDocs;
@@ -246,11 +251,11 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     BooleanQuery.Builder q = new BooleanQuery.Builder();
     q.add(new TermQuery(new Term("type", "note")), BooleanClause.Occur.MUST);
     
-    MultiPhraseQuery trouble = new MultiPhraseQuery();
-    trouble.add(new Term("body", "a"));
-    trouble
+    MultiPhraseQuery.Builder troubleBuilder = new MultiPhraseQuery.Builder();
+    troubleBuilder.add(new Term("body", "a"));
+    troubleBuilder
         .add(new Term[] {new Term("body", "test"), new Term("body", "this")});
-    q.add(trouble, BooleanClause.Occur.MUST);
+    q.add(troubleBuilder.build(), BooleanClause.Occur.MUST);
     
     // exception will be thrown here without fix for #35626:
     ScoreDoc[] hits = searcher.search(q.build(), 1000).scoreDocs;
@@ -268,9 +273,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
     
-    MultiPhraseQuery q = new MultiPhraseQuery();
-    q.add(new Term("body", "a"));
-    q.add(new Term[] {new Term("body", "nope"), new Term("body", "nope")});
+    MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
+    qb.add(new Term("body", "a"));
+    qb.add(new Term[] {new Term("body", "nope"), new Term("body", "nope")});
+    MultiPhraseQuery q = qb.build();
     assertEquals("Wrong number of hits", 0,
         searcher.search(q, 1).totalHits);
     
@@ -283,28 +289,36 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   }
   
   public void testHashCodeAndEquals() {
-    MultiPhraseQuery query1 = new MultiPhraseQuery();
-    MultiPhraseQuery query2 = new MultiPhraseQuery();
+    MultiPhraseQuery.Builder query1builder = new MultiPhraseQuery.Builder();
+    MultiPhraseQuery query1 = query1builder.build();
+    
+    MultiPhraseQuery.Builder query2builder = new MultiPhraseQuery.Builder();
+    MultiPhraseQuery query2 = query2builder.build();
     
     assertEquals(query1.hashCode(), query2.hashCode());
     assertEquals(query1, query2);
     
     Term term1 = new Term("someField", "someText");
     
-    query1.add(term1);
-    query2.add(term1);
+    query1builder.add(term1);
+    query1 = query1builder.build();
+
+    query2builder.add(term1);
+    query2 = query2builder.build();
     
     assertEquals(query1.hashCode(), query2.hashCode());
     assertEquals(query1, query2);
     
     Term term2 = new Term("someField", "someMoreText");
     
-    query1.add(term2);
+    query1builder.add(term2);
+    query1 = query1builder.build();
     
     assertFalse(query1.hashCode() == query2.hashCode());
     assertFalse(query1.equals(query2));
     
-    query2.add(term2);
+    query2builder.add(term2);
+    query2 = query2builder.build();
     
     assertEquals(query1.hashCode(), query2.hashCode());
     assertEquals(query1, query2);
@@ -320,7 +334,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   
   // LUCENE-2526
   public void testEmptyToString() {
-    new MultiPhraseQuery().toString();
+    new MultiPhraseQuery.Builder().build().toString();
   }
   
   public void testCustomIDF() throws Exception {
@@ -338,10 +352,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
       } 
     });
     
-    MultiPhraseQuery query = new MultiPhraseQuery();
-    query.add(new Term[] { new Term("body", "this"), new Term("body", "that") });
-    query.add(new Term("body", "is"));
-    Weight weight = query.createWeight(searcher, true);
+    MultiPhraseQuery.Builder queryBuilder = new MultiPhraseQuery.Builder();
+    queryBuilder.add(new Term[] { new Term("body", "this"), new Term("body", "that") });
+    queryBuilder.add(new Term("body", "is"));
+    Weight weight = queryBuilder.build().createWeight(searcher, true);
     assertEquals(10f * 10f, weight.getValueForNormalization(), 0.001f);
 
     writer.close();
@@ -372,7 +386,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     IndexReader r = writer.getReader();
     writer.close();
     IndexSearcher s = newSearcher(r);
-    MultiPhraseQuery mpq = new MultiPhraseQuery();
+    MultiPhraseQuery.Builder mpqb = new MultiPhraseQuery.Builder();
     //mpq.setSlop(1);
 
     // NOTE: not great that if we do the else clause here we
@@ -382,13 +396,13 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     // return the same position more than once (0, in this
     // case):
     if (true) {
-      mpq.add(new Term[] {new Term("field", "b"), new Term("field", "c")}, 0);
-      mpq.add(new Term[] {new Term("field", "a")}, 0);
+      mpqb.add(new Term[] {new Term("field", "b"), new Term("field", "c")}, 0);
+      mpqb.add(new Term[] {new Term("field", "a")}, 0);
     } else {
-      mpq.add(new Term[] {new Term("field", "a")}, 0);
-      mpq.add(new Term[] {new Term("field", "b"), new Term("field", "c")}, 0);
+      mpqb.add(new Term[] {new Term("field", "a")}, 0);
+      mpqb.add(new Term[] {new Term("field", "b"), new Term("field", "c")}, 0);
     }
-    TopDocs hits = s.search(mpq, 2);
+    TopDocs hits = s.search(mpqb.build(), 2);
     assertEquals(2, hits.totalHits);
     assertEquals(hits.scoreDocs[0].score, hits.scoreDocs[1].score, 1e-5);
     /*
@@ -449,15 +463,15 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
    * in each position - one of each position is sufficient (OR logic)
    */
   public void testZeroPosIncrSloppyParsedAnd() throws IOException {
-    MultiPhraseQuery q = new MultiPhraseQuery();
-    q.add(new Term[]{ new Term("field", "a"), new Term("field", "1") }, -1);
-    q.add(new Term[]{ new Term("field", "b"), new Term("field", "1") }, 0);
-    q.add(new Term[]{ new Term("field", "c") }, 1);
-    doTestZeroPosIncrSloppy(q, 0);
-    q.setSlop(1);
-    doTestZeroPosIncrSloppy(q, 0);
-    q.setSlop(2);
-    doTestZeroPosIncrSloppy(q, 1);
+    MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
+    qb.add(new Term[]{ new Term("field", "a"), new Term("field", "1") }, -1);
+    qb.add(new Term[]{ new Term("field", "b"), new Term("field", "1") }, 0);
+    qb.add(new Term[]{ new Term("field", "c") }, 1);
+    doTestZeroPosIncrSloppy(qb.build(), 0);
+    qb.setSlop(1);
+    doTestZeroPosIncrSloppy(qb.build(), 0);
+    qb.setSlop(2);
+    doTestZeroPosIncrSloppy(qb.build(), 1);
   }
   
   private void doTestZeroPosIncrSloppy(Query q, int nExpected) throws IOException {
@@ -511,49 +525,49 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
    * MPQ AND Mode - Manually creating a multiple phrase query
    */
   public void testZeroPosIncrSloppyMpqAnd() throws IOException {
-    final MultiPhraseQuery mpq = new MultiPhraseQuery();
+    final MultiPhraseQuery.Builder mpqb = new MultiPhraseQuery.Builder();
     int pos = -1;
     for (Token tap : INCR_0_QUERY_TOKENS_AND) {
       pos += tap.getPositionIncrement();
-      mpq.add(new Term[]{new Term("field",tap.toString())}, pos); //AND logic
+      mpqb.add(new Term[]{new Term("field",tap.toString())}, pos); //AND logic
     }
-    doTestZeroPosIncrSloppy(mpq, 0);
-    mpq.setSlop(1);
-    doTestZeroPosIncrSloppy(mpq, 0);
-    mpq.setSlop(2);
-    doTestZeroPosIncrSloppy(mpq, 1);
+    doTestZeroPosIncrSloppy(mpqb.build(), 0);
+    mpqb.setSlop(1);
+    doTestZeroPosIncrSloppy(mpqb.build(), 0);
+    mpqb.setSlop(2);
+    doTestZeroPosIncrSloppy(mpqb.build(), 1);
   }
 
   /**
    * MPQ Combined AND OR Mode - Manually creating a multiple phrase query
    */
   public void testZeroPosIncrSloppyMpqAndOrMatch() throws IOException {
-    final MultiPhraseQuery mpq = new MultiPhraseQuery();
+    final MultiPhraseQuery.Builder mpqb = new MultiPhraseQuery.Builder();
     for (Token tap[] : INCR_0_QUERY_TOKENS_AND_OR_MATCH) {
       Term[] terms = tapTerms(tap);
       final int pos = tap[0].getPositionIncrement()-1;
-      mpq.add(terms, pos); //AND logic in pos, OR across lines 
+      mpqb.add(terms, pos); //AND logic in pos, OR across lines 
     }
-    doTestZeroPosIncrSloppy(mpq, 0);
-    mpq.setSlop(1);
-    doTestZeroPosIncrSloppy(mpq, 0);
-    mpq.setSlop(2);
-    doTestZeroPosIncrSloppy(mpq, 1);
+    doTestZeroPosIncrSloppy(mpqb.build(), 0);
+    mpqb.setSlop(1);
+    doTestZeroPosIncrSloppy(mpqb.build(), 0);
+    mpqb.setSlop(2);
+    doTestZeroPosIncrSloppy(mpqb.build(), 1);
   }
 
   /**
    * MPQ Combined AND OR Mode - Manually creating a multiple phrase query - with no match
    */
   public void testZeroPosIncrSloppyMpqAndOrNoMatch() throws IOException {
-    final MultiPhraseQuery mpq = new MultiPhraseQuery();
+    final MultiPhraseQuery.Builder mpqb = new MultiPhraseQuery.Builder();
     for (Token tap[] : INCR_0_QUERY_TOKENS_AND_OR_NO_MATCHN) {
       Term[] terms = tapTerms(tap);
       final int pos = tap[0].getPositionIncrement()-1;
-      mpq.add(terms, pos); //AND logic in pos, OR across lines 
+      mpqb.add(terms, pos); //AND logic in pos, OR across lines 
     }
-    doTestZeroPosIncrSloppy(mpq, 0);
-    mpq.setSlop(2);
-    doTestZeroPosIncrSloppy(mpq, 0);
+    doTestZeroPosIncrSloppy(mpqb.build(), 0);
+    mpqb.setSlop(2);
+    doTestZeroPosIncrSloppy(mpqb.build(), 0);
   }
 
   private Term[] tapTerms(Token[] tap) {
@@ -565,11 +579,11 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   }
   
   public void testNegativeSlop() throws Exception {
-    MultiPhraseQuery query = new MultiPhraseQuery();
-    query.add(new Term("field", "two"));
-    query.add(new Term("field", "one"));
+    MultiPhraseQuery.Builder queryBuilder = new MultiPhraseQuery.Builder();
+    queryBuilder.add(new Term("field", "two"));
+    queryBuilder.add(new Term("field", "one"));
     expectThrows(IllegalArgumentException.class, () -> {
-      query.setSlop(-2);
+      queryBuilder.setSlop(-2);
     });
   }
   
