@@ -416,24 +416,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
     }
 
-    // BEGIN TRUNK ONLY BLOCK
-    // on trunk, the last release of the prev major release is also untested
-    Version lastPrevMajorVersion = null;
-    for (java.lang.reflect.Field field : Version.class.getDeclaredFields()) {
-      if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
-        Version v = (Version)field.get(Version.class);
-        Matcher constant = constantPattern.matcher(field.getName());
-        if (constant.matches() == false) continue;
-        if (v.major == Version.LATEST.major - 1 &&
-            (lastPrevMajorVersion == null || v.onOrAfter(lastPrevMajorVersion))) {
-          lastPrevMajorVersion = v;
-        }
-      }
-    }
-    assertNotNull(lastPrevMajorVersion);
-    expectedVersions.remove(lastPrevMajorVersion.toString() + "-cfs");
-    // END TRUNK ONLY BLOCK
-
     Collections.sort(expectedVersions);
 
     // find what versions we are testing
