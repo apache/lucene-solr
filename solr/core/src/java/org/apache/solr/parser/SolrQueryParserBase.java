@@ -387,7 +387,6 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     // only set slop of the phrase query was a result of this parser
     // and not a sub-parser.
     if (subQParser == null) {
-
       if (query instanceof PhraseQuery) {
         PhraseQuery pq = (PhraseQuery) query;
         Term[] terms = pq.getTerms();
@@ -398,11 +397,13 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         }
         builder.setSlop(slop);
         query = builder.build();
+      } else if (query instanceof MultiPhraseQuery) {
+        MultiPhraseQuery mpq = (MultiPhraseQuery)query;
+      
+        if (slop != mpq.getSlop()) {
+          query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
+        }
       }
-      if (query instanceof MultiPhraseQuery) {
-        ((MultiPhraseQuery) query).setSlop(slop);
-      }
-
     }
 
     return query;

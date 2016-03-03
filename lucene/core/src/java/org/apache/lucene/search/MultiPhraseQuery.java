@@ -37,74 +37,111 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
- * A generalized version of {@link PhraseQuery}, with an added
- * method {@link #add(Term[])} for adding more than one term at the same position
- * that are treated as a disjunction (OR).
- * To use this class to search for the phrase "Microsoft app*" first use
- * {@link #add(Term)} on the term "microsoft" (assuming lowercase analysis), then
+ * A generalized version of {@link PhraseQuery}, with the possibility of
+ * adding more than one term at the same position that are treated as a disjunction (OR).
+ * To use this class to search for the phrase "Microsoft app*" first create a Builder and use
+ * {@link Builder#add(Term)} on the term "microsoft" (assuming lowercase analysis), then
  * find all terms that have "app" as prefix using {@link LeafReader#terms(String)},
  * seeking to "app" then iterating and collecting terms until there is no longer
- * that prefix, and finally use {@link #add(Term[])} to add them to the query.
+ * that prefix, and finally use {@link Builder#add(Term[])} to add them.
+ * {@link Builder#build()} returns the fully constructed (and immutable) MultiPhraseQuery.
  */
 public class MultiPhraseQuery extends Query {
-  private String field;// becomes non-null on first add() then is unmodified
-  private final ArrayList<Term[]> termArrays = new ArrayList<>();
-  private final ArrayList<Integer> positions = new ArrayList<>();
-
-  private int slop = 0;
-
-  /** Sets the phrase slop for this query.
-   * @see PhraseQuery#getSlop()
-   */
-  public void setSlop(int s) {
-    if (s < 0) {
-      throw new IllegalArgumentException("slop value cannot be negative");
+  /** A builder for multi-phrase queries */ 
+  public static class Builder {
+    private String field; // becomes non-null on first add() then is unmodified
+    private final ArrayList<Term[]> termArrays;
+    private final ArrayList<Integer> positions;
+    private int slop;
+    
+    public Builder() {
+      this.field = null;
+      this.termArrays = new ArrayList<>();
+      this.positions = new ArrayList<>();
+      this.slop = 0;
     }
-    slop = s; 
-  }
+    
+    public Builder(MultiPhraseQuery multiPhraseQuery) {
+      this.field = multiPhraseQuery.field;
+      this.termArrays = new ArrayList<>(multiPhraseQuery.termArrays);
+      this.positions = new ArrayList<>(multiPhraseQuery.positions);
+      this.slop = multiPhraseQuery.slop;
+    }
+    
+    /** Sets the phrase slop for this query.
+     * @see PhraseQuery#getSlop()
+     */
+    public Builder setSlop(int s) {
+      if (s < 0) {
+        throw new IllegalArgumentException("slop value cannot be negative");
+      }
+      slop = s;
+      
+      return this;
+    }
 
+    /** Add a single term at the next position in the phrase.
+     */
+    public Builder add(Term term) { return add(new Term[]{term}); }
+
+    /** Add multiple terms at the next position in the phrase.  Any of the terms
+     * may match (a disjunction).
+     * The array is not copied or mutated, the caller should consider it
+     * immutable subsequent to calling this method.
+     */
+    public Builder add(Term[] terms) {
+      int position = 0;
+      if (positions.size() > 0)
+        position = positions.get(positions.size() - 1) + 1;
+
+      return add(terms, position);
+    }
+
+    /**
+     * Allows to specify the relative position of terms within the phrase.
+     * The array is not copied or mutated, the caller should consider it
+     * immutable subsequent to calling this method.
+     */
+    public Builder add(Term[] terms, int position) {
+      Objects.requireNonNull(terms, "Term array must not be null");
+      if (termArrays.size() == 0)
+        field = terms[0].field();
+
+      for (Term term : terms) {
+        if (!term.field().equals(field)) {
+          throw new IllegalArgumentException(
+              "All phrase terms must be in the same field (" + field + "): " + term);
+        }
+      }
+
+      termArrays.add(terms);
+      positions.add(position);
+      
+      return this;
+    }
+    
+    public MultiPhraseQuery build() {
+      return new MultiPhraseQuery(field, termArrays, positions, slop);
+    }
+  }
+  
+  private final String field;
+  private final ArrayList<Term[]> termArrays; // TODO: Change to Term[][]
+  private final ArrayList<Integer> positions; // TODO: Change to int[]
+  private final int slop;
+
+  private MultiPhraseQuery(String field, ArrayList<Term[]> termArrays, ArrayList<Integer> positions, int slop) {
+    // No argument checks here since they are provided by the MultiPhraseQuery.Builder
+    this.field = field;
+    this.termArrays = termArrays;
+    this.positions = positions;
+    this.slop = slop;
+  }
+  
   /** Sets the phrase slop for this query.
    * @see PhraseQuery#getSlop()
    */
   public int getSlop() { return slop; }
-
-  /** Add a single term at the next position in the phrase.
-   */
-  public void add(Term term) { add(new Term[]{term}); }
-
-  /** Add multiple terms at the next position in the phrase.  Any of the terms
-   * may match (a disjunction).
-   * The array is not copied or mutated, the caller should consider it
-   * immutable subsequent to calling this method.
-   */
-  public void add(Term[] terms) {
-    int position = 0;
-    if (positions.size() > 0)
-      position = positions.get(positions.size() - 1) + 1;
-
-    add(terms, position);
-  }
-
-  /**
-   * Allows to specify the relative position of terms within the phrase.
-   * The array is not copied or mutated, the caller should consider it
-   * immutable subsequent to calling this method.
-   */
-  public void add(Term[] terms, int position) {
-    Objects.requireNonNull(terms, "Term array must not be null");
-    if (termArrays.size() == 0)
-      field = terms[0].field();
-
-    for (Term term : terms) {
-      if (!term.field().equals(field)) {
-        throw new IllegalArgumentException(
-            "All phrase terms must be in the same field (" + field + "): " + term);
-      }
-    }
-
-    termArrays.add(terms);
-    positions.add(position);
-  }
 
   /**
    * Returns a List of the terms in the multi-phrase.
