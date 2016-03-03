@@ -163,7 +163,7 @@ public class CloudMLTQParser extends QParser {
       BooleanQuery.Builder realMLTQuery = new BooleanQuery.Builder();
       realMLTQuery.setDisableCoord(true);
       realMLTQuery.add(boostedMLTQuery, BooleanClause.Occur.MUST);
-      realMLTQuery.add(createIdQuery("id", id), BooleanClause.Occur.MUST_NOT);
+      realMLTQuery.add(createIdQuery(req.getSchema().getUniqueKeyField().getName(), id), BooleanClause.Occur.MUST_NOT);
 
       return realMLTQuery.build();
     } catch (IOException e) {
