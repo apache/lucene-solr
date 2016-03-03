@@ -53,13 +53,12 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
   private final String BIN_FILE_LOCATION_CHILD_DOCS = "./solr/solrj/src/test-files/solrj/javabin_backcompat_child_docs.bin";
 
   public void testStrings() throws Exception {
-    JavaBinCodec javabin = new JavaBinCodec();
     for (int i = 0; i < 10000 * RANDOM_MULTIPLIER; i++) {
       String s = TestUtil.randomUnicodeString(random());
       ByteArrayOutputStream os = new ByteArrayOutputStream();
-      javabin.marshal(s, os);
+      new JavaBinCodec().marshal(s, os);
       ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray());
-      Object o = javabin.unmarshal(is);
+      Object o = new JavaBinCodec().unmarshal(is);
       assertEquals(s, o);
     }
   }

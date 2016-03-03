@@ -37,6 +37,11 @@ Bug Fixes
   on such dates was also affected.  With this fixed, this is the first release range faceting works on BC years.
   (David Smiley)
 
+Other Changes
+----------------------
+* SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
+  (Jason Gerlowski, Benoit Vanalderweireldt, shalin)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
