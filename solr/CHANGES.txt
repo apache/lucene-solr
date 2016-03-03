@@ -361,6 +361,8 @@ Other Changes
   
 * SOLR-8764: Remove all deprecated methods and classes from master prior to the 6.0 release. (Steve Rowe)
 
+* SOLR-8780: Remove unused OverseerCollectionMessageHandler#getClusterStatus method. (Varun Thacker)
+
 ==================  5.5.1 ==================
 
 Bug Fixes
