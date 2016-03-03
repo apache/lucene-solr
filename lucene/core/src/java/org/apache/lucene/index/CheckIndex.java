@@ -1716,6 +1716,10 @@ public final class CheckIndex implements Closeable {
               throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have size=" + size + " points and inconsistent docCount=" + docCount);
             }
 
+            if (docCount > reader.maxDoc()) {
+              throw new RuntimeException("point values for field \"" + fieldInfo.name + "\" claims to have docCount=" + docCount + " but that's greater than maxDoc=" + reader.maxDoc());
+            }
+
             if (globalMinPackedValue == null) {
               if (size != 0) {
                 throw new RuntimeException("getMinPackedValue is null points for field \"" + fieldInfo.name + "\" yet size=" + size);
