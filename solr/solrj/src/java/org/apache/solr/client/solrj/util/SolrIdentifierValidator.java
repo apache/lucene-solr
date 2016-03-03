@@ -1,7 +1,3 @@
-package org.apache.solr.client.solrj.util;
-
-import java.util.regex.Pattern;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,6 +14,10 @@ import java.util.regex.Pattern;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj.util;
+
+import java.util.Locale;
+import java.util.regex.Pattern;
 
 /**
  * Ensures that provided identifiers align with Solr's recommendations/requirements for choosing
@@ -52,7 +52,8 @@ public class SolrIdentifierValidator {
   }
 
   public static String getIdentifierMessage(IdentifierType identifierType, String name) {
-      return "Invalid " + identifierType.toString().toLowerCase() + ": " + name + ". " + identifierType.toString().toLowerCase()
+      return "Invalid " + identifierType.toString().toLowerCase(Locale.ROOT) + ": " + name + ". "
+          + identifierType.toString().toLowerCase(Locale.ROOT)
           + " names must consist entirely of periods, underscores, hyphens, and alphanumerics";
 
   }
