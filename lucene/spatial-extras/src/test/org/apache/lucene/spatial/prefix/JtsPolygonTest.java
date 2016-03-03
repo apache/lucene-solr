@@ -16,9 +16,9 @@
  */
 package org.apache.lucene.spatial.prefix;
 
-import com.spatial4j.core.context.SpatialContextFactory;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.context.SpatialContextFactory;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
@@ -45,7 +45,7 @@ public class JtsPolygonTest extends StrategyTestCase {
     try {
       HashMap<String, String> args = new HashMap<>();
       args.put("spatialContextFactory",
-          "com.spatial4j.core.context.jts.JtsSpatialContextFactory");
+          "org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory");
       ctx = SpatialContextFactory.makeSpatialContext(args, getClass().getClassLoader());
     } catch (NoClassDefFoundError e) {
       assumeTrue("This test requires JTS jar: "+e, false);

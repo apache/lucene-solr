@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -34,7 +34,7 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 
 /**
  * Reads spatial data from the body field docs from an internally created {@link LineDocSource}.
- * It's parsed by {@link com.spatial4j.core.context.SpatialContext#readShapeFromWkt(String)} (String)} and then
+ * It's parsed by {@link org.locationtech.spatial4j.context.SpatialContext#readShapeFromWkt(String)} (String)} and then
  * further manipulated via a configurable {@link SpatialDocMaker.ShapeConverter}. When using point
  * data, it's likely you'll want to configure the shape converter so that the query shapes actually
  * cover a region. The queries are all created and cached in advance. This query maker works in

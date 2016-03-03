@@ -18,7 +18,7 @@ package org.apache.lucene.spatial.serialized;
 
 import java.io.IOException;
 
-import com.spatial4j.core.context.SpatialContext;
+import org.locationtech.spatial4j.context.SpatialContext;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.junit.Before;

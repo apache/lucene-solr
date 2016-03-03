@@ -21,8 +21,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexOptions;
@@ -47,7 +47,7 @@ import org.apache.lucene.util.Bits;
  * <li>Can index any shape; however only {@link RecursivePrefixTreeStrategy}
  * can effectively search non-point shapes.</li>
  * <li>Can index a variable number of shapes per field value. This strategy
- * can do it via multiple calls to {@link #createIndexableFields(com.spatial4j.core.shape.Shape)}
+ * can do it via multiple calls to {@link #createIndexableFields(org.locationtech.spatial4j.shape.Shape)}
  * for a document or by giving it some sort of Shape aggregate (e.g. JTS
  * WKT MultiPoint).  The shape's boundary is approximated to a grid precision.
  * </li>
@@ -56,7 +56,7 @@ import org.apache.lucene.util.Bits;
  * <li>Only {@link org.apache.lucene.spatial.query.SpatialOperation#Intersects}
  * is supported.  If only points are indexed then this is effectively equivalent
  * to IsWithin.</li>
- * <li>The strategy supports {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point,double)}
+ * <li>The strategy supports {@link #makeDistanceValueSource(org.locationtech.spatial4j.shape.Point,double)}
  * even for multi-valued data, so long as the indexed data is all points; the
  * behavior is undefined otherwise.  However, <em>it will likely be removed in
  * the future</em> in lieu of using another strategy with a more scalable
@@ -93,7 +93,7 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
   }
 
   /**
-   * A memory hint used by {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)}
+   * A memory hint used by {@link #makeDistanceValueSource(org.locationtech.spatial4j.shape.Point)}
    * for how big the initial size of each Document's array should be. The
    * default is 2.  Set this to slightly more than the default expected number
    * of points per document.

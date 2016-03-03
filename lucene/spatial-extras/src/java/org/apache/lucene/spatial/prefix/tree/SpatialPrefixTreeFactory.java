@@ -18,8 +18,8 @@ package org.apache.lucene.spatial.prefix.tree;
 
 import java.util.Map;
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.distance.DistanceUtils;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
 
 /**
  * Abstract Factory for creating {@link SpatialPrefixTree} instances with useful

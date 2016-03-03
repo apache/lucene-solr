@@ -16,7 +16,7 @@
  */
 package org.apache.solr.util;
 
-import com.spatial4j.core.distance.DistanceUtils;
+import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class DistanceUnitsTest extends LuceneTestCase {

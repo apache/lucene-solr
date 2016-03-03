@@ -23,7 +23,7 @@
 ### Spatial Context, Grid, Strategy config
 doc.maker=org.apache.lucene.benchmark.byTask.feeds.SpatialDocMaker
 #  SpatialContext:    see SpatialContextFactory.makeSpatialContext
-#spatial.spatialContextFactory=com.spatial4j.core.context.jts.JtsSpatialContextFactory
+#spatial.spatialContextFactory=org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory
 #spatial.geo=true
 #spatial.distCalculator=haversine
 #spatial.worldBounds=...

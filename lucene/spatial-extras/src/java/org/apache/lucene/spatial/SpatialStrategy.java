@@ -16,10 +16,10 @@
  */
 package org.apache.lucene.spatial;
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction;
@@ -100,7 +100,7 @@ public abstract class SpatialStrategy {
   public abstract Field[] createIndexableFields(Shape shape);
 
   /**
-   * See {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point, double)} called with
+   * See {@link #makeDistanceValueSource(org.locationtech.spatial4j.shape.Point, double)} called with
    * a multiplier of 1.0 (i.e. units of degrees).
    */
   public ValueSource makeDistanceValueSource(Point queryPoint) {
@@ -127,7 +127,7 @@ public abstract class SpatialStrategy {
 
   /**
    * Returns a ValueSource with values ranging from 1 to 0, depending inversely
-   * on the distance from {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point,double)}.
+   * on the distance from {@link #makeDistanceValueSource(org.locationtech.spatial4j.shape.Point,double)}.
    * The formula is {@code c/(d + c)} where 'd' is the distance and 'c' is
    * one tenth the distance to the farthest edge from the center. Thus the
    * scores will be 1 for indexed points at the center of the query shape and as

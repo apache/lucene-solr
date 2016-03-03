@@ -16,10 +16,10 @@
  */
 package org.apache.lucene.spatial.query;
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * Principally holds the query {@link Shape} and the {@link SpatialOperation}.
@@ -120,8 +120,8 @@ public class SpatialArgs {
    * inflates the size of the shape but should not shrink it.
    *
    * @return 0 to 0.5
-   * @see #calcDistanceFromErrPct(com.spatial4j.core.shape.Shape, double,
-   *      com.spatial4j.core.context.SpatialContext)
+   * @see #calcDistanceFromErrPct(org.locationtech.spatial4j.shape.Shape, double,
+   *      org.locationtech.spatial4j.context.SpatialContext)
    */
   public Double getDistErrPct() {
     return distErrPct;

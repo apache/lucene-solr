@@ -27,12 +27,12 @@ import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 
-import com.spatial4j.core.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Rectangle;
 
 /**
  * A base class for calculating a spatial relevance rank per document from a provided
  * {@link ValueSource} in which {@link FunctionValues#objectVal(int)} returns a {@link
- * com.spatial4j.core.shape.Rectangle}.
+ * org.locationtech.spatial4j.shape.Rectangle}.
  * <p>
  * Implementers: remember to implement equals and hashCode if you have
  * fields!
