@@ -40,14 +40,19 @@ import org.apache.solr.common.SolrInputField;
 import org.noggit.CharArr;
 
 /**
- * The class is designed to optimaly serialize/deserialize any supported types in Solr response. As we know there are only a limited type of
- * items this class can do it with very minimal amount of payload and code. There are 15 known types and if there is an
- * object in the object tree which does not fall into these types, It must be converted to one of these. Implement an
- * ObjectResolver and pass it over It is expected that this class is used on both end of the pipes. The class has one
- * read method and one write method for each of the datatypes
+ * Defines a space-efficient serialization/deserialization format for transferring data.
  * <p>
- * Note -- Never re-use an instance of this class for more than one marshal or unmarshall operation. Always create a new
- * instance.
+ * JavaBinCodec has built in support many commonly used types.  This includes primitive types (boolean, byte,
+ * short, double, int, long, float), common Java containers/utilities (Date, Map, Collection, Iterator, String,
+ * Object[], byte[]), and frequently used Solr types ({@link NamedList}, {@link SolrDocument},
+ * {@link SolrDocumentList}). Each of the above types has a pair of associated methods which read and write
+ * that type to a stream.
+ * <p>
+ * Classes that aren't supported natively can still be serialized/deserialized by providing
+ * an {@link JavaBinCodec.ObjectResolver} object that knows how to work with the unsupported class.
+ * This allows {@link JavaBinCodec} to be used to marshall/unmarshall arbitrary content.
+ * <p>
+ * NOTE -- {@link JavaBinCodec} instances cannot be reused for more than one marshall or unmarshall operation.
  */
 public class JavaBinCodec {
 
@@ -94,6 +99,8 @@ public class JavaBinCodec {
   protected FastOutputStream daos;
   private StringCache stringCache;
   private WritableDocFields writableDocFields;
+  private boolean alreadyMarshalled;
+  private boolean alreadyUnmarshalled;
 
   public JavaBinCodec() {
     resolver =null;
@@ -119,12 +126,14 @@ public class JavaBinCodec {
   }
   
   public void marshal(Object nl, OutputStream os) throws IOException {
+    assert !alreadyMarshalled;
     init(FastOutputStream.wrap(os));
     try {
       daos.writeByte(VERSION);
       writeVal(nl);
     } finally {
       daos.flushBuffer();
+      alreadyMarshalled = true;
     }
   }
 
@@ -136,12 +145,15 @@ public class JavaBinCodec {
   byte version;
 
   public Object unmarshal(InputStream is) throws IOException {
+    assert !alreadyUnmarshalled;
     FastInputStream dis = FastInputStream.wrap(is);
     version = dis.readByte();
     if (version != VERSION) {
       throw new RuntimeException("Invalid version (expected " + VERSION +
           ", but " + version + ") or the data in not in 'javabin' format");
     }
+    
+    alreadyUnmarshalled = true;
     return readVal(dis);
   }
 
@@ -879,8 +891,20 @@ public class JavaBinCodec {
     }
   }
 
-
+  /**
+   * Allows extension of {@link JavaBinCodec} to support serialization of arbitrary data types.
+   * <p>
+   * Implementors of this interface write a method to serialize a given object using an existing {@link JavaBinCodec}
+   */
   public static interface ObjectResolver {
+    /**
+     * Examine and attempt to serialize the given object, using a {@link JavaBinCodec} to write it to a stream.
+     *
+     * @param o     the object that the caller wants serialized.
+     * @param codec used to actually serialize {@code o}.
+     * @return the object {@code o} itself if it could not be serialized, or {@code null} if the whole object was successfully serialized.
+     * @see JavaBinCodec
+     */
     public Object resolve(Object o, JavaBinCodec codec) throws IOException;
   }
 
