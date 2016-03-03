@@ -110,6 +110,9 @@ API Changes
   comparator in ArrayUtil by Java 8's Comparator#naturalOrder().
   (Mike McCandless, Uwe Schindler, Robert Muir)
 
+* LUCENE-7058: Add getters to various Query implementations (Guillaume Smet via
+  Alan Woodward)
+
 Optimizations
 
 * LUCENE-6891: Use prefix coding when writing points in 

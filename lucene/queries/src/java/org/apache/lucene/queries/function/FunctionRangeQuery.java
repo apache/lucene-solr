@@ -67,6 +67,26 @@ public class FunctionRangeQuery extends Query {
     this.includeUpper = includeUpper;
   }
 
+  public ValueSource getValueSource() {
+    return valueSource;
+  }
+
+  public String getLowerVal() {
+    return lowerVal;
+  }
+
+  public String getUpperVal() {
+    return upperVal;
+  }
+
+  public boolean isIncludeLower() {
+    return includeLower;
+  }
+
+  public boolean isIncludeUpper() {
+    return includeUpper;
+  }
+
   @Override
   public String toString(String field) {
     return "frange(" + valueSource + "):"
