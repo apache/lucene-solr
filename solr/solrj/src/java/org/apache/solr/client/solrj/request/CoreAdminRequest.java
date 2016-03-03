@@ -111,8 +111,8 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
     @Override
     public void setCoreName(String coreName) {
       if (!SolrIdentifierValidator.validateCoreName(coreName)) {
-        throw new IllegalArgumentException("Invalid core: " + coreName
-            + ". Core names must consist entirely of periods, underscores, and alphanumerics");
+        throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.CORE,
+            coreName));
       }
       this.core = coreName;
     }
@@ -560,8 +560,8 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
   public static CoreAdminResponse renameCore(String coreName, String newName, SolrClient client )
       throws SolrServerException, IOException {
     if (!SolrIdentifierValidator.validateCoreName(newName)) {
-      throw new IllegalArgumentException("Invalid core: " + newName
-          + ". Core names must consist entirely of periods, underscores, and alphanumerics");
+      throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.CORE,
+          newName));
     }
     
     CoreAdminRequest req = new CoreAdminRequest();

@@ -292,15 +292,15 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     /**
      * Provide the name of the shards to be created, separated by commas
      * 
-     * Shard names must consist entirely of periods, underscores, and alphanumerics.  Other characters are not allowed.
+     * Shard names must consist entirely of periods, underscores, hyphens, and alphanumerics.  Other characters are not allowed.
      * 
      * @throws IllegalArgumentException if any of the shard names contain invalid characters.
      */
     public Create setShards(String shards) {
       for (String shard : shards.split(",")) {
         if (!SolrIdentifierValidator.validateShardName(shard)) {
-          throw new IllegalArgumentException("Invalid shard: " + shard
-              + ". Shard names must consist entirely of periods, underscores, and alphanumerics");
+          throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.SHARD,
+              shard));
         }
       }
       this.shards = shards;
@@ -317,8 +317,8 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     @Override
     public Create setCollectionName(String collectionName) throws SolrException {
       if (!SolrIdentifierValidator.validateCollectionName(collectionName)) {
-        throw new IllegalArgumentException("Invalid collection: " + collectionName
-            + ". Collection names must consist entirely of periods, underscores, and alphanumerics");
+        throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.COLLECTION,
+            collectionName));
       }
       this.collection = collectionName;
       return this;
@@ -440,15 +440,15 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     /**
      * Provide the name of the shard to be created.
      * 
-     * Shard names must consist entirely of periods, underscores, and alphanumerics.  Other characters are not allowed.
+     * Shard names must consist entirely of periods, underscores, hyphens, and alphanumerics.  Other characters are not allowed.
      * 
      * @throws IllegalArgumentException if the shard name contains invalid characters.
      */
     @Override
     public CreateShard setShardName(String shardName) {
       if (!SolrIdentifierValidator.validateShardName(shardName)) {
-        throw new IllegalArgumentException("Invalid shard: " + shardName
-            + ". Shard names must consist entirely of periods, underscores, and alphanumerics");
+        throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.SHARD,
+            shardName));
       }
       this.shardName = shardName;
       return this;
@@ -641,8 +641,8 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
      */
     public CreateAlias setAliasName(String aliasName) {
       if (!SolrIdentifierValidator.validateCollectionName(aliasName)) {
-        throw new IllegalArgumentException("Invalid alias: " + aliasName
-            + ". Aliases must consist entirely of periods, underscores, and alphanumerics");
+        throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.ALIAS,
+            aliasName));
       }
       this.aliasName = aliasName;
       return this;

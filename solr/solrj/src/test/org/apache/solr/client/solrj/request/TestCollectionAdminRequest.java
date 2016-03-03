@@ -37,7 +37,7 @@ public class TestCollectionAdminRequest extends LuceneTestCase {
       final String exceptionMessage = e.getMessage();
       assertTrue(exceptionMessage.contains("Invalid collection"));
       assertTrue(exceptionMessage.contains("invalid$collection@name"));
-      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, and alphanumerics"));
+      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
     }
   }
   
@@ -51,7 +51,7 @@ public class TestCollectionAdminRequest extends LuceneTestCase {
       final String exceptionMessage = e.getMessage();
       assertTrue(exceptionMessage.contains("Invalid shard"));
       assertTrue(exceptionMessage.contains("invalid$shard@name"));
-      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, and alphanumerics"));
+      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
     }
   }
   
@@ -65,7 +65,7 @@ public class TestCollectionAdminRequest extends LuceneTestCase {
       final String exceptionMessage = e.getMessage();
       assertTrue(exceptionMessage.contains("Invalid alias"));
       assertTrue(exceptionMessage.contains("invalid$alias@name"));
-      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, and alphanumerics"));
+      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
     }
   }
   
@@ -79,7 +79,7 @@ public class TestCollectionAdminRequest extends LuceneTestCase {
       final String exceptionMessage = e.getMessage();
       assertTrue(exceptionMessage.contains("Invalid shard"));
       assertTrue(exceptionMessage.contains("invalid$shard@name"));
-      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, and alphanumerics"));
+      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
     }
   }
 }

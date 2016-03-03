@@ -382,6 +382,8 @@ Other Changes
 
 * SOLR-8778: Deprecate CSVStrategy's setters, and make its pre-configured strategies immutable. (Steve Rowe)
 
+* SOLR-8725: Allow hyphen in collection, core, shard, and alias name as the non-first character (Anshum Gupta)
+
 ==================  5.5.1 ==================
 
 Bug Fixes

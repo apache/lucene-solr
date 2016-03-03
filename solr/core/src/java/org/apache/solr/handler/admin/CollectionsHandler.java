@@ -347,14 +347,12 @@ public class CollectionsHandler extends RequestHandlerBase {
         verifyRuleParams(h.coreContainer, props);
         final String collectionName = (String) props.get(NAME);
         if (!SolrIdentifierValidator.validateCollectionName(collectionName)) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid collection: " + collectionName
-          + ". Collection names must consist entirely of periods, underscores, and alphanumerics");
+          throw new SolrException(ErrorCode.BAD_REQUEST,
+              SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.COLLECTION, collectionName));
         }
         final String shardsParam = (String) props.get(SHARDS_PROP);
         if (StringUtils.isNotEmpty(shardsParam)) {
-          log.info("Validating shards param!!!!!!!!" + shardsParam);
           verifyShardsParam(shardsParam);
-          log.info("Validating shards param!!!!!!! done" + shardsParam);
         }
         if (SYSTEM_COLL.equals(collectionName)) {
           //We must always create a .system collection with only a single shard
@@ -434,8 +432,7 @@ public class CollectionsHandler extends RequestHandlerBase {
           throws Exception {
         final String aliasName = req.getParams().get(NAME);
         if (!SolrIdentifierValidator.validateCollectionName(aliasName)) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid alias: " + aliasName
-              + ". Aliases must consist entirely of periods, underscores, and alphanumerics");
+          throw new SolrException(ErrorCode.BAD_REQUEST, SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.ALIAS, aliasName));
         }
         return req.getParams().required().getAll(null, NAME, "collections");
       }
@@ -502,8 +499,8 @@ public class CollectionsHandler extends RequestHandlerBase {
         ClusterState clusterState = handler.coreContainer.getZkController().getClusterState();
         final String newShardName = req.getParams().get(SHARD_ID_PROP);
         if (!SolrIdentifierValidator.validateShardName(newShardName)) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid shard: " + newShardName
-              + ". Shard names must consist entirely of periods, underscores, and alphanumerics");
+          throw new SolrException(ErrorCode.BAD_REQUEST, SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.SHARD,
+              newShardName));
         }
         if (!ImplicitDocRouter.NAME.equals(((Map) clusterState.getCollection(req.getParams().get(COLLECTION_PROP)).get(DOC_ROUTER)).get(NAME)))
           throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections");
@@ -989,8 +986,8 @@ public class CollectionsHandler extends RequestHandlerBase {
   private static void verifyShardsParam(String shardsParam) {
     for (String shard : shardsParam.split(",")) {
       if (!SolrIdentifierValidator.validateShardName(shard))
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid shard: " + shard
-            + ". Shard names must consist entirely of periods, underscores, and alphanumerics");;
+        throw new SolrException(ErrorCode.BAD_REQUEST, SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.SHARD,
+            shard));
     }
   }
 
