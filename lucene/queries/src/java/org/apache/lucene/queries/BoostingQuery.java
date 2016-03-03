@@ -139,6 +139,18 @@ public class BoostingQuery extends Query {
       return 31 * super.hashCode() + Objects.hash(match, context, boost);
     }
 
+    public Query getMatch() {
+      return match;
+    }
+
+    public Query getContext() {
+      return context;
+    }
+
+    public float getBoost() {
+      return boost;
+    }
+
     @Override
     public boolean equals(Object obj) {
       if (super.equals(obj) == false) {

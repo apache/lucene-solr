@@ -94,6 +94,11 @@ public class NGramPhraseQuery extends Query {
     return h;
   }
 
+  /** Return the n in n-gram */
+  public int getN() {
+    return n;
+  }
+
   /** Return the list of terms. */
   public Term[] getTerms() {
     return phraseQuery.getTerms();

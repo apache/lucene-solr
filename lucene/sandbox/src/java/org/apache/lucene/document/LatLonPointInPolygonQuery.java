@@ -177,6 +177,34 @@ final class LatLonPointInPolygonQuery extends Query {
     };
   }
 
+  public String getField() {
+    return field;
+  }
+
+  public double getMinLat() {
+    return minLat;
+  }
+
+  public double getMaxLat() {
+    return maxLat;
+  }
+
+  public double getMinLon() {
+    return minLon;
+  }
+
+  public double getMaxLon() {
+    return maxLon;
+  }
+
+  public double[] getPolyLats() {
+    return polyLats;
+  }
+
+  public double[] getPolyLons() {
+    return polyLons;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

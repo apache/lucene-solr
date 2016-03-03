@@ -96,6 +96,26 @@ public final class DocValuesRangeQuery extends Query {
     return 31 * super.hashCode() + Objects.hash(field, lowerVal, upperVal, includeLower, includeUpper);
   }
 
+  public String getField() {
+    return field;
+  }
+
+  public Object getLowerVal() {
+    return lowerVal;
+  }
+
+  public Object getUpperVal() {
+    return upperVal;
+  }
+
+  public boolean isIncludeLower() {
+    return includeLower;
+  }
+
+  public boolean isIncludeUpper() {
+    return includeUpper;
+  }
+
   @Override
   public String toString(String field) {
     StringBuilder sb = new StringBuilder();
