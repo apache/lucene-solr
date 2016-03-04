@@ -25,10 +25,6 @@ New Features
   input tokens. Useful for normalizing short text in clustering/linking 
   tasks. (Mark Harwood, Adrien Grand)
 
-* LUCENE-5735: NumberRangePrefixTreeStrategy now includes interval/range faceting
-  for counting ranges that align with the underlying terms as defined by the
-  NumberRangePrefixTree (e.g. familiar date units like days).  (David Smiley)
-
 * LUCENE-6711: Use CollectionStatistics.docCount() for IDF and average field
   length computations, to avoid skew from documents that don't have the field.
   (Ahmet Arslan via Robert Muir)
