@@ -259,6 +259,9 @@ Bug Fixes
 * SOLR-8769: Fix document exclusion in mlt query parser in Cloud mode for schemas that have non-"id"
   unique field (Erik Hatcher, Anshum Gupta)
 
+* SOLR-8728: ReplicaAssigner throws NPE when a partial list of nodes are only participating in replica
+  placement. splitshard should preassign nodes using rules, if rules are present (noble, Shai Erera)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
