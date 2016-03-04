@@ -7,6 +7,11 @@ http://s.apache.org/luceneversions
 
 Bug Fixes
 
+* LUCENE-7065: Fix the explain for the global ordinals join query. Before the
+  explain would also indicate that non matching documents would match.
+  On top of that with score mode average, the explain would fail with a NPE.
+  (Martijn van Groningen)
+
 * LUCENE-7187: Block join queries' Weight#extractTerms(...) implementations
   should delegate to the wrapped weight. (Martijn van Groningen)
 

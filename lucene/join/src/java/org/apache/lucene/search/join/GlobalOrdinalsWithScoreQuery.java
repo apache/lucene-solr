@@ -121,21 +121,28 @@ final class GlobalOrdinalsWithScoreQuery extends Query {
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       SortedDocValues values = DocValues.getSorted(context.reader(), joinField);
-      if (values != null) {
-        int segmentOrd = values.getOrd(doc);
-        if (segmentOrd != -1) {
-          final float score;
-          if (globalOrds != null) {
-            long globalOrd = globalOrds.getGlobalOrds(context.ord).get(segmentOrd);
-            score = collector.score((int) globalOrd);
-          } else {
-            score = collector.score(segmentOrd);
-          }
-          BytesRef joinValue = values.lookupOrd(segmentOrd);
-          return Explanation.match(score, "Score based on join value " + joinValue.utf8ToString());
-        }
+      if (values == null) {
+        return Explanation.noMatch("Not a match");
       }
-      return Explanation.noMatch("Not a match");
+
+      int segmentOrd = values.getOrd(doc);
+      if (segmentOrd == -1) {
+        return Explanation.noMatch("Not a match");
+      }
+      BytesRef joinValue = values.lookupOrd(segmentOrd);
+
+      int ord;
+      if (globalOrds != null) {
+        ord = (int) globalOrds.getGlobalOrds(context.ord).get(segmentOrd);
+      } else {
+        ord = segmentOrd;
+      }
+      if (collector.match(ord) == false) {
+        return Explanation.noMatch("Not a match, join value " + Term.toString(joinValue));
+      }
+
+      float score = collector.score(ord);
+      return Explanation.match(score, "A match, join value " + Term.toString(joinValue));
     }
 
     @Override

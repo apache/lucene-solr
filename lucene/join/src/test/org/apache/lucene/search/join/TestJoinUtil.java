@@ -51,6 +51,7 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -293,6 +294,108 @@ public class TestJoinUtil extends LuceneTestCase {
     assertEquals(0, result.scoreDocs[0].doc);
     assertEquals(3, result.scoreDocs[1].doc);
 
+    indexSearcher.getIndexReader().close();
+    dir.close();
+  }
+
+  public void testOrdinalsJoinExplainNoMatches() throws Exception {
+    final String idField = "id";
+    final String productIdField = "productId";
+    // A field indicating to what type a document belongs, which is then used to distinques between documents during joining.
+    final String typeField = "type";
+    // A single sorted doc values field that holds the join values for all document types.
+    // Typically during indexing a schema will automatically create this field with the values
+    final String joinField = idField + productIdField;
+
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(
+        dir, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE)
+    );
+
+    // 0
+    Document doc = new Document();
+    doc.add(new TextField(idField, "1", Field.Store.NO));
+    doc.add(new TextField(typeField, "product", Field.Store.NO));
+    doc.add(new TextField("description", "random text", Field.Store.NO));
+    doc.add(new TextField("name", "name1", Field.Store.NO));
+    doc.add(new SortedDocValuesField(joinField, new BytesRef("1")));
+    w.addDocument(doc);
+
+    // 1
+    doc = new Document();
+    doc.add(new TextField(idField, "2", Field.Store.NO));
+    doc.add(new TextField(typeField, "product", Field.Store.NO));
+    doc.add(new TextField("description", "random text", Field.Store.NO));
+    doc.add(new TextField("name", "name2", Field.Store.NO));
+    doc.add(new SortedDocValuesField(joinField, new BytesRef("2")));
+    w.addDocument(doc);
+
+    // 2
+    doc = new Document();
+    doc.add(new TextField(productIdField, "1", Field.Store.NO));
+    doc.add(new TextField(typeField, "price", Field.Store.NO));
+    doc.add(new TextField("price", "10.0", Field.Store.NO));
+    doc.add(new SortedDocValuesField(joinField, new BytesRef("1")));
+    w.addDocument(doc);
+
+    // 3
+    doc = new Document();
+    doc.add(new TextField(productIdField, "2", Field.Store.NO));
+    doc.add(new TextField(typeField, "price", Field.Store.NO));
+    doc.add(new TextField("price", "20.0", Field.Store.NO));
+    doc.add(new SortedDocValuesField(joinField, new BytesRef("1")));
+    w.addDocument(doc);
+
+    if (random().nextBoolean()) {
+      w.flush();
+    }
+
+    // 4
+    doc = new Document();
+    doc.add(new TextField(productIdField, "3", Field.Store.NO));
+    doc.add(new TextField(typeField, "price", Field.Store.NO));
+    doc.add(new TextField("price", "5.0", Field.Store.NO));
+    doc.add(new SortedDocValuesField(joinField, new BytesRef("2")));
+    w.addDocument(doc);
+
+    // 5
+    doc = new Document();
+    doc.add(new TextField("field", "value", Field.Store.NO));
+    w.addDocument(doc);
+
+    IndexReader r = DirectoryReader.open(w);
+    IndexSearcher indexSearcher = new IndexSearcher(r);
+    SortedDocValues[] values = new SortedDocValues[r.leaves().size()];
+    for (int i = 0; i < values.length; i++) {
+      LeafReader leafReader =  r.leaves().get(i).reader();
+      values[i] = DocValues.getSorted(leafReader, joinField);
+    }
+    MultiDocValues.OrdinalMap ordinalMap = MultiDocValues.OrdinalMap.build(
+        r.getCoreCacheKey(), values, PackedInts.DEFAULT
+    );
+
+    Query toQuery = new TermQuery(new Term("price", "5.0"));
+    Query fromQuery = new TermQuery(new Term("name", "name2"));
+
+    for (ScoreMode scoreMode : ScoreMode.values()) {
+      Query joinQuery = JoinUtil.createJoinQuery(joinField, fromQuery, toQuery, indexSearcher, scoreMode, ordinalMap);
+      TopDocs result = indexSearcher.search(joinQuery, 10);
+      assertEquals(1, result.totalHits);
+      assertEquals(4, result.scoreDocs[0].doc); // doc with price: 5.0
+      Explanation explanation = indexSearcher.explain(joinQuery, 4);
+      assertTrue(explanation.isMatch());
+      assertEquals(explanation.getDescription(), "A match, join value 2");
+
+      explanation = indexSearcher.explain(joinQuery, 3);
+      assertFalse(explanation.isMatch());
+      assertEquals(explanation.getDescription(), "Not a match, join value 1");
+
+      explanation = indexSearcher.explain(joinQuery, 5);
+      assertFalse(explanation.isMatch());
+      assertEquals(explanation.getDescription(), "Not a match");
+    }
+
+    w.close();
     indexSearcher.getIndexReader().close();
     dir.close();
   }
