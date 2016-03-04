@@ -55,7 +55,7 @@ public class ReplicaAssigner {
   Map<String, Integer> shardVsReplicaCount;
   Map<String, Map<String, Object>> nodeVsTags;
   Map<String, HashMap<String, Integer>> shardVsNodes;
-  List<String> liveNodes;
+  List<String> participatingLiveNodes;
   Set<String> tagNames = new HashSet<>();
   private Map<String, AtomicInteger> nodeVsCores = new HashMap<>();
 
@@ -93,12 +93,12 @@ public class ReplicaAssigner {
                          Map<String, Integer> shardVsReplicaCount,
                          List snitches,
                          Map<String, Map<String, Integer>> shardVsNodes,
-                         List<String> liveNodes,
+                         List<String> participatingLiveNodes,
                          CoreContainer cc, ClusterState clusterState) {
     this.rules = rules;
     for (Rule rule : rules) tagNames.add(rule.tag.name);
     this.shardVsReplicaCount = shardVsReplicaCount;
-    this.liveNodes = new ArrayList<>(liveNodes);
+    this.participatingLiveNodes = new ArrayList<>(participatingLiveNodes);
     this.nodeVsTags = getTagsForNodes(cc, snitches);
     this.shardVsNodes = getDeepCopy(shardVsNodes, 2);
     validateTags(nodeVsTags);
@@ -209,7 +209,7 @@ public class ReplicaAssigner {
     Map<Position, String> result = new LinkedHashMap<>();
     int startPosition = 0;
     Map<String, Map<String, Integer>> copyOfCurrentState = getDeepCopy(shardVsNodes, 2);
-    List<String> sortedLiveNodes = new ArrayList<>(this.liveNodes);
+    List<String> sortedLiveNodes = new ArrayList<>(this.participatingLiveNodes);
     Collections.sort(sortedLiveNodes, new Comparator<String>() {
       @Override
       public int compare(String n1, String n2) {
@@ -397,7 +397,7 @@ public class ReplicaAssigner {
     }
 
 
-    for (String node : liveNodes) {
+    for (String node : participatingLiveNodes) {
       //now use the Snitch to get the tags
       for (SnitchInfoImpl info : snitches.values()) {
         if (!info.myTags.isEmpty()) {
@@ -419,7 +419,7 @@ public class ReplicaAssigner {
         String node = e.getKey();
         if (context.exception != null) {
           failedNodes.put(node, context);
-          liveNodes.remove(node);
+          participatingLiveNodes.remove(node);
           log.warn("Not all tags were obtained from node " + node);
           context.exception = new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Not all tags were obtained from node " + node);
@@ -436,7 +436,7 @@ public class ReplicaAssigner {
       }
     }
 
-    if (liveNodes.isEmpty()) {
+    if (participatingLiveNodes.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not get all tags for any nodes");
 
     }

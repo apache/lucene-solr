@@ -228,6 +228,9 @@ Bug Fixes
 
 * SOLR-8375: ReplicaAssigner rejects valid nodes (Kelvin Tan, noble)
 
+* SOLR-8728: ReplicaAssigner throws NPE when a partial list of nodes are only participating in replica
+  placement. splitshard should preassign nodes using rules, if rules are present (noble, Shai Erera)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
