@@ -43,7 +43,7 @@ public class MultiPhraseQueryNodeBuilder implements StandardQueryBuilder {
   public MultiPhraseQuery build(QueryNode queryNode) throws QueryNodeException {
     MultiPhraseQueryNode phraseNode = (MultiPhraseQueryNode) queryNode;
 
-    MultiPhraseQuery phraseQuery = new MultiPhraseQuery();
+    MultiPhraseQuery.Builder phraseQueryBuilder = new MultiPhraseQuery.Builder();
 
     List<QueryNode> children = phraseNode.getChildren();
 
@@ -70,14 +70,14 @@ public class MultiPhraseQueryNodeBuilder implements StandardQueryBuilder {
       for (int positionIncrement : positionTermMap.keySet()) {
         List<Term> termList = positionTermMap.get(positionIncrement);
 
-        phraseQuery.add(termList.toArray(new Term[termList.size()]),
+        phraseQueryBuilder.add(termList.toArray(new Term[termList.size()]),
             positionIncrement);
 
       }
 
     }
 
-    return phraseQuery;
+    return phraseQueryBuilder.build();
 
   }
 

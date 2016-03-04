@@ -147,8 +147,8 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
     for (int i = 0; i < 10; i++) {
       MultiPhraseQuery q1 = randomPhraseQuery(seed);
       MultiPhraseQuery q2 = randomPhraseQuery(seed);
-      q1.setSlop(i);
-      q2.setSlop(i+1);
+      q1 = new MultiPhraseQuery.Builder(q1).setSlop(i).build();
+      q2 = new MultiPhraseQuery.Builder(q2).setSlop(i+1).build();
       assertSubsetOf(q1, q2);
     }
   }
@@ -156,7 +156,7 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
   private MultiPhraseQuery randomPhraseQuery(long seed) {
     Random random = new Random(seed);
     int length = TestUtil.nextInt(random, 2, 5);
-    MultiPhraseQuery pq = new MultiPhraseQuery();
+    MultiPhraseQuery.Builder pqb = new MultiPhraseQuery.Builder();
     int position = 0;
     for (int i = 0; i < length; i++) {
       int depth = TestUtil.nextInt(random, 1, 3);
@@ -164,9 +164,9 @@ public class TestSloppyPhraseQuery2 extends SearchEquivalenceTestBase {
       for (int j = 0; j < depth; j++) {
         terms[j] = new Term("field", "" + (char) TestUtil.nextInt(random, 'a', 'z'));
       }
-      pq.add(terms, position);
+      pqb.add(terms, position);
       position += TestUtil.nextInt(random, 1, 3);
     }
-    return pq;
+    return pqb.build();
   }
 }

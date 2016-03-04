@@ -231,11 +231,11 @@ public class TestComplexExplanations extends BaseExplanationTestCase {
   }
   
   public void testMPQ7() throws Exception {
-    MultiPhraseQuery q = new MultiPhraseQuery();
-    q.add(ta(new String[] {"w1"}));
-    q.add(ta(new String[] {"w2"}));
-    q.setSlop(1);
-    bqtest(new BoostQuery(q, 0), new int[] { 0,1,2 });
+    MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
+    qb.add(ta(new String[] {"w1"}));
+    qb.add(ta(new String[] {"w2"}));
+    qb.setSlop(1);
+    bqtest(new BoostQuery(qb.build(), 0), new int[] { 0,1,2 });
   }
   
   public void testBQ12() throws Exception {

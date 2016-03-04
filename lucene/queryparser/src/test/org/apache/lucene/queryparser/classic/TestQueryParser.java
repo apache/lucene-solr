@@ -338,16 +338,17 @@ public class TestQueryParser extends QueryParserTestBase {
   
   /** forms multiphrase query */
   public void testSynonymsPhrase() throws Exception {
-    MultiPhraseQuery expectedQ = new MultiPhraseQuery();
-    expectedQ.add(new Term("field", "old"));
-    expectedQ.add(new Term[] { new Term("field", "dogs"), new Term("field", "dog") });
+    MultiPhraseQuery.Builder expectedQBuilder = new MultiPhraseQuery.Builder();
+    expectedQBuilder.add(new Term("field", "old"));
+    expectedQBuilder.add(new Term[] { new Term("field", "dogs"), new Term("field", "dog") });
     QueryParser qp = new QueryParser("field", new MockSynonymAnalyzer());
-    assertEquals(expectedQ, qp.parse("\"old dogs\""));
+    assertEquals(expectedQBuilder.build(), qp.parse("\"old dogs\""));
     qp.setDefaultOperator(Operator.AND);
-    assertEquals(expectedQ, qp.parse("\"old dogs\""));
-    BoostQuery expected = new BoostQuery(expectedQ, 2f);
+    assertEquals(expectedQBuilder.build(), qp.parse("\"old dogs\""));
+    BoostQuery expected = new BoostQuery(expectedQBuilder.build(), 2f);
     assertEquals(expected, qp.parse("\"old dogs\"^2"));
-    expectedQ.setSlop(3);
+    expectedQBuilder.setSlop(3);
+    expected = new BoostQuery(expectedQBuilder.build(), 2f);
     assertEquals(expected, qp.parse("\"old dogs\"~3^2"));
   }
   
@@ -461,15 +462,16 @@ public class TestQueryParser extends QueryParserTestBase {
   
   /** forms multiphrase query */
   public void testCJKSynonymsPhrase() throws Exception {
-    MultiPhraseQuery expectedQ = new MultiPhraseQuery();
-    expectedQ.add(new Term("field", "中"));
-    expectedQ.add(new Term[] { new Term("field", "国"), new Term("field", "國")});
+    MultiPhraseQuery.Builder expectedQBuilder = new MultiPhraseQuery.Builder();
+    expectedQBuilder.add(new Term("field", "中"));
+    expectedQBuilder.add(new Term[] { new Term("field", "国"), new Term("field", "國")});
     QueryParser qp = new QueryParser("field", new MockCJKSynonymAnalyzer());
     qp.setDefaultOperator(Operator.AND);
-    assertEquals(expectedQ, qp.parse("\"中国\""));
-    Query expected = new BoostQuery(expectedQ, 2f);
+    assertEquals(expectedQBuilder.build(), qp.parse("\"中国\""));
+    Query expected = new BoostQuery(expectedQBuilder.build(), 2f);
     assertEquals(expected, qp.parse("\"中国\"^2"));
-    expectedQ.setSlop(3);
+    expectedQBuilder.setSlop(3);
+    expected = new BoostQuery(expectedQBuilder.build(), 2f);
     assertEquals(expected, qp.parse("\"中国\"~3^2"));
   }
 
