@@ -26,7 +26,7 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.LegacyNumericUtils;
+import org.apache.lucene.util.NumericUtils;
 
 import java.io.IOException;
 
@@ -198,7 +198,7 @@ public class ToParentBlockJoinSortField extends SortField {
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
-            return LegacyNumericUtils.sortableFloatBits((int) view.get(docID));
+            return NumericUtils.sortableFloatBits((int) view.get(docID));
           }
         };
       }
@@ -223,7 +223,7 @@ public class ToParentBlockJoinSortField extends SortField {
         return new NumericDocValues() {
           @Override
           public long get(int docID) {
-            return LegacyNumericUtils.sortableDoubleBits(view.get(docID));
+            return NumericUtils.sortableDoubleBits(view.get(docID));
           }
         };
       }

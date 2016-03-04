@@ -393,8 +393,8 @@ public class TestPointQueries extends LuceneTestCase {
     for(int i=0;i<10000;i++) {
       long v = random().nextLong();
       byte[] tmp = new byte[8];
-      NumericUtils.longToBytes(v, tmp, 0);
-      long v2 = NumericUtils.bytesToLong(tmp, 0);
+      NumericUtils.longToSortableBytes(v, tmp, 0);
+      long v2 = NumericUtils.sortableBytesToLong(tmp, 0);
       assertEquals("got bytes=" + Arrays.toString(tmp), v, v2);
     }
   }
@@ -467,7 +467,7 @@ public class TestPointQueries extends LuceneTestCase {
       if (missing.get(id) == false) {
         doc.add(new LongPoint("sn_value", values[id]));
         byte[] bytes = new byte[8];
-        NumericUtils.longToBytes(values[id], bytes, 0);
+        NumericUtils.longToSortableBytes(values[id], bytes, 0);
         doc.add(new BinaryPoint("ss_value", bytes));
       }
     }
@@ -529,11 +529,11 @@ public class TestPointQueries extends LuceneTestCase {
                 System.out.println("\n" + Thread.currentThread().getName() + ": TEST: iter=" + iter + " value=" + lower + " TO " + upper);
                 byte[] tmp = new byte[8];
                 if (lower != null) {
-                  NumericUtils.longToBytes(lower, tmp, 0);
+                  NumericUtils.longToSortableBytes(lower, tmp, 0);
                   System.out.println("  lower bytes=" + Arrays.toString(tmp));
                 }
                 if (upper != null) {
-                  NumericUtils.longToBytes(upper, tmp, 0);
+                  NumericUtils.longToSortableBytes(upper, tmp, 0);
                   System.out.println("  upper bytes=" + Arrays.toString(tmp));
                 }
               }
@@ -542,9 +542,9 @@ public class TestPointQueries extends LuceneTestCase {
                 query = LongPoint.newRangeQuery("sn_value", lower, upper);
               } else {
                 byte[] lowerBytes = new byte[8];
-                NumericUtils.longToBytes(lower, lowerBytes, 0);
+                NumericUtils.longToSortableBytes(lower, lowerBytes, 0);
                 byte[] upperBytes = new byte[8];
-                NumericUtils.longToBytes(upper, upperBytes, 0);
+                NumericUtils.longToSortableBytes(upper, upperBytes, 0);
                 query = BinaryPoint.newRangeQuery("ss_value", lowerBytes, upperBytes);
               }
 

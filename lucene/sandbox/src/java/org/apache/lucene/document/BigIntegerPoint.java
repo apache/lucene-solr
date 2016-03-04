@@ -142,12 +142,12 @@ public class BigIntegerPoint extends Field {
   
   /** Encode single BigInteger dimension */
   public static void encodeDimension(BigInteger value, byte dest[], int offset) {
-    NumericUtils.bigIntToBytes(value, BYTES, dest, offset);
+    NumericUtils.bigIntToSortableBytes(value, BYTES, dest, offset);
   }
   
   /** Decode single BigInteger dimension */
   public static BigInteger decodeDimension(byte value[], int offset) {
-    return NumericUtils.bytesToBigInt(value, offset, BYTES);
+    return NumericUtils.sortableBytesToBigInt(value, offset, BYTES);
   }
 
   // static methods for generating queries

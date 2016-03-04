@@ -173,7 +173,7 @@ public abstract class SorterTestBase extends LuceneTestCase {
     doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id + 1));
     doc.add(new Field(TERM_VECTORS_FIELD, Integer.toString(id), TERM_VECTORS_TYPE));
     byte[] bytes = new byte[4];
-    NumericUtils.intToBytes(id, bytes, 0);
+    NumericUtils.intToSortableBytes(id, bytes, 0);
     // TODO: index time sorting doesn't yet support points
     //doc.add(new BinaryPoint(DIMENSIONAL_FIELD, bytes));
     return doc;

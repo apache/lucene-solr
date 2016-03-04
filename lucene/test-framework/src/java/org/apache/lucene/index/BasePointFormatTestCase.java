@@ -69,7 +69,7 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
     byte[] point = new byte[4];
     for(int i=0;i<20;i++) {
       Document doc = new Document();
-      NumericUtils.intToBytes(i, point, 0);
+      NumericUtils.intToSortableBytes(i, point, 0);
       doc.add(new BinaryPoint("dim", point));
       w.addDocument(doc);
     }
@@ -93,7 +93,7 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
                        }
                        public void visit(int docID, byte[] packedValue) {
                          seen.set(docID);
-                         assertEquals(docID, NumericUtils.bytesToInt(packedValue, 0));
+                         assertEquals(docID, NumericUtils.sortableBytesToInt(packedValue, 0));
                        }
                      });
     assertEquals(20, seen.cardinality());
@@ -108,7 +108,7 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
     byte[] point = new byte[4];
     for(int i=0;i<20;i++) {
       Document doc = new Document();
-      NumericUtils.intToBytes(i, point, 0);
+      NumericUtils.intToSortableBytes(i, point, 0);
       doc.add(new BinaryPoint("dim", point));
       w.addDocument(doc);
       if (i == 10) {
@@ -135,7 +135,7 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
                        }
                        public void visit(int docID, byte[] packedValue) {
                          seen.set(docID);
-                         assertEquals(docID, NumericUtils.bytesToInt(packedValue, 0));
+                         assertEquals(docID, NumericUtils.sortableBytesToInt(packedValue, 0));
                        }
                      });
     assertEquals(20, seen.cardinality());
@@ -149,7 +149,7 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
     byte[] point = new byte[4];
     for(int i=0;i<10;i++) {
       Document doc = new Document();
-      NumericUtils.intToBytes(i, point, 0);
+      NumericUtils.intToSortableBytes(i, point, 0);
       doc.add(new BinaryPoint("dim", point));
       doc.add(new NumericDocValuesField("id", i));
       doc.add(newStringField("x", "x", Field.Store.NO));
@@ -183,7 +183,7 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
                              if (liveDocs.get(docID)) {
                                seen.set(docID);
                              }
-                             assertEquals(idValues.get(docID), NumericUtils.bytesToInt(packedValue, 0));
+                             assertEquals(idValues.get(docID), NumericUtils.sortableBytesToInt(packedValue, 0));
                            }
                          });
         assertEquals(0, seen.cardinality());
@@ -349,7 +349,7 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
         for(int dim=0;dim<numDims;dim++) {
           values[dim] = randomBigInt(numBytesPerDim);
           bytes[dim] = new byte[numBytesPerDim];
-          NumericUtils.bigIntToBytes(values[dim], numBytesPerDim, bytes[dim], 0);
+          NumericUtils.bigIntToSortableBytes(values[dim], numBytesPerDim, bytes[dim], 0);
           if (VERBOSE) {
             System.out.println("    " + dim + " -> " + values[dim]);
           }
@@ -405,7 +405,7 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
               public void visit(int docID, byte[] packedValue) {
                 //System.out.println("visit check docID=" + docID);
                 for(int dim=0;dim<numDims;dim++) {
-                  BigInteger x = NumericUtils.bytesToBigInt(packedValue, dim * numBytesPerDim, numBytesPerDim);
+                  BigInteger x = NumericUtils.sortableBytesToBigInt(packedValue, dim * numBytesPerDim, numBytesPerDim);
                   if (x.compareTo(queryMin[dim]) < 0 || x.compareTo(queryMax[dim]) > 0) {
                     //System.out.println("  no");
                     return;
@@ -420,8 +420,8 @@ public abstract class BasePointFormatTestCase extends BaseIndexFileFormatTestCas
               public Relation compare(byte[] minPacked, byte[] maxPacked) {
                 boolean crosses = false;
                 for(int dim=0;dim<numDims;dim++) {
-                  BigInteger min = NumericUtils.bytesToBigInt(minPacked, dim * numBytesPerDim, numBytesPerDim);
-                  BigInteger max = NumericUtils.bytesToBigInt(maxPacked, dim * numBytesPerDim, numBytesPerDim);
+                  BigInteger min = NumericUtils.sortableBytesToBigInt(minPacked, dim * numBytesPerDim, numBytesPerDim);
+                  BigInteger max = NumericUtils.sortableBytesToBigInt(maxPacked, dim * numBytesPerDim, numBytesPerDim);
                   assert max.compareTo(min) >= 0;
 
                   if (max.compareTo(queryMin[dim]) < 0 || min.compareTo(queryMax[dim]) > 0) {

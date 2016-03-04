@@ -33,6 +33,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.LegacyNumericUtils;
+import org.apache.lucene.util.NumericUtils;
 
 /** Represents a range over double values.
  *
@@ -83,8 +84,8 @@ public final class DoubleRange extends Range {
 
   LongRange toLongRange() {
     return new LongRange(label,
-                         LegacyNumericUtils.doubleToSortableLong(min), true,
-                         LegacyNumericUtils.doubleToSortableLong(max), true);
+                         NumericUtils.doubleToSortableLong(min), true,
+                         NumericUtils.doubleToSortableLong(max), true);
   }
 
   @Override
