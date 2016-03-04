@@ -24,7 +24,9 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -86,7 +88,32 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     // and the new sub-shards don't have any.
     waitForRecoveriesToFinish(true);
     //waitForThingsToLevelOut(15);
+  }
 
+  @Test
+  public void testSplitShardWithRule() throws Exception {
+    waitForThingsToLevelOut(15);
+
+    if (usually()) {
+      log.info("Using legacyCloud=false for cluster");
+      CollectionsAPIDistributedZkTest.setClusterProp(cloudClient, "legacyCloud", "false");
+    }
+
+    log.info("Starting testSplitShardWithRule");
+    String collectionName = "shardSplitWithRule";
+    CollectionAdminRequest.Create createRequest = new CollectionAdminRequest.Create()
+        .setCollectionName(collectionName)
+        .setNumShards(1)
+        .setReplicationFactor(2)
+        .setRule("shard:*,replica:<2,node:*");
+    CollectionAdminResponse response = createRequest.process(cloudClient);
+    assertEquals(0, response.getStatus());
+
+    CollectionAdminRequest.SplitShard splitShardRequest = new CollectionAdminRequest.SplitShard()
+        .setCollectionName(collectionName)
+        .setShardName("shard1");
+    response = splitShardRequest.process(cloudClient);
+    assertEquals(String.valueOf(response.getErrorMessages()), 0, response.getStatus());
   }
 
   private void incompleteOrOverlappingCustomRangeTest() throws Exception  {

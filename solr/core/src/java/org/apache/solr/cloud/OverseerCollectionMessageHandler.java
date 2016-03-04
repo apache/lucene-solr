@@ -1202,13 +1202,18 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       
       // TODO: change this to handle sharding a slice into > 2 sub-shards.
 
+
+      Map<Position, String> nodeMap = identifyNodes(clusterState,
+          new ArrayList<>(clusterState.getLiveNodes()),
+          new ZkNodeProps(collection.getProperties()),
+          subSlices, repFactor - 1);
+
       List<Map<String, Object>> replicas = new ArrayList<>((repFactor - 1) * 2);
-      for (int i = 1; i <= subSlices.size(); i++) {
-        Collections.shuffle(nodeList, RANDOM);
-        String sliceName = subSlices.get(i - 1);
-        for (int j = 2; j <= repFactor; j++) {
-          String subShardNodeName = nodeList.get((repFactor * (i - 1) + (j - 2)) % nodeList.size());
-          String shardName = collectionName + "_" + sliceName + "_replica" + (j);
+
+        for (Map.Entry<Position, String> entry : nodeMap.entrySet()) {
+          String sliceName = entry.getKey().shard;
+          String subShardNodeName = entry.getValue();
+          String shardName = collectionName + "_" + sliceName + "_replica" + (entry.getKey().index);
 
           log.info("Creating replica shard " + shardName + " as part of slice " + sliceName + " of collection "
               + collectionName + " on " + subShardNodeName);
@@ -1243,7 +1248,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
           replicas.add(propMap);
         }
-      }
 
       // we must set the slice state into recovery before actually creating the replica cores
       // this ensures that the logic inside Overseer to update sub-shard state to 'active'
@@ -1975,8 +1979,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
                                               ZkNodeProps message,
                                               List<String> shardNames,
                                               int repFactor) throws IOException {
-    List<Map> maps = (List) message.get("rule");
-    if (maps == null) {
+    List<Map> rulesMap = (List) message.get("rule");
+    if (rulesMap == null) {
       int i = 0;
       Map<Position, String> result = new HashMap<>();
       for (String aShard : shardNames) {
@@ -1989,7 +1993,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
 
     List<Rule> rules = new ArrayList<>();
-    for (Object map : maps) rules.add(new Rule((Map) map));
+    for (Object map : rulesMap) rules.add(new Rule((Map) map));
 
     Map<String, Integer> sharVsReplicaCount = new HashMap<>();
 
@@ -2056,8 +2060,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
 
     // Kind of unnecessary, but it does put the logic of whether to override maxShardsPerNode in one place.
-    node = getNodesForNewReplicas(clusterState, collection, shard, 1, node,
-        overseer.getZkController().getCoreContainer()).get(0).nodeName;
+    if(node == null) {
+      node = getNodesForNewReplicas(clusterState, collection, shard, 1, node,
+          overseer.getZkController().getCoreContainer()).get(0).nodeName;
+    }
     log.info("Node not provided, Identified {} for creating new replica", node);
 
     if (!clusterState.liveNodesContain(node)) {
