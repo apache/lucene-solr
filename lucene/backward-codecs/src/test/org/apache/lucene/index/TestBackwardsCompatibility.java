@@ -692,7 +692,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // true if this is a 4.9+ index
     final boolean is49Index = MultiFields.getMergedFieldInfos(reader).fieldInfo("dvSortedNumeric") != null;
 
-    assert is40Index; // NOTE: currently we can only do this on trunk!
+    assert is40Index;
 
     final Bits liveDocs = MultiFields.getLiveDocs(reader);
 
