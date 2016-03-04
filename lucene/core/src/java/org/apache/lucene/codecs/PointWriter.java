@@ -131,6 +131,13 @@ public abstract class PointWriter implements Closeable {
   /** Default merge implementation to merge incoming points readers by visiting all their points and
    *  adding to this writer */
   public void merge(MergeState mergeState) throws IOException {
+    // check each incoming reader
+    for (PointReader reader : mergeState.pointReaders) {
+      if (reader != null) {
+        reader.checkIntegrity();
+      }
+    }
+    // merge field at a time
     for (FieldInfo fieldInfo : mergeState.mergeFieldInfos) {
       if (fieldInfo.getPointDimensionCount() != 0) {
         mergeOneField(mergeState, fieldInfo);
