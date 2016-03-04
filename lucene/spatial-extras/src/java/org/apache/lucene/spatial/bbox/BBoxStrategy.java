@@ -40,6 +40,7 @@ import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.apache.lucene.spatial.util.DistanceToShapeValueSource;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LegacyNumericUtils;
+import org.apache.lucene.util.NumericUtils;
 
 
 /**
@@ -581,7 +582,7 @@ public class BBoxStrategy extends SpatialStrategy {
 
   private Query makeNumberTermQuery(String field, double number) {
     BytesRefBuilder bytes = new BytesRefBuilder();
-    LegacyNumericUtils.longToPrefixCoded(LegacyNumericUtils.doubleToSortableLong(number), 0, bytes);
+    LegacyNumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(number), 0, bytes);
     return new TermQuery(new Term(field, bytes.get()));
   }
 

@@ -40,13 +40,6 @@ import org.apache.lucene.index.TermsEnum;
  * prefixed (in the first char) by the <code>shift</code> value (number of bits removed) used
  * during encoding.
  *
- * <p>To also index floating point numbers, this class supplies two methods to convert them
- * to integer values by changing their bit layout: {@link #doubleToSortableLong},
- * {@link #floatToSortableInt}. You will have no precision loss by
- * converting floating point numbers to integers and back (only that the integer form
- * is not usable). Other data types like dates can easily converted to longs or ints (e.g.
- * date to long: {@link java.util.Date#getTime}).
- *
  * <p>For easy usage, the trie algorithm is implemented for indexing inside
  * {@link org.apache.lucene.analysis.LegacyNumericTokenStream} that can index <code>int</code>, <code>long</code>,
  * <code>float</code>, and <code>double</code>. For querying,
@@ -229,58 +222,6 @@ public final class LegacyNumericUtils {
       sortableBits |= b;
     }
     return (sortableBits << getPrefixCodedIntShift(val)) ^ 0x80000000;
-  }
-
-  /**
-   * Converts a <code>double</code> value to a sortable signed <code>long</code>.
-   * The value is converted by getting their IEEE 754 floating-point &quot;double format&quot;
-   * bit layout and then some bits are swapped, to be able to compare the result as long.
-   * By this the precision is not reduced, but the value can easily used as a long.
-   * The sort order (including {@link Double#NaN}) is defined by
-   * {@link Double#compareTo}; {@code NaN} is greater than positive infinity.
-   * @see #sortableLongToDouble
-   */
-  public static long doubleToSortableLong(double val) {
-    return sortableDoubleBits(Double.doubleToLongBits(val));
-  }
-
-  /**
-   * Converts a sortable <code>long</code> back to a <code>double</code>.
-   * @see #doubleToSortableLong
-   */
-  public static double sortableLongToDouble(long val) {
-    return Double.longBitsToDouble(sortableDoubleBits(val));
-  }
-
-  /**
-   * Converts a <code>float</code> value to a sortable signed <code>int</code>.
-   * The value is converted by getting their IEEE 754 floating-point &quot;float format&quot;
-   * bit layout and then some bits are swapped, to be able to compare the result as int.
-   * By this the precision is not reduced, but the value can easily used as an int.
-   * The sort order (including {@link Float#NaN}) is defined by
-   * {@link Float#compareTo}; {@code NaN} is greater than positive infinity.
-   * @see #sortableIntToFloat
-   */
-  public static int floatToSortableInt(float val) {
-    return sortableFloatBits(Float.floatToIntBits(val));
-  }
-
-  /**
-   * Converts a sortable <code>int</code> back to a <code>float</code>.
-   * @see #floatToSortableInt
-   */
-  public static float sortableIntToFloat(int val) {
-    return Float.intBitsToFloat(sortableFloatBits(val));
-  }
-  
-  /** Converts IEEE 754 representation of a double to sortable order (or back to the original) */
-  public static long sortableDoubleBits(long bits) {
-    return bits ^ (bits >> 63) & 0x7fffffffffffffffL;
-  }
-  
-  /** Converts IEEE 754 representation of a float to sortable order (or back to the original) */
-  public static int sortableFloatBits(int bits) {
-    return bits ^ (bits >> 31) & 0x7fffffff;
   }
 
   /**

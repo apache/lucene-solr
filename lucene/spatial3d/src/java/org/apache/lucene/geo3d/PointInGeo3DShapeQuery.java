@@ -117,12 +117,12 @@ class PointInGeo3DShapeQuery extends Query {
                              // here are inclusive, we need to extend the bounds to the largest un-quantized values that
                              // could quantize into these bounds.  The encoding (Geo3DUtil.encodeValue) does
                              // a Math.round from double to long, so e.g. 1.4 -> 1, and -1.4 -> -1:
-                             double xMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.bytesToInt(minPackedValue, 0));
-                             double xMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.bytesToInt(maxPackedValue, 0));
-                             double yMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.bytesToInt(minPackedValue, 1 * Integer.BYTES));
-                             double yMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.bytesToInt(maxPackedValue, 1 * Integer.BYTES));
-                             double zMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.bytesToInt(minPackedValue, 2 * Integer.BYTES));
-                             double zMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.bytesToInt(maxPackedValue, 2 * Integer.BYTES));
+                             double xMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.sortableBytesToInt(minPackedValue, 0));
+                             double xMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.sortableBytesToInt(maxPackedValue, 0));
+                             double yMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.sortableBytesToInt(minPackedValue, 1 * Integer.BYTES));
+                             double yMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.sortableBytesToInt(maxPackedValue, 1 * Integer.BYTES));
+                             double zMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.sortableBytesToInt(minPackedValue, 2 * Integer.BYTES));
+                             double zMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.sortableBytesToInt(maxPackedValue, 2 * Integer.BYTES));
 
                              //System.out.println("  compare: x=" + cellXMin + "-" + cellXMax + " y=" + cellYMin + "-" + cellYMax + " z=" + cellZMin + "-" + cellZMax);
                              assert xMin <= xMax;

@@ -81,12 +81,12 @@ public final class Geo3DPoint extends Field {
   
   /** Encode single dimension */
   public static void encodeDimension(PlanetModel planetModel, double value, byte bytes[], int offset) {
-    NumericUtils.intToBytes(Geo3DUtil.encodeValue(planetModel.getMaximumMagnitude(), value), bytes, offset);
+    NumericUtils.intToSortableBytes(Geo3DUtil.encodeValue(planetModel.getMaximumMagnitude(), value), bytes, offset);
   }
   
   /** Decode single dimension */
   public static double decodeDimension(PlanetModel planetModel, byte value[], int offset) {
-    return Geo3DUtil.decodeValueCenter(planetModel.getMaximumMagnitude(), NumericUtils.bytesToInt(value, offset));
+    return Geo3DUtil.decodeValueCenter(planetModel.getMaximumMagnitude(), NumericUtils.sortableBytesToInt(value, offset));
   }
 
   /** Returns a query matching all points inside the provided shape.

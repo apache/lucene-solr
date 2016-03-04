@@ -145,8 +145,8 @@ public class TestLegacyNumericUtils extends LuceneTestCase {
     
     // check forward and back conversion
     for (int i=0; i<vals.length; i++) {
-      longVals[i]= LegacyNumericUtils.doubleToSortableLong(vals[i]);
-      assertTrue( "forward and back conversion should generate same double", Double.compare(vals[i], LegacyNumericUtils.sortableLongToDouble(longVals[i]))==0 );
+      longVals[i]= NumericUtils.doubleToSortableLong(vals[i]);
+      assertTrue( "forward and back conversion should generate same double", Double.compare(vals[i], NumericUtils.sortableLongToDouble(longVals[i]))==0 );
     }
     
     // check sort order (prefixVals should be ascending)
@@ -164,10 +164,10 @@ public class TestLegacyNumericUtils extends LuceneTestCase {
   };
 
   public void testSortableDoubleNaN() {
-    final long plusInf = LegacyNumericUtils.doubleToSortableLong(Double.POSITIVE_INFINITY);
+    final long plusInf = NumericUtils.doubleToSortableLong(Double.POSITIVE_INFINITY);
     for (double nan : DOUBLE_NANs) {
       assertTrue(Double.isNaN(nan));
-      final long sortable = LegacyNumericUtils.doubleToSortableLong(nan);
+      final long sortable = NumericUtils.doubleToSortableLong(nan);
       assertTrue("Double not sorted correctly: " + nan + ", long repr: " 
           + sortable + ", positive inf.: " + plusInf, sortable > plusInf);
     }
@@ -182,8 +182,8 @@ public class TestLegacyNumericUtils extends LuceneTestCase {
     
     // check forward and back conversion
     for (int i=0; i<vals.length; i++) {
-      intVals[i]= LegacyNumericUtils.floatToSortableInt(vals[i]);
-      assertTrue( "forward and back conversion should generate same double", Float.compare(vals[i], LegacyNumericUtils.sortableIntToFloat(intVals[i]))==0 );
+      intVals[i]= NumericUtils.floatToSortableInt(vals[i]);
+      assertTrue( "forward and back conversion should generate same double", Float.compare(vals[i], NumericUtils.sortableIntToFloat(intVals[i]))==0 );
     }
     
     // check sort order (prefixVals should be ascending)
@@ -201,10 +201,10 @@ public class TestLegacyNumericUtils extends LuceneTestCase {
   };
 
   public void testSortableFloatNaN() {
-    final int plusInf = LegacyNumericUtils.floatToSortableInt(Float.POSITIVE_INFINITY);
+    final int plusInf = NumericUtils.floatToSortableInt(Float.POSITIVE_INFINITY);
     for (float nan : FLOAT_NANs) {
       assertTrue(Float.isNaN(nan));
-      final int sortable = LegacyNumericUtils.floatToSortableInt(nan);
+      final int sortable = NumericUtils.floatToSortableInt(nan);
       assertTrue("Float not sorted correctly: " + nan + ", int repr: " 
           + sortable + ", positive inf.: " + plusInf, sortable > plusInf);
     }

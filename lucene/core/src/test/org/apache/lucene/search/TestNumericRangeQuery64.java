@@ -34,6 +34,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestLegacyNumericUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -559,7 +560,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     final long lower=-1000L, upper=+2000L;
     
     Query tq= LegacyNumericRangeQuery.newDoubleRange(field, precisionStep,
-        LegacyNumericUtils.sortableLongToDouble(lower), LegacyNumericUtils.sortableLongToDouble(upper), true, true);
+        NumericUtils.sortableLongToDouble(lower), NumericUtils.sortableLongToDouble(upper), true, true);
     TopDocs tTopDocs = searcher.search(tq, 1);
     assertEquals("Returned count of range query must be equal to inclusive range length", upper-lower+1, tTopDocs.totalHits );
   }

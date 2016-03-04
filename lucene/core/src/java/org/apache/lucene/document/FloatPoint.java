@@ -137,12 +137,12 @@ public final class FloatPoint extends Field {
   
   /** Encode single float dimension */
   public static void encodeDimension(float value, byte dest[], int offset) {
-    NumericUtils.intToBytes(NumericUtils.floatToSortableInt(value), dest, offset);
+    NumericUtils.intToSortableBytes(NumericUtils.floatToSortableInt(value), dest, offset);
   }
   
   /** Decode single float dimension */
   public static float decodeDimension(byte value[], int offset) {
-    return NumericUtils.sortableIntToFloat(NumericUtils.bytesToInt(value, offset));
+    return NumericUtils.sortableIntToFloat(NumericUtils.sortableBytesToInt(value, offset));
   }
   
   // static methods for generating queries

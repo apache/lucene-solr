@@ -81,7 +81,7 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
       return null;
     } else {
       byte[] bytes = new byte[Long.BYTES];
-      NumericUtils.longToBytes(l, bytes, 0);
+      NumericUtils.longToSortableBytes(l, bytes, 0);
       return new BytesRef(bytes);
     }
   }

@@ -137,12 +137,12 @@ public final class DoublePoint extends Field {
   
   /** Encode single double dimension */
   public static void encodeDimension(double value, byte dest[], int offset) {
-    NumericUtils.longToBytes(NumericUtils.doubleToSortableLong(value), dest, offset);
+    NumericUtils.longToSortableBytes(NumericUtils.doubleToSortableLong(value), dest, offset);
   }
   
   /** Decode single double dimension */
   public static double decodeDimension(byte value[], int offset) {
-    return NumericUtils.sortableLongToDouble(NumericUtils.bytesToLong(value, offset));
+    return NumericUtils.sortableLongToDouble(NumericUtils.sortableBytesToLong(value, offset));
   }
   
   // static methods for generating queries
