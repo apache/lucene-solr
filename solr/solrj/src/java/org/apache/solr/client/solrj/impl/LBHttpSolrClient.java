@@ -656,14 +656,11 @@ public class LBHttpSolrClient extends SolrClient {
   }
 
   private static Runnable getAliveCheckRunner(final WeakReference<LBHttpSolrClient> lbRef) {
-    return new Runnable() {
-      @Override
-      public void run() {
-        LBHttpSolrClient lb = lbRef.get();
-        if (lb != null && lb.zombieServers != null) {
-          for (ServerWrapper zombieServer : lb.zombieServers.values()) {
-            lb.checkAZombieServer(zombieServer);
-          }
+    return () -> {
+      LBHttpSolrClient lb = lbRef.get();
+      if (lb != null && lb.zombieServers != null) {
+        for (ServerWrapper zombieServer : lb.zombieServers.values()) {
+          lb.checkAZombieServer(zombieServer);
         }
       }
     };

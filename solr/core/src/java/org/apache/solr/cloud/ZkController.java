@@ -358,11 +358,8 @@ public final class ZkController {
     this.overseerCompletedMap = Overseer.getCompletedMap(zkClient);
     this.overseerFailureMap = Overseer.getFailureMap(zkClient);
     cmdExecutor = new ZkCmdExecutor(clientTimeout);
-    zkStateReader = new ZkStateReader(zkClient, new Runnable() {
-      @Override
-      public void run() {
-        if(cc!=null) cc.securityNodeChanged();
-      }
+    zkStateReader = new ZkStateReader(zkClient, () -> {
+      if (cc != null) cc.securityNodeChanged();
     });
 
     this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
@@ -2402,14 +2399,11 @@ public final class ZkController {
   }
 
   public OnReconnect getConfigDirListener() {
-    return new OnReconnect() {
-      @Override
-      public void command() {
-        synchronized (confDirectoryListeners) {
-          for (String s : confDirectoryListeners.keySet()) {
-            setConfWatcher(s, new WatcherImpl(s), null);
-            fireEventListeners(s);
-          }
+    return () -> {
+      synchronized (confDirectoryListeners) {
+        for (String s : confDirectoryListeners.keySet()) {
+          setConfWatcher(s, new WatcherImpl(s), null);
+          fireEventListeners(s);
         }
       }
     };

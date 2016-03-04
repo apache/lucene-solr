@@ -1612,12 +1612,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     final int mul = asc ? 1 : -1;
 
     if (field.equals("_docid_")) {
-     return new Comparator<Doc>() {
-      @Override
-      public int compare(Doc o1, Doc o2) {
-        return (o1.order - o2.order) * mul;
-      }
-     };
+     return (o1, o2) -> (o1.order - o2.order) * mul;
     }
 
     if (field.equals("score")) {
@@ -1669,16 +1664,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   public static Comparator<Doc> createComparator(final List<Comparator<Doc>> comparators) {
-    return new Comparator<Doc>() {
-      @Override
-      public int compare(Doc o1, Doc o2) {
-        int c = 0;
-        for (Comparator<Doc> comparator : comparators) {
-          c = comparator.compare(o1, o2);
-          if (c!=0) return c;
-        }
-        return o1.order - o2.order;
+    return (o1, o2) -> {
+      int c = 0;
+      for (Comparator<Doc> comparator : comparators) {
+        c = comparator.compare(o1, o2);
+        if (c!=0) return c;
       }
+      return o1.order - o2.order;
     };
   }
 

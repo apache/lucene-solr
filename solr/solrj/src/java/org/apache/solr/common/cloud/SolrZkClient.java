@@ -263,12 +263,7 @@ public class SolrZkClient implements Closeable {
       @Override
       public void process(final WatchedEvent event) {
         log.debug("Submitting job to respond to event " + event);
-        zkCallbackExecutor.submit(new Runnable () {
-          @Override
-          public void run () {
-            watcher.process(event);
-          }
-        });
+        zkCallbackExecutor.submit(() -> watcher.process(event));
       }
     };
   }

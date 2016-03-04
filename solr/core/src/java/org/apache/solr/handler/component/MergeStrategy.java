@@ -66,12 +66,10 @@ public interface MergeStrategy {
   * */
   public int getCost();
 
-  public static final Comparator MERGE_COMP = new Comparator() {
-                                                                  public int compare(Object o1, Object o2) {
-                                                                    MergeStrategy m1 = (MergeStrategy)o1;
-                                                                    MergeStrategy m2 = (MergeStrategy)o2;
-                                                                    return m1.getCost()-m2.getCost();
-                                                                  }
-                                                               };
+  final Comparator MERGE_COMP = (o1, o2) -> {
+    MergeStrategy m1 = (MergeStrategy) o1;
+    MergeStrategy m2 = (MergeStrategy) o2;
+    return m1.getCost() - m2.getCost();
+  };
 
 }

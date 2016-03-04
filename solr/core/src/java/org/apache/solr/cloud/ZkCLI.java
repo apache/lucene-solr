@@ -181,9 +181,7 @@ public class ZkCLI {
       SolrZkClient zkClient = null;
       try {
         zkClient = new SolrZkClient(zkServerAddress, 30000, 30000,
-            new OnReconnect() {
-              @Override
-              public void command() {}
+            () -> {
             });
         
         if (line.getOptionValue(CMD).equalsIgnoreCase(BOOTSTRAP)) {

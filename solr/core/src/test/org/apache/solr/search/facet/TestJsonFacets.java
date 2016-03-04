@@ -148,12 +148,9 @@ public class TestJsonFacets extends SolrTestCaseHS {
     for (int i=0; i<honda_model_counts.length-1; i++) {
       idx.add(i);
     }
-    Collections.sort(idx, new Comparator<Integer>() {
-      @Override
-      public int compare(Integer o1, Integer o2) {
-        int cmp = honda_model_counts[o2] - honda_model_counts[o1];
-        return cmp == 0 ? o1 - o2 : cmp;
-      }
+    Collections.sort(idx, (o1, o2) -> {
+      int cmp = honda_model_counts[o2] - honda_model_counts[o1];
+      return cmp == 0 ? o1 - o2 : cmp;
     });
 
 

@@ -351,13 +351,7 @@ public class TestIntervalFaceting extends SolrTestCaseJ4 {
     values[0] = random().nextInt(max);
     values[1] = random().nextInt(max);
     if (fieldName.startsWith("test_s")) {
-      Arrays.sort(values, new Comparator<Integer>() {
-
-        @Override
-        public int compare(Integer o1, Integer o2) {
-          return String.valueOf(o1).compareTo(String.valueOf(o2));
-        }
-      });
+      Arrays.sort(values, (o1, o2) -> String.valueOf(o1).compareTo(String.valueOf(o2)));
     } else {
       Arrays.sort(values);
     }
