@@ -123,7 +123,7 @@ API Changes
   Alan Woodward)
 
 * LUCENE-7064: MultiPhraseQuery is now immutable and should be constructed
-  with MultiPhraseQuery.Builder.
+  with MultiPhraseQuery.Builder. (Luc Vanlerberghe via Adrien Grand)
 
 Optimizations
 
