@@ -392,5 +392,10 @@ public abstract class CodecReader extends LeafReader implements Accountable {
     if (getTermVectorsReader() != null) {
       getTermVectorsReader().checkIntegrity();
     }
+
+    // points
+    if (getPointReader() != null) {
+      getPointReader().checkIntegrity();
+    }
   }
 }
