@@ -163,7 +163,9 @@ public class Rule {
         Map<String,Integer> nodesInThisShard = shardVsNodeSet.get(shardCondition.val.equals(WILD_WILD_CARD) ? entry.getKey() : shardName);
         if (nodesInThisShard != null) {
           for (Map.Entry<String,Integer> aNode : nodesInThisShard.entrySet()) {
-            Object obj = nodeVsTags.get(aNode.getKey()).get(tag.name);
+            Map<String, Object> tagValues = nodeVsTags.get(aNode.getKey());
+            if(tagValues == null) continue;
+            Object obj = tagValues.get(tag.name);
             if (tagCondition.canMatch(obj, phase)) countMatchingThisTagValue += aNode.getValue();
           }
         }
