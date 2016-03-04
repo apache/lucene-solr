@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.index;
 
-
 import org.apache.lucene.analysis.CannedBinaryTokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LegacyDoubleField;
@@ -29,6 +28,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestTerms extends LuceneTestCase {
@@ -167,8 +167,8 @@ public class TestTerms extends LuceneTestCase {
     
     IndexReader r = w.getReader();
     Terms terms = MultiFields.getTerms(r, "field");
-    assertEquals(minValue, LegacyNumericUtils.sortableIntToFloat(LegacyNumericUtils.getMinInt(terms)), 0.0f);
-    assertEquals(maxValue, LegacyNumericUtils.sortableIntToFloat(LegacyNumericUtils.getMaxInt(terms)), 0.0f);
+    assertEquals(minValue, NumericUtils.sortableIntToFloat(LegacyNumericUtils.getMinInt(terms)), 0.0f);
+    assertEquals(maxValue, NumericUtils.sortableIntToFloat(LegacyNumericUtils.getMaxInt(terms)), 0.0f);
 
     r.close();
     w.close();
@@ -194,8 +194,8 @@ public class TestTerms extends LuceneTestCase {
 
     Terms terms = MultiFields.getTerms(r, "field");
 
-    assertEquals(minValue, LegacyNumericUtils.sortableLongToDouble(LegacyNumericUtils.getMinLong(terms)), 0.0);
-    assertEquals(maxValue, LegacyNumericUtils.sortableLongToDouble(LegacyNumericUtils.getMaxLong(terms)), 0.0);
+    assertEquals(minValue, NumericUtils.sortableLongToDouble(LegacyNumericUtils.getMinLong(terms)), 0.0);
+    assertEquals(maxValue, NumericUtils.sortableLongToDouble(LegacyNumericUtils.getMaxLong(terms)), 0.0);
 
     r.close();
     w.close();

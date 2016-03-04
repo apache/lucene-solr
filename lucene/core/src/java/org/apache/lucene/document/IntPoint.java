@@ -137,12 +137,12 @@ public final class IntPoint extends Field {
   
   /** Encode single integer dimension */
   public static void encodeDimension(int value, byte dest[], int offset) {
-    NumericUtils.intToBytes(value, dest, offset);
+    NumericUtils.intToSortableBytes(value, dest, offset);
   }
   
   /** Decode single integer dimension */
   public static int decodeDimension(byte value[], int offset) {
-    return NumericUtils.bytesToInt(value, offset);
+    return NumericUtils.sortableBytesToInt(value, offset);
   }
   
   // static methods for generating queries

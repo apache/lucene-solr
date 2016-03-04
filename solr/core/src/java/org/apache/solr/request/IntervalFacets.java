@@ -35,7 +35,7 @@ import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LegacyNumericUtils;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -554,10 +554,10 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             startLimit = ((Integer) schemaField.getType().toObject(schemaField, start)).longValue();
             break;
           case FLOAT:
-            startLimit = LegacyNumericUtils.floatToSortableInt((float) schemaField.getType().toObject(schemaField, start));
+            startLimit = NumericUtils.floatToSortableInt((float) schemaField.getType().toObject(schemaField, start));
             break;
           case DOUBLE:
-            startLimit = LegacyNumericUtils.doubleToSortableLong((double) schemaField.getType().toObject(schemaField, start));
+            startLimit = NumericUtils.doubleToSortableLong((double) schemaField.getType().toObject(schemaField, start));
             break;
           default:
             throw new AssertionError();
@@ -583,10 +583,10 @@ public class IntervalFacets implements Iterable<FacetInterval> {
             endLimit = ((Integer) schemaField.getType().toObject(schemaField, end)).longValue();
             break;
           case FLOAT:
-            endLimit = LegacyNumericUtils.floatToSortableInt((float) schemaField.getType().toObject(schemaField, end));
+            endLimit = NumericUtils.floatToSortableInt((float) schemaField.getType().toObject(schemaField, end));
             break;
           case DOUBLE:
-            endLimit = LegacyNumericUtils.doubleToSortableLong((double) schemaField.getType().toObject(schemaField, end));
+            endLimit = NumericUtils.doubleToSortableLong((double) schemaField.getType().toObject(schemaField, end));
             break;
           default:
             throw new AssertionError();
@@ -753,8 +753,8 @@ public class IntervalFacets implements Iterable<FacetInterval> {
      * <li>{@link IntervalCompareResult#GREATER_THAN_END} if the value is greater than {@code endLimit}
      * <li>{@link IntervalCompareResult#LOWER_THAN_START} if the value is lower than {@code startLimit}
      * </ul>
-     * @see org.apache.lucene.util.LegacyNumericUtils#floatToSortableInt(float)
-     * @see org.apache.lucene.util.LegacyNumericUtils#doubleToSortableLong(double)
+     * @see org.apache.lucene.util.NumericUtils#floatToSortableInt(float)
+     * @see org.apache.lucene.util.NumericUtils#doubleToSortableLong(double)
      */
     public IntervalCompareResult includes(long value) {
       if (startLimit > value) {

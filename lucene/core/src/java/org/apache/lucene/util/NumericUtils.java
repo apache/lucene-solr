@@ -22,6 +22,14 @@ import java.util.Arrays;
 
 /**
  * Helper APIs to encode numeric values as sortable bytes and vice-versa.
+ * 
+ * <p>
+ * To also index floating point numbers, this class supplies two methods to convert them
+ * to integer values by changing their bit layout: {@link #doubleToSortableLong},
+ * {@link #floatToSortableInt}. You will have no precision loss by
+ * converting floating point numbers to integers and back (only that the integer form
+ * is not usable). Other data types like dates can easily converted to longs or ints (e.g.
+ * date to long: {@link java.util.Date#getTime}).
  *
  * @lucene.internal
  */
@@ -38,16 +46,16 @@ public final class NumericUtils {
    * {@link Double#compareTo}; {@code NaN} is greater than positive infinity.
    * @see #sortableLongToDouble
    */
-  public static long doubleToSortableLong(double val) {
-    return sortableDoubleBits(Double.doubleToLongBits(val));
+  public static long doubleToSortableLong(double value) {
+    return sortableDoubleBits(Double.doubleToLongBits(value));
   }
 
   /**
    * Converts a sortable <code>long</code> back to a <code>double</code>.
    * @see #doubleToSortableLong
    */
-  public static double sortableLongToDouble(long val) {
-    return Double.longBitsToDouble(sortableDoubleBits(val));
+  public static double sortableLongToDouble(long encoded) {
+    return Double.longBitsToDouble(sortableDoubleBits(encoded));
   }
 
   /**
@@ -59,16 +67,16 @@ public final class NumericUtils {
    * {@link Float#compareTo}; {@code NaN} is greater than positive infinity.
    * @see #sortableIntToFloat
    */
-  public static int floatToSortableInt(float val) {
-    return sortableFloatBits(Float.floatToIntBits(val));
+  public static int floatToSortableInt(float value) {
+    return sortableFloatBits(Float.floatToIntBits(value));
   }
 
   /**
    * Converts a sortable <code>int</code> back to a <code>float</code>.
    * @see #floatToSortableInt
    */
-  public static float sortableIntToFloat(int val) {
-    return Float.intBitsToFloat(sortableFloatBits(val));
+  public static float sortableIntToFloat(int encoded) {
+    return Float.intBitsToFloat(sortableFloatBits(encoded));
   }
   
   /** Converts IEEE 754 representation of a double to sortable order (or back to the original) */
@@ -122,83 +130,76 @@ public final class NumericUtils {
     }
   }
 
-  /** Returns true if N-dim rect A contains N-dim rect B */
-  public static boolean contains(int bytesPerDim,
-                                 byte[] minPackedA, byte[] maxPackedA,
-                                 byte[] minPackedB, byte[] maxPackedB) {
-    int dims = minPackedA.length / bytesPerDim;
-    for(int dim=0;dim<dims;dim++) {
-      int offset = dim * bytesPerDim;
-      if (StringHelper.compare(bytesPerDim, minPackedA, offset, minPackedB, offset) > 0) {
-        return false;
-      }
-      if (StringHelper.compare(bytesPerDim, maxPackedA, offset, maxPackedB, offset) < 0) {
-        return false;
-      }
-    }
-
-    return true;
-  }
-
-  public static void intToBytes(int x, byte[] dest, int offset) {
+  /** 
+   * Encodes an integer {@code value} such that unsigned byte order comparison
+   * is consistent with {@link Integer#compare(int, int)}
+   * @see #sortableBytesToInt(byte[], int)
+   */
+  public static void intToSortableBytes(int value, byte[] result, int offset) {
     // Flip the sign bit, so negative ints sort before positive ints correctly:
-    x ^= 0x80000000;
-    for (int i = 0; i < 4; i++) {
-      dest[offset+i] = (byte) (x >> 24-i*8);
-    }
+    value ^= 0x80000000;
+    result[offset] =   (byte) (value >> 24);
+    result[offset+1] = (byte) (value >> 16);
+    result[offset+2] = (byte) (value >>  8);
+    result[offset+3] = (byte) value;
   }
 
-  public static int bytesToInt(byte[] src, int offset) {
-    int x = 0;
-    for (int i = 0; i < 4; i++) {
-      x |= (src[offset+i] & 0xff) << (24-i*8);
-    }
+  /**
+   * Decodes an integer value previously written with {@link #intToSortableBytes}
+   * @see #intToSortableBytes(int, byte[], int)
+   */
+  public static int sortableBytesToInt(byte[] encoded, int offset) {
+    int x = ((encoded[offset] & 0xFF) << 24)   | 
+            ((encoded[offset+1] & 0xFF) << 16) |
+            ((encoded[offset+2] & 0xFF) <<  8) | 
+             (encoded[offset+3] & 0xFF);
     // Re-flip the sign bit to restore the original value:
     return x ^ 0x80000000;
   }
 
-  public static void longToBytes(long v, byte[] bytes, int offset) {
+  /** 
+   * Encodes an long {@code value} such that unsigned byte order comparison
+   * is consistent with {@link Long#compare(long, long)}
+   * @see #sortableBytesToLong(byte[], int)
+   */
+  public static void longToSortableBytes(long value, byte[] result, int offset) {
     // Flip the sign bit so negative longs sort before positive longs:
-    v ^= 0x8000000000000000L;
-    longToBytesDirect(v, bytes, offset);
+    value ^= 0x8000000000000000L;
+    result[offset] =   (byte) (value >> 56);
+    result[offset+1] = (byte) (value >> 48);
+    result[offset+2] = (byte) (value >> 40);
+    result[offset+3] = (byte) (value >> 32);
+    result[offset+4] = (byte) (value >> 24);
+    result[offset+5] = (byte) (value >> 16);
+    result[offset+6] = (byte) (value >> 8);
+    result[offset+7] = (byte) value;
   }
 
-  public static void longToBytesDirect(long v, byte[] bytes, int offset) {
-    bytes[offset] = (byte) (v >> 56);
-    bytes[offset+1] = (byte) (v >> 48);
-    bytes[offset+2] = (byte) (v >> 40);
-    bytes[offset+3] = (byte) (v >> 32);
-    bytes[offset+4] = (byte) (v >> 24);
-    bytes[offset+5] = (byte) (v >> 16);
-    bytes[offset+6] = (byte) (v >> 8);
-    bytes[offset+7] = (byte) v;
-  }
-
-  public static long bytesToLong(byte[] bytes, int offset) {
-    long v = bytesToLongDirect(bytes, offset);
+  /**
+   * Decodes a long value previously written with {@link #longToSortableBytes}
+   * @see #longToSortableBytes(long, byte[], int)
+   */
+  public static long sortableBytesToLong(byte[] encoded, int offset) {
+    long v = ((encoded[offset] & 0xFFL) << 56)   |
+             ((encoded[offset+1] & 0xFFL) << 48) |
+             ((encoded[offset+2] & 0xFFL) << 40) |
+             ((encoded[offset+3] & 0xFFL) << 32) |
+             ((encoded[offset+4] & 0xFFL) << 24) |
+             ((encoded[offset+5] & 0xFFL) << 16) |
+             ((encoded[offset+6] & 0xFFL) << 8)  |
+              (encoded[offset+7] & 0xFFL);
     // Flip the sign bit back
     v ^= 0x8000000000000000L;
     return v;
   }
 
-  public static long bytesToLongDirect(byte[] bytes, int offset) {
-    long v = ((bytes[offset] & 0xffL) << 56) |
-      ((bytes[offset+1] & 0xffL) << 48) |
-      ((bytes[offset+2] & 0xffL) << 40) |
-      ((bytes[offset+3] & 0xffL) << 32) |
-      ((bytes[offset+4] & 0xffL) << 24) |
-      ((bytes[offset+5] & 0xffL) << 16) |
-      ((bytes[offset+6] & 0xffL) << 8) |
-      (bytes[offset+7] & 0xffL);
-    return v;
-  }
-
-  public static void sortableBigIntBytes(byte[] bytes) {
-    // Flip the sign bit so negative bigints sort before positive bigints:
-    bytes[0] ^= 0x80;
-  }
-
-  public static void bigIntToBytes(BigInteger bigInt, int bigIntSize, byte[] result, int offset) {
+  /** 
+   * Encodes a BigInteger {@code value} such that unsigned byte order comparison
+   * is consistent with {@link BigInteger#compareTo(BigInteger)}. This also sign-extends
+   * the value to {@code bigIntSize} bytes if necessary: useful to create a fixed-width size.
+   * @see #sortableBytesToBigInt(byte[], int, int)
+   */
+  public static void bigIntToSortableBytes(BigInteger bigInt, int bigIntSize, byte[] result, int offset) {
     byte[] bigIntBytes = bigInt.toByteArray();
     byte[] fullBigIntBytes;
 
@@ -214,17 +215,23 @@ public final class NumericUtils {
     } else {
       throw new IllegalArgumentException("BigInteger: " + bigInt + " requires more than " + bigIntSize + " bytes storage");
     }
-    sortableBigIntBytes(fullBigIntBytes);
+    // Flip the sign bit so negative bigints sort before positive bigints:
+    fullBigIntBytes[0] ^= 0x80;
 
     System.arraycopy(fullBigIntBytes, 0, result, offset, bigIntSize);
 
-    assert bytesToBigInt(result, offset, bigIntSize).equals(bigInt): "bigInt=" + bigInt + " converted=" + bytesToBigInt(result, offset, bigIntSize);
+    assert sortableBytesToBigInt(result, offset, bigIntSize).equals(bigInt): "bigInt=" + bigInt + " converted=" + sortableBytesToBigInt(result, offset, bigIntSize);
   }
 
-  public static BigInteger bytesToBigInt(byte[] bytes, int offset, int length) {
+  /**
+   * Decodes a BigInteger value previously written with {@link #bigIntToSortableBytes}
+   * @see #bigIntToSortableBytes(BigInteger, int, byte[], int)
+   */
+  public static BigInteger sortableBytesToBigInt(byte[] encoded, int offset, int length) {
     byte[] bigIntBytes = new byte[length];
-    System.arraycopy(bytes, offset, bigIntBytes, 0, length);
-    sortableBigIntBytes(bigIntBytes);
+    System.arraycopy(encoded, offset, bigIntBytes, 0, length);
+    // Flip the sign bit back to the original
+    bigIntBytes[0] ^= 0x80;
     return new BigInteger(bigIntBytes);
   }
 }

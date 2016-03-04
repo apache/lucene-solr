@@ -137,12 +137,12 @@ public final class LongPoint extends Field {
   
   /** Encode single long dimension */
   public static void encodeDimension(long value, byte dest[], int offset) {
-    NumericUtils.longToBytes(value, dest, offset);
+    NumericUtils.longToSortableBytes(value, dest, offset);
   }
   
   /** Decode single long dimension */
   public static long decodeDimension(byte value[], int offset) {
-    return NumericUtils.bytesToLong(value, offset);
+    return NumericUtils.sortableBytesToLong(value, offset);
   }
   
   // static methods for generating queries

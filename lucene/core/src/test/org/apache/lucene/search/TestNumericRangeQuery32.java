@@ -34,6 +34,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestLegacyNumericUtils; // NaN arrays
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -525,7 +526,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     final int lower=-1000, upper=+2000;
     
     Query tq= LegacyNumericRangeQuery.newFloatRange(field, precisionStep,
-        LegacyNumericUtils.sortableIntToFloat(lower), LegacyNumericUtils.sortableIntToFloat(upper), true, true);
+        NumericUtils.sortableIntToFloat(lower), NumericUtils.sortableIntToFloat(upper), true, true);
     TopDocs tTopDocs = searcher.search(tq, 1);
     assertEquals("Returned count of range query must be equal to inclusive range length", upper-lower+1, tTopDocs.totalHits );
   }
