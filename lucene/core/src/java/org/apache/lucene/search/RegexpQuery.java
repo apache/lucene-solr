@@ -109,7 +109,12 @@ public class RegexpQuery extends AutomatonQuery {
           new RegExp(term.text(), flags).toAutomaton(
                        provider, maxDeterminizedStates), maxDeterminizedStates);
   }
-  
+
+  /** Returns the regexp of this query wrapped in a Term. */
+  public Term getRegexp() {
+    return term;
+  }
+
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {

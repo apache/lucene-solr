@@ -200,42 +200,42 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   /* MultiPhraseQuery */
   
   public void testMPQ1() throws Exception {
-    MultiPhraseQuery q = new MultiPhraseQuery();
-    q.add(ta(new String[] {"w1"}));
-    q.add(ta(new String[] {"w2","w3", "xx"}));
-    qtest(q, new int[] { 0,1,2,3 });
+    MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
+    qb.add(ta(new String[] {"w1"}));
+    qb.add(ta(new String[] {"w2","w3", "xx"}));
+    qtest(qb.build(), new int[] { 0,1,2,3 });
   }
   public void testMPQ2() throws Exception {
-    MultiPhraseQuery q = new MultiPhraseQuery();
-    q.add(ta(new String[] {"w1"}));
-    q.add(ta(new String[] {"w2","w3"}));
-    qtest(q, new int[] { 0,1,3 });
+    MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
+    qb.add(ta(new String[] {"w1"}));
+    qb.add(ta(new String[] {"w2","w3"}));
+    qtest(qb.build(), new int[] { 0,1,3 });
   }
   public void testMPQ3() throws Exception {
-    MultiPhraseQuery q = new MultiPhraseQuery();
-    q.add(ta(new String[] {"w1","xx"}));
-    q.add(ta(new String[] {"w2","w3"}));
-    qtest(q, new int[] { 0,1,2,3 });
+    MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
+    qb.add(ta(new String[] {"w1","xx"}));
+    qb.add(ta(new String[] {"w2","w3"}));
+    qtest(qb.build(), new int[] { 0,1,2,3 });
   }
   public void testMPQ4() throws Exception {
-    MultiPhraseQuery q = new MultiPhraseQuery();
-    q.add(ta(new String[] {"w1"}));
-    q.add(ta(new String[] {"w2"}));
-    qtest(q, new int[] { 0 });
+    MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
+    qb.add(ta(new String[] {"w1"}));
+    qb.add(ta(new String[] {"w2"}));
+    qtest(qb.build(), new int[] { 0 });
   }
   public void testMPQ5() throws Exception {
-    MultiPhraseQuery q = new MultiPhraseQuery();
-    q.add(ta(new String[] {"w1"}));
-    q.add(ta(new String[] {"w2"}));
-    q.setSlop(1);
-    qtest(q, new int[] { 0,1,2 });
+    MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
+    qb.add(ta(new String[] {"w1"}));
+    qb.add(ta(new String[] {"w2"}));
+    qb.setSlop(1);
+    qtest(qb.build(), new int[] { 0,1,2 });
   }
   public void testMPQ6() throws Exception {
-    MultiPhraseQuery q = new MultiPhraseQuery();
-    q.add(ta(new String[] {"w1","w3"}));
-    q.add(ta(new String[] {"w2"}));
-    q.setSlop(1);
-    qtest(q, new int[] { 0,1,2,3 });
+    MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
+    qb.add(ta(new String[] {"w1","w3"}));
+    qb.add(ta(new String[] {"w2"}));
+    qb.setSlop(1);
+    qtest(qb.build(), new int[] { 0,1,2,3 });
   }
 
   /* some simple tests of boolean queries containing term queries */

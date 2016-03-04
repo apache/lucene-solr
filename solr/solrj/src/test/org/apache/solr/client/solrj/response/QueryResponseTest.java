@@ -40,33 +40,9 @@ import org.junit.Test;
 @Limit(bytes=20000)
 public class QueryResponseTest extends LuceneTestCase {
   @Test
-  public void testDateFacets() throws Exception   {
-    XMLResponseParser parser = new XMLResponseParser();
-    InputStream is = new SolrResourceLoader().openResource("solrj/sampleDateFacetResponse.xml");
-    assertNotNull(is);
-    Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
-    NamedList<Object> response = parser.processResponse(in);
-    in.close();
-    
-    QueryResponse qr = new QueryResponse(response, null);
-    Assert.assertNotNull(qr);
-    
-    Assert.assertNotNull(qr.getFacetDates());
-    
-    for (FacetField f : qr.getFacetDates()) {
-      Assert.assertNotNull(f);
-
-      // TODO - test values?
-      // System.out.println(f.toString());
-      // System.out.println("GAP: " + f.getGap());
-      // System.out.println("END: " + f.getEnd());
-    }
-  }
-
-  @Test
   public void testRangeFacets() throws Exception {
     XMLResponseParser parser = new XMLResponseParser();
-    InputStream is = new SolrResourceLoader().openResource("solrj/sampleDateFacetResponse.xml");
+    InputStream is = new SolrResourceLoader().openResource("solrj/sampleRangeFacetResponse.xml");
     assertNotNull(is);
     Reader in = new InputStreamReader(is, StandardCharsets.UTF_8);
     NamedList<Object> response = parser.processResponse(in);

@@ -371,15 +371,10 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
                 // for distributed queries that don't include shards.qt, use the original path
                 // as the default but operators need to update their luceneMatchVersion to enable
                 // this behavior since it did not work this way prior to 5.1
-                if (req.getCore().getSolrConfig().luceneMatchVersion.onOrAfter(Version.LUCENE_5_1_0)) {
-                  String reqPath = (String) req.getContext().get(PATH);
-                  if (!"/select".equals(reqPath)) {
-                    params.set(CommonParams.QT, reqPath);
-                  } // else if path is /select, then the qt gets passed thru if set
-                } else {
-                  // this is the pre-5.1 behavior, which translates to sending the shard request to /select
-                  params.remove(CommonParams.QT);
-                }
+                String reqPath = (String) req.getContext().get(PATH);
+                if (!"/select".equals(reqPath)) {
+                  params.set(CommonParams.QT, reqPath);
+                } // else if path is /select, then the qt gets passed thru if set
               }
               shardHandler1.submit(sreq, shard, params, rb.preferredHostAddress);
             }

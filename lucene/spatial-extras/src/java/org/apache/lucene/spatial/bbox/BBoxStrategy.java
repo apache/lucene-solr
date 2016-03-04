@@ -16,10 +16,10 @@
  */
 package org.apache.lucene.spatial.bbox;
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -40,6 +40,7 @@ import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
 import org.apache.lucene.spatial.util.DistanceToShapeValueSource;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LegacyNumericUtils;
+import org.apache.lucene.util.NumericUtils;
 
 
 /**
@@ -64,7 +65,7 @@ import org.apache.lucene.util.LegacyNumericUtils;
  * and a boolean to mark a dateline cross. Depending on the particular {@link
  * SpatialOperation}s, there are a variety of {@link org.apache.lucene.search.LegacyNumericRangeQuery}s to be
  * done.
- * The {@link #makeOverlapRatioValueSource(com.spatial4j.core.shape.Rectangle, double)}
+ * The {@link #makeOverlapRatioValueSource(org.locationtech.spatial4j.shape.Rectangle, double)}
  * works by calculating the query bbox overlap percentage against the indexed
  * shape overlap percentage. The indexed shape's coordinates are retrieved from
  * {@link org.apache.lucene.index.LeafReader#getNumericDocValues}.
@@ -581,7 +582,7 @@ public class BBoxStrategy extends SpatialStrategy {
 
   private Query makeNumberTermQuery(String field, double number) {
     BytesRefBuilder bytes = new BytesRefBuilder();
-    LegacyNumericUtils.longToPrefixCoded(LegacyNumericUtils.doubleToSortableLong(number), 0, bytes);
+    LegacyNumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(number), 0, bytes);
     return new TermQuery(new Term(field, bytes.get()));
   }
 

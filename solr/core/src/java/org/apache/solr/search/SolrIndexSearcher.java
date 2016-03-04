@@ -2392,11 +2392,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return openNanoTime;
   }
 
-  @Deprecated
-  public long getOpenTime() {
-    return openTime.getTime();
-  }
-
   @Override
   public Explanation explain(Query query, int doc) throws IOException {
     return super.explain(QueryUtils.makeQueryable(query), doc);

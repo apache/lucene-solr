@@ -87,8 +87,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(this.chain);
-    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained
-        .getFactories()[0]);
+    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
     factory.setEnabled(true);
     assertNotNull(chained);
 
@@ -108,8 +107,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(
         "dedupe");
-    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained
-        .getFactories()[0]);
+    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
     factory.setEnabled(true);
     assertNotNull(chained);
 
@@ -154,8 +152,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
   public void testMultiThreaded() throws Exception {
     UpdateRequestProcessorChain chained = h.getCore().getUpdateProcessingChain(
         "dedupe");
-    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained
-        .getFactories()[0]);
+    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
     factory.setEnabled(true);
     Thread[] threads = null;
     Thread[] threads2 = null;
@@ -271,8 +268,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core
         .getUpdateProcessingChain(chain);
-    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained
-        .getFactories()[0]);
+    SignatureUpdateProcessorFactory factory = ((SignatureUpdateProcessorFactory) chained.getProcessors().get(0));
     factory.setEnabled(true);
     
     Map<String,String[]> params = new HashMap<>();

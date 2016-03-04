@@ -57,12 +57,12 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Throwables;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.context.SpatialContextFactory;
-import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.context.SpatialContextFactory;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * Abstract base class for Solr FieldTypes based on a Lucene 4 {@link SpatialStrategy}.
@@ -91,8 +91,6 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   private final Cache<String, T> fieldStrategyCache = CacheBuilder.newBuilder().build();
 
   protected DistanceUnits distanceUnits;
-  @Deprecated
-  protected String units; // for back compat; hopefully null
 
   protected final Set<String> supportedScoreModes;
 
@@ -120,30 +118,11 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
       ctx = SpatialContextFactory.makeSpatialContext(argsWrap, schema.getResourceLoader().getClassLoader());
       args.keySet().removeAll(argsWrap.getSeenKeys());
     }
-    
-    final String unitsErrMsg = "units parameter is deprecated, please use distanceUnits instead for field types with class " +
-        getClass().getSimpleName();
-    this.units = args.remove("units");//deprecated
-    if (units != null) {
-      if ("degrees".equals(units)) {
-        log.warn(unitsErrMsg);
-      } else {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, unitsErrMsg);
-      }
-    }
 
     final String distanceUnitsStr = args.remove("distanceUnits");
     if (distanceUnitsStr == null) {
-      if (units != null) {
-        this.distanceUnits = DistanceUnits.BACKCOMPAT;
-      } else {
-        this.distanceUnits = ctx.isGeo() ? DistanceUnits.KILOMETERS : DistanceUnits.DEGREES;
-      }
+      this.distanceUnits = ctx.isGeo() ? DistanceUnits.KILOMETERS : DistanceUnits.DEGREES;
     } else {
-      // If both units and distanceUnits was specified
-      if (units != null) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, unitsErrMsg);
-      }
       this.distanceUnits = parseDistanceUnits(distanceUnitsStr);
       if (this.distanceUnits == null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

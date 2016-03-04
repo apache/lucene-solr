@@ -83,7 +83,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   // Backcompat index generation, described below, is mostly automated in: 
   //
-  //    dev-tools/scripts/addBackCompatIndexes.py
+  //    dev-tools/scripts/addBackcompatIndexes.py
   //
   // For usage information, see:
   //
@@ -215,27 +215,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
+  // TODO: on 6.0.0 release, gen the indices and add here:
   final static String[] oldNames = {
-      "5.0.0-cfs",
-      "5.0.0-nocfs",
-      "5.1.0-cfs",
-      "5.1.0-nocfs",
-      "5.2.0-cfs",
-      "5.2.0-nocfs",
-      "5.2.1-cfs",
-      "5.2.1-nocfs",
-      "5.3.0-cfs",
-      "5.3.0-nocfs",
-      "5.3.1-cfs",
-      "5.3.1-nocfs",
-      "5.3.2-cfs",
-      "5.3.2-nocfs",
-      "5.4.0-cfs",
-      "5.4.0-nocfs",
-      "5.4.1-cfs",
-      "5.4.1-nocfs",
-      "5.5.0-cfs",
-      "5.5.0-nocfs"
   };
   
   final String[] unsupportedNames = {
@@ -338,12 +319,33 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "4.10.4-cfs",
       "4.10.4-nocfs",
       "5x-with-4x-segments-cfs",
-      "5x-with-4x-segments-nocfs"
+      "5x-with-4x-segments-nocfs",
+      "5.0.0.singlesegment-cfs",
+      "5.0.0.singlesegment-nocfs",
+      "5.0.0-cfs",
+      "5.0.0-nocfs",
+      "5.1.0-cfs",
+      "5.1.0-nocfs",
+      "5.2.0-cfs",
+      "5.2.0-nocfs",
+      "5.2.1-cfs",
+      "5.2.1-nocfs",
+      "5.3.0-cfs",
+      "5.3.0-nocfs",
+      "5.3.1-cfs",
+      "5.3.1-nocfs",
+      "5.3.2-cfs",
+      "5.3.2-nocfs",
+      "5.4.0-cfs",
+      "5.4.0-nocfs",
+      "5.4.1-cfs",
+      "5.4.1-nocfs",
+      "5.5.0-cfs",
+      "5.5.0-nocfs"
   };
-  
+
+  // TODO: on 6.0.0 release, gen the single segment indices and add here:
   final static String[] oldSingleSegmentNames = {
-    "5.0.0.singlesegment-cfs",
-    "5.0.0.singlesegment-nocfs"
   };
   
   static Map<String,Directory> oldIndexDirs;
@@ -407,10 +409,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (java.lang.reflect.Field field : Version.class.getDeclaredFields()) {
       if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
         Version v = (Version)field.get(Version.class);
-        if (v.equals(Version.LATEST)) continue;
+        if (v.equals(Version.LATEST)) {
+          continue;
+        }
 
         Matcher constant = constantPattern.matcher(field.getName());
-        if (constant.matches() == false) continue;
+        if (constant.matches() == false) {
+          continue;
+        }
 
         expectedVersions.add(v.toString() + "-cfs");
       }
@@ -439,7 +445,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // find what versions we are testing
     List<String> testedVersions = new ArrayList<>();
     for (String testedVersion : oldNames) {
-      if (testedVersion.endsWith("-cfs") == false) continue;
+      if (testedVersion.endsWith("-cfs") == false) {
+        continue;
+      }
       testedVersions.add(testedVersion);
     }
     Collections.sort(testedVersions);
@@ -819,9 +827,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   public void changeIndexWithAdds(Random random, Directory dir, Version nameVersion) throws IOException {
     SegmentInfos infos = SegmentInfos.readLatestCommit(dir);
-    if (nameVersion.onOrAfter(Version.LUCENE_5_3_0)) {
-      assertEquals(nameVersion, infos.getCommitLuceneVersion());
-    }
+    assertEquals(nameVersion, infos.getCommitLuceneVersion());
     assertEquals(nameVersion, infos.getMinSegmentLuceneVersion());
 
     // open writer
@@ -947,6 +953,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // add numeric fields, to test if flex preserves encoding
     doc.add(new LegacyIntField("trieInt", id, Field.Store.NO));
     doc.add(new LegacyLongField("trieLong", (long) id, Field.Store.NO));
+
     // add docvalues fields
     doc.add(new NumericDocValuesField("dvByte", (byte) id));
     byte bytes[] = new byte[] {
@@ -1288,7 +1295,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public static final String emptyIndex = "empty.5.0.0.zip";
+  public static final String emptyIndex = "empty.6.0.0.zip";
 
   public void testUpgradeEmptyOldIndex() throws Exception {
     Path oldIndexDir = createTempDir("emptyIndex");
@@ -1302,7 +1309,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public static final String moreTermsIndex = "moreterms.5.0.0.zip";
+  public static final String moreTermsIndex = "moreterms.6.0.0.zip";
 
   public void testMoreTerms() throws Exception {
     Path oldIndexDir = createTempDir("moreterms");
@@ -1314,7 +1321,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  public static final String dvUpdatesIndex = "dvupdates.5.0.0.zip";
+  public static final String dvUpdatesIndex = "dvupdates.6.0.0.zip";
 
   private void assertNumericDocValues(LeafReader r, String f, String cf) throws IOException {
     NumericDocValues ndvf = r.getNumericDocValues(f);

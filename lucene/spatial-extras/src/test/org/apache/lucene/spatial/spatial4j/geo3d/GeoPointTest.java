@@ -21,7 +21,7 @@ import org.apache.lucene.geo3d.PlanetModel;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-import com.spatial4j.core.distance.DistanceUtils;
+import org.locationtech.spatial4j.distance.DistanceUtils;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomFloat;
 

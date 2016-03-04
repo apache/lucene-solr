@@ -419,8 +419,7 @@ public class ZkStateReader implements Closeable {
     }
 
     this.clusterState = new ClusterState(liveNodes, result, legacyClusterStateVersion);
-    LOG.debug("clusterStateSet: version [{}] legacy [{}] interesting [{}] watched [{}] lazy [{}] total [{}]",
-        clusterState.getZkClusterStateVersion(),
+    LOG.debug("clusterStateSet: legacy [{}] interesting [{}] watched [{}] lazy [{}] total [{}]",
         legacyCollectionStates.keySet().size(),
         interestingCollections.size(),
         watchedCollectionStates.keySet().size(),
@@ -428,8 +427,7 @@ public class ZkStateReader implements Closeable {
         clusterState.getCollectionStates().size());
 
     if (LOG.isTraceEnabled()) {
-      LOG.trace("clusterStateSet: version [{}] legacy [{}] interesting [{}] watched [{}] lazy [{}] total [{}]",
-          clusterState.getZkClusterStateVersion(),
+      LOG.trace("clusterStateSet: legacy [{}] interesting [{}] watched [{}] lazy [{}] total [{}]",
           legacyCollectionStates.keySet(),
           interestingCollections,
           watchedCollectionStates.keySet(),

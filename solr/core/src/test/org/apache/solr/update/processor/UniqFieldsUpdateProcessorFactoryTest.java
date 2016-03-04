@@ -59,8 +59,7 @@ public class UniqFieldsUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core
       .getUpdateProcessingChain("uniq-fields");
-    UniqFieldsUpdateProcessorFactory factory = ((UniqFieldsUpdateProcessorFactory) chained
-        .getFactories()[0]);
+    UniqFieldsUpdateProcessorFactory factory = ((UniqFieldsUpdateProcessorFactory) chained.getProcessors().get(0));
     assertNotNull(chained);
 
     addDoc(adoc("id", "1a", 

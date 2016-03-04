@@ -184,14 +184,6 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
       return this.shardName;
     }
 
-    @Deprecated
-    public ModifiableSolrParams getCommonParams() {
-      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      params.set(CoreAdminParams.COLLECTION, collection);
-      params.set(CoreAdminParams.SHARD, shardName);
-      return params;
-    }
-
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
@@ -300,15 +292,15 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     /**
      * Provide the name of the shards to be created, separated by commas
      * 
-     * Shard names must consist entirely of periods, underscores, and alphanumerics.  Other characters are not allowed.
+     * Shard names must consist entirely of periods, underscores, hyphens, and alphanumerics.  Other characters are not allowed.
      * 
      * @throws IllegalArgumentException if any of the shard names contain invalid characters.
      */
     public Create setShards(String shards) {
       for (String shard : shards.split(",")) {
         if (!SolrIdentifierValidator.validateShardName(shard)) {
-          throw new IllegalArgumentException("Invalid shard: " + shard
-              + ". Shard names must consist entirely of periods, underscores, and alphanumerics");
+          throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.SHARD,
+              shard));
         }
       }
       this.shards = shards;
@@ -325,8 +317,8 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     @Override
     public Create setCollectionName(String collectionName) throws SolrException {
       if (!SolrIdentifierValidator.validateCollectionName(collectionName)) {
-        throw new IllegalArgumentException("Invalid collection: " + collectionName
-            + ". Collection names must consist entirely of periods, underscores, and alphanumerics");
+        throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.COLLECTION,
+            collectionName));
       }
       this.collection = collectionName;
       return this;
@@ -448,15 +440,15 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     /**
      * Provide the name of the shard to be created.
      * 
-     * Shard names must consist entirely of periods, underscores, and alphanumerics.  Other characters are not allowed.
+     * Shard names must consist entirely of periods, underscores, hyphens, and alphanumerics.  Other characters are not allowed.
      * 
      * @throws IllegalArgumentException if the shard name contains invalid characters.
      */
     @Override
     public CreateShard setShardName(String shardName) {
       if (!SolrIdentifierValidator.validateShardName(shardName)) {
-        throw new IllegalArgumentException("Invalid shard: " + shardName
-            + ". Shard names must consist entirely of periods, underscores, and alphanumerics");
+        throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.SHARD,
+            shardName));
       }
       this.shardName = shardName;
       return this;
@@ -534,6 +526,10 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
 
   // DELETESHARD request
   public static class DeleteShard extends CollectionShardAsyncAdminRequest<DeleteShard> {
+
+    private Boolean deleteInstanceDir;
+    private Boolean deleteDataDir;
+
     public DeleteShard() {
       action = CollectionAction.DELETESHARD;
     }
@@ -541,6 +537,36 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     @Override
     protected DeleteShard getThis() {
       return this;
+    }
+
+    public Boolean getDeleteInstanceDir() {
+      return deleteInstanceDir;
+    }
+
+    public DeleteShard setDeleteInstanceDir(Boolean deleteInstanceDir) {
+      this.deleteInstanceDir = deleteInstanceDir;
+      return this;
+    }
+
+    public Boolean getDeleteDataDir() {
+      return deleteDataDir;
+    }
+
+    public DeleteShard setDeleteDataDir(Boolean deleteDataDir) {
+      this.deleteDataDir = deleteDataDir;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = new ModifiableSolrParams(super.getParams());
+      if (deleteInstanceDir != null) {
+        params.set(CoreAdminParams.DELETE_INSTANCE_DIR, deleteInstanceDir);
+      }
+      if (deleteDataDir != null) {
+        params.set(CoreAdminParams.DELETE_DATA_DIR, deleteDataDir);
+      }
+      return params;
     }
   }
 
@@ -649,8 +675,8 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
      */
     public CreateAlias setAliasName(String aliasName) {
       if (!SolrIdentifierValidator.validateCollectionName(aliasName)) {
-        throw new IllegalArgumentException("Invalid alias: " + aliasName
-            + ". Aliases must consist entirely of periods, underscores, and alphanumerics");
+        throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.ALIAS,
+            aliasName));
       }
       this.aliasName = aliasName;
       return this;
@@ -667,15 +693,6 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
 
     public String getAliasedCollections() {
       return this.aliasedCollections;
-    }
-
-    /**
-     * @param aliasName the alias name
-     * @deprecated use {@link #setAliasName(String)} instead
-     */
-    @Deprecated
-    public void setCollectionName(String aliasName) {
-      this.aliasName = aliasName;
     }
 
     @Override
@@ -810,6 +827,9 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
   public static class DeleteReplica extends CollectionShardAsyncAdminRequest<DeleteReplica> {
     protected String replica;
     protected Boolean onlyIfDown;
+    private Boolean deleteDataDir;
+    private Boolean deleteInstanceDir;
+    private Boolean deleteIndexDir;
 
     public DeleteReplica() {
       action = CollectionAction.DELETEREPLICA;
@@ -841,11 +861,38 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
       if (onlyIfDown != null) {
         params.set("onlyIfDown", onlyIfDown);
       }
+      if (deleteDataDir != null) {
+        params.set(CoreAdminParams.DELETE_DATA_DIR, deleteDataDir);
+      }
+      if (deleteInstanceDir != null) {
+        params.set(CoreAdminParams.DELETE_INSTANCE_DIR, deleteInstanceDir);
+      }
+      if (deleteIndexDir != null) {
+        params.set(CoreAdminParams.DELETE_INDEX, deleteIndexDir);
+      }
       return params;
     }
 
     @Override
     protected DeleteReplica getThis() {
+      return this;
+    }
+
+    public Boolean getDeleteDataDir() {
+      return deleteDataDir;
+    }
+
+    public DeleteReplica setDeleteDataDir(Boolean deleteDataDir) {
+      this.deleteDataDir = deleteDataDir;
+      return this;
+    }
+
+    public Boolean getDeleteInstanceDir() {
+      return deleteInstanceDir;
+    }
+
+    public DeleteReplica setDeleteInstanceDir(Boolean deleteInstanceDir) {
+      this.deleteInstanceDir = deleteInstanceDir;
       return this;
     }
   }

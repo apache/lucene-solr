@@ -74,12 +74,7 @@ public class TSTLookup extends Lookup {
     final byte[] bBytes = b.bytes;
     int bUpto = b.offset;
     
-    final int aStop;
-    if (a.length < b.length) {
-      aStop = aUpto + a.length;
-    } else {
-      aStop = aUpto + b.length;
-    }
+    final int aStop = aUpto + Math.min(a.length, b.length);
 
     while(aUpto < aStop) {
       int aByte = aBytes[aUpto++] & 0xff;

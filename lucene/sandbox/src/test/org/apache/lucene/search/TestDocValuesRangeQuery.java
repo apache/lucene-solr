@@ -56,20 +56,18 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
         iw.addDocument(doc);
       }
       if (random().nextBoolean()) {
-        iw.deleteDocuments(LongPoint.newRangeQuery("idx", 0L, true, 10L, true));
+        iw.deleteDocuments(LongPoint.newRangeQuery("idx", 0L, 10L));
       }
       iw.commit();
       final IndexReader reader = iw.getReader();
-      final IndexSearcher searcher = newSearcher(reader);
+      final IndexSearcher searcher = newSearcher(reader, false);
       iw.close();
 
       for (int i = 0; i < 100; ++i) {
-        final Long min = random().nextBoolean() ? null : TestUtil.nextLong(random(), -100, 1000);
-        final Long max = random().nextBoolean() ? null : TestUtil.nextLong(random(), -100, 1000);
-        final boolean minInclusive = random().nextBoolean();
-        final boolean maxInclusive = random().nextBoolean();
-        final Query q1 = LongPoint.newRangeQuery("idx", min, minInclusive, max, maxInclusive);
-        final Query q2 = DocValuesRangeQuery.newLongRange("dv", min, max, minInclusive, maxInclusive);
+        final Long min = TestUtil.nextLong(random(), -100, 1000);
+        final Long max = TestUtil.nextLong(random(), -100, 1000);
+        final Query q1 = LongPoint.newRangeQuery("idx", min, max);
+        final Query q2 = DocValuesRangeQuery.newLongRange("dv", min, max, true, true);
         assertSameMatches(searcher, q1, q2, false);
       }
 
@@ -83,7 +81,7 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
       return null;
     } else {
       byte[] bytes = new byte[Long.BYTES];
-      NumericUtils.longToBytes(l, bytes, 0);
+      NumericUtils.longToSortableBytes(l, bytes, 0);
       return new BytesRef(bytes);
     }
   }
@@ -184,31 +182,29 @@ public class TestDocValuesRangeQuery extends LuceneTestCase {
       iw.addDocument(doc);
     }
     if (random().nextBoolean()) {
-      iw.deleteDocuments(LongPoint.newRangeQuery("idx", 0L, true, 10L, true));
+      iw.deleteDocuments(LongPoint.newRangeQuery("idx", 0L, 10L));
     }
     iw.commit();
     final IndexReader reader = iw.getReader();
-    final IndexSearcher searcher = newSearcher(reader);
+    final IndexSearcher searcher = newSearcher(reader, false);
     iw.close();
 
     for (int i = 0; i < 100; ++i) {
-      final Long min = random().nextBoolean() ? null : TestUtil.nextLong(random(), -100, 1000);
-      final Long max = random().nextBoolean() ? null : TestUtil.nextLong(random(), -100, 1000);
-      final boolean minInclusive = random().nextBoolean();
-      final boolean maxInclusive = random().nextBoolean();
+      final Long min = TestUtil.nextLong(random(), -100, 1000);
+      final Long max = TestUtil.nextLong(random(), -100, 1000);
 
       BooleanQuery.Builder ref = new BooleanQuery.Builder();
-      ref.add(LongPoint.newRangeQuery("idx", min, minInclusive, max, maxInclusive), Occur.FILTER);
+      ref.add(LongPoint.newRangeQuery("idx", min, max), Occur.FILTER);
       ref.add(new TermQuery(new Term("f", "a")), Occur.MUST);
 
       BooleanQuery.Builder bq1 = new BooleanQuery.Builder();
-      bq1.add(DocValuesRangeQuery.newLongRange("dv1", min, max, minInclusive, maxInclusive), Occur.FILTER);
+      bq1.add(DocValuesRangeQuery.newLongRange("dv1", min, max, true, true), Occur.FILTER);
       bq1.add(new TermQuery(new Term("f", "a")), Occur.MUST);
 
       assertSameMatches(searcher, ref.build(), bq1.build(), true);
 
       BooleanQuery.Builder bq2 = new BooleanQuery.Builder();
-      bq2.add(DocValuesRangeQuery.newBytesRefRange("dv2", toSortableBytes(min), toSortableBytes(max), minInclusive, maxInclusive), Occur.FILTER);
+      bq2.add(DocValuesRangeQuery.newBytesRefRange("dv2", toSortableBytes(min), toSortableBytes(max), true, true), Occur.FILTER);
       bq2.add(new TermQuery(new Term("f", "a")), Occur.MUST);
 
       assertSameMatches(searcher, ref.build(), bq2.build(), true);

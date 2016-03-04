@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.search.function.distance;
-import com.spatial4j.core.distance.DistanceUtils;
-import com.spatial4j.core.io.GeohashUtils;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.io.GeohashUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;

@@ -162,8 +162,8 @@ public class TestDuelingCodecs extends LuceneTestCase {
     createRandomIndex(numdocs, leftWriter, seed);
     createRandomIndex(numdocs, rightWriter, seed);
 
-    leftReader = wrapReader(leftWriter.getReader());
-    rightReader = wrapReader(rightWriter.getReader());
+    leftReader = wrapReader(leftWriter.getReader(), false);
+    rightReader = wrapReader(rightWriter.getReader(), false);
     
     // check that our readers are valid
     TestUtil.checkReader(leftReader);

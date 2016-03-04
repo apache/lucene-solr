@@ -65,8 +65,7 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("uima");
     assertNotNull(chained);
-    UIMAUpdateRequestProcessorFactory factory = (UIMAUpdateRequestProcessorFactory) chained
-            .getFactories()[0];
+    UIMAUpdateRequestProcessorFactory factory = (UIMAUpdateRequestProcessorFactory)chained.getProcessors().get(0);
     assertNotNull(factory);
     UpdateRequestProcessor processor = factory.getInstance(req(), null, null);
     assertTrue(processor instanceof UIMAUpdateRequestProcessor);
@@ -77,8 +76,7 @@ public class UIMAUpdateRequestProcessorTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("uima-multi-map");
     assertNotNull(chained);
-    UIMAUpdateRequestProcessorFactory factory = (UIMAUpdateRequestProcessorFactory) chained
-            .getFactories()[0];
+    UIMAUpdateRequestProcessorFactory factory = (UIMAUpdateRequestProcessorFactory)chained.getProcessors().get(0);
     assertNotNull(factory);
     UpdateRequestProcessor processor = factory.getInstance(req(), null, null);
     assertTrue(processor instanceof UIMAUpdateRequestProcessor);

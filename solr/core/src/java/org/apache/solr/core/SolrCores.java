@@ -123,10 +123,10 @@ class SolrCores {
         pendingCloses.clear();
       }
       
-      for (SolrCore core : coreList) {
-        ExecutorService coreCloseExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(Integer.MAX_VALUE,
-            new DefaultSolrThreadFactory("coreCloseExecutor"));
-        try {
+      ExecutorService coreCloseExecutor = ExecutorUtil.newMDCAwareFixedThreadPool(Integer.MAX_VALUE,
+          new DefaultSolrThreadFactory("coreCloseExecutor"));
+      try {
+        for (SolrCore core : coreList) {
           coreCloseExecutor.submit(new Callable<SolrCore>() {
             @Override
             public SolrCore call() throws Exception {
@@ -144,11 +144,11 @@ class SolrCores {
               return core;
             }
           });
-        } finally {
-          ExecutorUtil.shutdownAndAwaitTermination(coreCloseExecutor);
         }
-
+      } finally {
+        ExecutorUtil.shutdownAndAwaitTermination(coreCloseExecutor);
       }
+
     } while (coreList.size() > 0);
   }
 

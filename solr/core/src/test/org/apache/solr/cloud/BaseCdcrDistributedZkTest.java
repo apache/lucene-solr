@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import org.apache.http.params.CoreConnectionPNames;
@@ -48,10 +49,12 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.CdcrParams;
 import org.apache.zookeeper.CreateMode;
@@ -693,14 +696,16 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       this.jetty = jetty;
       this.info = replica;
       this.collection = collection;
+      
+      Properties nodeProperties = jetty.getNodeProperties();
 
       // we need to update the jetty's shard so that it registers itself to the right shard when restarted
       this.shard = shard;
-      this.jetty.setShards(this.shard);
+      nodeProperties.setProperty(CoreDescriptor.CORE_SHARD, this.shard);
 
       // we need to update the jetty's shard so that it registers itself under the right core name when restarted
       this.coreNodeName = coreNodeName;
-      this.jetty.setCoreNodeName(this.coreNodeName);
+      nodeProperties.setProperty(CoreDescriptor.CORE_NODE_NAME, this.coreNodeName);
 
       this.nodeName = replica.getNodeName();
 

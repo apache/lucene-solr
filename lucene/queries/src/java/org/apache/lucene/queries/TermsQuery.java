@@ -185,6 +185,11 @@ public class TermsQuery extends Query implements Accountable {
     return 31 * super.hashCode() + termDataHashCode;
   }
 
+  /** Returns the terms wrapped in a PrefixCodedTerms. */
+  public PrefixCodedTerms getTermData() {
+    return termData;
+  }
+
   @Override
   public String toString(String defaultField) {
     StringBuilder builder = new StringBuilder();

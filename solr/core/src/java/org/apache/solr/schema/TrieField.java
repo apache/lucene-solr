@@ -51,6 +51,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.LegacyNumericUtils;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.lucene.util.mutable.MutableValueLong;
 import org.apache.solr.common.SolrException;
@@ -117,23 +118,8 @@ public class TrieField extends PrimitiveFieldType {
     if (val != null) {
       return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
     } else {
-      // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
-      final BytesRef bytes = f.binaryValue();
-      if (bytes==null) return badFieldString(f);
-      switch (type) {
-        case INTEGER:
-          return toInt(bytes.bytes, bytes.offset);
-        case FLOAT:
-          return Float.intBitsToFloat(toInt(bytes.bytes, bytes.offset));
-        case LONG:
-          return toLong(bytes.bytes, bytes.offset);
-        case DOUBLE:
-          return Double.longBitsToDouble(toLong(bytes.bytes, bytes.offset));
-        case DATE:
-          return new Date(toLong(bytes.bytes, bytes.offset));
-        default:
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
-      }
+      // the old BinaryField encoding is no longer supported
+      return badFieldString(f);
     }
   }
 
@@ -366,8 +352,8 @@ public class TrieField extends PrimitiveFieldType {
       case FLOAT:
         if (matchOnly) {
           query = DocValuesRangeQuery.newLongRange(field.getName(),
-                min == null ? null : (long) LegacyNumericUtils.floatToSortableInt(Float.parseFloat(min)),
-                max == null ? null : (long) LegacyNumericUtils.floatToSortableInt(Float.parseFloat(max)),
+                min == null ? null : (long) NumericUtils.floatToSortableInt(Float.parseFloat(min)),
+                max == null ? null : (long) NumericUtils.floatToSortableInt(Float.parseFloat(max)),
                 minInclusive, maxInclusive);
         } else {
           query = LegacyNumericRangeQuery.newFloatRange(field.getName(), ps,
@@ -392,8 +378,8 @@ public class TrieField extends PrimitiveFieldType {
       case DOUBLE:
         if (matchOnly) {
           query = DocValuesRangeQuery.newLongRange(field.getName(),
-                min == null ? null : LegacyNumericUtils.doubleToSortableLong(Double.parseDouble(min)),
-                max == null ? null : LegacyNumericUtils.doubleToSortableLong(Double.parseDouble(max)),
+                min == null ? null : NumericUtils.doubleToSortableLong(Double.parseDouble(min)),
+                max == null ? null : NumericUtils.doubleToSortableLong(Double.parseDouble(max)),
                 minInclusive, maxInclusive);
         } else {
           query = LegacyNumericRangeQuery.newDoubleRange(field.getName(), ps,
@@ -432,18 +418,6 @@ public class TrieField extends PrimitiveFieldType {
     }
   }
 
-  @Deprecated
-  static int toInt(byte[] arr, int offset) {
-    return (arr[offset]<<24) | ((arr[offset+1]&0xff)<<16) | ((arr[offset+2]&0xff)<<8) | (arr[offset+3]&0xff);
-  }
-  
-  @Deprecated
-  static long toLong(byte[] arr, int offset) {
-    int high = (arr[offset]<<24) | ((arr[offset+1]&0xff)<<16) | ((arr[offset+2]&0xff)<<8) | (arr[offset+3]&0xff);
-    int low = (arr[offset+4]<<24) | ((arr[offset+5]&0xff)<<16) | ((arr[offset+6]&0xff)<<8) | (arr[offset+7]&0xff);
-    return (((long)high)<<32) | (low&0x0ffffffffL);
-  }
-
   @Override
   public String storedToReadable(IndexableField f) {
     return toExternal(f);
@@ -466,13 +440,13 @@ public class TrieField extends PrimitiveFieldType {
           LegacyNumericUtils.intToPrefixCoded(Integer.parseInt(s), 0, result);
           break;
         case FLOAT:
-          LegacyNumericUtils.intToPrefixCoded(LegacyNumericUtils.floatToSortableInt(Float.parseFloat(s)), 0, result);
+          LegacyNumericUtils.intToPrefixCoded(NumericUtils.floatToSortableInt(Float.parseFloat(s)), 0, result);
           break;
         case LONG:
           LegacyNumericUtils.longToPrefixCoded(Long.parseLong(s), 0, result);
           break;
         case DOUBLE:
-          LegacyNumericUtils.longToPrefixCoded(LegacyNumericUtils.doubleToSortableLong(Double.parseDouble(s)), 0, result);
+          LegacyNumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(Double.parseDouble(s)), 0, result);
           break;
         case DATE:
           LegacyNumericUtils.longToPrefixCoded(DateFormatUtil.parseMath(null, s).getTime(), 0, result);
@@ -510,11 +484,11 @@ public class TrieField extends PrimitiveFieldType {
       case INTEGER:
         return Integer.toString( LegacyNumericUtils.prefixCodedToInt(indexedForm) );
       case FLOAT:
-        return Float.toString( LegacyNumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(indexedForm)) );
+        return Float.toString( NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(indexedForm)) );
       case LONG:
         return Long.toString( LegacyNumericUtils.prefixCodedToLong(indexedForm) );
       case DOUBLE:
-        return Double.toString( LegacyNumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(indexedForm)) );
+        return Double.toString( NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(indexedForm)) );
       case DATE:
         return DateFormatUtil.formatExternal(new Date(LegacyNumericUtils.prefixCodedToLong(indexedForm)));
       default:
@@ -530,13 +504,13 @@ public class TrieField extends PrimitiveFieldType {
         value = Integer.toString( LegacyNumericUtils.prefixCodedToInt(indexedForm) );
         break;
       case FLOAT:
-        value = Float.toString( LegacyNumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(indexedForm)) );
+        value = Float.toString( NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(indexedForm)) );
         break;
       case LONG:
         value = Long.toString( LegacyNumericUtils.prefixCodedToLong(indexedForm) );
         break;
       case DOUBLE:
-        value = Double.toString( LegacyNumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(indexedForm)) );
+        value = Double.toString( NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(indexedForm)) );
         break;
       case DATE:
         value = DateFormatUtil.formatExternal(new Date(LegacyNumericUtils.prefixCodedToLong(indexedForm)));
@@ -556,11 +530,11 @@ public class TrieField extends PrimitiveFieldType {
       case INTEGER:
         return LegacyNumericUtils.prefixCodedToInt(term);
       case FLOAT:
-        return LegacyNumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(term));
+        return NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(term));
       case LONG:
         return LegacyNumericUtils.prefixCodedToLong(term);
       case DOUBLE:
-        return LegacyNumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(term));
+        return NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(term));
       case DATE:
         return new Date(LegacyNumericUtils.prefixCodedToLong(term));
       default:
@@ -583,52 +557,21 @@ public class TrieField extends PrimitiveFieldType {
           LegacyNumericUtils.intToPrefixCoded(val.intValue(), 0, bytes);
           break;
         case FLOAT:
-          LegacyNumericUtils.intToPrefixCoded(LegacyNumericUtils.floatToSortableInt(val.floatValue()), 0, bytes);
+          LegacyNumericUtils.intToPrefixCoded(NumericUtils.floatToSortableInt(val.floatValue()), 0, bytes);
           break;
         case LONG: //fallthrough!
         case DATE:
           LegacyNumericUtils.longToPrefixCoded(val.longValue(), 0, bytes);
           break;
         case DOUBLE:
-          LegacyNumericUtils.longToPrefixCoded(LegacyNumericUtils.doubleToSortableLong(val.doubleValue()), 0, bytes);
+          LegacyNumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(val.doubleValue()), 0, bytes);
           break;
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
       }
     } else {
-      // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
-      final BytesRef bytesRef = f.binaryValue();
-      if (bytesRef==null)
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
-      switch (type) {
-        case INTEGER:
-          LegacyNumericUtils.intToPrefixCoded(toInt(bytesRef.bytes, bytesRef.offset), 0, bytes);
-          break;
-        case FLOAT: {
-          // WARNING: Code Duplication! Keep in sync with o.a.l.util.LegacyNumericUtils!
-          // copied from LegacyNumericUtils to not convert to/from float two times
-          // code in next 2 lines is identical to: int v = LegacyNumericUtils.floatToSortableInt(Float.intBitsToFloat(toInt(arr)));
-          int v = toInt(bytesRef.bytes, bytesRef.offset);
-          if (v<0) v ^= 0x7fffffff;
-          LegacyNumericUtils.intToPrefixCoded(v, 0, bytes);
-          break;
-        }
-        case LONG: //fallthrough!
-        case DATE:
-          LegacyNumericUtils.longToPrefixCoded(toLong(bytesRef.bytes, bytesRef.offset), 0, bytes);
-          break;
-        case DOUBLE: {
-          // WARNING: Code Duplication! Keep in sync with o.a.l.util.LegacyNumericUtils!
-          // copied from LegacyNumericUtils to not convert to/from double two times
-          // code in next 2 lines is identical to: long v = LegacyNumericUtils.doubleToSortableLong(Double.longBitsToDouble(toLong(arr)));
-          long v = toLong(bytesRef.bytes, bytesRef.offset);
-          if (v<0) v ^= 0x7fffffffffffffffL;
-          LegacyNumericUtils.longToPrefixCoded(v, 0, bytes);
-          break;
-        }
-        default:
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
-      }
+      // the old BinaryField encoding is no longer supported
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid field contents: "+f.name());
     }
   }
   

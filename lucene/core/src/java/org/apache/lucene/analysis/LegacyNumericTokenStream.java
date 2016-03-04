@@ -30,6 +30,7 @@ import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LegacyNumericUtils;
+import org.apache.lucene.util.NumericUtils;
 
 /**
  * <b>Expert:</b> This class provides a {@link TokenStream}
@@ -299,7 +300,7 @@ public final class LegacyNumericTokenStream extends TokenStream {
    * <code>new Field(name, new LegacyNumericTokenStream(precisionStep).setDoubleValue(value))</code>
    */
   public LegacyNumericTokenStream setDoubleValue(final double value) {
-    numericAtt.init(LegacyNumericUtils.doubleToSortableLong(value), valSize = 64, precisionStep, -precisionStep);
+    numericAtt.init(NumericUtils.doubleToSortableLong(value), valSize = 64, precisionStep, -precisionStep);
     return this;
   }
   
@@ -310,7 +311,7 @@ public final class LegacyNumericTokenStream extends TokenStream {
    * <code>new Field(name, new LegacyNumericTokenStream(precisionStep).setFloatValue(value))</code>
    */
   public LegacyNumericTokenStream setFloatValue(final float value) {
-    numericAtt.init(LegacyNumericUtils.floatToSortableInt(value), valSize = 32, precisionStep, -precisionStep);
+    numericAtt.init(NumericUtils.floatToSortableInt(value), valSize = 32, precisionStep, -precisionStep);
     return this;
   }
   

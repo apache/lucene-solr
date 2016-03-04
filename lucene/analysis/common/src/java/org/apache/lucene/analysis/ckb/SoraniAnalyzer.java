@@ -120,9 +120,7 @@ public final class SoraniAnalyzer extends StopwordAnalyzerBase {
     TokenStream result = new StandardFilter(source);
     result = new SoraniNormalizationFilter(result);
     result = new LowerCaseFilter(result);
-    if (getVersion().onOrAfter(Version.LUCENE_5_4_0)) {
-      result = new DecimalDigitFilter(result);
-    }
+    result = new DecimalDigitFilter(result);
     result = new StopFilter(result, stopwords);
     if(!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);

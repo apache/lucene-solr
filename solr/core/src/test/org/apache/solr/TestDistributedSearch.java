@@ -225,27 +225,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     
     String facetQuery = "id:[1 TO 15]";
 
-    // simple date facet on one field
-    query("q",facetQuery, "rows",100, "facet","true", 
-          "facet.date",tdate_a,
-          "facet.date",tdate_a,
-          "facet.date.other", "all", 
-          "facet.date.start","2010-05-01T11:00:00Z", 
-          "facet.date.gap","+1DAY", 
-          "facet.date.end","2010-05-20T11:00:00Z");
-
-    // date facet on multiple fields
-    query("q",facetQuery, "rows",100, "facet","true", 
-          "facet.date",tdate_a,
-          "facet.date",tdate_b,
-          "facet.date",tdate_a,
-          "facet.date.other", "all", 
-          "f."+tdate_b+".facet.date.start","2009-05-01T11:00:00Z", 
-          "f."+tdate_b+".facet.date.gap","+3MONTHS", 
-          "facet.date.start","2010-05-01T11:00:00Z", 
-          "facet.date.gap","+1DAY", 
-          "facet.date.end","2010-05-20T11:00:00Z");
-
     // simple range facet on one field
     query("q",facetQuery, "rows",100, "facet","true", 
           "facet.range",tlong,

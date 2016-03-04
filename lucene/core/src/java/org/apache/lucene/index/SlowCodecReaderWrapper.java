@@ -172,6 +172,16 @@ public final class SlowCodecReaderWrapper {
       public int getBytesPerDimension(String fieldName) throws IOException {
         return values.getBytesPerDimension(fieldName);
       }
+
+      @Override
+      public long size(String fieldName) {
+        return values.size(fieldName);
+      }
+
+      @Override
+      public int getDocCount(String fieldName) {
+        return values.getDocCount(fieldName);
+      }
     };
   }
   

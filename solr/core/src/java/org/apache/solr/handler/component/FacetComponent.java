@@ -66,7 +66,6 @@ public class FacetComponent extends SearchComponent {
 
   public static final String FACET_QUERY_KEY = "facet_queries";
   public static final String FACET_FIELD_KEY = "facet_fields";
-  public static final String FACET_DATE_KEY = "facet_dates";
   public static final String FACET_RANGES_KEY = "facet_ranges";
   public static final String FACET_INTERVALS_KEY = "facet_intervals";
 
@@ -275,7 +274,6 @@ public class FacetComponent extends SearchComponent {
    *
    * @see SimpleFacets#getFacetQueryCounts
    * @see SimpleFacets#getFacetFieldCounts
-   * @see DateFacetProcessor#getFacetDateCounts
    * @see RangeFacetProcessor#getFacetRangeCounts
    * @see RangeFacetProcessor#getFacetIntervalCounts
    * @see FacetParams#FACET
@@ -286,13 +284,11 @@ public class FacetComponent extends SearchComponent {
     if (!simpleFacets.getGlobalParams().getBool(FacetParams.FACET, true))
       return null;
 
-    DateFacetProcessor dateFacetProcessor = new DateFacetProcessor(simpleFacets.getRequest(), simpleFacets.getDocsOrig(), simpleFacets.getGlobalParams(), simpleFacets.getResponseBuilder());
     RangeFacetProcessor rangeFacetProcessor = new RangeFacetProcessor(simpleFacets.getRequest(), simpleFacets.getDocsOrig(), simpleFacets.getGlobalParams(), simpleFacets.getResponseBuilder());
     NamedList<Object> counts = new SimpleOrderedMap<>();
     try {
       counts.add(FACET_QUERY_KEY, simpleFacets.getFacetQueryCounts());
       counts.add(FACET_FIELD_KEY, simpleFacets.getFacetFieldCounts());
-      counts.add(FACET_DATE_KEY, dateFacetProcessor.getFacetDateCounts());
       counts.add(FACET_RANGES_KEY, rangeFacetProcessor.getFacetRangeCounts());
       counts.add(FACET_INTERVALS_KEY, simpleFacets.getFacetIntervalCounts());
       counts.add(SpatialHeatmapFacets.RESPONSE_KEY, simpleFacets.getHeatmapCounts());
@@ -713,9 +709,6 @@ public class FacetComponent extends SearchComponent {
         }
       }
 
-      // Distributed facet_dates
-      doDistribDates(fi, facet_counts);
-
       // Distributed facet_ranges
       @SuppressWarnings("unchecked")
       SimpleOrderedMap<SimpleOrderedMap<Object>> rangesFromShard = (SimpleOrderedMap<SimpleOrderedMap<Object>>)
@@ -929,53 +922,6 @@ public class FacetComponent extends SearchComponent {
     }
   }
 
-  //
-  // The implementation below uses the first encountered shard's
-  // facet_dates as the basis for subsequent shards' data to be merged.
-  // (the "NOW" param should ensure consistency)
-  private void doDistribDates(FacetInfo fi, NamedList facet_counts) {
-    @SuppressWarnings("unchecked")
-    SimpleOrderedMap<SimpleOrderedMap<Object>> facet_dates =
-      (SimpleOrderedMap<SimpleOrderedMap<Object>>)
-      facet_counts.get("facet_dates");
-
-    if (facet_dates != null) {
-
-      // go through each facet_date
-      for (Map.Entry<String,SimpleOrderedMap<Object>> entry : facet_dates) {
-        final String field = entry.getKey();
-        if (fi.dateFacets.get(field) == null) {
-          // first time we've seen this field, no merging
-          fi.dateFacets.add(field, entry.getValue());
-
-        } else {
-          // not the first time, merge current field
-
-          SimpleOrderedMap<Object> shardFieldValues
-            = entry.getValue();
-          SimpleOrderedMap<Object> existFieldValues
-            = fi.dateFacets.get(field);
-
-          for (Map.Entry<String,Object> existPair : existFieldValues) {
-            final String key = existPair.getKey();
-            if (key.equals("gap") ||
-                key.equals("end") ||
-                key.equals("start")) {
-              // we can skip these, must all be the same across shards
-              continue;
-            }
-            // can be null if inconsistencies in shards responses
-            Integer newValue = (Integer) shardFieldValues.get(key);
-            if  (null != newValue) {
-              Integer oldValue = ((Integer) existPair.getValue());
-              existPair.setValue(oldValue + newValue);
-            }
-          }
-        }
-      }
-    }
-  }
-
   private void doDistribPivots(ResponseBuilder rb, int shardNum, NamedList facet_counts) {
     @SuppressWarnings("unchecked")
     SimpleOrderedMap<List<NamedList<Object>>> facet_pivot 
@@ -1158,8 +1104,6 @@ public class FacetComponent extends SearchComponent {
         fieldCounts.add(null, num(dff.missingCount));
       }
     }
-
-    facet_counts.add("facet_dates", fi.dateFacets);
 
     SimpleOrderedMap<SimpleOrderedMap<Object>> rangeFacetOutput = new SimpleOrderedMap<>();
     for (Map.Entry<String, RangeFacetRequest.DistribRangeFacet> entry : fi.rangeFacets.entrySet()) {

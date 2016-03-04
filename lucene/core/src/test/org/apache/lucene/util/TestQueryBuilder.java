@@ -173,11 +173,11 @@ public class TestQueryBuilder extends LuceneTestCase {
   
   /** forms multiphrase query */
   public void testSynonymsPhrase() throws Exception {
-    MultiPhraseQuery expected = new MultiPhraseQuery();
-    expected.add(new Term("field", "old"));
-    expected.add(new Term[] { new Term("field", "dogs"), new Term("field", "dog") });
+    MultiPhraseQuery.Builder expectedBuilder = new MultiPhraseQuery.Builder();
+    expectedBuilder.add(new Term("field", "old"));
+    expectedBuilder.add(new Term[] { new Term("field", "dogs"), new Term("field", "dog") });
     QueryBuilder builder = new QueryBuilder(new MockSynonymAnalyzer());
-    assertEquals(expected, builder.createPhraseQuery("field", "old dogs"));
+    assertEquals(expectedBuilder.build(), builder.createPhraseQuery("field", "old dogs"));
   }
 
   protected static class SimpleCJKTokenizer extends Tokenizer {
@@ -331,13 +331,13 @@ public class TestQueryBuilder extends LuceneTestCase {
   
   /** forms multiphrase query */
   public void testCJKSynonymsPhrase() throws Exception {
-    MultiPhraseQuery expected = new MultiPhraseQuery();
-    expected.add(new Term("field", "中"));
-    expected.add(new Term[] { new Term("field", "国"), new Term("field", "國")});
+    MultiPhraseQuery.Builder expectedBuilder = new MultiPhraseQuery.Builder();
+    expectedBuilder.add(new Term("field", "中"));
+    expectedBuilder.add(new Term[] { new Term("field", "国"), new Term("field", "國")});
     QueryBuilder builder = new QueryBuilder(new MockCJKSynonymAnalyzer());
-    assertEquals(expected, builder.createPhraseQuery("field", "中国"));
-    expected.setSlop(3);
-    assertEquals(expected, builder.createPhraseQuery("field", "中国", 3));
+    assertEquals(expectedBuilder.build(), builder.createPhraseQuery("field", "中国"));
+    expectedBuilder.setSlop(3);
+    assertEquals(expectedBuilder.build(), builder.createPhraseQuery("field", "中国", 3));
   }
 
   public void testNoTermAttribute() {

@@ -45,10 +45,8 @@ class SolrResourceLocator implements IResourceLocator {
   public SolrResourceLocator(SolrCore core, SolrParams initParams) {
     resourceLoader = core.getResourceLoader();
     
-    @SuppressWarnings("deprecation")
-    String lexicalResourcesDir = initParams.get(CarrotParams.LEXICAL_RESOURCES_DIR);
     String resourcesDir = initParams.get(CarrotParams.RESOURCES_DIR);
-    carrot2ResourcesDir = firstNonNull(resourcesDir, lexicalResourcesDir, CarrotClusteringEngine.CARROT_RESOURCES_PREFIX);
+    carrot2ResourcesDir = firstNonNull(resourcesDir, CarrotClusteringEngine.CARROT_RESOURCES_PREFIX);
   }
 
   @SuppressWarnings("unchecked")

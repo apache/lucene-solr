@@ -16,8 +16,8 @@
  */
 package org.apache.lucene.spatial;
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Rectangle;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Rectangle;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.util.LuceneTestCase;

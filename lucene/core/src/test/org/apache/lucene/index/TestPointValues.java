@@ -17,8 +17,16 @@
 package org.apache.lucene.index;
 
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.PointFormat;
+import org.apache.lucene.codecs.PointReader;
+import org.apache.lucene.codecs.PointWriter;
+import org.apache.lucene.codecs.lucene60.Lucene60PointReader;
+import org.apache.lucene.codecs.lucene60.Lucene60PointWriter;
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
@@ -26,6 +34,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -477,5 +489,78 @@ public class TestPointValues extends LuceneTestCase {
     expectThrows(IllegalStateException.class, () -> {
       field.numericValue();
     });
+  }
+
+  public void testTieBreakByDocID() throws Exception {
+    Directory dir = newFSDirectory(createTempDir());
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new IntPoint("int", 17));
+    for(int i=0;i<300000;i++) {
+      w.addDocument(doc);
+      if (false && random().nextInt(1000) == 17) {
+        w.commit();
+      }
+    }
+
+    IndexReader r = DirectoryReader.open(w);
+
+    for(LeafReaderContext ctx : r.leaves()) {
+      PointValues points = ctx.reader().getPointValues();
+      points.intersect("int",
+                       new IntersectVisitor() {
+
+                         int lastDocID = -1;
+
+                         @Override
+                         public void visit(int docID) {
+                           if (docID < lastDocID) {
+                             fail("docs out of order: docID=" + docID + " but lastDocID=" + lastDocID);
+                           }
+                           lastDocID = docID;
+                         }
+
+                         @Override
+                         public void visit(int docID, byte[] packedValue) {
+                           visit(docID);
+                         }
+
+                         @Override
+                         public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+                           if (random().nextBoolean()) {
+                             return Relation.CELL_CROSSES_QUERY;
+                           } else {
+                             return Relation.CELL_INSIDE_QUERY;
+                           }
+                         }
+                       });
+    }
+    
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testDeleteAllPointDocs() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.NO));
+    doc.add(new IntPoint("int", 17));
+    w.addDocument(doc);
+    w.addDocument(new Document());
+    w.commit();
+
+    w.deleteDocuments(new Term("id", "0"));
+    
+    w.forceMerge(1);
+    DirectoryReader r = w.getReader();
+    assertEquals(0, r.leaves().get(0).reader().getPointValues().size("int"));
+    assertEquals(0, r.leaves().get(0).reader().getPointValues().getDocCount("int"));
+    w.close();
+    r.close();
+    dir.close();
   }
 }

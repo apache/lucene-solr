@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Explanation;
 
-import com.spatial4j.core.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Rectangle;
 
 /**
  * The algorithm is implemented as envelope on envelope (rect on rect) overlays rather than

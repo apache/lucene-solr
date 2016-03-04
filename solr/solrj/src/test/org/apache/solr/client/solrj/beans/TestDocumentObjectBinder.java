@@ -101,67 +101,6 @@ public class TestDocumentObjectBinder extends LuceneTestCase {
     assertEquals("CCTV Store", supplierTwo.get(0));
   }
 
-  public void testToAndFromSolrDocument() {
-    Item item = new Item();
-    item.id = "one";
-    item.inStock = false;
-    item.categories = new String[] {"aaa", "bbb", "ccc"};
-    item.features = Arrays.asList(item.categories);
-    List<String> supA = Arrays.asList("supA1", "supA2", "supA3");
-    List<String> supB = Arrays.asList("supB1", "supB2", "supB3");
-    item.supplier = new HashMap<>();
-    item.supplier.put("supplier_supA", supA);
-    item.supplier.put("supplier_supB", supB);
-    
-    item.supplier_simple = new HashMap<>();
-    item.supplier_simple.put("sup_simple_supA", "supA_val");
-    item.supplier_simple.put("sup_simple_supB", "supB_val");
-    
-    DocumentObjectBinder binder = new DocumentObjectBinder();
-    SolrInputDocument doc = binder.toSolrInputDocument(item);
-    SolrDocumentList docs = new SolrDocumentList();
-    docs.add(ClientUtils.toSolrDocument(doc));
-    Item out = binder.getBeans(Item.class, docs).get(0);
-    Item singleOut = binder.getBean(Item.class, ClientUtils.toSolrDocument(doc));
-    
-    // make sure it came out the same
-    assertEquals(item.id, out.id);
-    assertEquals(item.inStock, out.inStock);
-    assertEquals(item.categories.length, out.categories.length);
-    assertEquals(item.features, out.features);
-    assertEquals(supA, out.supplier.get("supplier_supA"));
-    assertEquals(supB, out.supplier.get("supplier_supB"));
-    assertEquals(item.supplier_simple.get("sup_simple_supB"), out.supplier_simple.get("sup_simple_supB"));
-
-    assertEquals(item.id, singleOut.id);
-    assertEquals(item.inStock, singleOut.inStock);
-    assertEquals(item.categories.length, singleOut.categories.length);
-    assertEquals(item.features, singleOut.features);
-    assertEquals(supA, singleOut.supplier.get("supplier_supA"));
-    assertEquals(supB, singleOut.supplier.get("supplier_supB"));
-    assertEquals(item.supplier_simple.get("sup_simple_supB"), out.supplier_simple.get("sup_simple_supB"));
-    
-//    put back "out" as Bean, to see if both ways work as you would expect
-//    but the Field that "allSuppliers" need to be cleared, as it is just for 
-//    retrieving data, not to post data
-    out.allSuppliers = null;
-    SolrInputDocument doc1 = binder.toSolrInputDocument(out);
-    
-    SolrDocumentList docs1 = new SolrDocumentList();
-    docs1.add(ClientUtils.toSolrDocument(doc1));
-    Item out1 = binder.getBeans(Item.class, docs1).get(0);
-
-    assertEquals(item.id, out1.id);
-    assertEquals(item.inStock, out1.inStock);
-    assertEquals(item.categories.length, out1.categories.length);
-    assertEquals(item.features, out1.features);
-
-    assertEquals(item.supplier_simple.get("sup_simple_supB"), out1.supplier_simple.get("sup_simple_supB"));
-
-    assertEquals(supA, out1.supplier.get("supplier_supA"));
-    assertEquals(supB, out1.supplier.get("supplier_supB"));
-  }
-
   public void testChild() throws Exception {
     SingleValueChild in = new SingleValueChild();
     in.id = "1";
@@ -169,10 +108,11 @@ public class TestDocumentObjectBinder extends LuceneTestCase {
     in.child.id = "1.0";
     in.child.name = "Name One";
     DocumentObjectBinder binder = new DocumentObjectBinder();
-    SolrInputDocument doc = binder.toSolrInputDocument(in);
-    assertEquals(1, doc.getChildDocuments().size());
-    assertEquals(1, ClientUtils.toSolrDocument(doc).getChildDocuments().size());
-    SingleValueChild out = binder.getBean(SingleValueChild.class, ClientUtils.toSolrDocument(doc));
+    SolrInputDocument solrInputDoc = binder.toSolrInputDocument(in);
+    SolrDocument solrDoc = toSolrDocument(solrInputDoc);
+    assertEquals(1, solrInputDoc.getChildDocuments().size());
+    assertEquals(1, solrDoc.getChildDocuments().size());
+    SingleValueChild out = binder.getBean(SingleValueChild.class, solrDoc);
     assertEquals(in.id, out.id);
     assertEquals(in.child.id, out.child.id);
     assertEquals(in.child.name, out.child.name);
@@ -183,10 +123,11 @@ public class TestDocumentObjectBinder extends LuceneTestCase {
     child.id = "1.1";
     child.name = "Name Two";
     listIn.child = Arrays.asList(in.child, child);
-    doc = binder.toSolrInputDocument(listIn);
-    assertEquals(2, doc.getChildDocuments().size());
-    assertEquals(2, ClientUtils.toSolrDocument(doc).getChildDocuments().size());
-    ListChild listOut = binder.getBean(ListChild.class, ClientUtils.toSolrDocument(doc));
+    solrInputDoc = binder.toSolrInputDocument(listIn);
+    solrDoc = toSolrDocument(solrInputDoc);
+    assertEquals(2, solrInputDoc.getChildDocuments().size());
+    assertEquals(2, solrDoc.getChildDocuments().size());
+    ListChild listOut = binder.getBean(ListChild.class, solrDoc);
     assertEquals(listIn.id, listOut.id);
     assertEquals(listIn.child.get(0).id, listOut.child.get(0).id);
     assertEquals(listIn.child.get(0).name, listOut.child.get(0).name);
@@ -196,16 +137,30 @@ public class TestDocumentObjectBinder extends LuceneTestCase {
     ArrayChild arrIn = new ArrayChild();
     arrIn.id = "3";
     arrIn.child = new Child[]{in.child, child};
-    doc = binder.toSolrInputDocument(arrIn);
-    assertEquals(2, doc.getChildDocuments().size());
-    assertEquals(2, ClientUtils.toSolrDocument(doc).getChildDocuments().size());
-    ArrayChild arrOut = binder.getBean(ArrayChild.class, ClientUtils.toSolrDocument(doc));
+    solrInputDoc = binder.toSolrInputDocument(arrIn);
+    solrDoc = toSolrDocument(solrInputDoc);
+    assertEquals(2, solrInputDoc.getChildDocuments().size());
+    assertEquals(2, solrDoc.getChildDocuments().size());
+    ArrayChild arrOut = binder.getBean(ArrayChild.class, solrDoc);
     assertEquals(arrIn.id, arrOut.id);
     assertEquals(arrIn.child[0].id, arrOut.child[0].id);
     assertEquals(arrIn.child[0].name, arrOut.child[0].name);
     assertEquals(arrIn.child[1].id, arrOut.child[1].id);
     assertEquals(arrIn.child[1].name, arrOut.child[1].name);
 
+  }
+
+  private static SolrDocument toSolrDocument(SolrInputDocument d) {
+    SolrDocument doc = new SolrDocument();
+    for (SolrInputField field : d) {
+      doc.setField(field.getName(), field.getValue());
+    }
+    if (d.getChildDocuments() != null) {
+      for (SolrInputDocument in : d.getChildDocuments()) {
+        doc.addChildDocument(toSolrDocument(in));
+      }
+    }
+    return doc;
   }
 
   public static class Item {

@@ -338,6 +338,7 @@ public final class TestUtil {
     CheckIndex.testStoredFields(codecReader, infoStream, true);
     CheckIndex.testTermVectors(codecReader, infoStream, false, crossCheckTermVectors, true);
     CheckIndex.testDocValues(codecReader, infoStream, true);
+    CheckIndex.testPoints(codecReader, infoStream, true);
     
     // some checks really against the reader API
     checkReaderSanity(reader);
@@ -446,6 +447,16 @@ public final class TestUtil {
       assert result <= end;
       return result;
     }
+  }
+  
+  /**
+   * Returns a randomish big integer with {@code 1 .. maxBytes} storage.
+   */
+  public static BigInteger nextBigInteger(Random random, int maxBytes) {
+    int length = TestUtil.nextInt(random, 1, maxBytes);
+    byte[] buffer = new byte[length];
+    random.nextBytes(buffer);
+    return new BigInteger(buffer);
   }
 
   public static String randomSimpleString(Random r, int maxLength) {

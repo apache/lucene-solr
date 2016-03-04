@@ -117,9 +117,7 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new StandardTokenizer();
     TokenStream result = new LowerCaseFilter(source);
-    if (getVersion().onOrAfter(Version.LUCENE_5_4_0)) {
-      result = new DecimalDigitFilter(result);
-    }
+    result = new DecimalDigitFilter(result);
     if (!stemExclusionSet.isEmpty())
       result = new SetKeywordMarkerFilter(result, stemExclusionSet);
     result = new IndicNormalizationFilter(result);

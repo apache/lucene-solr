@@ -106,26 +106,6 @@ public class NodeConfig {
     return updateShardHandlerConfig;
   }
 
-  @Deprecated
-  public int getDistributedConnectionTimeout() {
-    return updateShardHandlerConfig.getDistributedConnectionTimeout();
-  }
-
-  @Deprecated
-  public int getDistributedSocketTimeout() {
-    return updateShardHandlerConfig.getDistributedSocketTimeout();
-  }
-
-  @Deprecated
-  public int getMaxUpdateConnections() {
-    return updateShardHandlerConfig.getMaxUpdateConnections();
-  }
-
-  @Deprecated
-  public int getMaxUpdateConnectionsPerHost() {
-    return updateShardHandlerConfig.getMaxUpdateConnectionsPerHost();
-  }
-
   public int getCoreLoadThreadCount() {
     return coreLoadThreads;
   }

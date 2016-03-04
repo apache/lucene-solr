@@ -57,7 +57,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   public static final String FOO_STRING_FIELD = "foo_s1";
   public static final String SMALL_STRING_FIELD = "small_s1";
   public static final String SMALL_INT_FIELD = "small_i";
-  static final String EMPTY_FACETS = "'facet_dates':{},'facet_ranges':{},'facet_intervals':{},'facet_heatmaps':{}";
+  static final String EMPTY_FACETS = "'facet_ranges':{},'facet_intervals':{},'facet_heatmaps':{}";
 
   @BeforeClass
   public static void beforeTests() throws Exception {

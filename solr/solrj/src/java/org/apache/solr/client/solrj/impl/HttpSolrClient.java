@@ -689,11 +689,6 @@ public class HttpSolrClient extends SolrClient {
     }
   }
   
-  /**
-   * @deprecated retries should be implemented in client code, and should be considered carefully per-request
-   */
-  public void setMaxRetries(int maxRetries) { }
-  
   public void setRequestWriter(RequestWriter requestWriter) {
     this.requestWriter = requestWriter;
   }

@@ -60,11 +60,6 @@ public class UpdateShardHandler {
 
   private final UpdateShardHandlerConfig cfg;
 
-  @Deprecated
-  public UpdateShardHandler(NodeConfig cfg) {
-    this(cfg.getUpdateShardHandlerConfig());
-  }
-
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
     this.cfg = cfg;
     clientConnectionManager = new PoolingClientConnectionManager(SchemeRegistryFactory.createSystemDefault());

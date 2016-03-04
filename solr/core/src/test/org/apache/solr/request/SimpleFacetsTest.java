@@ -805,45 +805,32 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTrieDateFacets() {
-    helpTestDateFacets("bday", false, FacetRangeMethod.FILTER);
-  }
-
-  @Test
   public void testTrieDateRangeFacets() {
-    helpTestDateFacets("bday", true, FacetRangeMethod.FILTER);
+    helpTestDateFacets("bday", FacetRangeMethod.FILTER);
   }
   
   @Test
-  public void testTrieDateFacetsDocValues() {
-    helpTestDateFacets("bday", false, FacetRangeMethod.DV);
-  }
-
-  @Test
   public void testTrieDateRangeFacetsDocValues() {
-    helpTestDateFacets("bday", true, FacetRangeMethod.DV);
+    helpTestDateFacets("bday", FacetRangeMethod.DV);
   }
 
   @Test
   public void testDateRangeFieldFacets() {
-    helpTestDateFacets("bday_drf", true, FacetRangeMethod.FILTER);
+    helpTestDateFacets("bday_drf", FacetRangeMethod.FILTER);
   }
 
-  private void helpTestDateFacets(final String fieldName, 
-                                  final boolean rangeMode, 
-                                  final FacetRangeMethod rangeFacetMethod) {
-    final String p = rangeMode ? "facet.range" : "facet.date";
-    final String b = rangeMode ? "facet_ranges" : "facet_dates";
+  private void helpTestDateFacets(final String fieldName, final FacetRangeMethod rangeFacetMethod) {
+    final String p = "facet.range";
+    final String b = "facet_ranges";
     final String f = fieldName;
-    final String c = (rangeMode ? "/lst[@name='counts']" : "");
+    final String c = "/lst[@name='counts']";
     final String pre = "//lst[@name='"+b+"']/lst[@name='"+f+"']" + c;
-    final String meta = pre + (rangeMode ? "/../" : "");
+    final String meta = pre + "/../";
 
     
-    // date faceting defaults to include both endpoints, 
-    // range faceting defaults to including only lower
+    // range faceting defaults to including only lower endpoint
     // doc exists with value @ 00:00:00.000 on July5
-    final String jul4 = rangeMode ? "[.='1'  ]" : "[.='2'  ]";
+    final String jul4 = "[.='1'  ]";
 
     assertQ("check counts for month of facet by day",
             req( "q", "*:*"
@@ -856,7 +843,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".other", "all"
                 ,p+".method", rangeFacetMethod.toString()  //This only applies to range faceting, won't be use for date faceting
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 31 : 34)+"]"
+            ,"*[count("+pre+"/int)=31]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
@@ -905,7 +892,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".other", "all"
                 ,"facet.mincount", "1"
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 8 : 11)+"]"
+            ,"*[count("+pre+"/int)=8]"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
             ,pre+"/int[@name='1976-07-04T00:00:00Z']" + jul4
             ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
@@ -930,9 +917,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".other", "all"
                 ,"f." + f + ".facet.mincount", "2"
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 3 : 7)+"]"
+            ,"*[count("+pre+"/int)=3]"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
-            ,pre+(rangeMode ? "" : "/int[@name='1976-07-04T00:00:00Z']" +jul4)
+            ,pre
             ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
             ,pre+"/int[@name='1976-07-15T00:00:00Z'][.='2'  ]"
             ,meta+"/int[@name='before' ][.='2']"
@@ -950,7 +937,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".gap",    "+1DAY"
                 ,p+".other",  "all"
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 2 : 5)+"]"
+            ,"*[count("+pre+"/int)=2]"
             ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
             ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
             
@@ -966,11 +953,11 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".gap",    "+1DAY"
                 ,p+".other",  "all"
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 2 : 5)+"]"
+            ,"*[count("+pre+"/int)=2]"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
             ,pre+"/int[@name='1976-07-04T00:00:00Z']" + jul4
             
-            ,meta+"/int[@name='after' ][.='"+(rangeMode ? 9 : 8)+"']"
+            ,meta+"/int[@name='after' ][.='9']"
             );
             
 
@@ -985,7 +972,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".other",  "all"
                 ,p+".hardend","false"
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 3 : 6)+"]"
+            ,"*[count("+pre+"/int)=3]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='5'  ]"
             ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0'  ]"
             ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='4'  ]"
@@ -1006,7 +993,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".other",  "all"
                 ,p+".hardend","true"
                 )
-            ,"*[count("+pre+"/int)="+(rangeMode ? 3 : 6)+"]"
+            ,"*[count("+pre+"/int)=3]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='5'  ]"
             ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0'  ]"
             ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='1'  ]"
@@ -1019,30 +1006,24 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTrieDateFacetsWithIncludeOption() {
-    helpTestDateFacetsWithIncludeOption("a_tdt", false);
-  }
-
-  @Test
   public void testTrieDateRangeFacetsWithIncludeOption() {
-    helpTestDateFacetsWithIncludeOption("a_tdt", true);
+    helpTestDateRangeFacetsWithIncludeOption("a_tdt");
   }
 
   @Test
   public void testDateRangeFieldDateRangeFacetsWithIncludeOption() {
-    helpTestDateFacetsWithIncludeOption("a_drf", true);
+    helpTestDateRangeFacetsWithIncludeOption("a_drf");
   }
 
   /** Similar to helpTestDateFacets, but for different fields with test data
       exactly on boundary marks */
-  private void helpTestDateFacetsWithIncludeOption(final String fieldName,
-                                                   final boolean rangeMode) {
-    final String p = rangeMode ? "facet.range" : "facet.date";
-    final String b = rangeMode ? "facet_ranges" : "facet_dates";
+  private void helpTestDateRangeFacetsWithIncludeOption(final String fieldName) {
+    final String p = "facet.range";
+    final String b = "facet_ranges";
     final String f = fieldName;
-    final String c = (rangeMode ? "/lst[@name='counts']" : "");
+    final String c = "/lst[@name='counts']";
     final String pre = "//lst[@name='"+b+"']/lst[@name='"+f+"']" + c;
-    final String meta = pre + (rangeMode ? "/../" : "");
+    final String meta = pre + "/../";
 
     assertQ("checking counts for lower",
             req( "q", "*:*"
@@ -1056,7 +1037,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "lower"
                 )
             // 15 days + pre+post+inner = 18
-            ,"*[count("+pre+"/int)="+(rangeMode ? 15 : 18)+"]"
+            ,"*[count("+pre+"/int)=15]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='0']"
@@ -1090,7 +1071,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "upper"
                 )
             // 15 days + pre+post+inner = 18
-            ,"*[count("+pre+"/int)="+(rangeMode ? 15 : 18)+"]"
+            ,"*[count("+pre+"/int)=15]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
@@ -1125,7 +1106,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "upper"
                 )
             // 15 days + pre+post+inner = 18
-            ,"*[count("+pre+"/int)="+(rangeMode ? 15 : 18)+"]"
+            ,"*[count("+pre+"/int)=15]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
@@ -1160,7 +1141,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "edge"
                 )
             // 15 days + pre+post+inner = 18
-            ,"*[count("+pre+"/int)="+(rangeMode ? 15 : 18)+"]"
+            ,"*[count("+pre+"/int)=15]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
@@ -1195,7 +1176,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "outer"
                 )
             // 12 days + pre+post+inner = 15
-            ,"*[count("+pre+"/int)="+(rangeMode ? 12 : 15)+"]"
+            ,"*[count("+pre+"/int)=12]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
@@ -1227,7 +1208,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "edge"
                 )
             // 12 days + pre+post+inner = 15
-            ,"*[count("+pre+"/int)="+(rangeMode ? 12 : 15)+"]"
+            ,"*[count("+pre+"/int)=12]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='0']"
@@ -1259,7 +1240,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "outer"
                 )
             // 12 days + pre+post+inner = 15
-            ,"*[count("+pre+"/int)="+(rangeMode ? 12 : 15)+"]"
+            ,"*[count("+pre+"/int)=12]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='0']"
@@ -1292,7 +1273,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "outer"
                 )
             // 12 days + pre+post+inner = 15
-            ,"*[count("+pre+"/int)="+(rangeMode ? 12 : 15)+"]"
+            ,"*[count("+pre+"/int)=12]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='0']"
@@ -1323,7 +1304,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "all"
                 )
             // 12 days + pre+post+inner = 15
-            ,"*[count("+pre+"/int)="+(rangeMode ? 12 : 15)+"]"
+            ,"*[count("+pre+"/int)=12]"
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
             ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
@@ -1344,20 +1325,17 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDateFacetsWithTz() {
-    for (boolean rangeType : new boolean[] { true, false }) {
-      helpTestDateFacetsWithTz("a_tdt", rangeType);
-    }
+  public void testDateRangeFacetsWithTz() {
+    helpTestDateRangeFacetsWithTz("a_tdt");
   }
 
-  private void helpTestDateFacetsWithTz(final String fieldName,
-                                        final boolean rangeMode) {
-    final String p = rangeMode ? "facet.range" : "facet.date";
-    final String b = rangeMode ? "facet_ranges" : "facet_dates";
+  private void helpTestDateRangeFacetsWithTz(final String fieldName) {
+    final String p = "facet.range";
+    final String b = "facet_ranges";
     final String f = fieldName;
-    final String c = (rangeMode ? "/lst[@name='counts']" : "");
+    final String c = "/lst[@name='counts']";
     final String pre = "//lst[@name='"+b+"']/lst[@name='"+f+"']" + c;
-    final String meta = pre + (rangeMode ? "/../" : "");
+    final String meta = pre + "/../";
 
     final String TZ = "America/Los_Angeles";
     assumeTrue("Test requires JVM to know about about TZ: " + TZ,
@@ -1377,7 +1355,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "lower"
                 )
             // 15 days + pre+post+inner = 18
-            ,"*[count("+pre+"/int)="+(rangeMode ? 15 : 18)+"]"
+            ,"*[count("+pre+"/int)=15]"
             ,pre+"/int[@name='1976-07-01T07:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-02T07:00:00Z'][.='0']"
             ,pre+"/int[@name='1976-07-03T07:00:00Z'][.='1'  ]"
@@ -1415,7 +1393,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,p+".include", "lower"
                 )
             // 15 days + pre+post+inner = 18
-            ,"*[count("+pre+"/int)="+(rangeMode ? 15 : 18)+"]"
+            ,"*[count("+pre+"/int)=15]"
             ,pre+"/int[@name='2010-11-01T07:00:00Z'][.='0']"
             ,pre+"/int[@name='2010-11-02T07:00:00Z'][.='0']"
             ,pre+"/int[@name='2010-11-03T07:00:00Z'][.='0']"
@@ -2388,16 +2366,14 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 400);
     }
     String field = "foo_dt";
-    for (String type : new String[]{"date", "range"}) {
-      assertQEx("no zero gap error for facet." + type + ": " + field,
+    assertQEx("no zero gap error for facet.range: " + field,
                 req("q", "*:*",
                     "facet", "true",
-                    "facet." + type, field,
-                    "facet."+type+".start", "NOW",
-                    "facet."+type+".gap", "+0DAYS",
-                    "facet."+type+".end", "NOW+10DAY"),
+                    "facet.range", field,
+                    "facet.range.start", "NOW",
+                    "facet.range.gap", "+0DAYS",
+                    "facet.range.end", "NOW+10DAY"),
                 400);
-    }
     field = "foo_f";
     assertQEx("no float underflow error: " + field,
               req("q", "*:*",

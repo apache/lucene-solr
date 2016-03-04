@@ -166,9 +166,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   public Date getStartTimeStamp() { return startTime; }
 
-  @Deprecated
-  public long getStartTime() { return startTime.getTime(); }
-
   public long getStartNanoTime() {
     return startNanoTime;
   }
@@ -641,56 +638,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     return createReloadedUpdateHandler(className, "Update Handler", updateHandler);
   }
 
-  /**
-   * Creates a new core and register it in the list of cores.
-   * If a core with the same name already exists, it will be stopped and replaced by this one.
-   *
-   * @param dataDir the index directory
-   * @param config a solr config instance
-   * @param schema a solr schema instance
-   *
-   * @since solr 1.3
-   * @deprecated will be removed in the next release
-   */
-  public SolrCore(String name, String dataDir, SolrConfig config, IndexSchema schema, CoreDescriptor cd) {
-    this(name, dataDir, config, schema, null, cd, null, null, null);
-  }
-
   public SolrCore(CoreDescriptor cd, ConfigSet coreConfig) {
     this(cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchema(), coreConfig.getProperties(),
         cd, null, null, null);
   }
 
-  /**
-   * Creates a new core that is to be loaded lazily. i.e. lazyLoad="true" in solr.xml
-   * 
-   * @since solr 4.1
-   * @deprecated will be removed in the next release
-   */
-  public SolrCore(String name, CoreDescriptor coreDescriptor) {
-    this.coreDescriptor = coreDescriptor;
-    this.setName(name);
-    this.schema = null;
-    this.dataDir = null;
-    this.ulogDir = null;
-    this.solrConfig = null;
-    this.configSetProperties = null;
-    this.maxWarmingSearchers = 2;  // we don't have a config yet, just pick a number.
-    this.slowQueryThresholdMillis = -1;
-    this.resourceLoader = null;
-    this.updateHandler = null;
-    this.isReloaded = true;
-    this.reqHandlers = null;
-    this.updateProcessorChains = null;
-    this.infoRegistry = null;
-    this.codec = null;
-    this.ruleExpiryLock = null;
-    this.memClassLoader = null;
-    this.directoryFactory = null;
-    this.solrCoreState = null;
-    this.restManager = null;
-    this.solrDelPolicy = null;
-  }
   
   /**
    * Creates a new core and register it in the list of cores. If a core with the

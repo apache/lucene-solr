@@ -18,6 +18,7 @@ package org.apache.lucene.queries;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.Fields;
@@ -336,6 +337,49 @@ public class CommonTermsQuery extends Query {
    */
   public float getHighFreqMinimumNumberShouldMatch() {
     return highFreqMinNrShouldMatch;
+  }
+  
+  /**
+   * Gets the list of terms.
+   */
+  public List<Term> getTerms() {
+    return Collections.unmodifiableList(terms);
+  }
+  
+  /**
+   * Gets the maximum threshold of a terms document frequency to be considered a
+   * low frequency term.
+   */
+  public float getMaxTermFrequency() {
+    return maxTermFrequency;
+  }
+  
+  /**
+   * Gets the {@link Occur} used for low frequency terms.
+   */
+  public Occur getLowFreqOccur() {
+    return lowFreqOccur;
+  }
+  
+  /**
+   * Gets the {@link Occur} used for high frequency terms.
+   */
+  public Occur getHighFreqOccur() {
+    return highFreqOccur;
+  }
+  
+  /**
+   * Gets the boost used for low frequency terms.
+   */
+  public float getLowFreqBoost() {
+    return lowFreqBoost;
+  }
+  
+  /**
+   * Gets the boost used for high frequency terms.
+   */
+  public float getHighFreqBoost() {
+    return highFreqBoost;
   }
   
   @Override

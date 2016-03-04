@@ -208,8 +208,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
     NamedList results = new NamedList();
     try {
-      // force update the cluster state
-      zkStateReader.updateClusterState();
       CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(operation);
       if (action == null) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:" + operation);
@@ -451,114 +449,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   }
 
-  @SuppressWarnings("unchecked")
-  private void getClusterStatus(ClusterState clusterState, ZkNodeProps message, NamedList results) throws KeeperException, InterruptedException {
-    String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
-
-    // read aliases
-    Aliases aliases = zkStateReader.getAliases();
-    Map<String, List<String>> collectionVsAliases = new HashMap<>();
-    Map<String, String> aliasVsCollections = aliases.getCollectionAliasMap();
-    if (aliasVsCollections != null) {
-      for (Map.Entry<String, String> entry : aliasVsCollections.entrySet()) {
-        List<String> colls = StrUtils.splitSmart(entry.getValue(), ',');
-        String alias = entry.getKey();
-        for (String coll : colls) {
-          if (collection == null || collection.equals(coll))  {
-            List<String> list = collectionVsAliases.get(coll);
-            if (list == null) {
-              list = new ArrayList<>();
-              collectionVsAliases.put(coll, list);
-            }
-            list.add(alias);
-          }
-        }
-      }
-    }
-
-    Map roles = null;
-    if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
-      roles = (Map) Utils.fromJSON(zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
-    }
-
-    // convert cluster state into a map of writable types
-    byte[] bytes = Utils.toJSON(clusterState);
-    Map<String, Object> stateMap = (Map<String,Object>) Utils.fromJSON(bytes);
-
-    Set<String> collections = new HashSet<>();
-    String routeKey = message.getStr(ShardParams._ROUTE_);
-    String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
-    if (collection == null) {
-      collections = new HashSet<>(clusterState.getCollections());
-    } else  {
-      collections = Collections.singleton(collection);
-    }
-
-    NamedList<Object> collectionProps = new SimpleOrderedMap<Object>();
-
-    for (String name : collections) {
-      Map<String, Object> collectionStatus = null;
-      DocCollection clusterStateCollection = clusterState.getCollection(name);
-
-      Set<String> requestedShards = new HashSet<>();
-      if (routeKey != null) {
-        DocRouter router = clusterStateCollection.getRouter();
-        Collection<Slice> slices = router.getSearchSlices(routeKey, null, clusterStateCollection);
-        for (Slice slice : slices) {
-          requestedShards.add(slice.getName());
-        }
-      }
-      if (shard != null) {
-        requestedShards.add(shard);
-      }
-
-      if (clusterStateCollection.getStateFormat() > 1) {
-        bytes = Utils.toJSON(clusterStateCollection);
-        Map<String, Object> docCollection = (Map<String, Object>) Utils.fromJSON(bytes);
-        collectionStatus = getCollectionStatus(docCollection, name, requestedShards);
-      } else {
-        collectionStatus = getCollectionStatus((Map<String, Object>) stateMap.get(name), name, requestedShards);
-      }
-
-      collectionStatus.put("znodeVersion", clusterStateCollection.getZNodeVersion());
-      if (collectionVsAliases.containsKey(name) && !collectionVsAliases.get(name).isEmpty()) {
-        collectionStatus.put("aliases", collectionVsAliases.get(name));
-      }
-      String configName = zkStateReader.readConfigName(name);
-      collectionStatus.put("configName", configName);
-      collectionProps.add(name, collectionStatus);
-    }
-
-    List<String> liveNodes = zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
-
-    // now we need to walk the collectionProps tree to cross-check replica state with live nodes
-    crossCheckReplicaStateWithLiveNodes(liveNodes, collectionProps);
-
-    NamedList<Object> clusterStatus = new SimpleOrderedMap<>();
-    clusterStatus.add("collections", collectionProps);
-
-    // read cluster properties
-    Map clusterProps = zkStateReader.getClusterProps();
-    if (clusterProps != null && !clusterProps.isEmpty())  {
-      clusterStatus.add("properties", clusterProps);
-    }
-
-    // add the alias map too
-    if (aliasVsCollections != null && !aliasVsCollections.isEmpty())  {
-      clusterStatus.add("aliases", aliasVsCollections);
-    }
-
-    // add the roles map
-    if (roles != null)  {
-      clusterStatus.add("roles", roles);
-    }
-
-    // add live_nodes
-    clusterStatus.add("live_nodes", liveNodes);
-
-    results.add("cluster", clusterStatus);
-  }
-
   /**
    * Walks the tree of collection status to verify that any replicas not reporting a "down" status is
    * on a live node, if any replicas reporting their status as "active" but the node is not live is
@@ -710,8 +600,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
     params.add(CoreAdminParams.CORE, core);
-    params.add(CoreAdminParams.DELETE_INSTANCE_DIR, "true");
-    params.add(CoreAdminParams.DELETE_DATA_DIR, "true");
+
+    params.set(CoreAdminParams.DELETE_INDEX, message.getBool(CoreAdminParams.DELETE_INDEX, true));
+    params.set(CoreAdminParams.DELETE_INSTANCE_DIR, message.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, true));
+    params.set(CoreAdminParams.DELETE_DATA_DIR, message.getBool(CoreAdminParams.DELETE_DATA_DIR, true));
 
     sendShardRequest(replica.getNodeName(), params, shardHandler, asyncId, requestMap);
 
@@ -1521,7 +1413,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     try {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminAction.UNLOAD.toString());
-      params.set(CoreAdminParams.DELETE_INDEX, "true");
+      params.set(CoreAdminParams.DELETE_INDEX, message.getBool(CoreAdminParams.DELETE_INDEX, true));
+      params.set(CoreAdminParams.DELETE_INSTANCE_DIR, message.getBool(CoreAdminParams.DELETE_INSTANCE_DIR, true));
+      params.set(CoreAdminParams.DELETE_DATA_DIR, message.getBool(CoreAdminParams.DELETE_DATA_DIR, true));
+
       sliceCmd(clusterState, params, null, slice, shardHandler, asyncId, requestMap);
 
       processResponses(results, shardHandler, true, "Failed to delete shard", asyncId, requestMap, Collections.emptySet());
@@ -2234,6 +2129,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     sendShardRequest(node, params, shardHandler, asyncId, requestMap);
 
     processResponses(results, shardHandler, true, "ADDREPLICA failed to create replica", asyncId, requestMap);
+
+    waitForCoreNodeName(collection, node, coreName);
   }
 
   private void processResponses(NamedList results, ShardHandler shardHandler, boolean abortOnError, String msgOnError,

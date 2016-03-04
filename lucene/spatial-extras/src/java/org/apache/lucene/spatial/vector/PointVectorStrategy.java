@@ -16,11 +16,11 @@
  */
 package org.apache.lucene.spatial.vector;
 
-import com.spatial4j.core.context.SpatialContext;
-import com.spatial4j.core.shape.Circle;
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Rectangle;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Circle;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -50,7 +50,7 @@ import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
  * org.apache.lucene.spatial.query.SpatialOperation#Intersects} and {@link
  * SpatialOperation#IsWithin} is supported.</li>
  * <li>Uses the FieldCache for
- * {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)} and for
+ * {@link #makeDistanceValueSource(org.locationtech.spatial4j.shape.Point)} and for
  * searching with a Circle.</li>
  * </ul>
  *
@@ -60,7 +60,7 @@ import org.apache.lucene.spatial.query.UnsupportedSpatialOperation;
  * This is a simple Strategy.  Search works with {@link org.apache.lucene.search.LegacyNumericRangeQuery}s on
  * an x and y pair of fields.  A Circle query does the same bbox query but adds a
  * ValueSource filter on
- * {@link #makeDistanceValueSource(com.spatial4j.core.shape.Point)}.
+ * {@link #makeDistanceValueSource(org.locationtech.spatial4j.shape.Point)}.
  * <p>
  * One performance shortcoming with this strategy is that a scenario involving
  * both a search using a Circle and sort will result in calculations for the
@@ -106,7 +106,7 @@ public class PointVectorStrategy extends SpatialStrategy {
     throw new UnsupportedOperationException("Can only index Point, not " + shape);
   }
 
-  /** @see #createIndexableFields(com.spatial4j.core.shape.Shape) */
+  /** @see #createIndexableFields(org.locationtech.spatial4j.shape.Shape) */
   public Field[] createIndexableFields(Point point) {
     FieldType doubleFieldType = new FieldType(LegacyDoubleField.TYPE_NOT_STORED);
     doubleFieldType.setNumericPrecisionStep(precisionStep);

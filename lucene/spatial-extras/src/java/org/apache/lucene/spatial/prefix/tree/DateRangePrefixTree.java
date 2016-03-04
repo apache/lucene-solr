@@ -24,7 +24,7 @@ import java.util.GregorianCalendar;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * A PrefixTree for date ranges in which the levels of the tree occur at natural periods of time (e.g. years,

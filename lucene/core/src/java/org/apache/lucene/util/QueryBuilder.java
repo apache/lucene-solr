@@ -354,8 +354,8 @@ public class QueryBuilder {
    * Creates complex phrase query from the cached tokenstream contents 
    */
   private Query analyzeMultiPhrase(String field, TokenStream stream, int slop) throws IOException {
-    MultiPhraseQuery mpq = newMultiPhraseQuery();
-    mpq.setSlop(slop);
+    MultiPhraseQuery.Builder mpqb = newMultiPhraseQueryBuilder();
+    mpqb.setSlop(slop);
     
     TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
 
@@ -369,9 +369,9 @@ public class QueryBuilder {
       
       if (positionIncrement > 0 && multiTerms.size() > 0) {
         if (enablePositionIncrements) {
-          mpq.add(multiTerms.toArray(new Term[0]), position);
+          mpqb.add(multiTerms.toArray(new Term[0]), position);
         } else {
-          mpq.add(multiTerms.toArray(new Term[0]));
+          mpqb.add(multiTerms.toArray(new Term[0]));
         }
         multiTerms.clear();
       }
@@ -380,11 +380,11 @@ public class QueryBuilder {
     }
     
     if (enablePositionIncrements) {
-      mpq.add(multiTerms.toArray(new Term[0]), position);
+      mpqb.add(multiTerms.toArray(new Term[0]), position);
     } else {
-      mpq.add(multiTerms.toArray(new Term[0]));
+      mpqb.add(multiTerms.toArray(new Term[0]));
     }
-    return mpq;
+    return mpqb.build();
   }
   
   /**
@@ -424,7 +424,7 @@ public class QueryBuilder {
    * This is intended for subclasses that wish to customize the generated queries.
    * @return new MultiPhraseQuery instance
    */
-  protected MultiPhraseQuery newMultiPhraseQuery() {
-    return new MultiPhraseQuery();
+  protected MultiPhraseQuery.Builder newMultiPhraseQueryBuilder() {
+    return new MultiPhraseQuery.Builder();
   }
 }

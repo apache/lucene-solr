@@ -19,8 +19,8 @@ package org.apache.lucene.spatial.prefix;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.spatial4j.core.shape.Point;
-import com.spatial4j.core.shape.Shape;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.queries.TermsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.prefix.tree.Cell;
@@ -35,7 +35,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 /**
  * A basic implementation of {@link PrefixTreeStrategy} using a large
  * {@link TermsQuery} of all the cells from
- * {@link SpatialPrefixTree#getTreeCellIterator(com.spatial4j.core.shape.Shape, int)}.
+ * {@link SpatialPrefixTree#getTreeCellIterator(org.locationtech.spatial4j.shape.Shape, int)}.
  * It only supports the search of indexed Point shapes.
  * <p>
  * The precision of query shapes (distErrPct) is an important factor in using

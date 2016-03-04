@@ -115,6 +115,16 @@ public abstract class PointWriter implements Closeable {
                  public int getBytesPerDimension(String fieldName) {
                    throw new UnsupportedOperationException();
                  }
+
+                 @Override
+                 public long size(String fieldName) {
+                   throw new UnsupportedOperationException();
+                 }
+
+                 @Override
+                 public int getDocCount(String fieldName) {
+                   throw new UnsupportedOperationException();
+                 }
                });
   }
 

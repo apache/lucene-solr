@@ -171,7 +171,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       final String exceptionMessage = e.getMessage();
       assertTrue(exceptionMessage.contains("Invalid core"));
       assertTrue(exceptionMessage.contains("invalid$core@name"));
-      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, and alphanumerics"));
+      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
     }
   }
   
@@ -184,7 +184,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
       final String exceptionMessage = e.getMessage();
       assertTrue(e.getMessage(), exceptionMessage.contains("Invalid core"));
       assertTrue(exceptionMessage.contains("invalid$core@name"));
-      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, and alphanumerics"));
+      assertTrue(exceptionMessage.contains("must consist entirely of periods, underscores, hyphens, and alphanumerics"));
     }
   }
   

@@ -39,6 +39,7 @@ import org.apache.lucene.util.bkd.BKDReader;
 
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.BLOCK_FP;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.BYTES_PER_DIM;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.DOC_COUNT;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.FIELD_COUNT;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.FIELD_FP;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.FIELD_FP_NAME;
@@ -47,6 +48,7 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.MAX_LEAF
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.MAX_VALUE;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.MIN_VALUE;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.NUM_DIMS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.POINT_COUNT;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.SPLIT_COUNT;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.SPLIT_DIM;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.SPLIT_VALUE;
@@ -119,6 +121,14 @@ class SimpleTextPointReader extends PointReader {
     assert startsWith(MAX_VALUE);
     BytesRef maxValue = SimpleTextUtil.fromBytesRefString(stripPrefix(MAX_VALUE));
     assert maxValue.length == numDims*bytesPerDim;
+
+    readLine(dataIn);
+    assert startsWith(POINT_COUNT);
+    long pointCount = parseLong(POINT_COUNT);
+
+    readLine(dataIn);
+    assert startsWith(DOC_COUNT);
+    int docCount = parseInt(DOC_COUNT);
     
     long[] leafBlockFPs = new long[count];
     for(int i=0;i<count;i++) {
@@ -139,7 +149,7 @@ class SimpleTextPointReader extends PointReader {
       System.arraycopy(br.bytes, br.offset, splitPackedValues, (1 + bytesPerDim) * i + 1, bytesPerDim);
     }
 
-    return new SimpleTextBKDReader(dataIn, numDims, maxPointsInLeafNode, bytesPerDim, leafBlockFPs, splitPackedValues, minValue.bytes, maxValue.bytes);
+    return new SimpleTextBKDReader(dataIn, numDims, maxPointsInLeafNode, bytesPerDim, leafBlockFPs, splitPackedValues, minValue.bytes, maxValue.bytes, pointCount, docCount);
   }
 
   private void readLine(IndexInput in) throws IOException {
@@ -266,5 +276,27 @@ class SimpleTextPointReader extends PointReader {
       return 0;
     }
     return bkdReader.getBytesPerDimension();
+  }
+
+  @Override
+  public long size(String fieldName) {
+    BKDReader bkdReader = getBKDReader(fieldName);
+    if (bkdReader == null) {
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this field were deleted in this segment:
+      return 0;
+    }
+    return bkdReader.getPointCount();
+  }
+
+  @Override
+  public int getDocCount(String fieldName) {
+    BKDReader bkdReader = getBKDReader(fieldName);
+    if (bkdReader == null) {
+      // Schema ghost corner case!  This field did index points in the past, but
+      // now all docs having this field were deleted in this segment:
+      return 0;
+    }
+    return bkdReader.getDocCount();
   }
 }

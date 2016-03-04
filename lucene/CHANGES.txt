@@ -3,6 +3,12 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 7.0.0 =======================
+(No Changes)
+
+======================= Lucene 6.1.0 =======================
+(No Changes)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
@@ -109,6 +115,15 @@ API Changes
   This also simplifies API of BytesRefHash. It also replaces the natural
   comparator in ArrayUtil by Java 8's Comparator#naturalOrder().
   (Mike McCandless, Uwe Schindler, Robert Muir)
+
+* LUCENE-7060: Update Spatial4j to 0.6.  The package com.spatial4j.core
+  is now org.locationtech.spatial4j. (David Smiley)
+
+* LUCENE-7058: Add getters to various Query implementations (Guillaume Smet via
+  Alan Woodward)
+
+* LUCENE-7064: MultiPhraseQuery is now immutable and should be constructed
+  with MultiPhraseQuery.Builder. (Luc Vanlerberghe via Adrien Grand)
 
 Optimizations
 

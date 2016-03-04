@@ -114,13 +114,6 @@ public class JettySolrRunner {
 
   }
 
-  private static Properties defaultNodeProperties(String solrconfigFilename, String schemaFilename) {
-    Properties props = new Properties();
-    props.setProperty("solrconfig", solrconfigFilename);
-    props.setProperty("schema", schemaFilename);
-    return props;
-  }
-
   /**
    * Create a new JettySolrRunner.
    *
@@ -134,82 +127,6 @@ public class JettySolrRunner {
     this(solrHome, JettyConfig.builder().setContext(context).setPort(port).build());
   }
 
-  /**
-   * @deprecated use {@link #JettySolrRunner(String,Properties,JettyConfig)}
-   */
-  @Deprecated
-  public JettySolrRunner(String solrHome, String context, int port, String solrConfigFilename, String schemaFileName) {
-    this(solrHome, defaultNodeProperties(solrConfigFilename, schemaFileName), JettyConfig.builder()
-        .setContext(context)
-        .setPort(port)
-        .build());
-  }
-
-  /**
-   * @deprecated use {@link #JettySolrRunner(String,Properties,JettyConfig)}
-   */
-  @Deprecated
-  public JettySolrRunner(String solrHome, String context, int port,
-      String solrConfigFilename, String schemaFileName, boolean stopAtShutdown) {
-    this(solrHome, defaultNodeProperties(solrConfigFilename, schemaFileName),
-        JettyConfig.builder()
-        .setContext(context)
-        .setPort(port)
-        .stopAtShutdown(stopAtShutdown)
-        .build());
-  }
-
-  /**
-   * Constructor taking an ordered list of additional (servlet holder -&gt; path spec) mappings
-   * to add to the servlet context
-   * @deprecated use {@link JettySolrRunner#JettySolrRunner(String,Properties,JettyConfig)}
-   */
-  @Deprecated
-  public JettySolrRunner(String solrHome, String context, int port,
-      String solrConfigFilename, String schemaFileName, boolean stopAtShutdown,
-      SortedMap<ServletHolder,String> extraServlets) {
-    this(solrHome, defaultNodeProperties(solrConfigFilename, schemaFileName),
-        JettyConfig.builder()
-        .setContext(context)
-        .setPort(port)
-        .stopAtShutdown(stopAtShutdown)
-        .withServlets(extraServlets)
-        .build());
-  }
-
-  /**
-   * @deprecated use {@link #JettySolrRunner(String,Properties,JettyConfig)}
-   */
-  @Deprecated
-  public JettySolrRunner(String solrHome, String context, int port, String solrConfigFilename, String schemaFileName,
-                         boolean stopAtShutdown, SortedMap<ServletHolder, String> extraServlets, SSLConfig sslConfig) {
-    this(solrHome, defaultNodeProperties(solrConfigFilename, schemaFileName),
-        JettyConfig.builder()
-        .setContext(context)
-        .setPort(port)
-        .stopAtShutdown(stopAtShutdown)
-        .withServlets(extraServlets)
-        .withSSLConfig(sslConfig)
-        .build());
-  }
-
-  /**
-   * @deprecated use {@link #JettySolrRunner(String,Properties,JettyConfig)}
-   */
-  @Deprecated
-  public JettySolrRunner(String solrHome, String context, int port, String solrConfigFilename, String schemaFileName,
-                         boolean stopAtShutdown, SortedMap<ServletHolder, String> extraServlets, SSLConfig sslConfig,
-                         SortedMap<Class<? extends Filter>, String> extraRequestFilters) {
-    this(solrHome, defaultNodeProperties(solrConfigFilename, schemaFileName),
-        JettyConfig.builder()
-        .setContext(context)
-        .setPort(port)
-        .stopAtShutdown(stopAtShutdown)
-        .withServlets(extraServlets)
-        .withFilters(extraRequestFilters)
-        .withSSLConfig(sslConfig)
-        .build());
-  }
 
   /**
    * Construct a JettySolrRunner
@@ -552,42 +469,17 @@ public class JettySolrRunner {
   }
 
   /**
-   * @deprecated set properties in the Properties passed to the constructor
-   */
-  @Deprecated
-  public void setShards(String shardList) {
-     nodeProperties.setProperty("shard", shardList);
-  }
-
-  /**
-   * @deprecated set properties in the Properties passed to the constructor
-   */
-  @Deprecated
-  public void setDataDir(String dataDir) {
-    nodeProperties.setProperty("solr.data.dir", dataDir);
-  }
-
-  /**
-   * @deprecated set properties in the Properties passed to the constructor
-   */
-  @Deprecated
-  public void setUlogDir(String ulogDir) {
-    nodeProperties.setProperty("solr.ulog.dir", ulogDir);
-  }
-
-  /**
-   * @deprecated set properties in the Properties passed to the constructor
-   */
-  @Deprecated
-  public void setCoreNodeName(String coreNodeName) {
-    nodeProperties.setProperty("coreNodeName", coreNodeName);
-  }
-
-  /**
    * @return the Solr home directory of this JettySolrRunner
    */
   public String getSolrHome() {
     return solrHome;
+  }
+
+  /**
+   * @return this node's properties
+   */
+  public Properties getNodeProperties() {
+    return nodeProperties;
   }
 
   private void waitForLoadingCoresToFinish(long timeoutMs) {

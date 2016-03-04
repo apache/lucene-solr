@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search;
 
-import com.spatial4j.core.distance.DistanceUtils;
+import org.locationtech.spatial4j.distance.DistanceUtils;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;

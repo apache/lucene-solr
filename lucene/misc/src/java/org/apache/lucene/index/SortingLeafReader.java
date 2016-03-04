@@ -303,6 +303,16 @@ public class SortingLeafReader extends FilterLeafReader {
     public int getBytesPerDimension(String fieldName) throws IOException {
       return in.getBytesPerDimension(fieldName);
     }
+
+    @Override
+    public long size(String fieldName) {
+      return in.size(fieldName);
+    }
+
+    @Override
+    public int getDocCount(String fieldName) {
+      return in.getDocCount(fieldName);
+    }
   }
 
   private static class SortingSortedDocValues extends SortedDocValues {

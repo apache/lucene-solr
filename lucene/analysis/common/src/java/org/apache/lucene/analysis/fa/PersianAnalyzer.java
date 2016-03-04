@@ -116,9 +116,7 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName) {
     final Tokenizer source = new StandardTokenizer();
     TokenStream result = new LowerCaseFilter(source);
-    if (getVersion().onOrAfter(Version.LUCENE_5_4_0)) {
-      result = new DecimalDigitFilter(result);
-    }
+    result = new DecimalDigitFilter(result);
     result = new ArabicNormalizationFilter(result);
     /* additional persian-specific normalization */
     result = new PersianNormalizationFilter(result);

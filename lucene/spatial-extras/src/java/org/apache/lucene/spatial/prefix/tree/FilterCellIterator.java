@@ -16,8 +16,8 @@
  */
 package org.apache.lucene.spatial.prefix.tree;
 
-import com.spatial4j.core.shape.Shape;
-import com.spatial4j.core.shape.SpatialRelation;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.SpatialRelation;
 
 import java.util.Iterator;
 
