@@ -370,13 +370,9 @@ public  class LeaderElector {
    * Sort n string sequence list.
    */
   public static void sortSeqs(List<String> seqs) {
-    Collections.sort(seqs, new Comparator<String>() {
-      
-      @Override
-      public int compare(String o1, String o2) {
-        int i = getSeq(o1) - getSeq(o2);
-        return i == 0 ? o1.compareTo(o2) : i ;
-      }
+    Collections.sort(seqs, (o1, o2) -> {
+      int i = getSeq(o1) - getSeq(o2);
+      return i == 0 ? o1.compareTo(o2) : i;
     });
   }
 

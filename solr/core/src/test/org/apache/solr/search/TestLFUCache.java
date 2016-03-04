@@ -385,14 +385,11 @@ public class TestLFUCache extends SolrTestCaseJ4 {
      * design, the cache eviction doesn't work right.
      */
     for (int i = 0; i < atLeast(2_000_000); ++i) {
-      executorService.submit(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            cache.put(random().nextInt(100), random().nextLong());
-          } catch (Throwable t) {
-            error.compareAndSet(null, t);
-          }
+      executorService.submit(() -> {
+        try {
+          cache.put(random().nextInt(100), random().nextLong());
+        } catch (Throwable t) {
+          error.compareAndSet(null, t);
         }
       });
     }

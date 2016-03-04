@@ -2530,46 +2530,43 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       schemaRes = mis.getResourceName();
     }
     final String managedSchmaResourcePath = schemaRes == null ? null : zkSolrResourceLoader.getConfigSetZkPath() + "/" + schemaRes;
-    return new Runnable() {
-      @Override
-      public void run() {
-        log.info("config update listener called for core {}", coreName);
-        SolrZkClient zkClient = cc.getZkController().getZkClient();
-        int solrConfigversion, overlayVersion, managedSchemaVersion = 0;
-        SolrConfig cfg = null;
-        try (SolrCore core = cc.solrCores.getCoreFromAnyList(coreName, true)) {
-          if (core == null || core.isClosed()) return;
-          cfg = core.getSolrConfig();
-          solrConfigversion = core.getSolrConfig().getOverlay().getZnodeVersion();
-          overlayVersion = core.getSolrConfig().getZnodeVersion();
-          if (managedSchmaResourcePath != null) {
-            managedSchemaVersion = ((ManagedIndexSchema) core.getLatestSchema()).getSchemaZkVersion();
-          }
-
-        }
-        if (cfg != null) {
-          cfg.refreshRequestParams();
-        }
-        if (checkStale(zkClient, overlayPath, solrConfigversion) ||
-            checkStale(zkClient, solrConfigPath, overlayVersion) ||
-            checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
-          log.info("core reload {}", coreName);
-          cc.reload(coreName);
-          return;
-        }
-        //some files in conf directory may have  other than managedschema, overlay, params
-        try (SolrCore core = cc.solrCores.getCoreFromAnyList(coreName, true)) {
-          if (core == null || core.isClosed()) return;
-          for (Runnable listener : core.confListeners) {
-            try {
-              listener.run();
-            } catch (Exception e) {
-              log.error("Error in listener ", e);
-            }
-          }
+    return () -> {
+      log.info("config update listener called for core {}", coreName);
+      SolrZkClient zkClient = cc.getZkController().getZkClient();
+      int solrConfigversion, overlayVersion, managedSchemaVersion = 0;
+      SolrConfig cfg = null;
+      try (SolrCore core1 = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+        if (core1 == null || core1.isClosed()) return;
+        cfg = core1.getSolrConfig();
+        solrConfigversion = core1.getSolrConfig().getOverlay().getZnodeVersion();
+        overlayVersion = core1.getSolrConfig().getZnodeVersion();
+        if (managedSchmaResourcePath != null) {
+          managedSchemaVersion = ((ManagedIndexSchema) core1.getLatestSchema()).getSchemaZkVersion();
         }
 
       }
+      if (cfg != null) {
+        cfg.refreshRequestParams();
+      }
+      if (checkStale(zkClient, overlayPath, solrConfigversion) ||
+          checkStale(zkClient, solrConfigPath, overlayVersion) ||
+          checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
+        log.info("core reload {}", coreName);
+        cc.reload(coreName);
+        return;
+      }
+      //some files in conf directory may have  other than managedschema, overlay, params
+      try (SolrCore core1 = cc.solrCores.getCoreFromAnyList(coreName, true)) {
+        if (core1 == null || core1.isClosed()) return;
+        for (Runnable listener : core1.confListeners) {
+          try {
+            listener.run();
+          } catch (Exception e) {
+            log.error("Error in listener ", e);
+          }
+        }
+      }
+
     };
   }
 

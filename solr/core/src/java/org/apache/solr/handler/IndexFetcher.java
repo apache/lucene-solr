@@ -1452,14 +1452,11 @@ public class IndexFetcher {
       } finally {
         cleanup();
         //if cleanup succeeds . The file is downloaded fully. do an fsync
-        fsyncService.submit(new Runnable(){
-          @Override
-          public void run() {
-            try {
-              file.sync();
-            } catch (IOException e) {
-              fsyncException = e;
-            }
+        fsyncService.submit(() -> {
+          try {
+            file.sync();
+          } catch (IOException e) {
+            fsyncException = e;
           }
         });
       }

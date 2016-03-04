@@ -145,13 +145,10 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
 
       this.es = es;
       if (this.es == null) {
-        this.es = new ElectorSetup(new OnReconnect() {
-          @Override
-          public void command() {
-            try {
-              setupOnConnect();
-            } catch (Throwable t) {
-            }
+        this.es = new ElectorSetup(() -> {
+          try {
+            setupOnConnect();
+          } catch (Throwable t) {
           }
         });
       }

@@ -86,34 +86,28 @@ public class PeerSync  {
   private SolrCore core;
 
   // comparator that sorts by absolute value, putting highest first
-  private static Comparator<Long> absComparator = new Comparator<Long>() {
-    @Override
-    public int compare(Long o1, Long o2) {
-      long l1 = Math.abs(o1);
-      long l2 = Math.abs(o2);
-      if (l1 >l2) return -1;
-      if (l1 < l2) return 1;
-      return 0;
-    }
+  private static Comparator<Long> absComparator = (o1, o2) -> {
+    long l1 = Math.abs(o1);
+    long l2 = Math.abs(o2);
+    if (l1 > l2) return -1;
+    if (l1 < l2) return 1;
+    return 0;
   };
 
   // comparator that sorts update records by absolute value of version, putting lowest first
-  private static Comparator<Object> updateRecordComparator = new Comparator<Object>() {
-    @Override
-    public int compare(Object o1, Object o2) {
-      if (!(o1 instanceof List)) return 1;
-      if (!(o2 instanceof List)) return -1;
+  private static Comparator<Object> updateRecordComparator = (o1, o2) -> {
+    if (!(o1 instanceof List)) return 1;
+    if (!(o2 instanceof List)) return -1;
 
-      List lst1 = (List)o1;
-      List lst2 = (List)o2;
+    List lst1 = (List) o1;
+    List lst2 = (List) o2;
 
-      long l1 = Math.abs((Long)lst1.get(1));
-      long l2 = Math.abs((Long)lst2.get(1));
+    long l1 = Math.abs((Long) lst1.get(1));
+    long l2 = Math.abs((Long) lst2.get(1));
 
-      if (l1 >l2) return 1;
-      if (l1 < l2) return -1;
-      return 0;
-    }
+    if (l1 > l2) return 1;
+    if (l1 < l2) return -1;
+    return 0;
   };
 
 

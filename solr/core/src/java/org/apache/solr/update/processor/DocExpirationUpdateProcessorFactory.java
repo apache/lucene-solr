@@ -500,11 +500,7 @@ public final class DocExpirationUpdateProcessorFactory
   /** @see #iAmInChargeOfPeriodicDeletes */
   private volatile boolean previouslyInChargeOfDeletes = true;
 
-  private static final Comparator<Slice> COMPARE_SLICES_BY_NAME = new Comparator<Slice>() {
-    public int compare(Slice a, Slice b) {
-      return a.getName().compareTo(b.getName());
-    }
-  };
+  private static final Comparator<Slice> COMPARE_SLICES_BY_NAME = (a, b) -> a.getName().compareTo(b.getName());
 
 }
 

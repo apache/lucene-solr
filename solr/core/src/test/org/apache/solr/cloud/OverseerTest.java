@@ -413,22 +413,18 @@ public class OverseerTest extends SolrTestCaseJ4 {
       //register total of coreCount cores
       for (int i = 0; i < coreCount; i++) {
         final int slot = i;
-        Runnable coreStarter = new Runnable() {
-          @Override
-          public void run() {
 
-            final String coreName = "core" + slot;
-            
-            try {
-              ids[slot]=controllers[slot % nodeCount].publishState(collection, coreName, "node" + slot, Replica.State.ACTIVE, sliceCount);
-            } catch (Throwable e) {
-              e.printStackTrace();
-              fail("register threw exception:" + e.getClass());
-            }
+        nodeExecutors[i % nodeCount].submit((Runnable) () -> {
+
+          final String coreName = "core" + slot;
+
+          try {
+            ids[slot] = controllers[slot % nodeCount].publishState(collection, coreName, "node" + slot, Replica.State.ACTIVE, sliceCount);
+          } catch (Throwable e) {
+            e.printStackTrace();
+            fail("register threw exception:" + e.getClass());
           }
-        };
-        
-        nodeExecutors[i % nodeCount].submit(coreStarter);
+        });
       }
       
       for (int i = 0; i < nodeCount; i++) {

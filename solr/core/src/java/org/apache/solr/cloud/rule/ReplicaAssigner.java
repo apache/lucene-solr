@@ -210,28 +210,25 @@ public class ReplicaAssigner {
     int startPosition = 0;
     Map<String, Map<String, Integer>> copyOfCurrentState = getDeepCopy(shardVsNodes, 2);
     List<String> sortedLiveNodes = new ArrayList<>(this.participatingLiveNodes);
-    Collections.sort(sortedLiveNodes, new Comparator<String>() {
-      @Override
-      public int compare(String n1, String n2) {
-        int result = 0;
-        for (int i = 0; i < rulePermutation.length; i++) {
-          Rule rule = rules.get(rulePermutation[i]);
-          int val = rule.compare(n1, n2, nodeVsTagsCopy, copyOfCurrentState);
-          if (val != 0) {//atleast one non-zero compare break now
-            result = val;
-            break;
-          }
-          if (result == 0) {//if all else is equal, prefer nodes with fewer cores
-            AtomicInteger n1Count = nodeVsCores.get(n1);
-            AtomicInteger n2Count = nodeVsCores.get(n2);
-            int a = n1Count == null ? 0 : n1Count.get();
-            int b = n2Count == null ? 0 : n2Count.get();
-            result = a > b ? 1 : a == b ? 0 : -1;
-          }
-
+    Collections.sort(sortedLiveNodes, (n1, n2) -> {
+      int result1 = 0;
+      for (int i = 0; i < rulePermutation.length; i++) {
+        Rule rule = rules.get(rulePermutation[i]);
+        int val = rule.compare(n1, n2, nodeVsTagsCopy, copyOfCurrentState);
+        if (val != 0) {//atleast one non-zero compare break now
+          result1 = val;
+          break;
         }
-        return result;
+        if (result1 == 0) {//if all else is equal, prefer nodes with fewer cores
+          AtomicInteger n1Count = nodeVsCores.get(n1);
+          AtomicInteger n2Count = nodeVsCores.get(n2);
+          int a = n1Count == null ? 0 : n1Count.get();
+          int b = n2Count == null ? 0 : n2Count.get();
+          result1 = a > b ? 1 : a == b ? 0 : -1;
+        }
+
       }
+      return result1;
     });
     forEachPosition:
     for (Position position : positions) {

@@ -1068,12 +1068,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     public boolean hasDeletedDocs;  // true if it's possible that filter may match deleted docs
   }
 
-  private static Comparator<Query> sortByCost = new Comparator<Query>() {
-    @Override
-    public int compare(Query q1, Query q2) {
-      return ((ExtendedQuery) q1).getCost() - ((ExtendedQuery) q2).getCost();
-    }
-  };
+  private static Comparator<Query> sortByCost = (q1, q2) -> ((ExtendedQuery) q1).getCost() - ((ExtendedQuery) q2).getCost();
 
   private DocSet getDocSetScore(List<Query> queries) throws IOException {
     Query main = queries.remove(0);
