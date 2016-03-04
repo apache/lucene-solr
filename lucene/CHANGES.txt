@@ -162,6 +162,13 @@ Tests
   expression to encapsulate a statement that is expected to throw an exception.
   (Ryan Ernst)
 
+Bug Fixes
+
+* LUCENE-7065: Fix the explain for the global ordinals join query. Before the
+  explain would also indicate that non matching documents would match.
+  On top of that with score mode average, the explain would fail with a NPE.
+  (Martijn van Groningen)
+
 Other
 
 * LUCENE-7035: Upgrade icu4j to 56.1/unicode 8. (Robert Muir)
