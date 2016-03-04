@@ -70,7 +70,7 @@ final class LatLonPointDistanceQuery extends Query {
     final GeoRect box2;
 
     // crosses dateline: split
-    if (box.maxLon < box.minLon) {
+    if (box.crossesDateline()) {
       box1 = new GeoRect(-180.0, box.maxLon, box.minLat, box.maxLat);
       box2 = new GeoRect(box.minLon, 180.0, box.minLat, box.maxLat);
     } else {
