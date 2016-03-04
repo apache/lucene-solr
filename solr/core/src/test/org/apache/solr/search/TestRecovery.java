@@ -93,23 +93,15 @@ public class TestRecovery extends SolrTestCaseJ4 {
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
-      UpdateLog.testing_logReplayHook = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
         }
       };
 
-      UpdateLog.testing_logReplayFinishHook = new Runnable() {
-        @Override
-        public void run() {
-          logReplayFinish.release();
-        }
-      };
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
 
       clearIndex();
@@ -197,14 +189,11 @@ public class TestRecovery extends SolrTestCaseJ4 {
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
-    UpdateLog.testing_logReplayHook = new Runnable() {
-      @Override
-      public void run() {
-        try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
+    UpdateLog.testing_logReplayHook = () -> {
+      try {
+        assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
     };
 
@@ -359,23 +348,15 @@ public class TestRecovery extends SolrTestCaseJ4 {
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
-    UpdateLog.testing_logReplayHook = new Runnable() {
-      @Override
-      public void run() {
-        try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
+    UpdateLog.testing_logReplayHook = () -> {
+      try {
+        assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
     };
 
-    UpdateLog.testing_logReplayFinishHook = new Runnable() {
-      @Override
-      public void run() {
-        logReplayFinish.release();
-      }
-    };
+    UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
 
     SolrQueryRequest req = req();
@@ -495,23 +476,15 @@ public class TestRecovery extends SolrTestCaseJ4 {
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
-    UpdateLog.testing_logReplayHook = new Runnable() {
-      @Override
-      public void run() {
-        try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
+    UpdateLog.testing_logReplayHook = () -> {
+      try {
+        assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
     };
 
-    UpdateLog.testing_logReplayFinishHook = new Runnable() {
-      @Override
-      public void run() {
-        logReplayFinish.release();
-      }
-    };
+    UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
 
     SolrQueryRequest req = req();
@@ -632,12 +605,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
     DirectUpdateHandler2.commitOnClose = false;
     final Semaphore logReplayFinish = new Semaphore(0);
 
-    UpdateLog.testing_logReplayFinishHook = new Runnable() {
-      @Override
-      public void run() {
-        logReplayFinish.release();
-      }
-    };
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
 
     SolrQueryRequest req = req();
@@ -762,23 +730,15 @@ public class TestRecovery extends SolrTestCaseJ4 {
     final Semaphore logReplay = new Semaphore(0);
     final Semaphore logReplayFinish = new Semaphore(0);
 
-    UpdateLog.testing_logReplayHook = new Runnable() {
-      @Override
-      public void run() {
-        try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
+    UpdateLog.testing_logReplayHook = () -> {
+      try {
+        assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
       }
     };
 
-    UpdateLog.testing_logReplayFinishHook = new Runnable() {
-      @Override
-      public void run() {
-        logReplayFinish.release();
-      }
-    };
+    UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
 
     SolrQueryRequest req = req();
@@ -827,23 +787,15 @@ public class TestRecovery extends SolrTestCaseJ4 {
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
-      UpdateLog.testing_logReplayHook = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
         }
       };
 
-      UpdateLog.testing_logReplayFinishHook = new Runnable() {
-        @Override
-        public void run() {
-          logReplayFinish.release();
-        }
-      };
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
 
       clearIndex();
@@ -959,23 +911,15 @@ public class TestRecovery extends SolrTestCaseJ4 {
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
-      UpdateLog.testing_logReplayHook = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
         }
       };
 
-      UpdateLog.testing_logReplayFinishHook = new Runnable() {
-        @Override
-        public void run() {
-          logReplayFinish.release();
-        }
-      };
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
       UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
       File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());
@@ -1098,23 +1042,15 @@ public class TestRecovery extends SolrTestCaseJ4 {
       final Semaphore logReplay = new Semaphore(0);
       final Semaphore logReplayFinish = new Semaphore(0);
 
-      UpdateLog.testing_logReplayHook = new Runnable() {
-        @Override
-        public void run() {
-          try {
-            assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
+      UpdateLog.testing_logReplayHook = () -> {
+        try {
+          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        } catch (Exception e) {
+          throw new RuntimeException(e);
         }
       };
 
-      UpdateLog.testing_logReplayFinishHook = new Runnable() {
-        @Override
-        public void run() {
-          logReplayFinish.release();
-        }
-      };
+      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
 
       UpdateLog ulog = h.getCore().getUpdateHandler().getUpdateLog();
       File logDir = new File(h.getCore().getUpdateHandler().getUpdateLog().getLogDir());

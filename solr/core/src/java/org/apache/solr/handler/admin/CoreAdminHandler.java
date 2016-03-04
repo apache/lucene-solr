@@ -155,23 +155,20 @@ public class CoreAdminHandler extends RequestHandlerBase {
         try {
           MDC.put("CoreAdminHandler.asyncId", taskId);
           MDC.put("CoreAdminHandler.action", op.action.toString());
-          parallelExecutor.execute(new Runnable() {
-            @Override
-            public void run() {
-              boolean exceptionCaught = false;
-              try {
-                callInfo.call();
-                taskObject.setRspObject(callInfo.rsp);
-              } catch (Exception e) {
-                exceptionCaught = true;
-                taskObject.setRspObjectFromException(e);
-              } finally {
-                removeTask("running", taskObject.taskId);
-                if (exceptionCaught) {
-                  addTask("failed", taskObject, true);
-                } else
-                  addTask("completed", taskObject, true);
-              }
+          parallelExecutor.execute(() -> {
+            boolean exceptionCaught = false;
+            try {
+              callInfo.call();
+              taskObject.setRspObject(callInfo.rsp);
+            } catch (Exception e) {
+              exceptionCaught = true;
+              taskObject.setRspObjectFromException(e);
+            } finally {
+              removeTask("running", taskObject.taskId);
+              if (exceptionCaught) {
+                addTask("failed", taskObject, true);
+              } else
+                addTask("completed", taskObject, true);
             }
           });
         } finally {

@@ -700,18 +700,15 @@ public class AnalyzingInfixSuggesterTest extends LuceneTestCase {
         }
 
         Collections.sort(expected,
-                         new Comparator<Input>() {
-                           @Override
-                           public int compare(Input a, Input b) {
-                             if (a.v > b.v) {
-                               return -1;
-                             } else if (a.v < b.v) {
-                               return 1;
-                             } else {
-                               return 0;
-                             }
-                           }
-                         });
+            (a1, b) -> {
+              if (a1.v > b.v) {
+                return -1;
+              } else if (a1.v < b.v) {
+                return 1;
+              } else {
+                return 0;
+              }
+            });
 
         if (expected.isEmpty() == false) {
 

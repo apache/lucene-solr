@@ -442,17 +442,14 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     final int ITERS = 1000000;
     int THREADS = 10;
 
-    runInThreads(THREADS, new Runnable() {
-      @Override
-      public void run() {
-        JavaBinCodec.StringBytes stringBytes1 = new JavaBinCodec.StringBytes(new byte[0], 0, 0);
-        for (int i = 0; i < ITERS; i++) {
-          JavaBinCodec.StringBytes b = l.get(i % l.size());
-          stringBytes1.reset(b.bytes, 0, b.bytes.length);
-          if (STRING_CACHE.get(stringBytes1) == null) throw new RuntimeException("error");
-        }
-
+    runInThreads(THREADS, () -> {
+      JavaBinCodec.StringBytes stringBytes1 = new JavaBinCodec.StringBytes(new byte[0], 0, 0);
+      for (int i = 0; i < ITERS; i++) {
+        JavaBinCodec.StringBytes b = l.get(i % l.size());
+        stringBytes1.reset(b.bytes, 0, b.bytes.length);
+        if (STRING_CACHE.get(stringBytes1) == null) throw new RuntimeException("error");
       }
+
     });
 
 
@@ -461,17 +458,14 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     System.out.println("time taken by LRUCACHE " + timer.getTime());
     timer = new RTimer();
 
-    runInThreads(THREADS, new Runnable() {
-      @Override
-      public void run() {
-        String a = null;
-        CharArr arr = new CharArr();
-        for (int i = 0; i < ITERS; i++) {
-          JavaBinCodec.StringBytes sb = l.get(i % l.size());
-          arr.reset();
-          ByteUtils.UTF8toUTF16(sb.bytes, 0, sb.bytes.length, arr);
-          a = arr.toString();
-        }
+    runInThreads(THREADS, () -> {
+      String a = null;
+      CharArr arr = new CharArr();
+      for (int i = 0; i < ITERS; i++) {
+        JavaBinCodec.StringBytes sb = l.get(i % l.size());
+        arr.reset();
+        ByteUtils.UTF8toUTF16(sb.bytes, 0, sb.bytes.length, arr);
+        a = arr.toString();
       }
     });
 
@@ -574,14 +568,11 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     if (nThreads <= 0) {
       ret += doDecode(buffers, iter, stringCache);
     } else {
-      runInThreads(nThreads, new Runnable() {
-        @Override
-        public void run() {
-          try {
-            doDecode(buffers, iter, stringCache);
-          } catch (IOException e) {
-            e.printStackTrace();
-          }
+      runInThreads(nThreads, () -> {
+        try {
+          doDecode(buffers, iter, stringCache);
+        } catch (IOException e) {
+          e.printStackTrace();
         }
       });
     }

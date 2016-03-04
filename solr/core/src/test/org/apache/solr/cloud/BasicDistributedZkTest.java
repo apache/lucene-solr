@@ -568,25 +568,20 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       ThreadPoolExecutor executor, final String collection, final int numShards, int cnt) {
     for (int i = 0; i < cnt; i++) {
       final int freezeI = i;
-      executor.execute(new Runnable() {
-        
-        @Override
-        public void run() {
-          Create createCmd = new Create();
-          createCmd.setCoreName(collection + freezeI);
-          createCmd.setCollection(collection);
+      executor.execute(() -> {
+        Create createCmd = new Create();
+        createCmd.setCoreName(collection + freezeI);
+        createCmd.setCollection(collection);
 
-          createCmd.setNumShards(numShards);
-          try {
-            String core3dataDir = createTempDir(collection).toFile().getAbsolutePath();
-            createCmd.setDataDir(getDataDir(core3dataDir));
+        createCmd.setNumShards(numShards);
+        try {
+          String core3dataDir = createTempDir(collection).toFile().getAbsolutePath();
+          createCmd.setDataDir(getDataDir(core3dataDir));
 
-            client.request(createCmd);
-          } catch (SolrServerException | IOException e) {
-            throw new RuntimeException(e);
-          }
+          client.request(createCmd);
+        } catch (SolrServerException | IOException e) {
+          throw new RuntimeException(e);
         }
-        
       });
     }
   }

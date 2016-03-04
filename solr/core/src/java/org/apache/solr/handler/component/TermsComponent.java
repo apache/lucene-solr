@@ -441,12 +441,7 @@ public class TermsComponent extends SearchComponent {
     public TermsResponse.Term[] getLexSorted(HashMap<String, TermsResponse.Term> data) {
       TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
 
-      Arrays.sort(arr, new Comparator<TermsResponse.Term>() {
-        @Override
-        public int compare(TermsResponse.Term o1, TermsResponse.Term o2) {
-          return o1.getTerm().compareTo(o2.getTerm());
-        }
-      });
+      Arrays.sort(arr, (o1, o2) -> o1.getTerm().compareTo(o2.getTerm()));
 
       return arr;
     }
@@ -455,19 +450,16 @@ public class TermsComponent extends SearchComponent {
     public TermsResponse.Term[] getCountSorted(HashMap<String, TermsResponse.Term> data) {
       TermsResponse.Term[] arr = data.values().toArray(new TermsResponse.Term[data.size()]);
 
-      Arrays.sort(arr, new Comparator<TermsResponse.Term>() {
-        @Override
-        public int compare(TermsResponse.Term o1, TermsResponse.Term o2) {
-          long freq1 = o1.getFrequency();
-          long freq2 = o2.getFrequency();
-          
-          if (freq2 < freq1) {
-            return -1;
-          } else if (freq1 < freq2) {
-            return 1;
-          } else {
-            return o1.getTerm().compareTo(o2.getTerm());
-          }
+      Arrays.sort(arr, (o1, o2) -> {
+        long freq1 = o1.getFrequency();
+        long freq2 = o2.getFrequency();
+
+        if (freq2 < freq1) {
+          return -1;
+        } else if (freq1 < freq2) {
+          return 1;
+        } else {
+          return o1.getTerm().compareTo(o2.getTerm());
         }
       });
 

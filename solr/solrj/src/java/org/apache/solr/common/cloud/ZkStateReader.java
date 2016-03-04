@@ -338,15 +338,12 @@ public class ZkStateReader implements Closeable {
     updateAliases();
 
     if (securityNodeListener != null) {
-      addSecuritynodeWatcher(new Callable<Pair<byte[], Stat>>() {
-        @Override
-        public void call(Pair<byte[], Stat> pair) {
-          ConfigData cd = new ConfigData();
-          cd.data = pair.getKey() == null || pair.getKey().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.getKey()), 4, false);
-          cd.version = pair.getValue() == null ? -1 : pair.getValue().getVersion();
-          securityData = cd;
-          securityNodeListener.run();
-        }
+      addSecuritynodeWatcher(pair -> {
+        ConfigData cd = new ConfigData();
+        cd.data = pair.getKey() == null || pair.getKey().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.getKey()), 4, false);
+        cd.version = pair.getValue() == null ? -1 : pair.getValue().getVersion();
+        securityData = cd;
+        securityNodeListener.run();
       });
       securityData = getSecurityProps(true);
     }

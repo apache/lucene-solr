@@ -108,12 +108,10 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     }));
 
     // force a deterministic random ordering of the files so seeds reproduce regardless of platform/filesystem
-    Collections.sort(xmlFiles, new Comparator<File>() {
-        public int compare(File o1, File o2) {
-          // don't rely on File.compareTo, it's behavior varies by OS
-          return o1.getName().compareTo(o2.getName());
-        }
-      });
+    Collections.sort(xmlFiles, (o1, o2) -> {
+      // don't rely on File.compareTo, it's behavior varies by OS
+      return o1.getName().compareTo(o2.getName());
+    });
     Collections.shuffle(xmlFiles, new Random(random().nextLong()));
 
     // if you add/remove example XML docs, you'll have to fix these expected values

@@ -398,25 +398,21 @@ public class TestDocBasedVersionConstraints extends SolrTestCaseJ4 {
   }
   
   private Callable<Object> delayedAdd(final String... fields) {
-    return Executors.callable(new Runnable() {
-        public void run() {
-          // log.info("ADDING DOC: " + adoc(fields));
-          assertU(adoc(fields));
-        }
-      });
+    return Executors.callable(() -> {
+      // log.info("ADDING DOC: " + adoc(fields));
+      assertU(adoc(fields));
+    });
   }
   private Callable<Object> delayedDelete(final String id, final String externalVersion) {
-    return Executors.callable(new Runnable() {
-        public void run() {
-          try {
-            // Why does this throw "Exception" ???
-            // log.info("DELETING DOC: " + id + " v="+externalVersion);
-            deleteAndGetVersion(id, params("del_version", externalVersion));
-          } catch (Exception e) {
-            throw new RuntimeException(e);
-          }
-        }
-      });
+    return Executors.callable(() -> {
+      try {
+        // Why does this throw "Exception" ???
+        // log.info("DELETING DOC: " + id + " v="+externalVersion);
+        deleteAndGetVersion(id, params("del_version", externalVersion));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    });
   }
   
 }

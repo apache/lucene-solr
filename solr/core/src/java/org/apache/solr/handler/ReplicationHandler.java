@@ -1077,20 +1077,17 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       return;
     }
 
-    Runnable task = new Runnable() {
-      @Override
-      public void run() {
-        if (pollDisabled.get()) {
-          LOG.info("Poll disabled");
-          return;
-        }
-        try {
-          LOG.debug("Polling for index modifications");
-          markScheduledExecutionStart();
-          doFetch(null, false);
-        } catch (Exception e) {
-          LOG.error("Exception in fetching index", e);
-        }
+    Runnable task = () -> {
+      if (pollDisabled.get()) {
+        LOG.info("Poll disabled");
+        return;
+      }
+      try {
+        LOG.debug("Polling for index modifications");
+        markScheduledExecutionStart();
+        doFetch(null, false);
+      } catch (Exception e) {
+        LOG.error("Exception in fetching index", e);
       }
     };
     executorService = Executors.newSingleThreadScheduledExecutor(

@@ -532,21 +532,13 @@ class FacetFieldMerger extends FacetBucketMerger<FacetField> {
     final int sortMul = direction.getMultiplier();
 
     if ("count".equals(freq.sortVariable)) {
-      comparator = new Comparator<FacetBucket>() {
-        @Override
-        public int compare(FacetBucket o1, FacetBucket o2) {
-          int v = -Long.compare(o1.count, o2.count) * sortMul;
-          return v == 0 ? o1.bucketValue.compareTo(o2.bucketValue) : v;
-        }
+      comparator = (o1, o2) -> {
+        int v = -Long.compare(o1.count, o2.count) * sortMul;
+        return v == 0 ? o1.bucketValue.compareTo(o2.bucketValue) : v;
       };
       Collections.sort(sortedBuckets, comparator);
     } else if ("index".equals(freq.sortVariable)) {
-      comparator = new Comparator<FacetBucket>() {
-        @Override
-        public int compare(FacetBucket o1, FacetBucket o2) {
-          return -o1.bucketValue.compareTo(o2.bucketValue) * sortMul;
-        }
-      };
+      comparator = (o1, o2) -> -o1.bucketValue.compareTo(o2.bucketValue) * sortMul;
       Collections.sort(sortedBuckets, comparator);
     } else {
       final String key = freq.sortVariable;
@@ -598,12 +590,7 @@ class FacetFieldMerger extends FacetBucketMerger<FacetField> {
         }
       }
       Collections.sort(lst);
-      Collections.sort(nulls, new Comparator<FacetBucket>() {
-        @Override
-        public int compare(FacetBucket o1, FacetBucket o2) {
-          return o1.bucketValue.compareTo(o2.bucketValue);
-        }
-      });
+      Collections.sort(nulls, (o1, o2) -> o1.bucketValue.compareTo(o2.bucketValue));
 
       ArrayList<FacetBucket> out = new ArrayList<>(buckets.size());
       for (SortVal sv : lst) {

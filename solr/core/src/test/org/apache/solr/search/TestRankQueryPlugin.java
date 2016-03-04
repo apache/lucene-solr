@@ -270,16 +270,13 @@ public class TestRankQueryPlugin extends QParserPlugin {
         } // end for-each-doc-in-response
       } // end for-each-response
 
-      Collections.sort(shardDocs, new Comparator<ShardDoc>() {
-        @Override
-        public int compare(ShardDoc o1, ShardDoc o2) {
-          if(o1.score < o2.score) {
-            return 1;
-          } else if (o1.score > o2.score) {
-            return -1;
-          } else {
-            return 0;  //To change body of implemented methods use File | Settings | File Templates.
-          }
+      Collections.sort(shardDocs, (o1, o2) -> {
+        if (o1.score < o2.score) {
+          return 1;
+        } else if (o1.score > o2.score) {
+          return -1;
+        } else {
+          return 0;  //To change body of implemented methods use File | Settings | File Templates.
         }
       });
 
@@ -591,16 +588,13 @@ public class TestRankQueryPlugin extends QParserPlugin {
         } // end for-each-doc-in-response
       } // end for-each-response
 
-      Collections.sort(shardDocs, new Comparator<ShardDoc>() {
-        @Override
-        public int compare(ShardDoc o1, ShardDoc o2) {
-          if(o1.score < o2.score) {
-            return 1;
-          } else if (o1.score > o2.score) {
-            return -1;
-          } else {
-            return 0;  //To change body of implemented methods use File | Settings | File Templates.
-          }
+      Collections.sort(shardDocs, (o1, o2) -> {
+        if (o1.score < o2.score) {
+          return 1;
+        } else if (o1.score > o2.score) {
+          return -1;
+        } else {
+          return 0;  //To change body of implemented methods use File | Settings | File Templates.
         }
       });
 

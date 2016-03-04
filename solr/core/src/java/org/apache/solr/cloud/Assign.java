@@ -99,14 +99,10 @@ public class Assign {
       map.put(shardId, cnt);
     }
 
-    Collections.sort(shardIdNames, new Comparator<String>() {
-
-      @Override
-      public int compare(String o1, String o2) {
-        Integer one = map.get(o1);
-        Integer two = map.get(o2);
-        return one.compareTo(two);
-      }
+    Collections.sort(shardIdNames, (o1, o2) -> {
+      Integer one = map.get(o1);
+      Integer two = map.get(o2);
+      return one.compareTo(two);
     });
 
     returnShardId = shardIdNames.get(0);
@@ -179,12 +175,7 @@ public class Assign {
     }
 
     ArrayList<ReplicaCount> sortedNodeList = new ArrayList<>(nodeNameVsShardCount.values());
-    Collections.sort(sortedNodeList, new Comparator<ReplicaCount>() {
-      @Override
-      public int compare(ReplicaCount x, ReplicaCount y) {
-        return (x.weight() < y.weight()) ? -1 : ((x.weight() == y.weight()) ? 0 : 1);
-      }
-    });
+    Collections.sort(sortedNodeList, (x, y) -> (x.weight() < y.weight()) ? -1 : ((x.weight() == y.weight()) ? 0 : 1));
     return sortedNodeList;
 
   }

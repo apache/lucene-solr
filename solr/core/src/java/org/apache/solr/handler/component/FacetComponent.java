@@ -1448,12 +1448,7 @@ public class FacetComponent extends SearchComponent {
     public ShardFacetCount[] getLexSorted() {
       ShardFacetCount[] arr 
         = counts.values().toArray(new ShardFacetCount[counts.size()]);
-      Arrays.sort(arr, new Comparator<ShardFacetCount>() {
-        @Override
-        public int compare(ShardFacetCount o1, ShardFacetCount o2) {
-          return o1.indexed.compareTo(o2.indexed);
-        }
-      });
+      Arrays.sort(arr, (o1, o2) -> o1.indexed.compareTo(o2.indexed));
       countSorted = arr;
       return arr;
     }
@@ -1461,13 +1456,10 @@ public class FacetComponent extends SearchComponent {
     public ShardFacetCount[] getCountSorted() {
       ShardFacetCount[] arr 
         = counts.values().toArray(new ShardFacetCount[counts.size()]);
-      Arrays.sort(arr, new Comparator<ShardFacetCount>() {
-        @Override
-        public int compare(ShardFacetCount o1, ShardFacetCount o2) {
-          if (o2.count < o1.count) return -1;
-          else if (o1.count < o2.count) return 1;
-          return o1.indexed.compareTo(o2.indexed);
-        }
+      Arrays.sort(arr, (o1, o2) -> {
+        if (o2.count < o1.count) return -1;
+        else if (o1.count < o2.count) return 1;
+        return o1.indexed.compareTo(o2.indexed);
       });
       countSorted = arr;
       return arr;
