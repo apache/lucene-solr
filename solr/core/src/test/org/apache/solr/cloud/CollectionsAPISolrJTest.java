@@ -50,7 +50,7 @@ import org.junit.Test;
 import static org.apache.solr.cloud.ReplicaPropertiesBase.verifyUniqueAcrossCollection;
 
 @LuceneTestCase.Slow
-public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
+public class CollectionsAPISolrJTest extends AbstractFullDistribZkTestBase {
 
   @Test
   public void test() throws Exception {
