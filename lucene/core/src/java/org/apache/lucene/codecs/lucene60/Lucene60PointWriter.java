@@ -122,6 +122,11 @@ public class Lucene60PointWriter extends PointWriter implements Closeable {
         return;
       }
     }
+    for (PointReader reader : mergeState.pointReaders) {
+      if (reader != null) {
+        reader.checkIntegrity();
+      }
+    }
 
     for (FieldInfo fieldInfo : mergeState.mergeFieldInfos) {
       if (fieldInfo.getPointDimensionCount() != 0) {
