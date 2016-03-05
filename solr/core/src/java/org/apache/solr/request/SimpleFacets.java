@@ -497,17 +497,7 @@ public class SimpleFacets {
             jsonFacet.put("limit", limit);
             jsonFacet.put("mincount", mincount);
             jsonFacet.put("missing", missing);
-            
-            if (prefix!=null) {
-              // presumably it supports single-value, but at least now returns wrong results on multi-value
-              throw new SolrException (
-                  SolrException.ErrorCode.BAD_REQUEST,
-                  FacetParams.FACET_PREFIX+"="+prefix+
-                  " are not supported by "+FacetParams.FACET_METHOD+"="+FacetParams.FACET_METHOD_uif+
-                  " for field:"+ field
-                  //jsonFacet.put("prefix", prefix);
-              );
-            }
+            jsonFacet.put("prefix", prefix);
             jsonFacet.put("numBuckets", params.getFieldBool(field, "numBuckets", false));
             jsonFacet.put("allBuckets", params.getFieldBool(field, "allBuckets", false));
             jsonFacet.put("method", "uif");
