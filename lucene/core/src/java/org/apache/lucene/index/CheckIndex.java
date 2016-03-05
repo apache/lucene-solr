@@ -567,8 +567,6 @@ public final class CheckIndex implements Closeable {
         input.close();
     }
 
-    String sFormat = "";
-
     result.segmentsFileName = segmentsFileName;
     result.numSegments = numSegments;
     result.userData = sis.getUserData();
@@ -591,7 +589,7 @@ public final class CheckIndex implements Closeable {
     }
 
     msg(infoStream, "Segments file=" + segmentsFileName + " numSegments=" + numSegments
-        + " " + versionString + " id=" + StringHelper.idToString(sis.getId()) + " format=" + sFormat + userDataString);
+        + " " + versionString + " id=" + StringHelper.idToString(sis.getId()) + userDataString);
 
     if (onlySegments != null) {
       result.partial = true;
