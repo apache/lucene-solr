@@ -2056,9 +2056,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
           "Collection: " + collection + " shard: " + shard + " does not exist");
     }
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
+    boolean skipCreateReplicaInClusterState = message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false);
 
     // Kind of unnecessary, but it does put the logic of whether to override maxShardsPerNode in one place.
-    if(node == null) {
+    if (!skipCreateReplicaInClusterState) {
       node = getNodesForNewReplicas(clusterState, collection, shard, 1, node,
           overseer.getZkController().getCoreContainer()).get(0).nodeName;
     }
@@ -2069,7 +2070,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
     if (coreName == null) {
       coreName = Assign.buildCoreName(coll, shard);
-    } else if (!message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false)) {
+    } else if (!skipCreateReplicaInClusterState) {
       //Validate that the core name is unique in that collection
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
@@ -2084,7 +2085,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     ModifiableSolrParams params = new ModifiableSolrParams();
     
     if (!Overseer.isLegacy(zkStateReader.getClusterProps())) {
-      if (!message.getBool(SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, false)) {
+      if (!skipCreateReplicaInClusterState) {
         ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower(), ZkStateReader.COLLECTION_PROP,
             collection, ZkStateReader.SHARD_ID_PROP, shard, ZkStateReader.CORE_NAME_PROP, coreName,
             ZkStateReader.STATE_PROP, Replica.State.DOWN.toString(), ZkStateReader.BASE_URL_PROP,
