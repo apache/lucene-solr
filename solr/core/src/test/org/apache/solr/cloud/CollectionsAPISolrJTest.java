@@ -45,6 +45,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.apache.solr.cloud.ReplicaPropertiesBase.verifyUniqueAcrossCollection;
@@ -53,6 +54,7 @@ import static org.apache.solr.cloud.ReplicaPropertiesBase.verifyUniqueAcrossColl
 public class CollectionsAPISolrJTest extends AbstractFullDistribZkTestBase {
 
   @Test
+  @Ignore
   public void test() throws Exception {
     testCreateAndDeleteCollection();
     testCreateAndDeleteShard();
