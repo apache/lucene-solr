@@ -23,10 +23,10 @@ import java.util.Map;
 
 import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.PointWriter;
-import org.apache.lucene.index.PointValues.IntersectVisitor;
-import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
@@ -53,6 +53,7 @@ class SimpleTextPointWriter extends PointWriter {
   final static BytesRef MAX_VALUE     = new BytesRef("max value ");
   final static BytesRef POINT_COUNT   = new BytesRef("point count ");
   final static BytesRef DOC_COUNT     = new BytesRef("doc count ");
+  final static BytesRef END           = new BytesRef("END");
 
   private IndexOutput dataOut;
   final BytesRefBuilder scratch = new BytesRefBuilder();
@@ -210,6 +211,8 @@ class SimpleTextPointWriter extends PointWriter {
 
   @Override
   public void finish() throws IOException {
+    SimpleTextUtil.write(dataOut, END);
+    SimpleTextUtil.writeNewline(dataOut);
     SimpleTextUtil.writeChecksum(dataOut, scratch);
   }
 
