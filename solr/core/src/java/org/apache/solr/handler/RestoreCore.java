@@ -19,6 +19,9 @@ package org.apache.solr.handler;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -57,7 +60,8 @@ public class RestoreCore implements Callable<Boolean> {
   private boolean doRestore() throws Exception {
 
     Path backupPath = Paths.get(backupLocation).resolve(backupName);
-    String restoreIndexName = "restore." + backupName;
+    SimpleDateFormat dateFormat = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT);
+    String restoreIndexName = "restore." + dateFormat.format(new Date());
     String restoreIndexPath = core.getDataDir() + restoreIndexName;
 
     Directory restoreIndexDir = null;
