@@ -1206,7 +1206,6 @@
               <fileset dir="@{testsDir}">
                 <include name="**/Test*.class" />
                 <include name="**/*Test.class" />
-                <include name="**/*Tests.class" />
                 <include name="${tests.explicitclass}" if="tests.explicitclass" />
                 <exclude name="**/*$*" />
               </fileset>
