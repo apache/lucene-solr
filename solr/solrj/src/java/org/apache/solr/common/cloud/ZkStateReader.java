@@ -165,12 +165,10 @@ public class ZkStateReader implements Closeable {
       } else {
         throw new ZooKeeperException(ErrorCode.INVALID_STATE, "No config data found at path: " + path);
       }
-    }
-    catch (KeeperException e) {
+    } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading config name for collection " + collection, e);
-    }
-    catch (InterruptedException e) {
-      Thread.interrupted();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading config name for collection " + collection, e);
     }
 
@@ -691,14 +689,17 @@ public class ZkStateReader implements Closeable {
     this.aliases = ClusterState.load(data);
   }
   
-  public Map getClusterProps(){
+  public Map getClusterProps() {
     try {
       if (getZkClient().exists(ZkStateReader.CLUSTER_PROPS, true)) {
         return (Map) Utils.fromJSON(getZkClient().getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true)) ;
       } else {
         return new LinkedHashMap();
       }
-    } catch (Exception e) {
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Thread interrupted. Error reading cluster properties", e);
+    } catch (KeeperException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading cluster properties", e);
     }
   }
@@ -741,9 +742,13 @@ public class ZkStateReader implements Closeable {
         LOG.warn("Race condition while trying to set a new cluster prop on current version [{}]", s.getVersion());
         //race condition
         continue;
-      } catch (Exception ex) {
-        LOG.error("Error updating path [{}]", CLUSTER_PROPS, ex);
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Error updating cluster property " + propertyName, ex);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        LOG.error("Thread Interrupted. Error updating path [{}]", CLUSTER_PROPS, e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Thread Interrupted. Error updating cluster property " + propertyName, e);
+      } catch (KeeperException e) {
+        LOG.error("Error updating path [{}]", CLUSTER_PROPS, e);
+        throw new SolrException(ErrorCode.SERVER_ERROR, "Error updating cluster property " + propertyName, e);
       }
       break;
     }
@@ -766,8 +771,11 @@ public class ZkStateReader implements Closeable {
             new ConfigData((Map<String, Object>) Utils.fromJSON(data), stat.getVersion()) :
             null;
       }
-    } catch (KeeperException | InterruptedException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,"Error reading security properties",e) ;
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(ErrorCode.SERVER_ERROR,"Error reading security properties", e) ;
+    } catch (KeeperException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,"Error reading security properties", e) ;
     }
     return null;
   }

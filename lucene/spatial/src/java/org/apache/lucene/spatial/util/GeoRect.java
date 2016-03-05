@@ -70,4 +70,9 @@ public class GeoRect {
 
     return b.toString();
   }
+
+  /** Returns true if this bounding box crosses the dateline */
+  public boolean crossesDateline() {
+    return maxLon < minLon;
+  }
 }

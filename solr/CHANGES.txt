@@ -265,6 +265,8 @@ Bug Fixes
 * SOLR-8728: ReplicaAssigner throws NPE when a partial list of nodes are only participating in replica
   placement. splitshard should preassign nodes using rules, if rules are present (noble, Shai Erera)
 
+* SOLR-8779: Fix missing InterruptedException handling in ZkStateReader.java (Varun Thacker)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
