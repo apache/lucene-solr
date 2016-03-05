@@ -270,6 +270,11 @@ Bug Fixes
 * SOLR-8449: Fix the core restore functionality to allow restoring multiple times on the same core
   (Johannes Brucher, Varun Thacker)
 
+* SOLR-8155: JSON Facet API - field faceting on a multi-valued string field without
+  docValues (i.e. UnInvertedField implementation), but with a prefix or with a sort
+  other than count, resulted in incorrect results.  This has been fixed, and facet.prefix
+  support for facet.method=uif has been enabled. (Mikhail Khludnev, yonik)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been

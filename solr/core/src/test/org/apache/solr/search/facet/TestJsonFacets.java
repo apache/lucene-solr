@@ -644,6 +644,27 @@ public class TestJsonFacets extends SolrTestCaseHS {
             " } "
     );
 
+    // test prefix on real multi-valued field
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{" +
+            " f1:{${terms} type:terms, field:${multi_ss}, prefix:A  }" +
+            ",f2:{${terms} type:terms, field:${multi_ss}, prefix:z }" +
+            ",f3:{${terms} type:terms, field:${multi_ss}, prefix:aa }" +
+            ",f4:{${terms} type:terms, field:${multi_ss}, prefix:bb }" +
+            ",f5:{${terms} type:terms, field:${multi_ss}, prefix:a }" +
+            ",f6:{${terms} type:terms, field:${multi_ss}, prefix:b }" +
+            "}"
+        )
+        , "facets=={ 'count':6 " +
+            ",f1:{buckets:[]}" +
+            ",f2:{buckets:[]}" +
+            ",f3:{buckets:[]}" +
+            ",f4:{buckets:[]}" +
+            ",f5:{buckets:[ {val:a,count:3} ]}" +
+            ",f6:{buckets:[ {val:b,count:3} ]}" +
+            " } "
+    );
+
     //
     // missing
     //
