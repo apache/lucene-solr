@@ -134,36 +134,43 @@ public class TestRestoreCore extends SolrJettyTestBase {
       Thread.sleep(1000);
     }
 
-    //Modify existing index before we call restore.
 
-    //Delete a few docs
-    int numDeletes = TestUtil.nextInt(random(), 1, nDocs);
-    for(int i=0; i<numDeletes; i++) {
-      masterClient.deleteByQuery("id:" + i);
-    }
-    masterClient.commit();
 
-    //Add a few more
-    int moreAdds = TestUtil.nextInt(random(), 1, 100);
-    for (int i=0; i<moreAdds; i++) {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", i + nDocs);
-      doc.addField("name", "name = " + (i + nDocs));
-      masterClient.add(doc);
-    }
-    //Purposely not calling commit once in a while. There can be some docs which are not committed
-    if (usually()) {
+    int numRestoreTests = TestUtil.nextInt(random(), 1, 5);
+
+    for (int attempts=0; attempts<numRestoreTests; attempts++) {
+      //Modify existing index before we call restore.
+
+      //Delete a few docs
+      int numDeletes = TestUtil.nextInt(random(), 1, nDocs);
+      for(int i=0; i<numDeletes; i++) {
+        masterClient.deleteByQuery("id:" + i);
+      }
       masterClient.commit();
+
+      //Add a few more
+      int moreAdds = TestUtil.nextInt(random(), 1, 100);
+      for (int i=0; i<moreAdds; i++) {
+        SolrInputDocument doc = new SolrInputDocument();
+        doc.addField("id", i + nDocs);
+        doc.addField("name", "name = " + (i + nDocs));
+        masterClient.add(doc);
+      }
+      //Purposely not calling commit once in a while. There can be some docs which are not committed
+      if (usually()) {
+        masterClient.commit();
+      }
+
+      TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_RESTORE, params);
+
+      while (!fetchRestoreStatus()) {
+        Thread.sleep(1000);
+      }
+
+      //See if restore was successful by checking if all the docs are present again
+      verifyDocs(nDocs);
     }
 
-    TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_RESTORE, params);
-
-    while (!fetchRestoreStatus()) {
-      Thread.sleep(1000);
-    }
-
-    //See if restore was successful by checking if all the docs are present again
-    verifyDocs(nDocs);
   }
 
   @Test
