@@ -215,9 +215,6 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
       List<String> methods = multiValued ? multiValuedMethods : singleValuedMethods;
       List<String> responses = new ArrayList<>(methods.size());
       for (String method : methods) {
-        if (method.equals("uif") && params.get("facet.prefix")!=null) {
-          continue; // it's not supported there
-        }
         if (method.equals("dv")) {
           params.set("facet.field", "{!key="+facet_field+"}"+facet_field+"_dv");
           params.set("facet.method",(String) null);

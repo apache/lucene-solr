@@ -512,7 +512,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
         params.set("facet.method", method);
       }
       for (String prefix : prefixes) {
-        if (prefix == null || "uif".equals(method)) {// there is no support 
+        if (prefix == null) {
           params.remove("facet.prefix");
         } else {
           params.set("facet.prefix", prefix);
@@ -2036,16 +2036,6 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     doFacetPrefix("tt_s1", "{!threads=0}", "", "facet.method","fcs");   // direct execution
     doFacetPrefix("tt_s1", "{!threads=-1}", "", "facet.method","fcs");  // default / unlimited threads
     doFacetPrefix("tt_s1", "{!threads=2}", "", "facet.method","fcs");   // specific number of threads
-  }
-  
-  /** no prefix for uif */
-  @Test(expected=RuntimeException.class)
-  public void testNOFacetPrefixForUif() {
-    if (random().nextBoolean()) {
-      doFacetPrefix("tt_s1", null, "", "facet.method", "uif");
-    } else {
-      doFacetPrefix("t_s", null, "", "facet.method", "uif");
-    }
   }
   
   @Test

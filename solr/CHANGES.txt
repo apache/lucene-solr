@@ -40,6 +40,12 @@ Bug Fixes
 * SOLR-8725: Allow hyphen in collection, core, shard, and alias name as the non-first character
   (Anshum Gupta) (from 6.0)
 
+* SOLR-8155: JSON Facet API - field faceting on a multi-valued string field without
+  docValues (i.e. UnInvertedField implementation), but with a prefix or with a sort
+  other than count, resulted in incorrect results.  This has been fixed, and facet.prefix
+  support for facet.method=uif has been enabled. (Mikhail Khludnev, yonik)
+
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

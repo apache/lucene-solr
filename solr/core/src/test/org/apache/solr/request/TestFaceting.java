@@ -626,12 +626,8 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
       
   private void assertQforUIF(String message, SolrQueryRequest request, String ... tests) {
-    final String paramString = request.getParamString();
-    if (paramString.contains("uif") && paramString.contains("prefix")){
-      assertQEx("uif prohibits prefix", "not supported", request, ErrorCode.BAD_REQUEST);
-    }else{
-      assertQ(message,request, tests);
-    }
+    // handle any differences for uif here, like skipping unsupported options
+    assertQ(message,request, tests);
   }
 
   private void add50ocs() {
