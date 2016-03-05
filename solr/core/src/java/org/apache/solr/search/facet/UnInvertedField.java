@@ -499,10 +499,11 @@ public class UnInvertedField extends DocTermOrds {
               if (delta==0) break;
               tnum += delta - TNUM_OFFSET;
               int arrIdx = tnum - startTermIndex;
-              if (arrIdx < 0) continue;
-              if (arrIdx >= nTerms) break;
-              countAcc.incrementCount(arrIdx, 1);
-              processor.collectFirstPhase(segDoc, arrIdx);
+              if (arrIdx >= 0) {
+                if (arrIdx >= nTerms) break;
+                countAcc.incrementCount(arrIdx, 1);
+                processor.collectFirstPhase(segDoc, arrIdx);
+              }
               delta = 0;
             }
             code >>>= 8;
