@@ -267,6 +267,9 @@ Bug Fixes
 
 * SOLR-8779: Fix missing InterruptedException handling in ZkStateReader.java (Varun Thacker)
 
+* SOLR-8449: Fix the core restore functionality to allow restoring multiple times on the same core
+  (Johannes Brucher, Varun Thacker)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
