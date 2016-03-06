@@ -18,8 +18,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.PointReader;
-import org.apache.lucene.codecs.PointWriter;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
@@ -60,10 +60,10 @@ class PointValuesWriter {
     numDocs++;
   }
 
-  public void flush(SegmentWriteState state, PointWriter writer) throws IOException {
+  public void flush(SegmentWriteState state, PointsWriter writer) throws IOException {
 
     writer.writeField(fieldInfo,
-                      new PointReader() {
+                      new PointsReader() {
                         @Override
                         public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
                           if (fieldName.equals(fieldInfo.name) == false) {

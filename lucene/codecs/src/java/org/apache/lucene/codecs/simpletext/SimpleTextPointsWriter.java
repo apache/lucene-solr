@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.codecs.PointReader;
-import org.apache.lucene.codecs.PointWriter;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
@@ -33,7 +33,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.bkd.BKDWriter;
 
-class SimpleTextPointWriter extends PointWriter {
+class SimpleTextPointsWriter extends PointsWriter {
 
   final static BytesRef NUM_DIMS      = new BytesRef("num dims ");
   final static BytesRef BYTES_PER_DIM = new BytesRef("bytes per dim ");
@@ -60,14 +60,14 @@ class SimpleTextPointWriter extends PointWriter {
   final SegmentWriteState writeState;
   final Map<String,Long> indexFPs = new HashMap<>();
 
-  public SimpleTextPointWriter(SegmentWriteState writeState) throws IOException {
-    String fileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name, writeState.segmentSuffix, SimpleTextPointFormat.POINT_EXTENSION);
+  public SimpleTextPointsWriter(SegmentWriteState writeState) throws IOException {
+    String fileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name, writeState.segmentSuffix, SimpleTextPointsFormat.POINT_EXTENSION);
     dataOut = writeState.directory.createOutput(fileName, writeState.context);
     this.writeState = writeState;
   }
 
   @Override
-  public void writeField(FieldInfo fieldInfo, PointReader values) throws IOException {
+  public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
 
     // We use the normal BKDWriter, but subclass to customize how it writes the index and blocks to disk:
     try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
@@ -223,7 +223,7 @@ class SimpleTextPointWriter extends PointWriter {
       dataOut = null;
 
       // Write index file
-      String fileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name, writeState.segmentSuffix, SimpleTextPointFormat.POINT_INDEX_EXTENSION);
+      String fileName = IndexFileNames.segmentFileName(writeState.segmentInfo.name, writeState.segmentSuffix, SimpleTextPointsFormat.POINT_INDEX_EXTENSION);
       try (IndexOutput indexOut = writeState.directory.createOutput(fileName, writeState.context)) {
         int count = indexFPs.size();
         write(indexOut, FIELD_COUNT);

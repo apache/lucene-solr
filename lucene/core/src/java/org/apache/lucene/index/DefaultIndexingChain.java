@@ -23,12 +23,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.codecs.PointFormat;
-import org.apache.lucene.codecs.PointWriter;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.codecs.StoredFieldsWriter;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.search.similarities.Similarity;
@@ -149,7 +149,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
   /** Writes all buffered points. */
   private void writePoints(SegmentWriteState state) throws IOException {
-    PointWriter pointWriter = null;
+    PointsWriter pointsWriter = null;
     boolean success = false;
     try {
       for (int i=0;i<fieldHash.length;i++) {
@@ -160,16 +160,16 @@ final class DefaultIndexingChain extends DocConsumer {
               // BUG
               throw new AssertionError("segment=" + state.segmentInfo + ": field=\"" + perField.fieldInfo.name + "\" has no points but wrote them");
             }
-            if (pointWriter == null) {
+            if (pointsWriter == null) {
               // lazy init
-              PointFormat fmt = state.segmentInfo.getCodec().pointFormat();
+              PointsFormat fmt = state.segmentInfo.getCodec().pointsFormat();
               if (fmt == null) {
                 throw new IllegalStateException("field=\"" + perField.fieldInfo.name + "\" was indexed as points but codec does not support points");
               }
-              pointWriter = fmt.fieldsWriter(state);
+              pointsWriter = fmt.fieldsWriter(state);
             }
 
-            perField.pointValuesWriter.flush(state, pointWriter);
+            perField.pointValuesWriter.flush(state, pointsWriter);
             perField.pointValuesWriter = null;
           } else if (perField.fieldInfo.getPointDimensionCount() != 0) {
             // BUG
@@ -178,15 +178,15 @@ final class DefaultIndexingChain extends DocConsumer {
           perField = perField.next;
         }
       }
-      if (pointWriter != null) {
-        pointWriter.finish();
+      if (pointsWriter != null) {
+        pointsWriter.finish();
       }
       success = true;
     } finally {
       if (success) {
-        IOUtils.close(pointWriter);
+        IOUtils.close(pointsWriter);
       } else {
-        IOUtils.closeWhileHandlingException(pointWriter);
+        IOUtils.closeWhileHandlingException(pointsWriter);
       }
     }
   }

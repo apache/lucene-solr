@@ -20,10 +20,10 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.util.Bits;
@@ -97,7 +97,7 @@ public final class SlowCodecReaderWrapper {
         }
 
         @Override
-        public PointReader getPointReader() {
+        public PointsReader getPointsReader() {
           return pointValuesToReader(reader.getPointValues());
         }
 
@@ -129,11 +129,11 @@ public final class SlowCodecReaderWrapper {
     }
   }
 
-  private static PointReader pointValuesToReader(PointValues values) {
+  private static PointsReader pointValuesToReader(PointValues values) {
     if (values == null) {
       return null;
     }
-    return new PointReader() {
+    return new PointsReader() {
       @Override
       public void intersect(String fieldName, IntersectVisitor visitor) throws IOException {
         values.intersect(fieldName, visitor);

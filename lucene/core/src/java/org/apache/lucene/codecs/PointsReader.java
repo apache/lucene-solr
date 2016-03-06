@@ -27,10 +27,10 @@ import org.apache.lucene.util.Accountable;
  *
  * @lucene.experimental
  */
-public abstract class PointReader extends PointValues implements Closeable, Accountable {
+public abstract class PointsReader extends PointValues implements Closeable, Accountable {
 
   /** Sole constructor. (For invocation by subclass constructors, typically implicit.) */
-  protected PointReader() {}
+  protected PointsReader() {}
 
   /** 
    * Checks consistency of this reader.
@@ -45,7 +45,7 @@ public abstract class PointReader extends PointValues implements Closeable, Acco
    * Returns an instance optimized for merging.
    * <p>
    * The default implementation returns {@code this} */
-  public PointReader getMergeInstance() throws IOException {
+  public PointsReader getMergeInstance() throws IOException {
     return this;
   }
 }

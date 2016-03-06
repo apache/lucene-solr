@@ -16,11 +16,11 @@
  */
 package org.apache.lucene.codecs.asserting;
 
-import org.apache.lucene.codecs.PointFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
@@ -53,7 +53,7 @@ public class AssertingCodec extends FilterCodec {
   private final LiveDocsFormat liveDocs = new AssertingLiveDocsFormat();
   private final PostingsFormat defaultFormat = new AssertingPostingsFormat();
   private final DocValuesFormat defaultDVFormat = new AssertingDocValuesFormat();
-  private final PointFormat pointFormat = new AssertingPointFormat();
+  private final PointsFormat pointsFormat = new AssertingPointsFormat();
 
   public AssertingCodec() {
     super("Asserting", TestUtil.getDefaultCodec());
@@ -90,8 +90,8 @@ public class AssertingCodec extends FilterCodec {
   }
 
   @Override
-  public PointFormat pointFormat() {
-    return pointFormat;
+  public PointsFormat pointsFormat() {
+    return pointsFormat;
   }
 
   @Override

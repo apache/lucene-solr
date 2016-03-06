@@ -300,7 +300,7 @@ public abstract class LeafReader extends IndexReader {
    */
   public abstract Bits getLiveDocs();
 
-  /** Returns the {@link org.apache.lucene.codecs.PointReader} used for numeric or
+  /** Returns the {@link PointValues} used for numeric or
    *  spatial searches, or null if there are no point fields. */
   public abstract PointValues getPointValues();
 
