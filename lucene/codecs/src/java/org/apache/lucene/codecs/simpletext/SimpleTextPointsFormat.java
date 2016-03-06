@@ -19,9 +19,9 @@ package org.apache.lucene.codecs.simpletext;
 
 import java.io.IOException;
 
-import org.apache.lucene.codecs.PointFormat;
-import org.apache.lucene.codecs.PointReader;
-import org.apache.lucene.codecs.PointWriter;
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -33,16 +33,16 @@ import org.apache.lucene.index.SegmentWriteState;
  *  any text editor, and even edit it to alter your index.
  *
  *  @lucene.experimental */
-public final class SimpleTextPointFormat extends PointFormat {
+public final class SimpleTextPointsFormat extends PointsFormat {
   
   @Override
-  public PointWriter fieldsWriter(SegmentWriteState state) throws IOException {
-    return new SimpleTextPointWriter(state);
+  public PointsWriter fieldsWriter(SegmentWriteState state) throws IOException {
+    return new SimpleTextPointsWriter(state);
   }
 
   @Override
-  public PointReader fieldsReader(SegmentReadState state) throws IOException {
-    return new SimpleTextPointReader(state);
+  public PointsReader fieldsReader(SegmentReadState state) throws IOException {
+    return new SimpleTextPointsReader(state);
   }
 
   /** Extension of points data file */

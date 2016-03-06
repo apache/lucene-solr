@@ -26,16 +26,16 @@ import org.apache.lucene.index.SegmentWriteState;
  * Encodes/decodes indexed points.
  *
  * @lucene.experimental */
-public abstract class PointFormat {
+public abstract class PointsFormat {
 
   /**
    * Creates a new point format.
    */
-  protected PointFormat() {
+  protected PointsFormat() {
   }
 
   /** Writes a new segment */
-  public abstract PointWriter fieldsWriter(SegmentWriteState state) throws IOException;
+  public abstract PointsWriter fieldsWriter(SegmentWriteState state) throws IOException;
 
   /** Reads a segment.  NOTE: by the time this call
    *  returns, it must hold open any files it will need to
@@ -46,18 +46,18 @@ public abstract class PointFormat {
    *  IOExceptions are expected and will automatically cause a retry of the 
    *  segment opening logic with the newly revised segments.
    *  */
-  public abstract PointReader fieldsReader(SegmentReadState state) throws IOException;
+  public abstract PointsReader fieldsReader(SegmentReadState state) throws IOException;
 
-  /** A {@code PointFormat} that has nothing indexed */
-  public static final PointFormat EMPTY = new PointFormat() {
+  /** A {@code PointsFormat} that has nothing indexed */
+  public static final PointsFormat EMPTY = new PointsFormat() {
       @Override
-      public PointWriter fieldsWriter(SegmentWriteState state) {
+      public PointsWriter fieldsWriter(SegmentWriteState state) {
         throw new UnsupportedOperationException();
       }
 
       @Override
-      public PointReader fieldsReader(SegmentReadState state) {
-        return new PointReader() {
+      public PointsReader fieldsReader(SegmentReadState state) {
+        return new PointsReader() {
           @Override
           public void close() {
           }

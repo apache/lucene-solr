@@ -18,12 +18,12 @@ package org.apache.lucene.codecs.simpletext;
 
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BasePointFormatTestCase;
+import org.apache.lucene.index.BasePointsFormatTestCase;
 
 /**
  * Tests SimpleText's point format
  */
-public class TestSimpleTextPointFormat extends BasePointFormatTestCase {
+public class TestSimpleTextPointsFormat extends BasePointsFormatTestCase {
   private final Codec codec = new SimpleTextCodec();
 
   @Override

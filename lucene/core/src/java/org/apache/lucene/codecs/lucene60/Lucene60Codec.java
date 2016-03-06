@@ -21,12 +21,12 @@ import java.util.Objects;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
-import org.apache.lucene.codecs.PointFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
@@ -129,8 +129,8 @@ public class Lucene60Codec extends Codec {
   }
 
   @Override
-  public final PointFormat pointFormat() {
-    return new Lucene60PointFormat();
+  public final PointsFormat pointsFormat() {
+    return new Lucene60PointsFormat();
   }
 
   /** Returns the postings format that should be used for writing 
