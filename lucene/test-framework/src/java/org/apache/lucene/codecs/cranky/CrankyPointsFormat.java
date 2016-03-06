@@ -19,9 +19,9 @@ package org.apache.lucene.codecs.cranky;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.codecs.PointFormat;
-import org.apache.lucene.codecs.PointReader;
-import org.apache.lucene.codecs.PointWriter;
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.SegmentInfo;
@@ -30,36 +30,36 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 
-class CrankyPointFormat extends PointFormat {
-  PointFormat delegate;
+class CrankyPointsFormat extends PointsFormat {
+  PointsFormat delegate;
   Random random;
   
-  CrankyPointFormat(PointFormat delegate, Random random) {
+  CrankyPointsFormat(PointsFormat delegate, Random random) {
     this.delegate = delegate;
     this.random = random;
   }
 
   @Override
-  public PointWriter fieldsWriter(SegmentWriteState state) throws IOException {
-    return new CrankyPointWriter(delegate.fieldsWriter(state), random);
+  public PointsWriter fieldsWriter(SegmentWriteState state) throws IOException {
+    return new CrankyPointsWriter(delegate.fieldsWriter(state), random);
   }
 
   @Override
-  public PointReader fieldsReader(SegmentReadState state) throws IOException {
-    return new CrankyPointReader(delegate.fieldsReader(state), random);
+  public PointsReader fieldsReader(SegmentReadState state) throws IOException {
+    return new CrankyPointsReader(delegate.fieldsReader(state), random);
   }
 
-  static class CrankyPointWriter extends PointWriter {
-    final PointWriter delegate;
+  static class CrankyPointsWriter extends PointsWriter {
+    final PointsWriter delegate;
     final Random random;
 
-    public CrankyPointWriter(PointWriter delegate, Random random) {
+    public CrankyPointsWriter(PointsWriter delegate, Random random) {
       this.delegate = delegate;
       this.random = random;
     }
 
     @Override
-    public void writeField(FieldInfo fieldInfo, PointReader values) throws IOException {
+    public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
       if (random.nextInt(100) == 0) {
         throw new IOException("Fake IOException");
       }  
@@ -97,10 +97,10 @@ class CrankyPointFormat extends PointFormat {
     }
   }
 
-  static class CrankyPointReader extends PointReader {
-    final PointReader delegate;
+  static class CrankyPointsReader extends PointsReader {
+    final PointsReader delegate;
     final Random random;
-    public CrankyPointReader(PointReader delegate, Random random) {
+    public CrankyPointsReader(PointsReader delegate, Random random) {
       this.delegate = delegate;
       this.random = random;
     }

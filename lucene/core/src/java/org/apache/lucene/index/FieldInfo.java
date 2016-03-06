@@ -49,7 +49,7 @@ public final class FieldInfo {
   private long dvGen;
 
   /** If both of these are positive it means this field indexed points
-   *  (see {@link org.apache.lucene.codecs.PointFormat}). */
+   *  (see {@link org.apache.lucene.codecs.PointsFormat}). */
   private int pointDimensionCount;
   private int pointNumBytes;
 

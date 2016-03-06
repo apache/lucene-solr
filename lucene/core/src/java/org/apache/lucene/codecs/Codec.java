@@ -109,7 +109,7 @@ public abstract class Codec implements NamedSPILoader.NamedSPI {
   public abstract CompoundFormat compoundFormat();
 
   /** Encodes/decodes points index */
-  public abstract PointFormat pointFormat();
+  public abstract PointsFormat pointsFormat();
   
   /** looks up a codec by name */
   public static Codec forName(String name) {

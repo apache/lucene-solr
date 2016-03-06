@@ -20,9 +20,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.apache.lucene.codecs.PointFormat;
-import org.apache.lucene.codecs.PointReader;
-import org.apache.lucene.codecs.PointWriter;
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
@@ -39,32 +39,32 @@ import org.apache.lucene.util.TestUtil;
  * Just like the default point format but with additional asserts.
  */
 
-public final class AssertingPointFormat extends PointFormat {
-  private final PointFormat in;
+public final class AssertingPointsFormat extends PointsFormat {
+  private final PointsFormat in;
 
-  /** Create a new AssertingPointFormat */
-  public AssertingPointFormat() {
-    this(TestUtil.getDefaultCodec().pointFormat());
+  /** Create a new AssertingPointsFormat */
+  public AssertingPointsFormat() {
+    this(TestUtil.getDefaultCodec().pointsFormat());
   }
 
   /**
-   * Expert: Create an AssertingPointFormat.
+   * Expert: Create an AssertingPointsFormat.
    * This is only intended to pass special parameters for testing.
    */
   // TODO: can we randomize this a cleaner way? e.g. stored fields and vectors do
   // this with a separate codec...
-  public AssertingPointFormat(PointFormat in) {
+  public AssertingPointsFormat(PointsFormat in) {
     this.in = in;
   }
   
   @Override
-  public PointWriter fieldsWriter(SegmentWriteState state) throws IOException {
-    return new AssertingPointWriter(state, in.fieldsWriter(state));
+  public PointsWriter fieldsWriter(SegmentWriteState state) throws IOException {
+    return new AssertingPointsWriter(state, in.fieldsWriter(state));
   }
 
   @Override
-  public PointReader fieldsReader(SegmentReadState state) throws IOException {
-    return new AssertingPointReader(state.segmentInfo.maxDoc(), in.fieldsReader(state));
+  public PointsReader fieldsReader(SegmentReadState state) throws IOException {
+    return new AssertingPointsReader(state.segmentInfo.maxDoc(), in.fieldsReader(state));
   }
 
   /** Validates in the 1D case that all points are visited in order, and point values are in bounds of the last cell checked */
@@ -144,11 +144,11 @@ public final class AssertingPointFormat extends PointFormat {
     }
   }
   
-  static class AssertingPointReader extends PointReader {
-    private final PointReader in;
+  static class AssertingPointsReader extends PointsReader {
+    private final PointsReader in;
     private final int maxDoc;
     
-    AssertingPointReader(int maxDoc, PointReader in) {
+    AssertingPointsReader(int maxDoc, PointsReader in) {
       this.in = in;
       this.maxDoc = maxDoc;
       // do a few simple checks on init
@@ -189,8 +189,8 @@ public final class AssertingPointFormat extends PointFormat {
     }
     
     @Override
-    public PointReader getMergeInstance() throws IOException {
-      return new AssertingPointReader(maxDoc, in.getMergeInstance());
+    public PointsReader getMergeInstance() throws IOException {
+      return new AssertingPointsReader(maxDoc, in.getMergeInstance());
     }
 
     @Override
@@ -242,15 +242,15 @@ public final class AssertingPointFormat extends PointFormat {
     }
   }
 
-  static class AssertingPointWriter extends PointWriter {
-    private final PointWriter in;
+  static class AssertingPointsWriter extends PointsWriter {
+    private final PointsWriter in;
 
-    AssertingPointWriter(SegmentWriteState writeState, PointWriter in) {
+    AssertingPointsWriter(SegmentWriteState writeState, PointsWriter in) {
       this.in = in;
     }
     
     @Override
-    public void writeField(FieldInfo fieldInfo, PointReader values) throws IOException {
+    public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
       if (fieldInfo.getPointDimensionCount() == 0) {
         throw new IllegalArgumentException("writing field=\"" + fieldInfo.name + "\" but pointDimensionalCount is 0");
       }

@@ -21,21 +21,21 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.FilterCodec;
-import org.apache.lucene.codecs.PointFormat;
-import org.apache.lucene.codecs.PointReader;
-import org.apache.lucene.codecs.PointWriter;
-import org.apache.lucene.index.BasePointFormatTestCase;
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.codecs.PointsWriter;
+import org.apache.lucene.index.BasePointsFormatTestCase;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.TestUtil;
 
 /**
- * Tests Lucene60PointFormat
+ * Tests Lucene60PointsFormat
  */
-public class TestLucene60PointFormat extends BasePointFormatTestCase {
+public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
   private final Codec codec;
   
-  public TestLucene60PointFormat() {
+  public TestLucene60PointsFormat() {
     // standard issue
     Codec defaultCodec = TestUtil.getDefaultCodec();
     if (random().nextBoolean()) {
@@ -43,22 +43,22 @@ public class TestLucene60PointFormat extends BasePointFormatTestCase {
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 50, 500);
       double maxMBSortInHeap = 3.0 + (3*random().nextDouble());
       if (VERBOSE) {
-        System.out.println("TEST: using Lucene60PointFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
+        System.out.println("TEST: using Lucene60PointsFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
 
       // sneaky impersonation!
       codec = new FilterCodec(defaultCodec.getName(), defaultCodec) {
         @Override
-        public PointFormat pointFormat() {
-          return new PointFormat() {
+        public PointsFormat pointsFormat() {
+          return new PointsFormat() {
             @Override
-            public PointWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-              return new Lucene60PointWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
+            public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
+              return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
             }
 
             @Override
-            public PointReader fieldsReader(SegmentReadState readState) throws IOException {
-              return new Lucene60PointReader(readState);
+            public PointsReader fieldsReader(SegmentReadState readState) throws IOException {
+              return new Lucene60PointsReader(readState);
             }
           };
         }

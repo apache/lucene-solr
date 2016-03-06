@@ -25,10 +25,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.util.Accountable;
@@ -77,10 +77,10 @@ public abstract class CodecReader extends LeafReader implements Accountable {
   public abstract FieldsProducer getPostingsReader();
 
   /**
-   * Expert: retrieve underlying PointReader
+   * Expert: retrieve underlying PointsReader
    * @lucene.internal
    */
-  public abstract PointReader getPointReader();
+  public abstract PointsReader getPointsReader();
   
   @Override
   public final void document(int docID, StoredFieldVisitor visitor) throws IOException {
@@ -323,8 +323,8 @@ public abstract class CodecReader extends LeafReader implements Accountable {
     }
 
     // points
-    if (getPointReader() != null) {
-      ramBytesUsed += getPointReader().ramBytesUsed();
+    if (getPointsReader() != null) {
+      ramBytesUsed += getPointsReader().ramBytesUsed();
     }
     
     return ramBytesUsed;
@@ -359,8 +359,8 @@ public abstract class CodecReader extends LeafReader implements Accountable {
     }
 
     // points
-    if (getPointReader() != null) {
-      resources.add(Accountables.namedAccountable("points", getPointReader()));
+    if (getPointsReader() != null) {
+      resources.add(Accountables.namedAccountable("points", getPointsReader()));
     }
     
     return Collections.unmodifiableList(resources);
@@ -394,8 +394,8 @@ public abstract class CodecReader extends LeafReader implements Accountable {
     }
 
     // points
-    if (getPointReader() != null) {
-      getPointReader().checkIntegrity();
+    if (getPointsReader() != null) {
+      getPointsReader().checkIntegrity();
     }
   }
 }
