@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Analyzer; // javadocs
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.LegacyNumericUtils;
 
 /**
@@ -75,8 +76,8 @@ public class FieldType implements IndexableFieldType  {
     this.numericType = ref.numericType();
     this.numericPrecisionStep = ref.numericPrecisionStep();
     this.docValuesType = ref.docValuesType();
-    this.dimensionCount = dimensionCount;
-    this.dimensionNumBytes = dimensionNumBytes;
+    this.dimensionCount = ref.dimensionCount;
+    this.dimensionNumBytes = ref.dimensionNumBytes;
     // Do not copy frozen!
   }
   
@@ -365,18 +366,24 @@ public class FieldType implements IndexableFieldType  {
    */
   public void setDimensions(int dimensionCount, int dimensionNumBytes) {
     if (dimensionCount < 0) {
-      throw new IllegalArgumentException("pointDimensionCount must be >= 0; got " + dimensionCount);
+      throw new IllegalArgumentException("dimensionCount must be >= 0; got " + dimensionCount);
+    }
+    if (dimensionCount > PointValues.MAX_DIMENSIONS) {
+      throw new IllegalArgumentException("dimensionCount must be <= " + PointValues.MAX_DIMENSIONS + "; got " + dimensionCount);
     }
     if (dimensionNumBytes < 0) {
-      throw new IllegalArgumentException("pointNumBytes must be >= 0; got " + dimensionNumBytes);
+      throw new IllegalArgumentException("dimensionNumBytes must be >= 0; got " + dimensionNumBytes);
+    }
+    if (dimensionCount > PointValues.MAX_NUM_BYTES) {
+      throw new IllegalArgumentException("dimensionNumBytes must be <= " + PointValues.MAX_NUM_BYTES + "; got " + dimensionNumBytes);
     }
     if (dimensionCount == 0) {
       if (dimensionNumBytes != 0) {
-        throw new IllegalArgumentException("when pointDimensionCount is 0 pointNumBytes must 0; got " + dimensionNumBytes);
+        throw new IllegalArgumentException("when dimensionCount is 0, dimensionNumBytes must 0; got " + dimensionNumBytes);
       }
     } else if (dimensionNumBytes == 0) {
       if (dimensionCount != 0) {
-        throw new IllegalArgumentException("when pointNumBytes is 0 pointDimensionCount must 0; got " + dimensionCount);
+        throw new IllegalArgumentException("when dimensionNumBytes is 0, dimensionCount must 0; got " + dimensionCount);
       }
     }
 
@@ -484,6 +491,8 @@ public class FieldType implements IndexableFieldType  {
   public int hashCode() {
     final int prime = 31;
     int result = 1;
+    result = prime * result + dimensionCount;
+    result = prime * result + dimensionNumBytes;
     result = prime * result + ((docValuesType == null) ? 0 : docValuesType.hashCode());
     result = prime * result + indexOptions.hashCode();
     result = prime * result + numericPrecisionStep;
@@ -504,6 +513,8 @@ public class FieldType implements IndexableFieldType  {
     if (obj == null) return false;
     if (getClass() != obj.getClass()) return false;
     FieldType other = (FieldType) obj;
+    if (dimensionCount != other.dimensionCount) return false;
+    if (dimensionNumBytes != other.dimensionNumBytes) return false;
     if (docValuesType != other.docValuesType) return false;
     if (indexOptions != other.indexOptions) return false;
     if (numericPrecisionStep != other.numericPrecisionStep) return false;
@@ -517,5 +528,4 @@ public class FieldType implements IndexableFieldType  {
     if (tokenized != other.tokenized) return false;
     return true;
   }
-
 }

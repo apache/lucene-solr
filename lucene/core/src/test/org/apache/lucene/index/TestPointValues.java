@@ -385,9 +385,8 @@ public class TestPointValues extends LuceneTestCase {
     for(int i=0;i<values.length;i++) {
       values[i] = new byte[4];
     }
-    doc.add(new BinaryPoint("dim", values));
     expectThrows(IllegalArgumentException.class, () -> {
-      w.addDocument(doc);
+      doc.add(new BinaryPoint("dim", values));
     });
 
     Document doc2 = new Document();

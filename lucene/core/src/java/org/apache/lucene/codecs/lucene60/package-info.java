@@ -194,9 +194,9 @@
  * </li>
  * <li>
  * {@link org.apache.lucene.codecs.lucene60.Lucene60PointsFormat Point values}.
- * Optional pair of files, recording dimesionally indexed fields, to enable fast
+ * Optional pair of files, recording dimensionally indexed fields, to enable fast
  * numeric range filtering and large numeric values like BigInteger and BigDecimal (1D)
- * and geo shape intersection (2D, 3D).
+ * and geographic shape intersection (2D, 3D).
  * </li>
  * </ul>
  * <p>Details on each of these are provided in their linked pages.</p>
@@ -396,6 +396,9 @@
  * contain the zlib-crc32 checksum of the file.</li>
  * <li>In version 4.9, DocValues has a new multi-valued numeric type (SortedNumeric)
  * that is suitable for faceting/sorting/analytics.
+ * <li>In version 5.4, DocValues have been improved to store more information on disk:
+ * addresses for binary fields and ord indexes for multi-valued fields.
+ * <li>In version 6.0, Points were added, for multi-dimensional range/distance search.
  * </li>
  * </ul>
  * <a name="Limitations"></a>
