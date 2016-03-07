@@ -16,14 +16,14 @@
  */
 package org.apache.lucene.spatial.spatial4j;
 
-import org.apache.lucene.geo3d.GeoArea;
-import org.apache.lucene.geo3d.GeoBBox;
-import org.apache.lucene.geo3d.GeoBBoxFactory;
-import org.apache.lucene.geo3d.GeoCircle;
-import org.apache.lucene.geo3d.GeoStandardCircle;
-import org.apache.lucene.geo3d.GeoPath;
-import org.apache.lucene.geo3d.GeoPoint;
-import org.apache.lucene.geo3d.PlanetModel;
+import org.apache.lucene.spatial3d.geom.GeoArea;
+import org.apache.lucene.spatial3d.geom.GeoBBox;
+import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
+import org.apache.lucene.spatial3d.geom.GeoCircle;
+import org.apache.lucene.spatial3d.geom.GeoStandardCircle;
+import org.apache.lucene.spatial3d.geom.GeoPath;
+import org.apache.lucene.spatial3d.geom.GeoPoint;
+import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.junit.Test;
 
 public class Geo3dShapeWGS84ModelRectRelationTest extends Geo3dShapeRectRelationTestCase {
