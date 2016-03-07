@@ -30,39 +30,10 @@ public class TestDynamicFieldCollectionResource extends SolrRestletTestBase {
   }
 
   @Test
-  public void testGetTwoDynamicFields() throws IOException {
-    assertQ("/schema/dynamicfields?indent=on&wt=xml&fl=*_i,*_s",
-            "count(/response/arr[@name='dynamicFields']/lst/str[@name='name']) = 2",
-            "(/response/arr[@name='dynamicFields']/lst/str[@name='name'])[1] = '*_i'",
-            "(/response/arr[@name='dynamicFields']/lst/str[@name='name'])[2] = '*_s'");
-  }
-
-  @Test
-  public void testNotFoundDynamicFields() throws IOException {
-    assertQ("/schema/dynamicfields?indent=on&wt=xml&fl=*_not_in_there,this_one_isnt_either_*",
-            "count(/response/arr[@name='dynamicFields']) = 1",
-            "count(/response/arr[@name='dynamicfields']/lst/str[@name='name']) = 0");
-  }
-
-  @Test
   public void testJsonGetAllDynamicFields() throws Exception {
     assertJQ("/schema/dynamicfields?indent=on",
              "/dynamicFields/[0]/name=='*_coordinate'",
              "/dynamicFields/[1]/name=='ignored_*'",
              "/dynamicFields/[2]/name=='*_mfacet'");
-  }
-  
-  @Test
-  public void testJsonGetTwoDynamicFields() throws Exception {
-    assertJQ("/schema/dynamicfields?indent=on&fl=*_i,*_s&wt=xml", // assertJQ will fix the wt param to be json
-             "/dynamicFields/[0]/name=='*_i'",
-             "/dynamicFields/[1]/name=='*_s'");
-  }
-
-  @Test
-  public void testJsonPostFieldsToNonMutableIndexSchema() throws Exception {
-    assertJPost("/schema/dynamicfields",
-        "[{\"name\":\"foobarbaz\", \"type\":\"text_general\", \"stored\":\"false\"}]",
-        "/error/msg=='This IndexSchema is not mutable.'");
   }
 }

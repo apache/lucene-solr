@@ -90,8 +90,8 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
                JSONUtil.toJSON(syns),
                "/responseHeader/status==0");
     
-    assertJQ(endpoint, 
-             "/synonymMappings/managedMap/happy==['cheerful','glad','joyful']");
+    assertJQ(endpoint,
+        "/synonymMappings/managedMap/happy==['cheerful','glad','joyful']");
 
     // request to a specific mapping
     assertJQ(endpoint+"/happy", 
@@ -146,7 +146,7 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
             "/response/lst[@name='error']/int[@name='code'] = '404'");
 
     // add the new field
-    assertJPut("/schema/fields/" + newFieldName, json("{'type':'managed_en'}"),
+    assertJPost("/schema", "{ add-field :  { name: managed_en_field, type : managed_en}}",
                "/responseHeader/status==0");
 
     // make sure the new field exists now

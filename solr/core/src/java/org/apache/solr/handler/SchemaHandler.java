@@ -20,15 +20,20 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -42,16 +47,28 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.JSON;
-import static org.apache.solr.core.ConfigSetProperties.IMMUTABLE_CONFIGSET_ARG;
 
 public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean isImmutableConfigSet = false;
 
-  @Override
-  public void init(NamedList args) {
-    super.init(args);
+  private static final Map<String, String> level2;
+
+  static {
+    Set<String> s = ImmutableSet.of(
+        IndexSchema.FIELD_TYPES,
+        IndexSchema.FIELDS,
+        IndexSchema.DYNAMIC_FIELDS,
+        IndexSchema.COPY_FIELDS
+    );
+    Map<String, String> m = new HashMap<>();
+    for (String s1 : s) {
+      m.put(s1, s1);
+      m.put(s1.toLowerCase(Locale.ROOT), s1);
+    }
+    level2 = ImmutableMap.copyOf(m);
   }
+
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
@@ -150,6 +167,33 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware {
           break;
         }
         default: {
+          List<String> parts = StrUtils.splitSmart(path, '/');
+          if (parts.get(0).isEmpty()) parts.remove(0);
+          if (parts.size() > 1 && level2.containsKey(parts.get(1))) {
+            String realName = level2.get(parts.get(1));
+            SimpleOrderedMap<Object> propertyValues = req.getSchema().getNamedPropertyValues(req.getParams());
+            Object o = propertyValues.get(realName);
+            if(parts.size()> 2) {
+              String name = parts.get(2);
+              if (o instanceof List) {
+                List list = (List) o;
+                for (Object obj : list) {
+                  if (obj instanceof SimpleOrderedMap) {
+                    SimpleOrderedMap simpleOrderedMap = (SimpleOrderedMap) obj;
+                    if(name.equals(simpleOrderedMap.get("name"))) {
+                      rsp.add(realName.substring(0, realName.length() - 1), simpleOrderedMap);
+                      return;
+                    }
+                  }
+                }
+              }
+              throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such path " + path);
+            } else {
+              rsp.add(realName, o);
+            }
+            return;
+          }
+
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "No such path " + path);
         }
       }
@@ -160,19 +204,25 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware {
   }
 
   private static Set<String> subPaths = new HashSet<>(Arrays.asList(
-      "/version",
-      "/uniquekey",
-      "/name",
-      "/similarity",
-      "/defaultsearchfield",
-      "/solrqueryparser",
-      "/zkversion",
-      "/solrqueryparser/defaultoperator"
+      "version",
+      "uniquekey",
+      "name",
+      "similarity",
+      "defaultsearchfield",
+      "solrqueryparser",
+      "zkversion"
   ));
+  static {
+    subPaths.addAll(level2.keySet());
+  }
 
   @Override
   public SolrRequestHandler getSubHandler(String subPath) {
-    if (subPaths.contains(subPath)) return this;
+    List<String> parts = StrUtils.splitSmart(subPath, '/');
+    if (parts.get(0).isEmpty()) parts.remove(0);
+    String prefix =  parts.get(0);
+    if(subPaths.contains(prefix)) return this;
+
     return null;
   }
 

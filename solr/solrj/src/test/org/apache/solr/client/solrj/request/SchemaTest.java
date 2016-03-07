@@ -575,10 +575,6 @@ public class SchemaTest extends RestTestBase {
     assertThat("solr.TextField", is(equalTo(newFieldTypeRepresentation.getAttributes().get("class"))));
     assertThat(analyzerDefinition.getTokenizer().get("class"),
         is(equalTo(newFieldTypeRepresentation.getAnalyzer().getTokenizer().get("class"))));
-    assertTrue(newFieldTypeRepresentation.getFields().size() == 1);
-    assertTrue(newFieldTypeRepresentation.getFields().contains(fieldName));
-    assertTrue(newFieldTypeRepresentation.getDynamicFields().size() == 1);
-    assertTrue(newFieldTypeRepresentation.getDynamicFields().contains(dynamicFieldName));
   }
 
   @Test
