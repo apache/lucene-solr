@@ -28,21 +28,21 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.codecs.DocValuesFormat;
-import org.apache.lucene.codecs.PointFormat;
-import org.apache.lucene.codecs.PointReader;
-import org.apache.lucene.codecs.PointWriter;
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.asserting.AssertingDocValuesFormat;
-import org.apache.lucene.codecs.asserting.AssertingPointFormat;
+import org.apache.lucene.codecs.asserting.AssertingPointsFormat;
 import org.apache.lucene.codecs.asserting.AssertingPostingsFormat;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapDocFreqInterval;
 import org.apache.lucene.codecs.blockterms.LuceneVarGapFixedInterval;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucenePostings;
-import org.apache.lucene.codecs.lucene60.Lucene60PointReader;
-import org.apache.lucene.codecs.lucene60.Lucene60PointWriter;
+import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
+import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
 import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
@@ -95,16 +95,16 @@ public class RandomCodec extends AssertingCodec {
   private final double maxMBSortInHeap;
 
   @Override
-  public PointFormat pointFormat() {
-    return new AssertingPointFormat(new PointFormat() {
+  public PointsFormat pointsFormat() {
+    return new AssertingPointsFormat(new PointsFormat() {
       @Override
-      public PointWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-        return new Lucene60PointWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
+      public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
+        return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
       }
 
       @Override
-      public PointReader fieldsReader(SegmentReadState readState) throws IOException {
-        return new Lucene60PointReader(readState);
+      public PointsReader fieldsReader(SegmentReadState readState) throws IOException {
+        return new Lucene60PointsReader(readState);
       }
     });
   }

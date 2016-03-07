@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.PointReader;
+import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
@@ -38,20 +38,20 @@ import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDReader;
 
-/** Reads point values previously written with {@link Lucene60PointWriter} */
-public class Lucene60PointReader extends PointReader implements Closeable {
+/** Reads point values previously written with {@link Lucene60PointsWriter} */
+public class Lucene60PointsReader extends PointsReader implements Closeable {
   final IndexInput dataIn;
   final SegmentReadState readState;
   final Map<Integer,BKDReader> readers = new HashMap<>();
 
   /** Sole constructor */
-  public Lucene60PointReader(SegmentReadState readState) throws IOException {
+  public Lucene60PointsReader(SegmentReadState readState) throws IOException {
     this.readState = readState;
 
 
     String indexFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
                                                           readState.segmentSuffix,
-                                                          Lucene60PointFormat.INDEX_EXTENSION);
+                                                          Lucene60PointsFormat.INDEX_EXTENSION);
 
     Map<Integer,Long> fieldToFileOffset = new HashMap<>();
 
@@ -60,9 +60,9 @@ public class Lucene60PointReader extends PointReader implements Closeable {
       Throwable priorE = null;
       try {
         CodecUtil.checkIndexHeader(indexIn,
-                                   Lucene60PointFormat.META_CODEC_NAME,
-                                   Lucene60PointFormat.INDEX_VERSION_START,
-                                   Lucene60PointFormat.INDEX_VERSION_START,
+                                   Lucene60PointsFormat.META_CODEC_NAME,
+                                   Lucene60PointsFormat.INDEX_VERSION_START,
+                                   Lucene60PointsFormat.INDEX_VERSION_START,
                                    readState.segmentInfo.getId(),
                                    readState.segmentSuffix);
         int count = indexIn.readVInt();
@@ -80,15 +80,15 @@ public class Lucene60PointReader extends PointReader implements Closeable {
 
     String dataFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name,
                                                          readState.segmentSuffix,
-                                                         Lucene60PointFormat.DATA_EXTENSION);
+                                                         Lucene60PointsFormat.DATA_EXTENSION);
     boolean success = false;
     dataIn = readState.directory.openInput(dataFileName, readState.context);
     try {
 
       CodecUtil.checkIndexHeader(dataIn,
-                                 Lucene60PointFormat.DATA_CODEC_NAME,
-                                 Lucene60PointFormat.DATA_VERSION_START,
-                                 Lucene60PointFormat.DATA_VERSION_START,
+                                 Lucene60PointsFormat.DATA_CODEC_NAME,
+                                 Lucene60PointsFormat.DATA_VERSION_START,
+                                 Lucene60PointsFormat.DATA_VERSION_START,
                                  readState.segmentInfo.getId(),
                                  readState.segmentSuffix);
 

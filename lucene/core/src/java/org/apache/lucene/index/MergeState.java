@@ -20,10 +20,10 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.util.Bits;
@@ -67,7 +67,7 @@ public class MergeState {
   public final FieldsProducer[] fieldsProducers;
 
   /** Point readers to merge */
-  public final PointReader[] pointReaders;
+  public final PointsReader[] pointsReaders;
 
   /** New docID base per reader. */
   public final int[] docBase;
@@ -90,7 +90,7 @@ public class MergeState {
     storedFieldsReaders = new StoredFieldsReader[numReaders];
     termVectorsReaders = new TermVectorsReader[numReaders];
     docValuesProducers = new DocValuesProducer[numReaders];
-    pointReaders = new PointReader[numReaders];
+    pointsReaders = new PointsReader[numReaders];
     fieldInfos = new FieldInfos[numReaders];
     liveDocs = new Bits[numReaders];
 
@@ -122,9 +122,9 @@ public class MergeState {
       }
       
       fieldsProducers[i] = reader.getPostingsReader().getMergeInstance();
-      pointReaders[i] = reader.getPointReader();
-      if (pointReaders[i] != null) {
-        pointReaders[i] = pointReaders[i].getMergeInstance();
+      pointsReaders[i] = reader.getPointsReader();
+      if (pointsReaders[i] != null) {
+        pointsReaders[i] = pointsReaders[i].getMergeInstance();
       }
     }
 

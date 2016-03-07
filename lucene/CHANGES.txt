@@ -118,6 +118,9 @@ API Changes
 * LUCENE-7064: MultiPhraseQuery is now immutable and should be constructed
   with MultiPhraseQuery.Builder. (Luc Vanlerberghe via Adrien Grand)
 
+* LUCENE-7072: Geo3DPoint always uses WGS84 planet model.
+  (Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-6891: Use prefix coding when writing points in 
@@ -134,6 +137,9 @@ Optimizations
 
 * LUCENE-7050: TermsQuery is now cached more aggressively by the default
   query caching policy. (Adrien Grand)
+
+* LUCENE-7066: PointRangeQuery got optimized for the case that all documents
+  have a value and all points from the segment match. (Adrien Grand)
 
 Changes in Runtime Behavior
 

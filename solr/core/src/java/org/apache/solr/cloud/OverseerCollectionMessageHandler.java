@@ -1371,7 +1371,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         return;
       }
       Thread.sleep(1000);
-      zkStateReader.updateClusterState();
     }
     throw new SolrException(ErrorCode.SERVER_ERROR,
         "Could not find new slice " + sliceName + " in collection " + collectionName

@@ -80,7 +80,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
 
     Thread.sleep(sleepMsBeforeHealPartition);
 
-    cloudClient.getZkStateReader().updateClusterState(); // get the latest state
+    cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName); // get the latest state
     leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
     assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
 
@@ -128,7 +128,7 @@ public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest 
     sendCommitWithRetry(replica);
     Thread.sleep(sleepMsBeforeHealPartition);
 
-    cloudClient.getZkStateReader().updateClusterState(); // get the latest state
+    cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName); // get the latest state
     leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
     assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
 

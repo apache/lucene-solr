@@ -425,7 +425,7 @@ public class ChaosMonkey {
     for (CloudJettyRunner cloudJetty : shardToJetty.get(slice)) {
       
       // get latest cloud state
-      zkStateReader.updateClusterState();
+      zkStateReader.forceUpdateCollection(collection);
       
       Slice theShards = zkStateReader.getClusterState().getSlicesMap(collection)
           .get(slice);
@@ -445,18 +445,6 @@ public class ChaosMonkey {
       }
     }
     return numActive;
-  }
-  
-  public SolrClient getRandomClient(String slice) throws KeeperException, InterruptedException {
-    // get latest cloud state
-    zkStateReader.updateClusterState();
-
-    // get random shard
-    List<SolrClient> clients = shardToClient.get(slice);
-    int index = LuceneTestCase.random().nextInt(clients.size() - 1);
-    SolrClient client = clients.get(index);
-
-    return client;
   }
   
   // synchronously starts and stops shards randomly, unless there is only one

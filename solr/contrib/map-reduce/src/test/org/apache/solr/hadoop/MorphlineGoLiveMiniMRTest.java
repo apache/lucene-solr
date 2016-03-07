@@ -646,7 +646,6 @@ public class MorphlineGoLiveMiniMRTest extends AbstractFullDistribZkTestBase {
       }
       
       Thread.sleep(200);
-      cloudClient.getZkStateReader().updateClusterState();
     }
     
     if (TEST_NIGHTLY) {
