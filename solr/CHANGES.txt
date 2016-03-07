@@ -22,6 +22,10 @@ See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 ==================  6.1.0 ==================
 Detailed Change List
 ----------------------
+* SOLR-8782: Add asynchronous sugar methods to the SolrJ Collections API.  You
+  can now call .processAsync() to run a method asynchronously, or
+  .processAndWait() to wait for a call to finish without holding HTTP
+  collections open.  (Alan Woodward)
 
 New Features
 ----------------------

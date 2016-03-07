@@ -161,7 +161,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/name", "collection-admin-edit", 20);
 
     CollectionAdminRequest.Reload reload = new CollectionAdminRequest.Reload();
-    reload.setCollectionName(cloudSolrClient.getDefaultCollection());
+    reload.setCollectionName(defaultCollName);
 
     HttpSolrClient solrClient = new HttpSolrClient(baseUrl);
     try {
