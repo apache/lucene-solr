@@ -19,11 +19,11 @@ package org.apache.lucene.codecs.simpletext;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
-import org.apache.lucene.codecs.PointFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
@@ -45,7 +45,7 @@ public final class SimpleTextCodec extends Codec {
   private final LiveDocsFormat liveDocs = new SimpleTextLiveDocsFormat();
   private final DocValuesFormat dvFormat = new SimpleTextDocValuesFormat();
   private final CompoundFormat compoundFormat = new SimpleTextCompoundFormat();
-  private final PointFormat pointFormat = new SimpleTextPointFormat();
+  private final PointsFormat pointsFormat = new SimpleTextPointsFormat();
   
   public SimpleTextCodec() {
     super("SimpleText");
@@ -97,7 +97,7 @@ public final class SimpleTextCodec extends Codec {
   }
 
   @Override
-  public PointFormat pointFormat() {
-    return pointFormat;
+  public PointsFormat pointsFormat() {
+    return pointsFormat;
   }
 }

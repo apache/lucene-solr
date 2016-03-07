@@ -28,57 +28,57 @@ import org.apache.lucene.index.MergeState;
  * @lucene.experimental
  */
 
-public abstract class PointWriter implements Closeable {
+public abstract class PointsWriter implements Closeable {
   /** Sole constructor. (For invocation by subclass 
    *  constructors, typically implicit.) */
-  protected PointWriter() {
+  protected PointsWriter() {
   }
 
   /** Write all values contained in the provided reader */
-  public abstract void writeField(FieldInfo fieldInfo, PointReader values) throws IOException;
+  public abstract void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException;
 
   /** Default naive merge implementation for one field: it just re-indexes all the values
    *  from the incoming segment.  The default codec overrides this for 1D fields and uses
    *  a faster but more complex implementation. */
   protected void mergeOneField(MergeState mergeState, FieldInfo fieldInfo) throws IOException {
     writeField(fieldInfo,
-               new PointReader() {
+               new PointsReader() {
                  @Override
                  public void intersect(String fieldName, IntersectVisitor mergedVisitor) throws IOException {
                    if (fieldName.equals(fieldInfo.name) == false) {
                      throw new IllegalArgumentException("field name must match the field being merged");
                    }
-                   for (int i=0;i<mergeState.pointReaders.length;i++) {
-                     PointReader pointReader = mergeState.pointReaders[i];
-                     if (pointReader == null) {
+                   for (int i=0;i<mergeState.pointsReaders.length;i++) {
+                     PointsReader pointsReader = mergeState.pointsReaders[i];
+                     if (pointsReader == null) {
                        // This segment has no points
                        continue;
                      }
                      MergeState.DocMap docMap = mergeState.docMaps[i];
                      int docBase = mergeState.docBase[i];
-                     pointReader.intersect(fieldInfo.name,
-                                                 new IntersectVisitor() {
-                                                   @Override
-                                                   public void visit(int docID) {
-                                                     // Should never be called because our compare method never returns Relation.CELL_INSIDE_QUERY
-                                                     throw new IllegalStateException();
-                                                   }
+                     pointsReader.intersect(fieldInfo.name,
+                                            new IntersectVisitor() {
+                                              @Override
+                                              public void visit(int docID) {
+                                                // Should never be called because our compare method never returns Relation.CELL_INSIDE_QUERY
+                                                throw new IllegalStateException();
+                                              }
 
-                                                   @Override
-                                                   public void visit(int docID, byte[] packedValue) throws IOException {
-                                                     int newDocID = docMap.get(docID);
-                                                     if (newDocID != -1) {
-                                                       // Not deleted:
-                                                       mergedVisitor.visit(docBase + newDocID, packedValue);
-                                                     }
-                                                   }
+                                              @Override
+                                              public void visit(int docID, byte[] packedValue) throws IOException {
+                                                int newDocID = docMap.get(docID);
+                                                if (newDocID != -1) {
+                                                  // Not deleted:
+                                                  mergedVisitor.visit(docBase + newDocID, packedValue);
+                                                }
+                                              }
 
-                                                   @Override
-                                                   public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                                                     // Forces this segment's PointReader to always visit all docs + values:
-                                                     return Relation.CELL_CROSSES_QUERY;
-                                                   }
-                                                 });
+                                              @Override
+                                              public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+                                                // Forces this segment's PointsReader to always visit all docs + values:
+                                                return Relation.CELL_CROSSES_QUERY;
+                                              }
+                                            });
                    }
                  }
 
@@ -132,7 +132,7 @@ public abstract class PointWriter implements Closeable {
    *  adding to this writer */
   public void merge(MergeState mergeState) throws IOException {
     // check each incoming reader
-    for (PointReader reader : mergeState.pointReaders) {
+    for (PointsReader reader : mergeState.pointsReaders) {
       if (reader != null) {
         reader.checkIntegrity();
       }

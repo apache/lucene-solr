@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.codecs.PointReader;
+import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
@@ -37,36 +37,36 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.bkd.BKDReader;
 
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.BLOCK_FP;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.BYTES_PER_DIM;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.DOC_COUNT;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.FIELD_COUNT;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.FIELD_FP;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.FIELD_FP_NAME;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.INDEX_COUNT;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.MAX_LEAF_POINTS;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.MAX_VALUE;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.MIN_VALUE;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.NUM_DIMS;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.POINT_COUNT;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.SPLIT_COUNT;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.SPLIT_DIM;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.SPLIT_VALUE;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_FP;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BYTES_PER_DIM;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.DOC_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.FIELD_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.FIELD_FP;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.FIELD_FP_NAME;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.INDEX_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.MAX_LEAF_POINTS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.MAX_VALUE;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.MIN_VALUE;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.NUM_DIMS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.POINT_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.SPLIT_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.SPLIT_DIM;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.SPLIT_VALUE;
 
-class SimpleTextPointReader extends PointReader {
+class SimpleTextPointsReader extends PointsReader {
 
   private final IndexInput dataIn;
   final SegmentReadState readState;
   final Map<String,BKDReader> readers = new HashMap<>();
   final BytesRefBuilder scratch = new BytesRefBuilder();
 
-  public SimpleTextPointReader(SegmentReadState readState) throws IOException {
+  public SimpleTextPointsReader(SegmentReadState readState) throws IOException {
     // Initialize readers now:
 
     // Read index:
     Map<String,Long> fieldToFileOffset = new HashMap<>();
 
-    String indexFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextPointFormat.POINT_INDEX_EXTENSION);
+    String indexFileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextPointsFormat.POINT_INDEX_EXTENSION);
     try (ChecksumIndexInput in = readState.directory.openChecksumInput(indexFileName, IOContext.DEFAULT)) {
       readLine(in);
       int count = parseInt(FIELD_COUNT);
@@ -81,7 +81,7 @@ class SimpleTextPointReader extends PointReader {
     }
 
     boolean success = false;
-    String fileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextPointFormat.POINT_EXTENSION);
+    String fileName = IndexFileNames.segmentFileName(readState.segmentInfo.name, readState.segmentSuffix, SimpleTextPointsFormat.POINT_EXTENSION);
     dataIn = readState.directory.openInput(fileName, IOContext.DEFAULT);
     try {
       for(Map.Entry<String,Long> ent : fieldToFileOffset.entrySet()) {
@@ -98,7 +98,7 @@ class SimpleTextPointReader extends PointReader {
   }
 
   private BKDReader initReader(long fp) throws IOException {
-    // NOTE: matches what writeIndex does in SimpleTextPointWriter
+    // NOTE: matches what writeIndex does in SimpleTextPointsWriter
     dataIn.seek(fp);
     readLine(dataIn);
     int numDims = parseInt(NUM_DIMS);
@@ -231,7 +231,7 @@ class SimpleTextPointReader extends PointReader {
 
   @Override
   public String toString() {
-    return "SimpleTextPointReader(segment=" + readState.segmentInfo.name + " maxDoc=" + readState.segmentInfo.maxDoc() + ")";
+    return "SimpleTextPointsReader(segment=" + readState.segmentInfo.name + " maxDoc=" + readState.segmentInfo.maxDoc() + ")";
   }
 
   @Override

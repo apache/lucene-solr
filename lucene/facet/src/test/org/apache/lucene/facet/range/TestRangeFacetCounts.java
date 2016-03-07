@@ -421,7 +421,10 @@ public class TestRangeFacetCounts extends FacetTestCase {
         }
         boolean minIncl;
         boolean maxIncl;
-        if (min == max) {
+
+        // NOTE: max - min >= 0 is here to handle the common overflow case!
+        if (max - min >= 0 && max - min < 2) {
+          // If max == min or max == min+1, we always do inclusive, else we might pass an empty range and hit exc from LongRange's ctor:
           minIncl = true;
           maxIncl = true;
         } else {

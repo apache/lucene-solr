@@ -20,9 +20,9 @@ package org.apache.lucene.codecs.lucene60;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.codecs.PointFormat;
-import org.apache.lucene.codecs.PointReader;
-import org.apache.lucene.codecs.PointWriter;
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 
@@ -69,10 +69,10 @@ import org.apache.lucene.index.SegmentWriteState;
  * @lucene.experimental
  */
 
-public final class Lucene60PointFormat extends PointFormat {
+public final class Lucene60PointsFormat extends PointsFormat {
 
-  static final String DATA_CODEC_NAME = "Lucene60PointFormatData";
-  static final String META_CODEC_NAME = "Lucene60PointFormatMeta";
+  static final String DATA_CODEC_NAME = "Lucene60PointsFormatData";
+  static final String META_CODEC_NAME = "Lucene60PointsFormatMeta";
 
   /**
    * Filename extension for the leaf blocks
@@ -91,16 +91,16 @@ public final class Lucene60PointFormat extends PointFormat {
   static final int INDEX_VERSION_CURRENT = INDEX_VERSION_START;
 
   /** Sole constructor */
-  public Lucene60PointFormat() {
+  public Lucene60PointsFormat() {
   }
 
   @Override
-  public PointWriter fieldsWriter(SegmentWriteState state) throws IOException {
-    return new Lucene60PointWriter(state);
+  public PointsWriter fieldsWriter(SegmentWriteState state) throws IOException {
+    return new Lucene60PointsWriter(state);
   }
 
   @Override
-  public PointReader fieldsReader(SegmentReadState state) throws IOException {
-    return new Lucene60PointReader(state);
+  public PointsReader fieldsReader(SegmentReadState state) throws IOException {
+    return new Lucene60PointsReader(state);
   }
 }

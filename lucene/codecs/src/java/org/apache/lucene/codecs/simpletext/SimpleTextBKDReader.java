@@ -27,9 +27,9 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.bkd.BKDReader;
 
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.BLOCK_COUNT;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.BLOCK_DOC_ID;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointWriter.BLOCK_VALUE;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_COUNT;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_DOC_ID;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.BLOCK_VALUE;
 
 class SimpleTextBKDReader extends BKDReader {
 
