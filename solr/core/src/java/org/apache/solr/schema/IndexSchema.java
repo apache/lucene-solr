@@ -39,6 +39,7 @@ import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -1352,6 +1353,10 @@ public class IndexSchema {
    * Get a map of property name -&gt; value for the whole schema.
    */
   public SimpleOrderedMap<Object> getNamedPropertyValues() {
+    return getNamedPropertyValues(new MapSolrParams(Collections.EMPTY_MAP));
+
+  }
+  public SimpleOrderedMap<Object> getNamedPropertyValues(SolrParams params) {
     SimpleOrderedMap<Object> topLevel = new SimpleOrderedMap<>();
     topLevel.add(NAME, getSchemaName());
     topLevel.add(VERSION, getVersion());
@@ -1372,19 +1377,19 @@ public class IndexSchema {
     List<SimpleOrderedMap<Object>> fieldTypeProperties = new ArrayList<>();
     SortedMap<String,FieldType> sortedFieldTypes = new TreeMap<>(fieldTypes);
     for (FieldType fieldType : sortedFieldTypes.values()) {
-      fieldTypeProperties.add(fieldType.getNamedPropertyValues(false));
+      fieldTypeProperties.add(fieldType.getNamedPropertyValues(params.getBool("showDefaults", false)));
     }
     topLevel.add(FIELD_TYPES, fieldTypeProperties);  
     List<SimpleOrderedMap<Object>> fieldProperties = new ArrayList<>();
     SortedSet<String> fieldNames = new TreeSet<>(fields.keySet());
     for (String fieldName : fieldNames) {
-      fieldProperties.add(fields.get(fieldName).getNamedPropertyValues(false));
+      fieldProperties.add(fields.get(fieldName).getNamedPropertyValues(params.getBool("showDefaults", false)));
     }
     topLevel.add(FIELDS, fieldProperties);
     List<SimpleOrderedMap<Object>> dynamicFieldProperties = new ArrayList<>();
     for (IndexSchema.DynamicField dynamicField : dynamicFields) {
       if ( ! dynamicField.getRegex().startsWith(INTERNAL_POLY_FIELD_PREFIX)) { // omit internal polyfields
-        dynamicFieldProperties.add(dynamicField.getPrototype().getNamedPropertyValues(false));
+        dynamicFieldProperties.add(dynamicField.getPrototype().getNamedPropertyValues(params.getBool("showDefaults", false)));
       }
     }
     topLevel.add(DYNAMIC_FIELDS, dynamicFieldProperties);
