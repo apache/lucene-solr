@@ -280,6 +280,28 @@ public final class ByteBlockPool {
     return newUpto+3;
   }
 
+  /** Fill the provided {@link BytesRef} with the bytes at the specified offset/length slice.
+   *  This will avoid copying the bytes, if the slice fits into a single block; otherwise, it uses
+   *  the provided {@linkl BytesRefBuilder} to copy bytes over. */
+  void setBytesRef(BytesRefBuilder builder, BytesRef result, long offset, int length) {
+    result.length = length;
+
+    int bufferIndex = (int) (offset >> BYTE_BLOCK_SHIFT);
+    byte[] buffer = buffers[bufferIndex];
+    int pos = (int) (offset & BYTE_BLOCK_MASK);
+    if (pos + length <= BYTE_BLOCK_SIZE) {
+      // common case where the slice lives in a single block: just reference the buffer directly without copying
+      result.bytes = buffer;
+      result.offset = pos;
+    } else {
+      // uncommon case: the slice spans at least 2 blocks, so we must copy the bytes:
+      builder.grow(length);
+      result.bytes = builder.get().bytes;
+      result.offset = 0;
+      readBytes(offset, result.bytes, 0, length);
+    }
+  }
+
   // Fill in a BytesRef from term's length & bytes encoded in
   // byte block
   public void setBytesRef(BytesRef term, int textStart) {

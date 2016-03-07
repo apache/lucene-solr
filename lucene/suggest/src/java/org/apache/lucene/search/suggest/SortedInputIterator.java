@@ -146,6 +146,7 @@ public class SortedInputIterator implements InputIterator {
     @Override
     public int compare(BytesRef left, BytesRef right) {
       // Make shallow copy in case decode changes the BytesRef:
+      assert left != right;
       leftScratch.bytes = left.bytes;
       leftScratch.offset = left.offset;
       leftScratch.length = left.length;
@@ -245,24 +246,24 @@ public class SortedInputIterator implements InputIterator {
   
   /** decodes the weight at the current position */
   protected long decode(BytesRef scratch, ByteArrayDataInput tmpInput) {
-    tmpInput.reset(scratch.bytes);
+    tmpInput.reset(scratch.bytes, scratch.offset, scratch.length);
     tmpInput.skipBytes(scratch.length - 8); // suggestion
-    scratch.length -= 8; // long
+    scratch.length -= Long.BYTES; // long
     return tmpInput.readLong();
   }
   
   /** decodes the contexts at the current position */
   protected Set<BytesRef> decodeContexts(BytesRef scratch, ByteArrayDataInput tmpInput) {
-    tmpInput.reset(scratch.bytes);
+    tmpInput.reset(scratch.bytes, scratch.offset, scratch.length);
     tmpInput.skipBytes(scratch.length - 2); //skip to context set size
     short ctxSetSize = tmpInput.readShort();
     scratch.length -= 2;
     final Set<BytesRef> contextSet = new HashSet<>();
     for (short i = 0; i < ctxSetSize; i++) {
-      tmpInput.setPosition(scratch.length - 2);
+      tmpInput.setPosition(scratch.offset + scratch.length - 2);
       short curContextLength = tmpInput.readShort();
       scratch.length -= 2;
-      tmpInput.setPosition(scratch.length - curContextLength);
+      tmpInput.setPosition(scratch.offset + scratch.length - curContextLength);
       BytesRef contextSpare = new BytesRef(curContextLength);
       tmpInput.readBytes(contextSpare.bytes, 0, curContextLength);
       contextSpare.length = curContextLength;
@@ -274,10 +275,11 @@ public class SortedInputIterator implements InputIterator {
   
   /** decodes the payload at the current position */
   protected BytesRef decodePayload(BytesRef scratch, ByteArrayDataInput tmpInput) {
-    tmpInput.reset(scratch.bytes);
+    tmpInput.reset(scratch.bytes, scratch.offset, scratch.length);
     tmpInput.skipBytes(scratch.length - 2); // skip to payload size
     short payloadLength = tmpInput.readShort(); // read payload size
-    tmpInput.setPosition(scratch.length - 2 - payloadLength); // setPosition to start of payload
+    assert payloadLength >= 0: payloadLength;
+    tmpInput.setPosition(scratch.offset + scratch.length - 2 - payloadLength); // setPosition to start of payload
     BytesRef payloadScratch = new BytesRef(payloadLength); 
     tmpInput.readBytes(payloadScratch.bytes, 0, payloadLength); // read payload
     payloadScratch.length = payloadLength;

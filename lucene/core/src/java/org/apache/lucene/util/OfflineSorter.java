@@ -282,7 +282,6 @@ public class OfflineSorter {
 
   /** Sort a single partition in-memory. */
   protected String sortPartition(TrackingDirectoryWrapper trackingDir) throws IOException {
-    BytesRefArray data = this.buffer;
 
     try (IndexOutput tempFile = trackingDir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT);
          ByteSequencesWriter out = getWriter(tempFile);) {
@@ -299,7 +298,7 @@ public class OfflineSorter {
       }
       
       // Clean up the buffer for the next partition.
-      data.clear();
+      buffer.clear();
 
       return tempFile.getName();
     }
