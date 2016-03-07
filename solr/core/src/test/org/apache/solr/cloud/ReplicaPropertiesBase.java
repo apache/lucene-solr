@@ -56,7 +56,6 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
     ClusterState clusterState = null;
     Replica replica = null;
     for (int idx = 0; idx < 300; ++idx) {
-      client.getZkStateReader().updateClusterState();
       clusterState = client.getZkStateReader().getClusterState();
       replica = clusterState.getReplica(collectionName, replicaName);
       if (replica == null) {
@@ -82,7 +81,6 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
     ClusterState clusterState = null;
 
     for (int idx = 0; idx < 300; ++idx) { // Keep trying while Overseer writes the ZK state for up to 30 seconds.
-      client.getZkStateReader().updateClusterState();
       clusterState = client.getZkStateReader().getClusterState();
       replica = clusterState.getReplica(collectionName, replicaName);
       if (replica == null) {
@@ -116,7 +114,6 @@ public abstract class ReplicaPropertiesBase extends AbstractFullDistribZkTestBas
 
     DocCollection col = null;
     for (int idx = 0; idx < 300; ++idx) {
-      client.getZkStateReader().updateClusterState();
       ClusterState clusterState = client.getZkStateReader().getClusterState();
 
       col = clusterState.getCollection(collectionName);

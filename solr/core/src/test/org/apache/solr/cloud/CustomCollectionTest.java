@@ -409,7 +409,6 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     int attempts = 0;
     while (true) {
       if (attempts > 30) fail("Not enough active replicas in the shard 'x'");
-      zkStateReader.updateClusterState();
       attempts++;
       replicaCount = zkStateReader.getClusterState().getSlice(collectionName, "x").getReplicas().size();
       if (replicaCount >= 1) break;

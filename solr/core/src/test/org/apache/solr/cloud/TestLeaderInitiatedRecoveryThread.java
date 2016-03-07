@@ -175,7 +175,6 @@ public class TestLeaderInitiatedRecoveryThread extends AbstractFullDistribZkTest
 
     timeOut = new TimeOut(30, TimeUnit.SECONDS);
     while (!timeOut.hasTimedOut()) {
-      cloudClient.getZkStateReader().updateClusterState();
       Replica r = cloudClient.getZkStateReader().getClusterState().getReplica(DEFAULT_COLLECTION, replica.getName());
       if (r.getState() == Replica.State.DOWN) {
         break;

@@ -88,7 +88,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     waitForRecoveriesToFinish("a1x2", true);
     waitForRecoveriesToFinish("b1x1", true);
 
-    cloudClient.getZkStateReader().updateClusterState();
+    cloudClient.getZkStateReader().forceUpdateCollection("b1x1");
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     DocCollection b1x1 = clusterState.getCollection("b1x1");
@@ -137,7 +137,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
     waitForRecoveriesToFinish("football", true);
 
-    cloudClient.getZkStateReader().updateClusterState();
+    cloudClient.getZkStateReader().forceUpdateCollection("football");
 
     Replica leader = null;
     Replica notLeader = null;

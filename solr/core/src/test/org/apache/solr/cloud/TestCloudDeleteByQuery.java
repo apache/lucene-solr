@@ -119,7 +119,6 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
       String nodeKey = jettyURL.getHost() + ":" + jettyURL.getPort() + jettyURL.getPath().replace("/","_");
       urlMap.put(nodeKey, jettyURL.toString());
     }
-    zkStateReader.updateClusterState();
     ClusterState clusterState = zkStateReader.getClusterState();
     for (Slice slice : clusterState.getSlices(COLLECTION_NAME)) {
       String shardName = slice.getName();

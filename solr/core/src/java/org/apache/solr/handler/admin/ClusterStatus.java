@@ -57,9 +57,6 @@ public class ClusterStatus {
   @SuppressWarnings("unchecked")
   public  void getClusterStatus(NamedList results)
       throws KeeperException, InterruptedException {
-    zkStateReader.updateClusterState();
-
-
     // read aliases
     Aliases aliases = zkStateReader.getAliases();
     Map<String, List<String>> collectionVsAliases = new HashMap<>();
