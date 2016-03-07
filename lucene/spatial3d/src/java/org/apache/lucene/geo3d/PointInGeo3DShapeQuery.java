@@ -40,14 +40,19 @@ import org.apache.lucene.util.NumericUtils;
 
 class PointInGeo3DShapeQuery extends Query {
   final String field;
-  final PlanetModel planetModel;
   final GeoShape shape;
 
   /** The lats/lons must be clockwise or counter-clockwise. */
-  public PointInGeo3DShapeQuery(PlanetModel planetModel, String field, GeoShape shape) {
+  public PointInGeo3DShapeQuery(String field, GeoShape shape) {
     this.field = field;
-    this.planetModel = planetModel;
     this.shape = shape;
+
+    if (shape instanceof BasePlanetObject) {
+      BasePlanetObject planetObject = (BasePlanetObject) shape;
+      if (planetObject.getPlanetModel().equals(PlanetModel.WGS84) == false) {
+        throw new IllegalArgumentException("this qurey requires PlanetModel.WGS84, but got: " + planetObject.getPlanetModel());
+      }
+    }
   }
 
   @Override
@@ -88,7 +93,7 @@ class PointInGeo3DShapeQuery extends Query {
         assert xyzSolid.getRelationship(shape) == GeoArea.WITHIN || xyzSolid.getRelationship(shape) == GeoArea.OVERLAPS: "expected WITHIN (1) or OVERLAPS (2) but got " + xyzSolid.getRelationship(shape) + "; shape="+shape+"; XYZSolid="+xyzSolid;
         */
 
-        double planetMax = planetModel.getMaximumMagnitude();
+        double planetMax = PlanetModel.WGS84.getMaximumMagnitude();
 
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
 
@@ -103,9 +108,9 @@ class PointInGeo3DShapeQuery extends Query {
                            @Override
                            public void visit(int docID, byte[] packedValue) {
                              assert packedValue.length == 12;
-                             double x = Geo3DPoint.decodeDimension(planetModel, packedValue, 0);
-                             double y = Geo3DPoint.decodeDimension(planetModel, packedValue, Integer.BYTES);
-                             double z = Geo3DPoint.decodeDimension(planetModel, packedValue, 2 * Integer.BYTES);
+                             double x = Geo3DPoint.decodeDimension(packedValue, 0);
+                             double y = Geo3DPoint.decodeDimension(packedValue, Integer.BYTES);
+                             double z = Geo3DPoint.decodeDimension(packedValue, 2 * Integer.BYTES);
                              if (shape.isWithin(x, y, z)) {
                                result.add(docID);
                              }
@@ -129,7 +134,7 @@ class PointInGeo3DShapeQuery extends Query {
                              assert yMin <= yMax;
                              assert zMin <= zMax;
 
-                             GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(planetModel, xMin, xMax, yMin, yMax, zMin, zMax);
+                             GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84, xMin, xMax, yMin, yMax, zMin, zMax);
 
                              switch(xyzSolid.getRelationship(shape)) {
                              case GeoArea.CONTAINS:
@@ -165,10 +170,6 @@ class PointInGeo3DShapeQuery extends Query {
     return field;
   }
 
-  public PlanetModel getPlanetModel() {
-    return planetModel;
-  }
-
   public GeoShape getShape() {
     return shape;
   }
@@ -182,13 +183,12 @@ class PointInGeo3DShapeQuery extends Query {
 
     PointInGeo3DShapeQuery that = (PointInGeo3DShapeQuery) o;
 
-    return planetModel.equals(that.planetModel) && shape.equals(that.shape);
+    return shape.equals(that.shape);
   }
 
   @Override
   public final int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + planetModel.hashCode();
     result = 31 * result + shape.hashCode();
     return result;
   }
@@ -203,8 +203,6 @@ class PointInGeo3DShapeQuery extends Query {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append(" PlanetModel: ");
-    sb.append(planetModel);
     sb.append(" Shape: ");
     sb.append(shape);
     return sb.toString();
