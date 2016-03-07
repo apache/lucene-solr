@@ -804,9 +804,7 @@ public class CoreContainer {
     SolrCore core = null;
     try {
       MDCLoggingContext.setCore(core);
-      if (!SolrIdentifierValidator.validateCoreName(dcore.getName())) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.CORE, dcore.getName()));
-      }
+      SolrIdentifierValidator.validateCoreName(dcore.getName());
       if (zkSys.getZkController() != null) {
         zkSys.getZkController().preRegister(dcore);
       }
@@ -1009,10 +1007,7 @@ public class CoreContainer {
   }
 
   public void rename(String name, String toName) {
-    if (!SolrIdentifierValidator.validateCoreName(toName)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.CORE,
-          toName));
-    }
+    SolrIdentifierValidator.validateCoreName(toName);
     try (SolrCore core = getCore(name)) {
       if (core != null) {
         registerCore(toName, core, true);

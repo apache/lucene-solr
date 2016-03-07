@@ -27,6 +27,10 @@ Detailed Change List
   .processAndWait() to wait for a call to finish without holding HTTP
   collections open.  (Alan Woodward)
 
+* SOLR-8765: Enforce required parameters at query construction time in the SolrJ
+  Collections API, add static factory methods, and deprecate old setter methods.
+  (Alan Woodward, Jason Gerlowski)
+
 New Features
 ----------------------
 
