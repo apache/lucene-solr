@@ -105,6 +105,8 @@ Upgrading from Solr 5.x
 
 * When requesting stats in date fields, "sum" is now a double value instead of a date. See SOLR-8671
 
+* SOLR-8736: The deprecated GET methods for schema are now accessible and implemented differently
+
 Detailed Change List
 ----------------------
 
@@ -394,6 +396,9 @@ Other Changes
 
 * SOLR-8758: Add a new SolrCloudTestCase class, using MiniSolrCloudCluster (Alan
   Woodward)
+
+* SOLR-8736: schema GET operations on fields, dynamicFields, fieldTypes, copyField are
+  reimplemented as a part of the bulk API with less details (noble)
 
 ==================  5.5.1 ==================
 

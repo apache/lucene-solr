@@ -24,7 +24,6 @@ public class TestSchemaSimilarityResource extends SolrRestletTestBase {
    * NOTE: schema used by parent class doesn't define a global sim, so we get the implicit default
    * which causes the FQN of the class to be returned
    * 
-   * @see TestClassNameShortening#testShortenedGlobalSimilarityStaysShortened
    */
   @Test
   public void testGetSchemaSimilarity() throws Exception {

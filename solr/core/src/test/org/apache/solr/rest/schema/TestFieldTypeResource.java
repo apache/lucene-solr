@@ -24,7 +24,7 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
   public void testGetFieldType() throws Exception {
     assertQ("/schema/fieldtypes/float?indent=on&wt=xml&showDefaults=true",
             "count(/response/lst[@name='fieldType']) = 1",
-            "count(/response/lst[@name='fieldType']/*) = 18",
+            "count(/response/lst[@name='fieldType']/*) = 16",
             "/response/lst[@name='fieldType']/str[@name='name'] = 'float'",
             "/response/lst[@name='fieldType']/str[@name='class'] = 'solr.TrieFloatField'",
             "/response/lst[@name='fieldType']/str[@name='precisionStep'] ='0'",
@@ -39,9 +39,7 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
             "/response/lst[@name='fieldType']/bool[@name='omitPositions'] = 'false'",
             "/response/lst[@name='fieldType']/bool[@name='storeOffsetsWithPositions'] = 'false'",
             "/response/lst[@name='fieldType']/bool[@name='multiValued'] = 'false'",
-            "/response/lst[@name='fieldType']/bool[@name='tokenized'] = 'false'",
-            "/response/lst[@name='fieldType']/arr[@name='fields']/str = 'weight'",
-            "/response/lst[@name='fieldType']/arr[@name='dynamicFields']/str = '*_f'");
+            "/response/lst[@name='fieldType']/bool[@name='tokenized'] = 'false'");
   }
 
   @Test
@@ -69,22 +67,19 @@ public class TestFieldTypeResource extends SolrRestletTestBase {
              "/fieldType/omitPositions==false",
              "/fieldType/storeOffsetsWithPositions==false",
              "/fieldType/multiValued==false",
-             "/fieldType/tokenized==false",
-             "/fieldType/fields==['weight']",
-             "/fieldType/dynamicFields==['*_f']");
+             "/fieldType/tokenized==false");
   }
   
   @Test
   public void testGetFieldTypeDontShowDefaults() throws Exception {
     assertQ("/schema/fieldtypes/teststop?wt=xml&indent=on",
-            "count(/response/lst[@name='fieldType']/*) = 5",
+            "count(/response/lst[@name='fieldType']/*) = 3",
             "/response/lst[@name='fieldType']/str[@name='name'] = 'teststop'",
             "/response/lst[@name='fieldType']/str[@name='class'] = 'solr.TextField'",
             "/response/lst[@name='fieldType']/lst[@name='analyzer']/lst[@name='tokenizer']/str[@name='class'] = 'solr.LowerCaseTokenizerFactory'",
             "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='class'][.='solr.StandardFilterFactory']",
             "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='class'][.='solr.StopFilterFactory']",
-            "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='words'][.='stopwords.txt']",
-            "/response/lst[@name='fieldType']/arr[@name='fields']/str[.='teststop']",
-            "/response/lst[@name='fieldType']/arr[@name='dynamicFields']");
+            "/response/lst[@name='fieldType']/lst[@name='analyzer']/arr[@name='filters']/lst/str[@name='words'][.='stopwords.txt']"
+            );
   }
 }

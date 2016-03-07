@@ -140,7 +140,7 @@ public class TestManagedStopFilterFactory extends RestTestBase {
             "/response/lst[@name='error']/int[@name='code'] = '404'");
 
     // add the new field
-    assertJPut("/schema/fields/" + newFieldName, json("{'type':'managed_en'}"),
+    assertJPost("/schema/fields", "{add-field : { name :managed_en_field, type : managed_en}}",
                "/responseHeader/status==0");
 
     // make sure the new field exists now
