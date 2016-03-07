@@ -187,7 +187,7 @@ def pushLocal(version, root, rev, rcNum, localDir):
   os.remove('%s/solr/package/solr.tar.bz2' % root)
 
   print('  KEYS')
-  run('wget http://people.apache.org/keys/group/lucene.asc')
+  run('wget http://home.apache.org/keys/group/lucene.asc')
   os.rename('lucene.asc', 'KEYS')
   run('chmod a+r-w KEYS')
   run('cp KEYS ../lucene')
