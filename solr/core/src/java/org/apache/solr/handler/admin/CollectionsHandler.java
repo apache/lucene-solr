@@ -16,45 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.client.solrj.response.RequestStatusState.*;
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_ACTIVE_NODES;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_IF_DOWN;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.REQUESTID;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARD_UNIQUE;
-import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
-import static org.apache.solr.common.cloud.DocCollection.RULE;
-import static org.apache.solr.common.cloud.DocCollection.SNITCH;
-import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
-import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
-import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
-import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
-import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
-import static org.apache.solr.common.params.ShardParams._ROUTE_;
-import static org.apache.solr.common.util.StrUtils.formatString;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -66,6 +29,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -117,8 +82,45 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
+import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
+import static org.apache.solr.client.solrj.response.RequestStatusState.NOT_FOUND;
+import static org.apache.solr.client.solrj.response.RequestStatusState.RUNNING;
+import static org.apache.solr.client.solrj.response.RequestStatusState.SUBMITTED;
+import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_CONF;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.COLL_PROP_PREFIX;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET_SHUFFLE;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_ACTIVE_NODES;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.ONLY_IF_DOWN;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.REQUESTID;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARD_UNIQUE;
+import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
+import static org.apache.solr.common.cloud.DocCollection.RULE;
+import static org.apache.solr.common.cloud.DocCollection.SNITCH;
+import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
+import static org.apache.solr.common.cloud.ZkStateReader.AUTO_ADD_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.*;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
+import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
+import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
+import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
+import static org.apache.solr.common.params.ShardParams._ROUTE_;
+import static org.apache.solr.common.util.StrUtils.formatString;
 
 public class CollectionsHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -348,11 +350,7 @@ public class CollectionsHandler extends RequestHandlerBase {
         addMapObject(props, RULE);
         addMapObject(props, SNITCH);
         verifyRuleParams(h.coreContainer, props);
-        final String collectionName = (String) props.get(NAME);
-        if (!SolrIdentifierValidator.validateCollectionName(collectionName)) {
-          throw new SolrException(ErrorCode.BAD_REQUEST,
-              SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.COLLECTION, collectionName));
-        }
+        final String collectionName = SolrIdentifierValidator.validateCollectionName((String)props.get(NAME));
         final String shardsParam = (String) props.get(SHARDS_PROP);
         if (StringUtils.isNotEmpty(shardsParam)) {
           verifyShardsParam(shardsParam);
@@ -433,10 +431,7 @@ public class CollectionsHandler extends RequestHandlerBase {
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler handler)
           throws Exception {
-        final String aliasName = req.getParams().get(NAME);
-        if (!SolrIdentifierValidator.validateCollectionName(aliasName)) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.ALIAS, aliasName));
-        }
+        final String aliasName = SolrIdentifierValidator.validateAliasName(req.getParams().get(NAME));
         return req.getParams().required().getAll(null, NAME, "collections");
       }
     },
@@ -505,11 +500,7 @@ public class CollectionsHandler extends RequestHandlerBase {
             COLLECTION_PROP,
             SHARD_ID_PROP);
         ClusterState clusterState = handler.coreContainer.getZkController().getClusterState();
-        final String newShardName = req.getParams().get(SHARD_ID_PROP);
-        if (!SolrIdentifierValidator.validateShardName(newShardName)) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.SHARD,
-              newShardName));
-        }
+        final String newShardName = SolrIdentifierValidator.validateShardName(req.getParams().get(SHARD_ID_PROP));
         if (!ImplicitDocRouter.NAME.equals(((Map) clusterState.getCollection(req.getParams().get(COLLECTION_PROP)).get(DOC_ROUTER)).get(NAME)))
           throw new SolrException(ErrorCode.BAD_REQUEST, "shards can be added only to 'implicit' collections");
         req.getParams().getAll(map,
@@ -997,9 +988,7 @@ public class CollectionsHandler extends RequestHandlerBase {
   
   private static void verifyShardsParam(String shardsParam) {
     for (String shard : shardsParam.split(",")) {
-      if (!SolrIdentifierValidator.validateShardName(shard))
-        throw new SolrException(ErrorCode.BAD_REQUEST, SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.SHARD,
-            shard));
+      SolrIdentifierValidator.validateShardName(shard);
     }
   }
 

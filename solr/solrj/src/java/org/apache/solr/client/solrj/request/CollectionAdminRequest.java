@@ -18,8 +18,6 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -80,16 +78,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   }
 
   protected void addProperties(ModifiableSolrParams params, Properties props) {
-    Iterator<Map.Entry<Object, Object>> iter = props.entrySet().iterator();
-    while(iter.hasNext()) {
-      Map.Entry<Object, Object> prop = iter.next();
-      String key = (String) prop.getKey();
-      String value = (String) prop.getValue();
-      params.set(PROPERTY_PREFIX + key, value);
+    for (String propertyName : props.stringPropertyNames()) {
+      params.set(PROPERTY_PREFIX + propertyName, props.getProperty(propertyName));
     }
   }
 
-  protected abstract static class AsyncCollectionAdminRequest extends CollectionAdminRequest<CollectionAdminResponse> {
+  /**
+   * Base class for asynchronous collection admin requests
+   */
+  public abstract static class AsyncCollectionAdminRequest extends CollectionAdminRequest<CollectionAdminResponse> {
 
     public AsyncCollectionAdminRequest(CollectionAction action) {
       super(action);
@@ -164,7 +161,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public RequestStatusState processAndWait(String asyncId, SolrClient client, long timeoutSeconds)
         throws IOException, SolrServerException, InterruptedException {
       processAsync(asyncId, client);
-      return new RequestStatus().setRequestId(asyncId).waitFor(client, timeoutSeconds);
+      return requestStatus(asyncId).waitFor(client, timeoutSeconds);
     }
 
     @Override
@@ -181,10 +178,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     protected String collection;
 
-    public AsyncCollectionSpecificAdminRequest(CollectionAction action) {
+    public AsyncCollectionSpecificAdminRequest(CollectionAction action, String collection) {
       super(action);
+      this.collection = collection;
     }
 
+    @Deprecated
     public abstract AsyncCollectionSpecificAdminRequest setCollectionName(String collection);
 
     @Override
@@ -202,12 +201,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String collection;
     protected String shard;
 
-    public AsyncShardSpecificAdminRequest(CollectionAction action) {
+    public AsyncShardSpecificAdminRequest(CollectionAction action, String collection, String shard) {
       super(action);
     }
 
+    @Deprecated
     public abstract AsyncShardSpecificAdminRequest setCollectionName(String collection);
 
+    @Deprecated
     public abstract AsyncShardSpecificAdminRequest setShardName(String shard);
 
     @Override
@@ -228,12 +229,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String collection;
     protected String shard;
 
-    public ShardSpecificAdminRequest(CollectionAction action) {
+    public ShardSpecificAdminRequest(CollectionAction action, String collection, String shard) {
       super(action);
     }
 
+    @Deprecated
     public abstract ShardSpecificAdminRequest setCollectionName(String collection);
 
+    @Deprecated
     public abstract ShardSpecificAdminRequest setShardName(String shard);
 
     @Override
@@ -264,7 +267,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String node;
     protected String role;
 
-    public CollectionAdminRoleRequest(CollectionAction action) {
+    public CollectionAdminRoleRequest(CollectionAction action, String node, String role) {
       super(action);
     }
 
@@ -274,12 +277,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    @Deprecated
     public abstract CollectionAdminRoleRequest setNode(String node);
 
     public String getNode() {
       return this.node;
     }
 
+    @Deprecated
     public abstract CollectionAdminRoleRequest setRole(String role);
 
     public String getRole() {
@@ -298,6 +303,17 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   /** Specific Collection API call implementations **/
 
+  /**
+   * Returns a SolrRequest for creating a collection
+   * @param collection the collection name
+   * @param config     the collection config
+   * @param numShards  the number of shards in the collection
+   * @param numReplicas the replication factor of the collection
+   */
+  public static Create createCollection(String collection, String config, int numShards, int numReplicas) {
+    return new Create(collection, config, numShards, numReplicas);
+  }
+
   // CREATE request
   public static class Create extends AsyncCollectionSpecificAdminRequest {
 
@@ -315,17 +331,31 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Integer stateFormat;
     private String[] rule , snitch;
 
+    /**
+     * @deprecated Use {@link #createCollection(String, String, int, int)}
+     */
+    @Deprecated
     public Create() {
-      super(CollectionAction.CREATE);
+      super(CollectionAction.CREATE, null);
     }
 
+    private Create(String collection, String config, int numShards, int numReplicas) {
+      super(CollectionAction.CREATE, SolrIdentifierValidator.validateCollectionName(collection));
+      this.configName = config;
+      this.numShards = numShards;
+      this.replicationFactor = numReplicas;
+    }
+
+    @Deprecated
     public Create setConfigName(String config) { this.configName = config; return this; }
     public Create setCreateNodeSet(String nodeSet) { this.createNodeSet = nodeSet; return this; }
     public Create setRouterName(String routerName) { this.routerName = routerName; return this; }
     public Create setRouterField(String routerField) { this.routerField = routerField; return this; }
+    @Deprecated
     public Create setNumShards(Integer numShards) {this.numShards = numShards; return this; }
     public Create setMaxShardsPerNode(Integer numShards) { this.maxShardsPerNode = numShards; return this; }
     public Create setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; return this; }
+    @Deprecated
     public Create setReplicationFactor(Integer repl) { this.replicationFactor = repl; return this; }
     public Create setStateFormat(Integer stateFormat) { this.stateFormat = stateFormat; return this; }
     public Create setRule(String... s){ this.rule = s; return this; }
@@ -350,10 +380,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      */
     public Create setShards(String shards) {
       for (String shard : shards.split(",")) {
-        if (!SolrIdentifierValidator.validateShardName(shard)) {
-          throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.SHARD,
-              shard));
-        }
+        SolrIdentifierValidator.validateShardName(shard);
       }
       this.shards = shards;
       return this;
@@ -366,16 +393,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      * 
      * @throws IllegalArgumentException if the collection name contains invalid characters.
      */
+    @Deprecated
     public Create setCollectionName(String collectionName) throws SolrException {
-      if (!SolrIdentifierValidator.validateCollectionName(collectionName)) {
-        throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.COLLECTION,
-            collectionName));
-      }
-      this.collection = collectionName;
+      this.collection = SolrIdentifierValidator.validateCollectionName(collectionName);
       return this;
     }
 
     @Override
+    @Deprecated
     public Create setAsyncId(String id) {
       this.asyncId = id;
       return this;
@@ -426,44 +451,85 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  /**
+   * Returns a SolrRequest to reload a collection
+   */
+  public static Reload reloadCollection(String collection) {
+    return new Reload(collection);
+  }
+
   // RELOAD request
   public static class Reload extends AsyncCollectionSpecificAdminRequest {
 
+    /**
+     * @deprecated use {@link #reloadCollection(String)}
+     */
+    @Deprecated
     public Reload() {
-      super(CollectionAction.RELOAD);
+      super(CollectionAction.RELOAD, null);
+    }
+
+    private Reload(String collection) {
+      super(CollectionAction.RELOAD, collection);
     }
 
     @Override
+    @Deprecated
     public Reload setCollectionName(String collection) {
       this.collection = collection;
       return this;
     }
 
     @Override
+    @Deprecated
     public Reload setAsyncId(String id) {
       this.asyncId = id;
       return this;
     }
   }
 
+  /**
+   * Returns a SolrRequest to delete a collection
+   */
+  public static Delete deleteCollection(String collection) {
+    return new Delete(collection);
+  }
+
   // DELETE request
   public static class Delete extends AsyncCollectionSpecificAdminRequest {
 
+    /**
+     * @deprecated Use {@link #deleteCollection(String)}
+     */
+    @Deprecated
     public Delete() {
-      super(CollectionAction.DELETE);
+      super(CollectionAction.DELETE, null);
+    }
+
+    private Delete(String collection) {
+      super(CollectionAction.DELETE, collection);
     }
 
     @Override
+    @Deprecated
     public Delete setCollectionName(String collection) {
       this.collection = collection;
       return this;
     }
 
     @Override
+    @Deprecated
     public Delete setAsyncId(String id) {
       this.asyncId = id;
       return this;
     }
+  }
+
+  /**
+   * Returns a SolrRequest to create a new shard in a collection
+   */
+  public static CreateShard createShard(String collection, String shard) {
+    return new CreateShard(collection, shard);
   }
 
   // CREATESHARD request
@@ -490,11 +556,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    /**
+     * @deprecated use {@link #createShard(String, String)}
+     */
+    @Deprecated
     public CreateShard() {
-      super(CollectionAction.CREATESHARD);
+      super(CollectionAction.CREATESHARD, null, null);
+    }
+
+    private CreateShard(String collection, String shard) {
+      super(CollectionAction.CREATESHARD, collection, SolrIdentifierValidator.validateShardName(shard));
     }
 
     @Override
+    @Deprecated
     public CreateShard setCollectionName(String collection) {
       this.collection = collection;
       return this;
@@ -508,16 +583,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      * @throws IllegalArgumentException if the shard name contains invalid characters.
      */
     @Override
+    @Deprecated
     public CreateShard setShardName(String shardName) {
-      if (!SolrIdentifierValidator.validateShardName(shardName)) {
-        throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.SHARD,
-            shardName));
-      }
-      this.shard = shardName;
+      this.shard = SolrIdentifierValidator.validateShardName(shardName);
       return this;
     }
 
     @Override
+    @Deprecated
     public CreateShard setAsyncId(String id) {
       this.asyncId = id;
       return this;
@@ -538,6 +611,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  /**
+   * Returns a SolrRequest to split a shard in a collection
+   */
+  public static SplitShard splitShard(String collection, String shard) {
+    return new SplitShard(collection, shard);
+  }
+
   // SPLITSHARD request
   public static class SplitShard extends AsyncShardSpecificAdminRequest {
     protected String ranges;
@@ -545,8 +625,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     private Properties properties;
 
+    private SplitShard(String collection, String shard) {
+      super(CollectionAction.SPLITSHARD, collection, shard);
+    }
+
+    /**
+     * @deprecated Use {@link #splitShard(String, String)}
+     */
+    @Deprecated
     public SplitShard() {
-      super(CollectionAction.SPLITSHARD);
+      super(CollectionAction.SPLITSHARD, null, null);
     }
 
     public SplitShard setRanges(String ranges) { this.ranges = ranges; return this; }
@@ -571,18 +659,21 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
+    @Deprecated
     public SplitShard setCollectionName(String collection) {
       this.collection = collection;
       return this;
     }
 
     @Override
+    @Deprecated
     public SplitShard setShardName(String shard) {
       this.shard = shard;
       return this;
     }
 
     @Override
+    @Deprecated
     public SplitShard setAsyncId(String id) {
       this.asyncId = id;
       return this;
@@ -604,14 +695,29 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  /**
+   * Returns a SolrRequest to delete a shard from a collection
+   */
+  public static DeleteShard deleteShard(String collection, String shard) {
+    return new DeleteShard(collection, shard);
+  }
+
   // DELETESHARD request
   public static class DeleteShard extends AsyncShardSpecificAdminRequest {
 
     private Boolean deleteInstanceDir;
     private Boolean deleteDataDir;
 
+    /**
+     * @deprecated Use {@link #deleteShard(String, String)}
+     */
+    @Deprecated
     public DeleteShard() {
-      super(CollectionAction.DELETESHARD);
+      super(CollectionAction.DELETESHARD, null, null);
+    }
+
+    private DeleteShard(String collection, String shard) {
+      super(CollectionAction.DELETESHARD, collection, shard);
     }
 
     public Boolean getDeleteInstanceDir() {
@@ -633,18 +739,21 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
+    @Deprecated
     public DeleteShard setCollectionName(String collection) {
       this.collection = collection;
       return this;
     }
 
     @Override
+    @Deprecated
     public DeleteShard setShardName(String shard) {
       this.shard = shard;
       return this;
     }
 
     @Override
+    @Deprecated
     public DeleteShard setAsyncId(String id) {
       this.asyncId = id;
       return this;
@@ -663,21 +772,41 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
+  /**
+   * Returns a SolrRequest to force a leader election for a shard in a collection
+   *
+   * WARNING: This may cause data loss if the new leader does not contain updates
+   * acknowledged by the old leader.  Use only if leadership elections are entirely
+   * broken.
+   */
+  public static ForceLeader forceLeaderElection(String collection, String shard) {
+    return new ForceLeader(collection, shard);
+  }
+
   // FORCELEADER request
   public static class ForceLeader extends ShardSpecificAdminRequest {
 
+    /**
+     * @deprecated Use {@link #forceLeaderElection(String, String)}
+     */
+    @Deprecated
     public ForceLeader() {
-      super(CollectionAction.FORCELEADER);
+      super(CollectionAction.FORCELEADER, null, null);
     }
 
+    private ForceLeader(String collection, String shard) {
+      super(CollectionAction.FORCELEADER, collection, shard);
+    }
 
     @Override
+    @Deprecated
     public ForceLeader setCollectionName(String collection) {
       this.collection = collection;
       return this;
     }
 
     @Override
+    @Deprecated
     public ForceLeader setShardName(String shard) {
       this.shard = shard;
       return this;
@@ -685,6 +814,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  /**
+   * A response object for {@link RequestStatus} requests
+   */
   public static class RequestStatusResponse extends CollectionAdminResponse {
 
     public RequestStatusState getRequestStatus() {
@@ -694,15 +826,34 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  /**
+   * Returns a SolrRequest for checking the status of an asynchronous request
+   *
+   * @see CollectionAdminRequest.AsyncCollectionAdminRequest
+   */
+  public static RequestStatus requestStatus(String requestId) {
+    return new RequestStatus(requestId);
+  }
+
   // REQUESTSTATUS request
   public static class RequestStatus extends CollectionAdminRequest<RequestStatusResponse> {
 
     protected String requestId = null;
 
+    private RequestStatus(String requestId) {
+      super(CollectionAction.REQUESTSTATUS);
+      this.requestId = requestId;
+    }
+
+    /**
+     * @deprecated Use {@link #requestStatus(String)}
+     */
+    @Deprecated
     public RequestStatus() {
       super(CollectionAction.REQUESTSTATUS);
     }
 
+    @Deprecated
     public RequestStatus setRequestId(String requestId) {
       this.requestId = requestId;
       return this;
@@ -726,6 +877,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return new RequestStatusResponse();
     }
 
+    /**
+     * Wait until the asynchronous request is either completed or failed, up to a timeout
+     * @param client a SolrClient
+     * @param timeoutSeconds the maximum time to wait in seconds
+     * @return the last seen state of the request
+     */
     public RequestStatusState waitFor(SolrClient client, long timeoutSeconds)
         throws IOException, SolrServerException, InterruptedException {
       long finishTime = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
@@ -733,7 +890,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       while (System.nanoTime() < finishTime) {
         state = this.process(client).getRequestStatus();
         if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED) {
-          new DeleteStatus().setRequestId(requestId).process(client);
+          deleteAsyncId(requestId).process(client);
           return state;
         }
         TimeUnit.SECONDS.sleep(1);
@@ -742,21 +899,43 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
+  /**
+   * Returns a SolrRequest to delete an asynchronous request status
+   */
+  public static DeleteStatus deleteAsyncId(String requestId) {
+    return new DeleteStatus(requestId);
+  }
+
+  public static DeleteStatus deleteAllAsyncIds() {
+    return new DeleteStatus().setFlush(true);
+  }
+
   // DELETESTATUS request
   public static class DeleteStatus extends CollectionAdminRequest<CollectionAdminResponse> {
 
     protected String requestId = null;
     protected Boolean flush = null;
 
+    private DeleteStatus(String requestId) {
+      super(CollectionAction.DELETESTATUS);
+      this.requestId = requestId;
+    }
+
+    /**
+     * @deprecated Use {@link #deleteAsyncId(String)} or {@link #deleteAllAsyncIds()}
+     */
+    @Deprecated
     public DeleteStatus() {
       super(CollectionAction.DELETESTATUS);
     }
 
+    @Deprecated
     public DeleteStatus setRequestId(String requestId) {
       this.requestId = requestId;
       return this;
     }
 
+    @Deprecated
     public DeleteStatus setFlush(Boolean flush) {
       this.flush = flush;
       return this;
@@ -773,9 +952,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      if (requestId == null && flush == null)
+        throw new IllegalArgumentException("Either requestid or flush parameter must be specified.");
+      if (requestId != null && flush != null)
+        throw new IllegalArgumentException("Both requestid and flush parameters can not be specified together.");
       if (requestId != null)
         params.set(CoreAdminParams.REQUESTID, requestId);
-
       if (flush != null)
         params.set(CollectionAdminParams.FLUSH, flush);
       return params;
@@ -788,12 +970,31 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  /**
+   * Returns a SolrRequest to create a new alias
+   * @param aliasName           the alias name
+   * @param aliasedCollections  the collections to alias
+   */
+  public static CreateAlias createAlias(String aliasName, String aliasedCollections) {
+    return new CreateAlias(aliasName, aliasedCollections);
+  }
+
   // CREATEALIAS request
   public static class CreateAlias extends AsyncCollectionAdminRequest {
 
     protected String aliasName;
     protected String aliasedCollections;
 
+    private CreateAlias(String aliasName, String aliasedCollections) {
+      super(CollectionAction.CREATEALIAS);
+      this.aliasName = SolrIdentifierValidator.validateAliasName(aliasName);
+      this.aliasedCollections = aliasedCollections;
+    }
+
+    /**
+     * @deprecated Use {@link #createAlias(String, String)}
+     */
+    @Deprecated
     public CreateAlias() {
       super(CollectionAction.CREATEALIAS);
     }
@@ -805,12 +1006,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
      * 
      * @throws IllegalArgumentException if the alias name contains invalid characters.
      */
+    @Deprecated
     public CreateAlias setAliasName(String aliasName) {
-      if (!SolrIdentifierValidator.validateCollectionName(aliasName)) {
-        throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.ALIAS,
-            aliasName));
-      }
-      this.aliasName = aliasName;
+      this.aliasName = SolrIdentifierValidator.validateAliasName(aliasName);
       return this;
     }
 
@@ -818,6 +1016,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return aliasName;
     }
 
+    @Deprecated
     public CreateAlias setAliasedCollections(String alias) {
       this.aliasedCollections = alias;
       return this;
@@ -828,6 +1027,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
+    @Deprecated
     public CreateAlias setAsyncId(String id) {
       this.asyncId = id;
       return this;
@@ -843,21 +1043,39 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  /**
+   * Returns a SolrRequest to delete an alias
+   */
+  public static DeleteAlias deleteAlias(String aliasName) {
+    return new DeleteAlias(aliasName);
+  }
+
   // DELETEALIAS request
   public static class DeleteAlias extends AsyncCollectionAdminRequest {
 
     protected String aliasName;
 
+    private DeleteAlias(String aliasName) {
+      super(CollectionAction.DELETEALIAS);
+      this.aliasName = aliasName;
+    }
+
+    /**
+     * @deprecated Use {@link #deleteAlias(String)}
+     */
+    @Deprecated
     public DeleteAlias() {
       super(CollectionAction.DELETEALIAS);
     }
 
+    @Deprecated
     public DeleteAlias setAliasName(String aliasName) {
       this.aliasName = aliasName;
       return this;
     }
 
     @Override
+    @Deprecated
     public DeleteAlias setAsyncId(String id) {
       this.asyncId = id;
       return this;
@@ -873,6 +1091,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  /**
+   * Returns a SolrRequest to add a replica to a shard in a collection
+   */
+  public static AddReplica addReplicaToShard(String collection, String shard) {
+    return new AddReplica(collection, shard, null);
+  }
+
+  /**
+   * Returns a SolrRequest to add a replica to a collection using a route key
+   */
+  public static AddReplica addReplicaByRouteKey(String collection, String routeKey) {
+    return new AddReplica(collection, null, routeKey);
+  }
+
   // ADDREPLICA request
   public static class AddReplica extends AsyncCollectionAdminRequest {
 
@@ -884,8 +1116,19 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected String dataDir;
     protected Properties properties;
 
+    /**
+     * @deprecated Use {@link #addReplicaByRouteKey(String, String)} or {@link #addReplicaToShard(String, String)}
+     */
+    @Deprecated
     public AddReplica() {
       super(CollectionAction.ADDREPLICA);
+    }
+
+    private AddReplica(String collection, String shard, String routeKey) {
+      super(CollectionAction.ADDREPLICA);
+      this.collection = collection;
+      this.shard = shard;
+      this.routeKey = routeKey;
     }
 
     public Properties getProperties() {
@@ -910,6 +1153,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return routeKey;
     }
 
+    @Deprecated
     public AddReplica setRouteKey(String routeKey) {
       this.routeKey = routeKey;
       return this;
@@ -933,17 +1177,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    @Deprecated
     public AddReplica setCollectionName(String collection) {
       this.collection = collection;
       return this;
     }
 
+    @Deprecated
     public AddReplica setShardName(String shard) {
       this.shard = shard;
       return this;
     }
 
     @Override
+    @Deprecated
     public AddReplica setAsyncId(String id) {
       this.asyncId = id;
       return this;
@@ -957,7 +1204,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       params.add(CoreAdminParams.COLLECTION, collection);
       if (shard == null || shard.isEmpty()) {
         if (routeKey == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Either shard or routeKey must be provided");
+          throw new IllegalArgumentException("Either shard or routeKey must be provided");
         }
         params.add(ShardParams._ROUTE_, routeKey);
       }
@@ -979,7 +1226,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return params;
     }
 
+  }
 
+  /**
+   * Returns a SolrRequest to delete a replica from a shard in a collection
+   */
+  public static DeleteReplica deleteReplica(String collection, String shard, String replica) {
+    return new DeleteReplica(collection, shard, replica);
   }
 
   // DELETEREPLICA request
@@ -991,10 +1244,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     private Boolean deleteInstanceDir;
     private Boolean deleteIndexDir;
 
+    /**
+     * @deprecated Use {@link #deleteReplica(String, String, String)}
+     */
+    @Deprecated
     public DeleteReplica() {
-      super(CollectionAction.DELETEREPLICA);
+      super(CollectionAction.DELETEREPLICA, null, null);
     }
 
+    private DeleteReplica(String collection, String shard, String replica) {
+      super(CollectionAction.DELETEREPLICA, collection, shard);
+      this.replica = replica;
+    }
+
+    @Deprecated
     public DeleteReplica setReplica(String replica) {
       this.replica = replica;
       return this;
@@ -1014,18 +1277,21 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
+    @Deprecated
     public DeleteReplica setCollectionName(String collection) {
       this.collection = collection;
       return this;
     }
 
     @Override
+    @Deprecated
     public DeleteReplica setShardName(String shard) {
       this.shard = shard;
       return this;
     }
 
     @Override
+    @Deprecated
     public DeleteReplica setAsyncId(String id) {
       this.asyncId = id;
       return this;
@@ -1070,16 +1336,34 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
+  /**
+   * Returns a SolrRequest to set a cluster property
+   */
+  public static ClusterProp setClusterProperty(String propertyName, String propertyValue) {
+    return new ClusterProp(propertyName, propertyValue);
+  }
+
   // CLUSTERPROP request
   public static class ClusterProp extends CollectionAdminRequest<CollectionAdminResponse> {
 
     private String propertyName;
     private String propertyValue;
 
+    /**
+     * @deprecated Use {@link #setClusterProperty(String, String)}
+     */
+    @Deprecated
     public ClusterProp() {
       super(CollectionAction.CLUSTERPROP);
     }
 
+    private ClusterProp(String propertyName, String propertyValue) {
+      super(CollectionAction.CLUSTERPROP);
+      this.propertyName = propertyName;
+      this.propertyValue = propertyValue;
+    }
+
+    @Deprecated
     public ClusterProp setPropertyName(String propertyName) {
       this.propertyName = propertyName;
       return this;
@@ -1089,6 +1373,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this.propertyName;
     }
 
+    @Deprecated
     public ClusterProp setPropertyValue(String propertyValue) {
       this.propertyValue = propertyValue;
       return this;
@@ -1115,6 +1400,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  /**
+   * Returns a SolrRequest to migrate data matching a split key to another collection
+   */
+  public static Migrate migrateData(String collection, String targetCollection, String splitKey) {
+    return new Migrate(collection, targetCollection, splitKey);
+  }
+
   // MIGRATE request
   public static class Migrate extends AsyncCollectionAdminRequest {
 
@@ -1124,10 +1416,22 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     private Integer forwardTimeout;
     private Properties properties;
 
+    /**
+     * @deprecated Use {@link #migrateData(String, String, String)}
+     */
+    @Deprecated
     public Migrate() {
       super(CollectionAction.MIGRATE);
     }
 
+    private Migrate(String collection, String targetCollection, String splitKey) {
+      super(CollectionAction.MIGRATE);
+      this.collection = collection;
+      this.targetCollection = targetCollection;
+      this.splitKey = splitKey;
+    }
+
+    @Deprecated
     public Migrate setCollectionName(String collection) {
       this.collection = collection;
       return this;
@@ -1137,6 +1441,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return collection;
     }
 
+    @Deprecated
     public Migrate setTargetCollection(String targetCollection) {
       this.targetCollection = targetCollection;
       return this;
@@ -1146,6 +1451,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this.targetCollection;
     }
 
+    @Deprecated
     public Migrate setSplitKey(String splitKey) {
       this.splitKey = splitKey;
       return this;
@@ -1174,6 +1480,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
+    @Deprecated
     public Migrate setAsyncId(String id) {
       this.asyncId = id;
       return this;
@@ -1198,44 +1505,85 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  /**
+   * Returns a SolrRequest to add a role to a node
+   */
+  public static AddRole addRole(String node, String role) {
+    return new AddRole(node, role);
+  }
+
   // ADDROLE request
   public static class AddRole extends CollectionAdminRoleRequest {
 
+    /**
+     * @deprecated Use {@link #addRole(String, String)}
+     */
+    @Deprecated
     public AddRole() {
-      super(CollectionAction.ADDROLE);
+      super(CollectionAction.ADDROLE, null, null);
+    }
+
+    private AddRole(String node, String role) {
+      super(CollectionAction.ADDROLE, node, role);
     }
 
     @Override
+    @Deprecated
     public AddRole setNode(String node) {
       this.node = node;
       return this;
     }
 
     @Override
+    @Deprecated
     public AddRole setRole(String role) {
       this.role = role;
       return this;
     }
   }
 
+  /**
+   * Returns a SolrRequest to remove a role from a node
+   */
+  public static RemoveRole removeRole(String node, String role) {
+    return new RemoveRole(node, role);
+  }
+
   // REMOVEROLE request
   public static class RemoveRole extends CollectionAdminRoleRequest {
 
+    /**
+     * @deprecated Use {@link #removeRole(String, String)}
+     */
+    @Deprecated
     public RemoveRole() {
-      super(CollectionAction.REMOVEROLE);
+      super(CollectionAction.REMOVEROLE, null, null);
+    }
+
+    private RemoveRole(String node, String role) {
+      super(CollectionAction.REMOVEROLE, node, role);
     }
 
     @Override
+    @Deprecated
     public RemoveRole setNode(String node) {
       this.node = node;
       return this;
     }
 
     @Override
+    @Deprecated
     public RemoveRole setRole(String role) {
       this.role = role;
       return this;
     }
+  }
+
+  /**
+   * Return a SolrRequest to get the Overseer status
+   */
+  public static OverseerStatus getOverseerStatus() {
+    return new OverseerStatus();
   }
 
   // OVERSEERSTATUS request
@@ -1246,10 +1594,18 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
+    @Deprecated
     public OverseerStatus setAsyncId(String id) {
       this.asyncId = id;
       return this;
     }
+  }
+
+  /**
+   * Return a SolrRequest to get the Cluster status
+   */
+  public static ClusterStatus getClusterStatus() {
+    return new ClusterStatus();
   }
 
   // CLUSTERSTATUS request
@@ -1310,7 +1666,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return new CollectionAdminResponse();
     }
 
+  }
 
+  /**
+   * Returns a SolrRequest to get a list of collections in the cluster
+   */
+  public static List listCollections() {
+    return new List();
   }
 
   // LIST request
@@ -1325,6 +1687,14 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
+  /**
+   * Returns a SolrRequest to add a property to a specific replica
+   */
+  public static AddReplicaProp addReplicaProperty(String collection, String shard, String replica,
+                                                  String propertyName, String propertyValue) {
+    return new AddReplicaProp(collection, shard, replica, propertyName, propertyValue);
+  }
+
   // ADDREPLICAPROP request
   public static class AddReplicaProp extends AsyncShardSpecificAdminRequest {
 
@@ -1333,14 +1703,26 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     private String propertyValue;
     private Boolean shardUnique;
 
+    /**
+     * @deprecated Use {@link #addReplicaProperty(String, String, String, String, String)}
+     */
+    @Deprecated
     public AddReplicaProp() {
-      super(CollectionAction.ADDREPLICAPROP);
+      super(CollectionAction.ADDREPLICAPROP, null, null);
+    }
+
+    private AddReplicaProp(String collection, String shard, String replica, String propertyName, String propertyValue) {
+      super(CollectionAction.ADDREPLICAPROP, collection, shard);
+      this.replica = replica;
+      this.propertyName = propertyName;
+      this.propertyValue = propertyValue;
     }
 
     public String getReplica() {
       return replica;
     }
 
+    @Deprecated
     public AddReplicaProp setReplica(String replica) {
       this.replica = replica;
       return this;
@@ -1350,6 +1732,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return propertyName;
     }
 
+    @Deprecated
     public AddReplicaProp setPropertyName(String propertyName) {
       this.propertyName = propertyName;
       return this;
@@ -1359,6 +1742,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return propertyValue;
     }
 
+    @Deprecated
     public AddReplicaProp setPropertyValue(String propertyValue) {
       this.propertyValue = propertyValue;
       return this;
@@ -1374,18 +1758,21 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
+    @Deprecated
     public AddReplicaProp setCollectionName(String collection) {
       this.collection = collection;
       return this;
     }
 
     @Override
+    @Deprecated
     public AddReplicaProp setShardName(String shard) {
       this.shard = shard;
       return this;
     }
 
     @Override
+    @Deprecated
     public AddReplicaProp setAsyncId(String id) {
       this.asyncId = id;
       return this;
@@ -1407,20 +1794,39 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  /**
+   * Returns a SolrRequest to delete a property from a specific replica
+   */
+  public static DeleteReplicaProp deleteReplicaProperty(String collection, String shard,
+                                                        String replica, String propertyName) {
+    return new DeleteReplicaProp(collection, shard, replica, propertyName);
+  }
+
   // DELETEREPLICAPROP request
   public static class DeleteReplicaProp extends AsyncShardSpecificAdminRequest {
 
     private String replica;
     private String propertyName;
 
+    /**
+     * @deprecated Use {@link #deleteReplicaProperty(String, String, String, String)}
+     */
+    @Deprecated
     public DeleteReplicaProp() {
-      super(CollectionAction.DELETEREPLICAPROP);
+      super(CollectionAction.DELETEREPLICAPROP, null, null);
+    }
+
+    private DeleteReplicaProp(String collection, String shard, String replica, String propertyName) {
+      super(CollectionAction.DELETEREPLICAPROP, collection, shard);
+      this.replica = replica;
+      this.propertyName = propertyName;
     }
 
     public String getReplica() {
       return replica;
     }
 
+    @Deprecated
     public DeleteReplicaProp setReplica(String replica) {
       this.replica = replica;
       return this;
@@ -1430,24 +1836,28 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return propertyName;
     }
 
+    @Deprecated
     public DeleteReplicaProp setPropertyName(String propertyName) {
       this.propertyName = propertyName;
       return this;
     }
 
     @Override
+    @Deprecated
     public DeleteReplicaProp setCollectionName(String collection) {
       this.collection = collection;
       return this;
     }
 
     @Override
+    @Deprecated
     public DeleteReplicaProp setShardName(String shard) {
       this.shard = shard;
       return this;
     }
 
     @Override
+    @Deprecated
     public DeleteReplicaProp setAsyncId(String id) {
       this.asyncId = id;
       return this;
@@ -1464,21 +1874,41 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   }
 
+  /**
+   * Returns a SolrRequest to migrate a collection state format
+   *
+   * This is an expert-level request, and should not generally be necessary.
+   */
+  public static MigrateClusterState migrateCollectionFormat(String collection) {
+    return new MigrateClusterState(collection);
+  }
+
   // MIGRATECLUSTERSTATE request
   public static class MigrateClusterState extends AsyncCollectionAdminRequest {
 
     protected String collection;
 
+    private MigrateClusterState(String collection) {
+      super(CollectionAction.MIGRATESTATEFORMAT);
+      this.collection = collection;
+    }
+
+    /**
+     * @deprecated Use {@link #migrateCollectionFormat(String)}
+     */
+    @Deprecated
     public MigrateClusterState() {
       super(CollectionAction.MIGRATESTATEFORMAT);
     }
 
+    @Deprecated
     public MigrateClusterState setCollectionName(String collection) {
       this.collection = collection;
       return this;
     }
 
     @Override
+    @Deprecated
     public MigrateClusterState setAsyncId(String id) {
       this.asyncId = id;
       return this;
@@ -1494,6 +1924,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
+  /**
+   * Returns a SolrRequest to balance a replica property across the shards of a collection
+   */
+  public static BalanceShardUnique balanceReplicaProperty(String collection, String propertyName) {
+    return new BalanceShardUnique(collection, propertyName);
+  }
+
   // BALANCESHARDUNIQUE request
   public static class BalanceShardUnique extends AsyncCollectionAdminRequest {
 
@@ -1502,6 +1939,16 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     protected Boolean onlyActiveNodes;
     protected Boolean shardUnique;
 
+    private BalanceShardUnique(String collection, String propertyName) {
+      super(CollectionAction.BALANCESHARDUNIQUE);
+      this.collection = collection;
+      this.propertyName = propertyName;
+    }
+
+    /**
+     * @deprecated Use {@link #balanceReplicaProperty(String, String)}
+     */
+    @Deprecated
     public BalanceShardUnique() {
       super(CollectionAction.BALANCESHARDUNIQUE);
     }
@@ -1510,6 +1957,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return propertyName;
     }
 
+    @Deprecated
     public BalanceShardUnique setPropertyName(String propertyName) {
       this.propertyName = propertyName;
       return this;
@@ -1533,6 +1981,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    @Deprecated
     public BalanceShardUnique setCollection(String collection) {
       this.collection = collection;
       return this;
@@ -1543,6 +1992,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
 
     @Override
+    @Deprecated
     public BalanceShardUnique setAsyncId(String id) {
       this.asyncId = id;
       return this;
