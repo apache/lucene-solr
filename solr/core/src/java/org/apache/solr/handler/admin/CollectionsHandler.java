@@ -920,8 +920,6 @@ public class CollectionsHandler extends RequestHandlerBase {
         + (checkLeaderOnly ? "leaders" : "replicas"));
     ZkStateReader zkStateReader = cc.getZkController().getZkStateReader();
     for (int i = 0; i < numRetries; i++) {
-
-      zkStateReader.updateClusterState();
       ClusterState clusterState = zkStateReader.getClusterState();
 
       Collection<Slice> shards = clusterState.getSlices(collectionName);

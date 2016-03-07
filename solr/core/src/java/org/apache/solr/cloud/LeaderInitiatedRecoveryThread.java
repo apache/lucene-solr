@@ -244,12 +244,6 @@ public class LeaderInitiatedRecoveryThread extends Thread {
         
         // see if the replica's node is still live, if not, no need to keep doing this loop
         ZkStateReader zkStateReader = zkController.getZkStateReader();
-        try {
-          zkStateReader.updateClusterState();
-        } catch (Exception exc) {
-          log.warn("Error when updating cluster state: "+exc);
-        }        
-        
         if (!zkStateReader.getClusterState().liveNodesContain(replicaNodeName)) {
           log.warn("Node "+replicaNodeName+" hosting core "+coreNeedingRecovery+
               " is no longer live. No need to keep trying to tell it to recover!");

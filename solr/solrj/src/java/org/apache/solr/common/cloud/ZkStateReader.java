@@ -226,7 +226,10 @@ public class ZkStateReader implements Closeable {
 
   /**
    * Forcibly refresh cluster state from ZK. Do this only to avoid race conditions because it's expensive.
+   *
+   * @deprecated Don't call this, call {@link #forceUpdateCollection(String)} on a single collection if you must.
    */
+  @Deprecated
   public void updateClusterState() throws KeeperException, InterruptedException {
     synchronized (getUpdateLock()) {
       if (clusterState == null) {
@@ -244,6 +247,49 @@ public class ZkStateReader implements Closeable {
       }
       refreshCollectionList(null);
       refreshLiveNodes(null);
+      constructState();
+    }
+  }
+
+  /**
+   * Forcibly refresh a collection's internal state from ZK. Try to avoid having to resort to this when
+   * a better design is possible.
+   */
+  public void forceUpdateCollection(String collection) throws KeeperException, InterruptedException {
+    synchronized (getUpdateLock()) {
+      if (clusterState == null) {
+        return;
+      }
+
+      ClusterState.CollectionRef ref = clusterState.getCollectionRef(collection);
+      if (ref == null) {
+        // We don't know anything about this collection, maybe it's new?
+        // First try to update the legacy cluster state.
+        refreshLegacyClusterState(null);
+        if (!legacyCollectionStates.containsKey(collection)) {
+          // No dice, see if a new collection just got created.
+          LazyCollectionRef tryLazyCollection = new LazyCollectionRef(collection);
+          if (tryLazyCollection.get() == null) {
+            // No dice, just give up.
+            return;
+          }
+          // What do you know, it exists!
+          lazyCollectionStates.putIfAbsent(collection, tryLazyCollection);
+        }
+      } else if (ref.isLazilyLoaded()) {
+        if (ref.get() != null) {
+          return;
+        }
+        // Edge case: if there's no external collection, try refreshing legacy cluster state in case it's there.
+        refreshLegacyClusterState(null);
+      } else if (legacyCollectionStates.containsKey(collection)) {
+        // Exists, and lives in legacy cluster state, force a refresh.
+        refreshLegacyClusterState(null);
+      } else if (watchedCollectionStates.containsKey(collection)) {
+        // Exists as a watched collection, force a refresh.
+        DocCollection newState = fetchCollectionState(collection, null);
+        updateWatchedCollection(collection, newState);
+      }
       constructState();
     }
   }

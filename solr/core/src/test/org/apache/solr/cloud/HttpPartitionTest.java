@@ -215,7 +215,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
 
     // Verify that the partitioned replica is DOWN
     ZkStateReader zkr = cloudClient.getZkStateReader();
-    zkr.updateClusterState(); // force the state to be fresh
+    zkr.forceUpdateCollection(testCollectionName);; // force the state to be fresh
     ClusterState cs = zkr.getClusterState();
     Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
     Slice slice = slices.iterator().next();
@@ -645,18 +645,13 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     final RTimer timer = new RTimer();
 
     ZkStateReader zkr = cloudClient.getZkStateReader();
-    zkr.updateClusterState(); // force the state to be fresh
-
+    zkr.forceUpdateCollection(testCollectionName);
     ClusterState cs = zkr.getClusterState();
     Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
     boolean allReplicasUp = false;
     long waitMs = 0L;
     long maxWaitMs = maxWaitSecs * 1000L;
     while (waitMs < maxWaitMs && !allReplicasUp) {
-      // refresh state every 2 secs
-      if (waitMs % 2000 == 0)
-        cloudClient.getZkStateReader().updateClusterState();
-
       cs = cloudClient.getZkStateReader().getClusterState();
       assertNotNull(cs);
       Slice shard = cs.getSlice(testCollectionName, shardId);

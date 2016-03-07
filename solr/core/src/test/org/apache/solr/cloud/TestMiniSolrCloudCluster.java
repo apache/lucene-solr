@@ -176,7 +176,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       assertEquals(1, rsp.getResults().getNumFound());
 
       // remove a server not hosting any replicas
-      zkStateReader.updateClusterState();
+      zkStateReader.forceUpdateCollection(collectionName);
       ClusterState clusterState = zkStateReader.getClusterState();
       HashMap<String, JettySolrRunner> jettyMap = new HashMap<String, JettySolrRunner>();
       for (JettySolrRunner jetty : miniCluster.getJettySolrRunners()) {
@@ -321,7 +321,8 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       try (SolrZkClient zkClient = new SolrZkClient
           (miniCluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
           ZkStateReader zkStateReader = new ZkStateReader(zkClient)) {
-        
+        zkStateReader.createClusterStateWatchersAndUpdate();
+
         // wait for collection to appear
         AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
 
@@ -368,6 +369,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
       try (SolrZkClient zkClient = new SolrZkClient
           (miniCluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
           ZkStateReader zkStateReader = new ZkStateReader(zkClient)) {
+        zkStateReader.createClusterStateWatchersAndUpdate();
         AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
 
         // modify collection
@@ -385,7 +387,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
         }
 
         // the test itself
-        zkStateReader.updateClusterState();
+        zkStateReader.forceUpdateCollection(collectionName);
         final ClusterState clusterState = zkStateReader.getClusterState();
 
         final HashSet<Integer> leaderIndices = new HashSet<Integer>();
@@ -444,7 +446,7 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
         }
         AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
 
-        zkStateReader.updateClusterState();
+        zkStateReader.forceUpdateCollection(collectionName);
 
         // re-query collection
         {
@@ -489,32 +491,29 @@ public class TestMiniSolrCloudCluster extends LuceneTestCase {
         }
       }
 
-      try (SolrZkClient zkClient = new SolrZkClient
-          (miniCluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, 45000, null);
-          ZkStateReader zkStateReader = new ZkStateReader(zkClient)) {
-        AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
+      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
 
-        // add some documents, then optimize to get merged-sorted segments
-        tstes.addDocuments(cloudSolrClient, 10, 10, true);
+      // add some documents, then optimize to get merged-sorted segments
+      tstes.addDocuments(cloudSolrClient, 10, 10, true);
 
-        // CommonParams.SEGMENT_TERMINATE_EARLY parameter intentionally absent
-        tstes.queryTimestampDescending(cloudSolrClient);
+      // CommonParams.SEGMENT_TERMINATE_EARLY parameter intentionally absent
+      tstes.queryTimestampDescending(cloudSolrClient);
 
-        // add a few more documents, but don't optimize to have some not-merge-sorted segments
-        tstes.addDocuments(cloudSolrClient, 2, 10, false);
+      // add a few more documents, but don't optimize to have some not-merge-sorted segments
+      tstes.addDocuments(cloudSolrClient, 2, 10, false);
 
-        // CommonParams.SEGMENT_TERMINATE_EARLY parameter now present
-        tstes.queryTimestampDescendingSegmentTerminateEarlyYes(cloudSolrClient);
-        tstes.queryTimestampDescendingSegmentTerminateEarlyNo(cloudSolrClient);
+      // CommonParams.SEGMENT_TERMINATE_EARLY parameter now present
+      tstes.queryTimestampDescendingSegmentTerminateEarlyYes(cloudSolrClient);
+      tstes.queryTimestampDescendingSegmentTerminateEarlyNo(cloudSolrClient);
 
-        // CommonParams.SEGMENT_TERMINATE_EARLY parameter present but it won't be used
-        tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(cloudSolrClient);
-        tstes.queryTimestampAscendingSegmentTerminateEarlyYes(cloudSolrClient); // uses a sort order that is _not_ compatible with the merge sort order
+      // CommonParams.SEGMENT_TERMINATE_EARLY parameter present but it won't be used
+      tstes.queryTimestampDescendingSegmentTerminateEarlyYesGrouped(cloudSolrClient);
+      tstes.queryTimestampAscendingSegmentTerminateEarlyYes(cloudSolrClient); // uses a sort order that is _not_ compatible with the merge sort order
 
-        // delete the collection we created earlier
-        miniCluster.deleteCollection(collectionName);
-        AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName, zkStateReader, true, true, 330);
-      }
+      // delete the collection we created earlier
+      miniCluster.deleteCollection(collectionName);
+      AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName, zkStateReader, true, true, 330);
     }
     finally {
       miniCluster.shutdown();

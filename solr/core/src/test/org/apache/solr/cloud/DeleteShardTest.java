@@ -96,7 +96,6 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
     ClusterState clusterState = zkStateReader.getClusterState();
     int counter = 10;
     while (counter-- > 0) {
-      zkStateReader.updateClusterState();
       clusterState = zkStateReader.getClusterState();
       if (clusterState.getSlice("collection1", shard) == null) {
         break;
@@ -142,7 +141,6 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
     boolean transition = false;
 
     for (int counter = 10; counter > 0; counter--) {
-      zkStateReader.updateClusterState();
       ClusterState clusterState = zkStateReader.getClusterState();
       State sliceState = clusterState.getSlice("collection1", slice).getState();
       if (sliceState == state) {

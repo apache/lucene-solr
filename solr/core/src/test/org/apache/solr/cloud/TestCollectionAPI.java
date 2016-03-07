@@ -625,7 +625,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           .setCollectionName("testClusterStateMigration")
           .process(client);
 
-      client.getZkStateReader().updateClusterState();
+      client.getZkStateReader().forceUpdateCollection("testClusterStateMigration");
 
       assertEquals(2, client.getZkStateReader().getClusterState().getCollection("testClusterStateMigration").getStateFormat());
 
@@ -735,7 +735,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private Map<String, String> getProps(CloudSolrClient client, String collectionName, String replicaName, String... props)
       throws KeeperException, InterruptedException {
 
-    client.getZkStateReader().updateClusterState();
+    client.getZkStateReader().forceUpdateCollection(collectionName);
     ClusterState clusterState = client.getZkStateReader().getClusterState();
     Replica replica = clusterState.getReplica(collectionName, replicaName);
     if (replica == null) {

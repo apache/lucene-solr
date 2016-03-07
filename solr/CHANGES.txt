@@ -299,6 +299,9 @@ Optimizations
 
 * SOLR-8720: ZkController#publishAndWaitForDownStates should use #publishNodeAsDown. (Mark Miller)
 
+* SOLR-8745: Deprecate costly ZkStateReader.updateClusterState(), replace with a narrow
+  forceUpdateCollection(collection) (Scott Blum via shalin)
+
 Other Changes
 ----------------------
 
