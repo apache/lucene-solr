@@ -444,7 +444,7 @@
 
   <!-- copy KEYS to the release folder -->
   <target name="-dist-keys">
-   <get src="http://people.apache.org/keys/group/lucene.asc" 
+   <get src="http://home.apache.org/keys/group/lucene.asc" 
         dest="${package.dir}/KEYS"/>
   </target>
  
