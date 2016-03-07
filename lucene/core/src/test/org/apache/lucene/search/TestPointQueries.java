@@ -351,12 +351,12 @@ public class TestPointQueries extends LuceneTestCase {
 
   @Nightly
   public void testRandomLongsBig() throws Exception {
-    doTestRandomLongs(200000);
+    doTestRandomLongs(100000);
   }
 
   private void doTestRandomLongs(int count) throws Exception {
 
-    int numValues = atLeast(count);
+    int numValues = TestUtil.nextInt(random(), count, count*2);
 
     if (VERBOSE) {
       System.out.println("TEST: numValues=" + numValues);
