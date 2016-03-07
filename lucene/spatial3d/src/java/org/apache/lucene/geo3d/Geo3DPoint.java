@@ -36,8 +36,6 @@ import org.apache.lucene.util.RamUsageEstimator;
  *  @lucene.experimental */
 public final class Geo3DPoint extends Field {
 
-  private final PlanetModel planetModel;
-
   /** Indexing {@link FieldType}. */
   public static final FieldType TYPE = new FieldType();
   static {
@@ -46,16 +44,15 @@ public final class Geo3DPoint extends Field {
   }
 
   /** 
-   * Creates a new Geo3DPoint field with the specified lat, lon (in radians), given a planet model.
+   * Creates a new Geo3DPoint field with the specified lat, lon (in radians).
    *
    * @throws IllegalArgumentException if the field name is null or lat or lon are out of bounds
    */
-  public Geo3DPoint(String name, PlanetModel planetModel, double lat, double lon) {
+  public Geo3DPoint(String name, double lat, double lon) {
     super(name, TYPE);
-    this.planetModel = planetModel;
     // Translate lat/lon to x,y,z:
-    final GeoPoint point = new GeoPoint(planetModel, lat, lon);
-    fillFieldsData(planetModel, point.x, point.y, point.z);
+    final GeoPoint point = new GeoPoint(PlanetModel.WGS84, lat, lon);
+    fillFieldsData(point.x, point.y, point.z);
   }
 
   /** 
@@ -63,40 +60,38 @@ public final class Geo3DPoint extends Field {
    *
    * @throws IllegalArgumentException if the field name is null or lat or lon are out of bounds
    */
-  public Geo3DPoint(String name, PlanetModel planetModel, double x, double y, double z) {
+  public Geo3DPoint(String name, double x, double y, double z) {
     super(name, TYPE);
-    this.planetModel = planetModel;
-    fillFieldsData(planetModel, x, y, z);
+    fillFieldsData(x, y, z);
   }
 
-  private void fillFieldsData(PlanetModel planetModel, double x, double y, double z) {
+  private void fillFieldsData(double x, double y, double z) {
     byte[] bytes = new byte[12];
-    encodeDimension(planetModel, x, bytes, 0);
-    encodeDimension(planetModel, y, bytes, Integer.BYTES);
-    encodeDimension(planetModel, z, bytes, 2*Integer.BYTES);
+    encodeDimension(x, bytes, 0);
+    encodeDimension(y, bytes, Integer.BYTES);
+    encodeDimension(z, bytes, 2*Integer.BYTES);
     fieldsData = new BytesRef(bytes);
   }
 
   // public helper methods (e.g. for queries)
   
   /** Encode single dimension */
-  public static void encodeDimension(PlanetModel planetModel, double value, byte bytes[], int offset) {
-    NumericUtils.intToSortableBytes(Geo3DUtil.encodeValue(planetModel.getMaximumMagnitude(), value), bytes, offset);
+  public static void encodeDimension(double value, byte bytes[], int offset) {
+    NumericUtils.intToSortableBytes(Geo3DUtil.encodeValue(PlanetModel.WGS84.getMaximumMagnitude(), value), bytes, offset);
   }
   
   /** Decode single dimension */
-  public static double decodeDimension(PlanetModel planetModel, byte value[], int offset) {
-    return Geo3DUtil.decodeValueCenter(planetModel.getMaximumMagnitude(), NumericUtils.sortableBytesToInt(value, offset));
+  public static double decodeDimension(byte value[], int offset) {
+    return Geo3DUtil.decodeValueCenter(PlanetModel.WGS84.getMaximumMagnitude(), NumericUtils.sortableBytesToInt(value, offset));
   }
 
   /** Returns a query matching all points inside the provided shape.
    * 
-   * @param planetModel The {@link PlanetModel} to use, which must match what was used during indexing
    * @param field field name. must not be {@code null}.
    * @param shape Which {@link GeoShape} to match
    */
-  public static Query newShapeQuery(PlanetModel planetModel, String field, GeoShape shape) {
-    return new PointInGeo3DShapeQuery(planetModel, field, shape);
+  public static Query newShapeQuery(String field, GeoShape shape) {
+    return new PointInGeo3DShapeQuery(field, shape);
   }
 
   @Override
@@ -108,9 +103,9 @@ public final class Geo3DPoint extends Field {
     result.append(':');
 
     BytesRef bytes = (BytesRef) fieldsData;
-    result.append(" x=" + decodeDimension(planetModel, bytes.bytes, bytes.offset));
-    result.append(" y=" + decodeDimension(planetModel, bytes.bytes, bytes.offset + Integer.BYTES));
-    result.append(" z=" + decodeDimension(planetModel, bytes.bytes, bytes.offset + 2*Integer.BYTES));
+    result.append(" x=" + decodeDimension(bytes.bytes, bytes.offset));
+    result.append(" y=" + decodeDimension(bytes.bytes, bytes.offset + Integer.BYTES));
+    result.append(" z=" + decodeDimension(bytes.bytes, bytes.offset + 2*Integer.BYTES));
     result.append('>');
     return result.toString();
   }

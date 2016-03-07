@@ -34,6 +34,11 @@ public abstract class BasePlanetObject {
   public BasePlanetObject(final PlanetModel planetModel) {
     this.planetModel = planetModel;
   }
+
+  /** Returns the {@link PlanetModel} provided when this shape was created. */
+  public PlanetModel getPlanetModel() {
+    return planetModel;
+  }
   
   @Override
   public int hashCode() {

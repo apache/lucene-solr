@@ -106,13 +106,12 @@ public class TestGeo3DPoint extends LuceneTestCase {
     iwc.setCodec(getCodec());
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
-    doc.add(new Geo3DPoint("field", PlanetModel.WGS84, toRadians(50.7345267), toRadians(-97.5303555)));
+    doc.add(new Geo3DPoint("field", toRadians(50.7345267), toRadians(-97.5303555)));
     w.addDocument(doc);
     IndexReader r = DirectoryReader.open(w);
     // We can't wrap with "exotic" readers because the query must see the BKD3DDVFormat:
     IndexSearcher s = newSearcher(r, false);
-    assertEquals(1, s.search(Geo3DPoint.newShapeQuery(PlanetModel.WGS84,
-                                                      "field",
+    assertEquals(1, s.search(Geo3DPoint.newShapeQuery("field",
                                                       GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, toRadians(50), toRadians(-97), Math.PI/180.)), 1).totalHits);
     w.close();
     r.close();
@@ -640,8 +639,6 @@ public class TestGeo3DPoint extends LuceneTestCase {
   private static void verify(double[] lats, double[] lons) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
 
-    PlanetModel planetModel = getPlanetModel();
-
     // Else we can get O(N^2) merging:
     int mbd = iwc.getMaxBufferedDocs();
     if (mbd != -1 && mbd < lats.length/100) {
@@ -662,7 +659,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
       doc.add(newStringField("id", ""+id, Field.Store.NO));
       doc.add(new NumericDocValuesField("id", id));
       if (Double.isNaN(lats[id]) == false) {
-        doc.add(new Geo3DPoint("point", planetModel, lats[id], lons[id]));
+        doc.add(new Geo3DPoint("point", lats[id], lons[id]));
       }
       w.addDocument(doc);
       if (id > 0 && random().nextInt(100) == 42) {
@@ -710,13 +707,13 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
             for (int iter=0;iter<iters && failed.get() == false;iter++) {
 
-              GeoShape shape = randomShape(planetModel);
+              GeoShape shape = randomShape(PlanetModel.WGS84);
 
               if (VERBOSE) {
                 System.err.println("\n" + Thread.currentThread() + ": TEST: iter=" + iter + " shape="+shape);
               }
               
-              Query query = Geo3DPoint.newShapeQuery(planetModel, "point", shape);
+              Query query = Geo3DPoint.newShapeQuery("point", shape);
 
               if (VERBOSE) {
                 System.err.println("  using query: " + query);
@@ -753,10 +750,10 @@ public class TestGeo3DPoint extends LuceneTestCase {
                 if (Double.isNaN(lats[id]) == false) {
 
                   // Accurate point:
-                  GeoPoint point1 = new GeoPoint(planetModel, lats[id], lons[id]);
+                  GeoPoint point1 = new GeoPoint(PlanetModel.WGS84, lats[id], lons[id]);
 
                   // Quantized point (32 bits per dim):
-                  GeoPoint point2 = quantize(planetModel.getMaximumMagnitude(), point1);
+                  GeoPoint point2 = quantize(PlanetModel.WGS84.getMaximumMagnitude(), point1);
 
                   if (shape.isWithin(point1) != shape.isWithin(point2)) {
                     if (VERBOSE) {
@@ -789,13 +786,13 @@ public class TestGeo3DPoint extends LuceneTestCase {
   }
 
   public void testToString() {
-    Geo3DPoint point = new Geo3DPoint("point", PlanetModel.SPHERE, toRadians(44.244272), toRadians(7.769736));
-    assertEquals("Geo3DPoint <point: x=0.9242545719837093 y=0.06276412683667808 z=0.37658219569203544>", point.toString());
+    Geo3DPoint point = new Geo3DPoint("point", toRadians(44.244272), toRadians(7.769736));
+    assertEquals("Geo3DPoint <point: x=0.9248467864160119 y=0.06280434265368656 z=0.37682349005486243>", point.toString());
   }
 
   public void testShapeQueryToString() {
-    assertEquals("PointInGeo3DShapeQuery: field=point: PlanetModel: PlanetModel.SPHERE Shape: GeoStandardCircle: {planetmodel=PlanetModel.SPHERE, center=[lat=0.3861041107739683, lon=0.06780373760536706], radius=0.1(5.729577951308232)}",
-                 Geo3DPoint.newShapeQuery(PlanetModel.SPHERE, "point", GeoCircleFactory.makeGeoCircle(PlanetModel.SPHERE, toRadians(44.244272), toRadians(7.769736), 0.1)).toString());
+    assertEquals("PointInGeo3DShapeQuery: field=point: Shape: GeoStandardCircle: {planetmodel=PlanetModel.WGS84, center=[lat=0.3861041107739683, lon=0.06780373760536706], radius=0.1(5.729577951308232)}",
+                 Geo3DPoint.newShapeQuery("point", GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, toRadians(44.244272), toRadians(7.769736), 0.1)).toString());
   }
 
   private static Directory getDirectory() {     
