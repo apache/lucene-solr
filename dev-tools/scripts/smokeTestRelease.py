@@ -1306,6 +1306,8 @@ def confirmAllReleasesAreTestedForBackCompat(smokeVersion, unpackPath):
       # Mixed version test case; ignore it for our purposes because we only
       # tally up the "tests single Lucene version" indices
       continue
+    elif name == '5.0.0.singlesegment':
+      tup = 5, 0, 0
     else:
       raise RuntimeError('could not parse version %s' % name)
 
