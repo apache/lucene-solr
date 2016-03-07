@@ -133,6 +133,8 @@ API Changes
 * LUCENE-7072: Geo3DPoint always uses WGS84 planet model.
   (Robert Muir, Mike McCandless)
 
+* LUCENE-7056: Geo3D classes are in different packages now. (David Smiley)
+
 Optimizations
 
 * LUCENE-6891: Use prefix coding when writing points in 
