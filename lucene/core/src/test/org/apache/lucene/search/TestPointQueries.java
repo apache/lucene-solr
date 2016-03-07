@@ -53,13 +53,11 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -1846,5 +1844,46 @@ public class TestPointQueries extends LuceneTestCase {
 
     // binary
     assertEquals("bytes:{[12] [2a]}", BinaryPoint.newSetQuery("bytes", new byte[] {42}, new byte[] {18}).toString());
+  }
+
+  public void testRangeOptimizesIfAllPointsMatch() throws IOException {
+    final int numDims = TestUtil.nextInt(random(), 1, 3);
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    int[] value = new int[numDims];
+    for (int i = 0; i < numDims; ++i) {
+      value[i] = TestUtil.nextInt(random(), 1, 10);
+    }
+    doc.add(new IntPoint("point", value));
+    w.addDocument(doc);
+    IndexReader reader = w.getReader();
+    IndexSearcher searcher = new IndexSearcher(reader);
+    searcher.setQueryCache(null);
+    int[] lowerBound = new int[numDims];
+    int[] upperBound = new int[numDims];
+    for (int i = 0; i < numDims; ++i) {
+      lowerBound[i] = value[i] - random().nextInt(1);
+      upperBound[i] = value[i] + random().nextInt(1);
+    }
+    Query query = IntPoint.newRangeQuery("point", lowerBound, upperBound);
+    Weight weight = searcher.createNormalizedWeight(query, false);
+    Scorer scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
+    assertEquals(DocIdSetIterator.all(1).getClass(), scorer.iterator().getClass());
+
+    // When not all documents in the query have a value, the optimization is not applicable
+    reader.close();
+    w.addDocument(new Document());
+    w.forceMerge(1);
+    reader = w.getReader();
+    searcher = new IndexSearcher(reader);
+    searcher.setQueryCache(null);
+    weight = searcher.createNormalizedWeight(query, false);
+    scorer = weight.scorer(searcher.getIndexReader().leaves().get(0));
+    assertFalse(DocIdSetIterator.all(1).getClass().equals(scorer.iterator().getClass()));
+
+    reader.close();
+    w.close();
+    dir.close();
   }
 }

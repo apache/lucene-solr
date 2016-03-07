@@ -142,6 +142,9 @@ Optimizations
 * LUCENE-7050: TermsQuery is now cached more aggressively by the default
   query caching policy. (Adrien Grand)
 
+* LUCENE-7066: PointRangeQuery got optimized for the case that all documents
+  have a value and all points from the segment match. (Adrien Grand)
+
 Changes in Runtime Behavior
 
 * LUCENE-6789: IndexSearcher's default Similarity is changed to BM25Similarity.
