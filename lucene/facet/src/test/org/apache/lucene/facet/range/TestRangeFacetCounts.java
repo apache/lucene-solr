@@ -532,6 +532,8 @@ public class TestRangeFacetCounts extends FacetTestCase {
       int[] expectedCounts = new int[numRange];
       float minAcceptedValue = Float.POSITIVE_INFINITY;
       float maxAcceptedValue = Float.NEGATIVE_INFINITY;
+      boolean[] rangeMinIncl = new boolean[numRange];
+      boolean[] rangeMaxIncl = new boolean[numRange];
       if (VERBOSE) {
         System.out.println("TEST: " + numRange + " ranges");
       }
@@ -582,6 +584,8 @@ public class TestRangeFacetCounts extends FacetTestCase {
           minIncl = random().nextBoolean();
           maxIncl = random().nextBoolean();
         }
+        rangeMinIncl[rangeID] = minIncl;
+        rangeMaxIncl[rangeID] = maxIncl;
         ranges[rangeID] = new DoubleRange("r" + rangeID, min, minIncl, max, maxIncl);
 
         if (VERBOSE) {
@@ -642,7 +646,17 @@ public class TestRangeFacetCounts extends FacetTestCase {
         // Test drill-down:
         DrillDownQuery ddq = new DrillDownQuery(config);
         if (random().nextBoolean()) {
-          ddq.add("field", FloatPoint.newRangeQuery("field", (float) range.min, (float) range.max));
+          // We must do the nextUp/down in float space, here, because the nextUp that DoubleRange did in double space, when cast back to float,
+          // in fact does nothing!
+          float minFloat = (float) range.min;
+          if (rangeMinIncl[rangeID] == false) {
+            minFloat = Math.nextUp(minFloat);
+          }
+          float maxFloat = (float) range.max;
+          if (rangeMaxIncl[rangeID] == false) {
+            maxFloat = Math.nextAfter(maxFloat, Float.NEGATIVE_INFINITY);
+          }
+          ddq.add("field", FloatPoint.newRangeQuery("field", minFloat, maxFloat));
         } else {
           ddq.add("field", range.getQuery(fastMatchQuery, vs));
         }
