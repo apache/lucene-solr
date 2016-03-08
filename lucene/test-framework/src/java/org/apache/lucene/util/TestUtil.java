@@ -61,11 +61,6 @@ import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType.LegacyNumericType;
-import org.apache.lucene.document.LegacyDoubleField;
-import org.apache.lucene.document.LegacyFloatField;
-import org.apache.lucene.document.LegacyIntField;
-import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.CheckIndex;
@@ -1072,7 +1067,6 @@ public final class TestUtil {
       final Field field2;
       final DocValuesType dvType = field1.fieldType().docValuesType();
       final int dimCount = field1.fieldType().pointDimensionCount();
-      final LegacyNumericType numType = field1.fieldType().numericType();
       if (dvType != DocValuesType.NONE) {
         switch(dvType) {
           case NUMERIC:
@@ -1092,23 +1086,6 @@ public final class TestUtil {
         byte[] bytes = new byte[br.length];
         System.arraycopy(br.bytes, br.offset, bytes, 0, br.length);
         field2 = new BinaryPoint(field1.name(), bytes, field1.fieldType());
-      } else if (numType != null) {
-        switch (numType) {
-          case INT:
-            field2 = new LegacyIntField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
-            break;
-          case FLOAT:
-            field2 = new LegacyFloatField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
-            break;
-          case LONG:
-            field2 = new LegacyLongField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
-            break;
-          case DOUBLE:
-            field2 = new LegacyDoubleField(field1.name(), field1.numericValue().intValue(), field1.fieldType());
-            break;
-          default:
-            throw new IllegalStateException("unknown Type: " + numType);
-        }
       } else {
         field2 = new Field(field1.name(), field1.stringValue(), field1.fieldType());
       }
