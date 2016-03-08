@@ -26,8 +26,8 @@ import java.util.Locale;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StoredField;
@@ -52,10 +52,8 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
-import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
@@ -73,8 +71,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -93,7 +89,7 @@ public class TestBlockJoin extends LuceneTestCase {
   private Document makeJob(String skill, int year) {
     Document job = new Document();
     job.add(newStringField("skill", skill, Field.Store.YES));
-    job.add(new LegacyIntField("year", year, Field.Store.NO));
+    job.add(new IntPoint("year", year));
     job.add(new StoredField("year", year));
     return job;
   }
@@ -102,7 +98,7 @@ public class TestBlockJoin extends LuceneTestCase {
   private Document makeQualification(String qualification, int year) {
     Document job = new Document();
     job.add(newStringField("qualification", qualification, Field.Store.YES));
-    job.add(new LegacyIntField("year", year, Field.Store.NO));
+    job.add(new IntPoint("year", year));
     return job;
   }
   
@@ -135,7 +131,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     BooleanQuery.Builder childQuery = new BooleanQuery.Builder();
     childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childQuery.add(new BooleanClause(LegacyNumericRangeQuery.newIntRange("year", 2006, 2011, true, true), Occur.MUST));
+    childQuery.add(new BooleanClause(IntPoint.newRangeQuery("year", 2006, 2011), Occur.MUST));
 
     ToParentBlockJoinQuery childJoinQuery = new ToParentBlockJoinQuery(childQuery.build(), parentsFilter, ScoreMode.Avg);
 
@@ -189,7 +185,7 @@ public class TestBlockJoin extends LuceneTestCase {
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery.Builder childQuery = new BooleanQuery.Builder();
     childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childQuery.add(new BooleanClause(LegacyNumericRangeQuery.newIntRange("year", 2006, 2011, true, true), Occur.MUST));
+    childQuery.add(new BooleanClause(IntPoint.newRangeQuery("year", 2006, 2011), Occur.MUST));
 
     // Define parent document criteria (find a resident in the UK)
     Query parentQuery = new TermQuery(new Term("country", "United Kingdom"));
@@ -269,23 +265,30 @@ public class TestBlockJoin extends LuceneTestCase {
     w.close();
     IndexSearcher s = newSearcher(r);
 
-    MultiTermQuery qc = LegacyNumericRangeQuery.newIntRange("year", 2007, 2007, true, true);
     // Hacky: this causes the query to need 2 rewrite
     // iterations: 
-    qc.setRewriteMethod(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_REWRITE);
+    BooleanQuery.Builder builder = new BooleanQuery.Builder();
+    builder.add(IntPoint.newExactQuery("year", 2007), BooleanClause.Occur.MUST);
+    Query qc = new Query() {
+      @Override
+      public Query rewrite(IndexReader reader) throws IOException {
+        return builder.build();
+      }
+
+      @Override
+      public String toString(String field) {
+        return "hack!";
+      }
+    };
 
     BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("docType", "resume")));
     CheckJoinIndex.check(r, parentsFilter);
 
-    int h1 = qc.hashCode();
     Query qw1 = qc.rewrite(r);
-    int h2 = qw1.hashCode();
     Query qw2 = qw1.rewrite(r);
-    int h3 = qw2.hashCode();
 
-    assertTrue(h1 != h2);
-    assertTrue(h2 != h3);
-    assertTrue(h3 != h1);
+    assertNotSame(qc, qw1);
+    assertNotSame(qw1, qw2);
 
     ToParentBlockJoinQuery qp = new ToParentBlockJoinQuery(qc, parentsFilter, ScoreMode.Max);
     ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(Sort.RELEVANCE, 10, true, true);
@@ -342,7 +345,7 @@ public class TestBlockJoin extends LuceneTestCase {
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery.Builder childQuery = new BooleanQuery.Builder();
     childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childQuery.add(new BooleanClause(LegacyNumericRangeQuery.newIntRange("year", 2006, 2011, true, true), Occur.MUST));
+    childQuery.add(new BooleanClause(IntPoint.newRangeQuery("year", 2006, 2011), Occur.MUST));
 
     // Define parent document criteria (find a resident in the UK)
     Query parentQuery = new TermQuery(new Term("country", "United Kingdom"));
@@ -516,7 +519,7 @@ public class TestBlockJoin extends LuceneTestCase {
     for(int parentDocID=0;parentDocID<numParentDocs;parentDocID++) {
       Document parentDoc = new Document();
       Document parentJoinDoc = new Document();
-      Field id = new LegacyIntField("parentID", parentDocID, Field.Store.YES);
+      Field id = new StoredField("parentID", parentDocID);
       parentDoc.add(id);
       parentJoinDoc.add(id);
       parentJoinDoc.add(newStringField("isParent", "x", Field.Store.NO));
@@ -538,8 +541,8 @@ public class TestBlockJoin extends LuceneTestCase {
       }
 
       if (doDeletes) {
-        parentDoc.add(new LegacyIntField("blockID", parentDocID, Field.Store.NO));
-        parentJoinDoc.add(new LegacyIntField("blockID", parentDocID, Field.Store.NO));
+        parentDoc.add(new IntPoint("blockID", parentDocID));
+        parentJoinDoc.add(new IntPoint("blockID", parentDocID));
       }
 
       final List<Document> joinDocs = new ArrayList<>();
@@ -563,7 +566,7 @@ public class TestBlockJoin extends LuceneTestCase {
         Document joinChildDoc = new Document();
         joinDocs.add(joinChildDoc);
 
-        Field childID = new LegacyIntField("childID", childDocID, Field.Store.YES);
+        Field childID = new StoredField("childID", childDocID);
         childDoc.add(childID);
         joinChildDoc.add(childID);
         childID = new NumericDocValuesField("childID", childDocID);
@@ -596,7 +599,7 @@ public class TestBlockJoin extends LuceneTestCase {
         }
 
         if (doDeletes) {
-          joinChildDoc.add(new LegacyIntField("blockID", parentDocID, Field.Store.NO));
+          joinChildDoc.add(new IntPoint("blockID", parentDocID));
         }
 
         w.addDocument(childDoc);
@@ -611,14 +614,15 @@ public class TestBlockJoin extends LuceneTestCase {
       }
     }
 
-    BytesRefBuilder term = new BytesRefBuilder();
-    for(int deleteID : toDelete) {
-      if (VERBOSE) {
-        System.out.println("DELETE parentID=" + deleteID);
+    if (!toDelete.isEmpty()) {
+      // TODO: we should add newSetQuery(String, Collection<T>) ? this is awkward.
+      int[] array = new int[toDelete.size()];
+      for (int i = 0; i < toDelete.size(); i++) {
+        array[i] = toDelete.get(i);
       }
-      LegacyNumericUtils.intToPrefixCoded(deleteID, 0, term);
-      w.deleteDocuments(new Term("blockID", term.toBytesRef()));
-      joinW.deleteDocuments(new Term("blockID", term.toBytesRef()));
+      Query query = IntPoint.newSetQuery("blockID", array);
+      w.deleteDocuments(query);
+      joinW.deleteDocuments(query);
     }
 
     final IndexReader r = w.getReader();
@@ -1061,11 +1065,11 @@ public class TestBlockJoin extends LuceneTestCase {
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery.Builder childJobQuery = new BooleanQuery.Builder();
     childJobQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childJobQuery.add(new BooleanClause(LegacyNumericRangeQuery.newIntRange("year", 2006, 2011, true, true), Occur.MUST));
+    childJobQuery.add(new BooleanClause(IntPoint.newRangeQuery("year", 2006, 2011), Occur.MUST));
 
     BooleanQuery.Builder childQualificationQuery = new BooleanQuery.Builder();
     childQualificationQuery.add(new BooleanClause(new TermQuery(new Term("qualification", "maths")), Occur.MUST));
-    childQualificationQuery.add(new BooleanClause(LegacyNumericRangeQuery.newIntRange("year", 1980, 2000, true, true), Occur.MUST));
+    childQualificationQuery.add(new BooleanClause(IntPoint.newRangeQuery("year", 1980, 2000), Occur.MUST));
 
 
     // Define parent document criteria (find a resident in the UK)
@@ -1210,7 +1214,7 @@ public class TestBlockJoin extends LuceneTestCase {
     // Define child document criteria (finds an example of relevant work experience)
     BooleanQuery.Builder childQuery = new BooleanQuery.Builder();
     childQuery.add(new BooleanClause(new TermQuery(new Term("skill", "java")), Occur.MUST));
-    childQuery.add(new BooleanClause(LegacyNumericRangeQuery.newIntRange("year", 2006, 2011, true, true), Occur.MUST));
+    childQuery.add(new BooleanClause(IntPoint.newRangeQuery("year", 2006, 2011), Occur.MUST));
 
     // Wrap the child document query to 'join' any matches
     // up to corresponding parent:
@@ -1707,7 +1711,7 @@ public class TestBlockJoin extends LuceneTestCase {
       Query resumeQuery = new ToChildBlockJoinQuery(new TermQuery(new Term("country","rv" + qrv)),
                                                     resumeFilter);
       
-      Query jobQuery = new ToChildBlockJoinQuery(LegacyNumericRangeQuery.newIntRange("year", qjv, qjv, true, true),
+      Query jobQuery = new ToChildBlockJoinQuery(IntPoint.newRangeQuery("year", qjv, qjv),
                                                  jobFilter);
       
       BooleanQuery.Builder fullQuery = new BooleanQuery.Builder();
