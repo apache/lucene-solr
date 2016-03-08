@@ -78,7 +78,7 @@ class ResultSetImpl implements ResultSet {
       this.firstTuple = this.solrStream.read();
       this.solrStream.pushBack(firstTuple);
     } catch (IOException e) {
-      throw new SQLException("Couldn't read first tuple", e);
+      throw new SQLException(e);
     }
 
     this.resultSetMetaData = new ResultSetMetaDataImpl(this);
