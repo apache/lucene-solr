@@ -299,7 +299,7 @@ public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
     assertU(commit("expungeDeletes","true"));
 
     sr = req("q","foo");
-    r = r = sr.getSearcher().getIndexReader();
+    r = sr.getSearcher().getIndexReader();
     assertEquals(r.maxDoc(), r.numDocs());  // no deletions
     assertEquals(4,r.maxDoc());             // no dups
     sr.close();

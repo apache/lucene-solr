@@ -167,7 +167,7 @@ public class FSTTermsWriter extends FieldsConsumer {
       FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
       boolean hasFreq = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0;
       TermsEnum termsEnum = terms.iterator();
-      TermsWriter termsWriter = termsWriter = new TermsWriter(fieldInfo);
+      TermsWriter termsWriter = new TermsWriter(fieldInfo);
 
       long sumTotalTermFreq = 0;
       long sumDocFreq = 0;
