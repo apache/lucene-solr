@@ -32,7 +32,7 @@ import org.apache.lucene.util.Bits;
  * uses as its basic source of data, possibly transforming the data along the
  * way or providing additional functionality.
  */
-public class FilterCodecReader extends CodecReader {
+public abstract class FilterCodecReader extends CodecReader {
   /** 
    * The underlying CodecReader instance. 
    */

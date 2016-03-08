@@ -196,7 +196,7 @@ public class TestFilterLeafReader extends LuceneTestCase {
     w.addDocument(new Document());
     DirectoryReader dr = w.getReader();
     LeafReader r = dr.leaves().get(0).reader();
-    FilterLeafReader r2 = new FilterLeafReader(r);
+    FilterLeafReader r2 = new FilterLeafReader(r) {};
     assertEquals(r, r2.getDelegate());
     assertEquals(r, FilterLeafReader.unwrap(r2));
     w.close();

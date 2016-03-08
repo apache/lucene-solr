@@ -31,7 +31,7 @@ import java.util.Objects;
  * source of data, possibly transforming the data along the 
  * way or providing additional functionality. 
  */
-public class FilterFileChannel extends FileChannel {
+public abstract class FilterFileChannel extends FileChannel {
   
   /** 
    * The underlying {@code FileChannel} instance. 

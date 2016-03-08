@@ -26,7 +26,7 @@ import org.apache.lucene.index.LeafReaderContext;
  *
  * @lucene.experimental
  */
-public class FilterCollector implements Collector {
+public abstract class FilterCollector implements Collector {
 
   protected final Collector in;
 
