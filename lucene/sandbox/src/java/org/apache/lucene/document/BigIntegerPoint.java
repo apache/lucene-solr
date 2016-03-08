@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.math.BigInteger;
 import java.util.Arrays;
 
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
@@ -39,6 +40,7 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>{@link #newRangeQuery(String, BigInteger, BigInteger)} for matching a 1D range.
  *   <li>{@link #newRangeQuery(String, BigInteger[], BigInteger[])} for matching points/ranges in n-dimensional space.
  * </ul>
+ * @see PointValues
  */
 public class BigIntegerPoint extends Field {
 

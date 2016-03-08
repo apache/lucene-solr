@@ -74,10 +74,12 @@ would be equivalent to the following code with the old setBoost API:
   float boost = ...;
   q.setBoost(q.getBoost() * boost);
 
-## DimensionalValues replaces NumericField (LUCENE-6917)
+# PointValues replaces NumericField (LUCENE-6917)
 
-DimensionalValues provides faster indexing and searching, a smaller
-index size, and less heap used at search time.  The numeric fields
-(IntField, FloatField, LongField, DoubleField) and NumericRangeQuery
-have been moved to the backward-codecs module and prefixed with
-Legacy.
+PointValues provides faster indexing and searching, a smaller
+index size, and less heap used at search time. See org.apache.lucene.index.PointValues
+for an introduction. 
+
+Legacy numeric encodings from previous versions of Lucene are
+deprecated as LegacyIntField, LegacyFloatField, LegacyLongField, and LegacyDoubleField,
+and can be searched with LegacyNumericRangeQuery.

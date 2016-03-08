@@ -20,6 +20,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
 
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
@@ -43,6 +44,7 @@ import org.apache.lucene.util.BytesRef;
  * This field supports both IPv4 and IPv6 addresses: IPv4 addresses are converted
  * to <a href="https://tools.ietf.org/html/rfc4291#section-2.5.5">IPv4-Mapped IPv6 Addresses</a>:
  * indexing {@code 1.2.3.4} is the same as indexing {@code ::FFFF:1.2.3.4}.
+ * @see PointValues
  */
 public class InetAddressPoint extends Field {
 

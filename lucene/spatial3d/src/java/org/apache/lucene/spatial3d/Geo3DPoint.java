@@ -18,6 +18,7 @@ package org.apache.lucene.spatial3d;
 
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
@@ -34,7 +35,7 @@ import org.apache.lucene.util.NumericUtils;
  * <ul>
  *   <li>{@link #newShapeQuery newShapeQuery()} for matching all points inside a specified shape
  * </ul>
- *
+ * @see PointValues
  *  @lucene.experimental */
 public final class Geo3DPoint extends Field {
 
