@@ -16,15 +16,10 @@
  */
 package org.apache.lucene.search;
 
-
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.document.BinaryPoint;
-import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -48,13 +43,7 @@ import org.apache.lucene.util.StringHelper;
  * create range queries for lucene's standard {@code Point} types, refer to factory
  * methods on those classes, e.g. {@link IntPoint#newSetQuery IntPoint.newSetQuery()} for 
  * fields indexed with {@link IntPoint}.
-
- * @see IntPoint
- * @see LongPoint
- * @see FloatPoint
- * @see DoublePoint
- * @see BinaryPoint 
- *
+ * @see PointValues
  * @lucene.experimental */
 
 public abstract class PointInSetQuery extends Query {
