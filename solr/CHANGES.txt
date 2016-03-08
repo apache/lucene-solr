@@ -408,6 +408,8 @@ Other Changes
 * SOLR-8766: Remove deprecated <admin> tag in solrconfig.xml and support for admin/gettableFiles
   (noble, Jason Gerlowski, Varun Thacker)
 
+* SOLR-8799: Improve error message when tuple can't be read by SolrJ JDBC (Kevin Risden, Joel Bernstein)
+
 ==================  5.5.1 ==================
 
 Bug Fixes
