@@ -28,7 +28,7 @@ import java.util.Objects;
  * source of data, possibly transforming the data along the 
  * way or providing additional functionality. 
  */
-public class FilterFileStore extends FileStore {
+public abstract class FilterFileStore extends FileStore {
   
   /** 
    * The underlying {@code FileStore} instance. 
