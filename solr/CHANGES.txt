@@ -405,7 +405,8 @@ Other Changes
 * SOLR-8736: schema GET operations on fields, dynamicFields, fieldTypes, copyField are
   reimplemented as a part of the bulk API with less details (noble)
 
-* SOLR-8766 : deprecated <admin> tag in solrconfig.xml is removed (noble)
+* SOLR-8766: Remove deprecated <admin> tag in solrconfig.xml and support for admin/gettableFiles
+  (noble, Jason Gerlowski, Varun Thacker)
 
 ==================  5.5.1 ==================
 

@@ -726,9 +726,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
 
-      // Handle things that should eventually go away
-      initDeprecatedSupport();
-
       statsCache = initStatsCache();
 
       // cause the executor to stall so firstSearcher events won't fire
@@ -2267,54 +2264,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   public ValueSourceParser getValueSourceParser(String parserName) {
     return valueSourceParsers.get(parserName);
-  }
-
-  /**
-   * Manage anything that should be taken care of in case configs change
-   */
-  private void initDeprecatedSupport()
-  {
-    // TODO -- this should be removed in deprecation release...
-    String gettable = solrConfig.get("admin/gettableFiles", null );
-    if( gettable != null ) {
-      log.warn(
-          "solrconfig.xml uses deprecated <admin/gettableFiles>, Please "+
-          "update your config to use the ShowFileRequestHandler." );
-      if( getRequestHandler( "/admin/file" ) == null ) {
-        NamedList<String> invariants = new NamedList<>();
-
-        // Hide everything...
-        Set<String> hide = new HashSet<>();
-
-        for (String file : solrConfig.getResourceLoader().listConfigDir()) {
-          hide.add(file.toUpperCase(Locale.ROOT));
-        }
-
-        // except the "gettable" list
-        StringTokenizer st = new StringTokenizer( gettable );
-        while( st.hasMoreTokens() ) {
-          hide.remove( st.nextToken().toUpperCase(Locale.ROOT) );
-        }
-        for( String s : hide ) {
-          invariants.add( ShowFileRequestHandler.HIDDEN, s );
-        }
-
-        NamedList<Object> args = new NamedList<>();
-        args.add( "invariants", invariants );
-        ShowFileRequestHandler handler = new ShowFileRequestHandler();
-        handler.init( args );
-        reqHandlers.register("/admin/file", handler);
-
-        log.warn( "adding ShowFileRequestHandler with hidden files: "+hide );
-      }
-    }
-
-    String facetSort = solrConfig.get("//bool[@name='facet.sort']", null);
-    if (facetSort != null) {
-      log.warn(
-          "solrconfig.xml uses deprecated <bool name='facet.sort'>. Please "+
-          "update your config to use <string name='facet.sort'>.");
-    }
   }
 
   /**
