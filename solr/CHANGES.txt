@@ -423,6 +423,11 @@ Bug Fixes
 * SOLR-8712: Variable solr.core.instanceDir was not being resolved (Kristine
   Jetzke, Shawn Heisey, Alan Woodward)
 
+* SOLR-8793: Fix Core admin status API to not fail when computing the size of the segments_N
+  file if the file no longer exists (for example, if a commit happened and the IndexReader
+  hasn't refreshed yet). In this case the reported size of the file is -1.
+  (Shai Erera, Alexey Serba, Richard Coggins)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

@@ -582,7 +582,7 @@ public class LukeRequestHandler extends RequestHandlerBase
     IndexCommit indexCommit = reader.getIndexCommit();
     String segmentsFileName = indexCommit.getSegmentsFileName();
     indexInfo.add("segmentsFile", segmentsFileName);
-    indexInfo.add("segmentsFileSizeInBytes", indexCommit.getDirectory().fileLength(segmentsFileName));
+    indexInfo.add("segmentsFileSizeInBytes", getFileLength(indexCommit.getDirectory(), segmentsFileName));
     Map<String,String> userData = indexCommit.getUserData();
     indexInfo.add("userData", userData);
     String s = userData.get(SolrIndexWriter.COMMIT_TIME_MSEC_KEY);
@@ -590,6 +590,16 @@ public class LukeRequestHandler extends RequestHandlerBase
       indexInfo.add("lastModified", new Date(Long.parseLong(s)));
     }
     return indexInfo;
+  }
+
+  private static long getFileLength(Directory dir, String filename) {
+    try {
+      return dir.fileLength(filename);
+    } catch (IOException e) {
+      // Whatever the error is, only log it and return -1.
+      log.warn("Error getting file length for [{}]", filename, e);
+      return -1;
+    }
   }
 
   /** Returns the sum of RAM bytes used by each segment */
