@@ -41,7 +41,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
   public void test() throws Exception {
     Random random = new Random(random().nextLong());
-    final LineFileDocs docs = new LineFileDocs(random, true);
+    final LineFileDocs docs = new LineFileDocs(random);
     final Directory d = newDirectory();
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));

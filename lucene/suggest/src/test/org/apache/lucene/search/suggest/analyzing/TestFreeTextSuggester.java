@@ -131,7 +131,7 @@ public class TestFreeTextSuggester extends LuceneTestCase {
 
   @Ignore
   public void testWiki() throws Exception {
-    final LineFileDocs lfd = new LineFileDocs(null, "/lucenedata/enwiki/enwiki-20120502-lines-1k.txt", false);
+    final LineFileDocs lfd = new LineFileDocs(null, "/lucenedata/enwiki/enwiki-20120502-lines-1k.txt");
     // Skip header:
     lfd.nextDoc();
     Analyzer analyzer = new MockAnalyzer(random());
