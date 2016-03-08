@@ -552,7 +552,7 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     @Override
     public void run() {
       try {
-        final LineFileDocs docs = new LineFileDocs(random(), true);
+        final LineFileDocs docs = new LineFileDocs(random());
         int numDocs = 0;
         while (System.nanoTime() < endTimeNanos) {
           final int what = random().nextInt(3);
