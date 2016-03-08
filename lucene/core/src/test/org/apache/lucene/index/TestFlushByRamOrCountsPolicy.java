@@ -39,7 +39,7 @@ public class TestFlushByRamOrCountsPolicy extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    lineDocFile = new LineFileDocs(random(), true);
+    lineDocFile = new LineFileDocs(random());
   }
   
   @AfterClass

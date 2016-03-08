@@ -429,7 +429,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
     final long t0 = System.currentTimeMillis();
 
     Random random = new Random(random().nextLong());
-    final LineFileDocs docs = new LineFileDocs(random, true);
+    final LineFileDocs docs = new LineFileDocs(random);
     final Path tempDir = createTempDir(testName);
     dir = getDirectory(newMockFSDirectory(tempDir)); // some subclasses rely on this being MDW
     if (dir instanceof BaseDirectoryWrapper) {

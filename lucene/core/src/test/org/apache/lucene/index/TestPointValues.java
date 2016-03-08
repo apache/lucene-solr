@@ -582,4 +582,50 @@ public class TestPointValues extends LuceneTestCase {
     w.close();
     dir.close();
   }
+
+  public void testSparsePoints() throws Exception {
+    Directory dir = newDirectory();
+    int numDocs = atLeast(1000);
+    int numFields = TestUtil.nextInt(random(), 1, 10);
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    int[] fieldDocCounts = new int[numFields];
+    int[] fieldSizes = new int[numFields];
+    for(int i=0;i<numDocs;i++) {
+      Document doc = new Document();
+      for(int field=0;field<numFields;field++) {
+        String fieldName = "int" + field;
+        if (random().nextInt(100) == 17) {
+          doc.add(new IntPoint(fieldName, random().nextInt()));
+          fieldDocCounts[field]++;
+          fieldSizes[field]++;
+
+          if (random().nextInt(10) == 5) {
+            // add same field again!
+            doc.add(new IntPoint(fieldName, random().nextInt()));
+            fieldSizes[field]++;
+          }
+        }
+      }
+      w.addDocument(doc);
+    }
+
+    IndexReader r = w.getReader();
+    for(int field=0;field<numFields;field++) {
+      int docCount = 0;
+      int size = 0;
+      String fieldName = "int" + field;
+      for(LeafReaderContext ctx : r.leaves()) {
+        PointValues points = ctx.reader().getPointValues();
+        if (ctx.reader().getFieldInfos().fieldInfo(fieldName) != null) {
+          docCount += points.getDocCount(fieldName);
+          size += points.size(fieldName);
+        }
+      }
+      assertEquals(fieldDocCounts[field], docCount);
+      assertEquals(fieldSizes[field], size);
+    }
+    r.close();
+    w.close();
+    dir.close();
+  }
 }

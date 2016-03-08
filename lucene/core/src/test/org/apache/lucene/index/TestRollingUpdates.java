@@ -40,7 +40,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     Random random = new Random(random().nextLong());
     final BaseDirectoryWrapper dir = newDirectory();
     
-    final LineFileDocs docs = new LineFileDocs(random, true);
+    final LineFileDocs docs = new LineFileDocs(random);
 
     //provider.register(new MemoryCodec());
     if (random().nextBoolean()) {
