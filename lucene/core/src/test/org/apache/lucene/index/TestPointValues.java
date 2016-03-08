@@ -39,6 +39,7 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -560,6 +561,25 @@ public class TestPointValues extends LuceneTestCase {
     assertEquals(0, r.leaves().get(0).reader().getPointValues().getDocCount("int"));
     w.close();
     r.close();
+    dir.close();
+  }
+
+  public void testPointsFieldMissingFromOneSegment() throws Exception {
+    Directory dir = FSDirectory.open(createTempDir());
+    IndexWriterConfig iwc = new IndexWriterConfig(null);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new StringField("id", "0", Field.Store.NO));
+    doc.add(new IntPoint("int0", 0));
+    w.addDocument(doc);
+    w.commit();
+
+    doc = new Document();
+    doc.add(new IntPoint("int1", 17));
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    w.close();
     dir.close();
   }
 }

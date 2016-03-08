@@ -4116,6 +4116,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
                              (mergeState.mergeFieldInfos.hasDocValues() ? "docValues" : "no docValues") + "; " + 
                              (mergeState.mergeFieldInfos.hasProx() ? "prox" : "no prox") + "; " + 
                              (mergeState.mergeFieldInfos.hasProx() ? "freqs" : "no freqs") + "; " +
+                             (mergeState.mergeFieldInfos.hasPointValues() ? "points" : "no points") + "; " +
                              String.format(Locale.ROOT,
                                            "%.1f sec (%.1f sec stopped, %.1f sec paused) to merge segment [%.2f MB, %.2f MB/sec]",
                                            sec,
