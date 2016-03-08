@@ -559,9 +559,4 @@
     </arr>
   </requestHandler>
 
-  <!-- Legacy config for the admin interface -->
-  <admin>
-    <defaultQuery>*:*</defaultQuery>
-  </admin>
-
 </config>
