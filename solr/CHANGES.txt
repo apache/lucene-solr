@@ -109,7 +109,8 @@ Upgrading from Solr 5.x
 
 * When requesting stats in date fields, "sum" is now a double value instead of a date. See SOLR-8671
 
-* SOLR-8736: The deprecated GET methods for schema are now accessible and implemented differently
+* SOLR-8736: The deprecated GET methods for schema are now accessible through the bulk API. The output
+  has less details and is not backward compatible.
 
 Detailed Change List
 ----------------------
