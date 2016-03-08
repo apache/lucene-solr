@@ -135,6 +135,10 @@ API Changes
 
 * LUCENE-7056: Geo3D classes are in different packages now. (David Smiley)
 
+* LUCENE-6952: These classes are now abstract: FilterCodecReader, FilterLeafReader,
+  FilterCollector, FilterDirectory.  And some Filter* classes in
+  lucene-test-framework too. (David Smiley)
+
 Optimizations
 
 * LUCENE-6891: Use prefix coding when writing points in 

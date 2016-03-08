@@ -34,7 +34,7 @@ import java.util.Objects;
  * that just overrides {@code close} will not force bytes to be 
  * written one-at-a-time.
  */
-public class FilterOutputStream2 extends OutputStream {
+public abstract class FilterOutputStream2 extends OutputStream {
   
   /** 
    * The underlying {@code OutputStream} instance. 

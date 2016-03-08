@@ -24,7 +24,7 @@ import java.io.IOException;
  *
  * @lucene.experimental
  */
-public class FilterLeafCollector implements LeafCollector {
+public abstract class FilterLeafCollector implements LeafCollector {
 
   protected final LeafCollector in;
 

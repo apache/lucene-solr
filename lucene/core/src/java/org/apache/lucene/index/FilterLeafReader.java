@@ -44,7 +44,7 @@ import org.apache.lucene.util.BytesRef;
  * overridden as well if the {@link #getLiveDocs() live docs} are not changed
  * either.
  */
-public class FilterLeafReader extends LeafReader {
+public abstract class FilterLeafReader extends LeafReader {
 
   /** Get the wrapped instance by <code>reader</code> as long as this reader is
    *  an instance of {@link FilterLeafReader}.  */
@@ -57,7 +57,7 @@ public class FilterLeafReader extends LeafReader {
 
   /** Base class for filtering {@link Fields}
    *  implementations. */
-  public static class FilterFields extends Fields {
+  public abstract static class FilterFields extends Fields {
     /** The underlying Fields instance. */
     protected final Fields in;
 
@@ -93,7 +93,7 @@ public class FilterLeafReader extends LeafReader {
    * these terms are going to be intersected with automata, you could consider
    * overriding {@link #intersect} for better performance.
    */
-  public static class FilterTerms extends Terms {
+  public abstract static class FilterTerms extends Terms {
     /** The underlying Terms instance. */
     protected final Terms in;
 
@@ -160,7 +160,7 @@ public class FilterLeafReader extends LeafReader {
   }
 
   /** Base class for filtering {@link TermsEnum} implementations. */
-  public static class FilterTermsEnum extends TermsEnum {
+  public abstract static class FilterTermsEnum extends TermsEnum {
     /** The underlying TermsEnum instance. */
     protected final TermsEnum in;
 
@@ -223,7 +223,7 @@ public class FilterLeafReader extends LeafReader {
   }
 
   /** Base class for filtering {@link PostingsEnum} implementations. */
-  public static class FilterPostingsEnum extends PostingsEnum {
+  public abstract static class FilterPostingsEnum extends PostingsEnum {
     /** The underlying PostingsEnum instance. */
     protected final PostingsEnum in;
 
