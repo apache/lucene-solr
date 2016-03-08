@@ -480,7 +480,7 @@ public abstract class ThreadedIndexingAndSearchingTestCase extends LuceneTestCas
           }
         }
 
-        IndexSearcher searcher = newSearcher(reader);
+        IndexSearcher searcher = newSearcher(reader, false);
         sum += searcher.search(new TermQuery(new Term("body", "united")), 10).totalHits;
 
         if (VERBOSE) {
