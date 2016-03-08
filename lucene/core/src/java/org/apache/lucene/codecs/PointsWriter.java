@@ -54,6 +54,12 @@ public abstract class PointsWriter implements Closeable {
                        // This segment has no points
                        continue;
                      }
+                     FieldInfo readerFieldInfo = mergeState.fieldInfos[i].fieldInfo(fieldName);
+                     if (readerFieldInfo == null) {
+                       // This segment never saw this field
+                       continue;
+                     }
+
                      MergeState.DocMap docMap = mergeState.docMaps[i];
                      int docBase = mergeState.docBase[i];
                      pointsReader.intersect(fieldInfo.name,
