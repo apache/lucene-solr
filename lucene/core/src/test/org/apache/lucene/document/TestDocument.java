@@ -340,10 +340,10 @@ public class TestDocument extends LuceneTestCase {
   
   public void testNumericFieldAsString() throws Exception {
     Document doc = new Document();
-    doc.add(new LegacyIntField("int", 5, Field.Store.YES));
+    doc.add(new StoredField("int", 5));
     assertEquals("5", doc.get("int"));
     assertNull(doc.get("somethingElse"));
-    doc.add(new LegacyIntField("int", 4, Field.Store.YES));
+    doc.add(new StoredField("int", 4));
     assertArrayEquals(new String[] { "5", "4" }, doc.getValues("int"));
     
     Directory dir = newDirectory();
