@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
@@ -40,6 +41,7 @@ import org.apache.lucene.util.StringHelper;
  *   <li>{@link #newRangeQuery(String, byte[], byte[])} for matching a 1D range.
  *   <li>{@link #newRangeQuery(String, byte[][], byte[][])} for matching points/ranges in n-dimensional space.
  * </ul> 
+ * @see PointValues
  */
 public final class BinaryPoint extends Field {
 

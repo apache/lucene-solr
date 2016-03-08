@@ -20,6 +20,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -43,6 +44,7 @@ import org.apache.lucene.spatial.util.GeoUtils;
  * <p>
  * <b>WARNING</b>: Values are indexed with some loss of precision, incurring up to 1E-7 error from the
  * original {@code double} values. 
+ * @see PointValues
  */
 // TODO ^^^ that is very sandy and hurts the API, usage, and tests tremendously, because what the user passes
 // to the field is not actually what gets indexed. Float would be 1E-5 error vs 1E-7, but it might be

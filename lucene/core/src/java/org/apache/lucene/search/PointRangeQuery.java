@@ -23,11 +23,7 @@ import java.util.Objects;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.document.BinaryPoint; // javadocs
-import org.apache.lucene.document.DoublePoint; // javadocs
-import org.apache.lucene.document.FloatPoint;  // javadocs
 import org.apache.lucene.document.IntPoint;    // javadocs
-import org.apache.lucene.document.LongPoint;   // javadocs
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -44,12 +40,7 @@ import org.apache.lucene.util.StringHelper;
  * fields indexed with {@link IntPoint}.
  * <p>
  * For a single-dimensional field this query is a simple range query; in a multi-dimensional field it's a box shape.
- * @see IntPoint
- * @see LongPoint
- * @see FloatPoint
- * @see DoublePoint
- * @see BinaryPoint 
- *
+ * @see PointValues
  * @lucene.experimental
  */
 public abstract class PointRangeQuery extends Query {
