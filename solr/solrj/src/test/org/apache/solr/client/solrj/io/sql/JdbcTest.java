@@ -396,6 +396,21 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
       }
     }
 
+
+    //Test error propagation
+    props = new Properties();
+    props.put("aggregationMode", "facet");
+    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1", props)) {
+      try (Statement stmt = con.createStatement()) {
+        try (ResultSet rs = stmt.executeQuery("select crap from collection1 group by a_s " +
+            "order by sum(a_f) desc")) {
+        } catch (Exception e) {
+          String errorMessage = e.getMessage();
+          assertTrue(errorMessage.contains("Group by queries must include atleast one aggregate function"));
+        }
+      }
+    }
+
     testDriverMetadata();
   }
 
