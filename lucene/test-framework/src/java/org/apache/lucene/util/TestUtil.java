@@ -279,28 +279,30 @@ public final class TestUtil {
   }
 
   public static CheckIndex.Status checkIndex(Directory dir, boolean crossCheckTermVectors) throws IOException {
-    return checkIndex(dir, crossCheckTermVectors, false);
+    return checkIndex(dir, crossCheckTermVectors, false, null);
   }
 
   /** If failFast is true, then throw the first exception when index corruption is hit, instead of moving on to other fields/segments to
    *  look for any other corruption.  */
-  public static CheckIndex.Status checkIndex(Directory dir, boolean crossCheckTermVectors, boolean failFast) throws IOException {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+  public static CheckIndex.Status checkIndex(Directory dir, boolean crossCheckTermVectors, boolean failFast, ByteArrayOutputStream output) throws IOException {
+    if (output == null) {
+      output = new ByteArrayOutputStream(1024);
+    }
     // TODO: actually use the dir's locking, unless test uses a special method?
     // some tests e.g. exception tests become much more complicated if they have to close the writer
     try (CheckIndex checker = new CheckIndex(dir, NoLockFactory.INSTANCE.obtainLock(dir, "bogus"))) {
       checker.setCrossCheckTermVectors(crossCheckTermVectors);
       checker.setFailFast(failFast);
-      checker.setInfoStream(new PrintStream(bos, false, IOUtils.UTF_8), false);
+      checker.setInfoStream(new PrintStream(output, false, IOUtils.UTF_8), false);
       CheckIndex.Status indexStatus = checker.checkIndex(null);
       
       if (indexStatus == null || indexStatus.clean == false) {
         System.out.println("CheckIndex failed");
-        System.out.println(bos.toString(IOUtils.UTF_8));
+        System.out.println(output.toString(IOUtils.UTF_8));
         throw new RuntimeException("CheckIndex failed");
       } else {
         if (LuceneTestCase.INFOSTREAM) {
-          System.out.println(bos.toString(IOUtils.UTF_8));
+          System.out.println(output.toString(IOUtils.UTF_8));
         }
         return indexStatus;
       }

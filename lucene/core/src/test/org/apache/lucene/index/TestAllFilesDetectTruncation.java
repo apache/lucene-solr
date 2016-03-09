@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -28,7 +27,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase;
@@ -116,7 +114,7 @@ public class TestAllFilesDetectTruncation extends LuceneTestCase {
 
       // CheckIndex should also fail:
       try {
-        TestUtil.checkIndex(dirCopy, true, true);
+        TestUtil.checkIndex(dirCopy, true, true, null);
         fail("truncation not detected after removing " + lostBytes + " bytes out of " + victimLength + " for file " + victim);
       } catch (CorruptIndexException | EOFException e) {
         // expected
