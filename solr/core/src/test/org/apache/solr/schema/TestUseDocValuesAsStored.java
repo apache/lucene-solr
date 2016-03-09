@@ -76,7 +76,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   @Test
   public void testOnEmptyIndex() throws Exception {
-    assertU(delQ("*:*"));
+    clearIndex();
     assertU(commit());
     assertJQ(req("q", "*:*"), "/response/numFound==0");
     assertJQ(req("q", "*:*", "fl", "*"), "/response/numFound==0");
@@ -236,6 +236,64 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
     fl = "*";
     assertQ(desc + ": " + fl, req("q", "*:*", "fl", fl), xpaths);
+
+  }
+  
+  // See SOLR-8740 for a discussion. This test is here to make sure we consciously change behavior of multiValued
+  // fields given that we can now return docValues fields. The behavior we've guaranteed in the past is that if
+  // multiValued fields are stored, they're returned in the document in the order they were added.
+  // There are four new fieldTypes added:
+  // <field name="test_mvt_dvt_st_str" type="string" indexed="true" multiValued="true" docValues="true"  stored="true"/>
+  // <field name="test_mvt_dvt_sf_str" type="string" indexed="true" multiValued="true" docValues="true"  stored="false"/>
+  // <field name="test_mvt_dvf_st_str" type="string" indexed="true" multiValued="true" docValues="false" stored="true"/>
+  // <field name="test_mvt_dvu_st_str" type="string" indexed="true" multiValued="true"                   stored="true"/>
+  //
+  // If any of these tests break as a result of returning DocValues rather than stored values, make sure we reach some
+  // consensus that any breaks on back-compat are A Good Thing and that that behavior is carefully documented!
+
+  @Test
+  public void testMultivaluedOrdering() throws Exception {
+    clearIndex();
+    
+    // multiValued=true, docValues=true, stored=true. Should return in original order
+    assertU(adoc("id", "1", "test_mvt_dvt_st_str", "cccc", "test_mvt_dvt_st_str", "aaaa", "test_mvt_dvt_st_str", "bbbb"));
+    
+    // multiValued=true, docValues=true, stored=false. Should return in sorted order
+    assertU(adoc("id", "2", "test_mvt_dvt_sf_str", "cccc", "test_mvt_dvt_sf_str", "aaaa", "test_mvt_dvt_sf_str", "bbbb"));
+    
+    // multiValued=true, docValues=false, stored=true. Should return in original order
+    assertU(adoc("id", "3", "test_mvt_dvf_st_str", "cccc", "test_mvt_dvf_st_str", "aaaa", "test_mvt_dvf_st_str", "bbbb"));
+    
+    // multiValued=true, docValues=not specified, stored=true. Should return in original order
+    assertU(adoc("id", "4", "test_mvt_dvu_st_str", "cccc", "test_mvt_dvu_st_str", "aaaa", "test_mvt_dvu_st_str", "bbbb"));
+    
+    assertU(commit());
+    
+    assertJQ(req("q", "id:1", "fl", "test_mvt_dvt_st_str"), 
+        "/response/docs/[0]/test_mvt_dvt_st_str/[0]==cccc",
+        "/response/docs/[0]/test_mvt_dvt_st_str/[1]==aaaa",
+        "/response/docs/[0]/test_mvt_dvt_st_str/[2]==bbbb");
+
+    // Currently, this test fails since stored=false. When SOLR-8740 is committed, it should not throw an exception
+    // and should succeed, returning the field in sorted order.
+    try {
+      assertJQ(req("q", "id:2", "fl", "test_mvt_dvt_sf_str"),
+          "/response/docs/[0]/test_mvt_dvt_sf_str/[0]==aaaa",
+          "/response/docs/[0]/test_mvt_dvt_sf_str/[1]==bbbb",
+          "/response/docs/[0]/test_mvt_dvt_sf_str/[2]==cccc");
+    } catch (Exception e) {
+      // do nothing until SOLR-8740 is committed. At that point this should not throw an exception. 
+      // NOTE: I think the test is correct after 8740 so just remove the try/catch
+    }
+    assertJQ(req("q", "id:3", "fl", "test_mvt_dvf_st_str"),
+        "/response/docs/[0]/test_mvt_dvf_st_str/[0]==cccc",
+        "/response/docs/[0]/test_mvt_dvf_st_str/[1]==aaaa",
+        "/response/docs/[0]/test_mvt_dvf_st_str/[2]==bbbb");
+
+    assertJQ(req("q", "id:4", "fl", "test_mvt_dvu_st_str"),
+        "/response/docs/[0]/test_mvt_dvu_st_str/[0]==cccc",
+        "/response/docs/[0]/test_mvt_dvu_st_str/[1]==aaaa",
+        "/response/docs/[0]/test_mvt_dvu_st_str/[2]==bbbb");
 
   }
 }
