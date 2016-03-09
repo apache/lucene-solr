@@ -19,6 +19,8 @@ package org.apache.solr.client.solrj.util;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import org.apache.solr.common.SolrException;
+
 /**
  * Ensures that provided identifiers align with Solr's recommendations/requirements for choosing
  * collection, core, etc identifiers.
@@ -34,7 +36,7 @@ public class SolrIdentifierValidator {
 
   public static String validateName(IdentifierType type, String name) {
     if (!validateIdentifier(name))
-      throw new IllegalArgumentException(getIdentifierMessage(type, name));
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, getIdentifierMessage(type, name));
     return name;
   }
 

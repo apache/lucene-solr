@@ -16,12 +16,11 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.core.Is.is;
-
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrIgnoredThreadsFilter;
@@ -43,8 +42,8 @@ import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.Is.is;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {SolrIgnoredThreadsFilter.class})
 public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
@@ -167,7 +166,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     try {
       createRequest.setCoreName("invalid$core@name");
       fail();
-    } catch (IllegalArgumentException e) {
+    } catch (SolrException e) {
       final String exceptionMessage = e.getMessage();
       assertTrue(exceptionMessage.contains("Invalid core"));
       assertTrue(exceptionMessage.contains("invalid$core@name"));
@@ -180,7 +179,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
     try {
       CoreAdminRequest.renameCore("validExistingCoreName", "invalid$core@name", null);
       fail();
-    } catch (IllegalArgumentException e) {
+    } catch (SolrException e) {
       final String exceptionMessage = e.getMessage();
       assertTrue(e.getMessage(), exceptionMessage.contains("Invalid core"));
       assertTrue(exceptionMessage.contains("invalid$core@name"));
