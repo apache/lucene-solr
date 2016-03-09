@@ -203,6 +203,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
     public AsyncShardSpecificAdminRequest(CollectionAction action, String collection, String shard) {
       super(action);
+      this.collection = collection;
+      this.shard = shard;
     }
 
     @Deprecated
