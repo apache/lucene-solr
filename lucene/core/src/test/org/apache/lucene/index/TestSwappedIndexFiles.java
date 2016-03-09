@@ -28,7 +28,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase;
@@ -118,7 +117,7 @@ public class TestSwappedIndexFiles extends LuceneTestCase {
 
       // CheckIndex should also fail:
       try {
-        TestUtil.checkIndex(dirCopy, true, true);
+        TestUtil.checkIndex(dirCopy, true, true, null);
         fail("wrong file " + victim + " not detected");
       } catch (CorruptIndexException | EOFException | IndexFormatTooOldException e) {
         // expected

@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -40,6 +41,7 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -626,6 +628,33 @@ public class TestPointValues extends LuceneTestCase {
     }
     r.close();
     w.close();
+    dir.close();
+  }
+
+  public void testCheckIndexIncludesPoints() throws Exception {
+    Directory dir = new RAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+    Document doc = new Document();
+    doc.add(new IntPoint("int1", 17));
+    w.addDocument(doc);
+
+    doc = new Document();
+    doc.add(new IntPoint("int1", 44));
+    doc.add(new IntPoint("int2", -17));
+    w.addDocument(doc);
+    w.close();
+
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    CheckIndex.Status status = TestUtil.checkIndex(dir, false, true, output);
+    assertEquals(1, status.segmentInfos.size());
+    CheckIndex.Status.SegmentInfoStatus segStatus = status.segmentInfos.get(0);
+    // total 3 point values were index:
+    assertEquals(3, segStatus.pointsStatus.totalValuePoints);
+    // ... across 2 fields:
+    assertEquals(2, segStatus.pointsStatus.totalValueFields);
+
+    // Make sure CheckIndex in fact declares that it is testing points!
+    assertTrue(output.toString(IOUtils.UTF_8).contains("test: points..."));
     dir.close();
   }
 }

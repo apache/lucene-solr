@@ -850,7 +850,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
             System.out.println("\nNOTE: MockDirectoryWrapper: now run CheckIndex");
           } 
 
-          TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true);
+          TestUtil.checkIndex(this, getCrossCheckTermVectorsOnClose(), true, null);
         }
           
         // TODO: factor this out / share w/ TestIW.assertNoUnreferencedFiles
