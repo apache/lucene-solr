@@ -45,6 +45,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.SegmentInfos;
+import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -296,7 +297,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   public synchronized void corruptFiles(Collection<String> files) throws IOException {
     // Must make a copy because we change the incoming unsyncedFiles
     // when we create temp files, delete, etc., below:
-    for(String name : new ArrayList<>(files)) {
+    final List<String> filesToCorrupt = new ArrayList<>(files);
+    // sort the files otherwise we have reproducibility issues
+    // across JVMs if the incoming collection is a hashSet etc.
+    CollectionUtil.timSort(filesToCorrupt);
+    for(String name : filesToCorrupt) {
       int damage = randomState.nextInt(6);
       String action = null;
 
