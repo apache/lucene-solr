@@ -176,7 +176,7 @@ public class TestBlockJoin extends LuceneTestCase {
     
     IndexReader r = w.getReader();
     w.close();
-    IndexSearcher s = newSearcher(r);
+    IndexSearcher s = newSearcher(r, false);
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
     BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("docType", "resume")));
@@ -263,7 +263,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     IndexReader r = w.getReader();
     w.close();
-    IndexSearcher s = newSearcher(r);
+    IndexSearcher s = newSearcher(r, false);
 
     // Hacky: this causes the query to need 2 rewrite
     // iterations: 
@@ -336,7 +336,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     IndexReader r = w.getReader();
     w.close();
-    IndexSearcher s = newSearcher(r);
+    IndexSearcher s = newSearcher(r, false);
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
     BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("docType", "resume")));
@@ -640,7 +640,7 @@ public class TestBlockJoin extends LuceneTestCase {
       }
     }
 
-    final IndexSearcher s = newSearcher(r);
+    final IndexSearcher s = newSearcher(r, false);
 
     final IndexSearcher joinS = new IndexSearcher(joinR);
 
@@ -1051,7 +1051,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     IndexReader r = w.getReader();
     w.close();
-    IndexSearcher s = newSearcher(r);
+    IndexSearcher s = newSearcher(r, false);
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
     BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("docType", "resume")));
@@ -1575,7 +1575,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     IndexReader r = w.getReader();
     w.close();
-    IndexSearcher s = newSearcher(r);
+    IndexSearcher s = newSearcher(r, false);
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
     BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("docType", "resume")));
@@ -1613,7 +1613,7 @@ public class TestBlockJoin extends LuceneTestCase {
 
     IndexReader r = w.getReader();
     w.close();
-    IndexSearcher s = newSearcher(r);
+    IndexSearcher s = newSearcher(r, false);
 
     // Create a filter that defines "parent" documents in the index - in this case resumes
     BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("docType", "resume")));
@@ -1644,7 +1644,7 @@ public class TestBlockJoin extends LuceneTestCase {
     w.forceMerge(1);
 
     final IndexReader r = w.getReader();
-    final IndexSearcher s = newSearcher(r);
+    final IndexSearcher s = newSearcher(r, false);
     w.close();
 
     BitSetProducer parentFilter = new QueryBitSetProducer(new TermQuery(new Term("docType", "resume")));
@@ -1690,7 +1690,7 @@ public class TestBlockJoin extends LuceneTestCase {
     }
 
     final IndexReader r = w.getReader();
-    final IndexSearcher s = newSearcher(r);
+    final IndexSearcher s = newSearcher(r, false);
     w.close();
 
     BitSetProducer resumeFilter = new QueryBitSetProducer(new TermQuery(new Term("docType", "resume")));
