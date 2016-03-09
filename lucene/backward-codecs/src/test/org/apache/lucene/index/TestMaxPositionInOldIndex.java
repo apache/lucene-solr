@@ -82,7 +82,7 @@ public class BuildMaxPositionIndex {
     BaseDirectoryWrapper dir = newFSDirectory(path);
     dir.setCheckIndexOnClose(false);
     RuntimeException expected = expectThrows(RuntimeException.class, () -> {
-      TestUtil.checkIndex(dir, false, true);
+      TestUtil.checkIndex(dir, false, true, null);
     });
     assertTrue(expected.getMessage().contains("pos 2147483647 > IndexWriter.MAX_POSITION=2147483519"));
 
