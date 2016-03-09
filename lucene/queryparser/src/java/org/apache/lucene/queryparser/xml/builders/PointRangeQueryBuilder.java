@@ -16,19 +16,20 @@
  */
 package org.apache.lucene.queryparser.xml.builders;
 
-import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.LegacyNumericUtils;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.queryparser.xml.DOMUtils;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.apache.lucene.queryparser.xml.QueryBuilder;
 import org.w3c.dom.Element;
 
 /**
- * Creates a {@link org.apache.lucene.search.LegacyNumericRangeQuery}. The table below specifies the required
- * attributes and the defaults if optional attributes are omitted. For more
- * detail on what each of the attributes actually do, consult the documentation
- * for {@link org.apache.lucene.search.LegacyNumericRangeQuery}:
+ * Creates a range query across 1D {@link PointValues}. The table below specifies the required
+ * attributes and the defaults if optional attributes are omitted:
  * <table summary="supported attributes">
  * <tr>
  * <th>Attribute name</th>
@@ -60,66 +61,33 @@ import org.w3c.dom.Element;
  * <td>No</td>
  * <td>int</td>
  * </tr>
- * <tr>
- * <td>includeLower</td>
- * <td>true, false</td>
- * <td>No</td>
- * <td>true</td>
- * </tr>
- * <tr>
- * <td>includeUpper</td>
- * <td>true, false</td>
- * <td>No</td>
- * <td>true</td>
- * </tr>
- * <tr>
- * <td>precisionStep</td>
- * <td>Integer</td>
- * <td>No</td>
- * <td>4</td>
- * </tr>
  * </table>
  * <p>
  * A {@link ParserException} will be thrown if an error occurs parsing the
  * supplied <tt>lowerTerm</tt> or <tt>upperTerm</tt> into the numeric type
  * specified by <tt>type</tt>.
- * @deprecated Index with points and use {@link PointRangeQueryBuilder} instead 
  */
-@Deprecated
-public class LegacyNumericRangeQueryBuilder implements QueryBuilder {
+public class PointRangeQueryBuilder implements QueryBuilder {
 
   @Override
   public Query getQuery(Element e) throws ParserException {
     String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
     String lowerTerm = DOMUtils.getAttributeOrFail(e, "lowerTerm");
     String upperTerm = DOMUtils.getAttributeOrFail(e, "upperTerm");
-    boolean lowerInclusive = DOMUtils.getAttribute(e, "includeLower", true);
-    boolean upperInclusive = DOMUtils.getAttribute(e, "includeUpper", true);
-    int precisionStep = DOMUtils.getAttribute(e, "precisionStep", LegacyNumericUtils.PRECISION_STEP_DEFAULT);
 
     String type = DOMUtils.getAttribute(e, "type", "int");
     try {
-      Query filter;
       if (type.equalsIgnoreCase("int")) {
-        filter = LegacyNumericRangeQuery.newIntRange(field, precisionStep, Integer
-                .valueOf(lowerTerm), Integer.valueOf(upperTerm), lowerInclusive,
-            upperInclusive);
+        return IntPoint.newRangeQuery(field, Integer.valueOf(lowerTerm), Integer.valueOf(upperTerm));
       } else if (type.equalsIgnoreCase("long")) {
-        filter = LegacyNumericRangeQuery.newLongRange(field, precisionStep, Long
-                .valueOf(lowerTerm), Long.valueOf(upperTerm), lowerInclusive,
-            upperInclusive);
+        return LongPoint.newRangeQuery(field, Long.valueOf(lowerTerm), Long.valueOf(upperTerm));
       } else if (type.equalsIgnoreCase("double")) {
-        filter = LegacyNumericRangeQuery.newDoubleRange(field, precisionStep, Double
-                .valueOf(lowerTerm), Double.valueOf(upperTerm), lowerInclusive,
-            upperInclusive);
+        return DoublePoint.newRangeQuery(field, Double.valueOf(lowerTerm), Double.valueOf(upperTerm));
       } else if (type.equalsIgnoreCase("float")) {
-        filter = LegacyNumericRangeQuery.newFloatRange(field, precisionStep, Float
-                .valueOf(lowerTerm), Float.valueOf(upperTerm), lowerInclusive,
-            upperInclusive);
+        return FloatPoint.newRangeQuery(field, Float.valueOf(lowerTerm), Float.valueOf(upperTerm));
       } else {
         throw new ParserException("type attribute must be one of: [long, int, double, float]");
       }
-      return filter;
     } catch (NumberFormatException nfe) {
       throw new ParserException("Could not parse lowerTerm or upperTerm into a number", nfe);
     }
