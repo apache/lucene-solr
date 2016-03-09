@@ -109,7 +109,7 @@ public abstract class PointRangeQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public final Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
 
     // We don't use RandomAccessWeight here: it's no good to approximate with "match all docs".
     // This is an inverted structure and should be used in the first pass:
@@ -239,7 +239,7 @@ public abstract class PointRangeQuery extends Query {
   }
 
   @Override
-  public int hashCode() {
+  public final int hashCode() {
     int hash = super.hashCode();
     hash = 31 * hash + Arrays.hashCode(lowerPoint);
     hash = 31 * hash + Arrays.hashCode(upperPoint);
@@ -249,20 +249,36 @@ public abstract class PointRangeQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object other) {
-    if (super.equals(other)) {
-      final PointRangeQuery q = (PointRangeQuery) other;
-      return q.numDims == numDims &&
-        q.bytesPerDim == bytesPerDim &&
-        Arrays.equals(lowerPoint, q.lowerPoint) &&
-        Arrays.equals(upperPoint, q.upperPoint);
+  public final boolean equals(Object other) {
+    if (super.equals(other) == false) {
+      return false;
     }
 
-    return false;
+    final PointRangeQuery q = (PointRangeQuery) other;
+    if (q.numDims != numDims) {
+      return false;
+    }
+
+    if (q.bytesPerDim != bytesPerDim) {
+      return false;
+    }
+
+    // Cannot use Arrays.equals here, because it in turn uses byte[].equals
+    // to compare each value, which only uses "=="
+    for(int dim=0;dim<numDims;dim++) {
+      if (Arrays.equals(lowerPoint[dim], q.lowerPoint[dim]) == false) {
+        return false;
+      }
+      if (Arrays.equals(upperPoint[dim], q.upperPoint[dim]) == false) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   @Override
-  public String toString(String field) {
+  public final String toString(String field) {
     final StringBuilder sb = new StringBuilder();
     if (this.field.equals(field) == false) {
       sb.append(this.field);
