@@ -1602,6 +1602,14 @@ public class TestPointQueries extends LuceneTestCase {
     r.close();
     dir.close();
   }
+  
+  /** Boxed methods for primitive types should behave the same as unboxed: just sugar */
+  public void testPointIntSetBoxed() throws Exception {
+    assertEquals(IntPoint.newSetQuery("foo", 1, 2, 3), IntPoint.newSetQuery("foo", Arrays.asList(1, 2, 3)));
+    assertEquals(FloatPoint.newSetQuery("foo", 1F, 2F, 3F), FloatPoint.newSetQuery("foo", Arrays.asList(1F, 2F, 3F)));
+    assertEquals(LongPoint.newSetQuery("foo", 1L, 2L, 3L), LongPoint.newSetQuery("foo", Arrays.asList(1L, 2L, 3L)));
+    assertEquals(DoublePoint.newSetQuery("foo", 1D, 2D, 3D), DoublePoint.newSetQuery("foo", Arrays.asList(1D, 2D, 3D)));
+  }
 
   public void testBasicMultiValuedPointInSetQuery() throws Exception {
     Directory dir = newDirectory();
