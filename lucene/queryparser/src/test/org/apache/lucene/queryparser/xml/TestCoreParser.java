@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -72,6 +73,7 @@ public class TestCoreParser extends LuceneTestCase {
       doc.add(newTextField("date", date, Field.Store.YES));
       doc.add(newTextField("contents", content, Field.Store.YES));
       doc.add(new LegacyIntField("date2", Integer.valueOf(date), Field.Store.NO));
+      doc.add(new IntPoint("date3", Integer.valueOf(date)));
       writer.addDocument(doc);
       line = d.readLine();
     }
@@ -163,6 +165,11 @@ public class TestCoreParser extends LuceneTestCase {
   public void testNumericRangeQueryXML() throws ParserException, IOException {
     Query q = parse("LegacyNumericRangeQuery.xml");
     dumpResults("LegacyNumericRangeQuery", q, 5);
+  }
+  
+  public void testPointRangeQuery() throws ParserException, IOException {
+    Query q = parse("PointRangeQuery.xml");
+    dumpResults("PointRangeQuery", q, 5);
   }
 
   //================= Helper methods ===================================

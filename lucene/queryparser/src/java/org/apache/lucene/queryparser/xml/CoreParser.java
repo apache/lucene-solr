@@ -67,6 +67,7 @@ public class CoreParser implements QueryBuilder {
     queryFactory.addBuilder("MatchAllDocsQuery", new MatchAllDocsQueryBuilder());
     queryFactory.addBuilder("BooleanQuery", new BooleanQueryBuilder(queryFactory));
     queryFactory.addBuilder("LegacyNumericRangeQuery", new LegacyNumericRangeQueryBuilder());
+    queryFactory.addBuilder("PointRangeQuery", new PointRangeQueryBuilder());
     queryFactory.addBuilder("RangeQuery", new RangeQueryBuilder());
     queryFactory.addBuilder("DisjunctionMaxQuery", new DisjunctionMaxQueryBuilder(queryFactory));
     if (parser != null) {
