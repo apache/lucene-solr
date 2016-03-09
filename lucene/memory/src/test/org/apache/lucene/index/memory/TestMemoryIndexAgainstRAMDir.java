@@ -35,10 +35,18 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.LegacyLongField;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Fields;
@@ -52,6 +60,9 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -432,6 +443,129 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
     assertNull(reader.postings(new Term("not-in-index", "foo")));
     assertNull(reader.postings(new Term("not-in-index", "foo"), PostingsEnum.ALL));
     assertNull(reader.terms("not-in-index"));
+  }
+
+  public void testDocValuesMemoryIndexVsNormalIndex() throws Exception {
+    Document doc = new Document();
+    long randomLong = random().nextLong();
+    doc.add(new NumericDocValuesField("numeric", randomLong));
+    if (random().nextBoolean()) {
+      doc.add(new LegacyLongField("numeric", randomLong, Field.Store.NO));
+    }
+    int numValues = atLeast(5);
+    for (int i = 0; i < numValues; i++) {
+      randomLong = random().nextLong();
+      doc.add(new SortedNumericDocValuesField("sorted_numeric", randomLong));
+      if (random().nextBoolean()) {
+        // randomly duplicate field/value
+        doc.add(new SortedNumericDocValuesField("sorted_numeric", randomLong));
+      }
+      if (random().nextBoolean()) {
+        doc.add(new LegacyLongField("numeric", randomLong, Field.Store.NO));
+      }
+    }
+    BytesRef randomTerm = new BytesRef(randomTerm());
+    doc.add(new BinaryDocValuesField("binary", randomTerm));
+    if (random().nextBoolean()) {
+      doc.add(new StringField("binary", randomTerm, Field.Store.NO));
+    }
+    randomTerm = new BytesRef(randomTerm());
+    doc.add(new SortedDocValuesField("sorted", randomTerm));
+    if (random().nextBoolean()) {
+      doc.add(new StringField("sorted", randomTerm, Field.Store.NO));
+    }
+    numValues = atLeast(5);
+    for (int i = 0; i < numValues; i++) {
+      randomTerm = new BytesRef(randomTerm());
+      doc.add(new SortedSetDocValuesField("sorted_set", randomTerm));
+      if (random().nextBoolean()) {
+        // randomly duplicate field/value
+        doc.add(new SortedSetDocValuesField("sorted_set", randomTerm));
+      }
+      if (random().nextBoolean()) {
+        // randomily just add a normal string field
+        doc.add(new StringField("sorted_set", randomTerm, Field.Store.NO));
+      }
+    }
+
+    MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
+    MemoryIndex memoryIndex = MemoryIndex.fromDocument(doc, mockAnalyzer);
+    IndexReader indexReader = memoryIndex.createSearcher().getIndexReader();
+    LeafReader leafReader =  indexReader.leaves().get(0).reader();
+
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));
+    writer.addDocument(doc);
+    writer.close();
+    IndexReader controlIndexReader = DirectoryReader.open(dir);
+    LeafReader controlLeafReader =  controlIndexReader.leaves().get(0).reader();
+
+    NumericDocValues numericDocValues = leafReader.getNumericDocValues("numeric");
+    NumericDocValues controlNumericDocValues = controlLeafReader.getNumericDocValues("numeric");
+    assertEquals(controlNumericDocValues.get(0), numericDocValues.get(0));
+
+    SortedNumericDocValues sortedNumericDocValues = leafReader.getSortedNumericDocValues("sorted_numeric");
+    sortedNumericDocValues.setDocument(0);
+    SortedNumericDocValues controlSortedNumericDocValues = controlLeafReader.getSortedNumericDocValues("sorted_numeric");
+    controlSortedNumericDocValues.setDocument(0);
+    assertEquals(controlSortedNumericDocValues.count(), sortedNumericDocValues.count());
+    for (int i = 0; i < controlSortedNumericDocValues.count(); i++) {
+      assertEquals(controlSortedNumericDocValues.valueAt(i), sortedNumericDocValues.valueAt(i));
+    }
+
+    BinaryDocValues binaryDocValues = leafReader.getBinaryDocValues("binary");
+    BinaryDocValues controlBinaryDocValues = controlLeafReader.getBinaryDocValues("binary");
+    assertEquals(controlBinaryDocValues.get(0), binaryDocValues.get(0));
+
+    SortedDocValues sortedDocValues = leafReader.getSortedDocValues("sorted");
+    SortedDocValues controlSortedDocValues = controlLeafReader.getSortedDocValues("sorted");
+    assertEquals(controlSortedDocValues.getValueCount(), sortedDocValues.getValueCount());
+    assertEquals(controlSortedDocValues.get(0), sortedDocValues.get(0));
+    assertEquals(controlSortedDocValues.getOrd(0), sortedDocValues.getOrd(0));
+    assertEquals(controlSortedDocValues.lookupOrd(0), sortedDocValues.lookupOrd(0));
+
+    SortedSetDocValues sortedSetDocValues = leafReader.getSortedSetDocValues("sorted_set");
+    sortedSetDocValues.setDocument(0);
+    SortedSetDocValues controlSortedSetDocValues = controlLeafReader.getSortedSetDocValues("sorted_set");
+    controlSortedSetDocValues.setDocument(0);
+    assertEquals(controlSortedSetDocValues.getValueCount(), sortedSetDocValues.getValueCount());
+    for (long controlOrd = controlSortedSetDocValues.nextOrd(); controlOrd != SortedSetDocValues.NO_MORE_ORDS;
+         controlOrd = controlSortedSetDocValues.nextOrd()) {
+      assertEquals(controlOrd, sortedSetDocValues.nextOrd());
+      assertEquals(controlSortedSetDocValues.lookupOrd(controlOrd), sortedSetDocValues.lookupOrd(controlOrd));
+    }
+    assertEquals(SortedSetDocValues.NO_MORE_ORDS, sortedSetDocValues.nextOrd());
+
+    indexReader.close();
+    controlIndexReader.close();
+    dir.close();
+  }
+
+  public void testNormsWithDocValues() throws Exception {
+    MemoryIndex mi = new MemoryIndex(true, true);
+    MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
+
+    mi.addField(new BinaryDocValuesField("text", new BytesRef("quick brown fox")), mockAnalyzer, 5f);
+    mi.addField(new TextField("text", "quick brown fox", Field.Store.NO), mockAnalyzer, 5f);
+    LeafReader leafReader = mi.createSearcher().getIndexReader().leaves().get(0).reader();
+
+    Document doc = new Document();
+    doc.add(new BinaryDocValuesField("text", new BytesRef("quick brown fox")));
+    Field field = new TextField("text", "quick brown fox", Field.Store.NO);
+    field.setBoost(5f);
+    doc.add(field);
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));
+    writer.addDocument(doc);
+    writer.close();
+
+    IndexReader controlIndexReader = DirectoryReader.open(dir);
+    LeafReader controlLeafReader =  controlIndexReader.leaves().get(0).reader();
+
+    assertEquals(controlLeafReader.getNormValues("text").get(0), leafReader.getNormValues("text").get(0));
+
+    controlIndexReader.close();
+    dir.close();
   }
 
   public void testDuellMemIndex() throws IOException {
