@@ -1886,4 +1886,84 @@ public class TestPointQueries extends LuceneTestCase {
     w.close();
     dir.close();
   }
+
+  public void testPointRangeEquals() {
+    Query q = IntPoint.newRangeQuery("a", 0, 1000);
+    assertEquals(q, IntPoint.newRangeQuery("a", 0, 1000));
+    assertFalse(q.equals(IntPoint.newRangeQuery("a", 1, 1000)));
+
+    q = LongPoint.newRangeQuery("a", 0, 1000);
+    assertEquals(q, LongPoint.newRangeQuery("a", 0, 1000));
+    assertFalse(q.equals(LongPoint.newRangeQuery("a", 1, 1000)));
+
+    q = FloatPoint.newRangeQuery("a", 0, 1000);
+    assertEquals(q, FloatPoint.newRangeQuery("a", 0, 1000));
+    assertFalse(q.equals(FloatPoint.newRangeQuery("a", 1, 1000)));
+
+    q = DoublePoint.newRangeQuery("a", 0, 1000);
+    assertEquals(q, DoublePoint.newRangeQuery("a", 0, 1000));
+    assertFalse(q.equals(DoublePoint.newRangeQuery("a", 1, 1000)));
+
+    byte[] zeros = new byte[5];
+    byte[] ones = new byte[5];
+    Arrays.fill(ones, (byte) 0xff);
+    q = BinaryPoint.newRangeQuery("a", new byte[][] {zeros}, new byte[][] {ones});
+    assertEquals(q, BinaryPoint.newRangeQuery("a", new byte[][] {zeros}, new byte[][] {ones}));
+    byte[] other = ones.clone();
+    other[2] = (byte) 5;
+    assertFalse(q.equals(BinaryPoint.newRangeQuery("a", new byte[][] {zeros}, new byte[][] {other})));
+  }
+
+  public void testPointExactEquals() {
+    Query q = IntPoint.newExactQuery("a", 1000);
+    assertEquals(q, IntPoint.newExactQuery("a", 1000));
+    assertFalse(q.equals(IntPoint.newExactQuery("a", 1)));
+
+    q = LongPoint.newExactQuery("a", 1000);
+    assertEquals(q, LongPoint.newExactQuery("a", 1000));
+    assertFalse(q.equals(LongPoint.newExactQuery("a", 1)));
+
+    q = FloatPoint.newExactQuery("a", 1000);
+    assertEquals(q, FloatPoint.newExactQuery("a", 1000));
+    assertFalse(q.equals(FloatPoint.newExactQuery("a", 1)));
+
+    q = DoublePoint.newExactQuery("a", 1000);
+    assertEquals(q, DoublePoint.newExactQuery("a", 1000));
+    assertFalse(q.equals(DoublePoint.newExactQuery("a", 1)));
+
+    byte[] ones = new byte[5];
+    Arrays.fill(ones, (byte) 0xff);
+    q = BinaryPoint.newExactQuery("a", ones);
+    assertEquals(q, BinaryPoint.newExactQuery("a", ones));
+    byte[] other = ones.clone();
+    other[2] = (byte) 5;
+    assertFalse(q.equals(BinaryPoint.newExactQuery("a", other)));
+  }
+
+  public void testPointInSetEquals() {
+    Query q = IntPoint.newSetQuery("a", 0, 1000, 17);
+    assertEquals(q, IntPoint.newSetQuery("a", 17, 0, 1000));
+    assertFalse(q.equals(IntPoint.newSetQuery("a", 1, 17, 1000)));
+
+    q = LongPoint.newSetQuery("a", 0, 1000, 17);
+    assertEquals(q, LongPoint.newSetQuery("a", 17, 0, 1000));
+    assertFalse(q.equals(LongPoint.newSetQuery("a", 1, 17, 1000)));
+
+    q = FloatPoint.newSetQuery("a", 0, 1000, 17);
+    assertEquals(q, FloatPoint.newSetQuery("a", 17, 0, 1000));
+    assertFalse(q.equals(FloatPoint.newSetQuery("a", 1, 17, 1000)));
+
+    q = DoublePoint.newSetQuery("a", 0, 1000, 17);
+    assertEquals(q, DoublePoint.newSetQuery("a", 17, 0, 1000));
+    assertFalse(q.equals(DoublePoint.newSetQuery("a", 1, 17, 1000)));
+
+    byte[] zeros = new byte[5];
+    byte[] ones = new byte[5];
+    Arrays.fill(ones, (byte) 0xff);
+    q = BinaryPoint.newSetQuery("a", new byte[][] {zeros, ones});
+    assertEquals(q, BinaryPoint.newSetQuery("a", new byte[][] {zeros, ones}));
+    byte[] other = ones.clone();
+    other[2] = (byte) 5;
+    assertFalse(q.equals(BinaryPoint.newSetQuery("a", new byte[][] {zeros, other})));
+  }
 }

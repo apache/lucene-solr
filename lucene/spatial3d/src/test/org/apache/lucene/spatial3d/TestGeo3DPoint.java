@@ -807,4 +807,18 @@ public class TestGeo3DPoint extends LuceneTestCase {
   private static Directory getDirectory() {     
     return newDirectory();
   }
+
+  public void testEquals() {
+    GeoShape shape = randomShape(PlanetModel.WGS84);
+    Query q = Geo3DPoint.newShapeQuery("point", shape);
+    assertEquals(q, Geo3DPoint.newShapeQuery("point", shape));
+    
+    // make a different random shape:
+    GeoShape shape2;
+    do {
+      shape2 = randomShape(PlanetModel.WGS84);
+    } while (shape.equals(shape2));
+
+    assertFalse(q.equals(Geo3DPoint.newShapeQuery("point", shape2)));
+  }
 }

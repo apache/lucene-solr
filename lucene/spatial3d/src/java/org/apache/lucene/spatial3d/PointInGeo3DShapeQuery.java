@@ -43,7 +43,7 @@ import org.apache.lucene.util.NumericUtils;
  *
  * @lucene.experimental */
 
-class PointInGeo3DShapeQuery extends Query {
+final class PointInGeo3DShapeQuery extends Query {
   final String field;
   final GeoShape shape;
 
@@ -192,7 +192,7 @@ class PointInGeo3DShapeQuery extends Query {
   }
 
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + shape.hashCode();
     return result;
