@@ -203,6 +203,9 @@ Other
 * LUCENE-7087: Let MemoryIndex#fromDocument(...) accept 'Iterable<? extends IndexableField>'
   as document instead of 'Document'. (Martijn van Groningen)
 
+* LUCENE-7091: Add doc values support to MemoryIndex
+  (Martijn van Groningen, David Smiley)
+
 ======================= Lucene 5.5.0 =======================
 
 New Features
