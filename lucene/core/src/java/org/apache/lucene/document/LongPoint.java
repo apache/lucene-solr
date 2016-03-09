@@ -17,6 +17,7 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.PointInSetQuery;
@@ -246,5 +247,20 @@ public final class LongPoint extends Field {
         return Long.toString(decodeDimension(value, 0));
       }
     };
+  }
+  
+  /**
+   * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
+   * 
+   * @param field field name. must not be {@code null}.
+   * @param values all values to match
+   */
+  public static Query newSetQuery(String field, Collection<Long> values) {
+    Long[] boxed = values.toArray(new Long[0]);
+    long[] unboxed = new long[boxed.length];
+    for (int i = 0; i < boxed.length; i++) {
+      unboxed[i] = boxed[i];
+    }
+    return newSetQuery(field, unboxed);
   }
 }
