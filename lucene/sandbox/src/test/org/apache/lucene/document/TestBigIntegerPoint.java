@@ -21,6 +21,7 @@ import java.math.BigInteger;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -93,4 +94,18 @@ public class TestBigIntegerPoint extends LuceneTestCase {
                                                                                  new BigInteger[] {BigInteger.valueOf(17), BigInteger.valueOf(42)}).toString());
     assertEquals("field:{1}", BigIntegerPoint.newSetQuery("field", BigInteger.ONE).toString());
   }
+
+  public void testQueryEquals() throws Exception {
+    Query q = BigIntegerPoint.newRangeQuery("a", BigInteger.valueOf(0), BigInteger.valueOf(1000));
+    assertEquals(q, BigIntegerPoint.newRangeQuery("a", BigInteger.valueOf(0), BigInteger.valueOf(1000)));
+    assertFalse(q.equals(BigIntegerPoint.newRangeQuery("a", BigInteger.valueOf(1), BigInteger.valueOf(1000))));
+
+    q = BigIntegerPoint.newExactQuery("a", BigInteger.valueOf(1000));
+    assertEquals(q, BigIntegerPoint.newExactQuery("a", BigInteger.valueOf(1000)));
+    assertFalse(q.equals(BigIntegerPoint.newExactQuery("a", BigInteger.valueOf(1))));
+
+    q = BigIntegerPoint.newSetQuery("a", BigInteger.valueOf(0), BigInteger.valueOf(1000), BigInteger.valueOf(17));
+    assertEquals(q, BigIntegerPoint.newSetQuery("a", BigInteger.valueOf(17), BigInteger.valueOf(0), BigInteger.valueOf(1000)));
+    assertFalse(q.equals(BigIntegerPoint.newSetQuery("a", BigInteger.valueOf(1), BigInteger.valueOf(17), BigInteger.valueOf(1000))));
+  }     
 }

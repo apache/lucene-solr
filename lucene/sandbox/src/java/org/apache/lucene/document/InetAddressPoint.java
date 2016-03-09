@@ -19,12 +19,14 @@ package org.apache.lucene.document;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Arrays;
+import java.util.Comparator;
 
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.StringHelper;
 
 /** 
  * An indexed 128-bit {@code InetAddress} field.
@@ -214,9 +216,22 @@ public class InetAddressPoint extends Field {
    */
   public static Query newSetQuery(String field, InetAddress... values) {
 
-    // Don't unexpectedly change the user's incoming values array:
-    InetAddress[] sortedValues = values.clone();
-    Arrays.sort(sortedValues);
+    // We must compare the encoded form (InetAddress doesn't implement Comparable, and even if it
+    // did, we do our own thing with ipv4 addresses):
+
+    // NOTE: we could instead convert-per-comparison and save this extra array, at cost of slower sort:
+    byte[][] sortedValues = new byte[values.length][];
+    for(int i=0;i<values.length;i++) {
+      sortedValues[i] = encode(values[i]);
+    }
+
+    Arrays.sort(sortedValues,
+                new Comparator<byte[]>() {
+                  @Override
+                  public int compare(byte[] a, byte[] b) {
+                    return StringHelper.compare(BYTES, a, 0, b, 0);
+                  }
+                });
 
     final BytesRef encoded = new BytesRef(new byte[BYTES]);
 
@@ -230,7 +245,7 @@ public class InetAddressPoint extends Field {
                                    if (upto == sortedValues.length) {
                                      return null;
                                    } else {
-                                     encoded.bytes = encode(sortedValues[upto]);
+                                     encoded.bytes = sortedValues[upto];
                                      assert encoded.bytes.length == encoded.length;
                                      upto++;
                                      return encoded;

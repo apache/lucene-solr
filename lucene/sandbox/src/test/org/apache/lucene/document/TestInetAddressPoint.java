@@ -21,6 +21,7 @@ import java.net.InetAddress;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -45,6 +46,7 @@ public class TestInetAddressPoint extends LuceneTestCase {
     assertEquals(1, searcher.count(InetAddressPoint.newPrefixQuery("field", address, 24)));
     assertEquals(1, searcher.count(InetAddressPoint.newRangeQuery("field", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5"))));
     assertEquals(1, searcher.count(InetAddressPoint.newSetQuery("field", InetAddress.getByName("1.2.3.4"))));
+    assertEquals(1, searcher.count(InetAddressPoint.newSetQuery("field", InetAddress.getByName("1.2.3.4"), InetAddress.getByName("1.2.3.5"))));
     assertEquals(0, searcher.count(InetAddressPoint.newSetQuery("field", InetAddress.getByName("1.2.3.3"))));
     assertEquals(0, searcher.count(InetAddressPoint.newSetQuery("field")));
 
@@ -87,5 +89,24 @@ public class TestInetAddressPoint extends LuceneTestCase {
     assertEquals("field:[1.2.3.0 TO 1.2.3.255]", InetAddressPoint.newPrefixQuery("field", InetAddress.getByName("1.2.3.4"), 24).toString());
     assertEquals("field:[fdc8:57ed:f042:ad1:0:0:0:0 TO fdc8:57ed:f042:ad1:ffff:ffff:ffff:ffff]", InetAddressPoint.newPrefixQuery("field", InetAddress.getByName("fdc8:57ed:f042:0ad1:f66d:4ff:fe90:ce0c"), 64).toString());
     assertEquals("field:{fdc8:57ed:f042:ad1:f66d:4ff:fe90:ce0c}", InetAddressPoint.newSetQuery("field", InetAddress.getByName("fdc8:57ed:f042:0ad1:f66d:4ff:fe90:ce0c")).toString());
+  }
+
+  public void testQueryEquals() throws Exception {
+    Query q = InetAddressPoint.newRangeQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5"));
+    assertEquals(q, InetAddressPoint.newRangeQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5")));
+    assertFalse(q.equals(InetAddressPoint.newRangeQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.7"))));
+
+    q = InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.2.3.3"), 16);
+    assertEquals(q, InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.2.3.3"), 16));
+    assertFalse(q.equals(InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.1.3.5"), 16)));
+    assertFalse(q.equals(InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.2.3.5"), 24)));
+
+    q = InetAddressPoint.newExactQuery("a", InetAddress.getByName("1.2.3.3"));
+    assertEquals(q, InetAddressPoint.newExactQuery("a", InetAddress.getByName("1.2.3.3")));
+    assertFalse(q.equals(InetAddressPoint.newExactQuery("a", InetAddress.getByName("1.2.3.5"))));
+
+    q = InetAddressPoint.newSetQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5"));
+    assertEquals(q, InetAddressPoint.newSetQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5")));
+    assertFalse(q.equals(InetAddressPoint.newSetQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.7"))));
   }
 }
