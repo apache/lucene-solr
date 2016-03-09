@@ -80,7 +80,7 @@ public class TestCoreParser extends LuceneTestCase {
     d.close();
     writer.close();
     reader = DirectoryReader.open(dir);
-    searcher = newSearcher(reader);
+    searcher = newSearcher(reader, false);
 
   }
 
