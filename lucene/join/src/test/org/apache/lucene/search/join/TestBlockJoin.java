@@ -615,12 +615,7 @@ public class TestBlockJoin extends LuceneTestCase {
     }
 
     if (!toDelete.isEmpty()) {
-      // TODO: we should add newSetQuery(String, Collection<T>) ? this is awkward.
-      int[] array = new int[toDelete.size()];
-      for (int i = 0; i < toDelete.size(); i++) {
-        array[i] = toDelete.get(i);
-      }
-      Query query = IntPoint.newSetQuery("blockID", array);
+      Query query = IntPoint.newSetQuery("blockID", toDelete);
       w.deleteDocuments(query);
       joinW.deleteDocuments(query);
     }
