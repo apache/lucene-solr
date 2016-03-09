@@ -20,6 +20,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateAlias;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.CreateShard;
+import org.apache.solr.common.SolrException;
 import org.junit.Test;
 
 /**
@@ -33,7 +34,7 @@ public class TestCollectionAdminRequest extends LuceneTestCase {
     try {
       createRequest.setCollectionName("invalid$collection@name");
       fail();
-    } catch (IllegalArgumentException e) {
+    } catch (SolrException e) {
       final String exceptionMessage = e.getMessage();
       assertTrue(exceptionMessage.contains("Invalid collection"));
       assertTrue(exceptionMessage.contains("invalid$collection@name"));
@@ -47,7 +48,7 @@ public class TestCollectionAdminRequest extends LuceneTestCase {
     try {
       createRequest.setShards("invalid$shard@name");
       fail();
-    } catch (IllegalArgumentException e) {
+    } catch (SolrException e) {
       final String exceptionMessage = e.getMessage();
       assertTrue(exceptionMessage.contains("Invalid shard"));
       assertTrue(exceptionMessage.contains("invalid$shard@name"));
@@ -61,7 +62,7 @@ public class TestCollectionAdminRequest extends LuceneTestCase {
     try {
       createAliasRequest.setAliasName("invalid$alias@name");
       fail();
-    } catch (IllegalArgumentException e) {
+    } catch (SolrException e) {
       final String exceptionMessage = e.getMessage();
       assertTrue(exceptionMessage.contains("Invalid alias"));
       assertTrue(exceptionMessage.contains("invalid$alias@name"));
@@ -75,7 +76,7 @@ public class TestCollectionAdminRequest extends LuceneTestCase {
     try {
       createShardRequest.setShardName("invalid$shard@name");
       fail();
-    } catch (IllegalArgumentException e) {
+    } catch (SolrException e) {
       final String exceptionMessage = e.getMessage();
       assertTrue(exceptionMessage.contains("Invalid shard"));
       assertTrue(exceptionMessage.contains("invalid$shard@name"));
