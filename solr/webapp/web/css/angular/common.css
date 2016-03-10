@@ -762,16 +762,7 @@ pre.syntax .tex .formula
   padding-left: 16px;
 }
 
-.new-ui-warning {
-  position: absolute;
-  left: 150px;
-  top: -20px;
-  align: center;
-  color: red;
-  font-weight: bold;
-}
-.new-ui-warning a.ul {
-  color: red;
-  font-weight: bold;
+.other-ui-link a.ul {
   text-decoration: underline;
 }
+
