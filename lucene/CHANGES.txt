@@ -14,6 +14,11 @@ Optimizations
 * LUCENE-7071: Reduce bytes copying in OfflineSorter, giving ~10%
   speedup on merging 2D LatLonPoint values (Mike McCandless)
 
+Other
+
+* LUCENE-7087: Let MemoryIndex#fromDocument(...) accept 'Iterable<? extends IndexableField>'
+  as document instead of 'Document'. (Martijn van Groningen)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
