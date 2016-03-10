@@ -54,7 +54,6 @@ import static org.apache.solr.cloud.ReplicaPropertiesBase.verifyUniqueAcrossColl
 public class CollectionsAPISolrJTest extends AbstractFullDistribZkTestBase {
 
   @Test
-  @Ignore
   public void test() throws Exception {
     testCreateAndDeleteCollection();
     testCreateAndDeleteShard();
@@ -80,6 +79,7 @@ public class CollectionsAPISolrJTest extends AbstractFullDistribZkTestBase {
             .setConfigName("conf1")
             .setRouterField("myOwnField")
             .setStateFormat(1);
+
     CollectionAdminResponse response = createCollectionRequest.process(cloudClient);
 
     assertEquals(0, response.getStatus());

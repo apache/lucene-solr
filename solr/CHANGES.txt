@@ -286,6 +286,9 @@ Bug Fixes
   other than count, resulted in incorrect results.  This has been fixed, and facet.prefix
   support for facet.method=uif has been enabled. (Mikhail Khludnev, yonik)
 
+* SOLR-8790: Collections API responses contain node name in the core-level responses that are
+  returned. (Anshum Gupta)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
