@@ -43,7 +43,6 @@ import org.slf4j.LoggerFactory;
  * this test is useful for catching regressions in indexing the example docs in collections that
  * use data-driven schema and managed schema features provided by configsets/data_driven_schema_configs.
  */
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-8135")
 public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
