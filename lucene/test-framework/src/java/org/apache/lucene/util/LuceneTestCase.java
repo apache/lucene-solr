@@ -764,14 +764,28 @@ public abstract class LuceneTestCase extends Assert {
    * Some tests expect the directory to contain a single segment, and want to 
    * do tests on that segment's reader. This is an utility method to help them.
    */
+    /*
   public static SegmentReader getOnlySegmentReader(DirectoryReader reader) {
     List<LeafReaderContext> subReaders = reader.leaves();
     if (subReaders.size() != 1) {
       throw new IllegalArgumentException(reader + " has " + subReaders.size() + " segments instead of exactly one");
     }
     final LeafReader r = subReaders.get(0).reader();
-    assertTrue(r instanceof SegmentReader);
+    assertTrue("expected a SegmentReader but got " + r, r instanceof SegmentReader);
     return (SegmentReader) r;
+  }
+    */
+
+  /**
+   * Some tests expect the directory to contain a single segment, and want to 
+   * do tests on that segment's reader. This is an utility method to help them.
+   */
+  public static LeafReader getOnlyLeafReader(IndexReader reader) {
+    List<LeafReaderContext> subReaders = reader.leaves();
+    if (subReaders.size() != 1) {
+      throw new IllegalArgumentException(reader + " has " + subReaders.size() + " segments instead of exactly one");
+    }
+    return subReaders.get(0).reader();
   }
 
   /**
@@ -1625,25 +1639,11 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   public static IndexReader wrapReader(IndexReader r) throws IOException {
-    return wrapReader(r, true);
-  }
-
-  public static IndexReader wrapReader(IndexReader r, boolean allowSlowCompositeReader) throws IOException {
     Random random = random();
       
-    // TODO: remove this, and fix those tests to wrap before putting slow around:
-    final boolean wasOriginallyAtomic = r instanceof LeafReader;
     for (int i = 0, c = random.nextInt(6)+1; i < c; i++) {
-      switch(random.nextInt(6)) {
+      switch(random.nextInt(5)) {
       case 0:
-        if (allowSlowCompositeReader) {
-          if (VERBOSE) {
-            System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with SlowCompositeReaderWrapper.wrap");
-          }
-          r = SlowCompositeReaderWrapper.wrap(r);
-        }
-        break;
-      case 1:
         // will create no FC insanity in atomic case, as ParallelLeafReader has own cache key:
         if (VERBOSE) {
           System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with ParallelLeaf/CompositeReader");
@@ -1652,7 +1652,7 @@ public abstract class LuceneTestCase extends Assert {
           new ParallelLeafReader((LeafReader) r) :
         new ParallelCompositeReader((CompositeReader) r);
         break;
-      case 2:
+      case 1:
         // Häckidy-Hick-Hack: a standard MultiReader will cause FC insanity, so we use
         // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
         // along our reader:
@@ -1661,9 +1661,9 @@ public abstract class LuceneTestCase extends Assert {
         }
         r = new FCInvisibleMultiReader(r);
         break;
-      case 3:
-        if (allowSlowCompositeReader) {
-          final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
+      case 2:
+        if (r instanceof LeafReader) {
+          final LeafReader ar = (LeafReader) r;
           final List<String> allFields = new ArrayList<>();
           for (FieldInfo fi : ar.getFieldInfos()) {
             allFields.add(fi.name);
@@ -1673,7 +1673,7 @@ public abstract class LuceneTestCase extends Assert {
           final Set<String> fields = new HashSet<>(allFields.subList(0, end));
           // will create no FC insanity as ParallelLeafReader has own cache key:
           if (VERBOSE) {
-            System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with ParallelLeafReader(SlowCompositeReaderWapper)");
+            System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with ParallelLeafReader");
           }
           r = new ParallelLeafReader(
                                      new FieldFilterLeafReader(ar, fields, false),
@@ -1681,7 +1681,7 @@ public abstract class LuceneTestCase extends Assert {
                                      );
         }
         break;
-      case 4:
+      case 3:
         // Häckidy-Hick-Hack: a standard Reader will cause FC insanity, so we use
         // QueryUtils' reader with a fake cache key, so insanity checker cannot walk
         // along our reader:
@@ -1694,7 +1694,7 @@ public abstract class LuceneTestCase extends Assert {
           r = new AssertingDirectoryReader((DirectoryReader)r);
         }
         break;
-      case 5:
+      case 4:
         if (VERBOSE) {
           System.out.println("NOTE: LuceneTestCase.wrapReader: wrapping previous reader=" + r + " with MismatchedLeaf/DirectoryReader");
         }
@@ -1708,11 +1708,8 @@ public abstract class LuceneTestCase extends Assert {
         fail("should not get here");
       }
     }
-    if (wasOriginallyAtomic) {
-      if (allowSlowCompositeReader) {
-        r = SlowCompositeReaderWrapper.wrap(r);
-      }
-    } else if ((r instanceof CompositeReader) && !(r instanceof FCInvisibleMultiReader)) {
+
+    if ((r instanceof CompositeReader) && !(r instanceof FCInvisibleMultiReader)) {
       // prevent cache insanity caused by e.g. ParallelCompositeReader, to fix we wrap one more time:
       r = new FCInvisibleMultiReader(r);
     }

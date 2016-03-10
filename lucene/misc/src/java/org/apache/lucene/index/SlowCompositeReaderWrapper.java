@@ -41,6 +41,7 @@ import org.apache.lucene.util.Bits;
  * leaves and then operate per-LeafReader,
  * instead of using this class.
  */
+
 public final class SlowCompositeReaderWrapper extends LeafReader {
 
   private final CompositeReader in;
@@ -63,6 +64,9 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   SlowCompositeReaderWrapper(CompositeReader reader, boolean merging) throws IOException {
     super();
     in = reader;
+    if (getFieldInfos().hasPointValues()) {
+      throw new IllegalArgumentException("cannot wrap points");
+    }
     fields = MultiFields.getFields(in);
     in.registerParentReader(this);
     this.merging = merging;

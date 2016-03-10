@@ -36,9 +36,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.spans.MultiSpansWrapper;
 import org.apache.lucene.search.spans.SpanCollector;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -225,7 +223,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     writer.addDocument(doc);
 
     final IndexReader readerFromWriter = writer.getReader();
-    LeafReader r = SlowCompositeReaderWrapper.wrap(readerFromWriter);
+    LeafReader r = getOnlyLeafReader(readerFromWriter);
 
     PostingsEnum tp = r.postings(new Term("content", "a"), PostingsEnum.ALL);
     
@@ -241,7 +239,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     // only one doc has "a"
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, tp.nextDoc());
 
-    IndexSearcher is = newSearcher(readerFromWriter);
+    IndexSearcher is = newSearcher(getOnlyLeafReader(readerFromWriter));
   
     SpanTermQuery stq1 = new SpanTermQuery(new Term("content", "a"));
     SpanTermQuery stq2 = new SpanTermQuery(new Term("content", "k"));
@@ -254,7 +252,7 @@ public class TestPositionIncrement extends LuceneTestCase {
       System.out.println("\ngetPayloadSpans test");
     }
     PayloadSpanCollector collector = new PayloadSpanCollector();
-    Spans pspans = MultiSpansWrapper.wrap(is.getIndexReader(), snq, SpanWeight.Postings.PAYLOADS);
+    Spans pspans = snq.createWeight(is, false).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.PAYLOADS);
     while (pspans.nextDoc() != Spans.NO_MORE_DOCS) {
       while (pspans.nextStartPosition() != Spans.NO_MORE_POSITIONS) {
         if (VERBOSE) {
@@ -276,7 +274,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(8, count);
 
     // System.out.println("\ngetSpans test");
-    Spans spans = MultiSpansWrapper.wrap(is.getIndexReader(), snq);
+    Spans spans = snq.createWeight(is, false).getSpans(is.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     count = 0;
     sawZero = false;
     while (spans.nextDoc() != Spans.NO_MORE_DOCS) {

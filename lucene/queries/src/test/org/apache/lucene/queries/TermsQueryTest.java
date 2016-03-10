@@ -342,11 +342,11 @@ public class TermsQueryTest extends LuceneTestCase {
     w.close();
     TermsQuery query = new TermsQuery(new Term("foo", "bar"), new Term("foo", "baz"));
     UsageTrackingQueryCachingPolicy policy = new UsageTrackingQueryCachingPolicy();
-    assertFalse(policy.shouldCache(query, getOnlySegmentReader(reader).getContext()));
+    assertFalse(policy.shouldCache(query, getOnlyLeafReader(reader).getContext()));
     policy.onUse(query);
     policy.onUse(query);
     // cached after two uses
-    assertTrue(policy.shouldCache(query, getOnlySegmentReader(reader).getContext()));
+    assertTrue(policy.shouldCache(query, getOnlyLeafReader(reader).getContext()));
     reader.close();
     dir.close();
   }

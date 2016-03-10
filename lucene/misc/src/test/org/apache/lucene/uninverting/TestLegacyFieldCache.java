@@ -307,7 +307,7 @@ public class TestLegacyFieldCache extends LuceneTestCase {
     iw.addDocument(doc);
     DirectoryReader ir = iw.getReader();
     iw.close();
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     
     // Binary type: can be retrieved via getTerms()
     expectThrows(IllegalStateException.class, () -> {
@@ -340,7 +340,7 @@ public class TestLegacyFieldCache extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.close();
     
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     
     final FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
@@ -379,7 +379,7 @@ public class TestLegacyFieldCache extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.close();
     
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     
     final FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
@@ -440,7 +440,7 @@ public class TestLegacyFieldCache extends LuceneTestCase {
     }
     iw.forceMerge(1);
     final DirectoryReader reader = iw.getReader();
-    final NumericDocValues longs = FieldCache.DEFAULT.getNumerics(getOnlySegmentReader(reader), "f", FieldCache.LEGACY_LONG_PARSER, false);
+    final NumericDocValues longs = FieldCache.DEFAULT.getNumerics(getOnlyLeafReader(reader), "f", FieldCache.LEGACY_LONG_PARSER, false);
     for (int i = 0; i < values.length; ++i) {
       assertEquals(values[i], longs.get(i));
     }
@@ -486,7 +486,7 @@ public class TestLegacyFieldCache extends LuceneTestCase {
     }
     iw.forceMerge(1);
     final DirectoryReader reader = iw.getReader();
-    final NumericDocValues ints = FieldCache.DEFAULT.getNumerics(getOnlySegmentReader(reader), "f", FieldCache.LEGACY_INT_PARSER, false);
+    final NumericDocValues ints = FieldCache.DEFAULT.getNumerics(getOnlyLeafReader(reader), "f", FieldCache.LEGACY_INT_PARSER, false);
     for (int i = 0; i < values.length; ++i) {
       assertEquals(values[i], ints.get(i));
     }

@@ -789,7 +789,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     iw.addIndexes(dirs);
     iw.forceMerge(1);
     
-    LeafReader ir = getOnlySegmentReader(DirectoryReader.open(iw));
+    LeafReader ir = getOnlyLeafReader(DirectoryReader.open(iw));
     for (int i = 0; i < ir.maxDoc(); i++) {
       Document doc = ir.document(i);
       assertEquals(10, doc.getFields().size());

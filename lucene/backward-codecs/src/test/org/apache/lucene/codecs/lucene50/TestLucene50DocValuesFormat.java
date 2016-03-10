@@ -200,7 +200,7 @@ public class TestLucene50DocValuesFormat extends BaseCompressingDocValuesFormatT
     
     // now compare again after the merge
     ir = writer.getReader();
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     Terms terms = ar.terms("indexed");
     if (terms != null) {
       assertEquals(terms.size(), ar.getSortedSetDocValues("dv").getValueCount());

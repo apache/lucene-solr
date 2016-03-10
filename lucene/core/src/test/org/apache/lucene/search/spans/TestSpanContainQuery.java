@@ -47,9 +47,10 @@ public class TestSpanContainQuery extends LuceneTestCase {
       doc.add(newTextField(field, docFields[i], Field.Store.YES));
       writer.addDocument(doc);
     }
+    writer.forceMerge(1);
     reader = writer.getReader();
     writer.close();
-    searcher = newSearcher(reader);
+    searcher = newSearcher(getOnlyLeafReader(reader));
   }
 
   @Override
@@ -71,7 +72,7 @@ public class TestSpanContainQuery extends LuceneTestCase {
   }
 
   Spans makeSpans(SpanQuery sq) throws Exception {
-    return MultiSpansWrapper.wrap(searcher.getIndexReader(), sq);
+    return sq.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
   }
 
   void tstEqualSpans(String mes, SpanQuery expectedQ, SpanQuery actualQ) throws Exception {

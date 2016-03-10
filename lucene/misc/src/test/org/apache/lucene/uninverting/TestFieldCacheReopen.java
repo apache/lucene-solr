@@ -47,7 +47,7 @@ public class TestFieldCacheReopen extends LuceneTestCase {
   
     // Open reader1
     DirectoryReader r = DirectoryReader.open(dir);
-    LeafReader r1 = getOnlySegmentReader(r);
+    LeafReader r1 = getOnlyLeafReader(r);
     final NumericDocValues ints = FieldCache.DEFAULT.getNumerics(r1, "number", FieldCache.INT_POINT_PARSER, false);
     assertEquals(17, ints.get(0));
   

@@ -692,7 +692,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.addDocument(doc);  
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
-    LeafReader subreader = getOnlySegmentReader(reader);
+    LeafReader subreader = getOnlyLeafReader(reader);
     TermsEnum te = subreader.fields().terms("").iterator();
     assertEquals(new BytesRef("a"), te.next());
     assertEquals(new BytesRef("b"), te.next());
@@ -713,7 +713,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.addDocument(doc);  
     writer.close();
     DirectoryReader reader = DirectoryReader.open(dir);
-    LeafReader subreader = getOnlySegmentReader(reader);
+    LeafReader subreader = getOnlyLeafReader(reader);
     TermsEnum te = subreader.fields().terms("").iterator();
     assertEquals(new BytesRef(""), te.next());
     assertEquals(new BytesRef("a"), te.next());
@@ -2549,7 +2549,7 @@ public class TestIndexWriter extends LuceneTestCase {
     w.commit();
     w.close();
     DirectoryReader r = DirectoryReader.open(d);
-    assertEquals(0, getOnlySegmentReader(r).getNormValues("foo").get(0));
+    assertEquals(0, getOnlyLeafReader(r).getNormValues("foo").get(0));
     r.close();
     d.close();
   }

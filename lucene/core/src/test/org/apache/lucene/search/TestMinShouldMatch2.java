@@ -87,7 +87,7 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
     iw.forceMerge(1);
     iw.close();
     r = DirectoryReader.open(dir);
-    reader = getOnlySegmentReader(r);
+    reader = getOnlyLeafReader(r);
     searcher = new IndexSearcher(reader);
     searcher.setSimilarity(new ClassicSimilarity() {
       @Override

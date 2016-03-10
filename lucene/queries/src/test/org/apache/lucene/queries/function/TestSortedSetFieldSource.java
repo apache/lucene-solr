@@ -50,7 +50,7 @@ public class TestSortedSetFieldSource extends LuceneTestCase {
 
     DirectoryReader ir = DirectoryReader.open(dir);
     IndexSearcher searcher = newSearcher(ir);
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     
     ValueSource vs = new SortedSetFieldSource("value");
     FunctionValues values = vs.getValues(Collections.emptyMap(), ar.getContext());

@@ -258,14 +258,14 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
       if (i == 100) {
         w.forceMerge(1);
         w.commit();
-        reader1 = getOnlySegmentReader(DirectoryReader.open(dir));
+        reader1 = getOnlyLeafReader(DirectoryReader.open(dir));
       }
     }
     w.forceMerge(1);
     w.commit();
     w.close();
 
-    LeafReader reader2 = getOnlySegmentReader(DirectoryReader.open(dir));
+    LeafReader reader2 = getOnlyLeafReader(DirectoryReader.open(dir));
 
     for (LeafReader reader : Arrays.asList(reader1, reader2)) {
       new SimpleMergedSegmentWarmer(InfoStream.NO_OUTPUT).warm(reader);
@@ -295,7 +295,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     oneDoc.add(customField);
     oneDoc.add(new NumericDocValuesField("field", 5));
     iw.addDocument(oneDoc);
-    LeafReader oneDocReader = getOnlySegmentReader(DirectoryReader.open(iw));
+    LeafReader oneDocReader = getOnlyLeafReader(DirectoryReader.open(iw));
     iw.close();
     
     // now feed to codec apis manually

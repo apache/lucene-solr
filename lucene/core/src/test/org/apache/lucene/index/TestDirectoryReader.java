@@ -761,7 +761,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     writer.commit();
   
     DirectoryReader r = DirectoryReader.open(dir);
-    LeafReader r1 = getOnlySegmentReader(r);
+    LeafReader r1 = getOnlyLeafReader(r);
     assertEquals(26, r1.terms("field").size());
     assertEquals(10, r1.terms("number").size());
     writer.addDocument(doc);

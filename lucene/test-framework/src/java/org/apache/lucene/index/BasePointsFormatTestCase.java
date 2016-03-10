@@ -77,7 +77,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     w.close();
 
     DirectoryReader r = DirectoryReader.open(dir);
-    LeafReader sub = getOnlySegmentReader(r);
+    LeafReader sub = getOnlyLeafReader(r);
     PointValues values = sub.getPointValues();
 
     // Simple test: make sure intersect can visit every doc:
@@ -119,7 +119,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
     w.close();
 
     DirectoryReader r = DirectoryReader.open(dir);
-    LeafReader sub = getOnlySegmentReader(r);
+    LeafReader sub = getOnlyLeafReader(r);
     PointValues values = sub.getPointValues();
 
     // Simple test: make sure intersect can visit every doc:

@@ -41,7 +41,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.CompositeReader;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
@@ -49,8 +48,10 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -66,8 +67,8 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
@@ -170,15 +171,14 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
 
   private void duellReaders(CompositeReader other, LeafReader memIndexReader)
       throws IOException {
-    LeafReader competitor = SlowCompositeReaderWrapper.wrap(other);
     Fields memFields = memIndexReader.fields();
-    for (String field : competitor.fields()) {
+    for (String field : MultiFields.getFields(other)) {
       Terms memTerms = memFields.terms(field);
       Terms iwTerms = memIndexReader.terms(field);
       if (iwTerms == null) {
         assertNull(memTerms);
       } else {
-        NumericDocValues normValues = competitor.getNormValues(field);
+        NumericDocValues normValues = MultiDocValues.getNormValues(other, field);
         NumericDocValues memNormValues = memIndexReader.getNormValues(field);
         if (normValues != null) {
           // mem idx always computes norms on the fly
