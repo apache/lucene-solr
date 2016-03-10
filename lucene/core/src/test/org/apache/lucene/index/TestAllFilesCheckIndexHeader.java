@@ -28,6 +28,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase;
@@ -86,6 +87,12 @@ public class TestAllFilesCheckIndexHeader extends LuceneTestCase {
   private void checkOneFile(Directory dir, String victim) throws IOException {
     try (BaseDirectoryWrapper dirCopy = newDirectory()) {
       dirCopy.setCheckIndexOnClose(false);
+
+      if (dirCopy instanceof MockDirectoryWrapper) {
+        // The while(true) loop below, under rarish circumstances, can sometimes double write:
+        ((MockDirectoryWrapper) dirCopy).setPreventDoubleWrite(false);
+      }
+
       long victimLength = dir.fileLength(victim);
       int wrongBytes = TestUtil.nextInt(random(), 1, (int) Math.min(100, victimLength));
       assert victimLength > 0;
