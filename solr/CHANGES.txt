@@ -119,6 +119,9 @@ Bug Fixes
 * SOLR-8449: Fix the core restore functionality to allow restoring multiple times on the same core
   (Johannes Brucher, Varun Thacker)
 
+* SOLR-8790: Collections API responses contain node name in the core-level responses that are
+  returned. (Anshum Gupta)
+
 Other Changes
 ----------------------
 

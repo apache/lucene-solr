@@ -78,6 +78,7 @@ public class CollectionsAPISolrJTests extends AbstractFullDistribZkTestBase {
             .setConfigName("conf1")
             .setRouterField("myOwnField")
             .setStateFormat(1);
+
     CollectionAdminResponse response = createCollectionRequest.process(cloudClient);
 
     assertEquals(0, response.getStatus());
