@@ -180,9 +180,9 @@ public class ClusterState implements JSONWriter.Writable {
    * if such a collection exists. Returns null otherwise.
    *
    * Implementation note: This method resolves the collection reference by calling
-   * {@link CollectionRef#get()} which can make a call to ZooKeeper. This is necessary
+   * {@link CollectionRef#get()} which may make a call to ZooKeeper. This is necessary
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
-   * Please javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
+   * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
    */
   public DocCollection getCollectionOrNull(String collectionName) {
     CollectionRef ref = collectionStates.get(collectionName);
