@@ -238,16 +238,14 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
       writer.close();
     }
     
-    LeafReader slow = SlowCompositeReaderWrapper.wrap(reader);
-    
-    Bits liveDocs = slow.getLiveDocs();
+    Bits liveDocs = MultiFields.getLiveDocs(reader);
     boolean[] expectedLiveDocs = new boolean[] { true, false, false, true, true, true };
     for (int i = 0; i < expectedLiveDocs.length; i++) {
       assertEquals(expectedLiveDocs[i], liveDocs.get(i));
     }
     
     long[] expectedValues = new long[] { 1, 2, 3, 17, 5, 17};
-    NumericDocValues ndv = slow.getNumericDocValues("val");
+    NumericDocValues ndv = MultiDocValues.getNumericValues(reader, "val");
     for (int i = 0; i < expectedValues.length; i++) {
       assertEquals(expectedValues[i], ndv.get(i));
     }
@@ -460,10 +458,9 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     
     final DirectoryReader reader = DirectoryReader.open(dir);
     
-    LeafReader r = SlowCompositeReaderWrapper.wrap(reader);
-    NumericDocValues ndv = r.getNumericDocValues("ndv");
-    SortedDocValues sdv = r.getSortedDocValues("sorted");
-    for (int i = 0; i < r.maxDoc(); i++) {
+    NumericDocValues ndv = MultiDocValues.getNumericValues(reader, "ndv");
+    SortedDocValues sdv = MultiDocValues.getSortedValues(reader, "sorted");
+    for (int i = 0; i < reader.maxDoc(); i++) {
       assertEquals(17, ndv.get(i));
       final BytesRef term = sdv.get(i);
       assertEquals(new BytesRef("value"), term);
@@ -491,9 +488,8 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     writer.close();
     
     final DirectoryReader reader = DirectoryReader.open(dir);
-    final LeafReader r = SlowCompositeReaderWrapper.wrap(reader);
-    NumericDocValues ndv = r.getNumericDocValues("ndv");
-    for (int i = 0; i < r.maxDoc(); i++) {
+    NumericDocValues ndv = MultiDocValues.getNumericValues(reader, "ndv");
+    for (int i = 0; i < reader.maxDoc(); i++) {
       assertEquals(3, ndv.get(i));
     }
     reader.close();
@@ -592,9 +588,8 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     writer.close();
     
     final DirectoryReader reader = DirectoryReader.open(dir);
-    final LeafReader r = SlowCompositeReaderWrapper.wrap(reader);
-    NumericDocValues ndv = r.getNumericDocValues("ndv");
-    for (int i = 0; i < r.maxDoc(); i++) {
+    NumericDocValues ndv = MultiDocValues.getNumericValues(reader, "ndv");
+    for (int i = 0; i < reader.maxDoc(); i++) {
       assertEquals(3, ndv.get(i));
     }
     reader.close();
@@ -806,7 +801,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     writer.close();
     
     reader = DirectoryReader.open(dir);
-    LeafReader ar = getOnlySegmentReader(reader);
+    LeafReader ar = getOnlyLeafReader(reader);
     assertEquals(DocValuesType.NUMERIC, ar.getFieldInfos().fieldInfo("foo").getDocValuesType());
     IndexSearcher searcher = new IndexSearcher(reader);
     TopFieldDocs td;
@@ -1103,9 +1098,8 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     writer.close();
     
     DirectoryReader reader = DirectoryReader.open(dir);
-    LeafReader r = SlowCompositeReaderWrapper.wrap(reader);
-    NumericDocValues f1 = r.getNumericDocValues("f1");
-    NumericDocValues f2 = r.getNumericDocValues("f2");
+    NumericDocValues f1 = MultiDocValues.getNumericValues(reader, "f1");
+    NumericDocValues f2 = MultiDocValues.getNumericValues(reader, "f2");
     assertEquals(12L, f1.get(0));
     assertEquals(13L, f2.get(0));
     assertEquals(17L, f1.get(1));

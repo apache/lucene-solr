@@ -182,7 +182,7 @@ public class TestPointValues extends LuceneTestCase {
     w2.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(dir);
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      w2.addIndexes(new CodecReader[] {getOnlySegmentReader(r)});
+        w2.addIndexes(new CodecReader[] {(CodecReader) getOnlyLeafReader(r)});
     });
     assertEquals("cannot change point dimension count from 2 to 1 for field=\"dim\"", expected.getMessage());
 
@@ -331,7 +331,7 @@ public class TestPointValues extends LuceneTestCase {
     w2.addDocument(doc);
     DirectoryReader r = DirectoryReader.open(dir);
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      w2.addIndexes(new CodecReader[] {getOnlySegmentReader(r)});
+        w2.addIndexes(new CodecReader[] {(CodecReader) getOnlyLeafReader(r)});
     });
     assertEquals("cannot change point numBytes from 6 to 4 for field=\"dim\"", expected.getMessage());
 

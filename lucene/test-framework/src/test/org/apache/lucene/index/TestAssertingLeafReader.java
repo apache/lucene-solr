@@ -54,9 +54,8 @@ public class TestAssertingLeafReader extends LuceneTestCase {
     assertEquals(1, r.numDocs());
 
     r = new AssertingDirectoryReader((DirectoryReader) r);
+    final IndexReader r2 = r;
 
-    final IndexReader r2 = SlowCompositeReaderWrapper.wrap(r);
-   
     Thread thread = new Thread() {
       @Override
       public void run() {
@@ -68,6 +67,6 @@ public class TestAssertingLeafReader extends LuceneTestCase {
     thread.start();
     thread.join();
 
-    IOUtils.close(r2, dir);
+    IOUtils.close(r, dir);
   }
 }

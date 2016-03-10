@@ -443,9 +443,9 @@ public class TestDocTermOrds extends LuceneTestCase {
     iw.deleteDocuments(new Term("foo", "baz"));
     DirectoryReader r2 = DirectoryReader.open(iw);
     
-    FieldCache.DEFAULT.getDocTermOrds(getOnlySegmentReader(r2), "foo", null);
+    FieldCache.DEFAULT.getDocTermOrds(getOnlyLeafReader(r2), "foo", null);
     
-    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(getOnlySegmentReader(r1), "foo", null);
+    SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(getOnlyLeafReader(r1), "foo", null);
     assertEquals(3, v.getValueCount());
     v.setDocument(1);
     assertEquals(1, v.nextOrd());
@@ -473,7 +473,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     iw.close();
     
     DirectoryReader ir = DirectoryReader.open(dir);
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     
     SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", FieldCache.INT32_TERM_PREFIX);
     assertEquals(2, v.getValueCount());
@@ -514,7 +514,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     iw.close();
     
     DirectoryReader ir = DirectoryReader.open(dir);
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     
     SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", FieldCache.INT64_TERM_PREFIX);
     assertEquals(2, v.getValueCount());
@@ -563,7 +563,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    LeafReader ar = getOnlySegmentReader(ireader);
+    LeafReader ar = getOnlyLeafReader(ireader);
     SortedSetDocValues dv = FieldCache.DEFAULT.getDocTermOrds(ar, "field", null);
     assertEquals(3, dv.getValueCount());
     
@@ -648,7 +648,7 @@ public class TestDocTermOrds extends LuceneTestCase {
     iw.close();
     
     DirectoryReader ir = DirectoryReader.open(dir);
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     
     SortedSetDocValues v = FieldCache.DEFAULT.getDocTermOrds(ar, "foo", null);
     assertNotNull(DocValues.unwrapSingleton(v)); // actually a single-valued field

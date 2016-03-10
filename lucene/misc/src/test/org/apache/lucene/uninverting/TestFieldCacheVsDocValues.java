@@ -399,7 +399,7 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     
     // now compare again after the merge
     ir = writer.getReader();
-    LeafReader ar = getOnlySegmentReader(ir);
+    LeafReader ar = getOnlyLeafReader(ir);
     SortedSetDocValues expected = FieldCache.DEFAULT.getDocTermOrds(ar, "indexed", null);
     SortedSetDocValues actual = ar.getSortedSetDocValues("dv");
     assertEquals(ir.maxDoc(), expected, actual);

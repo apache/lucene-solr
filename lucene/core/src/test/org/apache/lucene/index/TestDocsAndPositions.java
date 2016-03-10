@@ -335,7 +335,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     doc.add(newStringField("foo", "bar", Field.Store.NO));
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
-    LeafReader r = getOnlySegmentReader(reader);
+    LeafReader r = getOnlyLeafReader(reader);
     PostingsEnum disi = TestUtil.docs(random(), r, "foo", new BytesRef("bar"), null, PostingsEnum.NONE);
     int docid = disi.docID();
     assertEquals(-1, docid);
@@ -360,7 +360,7 @@ public class TestDocsAndPositions extends LuceneTestCase {
     doc.add(newTextField("foo", "bar", Field.Store.NO));
     writer.addDocument(doc);
     DirectoryReader reader = writer.getReader();
-    LeafReader r = getOnlySegmentReader(reader);
+    LeafReader r = getOnlyLeafReader(reader);
     PostingsEnum disi = r.postings(new Term("foo", "bar"), PostingsEnum.ALL);
     int docid = disi.docID();
     assertEquals(-1, docid);
