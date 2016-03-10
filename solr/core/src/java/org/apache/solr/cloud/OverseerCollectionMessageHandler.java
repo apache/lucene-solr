@@ -1847,6 +1847,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     String replica = zkStateReader.getBaseUrlForNodeName(nodeName);
     sreq.shards = new String[]{replica};
     sreq.actualShards = sreq.shards;
+    sreq.nodeName = nodeName;
     sreq.params = params;
 
     shardHandler.submit(sreq, replica, sreq.params);
