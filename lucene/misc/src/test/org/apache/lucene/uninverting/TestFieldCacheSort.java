@@ -23,11 +23,16 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LegacyFloatField;
 import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.LegacyLongField;
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -449,19 +454,22 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new LegacyIntField("value", 300000, Field.Store.YES));
+    doc.add(new IntPoint("value", 300000));
+    doc.add(new StoredField("value", 300000));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyIntField("value", -1, Field.Store.YES));
+    doc.add(new IntPoint("value", -1));
+    doc.add(new StoredField("value", -1));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyIntField("value", 4, Field.Store.YES));
+    doc.add(new IntPoint("value", 4));
+    doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.INTEGER));
+                     Collections.singletonMap("value", Type.INTEGER_POINT));
     writer.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortField("value", SortField.Type.INT));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -482,16 +490,18 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyIntField("value", -1, Field.Store.YES));
+    doc.add(new IntPoint("value", -1));
+    doc.add(new StoredField("value", -1));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyIntField("value", 4, Field.Store.YES));
+    doc.add(new IntPoint("value", 4));
+    doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.INTEGER));
+                     Collections.singletonMap("value", Type.INTEGER_POINT));
     writer.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortField("value", SortField.Type.INT));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -512,16 +522,18 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyIntField("value", -1, Field.Store.YES));
+    doc.add(new IntPoint("value", -1));
+    doc.add(new StoredField("value", -1));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyIntField("value", 4, Field.Store.YES));
+    doc.add(new IntPoint("value", 4));
+    doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.INTEGER));
+                     Collections.singletonMap("value", Type.INTEGER_POINT));
     writer.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir, false);
     SortField sortField = new SortField("value", SortField.Type.INT);
     sortField.setMissingValue(Integer.MAX_VALUE);
     Sort sort = new Sort(sortField);
@@ -542,6 +554,40 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
+    doc.add(new IntPoint("value", 300000));
+    doc.add(new StoredField("value", 300000));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new IntPoint("value", -1));
+    doc.add(new StoredField("value", -1));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new IntPoint("value", 4));
+    doc.add(new StoredField("value", 4));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.INTEGER_POINT));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir, false);
+    Sort sort = new Sort(new SortField("value", SortField.Type.INT, true));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // reverse numeric order
+    assertEquals("300000", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+
+  /** Tests sorting on type legacy int */
+  public void testLegacyInt() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
     doc.add(new LegacyIntField("value", 300000, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
@@ -551,7 +597,100 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc.add(new LegacyIntField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.INTEGER));
+                     Collections.singletonMap("value", Type.LEGACY_INTEGER));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.INT));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // numeric order
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("300000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy int with a missing value */
+  public void testLegacyIntMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyIntField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyIntField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LEGACY_INTEGER));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.INT));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as a 0
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy int, specifying the missing value should be treated as Integer.MAX_VALUE */
+  public void testLegacyIntMissingLast() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyIntField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyIntField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LEGACY_INTEGER));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sortField = new SortField("value", SortField.Type.INT);
+    sortField.setMissingValue(Integer.MAX_VALUE);
+    Sort sort = new Sort(sortField);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as a Integer.MAX_VALUE
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy int in reverse */
+  public void testLegacyIntReverse() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new LegacyIntField("value", 300000, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyIntField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyIntField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LEGACY_INTEGER));
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
@@ -573,19 +712,22 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new LegacyLongField("value", 3000000000L, Field.Store.YES));
+    doc.add(new LongPoint("value", 3000000000L));
+    doc.add(new StoredField("value", 3000000000L));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyLongField("value", -1, Field.Store.YES));
+    doc.add(new LongPoint("value", -1));
+    doc.add(new StoredField("value", -1));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyLongField("value", 4, Field.Store.YES));
+    doc.add(new LongPoint("value", 4));
+    doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.LONG));
+                     Collections.singletonMap("value", Type.LONG_POINT));
     writer.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -606,16 +748,18 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyLongField("value", -1, Field.Store.YES));
+    doc.add(new LongPoint("value", -1));
+    doc.add(new StoredField("value", -1));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyLongField("value", 4, Field.Store.YES));
+    doc.add(new LongPoint("value", 4));
+    doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.LONG));
+                     Collections.singletonMap("value", Type.LONG_POINT));
     writer.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -636,16 +780,18 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyLongField("value", -1, Field.Store.YES));
+    doc.add(new LongPoint("value", -1));
+    doc.add(new StoredField("value", -1));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyLongField("value", 4, Field.Store.YES));
+    doc.add(new LongPoint("value", 4));
+    doc.add(new StoredField("value", 4));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.LONG));
+                     Collections.singletonMap("value", Type.LONG_POINT));
     writer.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir, false);
     SortField sortField = new SortField("value", SortField.Type.LONG);
     sortField.setMissingValue(Long.MAX_VALUE);
     Sort sort = new Sort(sortField);
@@ -666,6 +812,40 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
+    doc.add(new LongPoint("value", 3000000000L));
+    doc.add(new StoredField("value", 3000000000L));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LongPoint("value", -1));
+    doc.add(new StoredField("value", -1));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LongPoint("value", 4));
+    doc.add(new StoredField("value", 4));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LONG_POINT));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir, false);
+    Sort sort = new Sort(new SortField("value", SortField.Type.LONG, true));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // reverse numeric order
+    assertEquals("3000000000", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("-1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy long */
+  public void testLegacyLong() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
     doc.add(new LegacyLongField("value", 3000000000L, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
@@ -675,7 +855,100 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc.add(new LegacyLongField("value", 4, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.LONG));
+                     Collections.singletonMap("value", Type.LEGACY_LONG));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // numeric order
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("3000000000", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy long with a missing value */
+  public void testLegacyLongMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyLongField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyLongField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LEGACY_LONG));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.LONG));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as 0
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy long, specifying the missing value should be treated as Long.MAX_VALUE */
+  public void testLegacyLongMissingLast() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyLongField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyLongField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LEGACY_LONG));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sortField = new SortField("value", SortField.Type.LONG);
+    sortField.setMissingValue(Long.MAX_VALUE);
+    Sort sort = new Sort(sortField);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as Long.MAX_VALUE
+    assertEquals("-1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy long in reverse */
+  public void testLegacyLongReverse() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new LegacyLongField("value", 3000000000L, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyLongField("value", -1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyLongField("value", 4, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LEGACY_LONG));
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
@@ -697,19 +970,22 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new LegacyFloatField("value", 30.1f, Field.Store.YES));
+    doc.add(new FloatPoint("value", 30.1f));
+    doc.add(new StoredField("value", 30.1f));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyFloatField("value", -1.3f, Field.Store.YES));
+    doc.add(new FloatPoint("value", -1.3f));
+    doc.add(new StoredField("value", -1.3f));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
+    doc.add(new FloatPoint("value", 4.2f));
+    doc.add(new StoredField("value", 4.2f));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.FLOAT));
+                     Collections.singletonMap("value", Type.FLOAT_POINT));
     writer.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -730,16 +1006,18 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyFloatField("value", -1.3f, Field.Store.YES));
+    doc.add(new FloatPoint("value", -1.3f));
+    doc.add(new StoredField("value", -1.3f));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
+    doc.add(new FloatPoint("value", 4.2f));
+    doc.add(new StoredField("value", 4.2f));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.FLOAT));
+                     Collections.singletonMap("value", Type.FLOAT_POINT));
     writer.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -760,16 +1038,18 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyFloatField("value", -1.3f, Field.Store.YES));
+    doc.add(new FloatPoint("value", -1.3f));
+    doc.add(new StoredField("value", -1.3f));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
+    doc.add(new FloatPoint("value", 4.2f));
+    doc.add(new StoredField("value", 4.2f));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.FLOAT));
+                     Collections.singletonMap("value", Type.FLOAT_POINT));
     writer.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir, false);
     SortField sortField = new SortField("value", SortField.Type.FLOAT);
     sortField.setMissingValue(Float.MAX_VALUE);
     Sort sort = new Sort(sortField);
@@ -790,6 +1070,40 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
+    doc.add(new FloatPoint("value", 30.1f));
+    doc.add(new StoredField("value", 30.1f));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatPoint("value", -1.3f));
+    doc.add(new StoredField("value", -1.3f));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new FloatPoint("value", 4.2f));
+    doc.add(new StoredField("value", 4.2f));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.FLOAT_POINT));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir, false);
+    Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT, true));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // reverse numeric order
+    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy float */
+  public void testLegacyFloat() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
     doc.add(new LegacyFloatField("value", 30.1f, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
@@ -799,7 +1113,100 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.FLOAT));
+                     Collections.singletonMap("value", Type.LEGACY_FLOAT));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // numeric order
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("30.1", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy float with a missing value */
+  public void testLegacyFloatMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyFloatField("value", -1.3f, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LEGACY_FLOAT));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.FLOAT));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as 0
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy float, specifying the missing value should be treated as Float.MAX_VALUE */
+  public void testLegacyFloatMissingLast() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyFloatField("value", -1.3f, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LEGACY_FLOAT));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sortField = new SortField("value", SortField.Type.FLOAT);
+    sortField.setMissingValue(Float.MAX_VALUE);
+    Sort sort = new Sort(sortField);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(3, td.totalHits);
+    // null is treated as Float.MAX_VALUE
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[2].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy float in reverse */
+  public void testLegacyFloatReverse() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new LegacyFloatField("value", 30.1f, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyFloatField("value", -1.3f, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyFloatField("value", 4.2f, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LEGACY_FLOAT));
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
@@ -821,22 +1228,26 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new LegacyDoubleField("value", 30.1, Field.Store.YES));
+    doc.add(new DoublePoint("value", 30.1));
+    doc.add(new StoredField("value", 30.1));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyDoubleField("value", -1.3, Field.Store.YES));
+    doc.add(new DoublePoint("value", -1.3));
+    doc.add(new StoredField("value", -1.3));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyDoubleField("value", 4.2333333333333, Field.Store.YES));
+    doc.add(new DoublePoint("value", 4.2333333333333));
+    doc.add(new StoredField("value", 4.2333333333333));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
+    doc.add(new DoublePoint("value", 4.2333333333332));
+    doc.add(new StoredField("value", 4.2333333333332));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.DOUBLE));
+                     Collections.singletonMap("value", Type.DOUBLE_POINT));
     writer.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -856,17 +1267,19 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
-    doc.add(new LegacyDoubleField("value", +0d, Field.Store.YES));
+    doc.add(new DoublePoint("value", +0d));
+    doc.add(new StoredField("value", +0d));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyDoubleField("value", -0d, Field.Store.YES));
+    doc.add(new DoublePoint("value", -0d));
+    doc.add(new StoredField("value", -0d));
     writer.addDocument(doc);
     doc = new Document();
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.DOUBLE));
+                     Collections.singletonMap("value", Type.DOUBLE_POINT));
     writer.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -891,19 +1304,22 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyDoubleField("value", -1.3, Field.Store.YES));
+    doc.add(new DoublePoint("value", -1.3));
+    doc.add(new StoredField("value", -1.3));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyDoubleField("value", 4.2333333333333, Field.Store.YES));
+    doc.add(new DoublePoint("value", 4.2333333333333));
+    doc.add(new StoredField("value", 4.2333333333333));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
+    doc.add(new DoublePoint("value", 4.2333333333332));
+    doc.add(new StoredField("value", 4.2333333333332));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.DOUBLE));
+                     Collections.singletonMap("value", Type.DOUBLE_POINT));
     writer.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir, false);
     Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
 
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
@@ -925,19 +1341,22 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Document doc = new Document();
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyDoubleField("value", -1.3, Field.Store.YES));
+    doc.add(new DoublePoint("value", -1.3));
+    doc.add(new StoredField("value", -1.3));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyDoubleField("value", 4.2333333333333, Field.Store.YES));
+    doc.add(new DoublePoint("value", 4.2333333333333));
+    doc.add(new StoredField("value", 4.2333333333333));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
+    doc.add(new DoublePoint("value", 4.2333333333332));
+    doc.add(new StoredField("value", 4.2333333333332));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.DOUBLE));
+                     Collections.singletonMap("value", Type.DOUBLE_POINT));
     writer.close();
     
-    IndexSearcher searcher = newSearcher(ir);
+    IndexSearcher searcher = newSearcher(ir, false);
     SortField sortField = new SortField("value", SortField.Type.DOUBLE);
     sortField.setMissingValue(Double.MAX_VALUE);
     Sort sort = new Sort(sortField);
@@ -959,6 +1378,45 @@ public class TestFieldCacheSort extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
     Document doc = new Document();
+    doc.add(new DoublePoint("value", 30.1));
+    doc.add(new StoredField("value", 30.1));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoublePoint("value", -1.3));
+    doc.add(new StoredField("value", -1.3));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoublePoint("value", 4.2333333333333));
+    doc.add(new StoredField("value", 4.2333333333333));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new DoublePoint("value", 4.2333333333332));
+    doc.add(new StoredField("value", 4.2333333333332));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.DOUBLE_POINT));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir, false);
+    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE, true));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(4, td.totalHits);
+    // numeric order
+    assertEquals("30.1", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+
+  /** Tests sorting on type legacy double */
+  public void testLegacyDouble() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
     doc.add(new LegacyDoubleField("value", 30.1, Field.Store.YES));
     writer.addDocument(doc);
     doc = new Document();
@@ -971,7 +1429,145 @@ public class TestFieldCacheSort extends LuceneTestCase {
     doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
     writer.addDocument(doc);
     IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
-                     Collections.singletonMap("value", Type.DOUBLE));
+                     Collections.singletonMap("value", Type.LEGACY_DOUBLE));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(4, td.totalHits);
+    // numeric order
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("30.1", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy double with +/- zero */
+  public void testLegacyDoubleSignedZero() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new LegacyDoubleField("value", +0d, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyDoubleField("value", -0d, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LEGACY_DOUBLE));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(2, td.totalHits);
+    // numeric order
+    double v0 = searcher.doc(td.scoreDocs[0].doc).getField("value").numericValue().doubleValue();
+    double v1 = searcher.doc(td.scoreDocs[1].doc).getField("value").numericValue().doubleValue();
+    assertEquals(0, v0, 0d);
+    assertEquals(0, v1, 0d);
+    // check sign bits
+    assertEquals(1, Double.doubleToLongBits(v0) >>> 63);
+    assertEquals(0, Double.doubleToLongBits(v1) >>> 63);
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy double with a missing value */
+  public void testLegacyDoubleMissing() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyDoubleField("value", -1.3, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyDoubleField("value", 4.2333333333333, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LEGACY_DOUBLE));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    Sort sort = new Sort(new SortField("value", SortField.Type.DOUBLE));
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(4, td.totalHits);
+    // null treated as a 0
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[3].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy double, specifying the missing value should be treated as Double.MAX_VALUE */
+  public void testLegacyDoubleMissingLast() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyDoubleField("value", -1.3, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyDoubleField("value", 4.2333333333333, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LEGACY_DOUBLE));
+    writer.close();
+    
+    IndexSearcher searcher = newSearcher(ir);
+    SortField sortField = new SortField("value", SortField.Type.DOUBLE);
+    sortField.setMissingValue(Double.MAX_VALUE);
+    Sort sort = new Sort(sortField);
+
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+    assertEquals(4, td.totalHits);
+    // null treated as Double.MAX_VALUE
+    assertEquals("-1.3", searcher.doc(td.scoreDocs[0].doc).get("value"));
+    assertEquals("4.2333333333332", searcher.doc(td.scoreDocs[1].doc).get("value"));
+    assertEquals("4.2333333333333", searcher.doc(td.scoreDocs[2].doc).get("value"));
+    assertNull(searcher.doc(td.scoreDocs[3].doc).get("value"));
+    TestUtil.checkReader(ir);
+    ir.close();
+    dir.close();
+  }
+  
+  /** Tests sorting on type legacy double in reverse */
+  public void testLegacyDoubleReverse() throws IOException {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new LegacyDoubleField("value", 30.1, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyDoubleField("value", -1.3, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyDoubleField("value", 4.2333333333333, Field.Store.YES));
+    writer.addDocument(doc);
+    doc = new Document();
+    doc.add(new LegacyDoubleField("value", 4.2333333333332, Field.Store.YES));
+    writer.addDocument(doc);
+    IndexReader ir = UninvertingReader.wrap(writer.getReader(), 
+                     Collections.singletonMap("value", Type.LEGACY_DOUBLE));
     writer.close();
     
     IndexSearcher searcher = newSearcher(ir);
@@ -1062,7 +1658,7 @@ public class TestFieldCacheSort extends LuceneTestCase {
     }
 
     IndexReader r = UninvertingReader.wrap(DirectoryReader.open(w),
-                    Collections.singletonMap("id", Type.INTEGER));
+                    Collections.singletonMap("id", Type.LEGACY_INTEGER));
     w.close();
     Query q = new TermQuery(new Term("body", "text"));
     IndexSearcher s = newSearcher(r);

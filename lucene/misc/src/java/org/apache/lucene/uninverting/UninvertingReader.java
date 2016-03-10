@@ -58,33 +58,69 @@ public class UninvertingReader extends FilterLeafReader {
    */
   public static enum Type {
     /** 
-     * Single-valued Integer, (e.g. indexed with {@link org.apache.lucene.document.LegacyIntField})
+     * Single-valued Integer, (e.g. indexed with {@link org.apache.lucene.document.IntPoint})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
      */
-    INTEGER,
+    INTEGER_POINT,
+    /** 
+     * Single-valued Integer, (e.g. indexed with {@link org.apache.lucene.document.LongPoint})
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link NumericDocValuesField}.
+     */
+    LONG_POINT,
+    /** 
+     * Single-valued Integer, (e.g. indexed with {@link org.apache.lucene.document.FloatPoint})
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link NumericDocValuesField}.
+     */
+    FLOAT_POINT,
+    /** 
+     * Single-valued Integer, (e.g. indexed with {@link org.apache.lucene.document.DoublePoint})
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link NumericDocValuesField}.
+     */
+    DOUBLE_POINT,
+    /** 
+     * Single-valued Integer, (e.g. indexed with {@link org.apache.lucene.document.LegacyIntField})
+     * <p>
+     * Fields with this type act as if they were indexed with
+     * {@link NumericDocValuesField}.
+     * @deprecated Index with points and use {@link #INTEGER_POINT} instead.
+     */
+    @Deprecated
+    LEGACY_INTEGER,
     /** 
      * Single-valued Long, (e.g. indexed with {@link org.apache.lucene.document.LegacyLongField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
+     * @deprecated Index with points and use {@link #LONG_POINT} instead.
      */
-    LONG,
+    @Deprecated
+    LEGACY_LONG,
     /** 
      * Single-valued Float, (e.g. indexed with {@link org.apache.lucene.document.LegacyFloatField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
+     * @deprecated Index with points and use {@link #FLOAT_POINT} instead.
      */
-    FLOAT,
+    @Deprecated
+    LEGACY_FLOAT,
     /** 
      * Single-valued Double, (e.g. indexed with {@link org.apache.lucene.document.LegacyDoubleField})
      * <p>
      * Fields with this type act as if they were indexed with
      * {@link NumericDocValuesField}.
+     * @deprecated Index with points and use {@link #DOUBLE_POINT} instead.
      */
-    DOUBLE,
+    @Deprecated
+    LEGACY_DOUBLE,
     /** 
      * Single-valued Binary, (e.g. indexed with {@link StringField}) 
      * <p>
@@ -181,14 +217,29 @@ public class UninvertingReader extends FilterLeafReader {
     ArrayList<FieldInfo> filteredInfos = new ArrayList<>();
     for (FieldInfo fi : in.getFieldInfos()) {
       DocValuesType type = fi.getDocValuesType();
-      if (fi.getIndexOptions() != IndexOptions.NONE && fi.getDocValuesType() == DocValuesType.NONE) {
+      if (type == DocValuesType.NONE) {        
         Type t = mapping.get(fi.name);
         if (t != null) {
+          if (t == Type.INTEGER_POINT || t == Type.LONG_POINT || t == Type.FLOAT_POINT || t == Type.DOUBLE_POINT) {
+            // type uses points
+            if (fi.getPointDimensionCount() == 0) {
+              continue;
+            }
+          } else {
+            // type uses inverted index
+            if (fi.getIndexOptions() == IndexOptions.NONE) {
+              continue;
+            }
+          }
           switch(t) {
-            case INTEGER:
-            case LONG:
-            case FLOAT:
-            case DOUBLE:
+            case INTEGER_POINT:
+            case LONG_POINT:
+            case FLOAT_POINT:
+            case DOUBLE_POINT:
+            case LEGACY_INTEGER:
+            case LEGACY_LONG:
+            case LEGACY_FLOAT:
+            case LEGACY_DOUBLE:
               type = DocValuesType.NUMERIC;
               break;
             case BINARY:
@@ -226,10 +277,14 @@ public class UninvertingReader extends FilterLeafReader {
     Type v = getType(field);
     if (v != null) {
       switch (v) {
-        case INTEGER: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.NUMERIC_UTILS_INT_PARSER, true);
-        case FLOAT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.NUMERIC_UTILS_FLOAT_PARSER, true);
-        case LONG: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.NUMERIC_UTILS_LONG_PARSER, true);
-        case DOUBLE: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, true);
+        case INTEGER_POINT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.INT_POINT_PARSER, true);
+        case FLOAT_POINT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.FLOAT_POINT_PARSER, true);
+        case LONG_POINT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LONG_POINT_PARSER, true);
+        case DOUBLE_POINT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.DOUBLE_POINT_PARSER, true);
+        case LEGACY_INTEGER: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_INT_PARSER, true);
+        case LEGACY_FLOAT: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_FLOAT_PARSER, true);
+        case LEGACY_LONG: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_LONG_PARSER, true);
+        case LEGACY_DOUBLE: return FieldCache.DEFAULT.getNumerics(in, field, FieldCache.LEGACY_DOUBLE_PARSER, true);
       }
     }
     return super.getNumericDocValues(field);
@@ -275,8 +330,20 @@ public class UninvertingReader extends FilterLeafReader {
 
   @Override
   public Bits getDocsWithField(String field) throws IOException {
-    if (getType(field) != null) {
-      return FieldCache.DEFAULT.getDocsWithField(in, field);
+    Type v = getType(field);
+    if (v != null) {
+      switch (v) {
+        case INTEGER_POINT:  return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.INT_POINT_PARSER);
+        case FLOAT_POINT:    return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.FLOAT_POINT_PARSER);
+        case LONG_POINT:     return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.LONG_POINT_PARSER);
+        case DOUBLE_POINT:   return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.DOUBLE_POINT_PARSER);
+        case LEGACY_INTEGER: return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.LEGACY_INT_PARSER);
+        case LEGACY_FLOAT:   return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.LEGACY_FLOAT_PARSER);
+        case LEGACY_LONG:    return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.LEGACY_LONG_PARSER);
+        case LEGACY_DOUBLE:  return FieldCache.DEFAULT.getDocsWithField(in, field, FieldCache.LEGACY_DOUBLE_PARSER);
+        default:
+          return FieldCache.DEFAULT.getDocsWithField(in, field, null);
+      }
     } else {
       return in.getDocsWithField(field);
     }

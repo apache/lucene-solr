@@ -42,6 +42,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+// TODO: what happened to this test... its not actually uninverting?
 public class TestFieldCacheWithThreads extends LuceneTestCase {
 
   public void test() throws Exception {
@@ -83,7 +84,7 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
           public void run() {
             try {
               //NumericDocValues ndv = ar.getNumericDocValues("number");
-              NumericDocValues ndv = FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_LONG_PARSER, false);
+              NumericDocValues ndv = FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.LONG_POINT_PARSER, false);
               //BinaryDocValues bdv = ar.getBinaryDocValues("bytes");
               BinaryDocValues bdv = FieldCache.DEFAULT.getTerms(ar, "bytes", false);
               SortedDocValues sdv = FieldCache.DEFAULT.getTermsIndex(ar, "sorted");
@@ -93,16 +94,16 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
                 int docID = threadRandom.nextInt(numDocs);
                 switch(threadRandom.nextInt(4)) {
                 case 0:
-                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_INT_PARSER, false).get(docID));
+                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.INT_POINT_PARSER, false).get(docID));
                   break;
                 case 1:
-                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_LONG_PARSER, false).get(docID));
+                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.LONG_POINT_PARSER, false).get(docID));
                   break;
                 case 2:
-                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_FLOAT_PARSER, false).get(docID));
+                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.FLOAT_POINT_PARSER, false).get(docID));
                   break;
                 case 3:
-                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, false).get(docID));
+                  assertEquals(numbers.get(docID).longValue(), FieldCache.DEFAULT.getNumerics(ar, "number", FieldCache.DOUBLE_POINT_PARSER, false).get(docID));
                   break;
                 }
                 BytesRef term = bdv.get(docID);
