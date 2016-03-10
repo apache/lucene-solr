@@ -21,34 +21,36 @@ import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
-import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
+import org.apache.lucene.queryparser.flexible.standard.config.LegacyNumericConfig;
 
 /**
- * This query node represents a range query composed by {@link NumericQueryNode}
+ * This query node represents a range query composed by {@link LegacyNumericQueryNode}
  * bounds, which means the bound values are {@link Number}s.
  * 
- * @see NumericQueryNode
+ * @see LegacyNumericQueryNode
  * @see AbstractRangeQueryNode
+ * @deprecated Index with Points instead and use {@link PointRangeQueryNode} instead.
  */
-public class NumericRangeQueryNode extends
-    AbstractRangeQueryNode<NumericQueryNode> {
+@Deprecated
+public class LegacyNumericRangeQueryNode extends
+    AbstractRangeQueryNode<LegacyNumericQueryNode> {
   
-  public NumericConfig numericConfig; 
+  public LegacyNumericConfig numericConfig; 
   
   /**
-   * Constructs a {@link NumericRangeQueryNode} object using the given
-   * {@link NumericQueryNode} as its bounds and {@link NumericConfig}.
+   * Constructs a {@link LegacyNumericRangeQueryNode} object using the given
+   * {@link LegacyNumericQueryNode} as its bounds and {@link LegacyNumericConfig}.
    * 
    * @param lower the lower bound
    * @param upper the upper bound
    * @param lowerInclusive <code>true</code> if the lower bound is inclusive, otherwise, <code>false</code>
    * @param upperInclusive <code>true</code> if the upper bound is inclusive, otherwise, <code>false</code>
-   * @param numericConfig the {@link NumericConfig} that represents associated with the upper and lower bounds
+   * @param numericConfig the {@link LegacyNumericConfig} that represents associated with the upper and lower bounds
    * 
-   * @see #setBounds(NumericQueryNode, NumericQueryNode, boolean, boolean, NumericConfig)
+   * @see #setBounds(LegacyNumericQueryNode, LegacyNumericQueryNode, boolean, boolean, LegacyNumericConfig)
    */
-  public NumericRangeQueryNode(NumericQueryNode lower, NumericQueryNode upper,
-      boolean lowerInclusive, boolean upperInclusive, NumericConfig numericConfig) throws QueryNodeException {
+  public LegacyNumericRangeQueryNode(LegacyNumericQueryNode lower, LegacyNumericQueryNode upper,
+      boolean lowerInclusive, boolean upperInclusive, LegacyNumericConfig numericConfig) throws QueryNodeException {
     setBounds(lower, upper, lowerInclusive, upperInclusive, numericConfig);
   }
   
@@ -73,17 +75,17 @@ public class NumericRangeQueryNode extends
   
   /**
    * Sets the upper and lower bounds of this range query node and the
-   * {@link NumericConfig} associated with these bounds.
+   * {@link LegacyNumericConfig} associated with these bounds.
    * 
    * @param lower the lower bound
    * @param upper the upper bound
    * @param lowerInclusive <code>true</code> if the lower bound is inclusive, otherwise, <code>false</code>
    * @param upperInclusive <code>true</code> if the upper bound is inclusive, otherwise, <code>false</code>
-   * @param numericConfig the {@link NumericConfig} that represents associated with the upper and lower bounds
+   * @param numericConfig the {@link LegacyNumericConfig} that represents associated with the upper and lower bounds
    * 
    */
-  public void setBounds(NumericQueryNode lower, NumericQueryNode upper,
-      boolean lowerInclusive, boolean upperInclusive, NumericConfig numericConfig) throws QueryNodeException {
+  public void setBounds(LegacyNumericQueryNode lower, LegacyNumericQueryNode upper,
+      boolean lowerInclusive, boolean upperInclusive, LegacyNumericConfig numericConfig) throws QueryNodeException {
     
     if (numericConfig == null) {
       throw new IllegalArgumentException("numericConfig cannot be null!");
@@ -123,11 +125,11 @@ public class NumericRangeQueryNode extends
   }
   
   /**
-   * Returns the {@link NumericConfig} associated with the lower and upper bounds.
+   * Returns the {@link LegacyNumericConfig} associated with the lower and upper bounds.
    * 
-   * @return the {@link NumericConfig} associated with the lower and upper bounds
+   * @return the {@link LegacyNumericConfig} associated with the lower and upper bounds
    */
-  public NumericConfig getNumericConfig() {
+  public LegacyNumericConfig getNumericConfig() {
     return this.numericConfig;
   }
   
