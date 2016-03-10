@@ -62,6 +62,7 @@ import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.HttpClientInterceptorPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.SecurityPluginHolder;
+import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.KeeperException;
@@ -916,8 +917,9 @@ public class CoreContainer {
       log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
       SolrCore newCore = core.reload(coreConfig);
       registerCore(name, newCore, false);
-    }
-    catch (Exception e) {
+    } catch (SolrCoreState.CoreIsClosedException e) {
+      throw e;
+    } catch (Exception e) {
       coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
     }
