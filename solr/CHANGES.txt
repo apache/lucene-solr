@@ -285,6 +285,9 @@ Bug Fixes
 
 * SOLR-8135: If a core reload is fired after a core close, it is not a non-recoverable error (noble)
 
+* SOLR-8790: Collections API responses contain node name in the core-level responses that are
+  returned. (Anshum Gupta)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
