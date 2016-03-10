@@ -255,7 +255,7 @@ Bug Fixes
   other than count, resulted in incorrect results.  This has been fixed, and facet.prefix
   support for facet.method=uif has been enabled. (Mikhail Khludnev, yonik)
 
-* SOLR-8135: If a core reload is fired after a core close, it is not a recoverable error (noble)
+* SOLR-8135: If a core reload is fired after a core close, it is not a non-recoverable error (noble)
 
 Optimizations
 ----------------------
