@@ -111,8 +111,8 @@ public class TestNorms extends LuceneTestCase {
   public void testMaxByteNorms() throws IOException {
     Directory dir = newFSDirectory(createTempDir("TestNorms.testMaxByteNorms"));
     buildIndex(dir);
-    LeafReader open = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
-    NumericDocValues normValues = open.getNormValues(byteTestField);
+    DirectoryReader open = DirectoryReader.open(dir);
+    NumericDocValues normValues = MultiDocValues.getNormValues(open, byteTestField);
     assertNotNull(normValues);
     for (int i = 0; i < open.maxDoc(); i++) {
       Document document = open.document(i);

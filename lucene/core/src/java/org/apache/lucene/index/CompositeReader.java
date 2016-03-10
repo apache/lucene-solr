@@ -26,8 +26,6 @@ import org.apache.lucene.store.*;
  be used to get stored fields from the underlying LeafReaders,
  but it is not possible to directly retrieve postings. To do that, get
  the {@link LeafReaderContext} for all sub-readers via {@link #leaves()}.
- Alternatively, you can mimic an {@link LeafReader} (with a serious slowdown),
- by wrapping composite readers with {@link SlowCompositeReaderWrapper}.
  
  <p>IndexReader instances for indexes on disk are usually constructed
  with a call to one of the static <code>DirectoryReader.open()</code> methods,

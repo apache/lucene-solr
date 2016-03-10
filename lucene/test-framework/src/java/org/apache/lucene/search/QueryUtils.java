@@ -398,7 +398,7 @@ public class QueryUtils {
             // previous reader, hits NO_MORE_DOCS
             if (lastReader[0] != null) {
               final LeafReader previousReader = lastReader[0];
-              IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
+              IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
               indexSearcher.setSimilarity(s.getSimilarity(true));
               Weight w = indexSearcher.createNormalizedWeight(q, true);
               LeafReaderContext ctx = (LeafReaderContext)indexSearcher.getTopReaderContext();
@@ -500,7 +500,7 @@ public class QueryUtils {
         // previous reader, hits NO_MORE_DOCS
         if (lastReader[0] != null) {
           final LeafReader previousReader = lastReader[0];
-          IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
+          IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
           indexSearcher.setSimilarity(s.getSimilarity(true));
           Weight w = indexSearcher.createNormalizedWeight(q, true);
           Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext());
@@ -528,7 +528,7 @@ public class QueryUtils {
       // confirm that skipping beyond the last doc, on the
       // previous reader, hits NO_MORE_DOCS
       final LeafReader previousReader = lastReader[0];
-      IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader);
+      IndexSearcher indexSearcher = LuceneTestCase.newSearcher(previousReader, false);
       indexSearcher.setSimilarity(s.getSimilarity(true));
       Weight w = indexSearcher.createNormalizedWeight(q, true);
       Scorer scorer = w.scorer((LeafReaderContext)indexSearcher.getTopReaderContext());

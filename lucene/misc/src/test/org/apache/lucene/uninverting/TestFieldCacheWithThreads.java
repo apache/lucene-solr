@@ -181,7 +181,7 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
     final DirectoryReader r = writer.getReader();
     writer.close();
     
-    final LeafReader sr = getOnlySegmentReader(r);
+    final LeafReader sr = getOnlyLeafReader(r);
 
     final long END_TIME = System.currentTimeMillis() + (TEST_NIGHTLY ? 30 : 1);
 

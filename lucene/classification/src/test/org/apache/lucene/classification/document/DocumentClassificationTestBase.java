@@ -30,7 +30,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Before;
 
@@ -202,7 +201,8 @@ public abstract class DocumentClassificationTestBase<T> extends ClassificationTe
     indexWriter.addDocument(doc);
 
     indexWriter.commit();
-    return SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
+    indexWriter.forceMerge(1);
+    return getOnlyLeafReader(indexWriter.getReader());
   }
 
   protected Document getVideoGameDocument() {
