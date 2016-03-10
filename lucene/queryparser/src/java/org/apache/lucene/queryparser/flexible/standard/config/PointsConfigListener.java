@@ -25,49 +25,41 @@ import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfi
 
 /**
  * This listener is used to listen to {@link FieldConfig} requests in
- * {@link QueryConfigHandler} and add {@link ConfigurationKeys#NUMERIC_CONFIG}
- * based on the {@link ConfigurationKeys#NUMERIC_CONFIG_MAP} set in the
+ * {@link QueryConfigHandler} and add {@link ConfigurationKeys#POINTS_CONFIG}
+ * based on the {@link ConfigurationKeys#POINTS_CONFIG_MAP} set in the
  * {@link QueryConfigHandler}.
  * 
- * @see NumericConfig
+ * @see PointsConfig
  * @see QueryConfigHandler
- * @see ConfigurationKeys#NUMERIC_CONFIG
- * @see ConfigurationKeys#NUMERIC_CONFIG_MAP
+ * @see ConfigurationKeys#POINTS_CONFIG
+ * @see ConfigurationKeys#POINTS_CONFIG_MAP
  */
-public class NumericFieldConfigListener implements FieldConfigListener {
+public class PointsConfigListener implements FieldConfigListener {
   
   final private QueryConfigHandler config;
   
   /**
-   * Construcs a {@link NumericFieldConfigListener} object using the given {@link QueryConfigHandler}.
+   * Constructs a {@link PointsConfigListener} object using the given {@link QueryConfigHandler}.
    * 
    * @param config the {@link QueryConfigHandler} it will listen too
    */
-  public NumericFieldConfigListener(QueryConfigHandler config) {
-    
+  public PointsConfigListener(QueryConfigHandler config) { 
     if (config == null) {
       throw new IllegalArgumentException("config cannot be null!");
     }
-    
     this.config = config;
-    
   }
   
   @Override
   public void buildFieldConfig(FieldConfig fieldConfig) {
-    Map<String,NumericConfig> numericConfigMap = config
-        .get(ConfigurationKeys.NUMERIC_CONFIG_MAP);
+    Map<String,PointsConfig> pointsConfigMap = config.get(ConfigurationKeys.POINTS_CONFIG_MAP);
     
-    if (numericConfigMap != null) {
-      NumericConfig numericConfig = numericConfigMap
-          .get(fieldConfig.getField());
+    if (pointsConfigMap != null) {
+      PointsConfig pointsConfig = pointsConfigMap.get(fieldConfig.getField());
       
-      if (numericConfig != null) {
-        fieldConfig.set(ConfigurationKeys.NUMERIC_CONFIG, numericConfig);
+      if (pointsConfig != null) {
+        fieldConfig.set(ConfigurationKeys.POINTS_CONFIG, pointsConfig);
       }
-      
     }
-    
   }
-  
 }
