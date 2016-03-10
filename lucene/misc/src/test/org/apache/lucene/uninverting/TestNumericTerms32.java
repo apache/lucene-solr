@@ -96,9 +96,9 @@ public class TestNumericTerms32 extends LuceneTestCase {
     }
   
     Map<String,Type> map = new HashMap<>();
-    map.put("field2", Type.INTEGER);
-    map.put("field4", Type.INTEGER);
-    map.put("field8", Type.INTEGER);
+    map.put("field2", Type.LEGACY_INTEGER);
+    map.put("field4", Type.LEGACY_INTEGER);
+    map.put("field8", Type.LEGACY_INTEGER);
     reader = UninvertingReader.wrap(writer.getReader(), map);
     searcher=newSearcher(reader);
     writer.close();

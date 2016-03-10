@@ -458,8 +458,8 @@ public class TestFieldCacheVsDocValues extends LuceneTestCase {
     DirectoryReader ir = DirectoryReader.open(dir);
     for (LeafReaderContext context : ir.leaves()) {
       LeafReader r = context.reader();
-      Bits expected = FieldCache.DEFAULT.getDocsWithField(r, "indexed");
-      Bits actual = FieldCache.DEFAULT.getDocsWithField(r, "dv");
+      Bits expected = FieldCache.DEFAULT.getDocsWithField(r, "indexed", null);
+      Bits actual = FieldCache.DEFAULT.getDocsWithField(r, "dv", null);
       assertEquals(expected, actual);
     }
     ir.close();
