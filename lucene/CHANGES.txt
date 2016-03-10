@@ -175,6 +175,9 @@ Other
 
 * LUCENE-7035: Upgrade icu4j to 56.1/unicode 8. (Robert Muir)
 
+* LUCENE-7087: Let MemoryIndex#fromDocument(...) accept 'Iterable<? extends IndexableField>'
+  as document instead of 'Document'. (Martijn van Groningen)
+
 ======================= Lucene 5.5.0 =======================
 
 New Features

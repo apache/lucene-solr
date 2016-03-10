@@ -265,7 +265,7 @@ public class MemoryIndex {
    * @param analyzer the analyzer to use
    * @return a MemoryIndex
    */
-  public static MemoryIndex fromDocument(Document document, Analyzer analyzer) {
+  public static MemoryIndex fromDocument(Iterable<? extends IndexableField> document, Analyzer analyzer) {
     return fromDocument(document, analyzer, false, false, 0);
   }
 
@@ -277,7 +277,7 @@ public class MemoryIndex {
    * @param storePayloads <code>true</code> if payloads should be stored
    * @return a MemoryIndex
    */
-  public static MemoryIndex fromDocument(Document document, Analyzer analyzer, boolean storeOffsets, boolean storePayloads) {
+  public static MemoryIndex fromDocument(Iterable<? extends IndexableField> document, Analyzer analyzer, boolean storeOffsets, boolean storePayloads) {
     return fromDocument(document, analyzer, storeOffsets, storePayloads, 0);
   }
 
@@ -290,7 +290,7 @@ public class MemoryIndex {
    * @param maxReusedBytes the number of bytes that should remain in the internal memory pools after {@link #reset()} is called
    * @return a MemoryIndex
    */
-  public static MemoryIndex fromDocument(Document document, Analyzer analyzer, boolean storeOffsets, boolean storePayloads, long maxReusedBytes) {
+  public static MemoryIndex fromDocument(Iterable<? extends IndexableField> document, Analyzer analyzer, boolean storeOffsets, boolean storePayloads, long maxReusedBytes) {
     MemoryIndex mi = new MemoryIndex(storeOffsets, storePayloads, maxReusedBytes);
     for (IndexableField field : document) {
       mi.addField(field, analyzer);
