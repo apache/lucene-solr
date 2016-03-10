@@ -454,7 +454,7 @@ public class CollectionsHandler extends RequestHandlerBase {
         String splitKey = req.getParams().get("split.key");
 
         if (splitKey == null && shard == null) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Missing required parameter: shard");
+          throw new SolrException(ErrorCode.BAD_REQUEST, "At least one of shard, or split.key should be specified.");
         }
         if (splitKey != null && shard != null) {
           throw new SolrException(ErrorCode.BAD_REQUEST,
