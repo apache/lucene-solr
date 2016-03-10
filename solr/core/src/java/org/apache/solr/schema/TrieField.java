@@ -203,14 +203,14 @@ public class TrieField extends PrimitiveFieldType {
     } else {
       switch (type) {
         case INTEGER:
-          return Type.INTEGER;
+          return Type.LEGACY_INTEGER;
         case LONG:
         case DATE:
-          return Type.LONG;
+          return Type.LEGACY_LONG;
         case FLOAT:
-          return Type.FLOAT;
+          return Type.LEGACY_FLOAT;
         case DOUBLE:
-          return Type.DOUBLE;
+          return Type.LEGACY_DOUBLE;
         default:
           throw new AssertionError();
       }

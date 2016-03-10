@@ -363,8 +363,9 @@ public class TestUninvertingReader extends LuceneTestCase {
     iw.close();
 
     Map<String, Type> uninvertingMap = new HashMap<>();
-    uninvertingMap.put("int", Type.INTEGER);
-    uninvertingMap.put("dv", Type.INTEGER);
+    uninvertingMap.put("int", Type.LEGACY_INTEGER);
+    uninvertingMap.put("dv", Type.LEGACY_INTEGER);
+    uninvertingMap.put("dint", Type.INTEGER_POINT);
 
     DirectoryReader ir = UninvertingReader.wrap(DirectoryReader.open(dir), 
                          uninvertingMap);
@@ -376,6 +377,7 @@ public class TestUninvertingReader extends LuceneTestCase {
     assertEquals(0, intFInfo.getPointNumBytes());
 
     FieldInfo dintFInfo = leafReader.getFieldInfos().fieldInfo("dint");
+    assertEquals(DocValuesType.NUMERIC, dintFInfo.getDocValuesType());
     assertEquals(1, dintFInfo.getPointDimensionCount());
     assertEquals(4, dintFInfo.getPointNumBytes());
 

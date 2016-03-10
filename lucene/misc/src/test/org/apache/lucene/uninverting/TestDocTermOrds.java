@@ -353,7 +353,7 @@ public class TestDocTermOrds extends LuceneTestCase {
                                             TestUtil.nextInt(random(), 2, 10));
                                             
 
-    final NumericDocValues docIDToID = FieldCache.DEFAULT.getNumerics(r, "id", FieldCache.NUMERIC_UTILS_INT_PARSER, false);
+    final NumericDocValues docIDToID = FieldCache.DEFAULT.getNumerics(r, "id", FieldCache.LEGACY_INT_PARSER, false);
     /*
       for(int docID=0;docID<subR.maxDoc();docID++) {
       System.out.println("  docID=" + docID + " id=" + docIDToID[docID]);
