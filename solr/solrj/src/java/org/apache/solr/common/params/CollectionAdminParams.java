@@ -21,4 +21,6 @@ public abstract class CollectionAdminParams {
   /* Param used by DELETESTATUS call to clear all stored responses */
   public static final String FLUSH = "flush";
 
+  public static final String COLLECTION = "collection";
+
 }

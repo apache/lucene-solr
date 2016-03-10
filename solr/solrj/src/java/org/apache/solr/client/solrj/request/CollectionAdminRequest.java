@@ -616,27 +616,30 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   /**
    * Returns a SolrRequest to split a shard in a collection
    */
-  public static SplitShard splitShard(String collection, String shard) {
-    return new SplitShard(collection, shard);
+  public static SplitShard splitShard(String collection) {
+    return new SplitShard(collection);
   }
 
   // SPLITSHARD request
-  public static class SplitShard extends AsyncShardSpecificAdminRequest {
+  public static class SplitShard extends AsyncCollectionAdminRequest {
+    protected String collection;
     protected String ranges;
     protected String splitKey;
+    protected String shard;
 
     private Properties properties;
 
-    private SplitShard(String collection, String shard) {
-      super(CollectionAction.SPLITSHARD, collection, shard);
+    private SplitShard(String collection) {
+      super(CollectionAction.SPLITSHARD);
+      this.collection = collection;
     }
 
     /**
-     * @deprecated Use {@link #splitShard(String, String)}
+     * @deprecated Use {@link #splitShard(String)}
      */
     @Deprecated
     public SplitShard() {
-      super(CollectionAction.SPLITSHARD, null, null);
+      super(CollectionAction.SPLITSHARD);
     }
 
     public SplitShard setRanges(String ranges) { this.ranges = ranges; return this; }
@@ -660,15 +663,12 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
-    @Override
     @Deprecated
     public SplitShard setCollectionName(String collection) {
       this.collection = collection;
       return this;
     }
 
-    @Override
-    @Deprecated
     public SplitShard setShardName(String shard) {
       this.shard = shard;
       return this;
@@ -684,10 +684,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      params.set( "ranges", ranges);
 
-      if(splitKey != null)
-        params.set("split.key", this.splitKey);
+      if(this.collection == null) {
+        throw new IllegalArgumentException("You must set collection name for this request.");
+      }
+
+      params.set(CollectionAdminParams.COLLECTION, collection);
+
+      if (this.shard == null && this.splitKey == null) {
+        throw new IllegalArgumentException("You must set shardname OR splitkey for this request.");
+      }
+
+      params.set("shard", shard);
+      params.set("split.key", this.splitKey);
+      params.set( "ranges", ranges);
 
       if(properties != null) {
         addProperties(params, properties);
