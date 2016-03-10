@@ -715,3 +715,17 @@ pre.syntax .tex .formula
 .other-ui-link a.ul {
   text-decoration: underline;
 }
+
+.old-ui-warning {
+  position: absolute;
+  right: 0px;
+  top: -20px;
+  align: center;
+  color: red;
+  font-weight: bold;
+}
+.old-ui-warning a.ul {
+  color: red;
+  font-weight: bold;
+  text-decoration: underline;
+}
