@@ -1082,7 +1082,7 @@ public class BKDWriter implements Closeable {
 
       // Second pass: write the full values:
       byte[] lastPackedValue = new byte[bytesPerDim];
-      for (int i=0;i<source.count;i++) {
+      for (int i=0;i<count;i++) {
         // TODO: we could do bulk copying here, avoiding the intermediate copy:
         heapSource.readPackedValue(Math.toIntExact(source.start + i), scratchPackedValue);
         assert numDims != 1 || valueInOrder(i, lastPackedValue, scratchPackedValue);
@@ -1143,7 +1143,7 @@ public class BKDWriter implements Closeable {
 
           // Partition this source according to how the splitDim split the values:
           int nextRightCount = 0;
-          for (int i=0;i<source.count;i++) {
+          for (long i=0;i<source.count;i++) {
             boolean result = reader.next();
             assert result;
             byte[] packedValue = reader.packedValue();
