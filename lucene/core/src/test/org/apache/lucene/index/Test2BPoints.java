@@ -16,8 +16,16 @@
  */
 package org.apache.lucene.index;
 
+import java.io.IOException;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.codecs.PointsWriter;
+import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
+import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.search.IndexSearcher;
@@ -33,10 +41,10 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 
 // e.g. run like this: ant test -Dtestcase=Test2BPoints -Dtests.nightly=true -Dtests.verbose=true -Dtests.monster=true
 // 
-//   or: python -u /l/util/src/python/repeatLuceneTest.py -once -nolog -tmpDir /b/tmp -logDir /l/logs Test2BPoints.test1D -verbose
+//   or: python -u /l/util/src/python/repeatLuceneTest.py -heap 6g -once -nolog -tmpDir /b/tmp -logDir /l/logs Test2BPoints.test2D -verbose
 
 @SuppressCodecs({ "SimpleText", "Memory", "Direct", "Compressing" })
-@TimeoutSuite(millis = 16 * TimeUnits.HOUR)
+@TimeoutSuite(millis = 365 * 24 * TimeUnits.HOUR) // hopefully ~1 year is long enough ;)
 @Monster("takes at least 4 hours and consumes many GB of temp disk space")
 public class Test2BPoints extends LuceneTestCase {
   public void test1D() throws Exception {
@@ -44,12 +52,14 @@ public class Test2BPoints extends LuceneTestCase {
     System.out.println("DIR: " + ((FSDirectory) dir).getDirectory());
 
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()))
-        .setCodec(Codec.forName("Lucene60"))
-        .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-        .setRAMBufferSizeMB(64.0)
-        .setMergeScheduler(new ConcurrentMergeScheduler())
-        .setMergePolicy(newLogMergePolicy(false, 10))
-        .setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+      .setCodec(getCodec())
+      .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+      .setRAMBufferSizeMB(256.0)
+      .setMergeScheduler(new ConcurrentMergeScheduler())
+      .setMergePolicy(newLogMergePolicy(false, 10))
+      .setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+
+    ((ConcurrentMergeScheduler) iwc.getMergeScheduler()).setMaxMergesAndThreads(6, 3);
     
     IndexWriter w = new IndexWriter(dir, iwc);
 
@@ -88,13 +98,15 @@ public class Test2BPoints extends LuceneTestCase {
     Directory dir = FSDirectory.open(createTempDir("2BPoints2D"));
 
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()))
-        .setCodec(Codec.forName("Lucene60"))
-        .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-        .setRAMBufferSizeMB(64.0)
-        .setMergeScheduler(new ConcurrentMergeScheduler())
-        .setMergePolicy(newLogMergePolicy(false, 10))
-        .setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+      .setCodec(getCodec())
+      .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+      .setRAMBufferSizeMB(256.0)
+      .setMergeScheduler(new ConcurrentMergeScheduler())
+      .setMergePolicy(newLogMergePolicy(false, 10))
+      .setOpenMode(IndexWriterConfig.OpenMode.CREATE);
     
+    ((ConcurrentMergeScheduler) iwc.getMergeScheduler()).setMaxMergesAndThreads(6, 3);
+
     IndexWriter w = new IndexWriter(dir, iwc);
 
     MergePolicy mp = w.getConfig().getMergePolicy();
@@ -126,5 +138,27 @@ public class Test2BPoints extends LuceneTestCase {
     System.out.println("TEST: now CheckIndex");
     TestUtil.checkIndex(dir);
     dir.close();
+  }
+
+  private static Codec getCodec() {
+
+    return new FilterCodec("Lucene60", Codec.forName("Lucene60")) {
+      @Override
+      public PointsFormat pointsFormat() {
+        return new PointsFormat() {
+          @Override
+          public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
+            int maxPointsInLeafNode = 1024;
+            double maxMBSortInHeap = 256.0;
+            return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
+          }
+
+          @Override
+          public PointsReader fieldsReader(SegmentReadState readState) throws IOException {
+            return new Lucene60PointsReader(readState);
+          }
+        };
+      }
+    };
   }
 }
