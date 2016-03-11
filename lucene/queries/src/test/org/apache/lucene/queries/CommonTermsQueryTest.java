@@ -489,7 +489,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       QueryUtils.check(random(), cq, newSearcher(reader2));
       reader2.close();
     } finally {
-      IOUtils.close(wrapper, w, dir, analyzer);
+      IOUtils.close(reader, w, dir, analyzer);
     }
     
   }
