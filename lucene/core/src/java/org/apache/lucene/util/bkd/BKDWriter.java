@@ -1059,9 +1059,6 @@ public class BKDWriter implements Closeable {
       assert count > 0: "nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset;
       writeLeafBlockDocs(out, heapSource.docIDs, Math.toIntExact(source.start), count);
 
-      // TODO: we should delta compress / only write suffix bytes, like terms dict (the values will all be "close together" since we are at
-      // a leaf cell):
-
       // First pass: find the per-dim common prefix for all values in this block:
       Arrays.fill(commonPrefixLengths, bytesPerDim);
       for (int i=0;i<count;i++) {
