@@ -28,7 +28,6 @@ final class OfflinePointWriter implements PointWriter {
   final Directory tempDir;
   final IndexOutput out;
   final int packedBytesLength;
-  final int bytesPerDoc;
   private long count;
   private boolean closed;
 
@@ -36,7 +35,6 @@ final class OfflinePointWriter implements PointWriter {
     this.out = tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT);
     this.tempDir = tempDir;
     this.packedBytesLength = packedBytesLength;
-    bytesPerDoc = packedBytesLength + Long.BYTES + Integer.BYTES;
   }
 
   /** Initializes on an already written/closed file, just so consumers can use {@link #getReader} to read the file. */
@@ -44,7 +42,6 @@ final class OfflinePointWriter implements PointWriter {
     this.out = out;
     this.tempDir = tempDir;
     this.packedBytesLength = packedBytesLength;
-    bytesPerDoc = packedBytesLength + Long.BYTES + Integer.BYTES;
     this.count = count;
     closed = true;
   }
