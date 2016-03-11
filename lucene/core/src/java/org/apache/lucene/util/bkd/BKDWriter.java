@@ -1126,6 +1126,14 @@ public class BKDWriter implements Closeable {
       byte[] maxSplitPackedValue = new byte[packedBytesLength];
       System.arraycopy(maxPackedValue, 0, maxSplitPackedValue, 0, packedBytesLength);
 
+      // When we are on this dim, below, we clear the ordBitSet:
+      int dimToClear;
+      if (numDims - 1 == splitDim) {
+        dimToClear = numDims - 2;
+      } else {
+        dimToClear = numDims - 1;
+      }
+
       for(int dim=0;dim<numDims;dim++) {
 
         if (dim == splitDim) {
@@ -1152,6 +1160,9 @@ public class BKDWriter implements Closeable {
             if (ordBitSet.get(ord)) {
               rightPointWriter.append(packedValue, ord, docID);
               nextRightCount++;
+              if (dim == dimToClear) {
+                ordBitSet.clear(ord);
+              }
             } else {
               leftPointWriter.append(packedValue, ord, docID);
             }
@@ -1162,10 +1173,6 @@ public class BKDWriter implements Closeable {
 
           assert rightCount == nextRightCount: "rightCount=" + rightCount + " nextRightCount=" + nextRightCount;
         }
-      }
-
-      if (numDims > 1) {
-        ordBitSet.clear(0, pointCount);
       }
 
       // Recurse on left tree:
