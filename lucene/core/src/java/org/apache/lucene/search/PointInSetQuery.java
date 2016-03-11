@@ -103,7 +103,7 @@ public abstract class PointInSetQuery extends Query {
   }
 
   @Override
-  public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
+  public final Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
 
     // We don't use RandomAccessWeight here: it's no good to approximate with "match all docs".
     // This is an inverted structure and should be used in the first pass:
@@ -161,14 +161,12 @@ public abstract class PointInSetQuery extends Query {
     private final DocIdSetBuilder result;
     private TermIterator iterator;
     private BytesRef nextQueryPoint;
-    private final byte[] lastMaxPackedValue;
     private final BytesRef scratch = new BytesRef();
     private final PrefixCodedTerms sortedPackedPoints;
 
     public MergePointVisitor(PrefixCodedTerms sortedPackedPoints, DocIdSetBuilder result) throws IOException {
       this.result = result;
       this.sortedPackedPoints = sortedPackedPoints;
-      lastMaxPackedValue = new byte[bytesPerDim];
       scratch.length = bytesPerDim;
       this.iterator = sortedPackedPoints.iterator();
       nextQueryPoint = iterator.next();
@@ -304,7 +302,7 @@ public abstract class PointInSetQuery extends Query {
   }
 
   @Override
-  public int hashCode() {
+  public final int hashCode() {
     int hash = super.hashCode();
     hash = 31 * hash + sortedPackedPointsHashCode;
     hash = 31 * hash + numDims;
@@ -313,7 +311,7 @@ public abstract class PointInSetQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object other) {
+  public final boolean equals(Object other) {
     if (super.equals(other)) {
       final PointInSetQuery q = (PointInSetQuery) other;
       return q.numDims == numDims &&
@@ -326,7 +324,7 @@ public abstract class PointInSetQuery extends Query {
   }
 
   @Override
-  public String toString(String field) {
+  public final String toString(String field) {
     final StringBuilder sb = new StringBuilder();
     if (this.field.equals(field) == false) {
       sb.append(this.field);

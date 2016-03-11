@@ -44,7 +44,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryparser.flexible.core.QueryNodeException;
 import org.apache.lucene.queryparser.flexible.core.parser.EscapeQuerySyntax;
 import org.apache.lucene.queryparser.flexible.standard.config.NumberDateFormat;
-import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
+import org.apache.lucene.queryparser.flexible.standard.config.LegacyNumericConfig;
 import org.apache.lucene.queryparser.flexible.standard.parser.EscapeQuerySyntaxImpl;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -56,7 +56,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestNumericQueryParser extends LuceneTestCase {
+public class TestLegacyNumericQueryParser extends LuceneTestCase {
   
   private static enum NumberType {
     NEGATIVE, ZERO, POSITIVE;
@@ -193,12 +193,12 @@ public class TestNumericQueryParser extends LuceneTestCase {
             .setMergePolicy(newLogMergePolicy()));
     
     Document doc = new Document();
-    HashMap<String,NumericConfig> numericConfigMap = new HashMap<>();
+    HashMap<String,LegacyNumericConfig> numericConfigMap = new HashMap<>();
     HashMap<String,Field> numericFieldMap = new HashMap<>();
-    qp.setNumericConfigMap(numericConfigMap);
+    qp.setLegacyNumericConfigMap(numericConfigMap);
     
     for (LegacyNumericType type : LegacyNumericType.values()) {
-      numericConfigMap.put(type.name(), new NumericConfig(PRECISION_STEP,
+      numericConfigMap.put(type.name(), new LegacyNumericConfig(PRECISION_STEP,
           NUMBER_FORMAT, type));
 
       FieldType ft = new FieldType(LegacyIntField.TYPE_NOT_STORED);
@@ -229,7 +229,7 @@ public class TestNumericQueryParser extends LuceneTestCase {
       doc.add(field);
     }
     
-    numericConfigMap.put(DATE_FIELD_NAME, new NumericConfig(PRECISION_STEP,
+    numericConfigMap.put(DATE_FIELD_NAME, new LegacyNumericConfig(PRECISION_STEP,
         DATE_FORMAT, LegacyNumericType.LONG));
     FieldType ft = new FieldType(LegacyLongField.TYPE_NOT_STORED);
     ft.setStored(true);

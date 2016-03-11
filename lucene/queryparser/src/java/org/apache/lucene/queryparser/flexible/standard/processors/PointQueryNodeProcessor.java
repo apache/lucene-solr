@@ -30,19 +30,19 @@ import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.nodes.RangeQueryNode;
 import org.apache.lucene.queryparser.flexible.core.processors.QueryNodeProcessorImpl;
-import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
+import org.apache.lucene.queryparser.flexible.standard.config.PointsConfig;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
-import org.apache.lucene.queryparser.flexible.standard.nodes.NumericQueryNode;
-import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNode;
+import org.apache.lucene.queryparser.flexible.standard.nodes.PointQueryNode;
+import org.apache.lucene.queryparser.flexible.standard.nodes.PointRangeQueryNode;
 
 /**
  * This processor is used to convert {@link FieldQueryNode}s to
- * {@link NumericRangeQueryNode}s. It looks for
- * {@link ConfigurationKeys#NUMERIC_CONFIG} set in the {@link FieldConfig} of
+ * {@link PointRangeQueryNode}s. It looks for
+ * {@link ConfigurationKeys#POINTS_CONFIG} set in the {@link FieldConfig} of
  * every {@link FieldQueryNode} found. If
- * {@link ConfigurationKeys#NUMERIC_CONFIG} is found, it considers that
+ * {@link ConfigurationKeys#POINTS_CONFIG} is found, it considers that
  * {@link FieldQueryNode} to be a numeric query and convert it to
- * {@link NumericRangeQueryNode} with upper and lower inclusive and lower and
+ * {@link PointRangeQueryNode} with upper and lower inclusive and lower and
  * upper equals to the value represented by the {@link FieldQueryNode} converted
  * to {@link Number}. It means that <b>field:1</b> is converted to <b>field:[1
  * TO 1]</b>. <br>
@@ -50,17 +50,17 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNo
  * Note that {@link FieldQueryNode}s children of a
  * {@link RangeQueryNode} are ignored.
  * 
- * @see ConfigurationKeys#NUMERIC_CONFIG
+ * @see ConfigurationKeys#POINTS_CONFIG
  * @see FieldQueryNode
- * @see NumericConfig
- * @see NumericQueryNode
+ * @see PointsConfig
+ * @see PointQueryNode
  */
-public class NumericQueryNodeProcessor extends QueryNodeProcessorImpl {
+public class PointQueryNodeProcessor extends QueryNodeProcessorImpl {
   
   /**
-   * Constructs a {@link NumericQueryNodeProcessor} object.
+   * Constructs a {@link PointQueryNodeProcessor} object.
    */
-  public NumericQueryNodeProcessor() {
+  public PointQueryNodeProcessor() {
   // empty constructor
   }
   
@@ -78,8 +78,7 @@ public class NumericQueryNodeProcessor extends QueryNodeProcessorImpl {
             .getFieldAsString());
         
         if (fieldConfig != null) {
-          NumericConfig numericConfig = fieldConfig
-              .get(ConfigurationKeys.NUMERIC_CONFIG);
+          PointsConfig numericConfig = fieldConfig.get(ConfigurationKeys.POINTS_CONFIG);
           
           if (numericConfig != null) {
             
@@ -99,18 +98,14 @@ public class NumericQueryNodeProcessor extends QueryNodeProcessorImpl {
                         .getCanonicalName()), e);
               }
               
-              switch (numericConfig.getType()) {
-                case LONG:
-                  number = number.longValue();
-                  break;
-                case INT:
-                  number = number.intValue();
-                  break;
-                case DOUBLE:
-                  number = number.doubleValue();
-                  break;
-                case FLOAT:
-                  number = number.floatValue();
+              if (Integer.class.equals(numericConfig.getType())) {
+                number = number.intValue();
+              } else if (Long.class.equals(numericConfig.getType())) {
+                number = number.longValue();
+              } else if (Double.class.equals(numericConfig.getType())) {
+                number = number.doubleValue();
+              } else if (Float.class.equals(numericConfig.getType())) {
+                number = number.floatValue();
               }
               
             } else {
@@ -118,24 +113,15 @@ public class NumericQueryNodeProcessor extends QueryNodeProcessorImpl {
                   QueryParserMessages.NUMERIC_CANNOT_BE_EMPTY, fieldNode.getFieldAsString()));
             }
             
-            NumericQueryNode lowerNode = new NumericQueryNode(fieldNode
-                .getField(), number, numberFormat);
-            NumericQueryNode upperNode = new NumericQueryNode(fieldNode
-                .getField(), number, numberFormat);
+            PointQueryNode lowerNode = new PointQueryNode(fieldNode.getField(), number, numberFormat);
+            PointQueryNode upperNode = new PointQueryNode(fieldNode.getField(), number, numberFormat);
             
-            return new NumericRangeQueryNode(lowerNode, upperNode, true, true,
-                numericConfig);
-            
+            return new PointRangeQueryNode(lowerNode, upperNode, true, true, numericConfig);
           }
-          
         }
-        
       }
-      
     }
-    
     return node;
-    
   }
   
   @Override
@@ -144,9 +130,7 @@ public class NumericQueryNodeProcessor extends QueryNodeProcessorImpl {
   }
   
   @Override
-  protected List<QueryNode> setChildrenOrder(List<QueryNode> children)
-      throws QueryNodeException {
+  protected List<QueryNode> setChildrenOrder(List<QueryNode> children) throws QueryNodeException {
     return children;
   }
-  
 }

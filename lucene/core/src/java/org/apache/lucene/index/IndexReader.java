@@ -56,8 +56,6 @@ import org.apache.lucene.util.IOUtils;
   be used to get stored fields from the underlying LeafReaders,
   but it is not possible to directly retrieve postings. To do that, get
   the sub-readers via {@link CompositeReader#getSequentialSubReaders}.
-  Alternatively, you can mimic an {@link LeafReader} (with a serious slowdown),
-  by wrapping composite readers with {@link SlowCompositeReaderWrapper}.
  </ul>
  
  <p>IndexReader instances for indexes on disk are usually constructed

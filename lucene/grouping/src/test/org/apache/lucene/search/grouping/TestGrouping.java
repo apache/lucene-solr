@@ -44,7 +44,6 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
@@ -1164,16 +1163,7 @@ public class TestGrouping extends LuceneTestCase {
     final List<Collection<SearchGroup<BytesRef>>> shardGroups = new ArrayList<>();
     List<AbstractFirstPassGroupingCollector<?>> firstPassGroupingCollectors = new ArrayList<>();
     AbstractFirstPassGroupingCollector<?> firstPassCollector = null;
-    boolean shardsCanUseIDV;
-    if (canUseIDV) {
-      if (SlowCompositeReaderWrapper.class.isAssignableFrom(subSearchers[0].getIndexReader().getClass())) {
-        shardsCanUseIDV = false;
-      } else {
-        shardsCanUseIDV = !preFlex;
-      }
-    } else {
-      shardsCanUseIDV = false;
-    }
+    boolean shardsCanUseIDV = canUseIDV;
 
     String groupField = "group";
 

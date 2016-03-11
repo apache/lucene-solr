@@ -164,6 +164,8 @@ New Features
 
 * SOLR-8698: params.json can now specify 'appends' and 'invariants' (noble)
 
+* SOLR-8831: allow _version_ field to be retrievable via docValues (yonik)
+
 
 Bug Fixes
 ----------------------
@@ -254,6 +256,11 @@ Bug Fixes
   docValues (i.e. UnInvertedField implementation), but with a prefix or with a sort
   other than count, resulted in incorrect results.  This has been fixed, and facet.prefix
   support for facet.method=uif has been enabled. (Mikhail Khludnev, yonik)
+
+* SOLR-8135: If a core reload is fired after a core close, it is not a non-recoverable error (noble)
+
+* SOLR-8804: Fix a race condition in the ClusterStatus API call whereby the call would fail when a concurrent delete
+  collection api command was executed (Alexey Serba, Varun Thacker)
 
 Optimizations
 ----------------------

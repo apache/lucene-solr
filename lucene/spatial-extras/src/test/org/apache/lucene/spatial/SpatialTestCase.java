@@ -73,8 +73,8 @@ public abstract class SpatialTestCase extends LuceneTestCase {
     super.setUp();
     // TODO: change this module to index docvalues instead of uninverting
     uninvertMap.clear();
-    uninvertMap.put("pointvector__x", Type.DOUBLE);
-    uninvertMap.put("pointvector__y", Type.DOUBLE);
+    uninvertMap.put("pointvector__x", Type.LEGACY_DOUBLE);
+    uninvertMap.put("pointvector__y", Type.LEGACY_DOUBLE);
 
     directory = newDirectory();
     final Random random = random();

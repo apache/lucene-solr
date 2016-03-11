@@ -32,7 +32,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.Terms;
@@ -399,8 +398,9 @@ public class CommonTermsQueryTest extends LuceneTestCase {
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, analyzer);
     createRandomIndex(atLeast(50), w, random().nextLong());
+    w.forceMerge(1);
     DirectoryReader reader = w.getReader();
-    LeafReader wrapper = SlowCompositeReaderWrapper.wrap(reader);
+    LeafReader wrapper = getOnlyLeafReader(reader);
     String field = "body";
     Terms terms = wrapper.terms(field);
     PriorityQueue<TermAndFreq> lowFreqQueue = new PriorityQueue<CommonTermsQueryTest.TermAndFreq>(
@@ -489,7 +489,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       QueryUtils.check(random(), cq, newSearcher(reader2));
       reader2.close();
     } finally {
-      IOUtils.close(reader, wrapper, w, dir, analyzer);
+      IOUtils.close(reader, w, dir, analyzer);
     }
     
   }

@@ -27,7 +27,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -190,7 +189,8 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
     indexWriter.addDocument(doc);
 
     indexWriter.commit();
-    return SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
+    indexWriter.forceMerge(1);
+    return getOnlyLeafReader(indexWriter.getReader());
   }
 
   protected LeafReader getRandomIndex(Analyzer analyzer, int size) throws IOException {
@@ -213,7 +213,8 @@ public abstract class ClassificationTestBase<T> extends LuceneTestCase {
       indexWriter.addDocument(doc);
     }
     indexWriter.commit();
-    return SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
+    indexWriter.forceMerge(1);
+    return getOnlyLeafReader(indexWriter.getReader());
   }
 
   private String createRandomString(Random random) {

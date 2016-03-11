@@ -41,7 +41,7 @@ public class TestDocValues extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
     iw.addDocument(new Document());
     DirectoryReader dr = DirectoryReader.open(iw);
-    LeafReader r = getOnlySegmentReader(dr);
+    LeafReader r = getOnlyLeafReader(dr);
     
     // ok
     assertNotNull(DocValues.getBinary(r, "bogus"));
@@ -66,7 +66,7 @@ public class TestDocValues extends LuceneTestCase {
     doc.add(new StringField("foo", "bar", Field.Store.NO));
     iw.addDocument(doc);
     DirectoryReader dr = DirectoryReader.open(iw);
-    LeafReader r = getOnlySegmentReader(dr);
+    LeafReader r = getOnlyLeafReader(dr);
    
     // errors
     expectThrows(IllegalStateException.class, () -> {
@@ -103,7 +103,7 @@ public class TestDocValues extends LuceneTestCase {
     doc.add(new NumericDocValuesField("foo", 3));
     iw.addDocument(doc);
     DirectoryReader dr = DirectoryReader.open(iw);
-    LeafReader r = getOnlySegmentReader(dr);
+    LeafReader r = getOnlyLeafReader(dr);
     
     // ok
     assertNotNull(DocValues.getNumeric(r, "foo"));
@@ -136,7 +136,7 @@ public class TestDocValues extends LuceneTestCase {
     doc.add(new BinaryDocValuesField("foo", new BytesRef("bar")));
     iw.addDocument(doc);
     DirectoryReader dr = DirectoryReader.open(iw);
-    LeafReader r = getOnlySegmentReader(dr);
+    LeafReader r = getOnlyLeafReader(dr);
     
     // ok
     assertNotNull(DocValues.getBinary(r, "foo"));
@@ -171,7 +171,7 @@ public class TestDocValues extends LuceneTestCase {
     doc.add(new SortedDocValuesField("foo", new BytesRef("bar")));
     iw.addDocument(doc);
     DirectoryReader dr = DirectoryReader.open(iw);
-    LeafReader r = getOnlySegmentReader(dr);
+    LeafReader r = getOnlyLeafReader(dr);
     
     // ok
     assertNotNull(DocValues.getBinary(r, "foo"));
@@ -202,7 +202,7 @@ public class TestDocValues extends LuceneTestCase {
     doc.add(new SortedSetDocValuesField("foo", new BytesRef("bar")));
     iw.addDocument(doc);
     DirectoryReader dr = DirectoryReader.open(iw);
-    LeafReader r = getOnlySegmentReader(dr);
+    LeafReader r = getOnlyLeafReader(dr);
     
     // ok
     assertNotNull(DocValues.getSortedSet(r, "foo"));
@@ -237,7 +237,7 @@ public class TestDocValues extends LuceneTestCase {
     doc.add(new SortedNumericDocValuesField("foo", 3));
     iw.addDocument(doc);
     DirectoryReader dr = DirectoryReader.open(iw);
-    LeafReader r = getOnlySegmentReader(dr);
+    LeafReader r = getOnlyLeafReader(dr);
     
     // ok
     assertNotNull(DocValues.getSortedNumeric(r, "foo"));

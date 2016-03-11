@@ -66,7 +66,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // flush
     writer.close();
 
-    SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
+    LeafReader reader = getOnlyLeafReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f1").omitsNorms());
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitsNorms());
@@ -120,7 +120,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // flush
     writer.close();
 
-    SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
+    LeafReader reader = getOnlyLeafReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f1").omitsNorms());
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitsNorms());
@@ -168,7 +168,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // flush
     writer.close();
 
-    SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(ram));
+    LeafReader reader = getOnlyLeafReader(DirectoryReader.open(ram));
     FieldInfos fi = reader.getFieldInfos();
     assertTrue("OmitNorms field bit should not be set.", !fi.fieldInfo("f1").omitsNorms());
     assertTrue("OmitNorms field bit should be set.", fi.fieldInfo("f2").omitsNorms());
@@ -297,7 +297,7 @@ public class TestOmitNorms extends LuceneTestCase {
     // fully merge and validate MultiNorms against single segment.
     riw.forceMerge(1);
     DirectoryReader ir2 = riw.getReader();
-    NumericDocValues norms2 = getOnlySegmentReader(ir2).getNormValues(field);
+    NumericDocValues norms2 = getOnlyLeafReader(ir2).getNormValues(field);
 
     if (norms1 == null) {
       assertNull(norms2);

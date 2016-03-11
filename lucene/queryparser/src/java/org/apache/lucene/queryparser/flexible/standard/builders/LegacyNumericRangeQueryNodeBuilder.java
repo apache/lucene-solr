@@ -22,38 +22,40 @@ import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
 import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
 import org.apache.lucene.queryparser.flexible.core.util.StringUtils;
 import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
-import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
-import org.apache.lucene.queryparser.flexible.standard.nodes.NumericQueryNode;
-import org.apache.lucene.queryparser.flexible.standard.nodes.NumericRangeQueryNode;
+import org.apache.lucene.queryparser.flexible.standard.config.LegacyNumericConfig;
+import org.apache.lucene.queryparser.flexible.standard.nodes.LegacyNumericQueryNode;
+import org.apache.lucene.queryparser.flexible.standard.nodes.LegacyNumericRangeQueryNode;
 import org.apache.lucene.search.LegacyNumericRangeQuery;
 
 /**
- * Builds {@link org.apache.lucene.search.LegacyNumericRangeQuery}s out of {@link NumericRangeQueryNode}s.
+ * Builds {@link org.apache.lucene.search.LegacyNumericRangeQuery}s out of {@link LegacyNumericRangeQueryNode}s.
  *
  * @see org.apache.lucene.search.LegacyNumericRangeQuery
- * @see NumericRangeQueryNode
+ * @see LegacyNumericRangeQueryNode
+ * @deprecated Index with points and use {@link PointRangeQueryNodeBuilder} instead.
  */
-public class NumericRangeQueryNodeBuilder implements StandardQueryBuilder {
+@Deprecated
+public class LegacyNumericRangeQueryNodeBuilder implements StandardQueryBuilder {
   
   /**
-   * Constructs a {@link NumericRangeQueryNodeBuilder} object.
+   * Constructs a {@link LegacyNumericRangeQueryNodeBuilder} object.
    */
-  public NumericRangeQueryNodeBuilder() {
+  public LegacyNumericRangeQueryNodeBuilder() {
   // empty constructor
   }
   
   @Override
   public LegacyNumericRangeQuery<? extends Number> build(QueryNode queryNode)
       throws QueryNodeException {
-    NumericRangeQueryNode numericRangeNode = (NumericRangeQueryNode) queryNode;
+    LegacyNumericRangeQueryNode numericRangeNode = (LegacyNumericRangeQueryNode) queryNode;
     
-    NumericQueryNode lowerNumericNode = numericRangeNode.getLowerBound();
-    NumericQueryNode upperNumericNode = numericRangeNode.getUpperBound();
+    LegacyNumericQueryNode lowerNumericNode = numericRangeNode.getLowerBound();
+    LegacyNumericQueryNode upperNumericNode = numericRangeNode.getUpperBound();
     
     Number lowerNumber = lowerNumericNode.getValue();
     Number upperNumber = upperNumericNode.getValue();
     
-    NumericConfig numericConfig = numericRangeNode.getNumericConfig();
+    LegacyNumericConfig numericConfig = numericRangeNode.getNumericConfig();
     FieldType.LegacyNumericType numberType = numericConfig.getType();
     String field = StringUtils.toString(numericRangeNode.getField());
     boolean minInclusive = numericRangeNode.isLowerInclusive();

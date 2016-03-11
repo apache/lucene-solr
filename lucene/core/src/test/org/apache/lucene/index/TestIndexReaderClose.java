@@ -37,14 +37,15 @@ public class TestIndexReaderClose extends LuceneTestCase {
   public void testCloseUnderException() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), new MockAnalyzer(random())));
+    writer.addDocument(new Document());
     writer.commit();
     writer.close();
     final int iters = 1000 +  1 + random().nextInt(20);
     for (int j = 0; j < iters; j++) {
       DirectoryReader open = DirectoryReader.open(dir);
       final boolean throwOnClose = !rarely();
-      LeafReader wrap = SlowCompositeReaderWrapper.wrap(open);
-      FilterLeafReader reader = new FilterLeafReader(wrap) {
+      LeafReader leaf = getOnlyLeafReader(open);
+      FilterLeafReader reader = new FilterLeafReader(leaf) {
         @Override
         protected void doClose() throws IOException {
           super.doClose();
@@ -87,52 +88,8 @@ public class TestIndexReaderClose extends LuceneTestCase {
         reader.close(); // call it again
       }
       assertEquals(0, count.get());
-      wrap.close();
     }
     dir.close();
-  }
-
-  public void testCoreListenerOnSlowCompositeReaderWrapper() throws IOException {
-    RandomIndexWriter w = new RandomIndexWriter(random(), newDirectory());
-    final int numDocs = TestUtil.nextInt(random(), 1, 5);
-    for (int i = 0; i < numDocs; ++i) {
-      w.addDocument(new Document());
-      if (random().nextBoolean()) {
-        w.commit();
-      }
-    }
-    w.commit();
-    w.close();
-
-    final IndexReader reader = DirectoryReader.open(w.w.getDirectory());
-    final LeafReader leafReader = SlowCompositeReaderWrapper.wrap(reader);
-    
-    final int numListeners = TestUtil.nextInt(random(), 1, 10);
-    final List<LeafReader.CoreClosedListener> listeners = new ArrayList<>();
-    AtomicInteger counter = new AtomicInteger(numListeners);
-    
-    for (int i = 0; i < numListeners; ++i) {
-      CountCoreListener listener = new CountCoreListener(counter, leafReader.getCoreCacheKey());
-      listeners.add(listener);
-      leafReader.addCoreClosedListener(listener);
-    }
-    for (int i = 0; i < 100; ++i) {
-      leafReader.addCoreClosedListener(listeners.get(random().nextInt(listeners.size())));
-    }
-    final int removed = random().nextInt(numListeners);
-    Collections.shuffle(listeners, random());
-    for (int i = 0; i < removed; ++i) {
-      leafReader.removeCoreClosedListener(listeners.get(i));
-    }
-    assertEquals(numListeners, counter.get());
-    // make sure listeners are registered on the wrapped reader and that closing any of them has the same effect
-    if (random().nextBoolean()) {
-      reader.close();
-    } else {
-      leafReader.close();
-    }
-    assertEquals(removed, counter.get());
-    w.w.getDirectory().close();
   }
 
   public void testCoreListenerOnWrapperWithDifferentCacheKey() throws IOException {
@@ -144,13 +101,14 @@ public class TestIndexReaderClose extends LuceneTestCase {
         w.commit();
       }
     }
+    w.forceMerge(1);
     w.commit();
     w.close();
 
     final IndexReader reader = DirectoryReader.open(w.w.getDirectory());
     // We explicitly define a different cache key
     final Object coreCacheKey = new Object();
-    final LeafReader leafReader = new FilterLeafReader(SlowCompositeReaderWrapper.wrap(reader)) {
+    final LeafReader leafReader = new FilterLeafReader(getOnlyLeafReader(reader)) {
       @Override
       public Object getCoreCacheKey() {
         return coreCacheKey;

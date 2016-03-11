@@ -95,7 +95,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
 
-    searcher = newSearcher(reader);
+    searcher = new IndexSearcher(reader);
   }
   
   @Override
@@ -123,7 +123,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query = new PhraseQuery(3, "field", "one", "five");
     ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    QueryUtils.check(random(), query,searcher);
+    QueryUtils.check(random(), query, searcher);
   }
 
   /**

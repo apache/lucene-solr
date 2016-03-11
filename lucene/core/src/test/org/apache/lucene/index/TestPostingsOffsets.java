@@ -375,10 +375,9 @@ public class TestPostingsOffsets extends LuceneTestCase {
       riw.addDocument(doc);
     }
     CompositeReader ir = riw.getReader();
-    LeafReader slow = SlowCompositeReaderWrapper.wrap(ir);
-    FieldInfos fis = slow.getFieldInfos();
+    FieldInfos fis = MultiFields.getMergedFieldInfos(ir);
     assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, fis.fieldInfo("foo").getIndexOptions());
-    slow.close();
+    ir.close();
     ir.close();
     riw.close();
     dir.close();

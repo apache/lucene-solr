@@ -58,7 +58,6 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
@@ -558,7 +557,7 @@ public class TestJoinUtil extends LuceneTestCase {
     assertEquals(numParents, topDocs.totalHits);
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       ScoreDoc scoreDoc = topDocs.scoreDocs[i];
-      String id = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()).document(scoreDoc.doc).get("id");
+      String id = searcher.doc(scoreDoc.doc).get("id");
       assertEquals(lowestScoresPerParent.get(id), scoreDoc.score, 0f);
     }
 
@@ -567,7 +566,7 @@ public class TestJoinUtil extends LuceneTestCase {
     assertEquals(numParents, topDocs.totalHits);
     for (int i = 0; i < topDocs.scoreDocs.length; i++) {
       ScoreDoc scoreDoc = topDocs.scoreDocs[i];
-      String id = SlowCompositeReaderWrapper.wrap(searcher.getIndexReader()).document(scoreDoc.doc).get("id");
+      String id = searcher.doc(scoreDoc.doc).get("id");
       assertEquals(highestScoresPerParent.get(id), scoreDoc.score, 0f);
     }
 
@@ -1229,8 +1228,7 @@ public class TestJoinUtil extends LuceneTestCase {
 
       final Map<Integer, JoinScore> docToJoinScore = new HashMap<>();
       if (multipleValuesPerDocument) {
-        LeafReader slowCompositeReader = SlowCompositeReaderWrapper.wrap(topLevelReader);
-        Terms terms = slowCompositeReader.terms(toField);
+        Terms terms = MultiFields.getTerms(topLevelReader, toField);
         if (terms != null) {
           PostingsEnum postingsEnum = null;
           SortedSet<BytesRef> joinValues = new TreeSet<>();

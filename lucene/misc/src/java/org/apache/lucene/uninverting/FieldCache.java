@@ -32,6 +32,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LegacyNumericUtils;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -71,21 +72,101 @@ interface FieldCache {
      * @param terms the {@link Terms} instance to create the {@link TermsEnum} from.
      * @return a possibly filtered {@link TermsEnum} instance, this method must not return <code>null</code>.
      * @throws IOException if an {@link IOException} occurs
+     * @deprecated index with Points instead
      */
+    @Deprecated
     public TermsEnum termsEnum(Terms terms) throws IOException;
     
     /** Parse's this field's value */
     public long parseValue(BytesRef term);
+  }
+  
+  /**
+   * Base class for points parsers. These parsers do not use the inverted index, but instead
+   * uninvert point data.
+   * 
+   * This abstraction can be cleaned up when Parser.termsEnum is removed.
+   */
+  public abstract class PointParser implements Parser {
+    public final TermsEnum termsEnum(Terms terms) throws IOException {
+      throw new UnsupportedOperationException("makes no sense for parsing points");
+    }
   }
 
   /** Expert: The cache used internally by sorting and range query classes. */
   public static FieldCache DEFAULT = new FieldCacheImpl();
 
   /**
+   * A parser instance for int values encoded by {@link org.apache.lucene.util.NumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.document.IntPoint}.
+   */
+  public static final Parser INT_POINT_PARSER = new PointParser() {
+    @Override
+    public long parseValue(BytesRef point) {
+      return NumericUtils.sortableBytesToInt(point.bytes, point.offset);
+    }
+    
+    @Override
+    public String toString() { 
+      return FieldCache.class.getName()+".INT_POINT_PARSER"; 
+    }
+  };
+  
+  /**
+   * A parser instance for long values encoded by {@link org.apache.lucene.util.NumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.document.LongPoint}.
+   */
+  public static final Parser LONG_POINT_PARSER = new PointParser() {
+    @Override
+    public long parseValue(BytesRef point) {
+      return NumericUtils.sortableBytesToLong(point.bytes, point.offset);
+    }
+    
+    @Override
+    public String toString() { 
+      return FieldCache.class.getName()+".LONG_POINT_PARSER"; 
+    }
+  };
+  
+  /**
+   * A parser instance for float values encoded by {@link org.apache.lucene.util.NumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.document.FloatPoint}.
+   */
+  public static final Parser FLOAT_POINT_PARSER = new PointParser() {
+    @Override
+    public long parseValue(BytesRef point) {
+      return NumericUtils.sortableFloatBits(NumericUtils.sortableBytesToInt(point.bytes, point.offset));
+    }
+    
+    @Override
+    public String toString() { 
+      return FieldCache.class.getName()+".FLOAT_POINT_PARSER"; 
+    }
+  };
+  
+  /**
+   * A parser instance for double values encoded by {@link org.apache.lucene.util.NumericUtils}, e.g. when indexed
+   * via {@link org.apache.lucene.document.DoublePoint}.
+   */
+  public static final Parser DOUBLE_POINT_PARSER = new PointParser() {
+    @Override
+    public long parseValue(BytesRef point) {
+      return NumericUtils.sortableDoubleBits(NumericUtils.sortableBytesToLong(point.bytes, point.offset));
+    }
+    
+    @Override
+    public String toString() { 
+      return FieldCache.class.getName()+".DOUBLE_POINT_PARSER"; 
+    }
+  };
+  
+  /**
    * A parser instance for int values encoded by {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
    * via {@link org.apache.lucene.document.LegacyIntField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * @deprecated Index with points and use {@link #INT_POINT_PARSER} instead.
    */
-  public static final Parser NUMERIC_UTILS_INT_PARSER = new Parser() {
+  @Deprecated
+  public static final Parser LEGACY_INT_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
       return LegacyNumericUtils.prefixCodedToInt(term);
@@ -98,15 +179,17 @@ interface FieldCache {
     
     @Override
     public String toString() { 
-      return FieldCache.class.getName()+".NUMERIC_UTILS_INT_PARSER"; 
+      return FieldCache.class.getName()+".LEGACY_INT_PARSER"; 
     }
   };
 
   /**
    * A parser instance for float values encoded with {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
    * via {@link org.apache.lucene.document.LegacyFloatField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * @deprecated Index with points and use {@link #FLOAT_POINT_PARSER} instead.
    */
-  public static final Parser NUMERIC_UTILS_FLOAT_PARSER = new Parser() {
+  @Deprecated
+  public static final Parser LEGACY_FLOAT_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
       int val = LegacyNumericUtils.prefixCodedToInt(term);
@@ -116,7 +199,7 @@ interface FieldCache {
     
     @Override
     public String toString() { 
-      return FieldCache.class.getName()+".NUMERIC_UTILS_FLOAT_PARSER"; 
+      return FieldCache.class.getName()+".LEGACY_FLOAT_PARSER"; 
     }
     
     @Override
@@ -128,15 +211,17 @@ interface FieldCache {
   /**
    * A parser instance for long values encoded by {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
    * via {@link org.apache.lucene.document.LegacyLongField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * @deprecated Index with points and use {@link #LONG_POINT_PARSER} instead.
    */
-  public static final Parser NUMERIC_UTILS_LONG_PARSER = new Parser() {
+  @Deprecated
+  public static final Parser LEGACY_LONG_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
       return LegacyNumericUtils.prefixCodedToLong(term);
     }
     @Override
     public String toString() { 
-      return FieldCache.class.getName()+".NUMERIC_UTILS_LONG_PARSER"; 
+      return FieldCache.class.getName()+".LEGACY_LONG_PARSER"; 
     }
     
     @Override
@@ -148,8 +233,10 @@ interface FieldCache {
   /**
    * A parser instance for double values encoded with {@link org.apache.lucene.util.LegacyNumericUtils}, e.g. when indexed
    * via {@link org.apache.lucene.document.LegacyDoubleField}/{@link org.apache.lucene.analysis.LegacyNumericTokenStream}.
+   * @deprecated Index with points and use {@link #DOUBLE_POINT_PARSER} instead.
    */
-  public static final Parser NUMERIC_UTILS_DOUBLE_PARSER = new Parser() {
+  @Deprecated
+  public static final Parser LEGACY_DOUBLE_PARSER = new Parser() {
     @Override
     public long parseValue(BytesRef term) {
       long val = LegacyNumericUtils.prefixCodedToLong(term);
@@ -158,7 +245,7 @@ interface FieldCache {
     }
     @Override
     public String toString() { 
-      return FieldCache.class.getName()+".NUMERIC_UTILS_DOUBLE_PARSER"; 
+      return FieldCache.class.getName()+".LEGACY_DOUBLE_PARSER"; 
     }
     
     @Override
@@ -168,18 +255,20 @@ interface FieldCache {
   };
   
   /** Checks the internal cache for an appropriate entry, and if none is found,
-   *  reads the terms in <code>field</code> and returns a bit set at the size of
+   *  reads the terms/points in <code>field</code> and returns a bit set at the size of
    *  <code>reader.maxDoc()</code>, with turned on bits for each docid that 
    *  does have a value for this field.
+   *  @param parser May be {@code null} if coming from the inverted index, otherwise
+   *                can be a {@link PointParser} to compute from point values.
    */
-  public Bits getDocsWithField(LeafReader reader, String field) throws IOException;
+  public Bits getDocsWithField(LeafReader reader, String field, Parser parser) throws IOException;
 
   /**
    * Returns a {@link NumericDocValues} over the values found in documents in the given
    * field. If the field was indexed as {@link NumericDocValuesField}, it simply
    * uses {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)} to read the values.
    * Otherwise, it checks the internal cache for an appropriate entry, and if
-   * none is found, reads the terms in <code>field</code> as longs and returns
+   * none is found, reads the terms/points in <code>field</code> as longs and returns
    * an array of size <code>reader.maxDoc()</code> of the value each document
    * has in the given field.
    * 
@@ -199,7 +288,7 @@ interface FieldCache {
    *           If any error occurs.
    */
   public NumericDocValues getNumerics(LeafReader reader, String field, Parser parser, boolean setDocsWithField) throws IOException;
-
+  
   /** Checks the internal cache for an appropriate entry, and if none
    * is found, reads the term values in <code>field</code>
    * and returns a {@link BinaryDocValues} instance, providing a

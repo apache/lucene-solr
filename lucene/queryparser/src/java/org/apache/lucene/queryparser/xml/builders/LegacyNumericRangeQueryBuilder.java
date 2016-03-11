@@ -83,7 +83,9 @@ import org.w3c.dom.Element;
  * A {@link ParserException} will be thrown if an error occurs parsing the
  * supplied <tt>lowerTerm</tt> or <tt>upperTerm</tt> into the numeric type
  * specified by <tt>type</tt>.
+ * @deprecated Index with points and use {@link PointRangeQueryBuilder} instead 
  */
+@Deprecated
 public class LegacyNumericRangeQueryBuilder implements QueryBuilder {
 
   @Override

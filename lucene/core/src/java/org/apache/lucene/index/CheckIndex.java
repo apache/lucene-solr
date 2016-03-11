@@ -1683,9 +1683,14 @@ public final class CheckIndex implements Closeable {
    * @lucene.experimental
    */
   public static Status.PointsStatus testPoints(CodecReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    if (infoStream != null) {
+      infoStream.print("    test: points..............");
+    }
+    long startNS = System.nanoTime();
     FieldInfos fieldInfos = reader.getFieldInfos();
     Status.PointsStatus status = new Status.PointsStatus();
     try {
+
       if (fieldInfos.hasPointValues()) {
         PointsReader values = reader.getPointsReader();
         if (values == null) {
@@ -1840,6 +1845,8 @@ public final class CheckIndex implements Closeable {
           }
         }
       }
+      msg(infoStream, String.format(Locale.ROOT, "OK [%d fields, %d points] [took %.3f sec]", status.totalValueFields, status.totalValuePoints, nsToSec(System.nanoTime()-startNS)));
+
     } catch (Throwable e) {
       if (failFast) {
         IOUtils.reThrow(e);
