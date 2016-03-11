@@ -92,7 +92,7 @@ public class ClusterStatus {
     byte[] bytes = Utils.toJSON(clusterState);
     Map<String, Object> stateMap = (Map<String,Object>) Utils.fromJSON(bytes);
 
-    Set<String> collections = new HashSet<>();
+    Set<String> collections;
     String routeKey = message.getStr(ShardParams._ROUTE_);
     String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
     if (collection == null) {
@@ -101,11 +101,19 @@ public class ClusterStatus {
       collections = Collections.singleton(collection);
     }
 
-    NamedList<Object> collectionProps = new SimpleOrderedMap<Object>();
+    NamedList<Object> collectionProps = new SimpleOrderedMap<>();
 
     for (String name : collections) {
-      Map<String, Object> collectionStatus = null;
-      DocCollection clusterStateCollection = clusterState.getCollection(name);
+      Map<String, Object> collectionStatus;
+      DocCollection clusterStateCollection = clusterState.getCollectionOrNull(name);
+      if (clusterStateCollection == null) {
+        if (collection != null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Collection: " + name + " not found");
+        } else {
+          //collection might have got deleted at the same time
+          continue;
+        }
+      }
 
       Set<String> requestedShards = new HashSet<>();
       if (routeKey != null) {
