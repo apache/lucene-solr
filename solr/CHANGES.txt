@@ -289,6 +289,9 @@ Bug Fixes
 * SOLR-8790: Collections API responses contain node name in the core-level responses that are
   returned. (Anshum Gupta)
 
+* SOLR-8804: Fix a race condition in the ClusterStatus API call whereby the call would fail when a concurrent delete
+  collection api command was executed (Alexey Serba, Varun Thacker)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
