@@ -623,7 +623,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     DaemonStream daemonStream;
 
     expression = StreamExpressionParser.parse("daemon(rollup("
-        + "search(collection1, q=*:*, fl=\"a_i,a_s\", sort=\"a_s asc\"),"
+        + "search(collection1, q=\"*:*\", fl=\"a_i,a_s\", sort=\"a_s asc\"),"
         + "over=\"a_s\","
         + "sum(a_i)"
         + "), id=\"test\", runInterval=\"1000\", queueSize=\"9\")");
@@ -2366,13 +2366,17 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
         assertEquals(14, (long) tuple.getLong(id));
         tuple = dstream.read(); // This should trigger a checkpoint as it's the 4th read from the stream.
         assertEquals(15, (long) tuple.getLong(id));
+
+        dstream.shutdown();
+        tuple = dstream.read();
+        assertTrue(tuple.EOF);
       } finally {
         dstream.close();
       }
     } finally {
-      cache.close();
       del("*:*");
       commit();
+      cache.close();
     }
   }
 
