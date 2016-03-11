@@ -30,7 +30,6 @@ final class OfflinePointReader implements PointReader {
   private final byte[] packedValue;
   private long ord;
   private int docID;
-  final int bytesPerDoc;
 
   OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length) throws IOException {
     this(tempDir.openInput(tempFileName, IOContext.READONCE), packedBytesLength, start, length);
@@ -38,7 +37,7 @@ final class OfflinePointReader implements PointReader {
 
   private OfflinePointReader(IndexInput in, int packedBytesLength, long start, long length) throws IOException {
     this.in = in;
-    bytesPerDoc = packedBytesLength + Long.BYTES + Integer.BYTES;
+    int bytesPerDoc = packedBytesLength + Long.BYTES + Integer.BYTES;
     long seekFP = start * bytesPerDoc;
     in.seek(seekFP);
     this.countLeft = length;
