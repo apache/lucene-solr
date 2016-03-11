@@ -171,11 +171,16 @@ public class DaemonStream extends TupleStream implements Expressible {
     this.tupleStream.setStreamContext(streamContext);
   }
 
+  public void shutdown() {
+    streamRunner.setShutdown(true);
+  }
+
   public void close() {
     if(closed) {
       return;
     }
     streamRunner.setShutdown(true);
+    this.closed = true;
   }
 
   public List<TupleStream> children() {
@@ -226,7 +231,6 @@ public class DaemonStream extends TupleStream implements Expressible {
 
     public synchronized void setShutdown(boolean shutdown) {
       this.shutdown = shutdown;
-      interrupt(); //We could be blocked on the queue or sleeping
     }
 
     public synchronized boolean getShutdown() {
