@@ -88,7 +88,8 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                           fieldInfo.getPointDimensionCount(),
                                           fieldInfo.getPointNumBytes(),
                                           maxPointsInLeafNode,
-                                          maxMBSortInHeap)) {
+                                          maxMBSortInHeap,
+                                          values.size(fieldInfo.name))) {
 
       values.intersect(fieldInfo.name, new IntersectVisitor() {
           @Override
@@ -131,6 +132,20 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
     for (FieldInfo fieldInfo : mergeState.mergeFieldInfos) {
       if (fieldInfo.getPointDimensionCount() != 0) {
         if (fieldInfo.getPointDimensionCount() == 1) {
+
+          // Worst case total maximum size (if none of the points are deleted):
+          long totMaxSize = 0;
+          for(int i=0;i<mergeState.pointsReaders.length;i++) {
+            PointsReader reader = mergeState.pointsReaders[i];
+            if (reader != null) {
+              FieldInfos readerFieldInfos = mergeState.fieldInfos[i];
+              FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
+              if (readerFieldInfo != null) {
+                totMaxSize += reader.size(fieldInfo.name);
+              }
+            }
+          }
+
           //System.out.println("MERGE: field=" + fieldInfo.name);
           // Optimize the 1D case to use BKDWriter.merge, which does a single merge sort of the
           // already sorted incoming segments, instead of trying to sort all points again as if
@@ -141,7 +156,8 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                                 fieldInfo.getPointDimensionCount(),
                                                 fieldInfo.getPointNumBytes(),
                                                 maxPointsInLeafNode,
-                                                maxMBSortInHeap)) {
+                                                maxMBSortInHeap,
+                                                totMaxSize)) {
             List<BKDReader> bkdReaders = new ArrayList<>();
             List<MergeState.DocMap> docMaps = new ArrayList<>();
             List<Integer> docIDBases = new ArrayList<>();

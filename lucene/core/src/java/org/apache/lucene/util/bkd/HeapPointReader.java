@@ -26,15 +26,17 @@ final class HeapPointReader implements PointReader {
   final List<byte[]> blocks;
   final int valuesPerBlock;
   final int packedBytesLength;
-  final long[] ords;
+  final long[] ordsLong;
+  final int[] ords;
   final int[] docIDs;
   final int end;
   final byte[] scratch;
 
-  HeapPointReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, long[] ords, int[] docIDs, int start, int end) {
+  HeapPointReader(List<byte[]> blocks, int valuesPerBlock, int packedBytesLength, int[] ords, long[] ordsLong, int[] docIDs, int start, int end) {
     this.blocks = blocks;
     this.valuesPerBlock = valuesPerBlock;
     this.ords = ords;
+    this.ordsLong = ordsLong;
     this.docIDs = docIDs;
     curRead = start-1;
     this.end = end;
@@ -76,7 +78,11 @@ final class HeapPointReader implements PointReader {
 
   @Override
   public long ord() {
-    return ords[curRead];
+    if (ordsLong != null) {
+      return ordsLong[curRead];
+    } else {
+      return ords[curRead];
+    }
   }
 
   @Override

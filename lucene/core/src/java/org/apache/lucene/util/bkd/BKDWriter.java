@@ -128,12 +128,18 @@ public class BKDWriter implements Closeable {
 
   protected long pointCount;
 
-  public BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim) throws IOException {
-    this(maxDoc, tempDir, tempFileNamePrefix, numDims, bytesPerDim, DEFAULT_MAX_POINTS_IN_LEAF_NODE, DEFAULT_MAX_MB_SORT_IN_HEAP);
+  /** true if we have so many values that we must write ords using long (8 bytes) instead of int (4 bytes) */
+  private final boolean longOrds;
+
+  /** An upper bound on how many points the caller will add (includes deletions) */
+  private final long totalPointCount;
+
+  public BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim, long totalPointCount) throws IOException {
+    this(maxDoc, tempDir, tempFileNamePrefix, numDims, bytesPerDim, DEFAULT_MAX_POINTS_IN_LEAF_NODE, DEFAULT_MAX_MB_SORT_IN_HEAP, totalPointCount);
   }
 
-  public BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim, int maxPointsInLeafNode, double maxMBSortInHeap) throws IOException {
-    verifyParams(numDims, maxPointsInLeafNode, maxMBSortInHeap);
+  public BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim, int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount) throws IOException {
+    verifyParams(numDims, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount);
     // We use tracking dir to deal with removing files on exception, so each place that
     // creates temp files doesn't need crazy try/finally/sucess logic:
     this.tempDir = new TrackingDirectoryWrapper(tempDir);
@@ -141,6 +147,7 @@ public class BKDWriter implements Closeable {
     this.maxPointsInLeafNode = maxPointsInLeafNode;
     this.numDims = numDims;
     this.bytesPerDim = bytesPerDim;
+    this.totalPointCount = totalPointCount;
     docsSeen = new FixedBitSet(maxDoc);
     packedBytesLength = numDims * bytesPerDim;
 
@@ -153,8 +160,15 @@ public class BKDWriter implements Closeable {
     minPackedValue = new byte[packedBytesLength];
     maxPackedValue = new byte[packedBytesLength];
 
-    // dimensional values (numDims * bytesPerDim) + ord (long) + docID (int)
-    bytesPerDoc = packedBytesLength + Long.BYTES + Integer.BYTES;
+    // If we may have more than 1+Integer.MAX_VALUE values, then we must encode ords with long (8 bytes), else we can use int (4 bytes).
+    longOrds = totalPointCount > Integer.MAX_VALUE;
+
+    // dimensional values (numDims * bytesPerDim) + ord (int or long) + docID (int)
+    if (longOrds) {
+      bytesPerDoc = packedBytesLength + Long.BYTES + Integer.BYTES;
+    } else {
+      bytesPerDoc = packedBytesLength + Integer.BYTES + Integer.BYTES;
+    }
 
     // As we recurse, we compute temporary partitions of the data, halving the
     // number of points at each recursion.  Once there are few enough points,
@@ -173,12 +187,12 @@ public class BKDWriter implements Closeable {
     }
 
     // We write first maxPointsSortInHeap in heap, then cutover to offline for additional points:
-    heapPointWriter = new HeapPointWriter(16, maxPointsSortInHeap, packedBytesLength);
+    heapPointWriter = new HeapPointWriter(16, maxPointsSortInHeap, packedBytesLength, longOrds);
 
     this.maxMBSortInHeap = maxMBSortInHeap;
   }
 
-  public static void verifyParams(int numDims, int maxPointsInLeafNode, double maxMBSortInHeap) {
+  public static void verifyParams(int numDims, int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount) {
     // We encode dim in a single byte in the splitPackedValues, but we only expose 4 bits for it now, in case we want to use
     // remaining 4 bits for another purpose later
     if (numDims < 1 || numDims > MAX_DIMS) {
@@ -193,13 +207,16 @@ public class BKDWriter implements Closeable {
     if (maxMBSortInHeap < 0.0) {
       throw new IllegalArgumentException("maxMBSortInHeap must be >= 0.0 (got: " + maxMBSortInHeap + ")");
     }
+    if (totalPointCount < 0) {
+      throw new IllegalArgumentException("totalPointCount must be >=0 (got: " + totalPointCount + ")");
+    }
   }
 
   /** If the current segment has too many points then we switchover to temp files / offline sort. */
   private void switchToOffline() throws IOException {
 
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
-    offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength);
+    offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds);
     tempInput = offlinePointWriter.out;
     PointReader reader = heapPointWriter.getReader(0);
     for(int i=0;i<pointCount;i++) {
@@ -243,6 +260,9 @@ public class BKDWriter implements Closeable {
     }
 
     pointCount++;
+    if (pointCount > totalPointCount) {
+      throw new IllegalStateException("totalPointCount=" + totalPointCount + " was passed when we were created, but we just hit " + pointCount + " values");
+    }
     docsSeen.set(docID);
   }
 
@@ -437,6 +457,9 @@ public class BKDWriter implements Closeable {
 
       assert numDims > 1 || valueInOrder(valueCount, lastPackedValue, reader.state.scratchPackedValue);
       valueCount++;
+      if (pointCount > totalPointCount) {
+        throw new IllegalStateException("totalPointCount=" + totalPointCount + " was passed when we were created, but we just hit " + pointCount + " values");
+      }
 
       if (leafCount == 0) {
         if (leafBlockFPs.size() > 0) {
@@ -569,13 +592,10 @@ public class BKDWriter implements Closeable {
     new IntroSorter() {
       private final byte[] pivotPackedValue = new byte[bytesPerDim];
       private int pivotDocID;
-      private long pivotOrd;
 
       @Override
       protected void setPivot(int i) {
         pivotDocID = writer.docIDs[i];
-        pivotOrd = writer.ords[i];
-
         int block = i / writer.valuesPerBlock;
         int index = i % writer.valuesPerBlock;
         System.arraycopy(writer.blocks.get(block), index*packedBytesLength+dim*bytesPerDim, pivotPackedValue, 0, bytesPerDim);
@@ -593,12 +613,7 @@ public class BKDWriter implements Closeable {
         }
 
         // Tie-break
-        cmp = Integer.compare(pivotDocID, writer.docIDs[j]);
-        if (cmp != 0) {
-          return cmp;
-        }
-
-        return Long.compare(pivotOrd, writer.ords[j]);
+        return Integer.compare(pivotDocID, writer.docIDs[j]);
       }
 
       @Override
@@ -607,9 +622,15 @@ public class BKDWriter implements Closeable {
         writer.docIDs[i] = writer.docIDs[j];
         writer.docIDs[j] = docID;
 
-        long ord = writer.ords[i];
-        writer.ords[i] = writer.ords[j];
-        writer.ords[j] = ord;
+        if (longOrds) {
+          long ord = writer.ordsLong[i];
+          writer.ordsLong[i] = writer.ordsLong[j];
+          writer.ordsLong[j] = ord;
+        } else {
+          int ord = writer.ords[i];
+          writer.ords[i] = writer.ords[j];
+          writer.ords[j] = ord;
+        }
 
         byte[] blockI = writer.blocks.get(i / writer.valuesPerBlock);
         int indexI = (i % writer.valuesPerBlock) * packedBytesLength;
@@ -660,7 +681,7 @@ public class BKDWriter implements Closeable {
         sorted = heapPointWriter;
       } else {
         // Subsequent dims need a private copy
-        sorted = new HeapPointWriter((int) pointCount, (int) pointCount, packedBytesLength);
+        sorted = new HeapPointWriter((int) pointCount, (int) pointCount, packedBytesLength, longOrds);
         sorted.copyFrom(heapPointWriter);
       }
 
@@ -691,10 +712,16 @@ public class BKDWriter implements Closeable {
           }
 
           // Tie-break by docID:
-          reader.reset(a.bytes, a.offset + packedBytesLength + Long.BYTES, a.length);
+          int offset;
+          if (longOrds) {
+            offset = Long.BYTES;
+          } else {
+            offset = Integer.BYTES;
+          }
+          reader.reset(a.bytes, a.offset + packedBytesLength + offset, a.length);
           final int docIDA = reader.readInt();
 
-          reader.reset(b.bytes, b.offset + packedBytesLength + Long.BYTES, b.length);
+          reader.reset(b.bytes, b.offset + packedBytesLength + offset, b.length);
           final int docIDB = reader.readInt();
 
           // No need to tie break on ord, for the case where the same doc has the same value in a given dimension indexed more than once: it
@@ -746,7 +773,7 @@ public class BKDWriter implements Closeable {
 
       assert lastWriter[0] != null;
 
-      return new OfflinePointWriter(tempDir, lastWriter[0], packedBytesLength, pointCount);
+      return new OfflinePointWriter(tempDir, lastWriter[0], packedBytesLength, pointCount, longOrds);
     }
   }
 
@@ -1005,7 +1032,7 @@ public class BKDWriter implements Closeable {
   private PathSlice switchToHeap(PathSlice source) throws IOException {
     int count = Math.toIntExact(source.count);
     try (
-       PointWriter writer = new HeapPointWriter(count, count, packedBytesLength);
+       PointWriter writer = new HeapPointWriter(count, count, packedBytesLength, longOrds);
        PointReader reader = source.writer.getReader(source.start);
        ) {
       for(int i=0;i<count;i++) {
@@ -1214,9 +1241,9 @@ public class BKDWriter implements Closeable {
   PointWriter getPointWriter(long count) throws IOException {
     if (count <= maxPointsSortInHeap) {
       int size = Math.toIntExact(count);
-      return new HeapPointWriter(size, size, packedBytesLength);
+      return new HeapPointWriter(size, size, packedBytesLength, longOrds);
     } else {
-      return new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength);
+      return new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds);
     }
   }
 }

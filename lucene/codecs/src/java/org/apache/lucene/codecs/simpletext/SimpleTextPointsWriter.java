@@ -76,7 +76,8 @@ class SimpleTextPointsWriter extends PointsWriter {
                                           fieldInfo.getPointDimensionCount(),
                                           fieldInfo.getPointNumBytes(),
                                           BKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
-                                          BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP) {
+                                          BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
+                                          values.size(fieldInfo.name)) {
 
         @Override
         protected void writeIndex(IndexOutput out, long[] leafBlockFPs, byte[] splitPackedValues) throws IOException {
