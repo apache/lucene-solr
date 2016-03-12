@@ -96,8 +96,10 @@ public class LatLonPoint extends Field {
   }
 
   private static final int BITS = 32;
-  private static final double LONGITUDE_SCALE = (0x1L<<BITS)/360.0D;
-  private static final double LATITUDE_SCALE = (0x1L<<BITS)/180.0D;
+  private static final double LONGITUDE_ENCODE = (0x1L<<BITS)/360.0D;
+  private static final double LONGITUDE_DECODE = 1/LONGITUDE_ENCODE;
+  private static final double LATITUDE_ENCODE  = (0x1L<<BITS)/180.0D;
+  private static final double LATITUDE_DECODE  =  1/LATITUDE_ENCODE;
   
   @Override
   public String toString() {
@@ -142,7 +144,7 @@ public class LatLonPoint extends Field {
     if (latitude == 90.0D) {
       latitude = Math.nextDown(latitude);
     }
-    return Math.toIntExact((long) (latitude * LATITUDE_SCALE));
+    return Math.toIntExact((long) (latitude * LATITUDE_ENCODE));
   }
 
   /** 
@@ -159,7 +161,7 @@ public class LatLonPoint extends Field {
     if (longitude == 180.0D) {
       longitude = Math.nextDown(longitude);
     }
-    return Math.toIntExact((long) (longitude * LONGITUDE_SCALE));
+    return Math.toIntExact((long) (longitude * LONGITUDE_ENCODE));
   }
 
   /** 
@@ -168,7 +170,7 @@ public class LatLonPoint extends Field {
    * @return decoded latitude value.
    */
   public static double decodeLatitude(int encoded) {
-    double result = encoded / LATITUDE_SCALE;
+    double result = encoded * LATITUDE_DECODE;
     assert GeoUtils.isValidLat(result);
     return result;
   }
@@ -189,7 +191,7 @@ public class LatLonPoint extends Field {
    * @return decoded longitude value.
    */  
   public static double decodeLongitude(int encoded) {
-    double result = encoded / LONGITUDE_SCALE;
+    double result = encoded * LONGITUDE_DECODE;
     assert GeoUtils.isValidLon(result);
     return result;
   }
