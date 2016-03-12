@@ -7,7 +7,11 @@ http://s.apache.org/luceneversions
 (No Changes)
 
 ======================= Lucene 6.1.0 =======================
-(No Changes)
+
+New Features
+
+* LUCENE-7099: Add LatLonPoint.newDistanceSort to the sandbox's
+  LatLonPoint. (Robert Muir)
 
 Optimizations
 

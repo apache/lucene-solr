@@ -215,26 +215,26 @@ limitations under the License.
         <div class="fieldset" ng-show="isHighlight">
 
         <label for="hl_fl" title="Fields to highlight on.">hl.fl</label>
-        <input type="text" ng-model="hl.fl" name="hl.fl" id="hl_fl" value="" title="Fields to highlight on.">
+        <input type="text" ng-model="hl['hl.fl']" name="hl.fl" id="hl_fl" value="" title="Fields to highlight on.">
 
         <label for="hl_simple_pre">hl.simple.pre</label>
-        <input type="text" ng-model="hl['simple.pre']" name="hl.simple.pre" id="hl_simple_pre" value="<em>">
+        <input type="text" ng-model="hl['hl.simple.pre']" name="hl.simple.pre" id="hl_simple_pre" value="<em>">
 
         <label for="hl_simple_post">hl.simple.post</label>
-        <input type="text" ng-model="hl['simple.post']"  name="hl.simple.post" id="hl_simple_post" value="</em>">
+        <input type="text" ng-model="hl['hl.simple.post']"  name="hl.simple.post" id="hl_simple_post" value="</em>">
 
         <label for="hl_requireFieldMatch" class="checkbox">
-          <input type="checkbox" ng-model="hl.requireFieldMatch" name="hl.requireFieldMatch" id="hl_requireFieldMatch" value="true">
+          <input type="checkbox" ng-model="hl['hl.requireFieldMatch']" name="hl.requireFieldMatch" id="hl_requireFieldMatch" value="true">
           hl.requireFieldMatch
         </label>
 
         <label for="hl_usePhraseHighlighter" class="checkbox">
-          <input type="checkbox" ng-model="hl.usePhraseHighLighter" name="hl.usePhraseHighlighter" id="hl_usePhraseHighlighter" value="true">
+          <input type="checkbox" ng-model="hl['usePhraseHighLighter']" name="hl.usePhraseHighlighter" id="hl_usePhraseHighlighter" value="true">
           hl.usePhraseHighlighter
         </label>
 
         <label for="hl_highlightMultiTerm" class="checkbox">
-          <input type="checkbox" ng-model="hl.hightlightMultiTerm" name="hl.highlightMultiTerm" id="hl_highlightMultiTerm" value="true">
+          <input type="checkbox" ng-model="hl['hightlightMultiTerm']" name="hl.highlightMultiTerm" id="hl_highlightMultiTerm" value="true">
           hl.highlightMultiTerm
         </label>
 

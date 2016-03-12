@@ -56,6 +56,9 @@ public class TestLatLonPoint extends LuceneTestCase {
     
     // distance query does not quantize inputs
     assertEquals("field:18.0,19.0 +/- 25.0 meters", LatLonPoint.newDistanceQuery("field", 18, 19, 25).toString());
+    
+    // sort field
+    assertEquals("<distance:\"field\" latitude=18.0 longitude=19.0>", LatLonPoint.newDistanceSort("field", 18.0, 19.0).toString());
   }
   
   /** Valid values that should not cause exception */
