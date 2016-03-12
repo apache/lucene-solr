@@ -970,7 +970,6 @@ public class BKDWriter implements Closeable {
   private byte[] markRightTree(long rightCount, int splitDim, PathSlice source, LongBitSet ordBitSet) throws IOException {
 
     // Now we mark ords that fall into the right half, so we can partition on all other dims that are not the split dim:
-    assert numDims == 1 || ordBitSet.cardinality() == 0: "cardinality=" + ordBitSet.cardinality();
 
     // Read the split value, then mark all ords in the right tree (larger than the split value):
     try (PointReader reader = source.writer.getReader(source.start + source.count - rightCount)) {
@@ -988,8 +987,6 @@ public class BKDWriter implements Closeable {
           assert result;
           ordBitSet.set(reader.ord());
         }
-
-        assert rightCount == ordBitSet.cardinality(): "rightCount=" + rightCount + " cardinality=" + ordBitSet.cardinality();
       }
     }
 
