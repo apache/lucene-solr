@@ -30,27 +30,36 @@ final class OfflinePointWriter implements PointWriter {
   final int packedBytesLength;
   private long count;
   private boolean closed;
+  // true if ords are written as long (8 bytes), else 4 bytes
+  private boolean longOrds;
 
-  public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, int packedBytesLength) throws IOException {
+  public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, int packedBytesLength, boolean longOrds) throws IOException {
     this.out = tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT);
     this.tempDir = tempDir;
     this.packedBytesLength = packedBytesLength;
+    this.longOrds = longOrds;
   }
 
   /** Initializes on an already written/closed file, just so consumers can use {@link #getReader} to read the file. */
-  public OfflinePointWriter(Directory tempDir, IndexOutput out, int packedBytesLength, long count) {
+  public OfflinePointWriter(Directory tempDir, IndexOutput out, int packedBytesLength, long count, boolean longOrds) {
     this.out = out;
     this.tempDir = tempDir;
     this.packedBytesLength = packedBytesLength;
     this.count = count;
     closed = true;
+    this.longOrds = longOrds;
   }
     
   @Override
   public void append(byte[] packedValue, long ord, int docID) throws IOException {
     assert packedValue.length == packedBytesLength;
     out.writeBytes(packedValue, 0, packedValue.length);
-    out.writeLong(ord);
+    if (longOrds) {
+      out.writeLong(ord);
+    } else {
+      assert ord <= Integer.MAX_VALUE;
+      out.writeInt((int) ord);
+    }
     out.writeInt(docID);
     count++;
   }
@@ -58,7 +67,7 @@ final class OfflinePointWriter implements PointWriter {
   @Override
   public PointReader getReader(long start) throws IOException {
     assert closed;
-    return new OfflinePointReader(tempDir, out.getName(), packedBytesLength, start, count-start);
+    return new OfflinePointReader(tempDir, out.getName(), packedBytesLength, start, count-start, longOrds);
   }
 
   @Override

@@ -41,6 +41,17 @@ public abstract class PointsWriter implements Closeable {
    *  from the incoming segment.  The default codec overrides this for 1D fields and uses
    *  a faster but more complex implementation. */
   protected void mergeOneField(MergeState mergeState, FieldInfo fieldInfo) throws IOException {
+    long maxPointCount = 0;
+    for (int i=0;i<mergeState.pointsReaders.length;i++) {
+      PointsReader pointsReader = mergeState.pointsReaders[i];
+      if (pointsReader != null) {
+        FieldInfo readerFieldInfo = mergeState.fieldInfos[i].fieldInfo(fieldInfo.name);
+        if (readerFieldInfo != null) {
+          maxPointCount += pointsReader.size(fieldInfo.name);
+        }
+      }
+    }
+    final long finalMaxPointCount = maxPointCount;
     writeField(fieldInfo,
                new PointsReader() {
                  @Override
@@ -48,6 +59,7 @@ public abstract class PointsWriter implements Closeable {
                    if (fieldName.equals(fieldInfo.name) == false) {
                      throw new IllegalArgumentException("field name must match the field being merged");
                    }
+                   
                    for (int i=0;i<mergeState.pointsReaders.length;i++) {
                      PointsReader pointsReader = mergeState.pointsReaders[i];
                      if (pointsReader == null) {
@@ -124,7 +136,7 @@ public abstract class PointsWriter implements Closeable {
 
                  @Override
                  public long size(String fieldName) {
-                   throw new UnsupportedOperationException();
+                   return finalMaxPointCount;
                  }
 
                  @Override

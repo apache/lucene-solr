@@ -30,18 +30,22 @@ final class OfflinePointReader implements PointReader {
   private final byte[] packedValue;
   private long ord;
   private int docID;
+  // true if ords are written as long (8 bytes), else 4 bytes
+  private boolean longOrds;
 
-  OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length) throws IOException {
-    this(tempDir.openInput(tempFileName, IOContext.READONCE), packedBytesLength, start, length);
-  }
-
-  private OfflinePointReader(IndexInput in, int packedBytesLength, long start, long length) throws IOException {
-    this.in = in;
-    int bytesPerDoc = packedBytesLength + Long.BYTES + Integer.BYTES;
+  OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length, boolean longOrds) throws IOException {
+    in = tempDir.openInput(tempFileName, IOContext.READONCE);
+    int bytesPerDoc = packedBytesLength + Integer.BYTES;
+    if (longOrds) {
+      bytesPerDoc += Long.BYTES;
+    } else {
+      bytesPerDoc += Integer.BYTES;
+    }
     long seekFP = start * bytesPerDoc;
     in.seek(seekFP);
     this.countLeft = length;
     packedValue = new byte[packedBytesLength];
+    this.longOrds = longOrds;
   }
 
   @Override
@@ -58,7 +62,11 @@ final class OfflinePointReader implements PointReader {
       assert countLeft == -1;
       return false;
     }
-    ord = in.readLong();
+    if (longOrds) {
+      ord = in.readLong();
+    } else {
+      ord = in.readInt();
+    }
     docID = in.readInt();
     return true;
   }
