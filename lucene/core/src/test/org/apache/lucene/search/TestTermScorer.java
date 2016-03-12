@@ -60,7 +60,7 @@ public class TestTermScorer extends LuceneTestCase {
     writer.forceMerge(1);
     indexReader = getOnlyLeafReader(writer.getReader());
     writer.close();
-    indexSearcher = newSearcher(indexReader);
+    indexSearcher = newSearcher(indexReader, false);
     indexSearcher.setSimilarity(new ClassicSimilarity());
   }
   
