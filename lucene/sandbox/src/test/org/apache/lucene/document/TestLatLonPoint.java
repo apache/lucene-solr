@@ -159,6 +159,16 @@ public class TestLatLonPoint extends LuceneTestCase {
     assertEquals(-180.0, LatLonPoint.decodeLongitude(LatLonPoint.encodeLongitude(-180.0)), ENCODING_TOLERANCE);
   }
 
+  public void testEncodeDecodeExtremeValues() throws Exception {
+    assertEquals(Integer.MIN_VALUE, LatLonPoint.encodeLatitude(-90.0));
+    assertEquals(0, LatLonPoint.encodeLatitude(0.0));
+    assertEquals(Integer.MAX_VALUE, LatLonPoint.encodeLatitude(90.0));
+
+    assertEquals(Integer.MIN_VALUE, LatLonPoint.encodeLongitude(-180.0));
+    assertEquals(0, LatLonPoint.encodeLatitude(0.0));
+    assertEquals(Integer.MAX_VALUE, LatLonPoint.encodeLongitude(180.0));
+  }
+
   public void testEncodeDecodeIsStable() throws Exception {
     int iters = atLeast(1000);
     for(int iter=0;iter<iters;iter++) {
