@@ -117,7 +117,7 @@ public class Test2BPoints extends LuceneTestCase {
     }
 
     final int numDocs = (Integer.MAX_VALUE / 26) + 1;
-    long counter = 0;
+    int counter = 0;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       for (int j=0;j<26;j++) {
