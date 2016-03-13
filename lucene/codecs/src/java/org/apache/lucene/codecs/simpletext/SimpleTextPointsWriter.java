@@ -158,11 +158,10 @@ class SimpleTextPointsWriter extends PointsWriter {
         }
 
         @Override
-        protected void writeLeafBlockPackedValue(IndexOutput out, int[] commonPrefixLengths, byte[] bytes) throws IOException {
+        protected void writeLeafBlockPackedValue(IndexOutput out, int[] commonPrefixLengths, byte[] bytes, int bytesOffset) throws IOException {
           // NOTE: we don't do prefix coding, so we ignore commonPrefixLengths
-          assert bytes.length == packedBytesLength;
           write(out, BLOCK_VALUE);
-          write(out, new BytesRef(bytes, 0, bytes.length).toString());
+          write(out, new BytesRef(bytes, bytesOffset, packedBytesLength).toString());
           newline(out);
         }          
       }) {
