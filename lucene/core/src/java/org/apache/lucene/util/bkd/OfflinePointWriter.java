@@ -31,8 +31,8 @@ final class OfflinePointWriter implements PointWriter {
   private long count;
   private boolean closed;
 
-  public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, int packedBytesLength) throws IOException {
-    this.out = tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT);
+  public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, int packedBytesLength, String desc) throws IOException {
+    this.out = tempDir.createTempOutput(tempFileNamePrefix, "bkd_" + desc, IOContext.DEFAULT);
     this.tempDir = tempDir;
     this.packedBytesLength = packedBytesLength;
   }
