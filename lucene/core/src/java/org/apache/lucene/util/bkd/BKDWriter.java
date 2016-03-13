@@ -1177,7 +1177,7 @@ public class BKDWriter implements Closeable {
              PointReader reader = slices[dim].writer.getReader(slices[dim].start);) {
 
           // Partition this source according to how the splitDim split the values:
-          int nextRightCount = 0;
+          long nextRightCount = 0;
           for (long i=0;i<source.count;i++) {
             boolean result = reader.next();
             assert result;
