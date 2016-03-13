@@ -55,7 +55,7 @@ public class Test2BBKDPoints extends LuceneTestCase {
 
     final int numDocs = (Integer.MAX_VALUE / 26) + 100;
 
-    BKDWriter w = new BKDWriter(numDocs, dir, "_0", 1, 1024, 128, Long.BYTES, 26L * numDocs);
+    BKDWriter w = new BKDWriter(numDocs, dir, "_0", 1, 1024, 256, Long.BYTES, 26L * numDocs);
     int counter = 0;
     byte[] packedBytes = new byte[Long.BYTES];
     for (int docID = 0; docID < numDocs; docID++) {
@@ -88,8 +88,8 @@ public class Test2BBKDPoints extends LuceneTestCase {
 
     final int numDocs = (Integer.MAX_VALUE / 26) + 100;
 
-    BKDWriter w = new BKDWriter(numDocs, dir, "_0", 2, Long.BYTES, 26L * numDocs);
-    long counter = 0;
+    BKDWriter w = new BKDWriter(numDocs, dir, "_0", 2, 1024, 256, Long.BYTES, 26L * numDocs);
+    int counter = 0;
     byte[] packedBytes = new byte[2*Long.BYTES];
     for (int docID = 0; docID < numDocs; docID++) {
       for (int j=0;j<26;j++) {
@@ -98,8 +98,8 @@ public class Test2BBKDPoints extends LuceneTestCase {
         // then our counter, which will overflow a bit in the end:
         NumericUtils.intToSortableBytes(counter, packedBytes, Integer.BYTES);
         // then two random ints for the 2nd dimension:
-        NumericUtils.intoSortableBytes(random().nextInt(), packedBytes, Long.BYTES);
-        NumericUtils.intoSortableBytes(random().nextInt(), packedBytes, Long.BYTES + Integer.BYTES);
+        NumericUtils.intToSortableBytes(random().nextInt(), packedBytes, Long.BYTES);
+        NumericUtils.intToSortableBytes(random().nextInt(), packedBytes, Long.BYTES + Integer.BYTES);
         w.add(packedBytes, docID);
         counter++;
       }
