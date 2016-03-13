@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util.bkd;
 
-
 import java.util.List;
 
 import org.apache.lucene.util.PagedBytes;

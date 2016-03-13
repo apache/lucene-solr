@@ -106,9 +106,9 @@ public class BKDWriter implements Closeable {
   final double maxMBSortInHeap;
 
   final byte[] scratchDiff;
-  final byte[] scratchPackedValue;
   final byte[] scratch1;
   final byte[] scratch2;
+  final BytesRef scratchBytesRef = new BytesRef();
   final int[] commonPrefixLengths;
 
   protected final FixedBitSet docsSeen;
@@ -152,7 +152,7 @@ public class BKDWriter implements Closeable {
     packedBytesLength = numDims * bytesPerDim;
 
     scratchDiff = new byte[bytesPerDim];
-    scratchPackedValue = new byte[packedBytesLength];
+    scratchBytesRef.length = packedBytesLength;
     scratch1 = new byte[packedBytesLength];
     scratch2 = new byte[packedBytesLength];
     commonPrefixLengths = new int[numDims];
@@ -455,7 +455,7 @@ public class BKDWriter implements Closeable {
       }
       System.arraycopy(reader.state.scratchPackedValue, 0, maxPackedValue, 0, packedBytesLength);
 
-      assert numDims > 1 || valueInOrder(valueCount, lastPackedValue, reader.state.scratchPackedValue);
+      assert numDims > 1 || valueInOrder(valueCount, lastPackedValue, reader.state.scratchPackedValue, 0);
       valueCount++;
       if (pointCount > totalPointCount) {
         throw new IllegalStateException("totalPointCount=" + totalPointCount + " was passed when we were created, but we just hit " + pointCount + " values");
@@ -502,7 +502,7 @@ public class BKDWriter implements Closeable {
 
         // Write the full values:
         for (int i=0;i<leafCount;i++) {
-          writeLeafBlockPackedValue(out, commonPrefixLengths, leafBlockPackedValues[i]);
+          writeLeafBlockPackedValue(out, commonPrefixLengths, leafBlockPackedValues[i], 0);
         }
 
         leafCount = 0;
@@ -920,10 +920,10 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  protected void writeLeafBlockPackedValue(IndexOutput out, int[] commonPrefixLengths, byte[] bytes) throws IOException {
+  protected void writeLeafBlockPackedValue(IndexOutput out, int[] commonPrefixLengths, byte[] bytes, int offset) throws IOException {
     for(int dim=0;dim<numDims;dim++) {
       int prefix = commonPrefixLengths[dim];
-      out.writeBytes(bytes, dim*bytesPerDim+prefix, bytesPerDim-prefix);
+      out.writeBytes(bytes, offset+dim*bytesPerDim+prefix, bytesPerDim-prefix);
     }
   }
 
@@ -994,13 +994,13 @@ public class BKDWriter implements Closeable {
   }
 
   /** Called only in assert */
-  private boolean valueInBounds(byte[] packedValue, byte[] minPackedValue, byte[] maxPackedValue) {
+  private boolean valueInBounds(BytesRef packedValue, byte[] minPackedValue, byte[] maxPackedValue) {
     for(int dim=0;dim<numDims;dim++) {
       int offset = bytesPerDim*dim;
-      if (StringHelper.compare(bytesPerDim, packedValue, offset, minPackedValue, offset) < 0) {
+      if (StringHelper.compare(bytesPerDim, packedValue.bytes, packedValue.offset + offset, minPackedValue, offset) < 0) {
         return false;
       }
-      if (StringHelper.compare(bytesPerDim, packedValue, offset, maxPackedValue, offset) > 0) {
+      if (StringHelper.compare(bytesPerDim, packedValue.bytes, packedValue.offset + offset, maxPackedValue, offset) > 0) {
         return false;
       }
     }
@@ -1060,15 +1060,34 @@ public class BKDWriter implements Closeable {
     }
 
     if (nodeID >= leafNodeOffset) {
+
       // Leaf node: write block
+      for (int dim=0;dim<numDims;dim++) {
+        if (slices[dim].writer instanceof HeapPointWriter == false) {
+          // Adversarial cases can cause this, e.g. very lopsided data, all equal points, such that we started
+          // offline, but then kept splitting only in one dimension, and so never had to rewrite into heap writer
+          slices[dim] = switchToHeap(slices[dim]);
+        }
+
+        PathSlice source = slices[dim];
+
+        HeapPointWriter heapSource = (HeapPointWriter) source.writer;
+
+        // Find common prefix by comparing first and last values, already sorted in this dimension:
+        heapSource.readPackedValue(Math.toIntExact(source.start), scratch1);
+        heapSource.readPackedValue(Math.toIntExact(source.start + source.count - 1), scratch2);
+
+        int offset = dim * bytesPerDim;
+        commonPrefixLengths[dim] = bytesPerDim;
+        for(int j=0;j<bytesPerDim;j++) {
+          if (scratch1[offset+j] != scratch2[offset+j]) {
+            commonPrefixLengths[dim] = j;
+            break;
+          }
+        }
+      }
 
       PathSlice source = slices[0];
-
-      if (source.writer instanceof HeapPointWriter == false) {
-        // Adversarial cases can cause this, e.g. very lopsided data, all equal points, such that we started
-        // offline, but then kept splitting only in one dimension, and so never had to rewrite into heap writer
-        source = switchToHeap(source);
-      }
 
       // We ensured that maxPointsSortInHeap was >= maxPointsInLeafNode, so we better be in heap at this point:
       HeapPointWriter heapSource = (HeapPointWriter) source.writer;
@@ -1083,37 +1102,21 @@ public class BKDWriter implements Closeable {
       assert count > 0: "nodeID=" + nodeID + " leafNodeOffset=" + leafNodeOffset;
       writeLeafBlockDocs(out, heapSource.docIDs, Math.toIntExact(source.start), count);
 
-      // First pass: find the per-dim common prefix for all values in this block:
-      Arrays.fill(commonPrefixLengths, bytesPerDim);
-      for (int i=0;i<count;i++) {
-        if (i == 0) {
-          heapSource.readPackedValue(Math.toIntExact(source.start + i), scratch1);
-        } else {
-          heapSource.readPackedValue(Math.toIntExact(source.start + i), scratchPackedValue);
-          for(int dim=0;dim<numDims;dim++) {
-            int offset = dim * bytesPerDim;
-            for(int j=0;j<commonPrefixLengths[dim];j++) {
-              if (scratch1[offset+j] != scratchPackedValue[offset+j]) {
-                commonPrefixLengths[dim] = j;
-                break;
-              }
-            }
-          }
-        }
-      }
+      // TODO: minor opto: we don't really have to write the actual common prefixes, because BKDReader on recursing can regenerate it for us
+      // from the index, much like how terms dict does so from the FST:
 
+      // Write the common prefixes:
       writeCommonPrefixes(out, commonPrefixLengths, scratch1);
 
-      // Second pass: write the full values:
+      // Write the full values:
       byte[] lastPackedValue = new byte[bytesPerDim];
       for (int i=0;i<count;i++) {
-        // TODO: we could do bulk copying here, avoiding the intermediate copy:
-        heapSource.readPackedValue(Math.toIntExact(source.start + i), scratchPackedValue);
-        assert numDims != 1 || valueInOrder(i, lastPackedValue, scratchPackedValue);
+        heapSource.getPackedValueSlice(Math.toIntExact(source.start + i), scratchBytesRef);
+        assert numDims != 1 || valueInOrder(i, lastPackedValue, scratchBytesRef.bytes, scratchBytesRef.offset);
 
         // Make sure this value does in fact fall within this leaf cell:
-        assert valueInBounds(scratchPackedValue, minPackedValue, maxPackedValue);
-        writeLeafBlockPackedValue(out, commonPrefixLengths, scratchPackedValue);
+        assert valueInBounds(scratchBytesRef, minPackedValue, maxPackedValue);
+        writeLeafBlockPackedValue(out, commonPrefixLengths, scratchBytesRef.bytes, scratchBytesRef.offset);
       }
 
     } else {
@@ -1227,11 +1230,11 @@ public class BKDWriter implements Closeable {
   }
 
   // only called from assert
-  private boolean valueInOrder(long ord, byte[] lastPackedValue, byte[] packedValue) {
-    if (ord > 0 && StringHelper.compare(bytesPerDim, lastPackedValue, 0, packedValue, 0) > 0) {
-      throw new AssertionError("values out of order: last value=" + new BytesRef(lastPackedValue) + " current value=" + new BytesRef(packedValue) + " ord=" + ord);
+  private boolean valueInOrder(long ord, byte[] lastPackedValue, byte[] packedValue, int packedValueOffset) {
+    if (ord > 0 && StringHelper.compare(bytesPerDim, lastPackedValue, 0, packedValue, packedValueOffset) > 0) {
+      throw new AssertionError("values out of order: last value=" + new BytesRef(lastPackedValue) + " current value=" + new BytesRef(packedValue, packedValueOffset, packedBytesLength) + " ord=" + ord);
     }
-    System.arraycopy(packedValue, 0, lastPackedValue, 0, bytesPerDim);
+    System.arraycopy(packedValue, packedValueOffset, lastPackedValue, 0, bytesPerDim);
     return true;
   }
 

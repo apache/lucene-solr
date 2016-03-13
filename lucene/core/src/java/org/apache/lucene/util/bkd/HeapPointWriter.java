@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 
 final class HeapPointWriter implements PointWriter {
   int[] docIDs;
@@ -70,6 +71,15 @@ final class HeapPointWriter implements PointWriter {
     int block = index / valuesPerBlock;
     int blockIndex = index % valuesPerBlock;
     System.arraycopy(blocks.get(block), blockIndex * packedBytesLength, bytes, 0, packedBytesLength);
+  }
+
+  /** Returns a reference, in <code>result</code>, to the byte[] slice holding this value */
+  void getPackedValueSlice(int index, BytesRef result) {
+    int block = index / valuesPerBlock;
+    int blockIndex = index % valuesPerBlock;
+    result.bytes = blocks.get(block);
+    result.offset = blockIndex * packedBytesLength;
+    assert result.length == packedBytesLength;
   }
 
   void writePackedValue(int index, byte[] bytes) {
