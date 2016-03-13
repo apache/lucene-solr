@@ -18,9 +18,7 @@ package org.apache.lucene.util.bkd;
 
 import java.util.List;
 
-import org.apache.lucene.util.PagedBytes;
-
-final class HeapPointReader implements PointReader {
+final class HeapPointReader extends PointReader {
   private int curRead;
   final List<byte[]> blocks;
   final int valuesPerBlock;

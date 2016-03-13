@@ -1176,24 +1176,7 @@ public class BKDWriter implements Closeable {
              PointWriter rightPointWriter = getPointWriter(source.count - leftCount, "right" + dim);
              PointReader reader = slices[dim].writer.getReader(slices[dim].start);) {
 
-          // Partition this source according to how the splitDim split the values:
-          long nextRightCount = 0;
-          for (long i=0;i<source.count;i++) {
-            boolean result = reader.next();
-            assert result;
-            byte[] packedValue = reader.packedValue();
-            long ord = reader.ord();
-            int docID = reader.docID();
-            if (ordBitSet.get(ord)) {
-              rightPointWriter.append(packedValue, ord, docID);
-              nextRightCount++;
-              if (dim == dimToClear) {
-                ordBitSet.clear(ord);
-              }
-            } else {
-              leftPointWriter.append(packedValue, ord, docID);
-            }
-          }
+          long nextRightCount = reader.split(source.count, ordBitSet, leftPointWriter, rightPointWriter, dim == dimToClear);
 
           leftSlices[dim] = new PathSlice(leftPointWriter, 0, leftCount);
           rightSlices[dim] = new PathSlice(rightPointWriter, 0, rightCount);

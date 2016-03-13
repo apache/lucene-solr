@@ -28,7 +28,7 @@ final class OfflinePointWriter implements PointWriter {
   final Directory tempDir;
   final IndexOutput out;
   final int packedBytesLength;
-  private long count;
+  long count;
   private boolean closed;
   // true if ords are written as long (8 bytes), else 4 bytes
   private boolean longOrds;
