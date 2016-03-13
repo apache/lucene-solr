@@ -216,7 +216,7 @@ public class BKDWriter implements Closeable {
   private void switchToOffline() throws IOException {
 
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
-    offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds);
+    offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds, "switch");
     tempInput = offlinePointWriter.out;
     PointReader reader = heapPointWriter.getReader(0);
     for(int i=0;i<pointCount;i++) {
@@ -1172,8 +1172,8 @@ public class BKDWriter implements Closeable {
           continue;
         }
 
-        try (PointWriter leftPointWriter = getPointWriter(leftCount);
-             PointWriter rightPointWriter = getPointWriter(source.count - leftCount);
+        try (PointWriter leftPointWriter = getPointWriter(leftCount, "left" + dim);
+             PointWriter rightPointWriter = getPointWriter(source.count - leftCount, "right" + dim);
              PointReader reader = slices[dim].writer.getReader(slices[dim].start);) {
 
           // Partition this source according to how the splitDim split the values:
@@ -1238,12 +1238,12 @@ public class BKDWriter implements Closeable {
     return true;
   }
 
-  PointWriter getPointWriter(long count) throws IOException {
+  PointWriter getPointWriter(long count, String desc) throws IOException {
     if (count <= maxPointsSortInHeap) {
       int size = Math.toIntExact(count);
       return new HeapPointWriter(size, size, packedBytesLength, longOrds);
     } else {
-      return new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds);
+      return new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds, desc);
     }
   }
 }

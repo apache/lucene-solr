@@ -33,8 +33,8 @@ final class OfflinePointWriter implements PointWriter {
   // true if ords are written as long (8 bytes), else 4 bytes
   private boolean longOrds;
 
-  public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, int packedBytesLength, boolean longOrds) throws IOException {
-    this.out = tempDir.createTempOutput(tempFileNamePrefix, "bkd", IOContext.DEFAULT);
+  public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, int packedBytesLength, boolean longOrds, String desc) throws IOException {
+    this.out = tempDir.createTempOutput(tempFileNamePrefix, "bkd_" + desc, IOContext.DEFAULT);
     this.tempDir = tempDir;
     this.packedBytesLength = packedBytesLength;
     this.longOrds = longOrds;
