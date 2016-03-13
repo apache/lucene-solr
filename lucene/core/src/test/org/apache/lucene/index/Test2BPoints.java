@@ -70,11 +70,12 @@ public class Test2BPoints extends LuceneTestCase {
     }
 
     final int numDocs = (Integer.MAX_VALUE / 26) + 1;
-    long counter = 0;
+    int counter = 0;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       for (int j=0;j<26;j++) {
-        doc.add(new LongPoint("long", counter));
+        long x = (((long) random().nextInt() << 32)) | (long) counter;
+        doc.add(new LongPoint("long", x));
         counter++;
       }
       w.addDocument(doc);
@@ -120,7 +121,9 @@ public class Test2BPoints extends LuceneTestCase {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       for (int j=0;j<26;j++) {
-        doc.add(new LongPoint("long", counter, 2*counter+1));
+        long x = (((long) random().nextInt() << 32)) | (long) counter;
+        long y = (((long) random().nextInt() << 32)) | (long) random().nextInt();
+        doc.add(new LongPoint("long", x, y));
         counter++;
       }
       w.addDocument(doc);
