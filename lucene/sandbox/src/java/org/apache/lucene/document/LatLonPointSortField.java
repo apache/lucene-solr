@@ -47,7 +47,7 @@ final class LatLonPointSortField extends SortField {
   
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) throws IOException {
-    return new LatLonPointDistanceComparator(getField(), latitude, longitude, numHits, getMissingValue());
+    return new LatLonPointDistanceComparator(getField(), latitude, longitude, numHits);
   }
 
   @Override
@@ -57,16 +57,10 @@ final class LatLonPointSortField extends SortField {
 
   @Override
   public void setMissingValue(Object missingValue) {
-    if (missingValue == null) {
-      throw new IllegalArgumentException("Missing value cannot be null");
+    if (Double.valueOf(Double.POSITIVE_INFINITY).equals(missingValue) == false) {
+      throw new IllegalArgumentException("Missing value can only be Double.POSITIVE_INFINITY (missing values last), but got " + missingValue);
     }
-    if (missingValue.getClass() != Double.class)
-      throw new IllegalArgumentException("Missing value can only be of type java.lang.Double, but got " + missingValue.getClass());
-    Double value = (Double) missingValue;
-    if (!Double.isInfinite(value)) {
-      throw new IllegalArgumentException("Missing value can only be Double.NEGATIVE_INFINITY (missing values first) or Double.POSITIVE_INFINITY (missing values last), but got " + value);
-    }
-    this.missingValue = value;
+    this.missingValue = missingValue;
   }
   
   @Override
