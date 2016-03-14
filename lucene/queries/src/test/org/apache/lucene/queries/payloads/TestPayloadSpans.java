@@ -435,6 +435,7 @@ public class TestPayloadSpans extends LuceneTestCase {
       writer.addDocument(doc);
     }
 
+    writer.forceMerge(1);
     closeIndexReader = writer.getReader();
     writer.close();
 
