@@ -21,6 +21,9 @@ Optimizations
 * LUCENE-7099: LatLonPoint's newDistanceQuery supports two-phase
   iteration. (Robert Muir)
 
+* LUCENE-7097: IntroSorter now recurses to 2 * log_2(count) quicksort
+  stack depth before switching to heapsort (Adrien Grand, Mike McCandless)
+
 Other
 
 * LUCENE-7087: Let MemoryIndex#fromDocument(...) accept 'Iterable<? extends IndexableField>'
