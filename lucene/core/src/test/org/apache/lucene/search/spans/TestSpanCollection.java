@@ -61,7 +61,7 @@ public class TestSpanCollection extends LuceneTestCase {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
+        newIndexWriterConfig(new MockAnalyzer(random())));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newField(FIELD, docFields[i], OFFSETS));
