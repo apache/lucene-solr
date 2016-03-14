@@ -73,6 +73,82 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     dir.close();
   }
   
+  /** Add two points (one doc missing) and sort by distance */
+  public void testMissingLast() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    
+    // missing
+    Document doc = new Document();
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new LatLonPoint("location", 40.718266, -74.007819));
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new LatLonPoint("location", 40.7051157, -74.0088305));
+    iw.addDocument(doc);
+    
+    IndexReader reader = iw.getReader();
+    IndexSearcher searcher = new IndexSearcher(reader);
+    iw.close();
+
+    Sort sort = new Sort(LatLonPoint.newDistanceSort("location", 40.7143528, -74.0059731));
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
+    
+    FieldDoc d = (FieldDoc) td.scoreDocs[0];
+    assertEquals(462.61748421408186D, (Double)d.fields[0], 0.0D);
+    
+    d = (FieldDoc) td.scoreDocs[1];
+    assertEquals(1056.1630445911035D, (Double)d.fields[0], 0.0D);
+    
+    d = (FieldDoc) td.scoreDocs[2];
+    assertEquals(Double.POSITIVE_INFINITY, (Double)d.fields[0], 0.0D);
+    
+    reader.close();
+    dir.close();
+  }
+  
+  /** Add two points (one doc missing) and sort by distance */
+  public void testMissingFirst() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
+    
+    // missing
+    Document doc = new Document();
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new LatLonPoint("location", 40.718266, -74.007819));
+    iw.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new LatLonPoint("location", 40.7051157, -74.0088305));
+    iw.addDocument(doc);
+    
+    IndexReader reader = iw.getReader();
+    IndexSearcher searcher = new IndexSearcher(reader);
+    iw.close();
+
+    SortField sortField = LatLonPoint.newDistanceSort("location", 40.7143528, -74.0059731);
+    sortField.setMissingValue(Double.NEGATIVE_INFINITY);
+    Sort sort = new Sort(sortField);
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
+
+    FieldDoc d = (FieldDoc) td.scoreDocs[0];
+    assertEquals(Double.NEGATIVE_INFINITY, (Double)d.fields[0], 0.0D);
+    
+    d = (FieldDoc) td.scoreDocs[1];
+    assertEquals(462.61748421408186D, (Double)d.fields[0], 0.0D);
+    
+    d = (FieldDoc) td.scoreDocs[2];
+    assertEquals(1056.1630445911035D, (Double)d.fields[0], 0.0D);
+    
+    reader.close();
+    dir.close();
+  }
+  
   /** Run a few iterations with just 10 docs, hopefully easy to debug */
   public void testRandom() throws Exception {
     for (int iters = 0; iters < 100; iters++) {
@@ -141,17 +217,20 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
     for (int i = 0; i < numDocs; i++) {
-      double latRaw = -90 + 180.0 * random().nextDouble();
-      double lonRaw = -180 + 360.0 * random().nextDouble();
-      // pre-normalize up front, so we can just use quantized value for testing and do simple exact comparisons
-      double lat = LatLonPoint.decodeLatitude(LatLonPoint.encodeLatitude(latRaw));
-      double lon = LatLonPoint.decodeLongitude(LatLonPoint.encodeLongitude(lonRaw));
       Document doc = new Document();
       doc.add(new StoredField("id", i));
       doc.add(new NumericDocValuesField("id", i));
-      doc.add(new LatLonPoint("field", lat, lon));
-      doc.add(new StoredField("lat", lat));
-      doc.add(new StoredField("lon", lon));
+      if (random().nextInt(10) > 7) {
+        double latRaw = -90 + 180.0 * random().nextDouble();
+        double lonRaw = -180 + 360.0 * random().nextDouble();
+        // pre-normalize up front, so we can just use quantized value for testing and do simple exact comparisons
+        double lat = LatLonPoint.decodeLatitude(LatLonPoint.encodeLatitude(latRaw));
+        double lon = LatLonPoint.decodeLongitude(LatLonPoint.encodeLongitude(lonRaw));
+
+        doc.add(new LatLonPoint("field", lat, lon));
+        doc.add(new StoredField("lat", lat));
+        doc.add(new StoredField("lon", lon));
+      } // otherwise "missing"
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
@@ -160,14 +239,20 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     for (int i = 0; i < numQueries; i++) {
       double lat = -90 + 180.0 * random().nextDouble();
       double lon = -180 + 360.0 * random().nextDouble();
+      double missingValue = random().nextBoolean() ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
 
       Result expected[] = new Result[reader.maxDoc()];
       
       for (int doc = 0; doc < reader.maxDoc(); doc++) {
         Document targetDoc = reader.document(doc);
-        double docLatitude = targetDoc.getField("lat").numericValue().doubleValue();
-        double docLongitude = targetDoc.getField("lon").numericValue().doubleValue();
-        double distance = GeoDistanceUtils.haversin(lat, lon, docLatitude, docLongitude);
+        final double distance;
+        if (targetDoc.getField("lat") == null) {
+          distance = missingValue; // missing
+        } else {
+          double docLatitude = targetDoc.getField("lat").numericValue().doubleValue();
+          double docLongitude = targetDoc.getField("lon").numericValue().doubleValue();
+          distance = GeoDistanceUtils.haversin(lat, lon, docLatitude, docLongitude);
+        }
         int id = targetDoc.getField("id").numericValue().intValue();
         expected[doc] = new Result(id, distance);
       }
@@ -177,7 +262,9 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
       // randomize the topN a bit
       int topN = TestUtil.nextInt(random(), 1, reader.maxDoc());
       // sort by distance, then ID
-      Sort sort = new Sort(LatLonPoint.newDistanceSort("field", lat, lon), 
+      SortField distanceSort = LatLonPoint.newDistanceSort("field", lat, lon);
+      distanceSort.setMissingValue(missingValue);
+      Sort sort = new Sort(distanceSort, 
                            new SortField("id", SortField.Type.INT));
 
       TopDocs topDocs = searcher.search(new MatchAllDocsQuery(), topN, sort);

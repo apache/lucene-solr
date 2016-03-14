@@ -62,7 +62,11 @@ final class LatLonPointSortField extends SortField {
     }
     if (missingValue.getClass() != Double.class)
       throw new IllegalArgumentException("Missing value can only be of type java.lang.Double, but got " + missingValue.getClass());
-    this.missingValue = missingValue;
+    Double value = (Double) missingValue;
+    if (!Double.isInfinite(value)) {
+      throw new IllegalArgumentException("Missing value can only be Double.NEGATIVE_INFINITY (missing values first) or Double.POSITIVE_INFINITY (missing values last), but got " + value);
+    }
+    this.missingValue = value;
   }
   
   @Override
