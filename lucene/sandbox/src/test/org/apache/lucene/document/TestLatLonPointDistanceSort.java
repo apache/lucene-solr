@@ -54,7 +54,7 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader reader = iw.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     iw.close();
 
     Sort sort = new Sort(LatLonPoint.newDistanceSort("location", 40.7143528, -74.0059731));
@@ -91,7 +91,7 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader reader = iw.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     iw.close();
 
     Sort sort = new Sort(LatLonPoint.newDistanceSort("location", 40.7143528, -74.0059731));
@@ -128,7 +128,7 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     iw.addDocument(doc);
     
     IndexReader reader = iw.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
     iw.close();
 
     SortField sortField = LatLonPoint.newDistanceSort("location", 40.7143528, -74.0059731);
@@ -234,7 +234,7 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     for (int i = 0; i < numQueries; i++) {
       double lat = -90 + 180.0 * random().nextDouble();
@@ -288,5 +288,25 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     reader.close();
     writer.close();
     dir.close();
+  }
+
+  /** Test this method sorts the same way as real haversin */
+  public void testPartialHaversin() {
+    for (int i = 0; i < 100000; i++) {
+      double centerLat = -90 + 180.0 * random().nextDouble();
+      double centerLon = -180 + 360.0 * random().nextDouble();
+
+      double lat1 = -90 + 180.0 * random().nextDouble();
+      double lon1 = -180 + 360.0 * random().nextDouble();
+
+      double lat2 = -90 + 180.0 * random().nextDouble();
+      double lon2 = -180 + 360.0 * random().nextDouble();
+
+      int expected = Integer.signum(Double.compare(GeoDistanceUtils.haversin(centerLat, centerLon, lat1, lon1),
+                                                   GeoDistanceUtils.haversin(centerLat, centerLon, lat2, lon2)));
+      int actual = Integer.signum(Double.compare(LatLonPointDistanceComparator.haversin1(centerLat, centerLon, lat1, lon1),
+                                                 LatLonPointDistanceComparator.haversin1(centerLat, centerLon, lat2, lon2)));
+      assertEquals(expected, actual);
+    }
   }
 }
