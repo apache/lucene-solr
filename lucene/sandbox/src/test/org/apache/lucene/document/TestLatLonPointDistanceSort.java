@@ -28,6 +28,8 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.spatial.util.GeoDistanceUtils;
+import org.apache.lucene.spatial.util.GeoRect;
+import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -105,45 +107,6 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     
     d = (FieldDoc) td.scoreDocs[2];
     assertEquals(Double.POSITIVE_INFINITY, (Double)d.fields[0], 0.0D);
-    
-    reader.close();
-    dir.close();
-  }
-  
-  /** Add two points (one doc missing) and sort by distance */
-  public void testMissingFirst() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    
-    // missing
-    Document doc = new Document();
-    iw.addDocument(doc);
-    
-    doc = new Document();
-    doc.add(new LatLonPoint("location", 40.718266, -74.007819));
-    iw.addDocument(doc);
-    
-    doc = new Document();
-    doc.add(new LatLonPoint("location", 40.7051157, -74.0088305));
-    iw.addDocument(doc);
-    
-    IndexReader reader = iw.getReader();
-    IndexSearcher searcher = newSearcher(reader);
-    iw.close();
-
-    SortField sortField = LatLonPoint.newDistanceSort("location", 40.7143528, -74.0059731);
-    sortField.setMissingValue(Double.NEGATIVE_INFINITY);
-    Sort sort = new Sort(sortField);
-    TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
-
-    FieldDoc d = (FieldDoc) td.scoreDocs[0];
-    assertEquals(Double.NEGATIVE_INFINITY, (Double)d.fields[0], 0.0D);
-    
-    d = (FieldDoc) td.scoreDocs[1];
-    assertEquals(462.61748421408186D, (Double)d.fields[0], 0.0D);
-    
-    d = (FieldDoc) td.scoreDocs[2];
-    assertEquals(1056.1630445911035D, (Double)d.fields[0], 0.0D);
     
     reader.close();
     dir.close();
@@ -239,7 +202,7 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     for (int i = 0; i < numQueries; i++) {
       double lat = -90 + 180.0 * random().nextDouble();
       double lon = -180 + 360.0 * random().nextDouble();
-      double missingValue = random().nextBoolean() ? Double.POSITIVE_INFINITY : Double.NEGATIVE_INFINITY;
+      double missingValue = Double.POSITIVE_INFINITY;
 
       Result expected[] = new Result[reader.maxDoc()];
       
@@ -307,6 +270,20 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
       int actual = Integer.signum(Double.compare(LatLonPointDistanceComparator.haversin1(centerLat, centerLon, lat1, lon1),
                                                  LatLonPointDistanceComparator.haversin1(centerLat, centerLon, lat2, lon2)));
       assertEquals(expected, actual);
+    }
+  }
+  
+  /** Test infinite radius covers whole earth */
+  public void testInfiniteRect() {
+    for (int i = 0; i < 100000; i++) {
+      double centerLat = -90 + 180.0 * random().nextDouble();
+      double centerLon = -180 + 360.0 * random().nextDouble();
+      GeoRect rect = GeoUtils.circleToBBox(centerLat, centerLon, Double.POSITIVE_INFINITY);
+      assertEquals(-180.0, rect.minLon, 0.0D);
+      assertEquals(180.0, rect.maxLon, 0.0D);
+      assertEquals(-90.0, rect.minLat, 0.0D);
+      assertEquals(90.0, rect.maxLat, 0.0D);
+      assertFalse(rect.crossesDateline());
     }
   }
 }

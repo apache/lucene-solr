@@ -42,7 +42,6 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
   final String field;
   final double latitude;
   final double longitude;
-  final double missingValue;
 
   final double[] values;
   double bottom;
@@ -52,27 +51,22 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
   // current bounding box(es) for the bottom distance on the PQ.
   // these are pre-encoded with LatLonPoint's encoding and 
   // used to exclude uncompetitive hits faster.
-  int minLon;
-  int maxLon;
-  int minLat;
-  int maxLat;
+  int minLon = Integer.MIN_VALUE;
+  int maxLon = Integer.MAX_VALUE;
+  int minLat = Integer.MIN_VALUE;
+  int maxLat = Integer.MAX_VALUE;
 
-  // crossesDateLine is true, then we have a second box to check
-  boolean crossesDateLine;
-  int minLon2;
-  int maxLon2;
-  int minLat2;
-  int maxLat2;
+  // second set of longitude ranges to check (for cross-dateline case)
+  int minLon2 = Integer.MAX_VALUE;
 
   // the number of times setBottom has been called (adversary protection)
   int setBottomCounter = 0;
 
-  public LatLonPointDistanceComparator(String field, double latitude, double longitude, int numHits, double missingValue) {
+  public LatLonPointDistanceComparator(String field, double latitude, double longitude, int numHits) {
     this.field = field;
     this.latitude = latitude;
     this.longitude = longitude;
     this.values = new double[numHits];
-    this.missingValue = missingValue;
   }
   
   @Override
@@ -90,53 +84,22 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     // sampling if we get called way too much: don't make gobs of bounding
     // boxes if comparator hits a worst case order (e.g. backwards distance order)
     if (setBottomCounter < 1024 || (setBottomCounter & 0x3F) == 0x3F) {
-      // don't pass infinite values to circleToBBox: just make a complete box.
-      if (bottom == missingValue) {
-        minLat = minLon = Integer.MIN_VALUE;
-        maxLat = maxLon = Integer.MAX_VALUE;
-        crossesDateLine = false;
+      GeoRect box = GeoUtils.circleToBBox(longitude, latitude, haversin2(bottom));
+      // pre-encode our box to our integer encoding, so we don't have to decode 
+      // to double values for uncompetitive hits. This has some cost!
+      minLat = LatLonPoint.encodeLatitude(box.minLat);
+      maxLat = LatLonPoint.encodeLatitude(box.maxLat);
+      if (box.crossesDateline()) {
+        // box1
+        minLon = Integer.MIN_VALUE;
+        maxLon = LatLonPoint.encodeLongitude(box.maxLon);
+        // box2
+        minLon2 = LatLonPoint.encodeLongitude(box.minLon);
       } else {
-        assert Double.isFinite(bottom);
-        GeoRect box = GeoUtils.circleToBBox(longitude, latitude, haversin2(bottom));
-        // pre-encode our box to our integer encoding, so we don't have to decode 
-        // to double values for uncompetitive hits. This has some cost!
-        int minLatEncoded = LatLonPoint.encodeLatitude(box.minLat);
-        int maxLatEncoded = LatLonPoint.encodeLatitude(box.maxLat);
-        int minLonEncoded = LatLonPoint.encodeLongitude(box.minLon);
-        int maxLonEncoded = LatLonPoint.encodeLongitude(box.maxLon);
-        // be sure to not introduce quantization error in our optimization, just 
-        // round up our encoded box safely in all directions.
-        if (minLatEncoded != Integer.MIN_VALUE) {
-          minLatEncoded--;
-        }
-        if (minLonEncoded != Integer.MIN_VALUE) {
-          minLonEncoded--;
-        }
-        if (maxLatEncoded != Integer.MAX_VALUE) {
-          maxLatEncoded++;
-        }
-        if (maxLonEncoded != Integer.MAX_VALUE) {
-          maxLonEncoded++;
-        }
-        crossesDateLine = box.crossesDateline();
-        // crosses dateline: split
-        if (crossesDateLine) {
-          // box1
-          minLon = Integer.MIN_VALUE;
-          maxLon = maxLonEncoded;
-          minLat = minLatEncoded;
-          maxLat = maxLatEncoded;
-          // box2
-          minLon2 = minLonEncoded;
-          maxLon2 = Integer.MAX_VALUE;
-          minLat2 = minLatEncoded;
-          maxLat2 = maxLatEncoded;
-        } else {
-          minLon = minLonEncoded;
-          maxLon = maxLonEncoded;
-          minLat = minLatEncoded;
-          maxLat = maxLatEncoded;
-        }
+        minLon = LatLonPoint.encodeLongitude(box.minLon);
+        maxLon = LatLonPoint.encodeLongitude(box.maxLon);
+        // disable box2
+        minLon2 = Integer.MAX_VALUE;
       }
     }
     setBottomCounter++;
@@ -153,24 +116,33 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
 
     int numValues = currentDocs.count();
     if (numValues == 0) {
-      return Double.compare(bottom, missingValue);
+      return Double.compare(bottom, Double.POSITIVE_INFINITY);
     }
 
-    double minValue = Double.POSITIVE_INFINITY;
+    int cmp = -1;
     for (int i = 0; i < numValues; i++) {
       long encoded = currentDocs.valueAt(i);
+
+      // test bounding box
       int latitudeBits = (int)(encoded >> 32);
+      if (latitudeBits < minLat || latitudeBits > maxLat) {
+        continue;
+      }
       int longitudeBits = (int)(encoded & 0xFFFFFFFF);
-      boolean outsideBox = ((latitudeBits < minLat || longitudeBits < minLon || latitudeBits > maxLat || longitudeBits > maxLon) &&
-            (crossesDateLine == false || latitudeBits < minLat2 || longitudeBits < minLon2 || latitudeBits > maxLat2 || longitudeBits > maxLon2));
+      if ((longitudeBits < minLon || longitudeBits > maxLon) && (longitudeBits < minLon2)) {
+        continue;
+      }
+
       // only compute actual distance if its inside "competitive bounding box"
-      if (outsideBox == false) {
-        double docLatitude = LatLonPoint.decodeLatitude(latitudeBits);
-        double docLongitude = LatLonPoint.decodeLongitude(longitudeBits);
-        minValue = Math.min(minValue, haversin1(latitude, longitude, docLatitude, docLongitude));
+      double docLatitude = LatLonPoint.decodeLatitude(latitudeBits);
+      double docLongitude = LatLonPoint.decodeLongitude(longitudeBits);
+      cmp = Math.max(cmp, Double.compare(bottom, haversin1(latitude, longitude, docLatitude, docLongitude)));
+      // once we compete in the PQ, no need to continue.
+      if (cmp > 0) {
+        return cmp;
       }
     }
-    return Double.compare(bottom, minValue);
+    return cmp;
   }
   
   @Override
@@ -204,12 +176,8 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
   double sortKey(int doc) {
     currentDocs.setDocument(doc);
 
-    int numValues = currentDocs.count();
-    if (numValues == 0) {
-      return missingValue;
-    }
-
     double minValue = Double.POSITIVE_INFINITY;
+    int numValues = currentDocs.count();
     for (int i = 0; i < numValues; i++) {
       long encoded = currentDocs.valueAt(i);
       double docLatitude = LatLonPoint.decodeLatitude((int)(encoded >> 32));

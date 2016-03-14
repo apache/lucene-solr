@@ -142,9 +142,11 @@ final class LatLonPointDistanceQuery extends Query {
                              double latMax = LatLonPoint.decodeLatitude(maxPackedValue, 0);
                              double lonMax = LatLonPoint.decodeLongitude(maxPackedValue, Integer.BYTES);
                              
-                             if ((latMax < box1.minLat || lonMax < box1.minLon || latMin > box1.maxLat || lonMin > box1.maxLon) && 
-                                 (box2 == null || latMax < box2.minLat || lonMax < box2.minLon || latMin > box2.maxLat || lonMin > box2.maxLon)) {
-                               // we are fully outside of bounding box(es), don't proceed any further.
+                             if (latMax < box1.minLat || latMin > box1.maxLat) {
+                               // latitude out of bounding box range
+                               return Relation.CELL_OUTSIDE_QUERY;
+                             } else if ((lonMax < box1.minLon || lonMin > box1.maxLon) && (box2 == null || lonMax < box2.minLon)) {
+                               // longitude out of bounding box range
                                return Relation.CELL_OUTSIDE_QUERY;
                              } else if (lonMax - longitude < 90 && longitude - lonMin < 90 &&
                                  GeoDistanceUtils.haversin(latitude, longitude, latMin, lonMin) <= radiusMeters &&
