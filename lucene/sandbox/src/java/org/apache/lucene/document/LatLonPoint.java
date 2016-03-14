@@ -333,8 +333,8 @@ public class LatLonPoint extends Field {
    * the hits contains a Double instance with the distance in meters.
    * <p>
    * If a document is missing the field, then by default it is treated as having {@link Double#POSITIVE_INFINITY} distance
-   * (missing last). You can change this by calling {@link SortField#setMissingValue(Object)} on the returned SortField 
-   * to a different Double value.
+   * (missing values sort last). You can change this to sort missing values first by calling 
+   * {@link SortField#setMissingValue(Object) setMissingValue(Double.NEGATIVE_INFINITY)} on the returned SortField. 
    * <p>
    * If a document contains multiple values for the field, the <i>closest</i> distance to the location is used.
    * <p>

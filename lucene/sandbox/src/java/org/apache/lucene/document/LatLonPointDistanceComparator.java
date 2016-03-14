@@ -89,45 +89,53 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     // sampling if we get called way too much: don't make gobs of bounding
     // boxes if comparator hits a worst case order (e.g. backwards distance order)
     if (setBottomCounter < 1024 || (setBottomCounter & 0x3F) == 0x3F) {
-      GeoRect box = GeoUtils.circleToBBox(longitude, latitude, bottom);
-      // pre-encode our box to our integer encoding, so we don't have to decode 
-      // to double values for uncompetitive hits. This has some cost!
-      int minLatEncoded = LatLonPoint.encodeLatitude(box.minLat);
-      int maxLatEncoded = LatLonPoint.encodeLatitude(box.maxLat);
-      int minLonEncoded = LatLonPoint.encodeLongitude(box.minLon);
-      int maxLonEncoded = LatLonPoint.encodeLongitude(box.maxLon);
-      // be sure to not introduce quantization error in our optimization, just 
-      // round up our encoded box safely in all directions.
-      if (minLatEncoded != Integer.MIN_VALUE) {
-        minLatEncoded--;
-      }
-      if (minLonEncoded != Integer.MIN_VALUE) {
-        minLonEncoded--;
-      }
-      if (maxLatEncoded != Integer.MAX_VALUE) {
-        maxLatEncoded++;
-      }
-      if (maxLonEncoded != Integer.MAX_VALUE) {
-        maxLonEncoded++;
-      }
-      crossesDateLine = box.crossesDateline();
-      // crosses dateline: split
-      if (crossesDateLine) {
-        // box1
-        minLon = Integer.MIN_VALUE;
-        maxLon = maxLonEncoded;
-        minLat = minLatEncoded;
-        maxLat = maxLatEncoded;
-        // box2
-        minLon2 = minLonEncoded;
-        maxLon2 = Integer.MAX_VALUE;
-        minLat2 = minLatEncoded;
-        maxLat2 = maxLatEncoded;
+      // don't pass infinite values to circleToBBox: just make a complete box.
+      if (bottom == missingValue) {
+        minLat = minLon = Integer.MIN_VALUE;
+        maxLat = maxLon = Integer.MAX_VALUE;
+        crossesDateLine = false;
       } else {
-        minLon = minLonEncoded;
-        maxLon = maxLonEncoded;
-        minLat = minLatEncoded;
-        maxLat = maxLatEncoded;
+        assert Double.isFinite(bottom);
+        GeoRect box = GeoUtils.circleToBBox(longitude, latitude, bottom);
+        // pre-encode our box to our integer encoding, so we don't have to decode 
+        // to double values for uncompetitive hits. This has some cost!
+        int minLatEncoded = LatLonPoint.encodeLatitude(box.minLat);
+        int maxLatEncoded = LatLonPoint.encodeLatitude(box.maxLat);
+        int minLonEncoded = LatLonPoint.encodeLongitude(box.minLon);
+        int maxLonEncoded = LatLonPoint.encodeLongitude(box.maxLon);
+        // be sure to not introduce quantization error in our optimization, just 
+        // round up our encoded box safely in all directions.
+        if (minLatEncoded != Integer.MIN_VALUE) {
+          minLatEncoded--;
+        }
+        if (minLonEncoded != Integer.MIN_VALUE) {
+          minLonEncoded--;
+        }
+        if (maxLatEncoded != Integer.MAX_VALUE) {
+          maxLatEncoded++;
+        }
+        if (maxLonEncoded != Integer.MAX_VALUE) {
+          maxLonEncoded++;
+        }
+        crossesDateLine = box.crossesDateline();
+        // crosses dateline: split
+        if (crossesDateLine) {
+          // box1
+          minLon = Integer.MIN_VALUE;
+          maxLon = maxLonEncoded;
+          minLat = minLatEncoded;
+          maxLat = maxLatEncoded;
+          // box2
+          minLon2 = minLonEncoded;
+          maxLon2 = Integer.MAX_VALUE;
+          minLat2 = minLatEncoded;
+          maxLat2 = maxLatEncoded;
+        } else {
+          minLon = minLonEncoded;
+          maxLon = maxLonEncoded;
+          minLat = minLatEncoded;
+          maxLat = maxLatEncoded;
+        }
       }
     }
     setBottomCounter++;
