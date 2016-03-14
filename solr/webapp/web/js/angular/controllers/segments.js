@@ -26,6 +26,8 @@ solrAdminApp.controller('SegmentsController', function($scope, $routeParams, $in
             var segments = data.segments;
 
             var segmentSizeInBytesMax = getLargestSegmentSize(segments);
+            var segmentSizeInBytesMaxLog = Math.log(segmentSizeInBytesMax);
+                
             $scope.segmentMB = Math.floor(segmentSizeInBytesMax / MB_FACTOR);
             $scope.xaxis = calculateXAxis(segmentSizeInBytesMax);
 
@@ -37,14 +39,16 @@ solrAdminApp.controller('SegmentsController', function($scope, $routeParams, $in
                 var segment = segments[name];
 
                 var segmentSizeInBytesLog = Math.log(segment.sizeInBytes);
-                var segmentSizeInBytesMaxLog = Math.log(segmentSizeInBytesMax);
-
+ 
+                // all in percent!
                 segment.totalSize = Math.floor((segmentSizeInBytesLog / segmentSizeInBytesMaxLog ) * 100);
+                
+                // This yields proportional sizes which looks weird in a log graph
+                //segment.deletedDocSize = Math.floor((segment.delCount / segment.size) * segment.totalSize);
+                //segment.aliveDocSize = segment.totalSize - segment.deletedDocSize;
 
-                segment.deletedDocSize = Math.floor((segment.delCount / (segment.delCount + segment.totalSize)) * segment.totalSize);
-                if (segment.delDocSize <= 0.001) delete segment.deletedDocSize;
-
-                segment.aliveDocSize = segment.totalSize - segment.deletedDocSize;
+                segment.aliveDocSize = Math.floor(Math.log(segment.size - segment.delCount) / Math.log(segment.size) * segment.totalSize);
+                segment.deletedDocSize = segment.totalSize - segment.aliveDocSize;
 
                 $scope.segments.push(segment);
 
