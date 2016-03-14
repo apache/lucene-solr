@@ -27,7 +27,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.spatial.util.GeoDistanceUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -59,7 +58,7 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     iw.close();
 
     Sort sort = new Sort(LatLonPoint.newDistanceSort("location", 40.7143528, -74.0059731));
-    TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
+    TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
     
     FieldDoc d = (FieldDoc) td.scoreDocs[0];
     assertEquals(462.61748421408186D, (Double)d.fields[0], 0.0D);
@@ -130,6 +129,11 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
       if (id != other.id) return false;
       return true;
     }
+
+    @Override
+    public String toString() {
+      return "Result [id=" + id + ", distance=" + distance + "]";
+    }
   }
   
   private void doRandomTest(int numDocs, int numQueries) throws IOException {
@@ -181,6 +185,17 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
         FieldDoc fieldDoc = (FieldDoc) topDocs.scoreDocs[resultNumber];
         Result actual = new Result((Integer) fieldDoc.fields[1], (Double) fieldDoc.fields[0]);
         assertEquals(expected[resultNumber], actual);
+      }
+
+      // get page2 with searchAfter()
+      if (topN < reader.maxDoc()) {
+        int page2 = TestUtil.nextInt(random(), 1, reader.maxDoc() - topN);
+        TopDocs topDocs2 = searcher.searchAfter(topDocs.scoreDocs[topN - 1], new MatchAllDocsQuery(), page2, sort);
+        for (int resultNumber = 0; resultNumber < page2; resultNumber++) {
+          FieldDoc fieldDoc = (FieldDoc) topDocs2.scoreDocs[resultNumber];
+          Result actual = new Result((Integer) fieldDoc.fields[1], (Double) fieldDoc.fields[0]);
+          assertEquals(expected[topN + resultNumber], actual);
+        }
       }
     }
     reader.close();
