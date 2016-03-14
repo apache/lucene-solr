@@ -132,13 +132,8 @@ public class FacetField extends FacetRequest {
 
     org.apache.lucene.document.FieldType.NumericType ntype = ft.getNumericType();
 
-    if (sf.hasDocValues() && ntype==null) {
-      // single and multi-valued string docValues
-      return new FacetFieldProcessorDV(fcontext, this, sf);
-    }
-
     if (!multiToken) {
-      if (sf.getType().getNumericType() != null) {
+      if (ntype != null) {
         // single valued numeric (docvalues or fieldcache)
         return new FacetFieldProcessorNumeric(fcontext, this, sf);
       } else {
@@ -147,8 +142,10 @@ public class FacetField extends FacetRequest {
       }
     }
 
-    // multivalued but field doesn't have docValues
-    if (method == FacetMethod.DV) {
+    // multi-valued after this point
+
+    if (sf.hasDocValues() || method == FacetMethod.DV) {
+      // single and multi-valued string docValues
       return new FacetFieldProcessorDV(fcontext, this, sf);
     }
 
