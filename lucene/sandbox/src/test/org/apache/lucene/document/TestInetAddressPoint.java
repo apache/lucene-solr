@@ -41,7 +41,7 @@ public class TestInetAddressPoint extends LuceneTestCase {
     
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = newSearcher(reader, false);
+    IndexSearcher searcher = newSearcher(reader);
     assertEquals(1, searcher.count(InetAddressPoint.newExactQuery("field", address)));
     assertEquals(1, searcher.count(InetAddressPoint.newPrefixQuery("field", address, 24)));
     assertEquals(1, searcher.count(InetAddressPoint.newRangeQuery("field", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5"))));
@@ -68,7 +68,7 @@ public class TestInetAddressPoint extends LuceneTestCase {
     
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = newSearcher(reader, false);
+    IndexSearcher searcher = newSearcher(reader);
     assertEquals(1, searcher.count(InetAddressPoint.newExactQuery("field", address)));
     assertEquals(1, searcher.count(InetAddressPoint.newPrefixQuery("field", address, 64)));
     assertEquals(1, searcher.count(InetAddressPoint.newRangeQuery("field", InetAddress.getByName("fec0::f66c"), InetAddress.getByName("fec0::f66e"))));

@@ -55,7 +55,7 @@ public class TestLatLonPointDistanceQuery extends LuceneTestCase {
     
     // search within 50km and verify we found our doc
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = newSearcher(reader, false);
+    IndexSearcher searcher = newSearcher(reader);
     assertEquals(1, searcher.count(LatLonPoint.newDistanceQuery("field", 18, -65, 50_000)));
 
     reader.close();
@@ -148,7 +148,7 @@ public class TestLatLonPointDistanceQuery extends LuceneTestCase {
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     for (int i = 0; i < numQueries; i++) {
       double lat = -90 + 180.0 * random().nextDouble();
