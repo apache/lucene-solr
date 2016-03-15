@@ -209,6 +209,9 @@ Other
 * LUCENE-7091: Add doc values support to MemoryIndex
   (Martijn van Groningen, David Smiley)
 
+* LUCENE-7093: Add point values support to MemoryIndex
+  (Martijn van Groningen, Mike McCandless)
+
 ======================= Lucene 5.5.0 =======================
 
 New Features
