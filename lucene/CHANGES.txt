@@ -196,6 +196,9 @@ Bug Fixes
   On top of that with score mode average, the explain would fail with a NPE.
   (Martijn van Groningen)
 
+* LUCENE-7101: OfflineSorter had O(N^2) merge cost, and used too many
+  temporary file descriptors, for large sorts (Mike McCandless)
+
 Other
 
 * LUCENE-7035: Upgrade icu4j to 56.1/unicode 8. (Robert Muir)

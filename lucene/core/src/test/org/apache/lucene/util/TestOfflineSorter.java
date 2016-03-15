@@ -82,7 +82,7 @@ public class TestOfflineSorter extends LuceneTestCase {
     try (Directory dir = newDirectory()) {
       SortInfo sortInfo = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), OfflineSorter.MAX_TEMPFILES),
                                     generateRandom((int)OfflineSorter.MB * 20));
-      assertEquals(1, sortInfo.mergeRounds);
+      assertEquals(3, sortInfo.mergeRounds);
     }
   }
 

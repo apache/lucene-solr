@@ -64,7 +64,7 @@ public class OfflineSorter {
   /**
    * Maximum number of temporary files before doing an intermediate merge.
    */
-  public final static int MAX_TEMPFILES = 128;
+  public final static int MAX_TEMPFILES = 10;
 
   private final Directory dir;
 
@@ -232,6 +232,7 @@ public class OfflineSorter {
     sortInfo.totalTime = System.currentTimeMillis();
 
     List<String> segments = new ArrayList<>();
+    int[] levelCounts = new int[1];
 
     // So we can remove any partially written temp files on exception:
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
@@ -244,15 +245,26 @@ public class OfflineSorter {
         segments.add(sortPartition(trackingDir));
         sortInfo.tempMergeFiles++;
         sortInfo.lineCount += lineCount;
+        levelCounts[0]++;
 
-        // Handle intermediate merges.
-        if (segments.size() == maxTempFiles) {
+        // Handle intermediate merges; we need a while loop to "cascade" the merge when necessary:
+        int mergeLevel = 0;
+        while (levelCounts[mergeLevel] == maxTempFiles) {
           mergePartitions(trackingDir, segments);
+          if (mergeLevel+2 > levelCounts.length) {
+            levelCounts = ArrayUtil.grow(levelCounts, mergeLevel+2);
+          }
+          levelCounts[mergeLevel+1]++;
+          levelCounts[mergeLevel] = 0;
+          mergeLevel++;
         }
       }
+      
+      // TODO: we shouldn't have to do this?  Can't we return a merged reader to
+      // the caller, who often consumes the result just once, instead?
 
-      // Merge the partitions to the output file with a priority queue.
-      if (segments.size() > 1) {     
+      // Merge all partitions down to 1 (basically a forceMerge(1)):
+      while (segments.size() > 1) {     
         mergePartitions(trackingDir, segments);
       }
 
@@ -304,19 +316,25 @@ public class OfflineSorter {
     }
   }
 
-  /** Merge a list of sorted temporary files (partitions) into an output file.  Note that this closes the
-   *  incoming {@link IndexOutput}. */
+  /** Merge the most recent {@code maxTempFile} partitions into a new partition. */
   void mergePartitions(Directory trackingDir, List<String> segments) throws IOException {
     long start = System.currentTimeMillis();
 
-    PriorityQueue<FileAndTop> queue = new PriorityQueue<FileAndTop>(segments.size()) {
+    List<String> segmentsToMerge;
+    if (segments.size() > maxTempFiles) {
+      segmentsToMerge = segments.subList(segments.size() - maxTempFiles, segments.size());
+    } else {
+      segmentsToMerge = segments;
+    }
+
+    PriorityQueue<FileAndTop> queue = new PriorityQueue<FileAndTop>(segmentsToMerge.size()) {
       @Override
       protected boolean lessThan(FileAndTop a, FileAndTop b) {
         return comparator.compare(a.current.get(), b.current.get()) < 0;
       }
     };
 
-    ByteSequencesReader[] streams = new ByteSequencesReader[segments.size()];
+    ByteSequencesReader[] streams = new ByteSequencesReader[segmentsToMerge.size()];
 
     String newSegmentName = null;
 
@@ -326,8 +344,8 @@ public class OfflineSorter {
       newSegmentName = out.getName();
       
       // Open streams and read the top for each file
-      for (int i = 0; i < segments.size(); i++) {
-        streams[i] = getReader(dir.openInput(segments.get(i), IOContext.READONCE));
+      for (int i = 0; i < segmentsToMerge.size(); i++) {
+        streams[i] = getReader(dir.openInput(segmentsToMerge.get(i), IOContext.READONCE));
         BytesRefBuilder bytes = new BytesRefBuilder();
         boolean result = streams[i].read(bytes);
         assert result;
@@ -354,9 +372,9 @@ public class OfflineSorter {
       IOUtils.close(streams);
     }
 
-    IOUtils.deleteFiles(trackingDir, segments);
+    IOUtils.deleteFiles(trackingDir, segmentsToMerge);
 
-    segments.clear();
+    segmentsToMerge.clear();
     segments.add(newSegmentName);
 
     sortInfo.tempMergeFiles++;
