@@ -27,6 +27,7 @@
     <orderEntry type="module" module-name="expressions" />
     <orderEntry type="module" module-name="analysis-common" />
     <orderEntry type="module" module-name="lucene-core" />
+    <orderEntry type="module" module-name="classification" />
     <orderEntry type="module" module-name="queryparser" />
     <orderEntry type="module" module-name="join" />
     <orderEntry type="module" module-name="sandbox" />
