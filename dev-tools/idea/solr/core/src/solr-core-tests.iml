@@ -21,6 +21,7 @@
     <orderEntry type="module" scope="TEST" module-name="solr-core" />
     <orderEntry type="module" scope="TEST" module-name="solrj" />
     <orderEntry type="module" scope="TEST" module-name="lucene-core" />
+    <orderEntry type="module" scope="TEST" module-name="classification" />
     <orderEntry type="module" scope="TEST" module-name="analysis-common" />
     <orderEntry type="module" scope="TEST" module-name="queryparser" />
     <orderEntry type="module" scope="TEST" module-name="queries" />
