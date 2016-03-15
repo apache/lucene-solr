@@ -49,7 +49,6 @@ import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
 public class Test2BPoints extends LuceneTestCase {
   public void test1D() throws Exception {
     Directory dir = FSDirectory.open(createTempDir("2BPoints1D"));
-    System.out.println("DIR: " + ((FSDirectory) dir).getDirectory());
 
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()))
       .setCodec(getCodec())
@@ -144,24 +143,6 @@ public class Test2BPoints extends LuceneTestCase {
   }
 
   private static Codec getCodec() {
-
-    return new FilterCodec("Lucene60", Codec.forName("Lucene60")) {
-      @Override
-      public PointsFormat pointsFormat() {
-        return new PointsFormat() {
-          @Override
-          public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-            int maxPointsInLeafNode = 1024;
-            double maxMBSortInHeap = 256.0;
-            return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
-          }
-
-          @Override
-          public PointsReader fieldsReader(SegmentReadState readState) throws IOException {
-            return new Lucene60PointsReader(readState);
-          }
-        };
-      }
-    };
+    return Codec.forName("Lucene60");
   }
 }

@@ -212,11 +212,11 @@ public class BKDWriter implements Closeable {
     }
   }
 
-  /** If the current segment has too many points then we switchover to temp files / offline sort. */
-  private void switchToOffline() throws IOException {
+  /** If the current segment has too many points then we spill over to temp files / offline sort. */
+  private void spillToOffline() throws IOException {
 
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
-    offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds, "switch");
+    offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds, "spill");
     tempInput = offlinePointWriter.out;
     PointReader reader = heapPointWriter.getReader(0);
     for(int i=0;i<pointCount;i++) {
@@ -235,7 +235,7 @@ public class BKDWriter implements Closeable {
 
     if (pointCount >= maxPointsSortInHeap) {
       if (offlinePointWriter == null) {
-        switchToOffline();
+        spillToOffline();
       }
       offlinePointWriter.append(packedValue, pointCount, docID);
     } else {
@@ -733,7 +733,7 @@ public class BKDWriter implements Closeable {
       // TODO: this is sort of sneaky way to get the final OfflinePointWriter from OfflineSorter:
       IndexOutput[] lastWriter = new IndexOutput[1];
 
-      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix, cmp, OfflineSorter.BufferSize.megabytes(Math.max(1, (long) maxMBSortInHeap)), OfflineSorter.MAX_TEMPFILES) {
+      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, OfflineSorter.BufferSize.megabytes(Math.max(1, (long) maxMBSortInHeap)), OfflineSorter.MAX_TEMPFILES) {
 
           /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
           @Override
@@ -742,9 +742,7 @@ public class BKDWriter implements Closeable {
             return new ByteSequencesWriter(out) {
               @Override
               public void write(byte[] bytes, int off, int len) throws IOException {
-                if (len != bytesPerDoc) {
-                  throw new IllegalArgumentException("len=" + len + " bytesPerDoc=" + bytesPerDoc);
-                }
+                assert len == bytesPerDoc: "len=" + len + " bytesPerDoc=" + bytesPerDoc;
                 out.writeBytes(bytes, off, len);
               }
             };
