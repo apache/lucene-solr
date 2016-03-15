@@ -85,6 +85,13 @@ public class ChaosMonkey {
   private List<CloudJettyRunner> deadPool = new ArrayList<>();
 
   private Thread monkeyThread;
+
+  /**
+   * Our own Random, seeded from LuceneTestCase on init, so that we can produce a consistent sequence 
+   * of random chaos regardless of if/how othe threads access the test randomness in other threads
+   * @see LuceneTestCase#random()
+   */
+  private final Random chaosRandom;
   
   public ChaosMonkey(ZkTestServer zkServer, ZkStateReader zkStateReader,
       String collection, Map<String,List<CloudJettyRunner>> shardToJetty,
@@ -94,22 +101,22 @@ public class ChaosMonkey {
     this.zkServer = zkServer;
     this.zkStateReader = zkStateReader;
     this.collection = collection;
+    this.chaosRandom = new Random(LuceneTestCase.random().nextLong());
     
     if (!MONKEY_ENABLED) {
       monkeyLog("The Monkey is Disabled and will not run");
       return;
     }
     
-    Random random = LuceneTestCase.random();
     if (EXP != null) {
       expireSessions = EXP; 
     } else {
-      expireSessions = random.nextBoolean();
+      expireSessions = chaosRandom.nextBoolean();
     }
     if (CONN_LOSS != null) {
       causeConnectionLoss = CONN_LOSS;
     } else {
-      causeConnectionLoss = random.nextBoolean();
+      causeConnectionLoss = chaosRandom.nextBoolean();
     }
     
     
@@ -326,7 +333,7 @@ public class ChaosMonkey {
     
     List<String> sliceKeyList = new ArrayList<>(slices.size());
     sliceKeyList.addAll(slices.keySet());
-    String sliceName = sliceKeyList.get(LuceneTestCase.random().nextInt(sliceKeyList.size()));
+    String sliceName = sliceKeyList.get(chaosRandom.nextInt(sliceKeyList.size()));
     return sliceName;
   }
   
@@ -365,8 +372,7 @@ public class ChaosMonkey {
       return null;
     }
     
-    Random random = LuceneTestCase.random();
-    int chance = random.nextInt(10);
+    int chance = chaosRandom.nextInt(10);
     CloudJettyRunner cjetty;
     if (chance <= 5 && aggressivelyKillLeaders) {
       // if killLeader, really aggressively go after leaders
@@ -374,7 +380,7 @@ public class ChaosMonkey {
     } else {
       // get random shard
       List<CloudJettyRunner> jetties = shardToJetty.get(slice);
-      int index = random.nextInt(jetties.size());
+      int index = chaosRandom.nextInt(jetties.size());
       cjetty = jetties.get(index);
       
       ZkNodeProps leader = null;
@@ -457,7 +463,7 @@ public class ChaosMonkey {
     monkeyLog("starting");
     
     
-    if (LuceneTestCase.random().nextBoolean()) {
+    if (chaosRandom.nextBoolean()) {
       monkeyLog("Jetty will not commit on close");
       DirectUpdateHandler2.commitOnClose = false;
     }
@@ -474,43 +480,9 @@ public class ChaosMonkey {
         while (!stop) {
           try {
     
-            Random random = LuceneTestCase.random();
-            Thread.sleep(random.nextInt(roundPauseUpperLimit));
-            if (random.nextBoolean()) {
-             if (!deadPool.isEmpty()) {
-               int index = random.nextInt(deadPool.size());
-               JettySolrRunner jetty = deadPool.get(index).jetty;
-               if (jetty.isStopped() && !ChaosMonkey.start(jetty)) {
-                 continue;
-               }
-               //System.out.println("started on port:" + jetty.getLocalPort());
-               deadPool.remove(index);
-               starts.incrementAndGet();
-               continue;
-             }
-            }
-            
-            int rnd = random.nextInt(10);
+            Thread.sleep(chaosRandom.nextInt(roundPauseUpperLimit));
 
-            if (expireSessions && rnd < EXPIRE_PERCENT) {
-              expireRandomSession();
-            } 
-            
-            if (causeConnectionLoss && rnd < CONLOSS_PERCENT) {
-              randomConnectionLoss();
-            }
-            
-            CloudJettyRunner cjetty;
-            if (random.nextBoolean()) {
-              cjetty = stopRandomShard();
-            } else {
-              cjetty = killRandomShard();
-            }
-            if (cjetty == null) {
-              // we cannot kill
-            } else {
-              deadPool.add(cjetty);
-            }
+            causeSomeChaos();
             
           } catch (InterruptedException e) {
             //
@@ -549,6 +521,46 @@ public class ChaosMonkey {
     }
   }
 
+  /**
+   * causes some randomly selected chaos
+   */
+  public void causeSomeChaos() throws Exception {
+    if (chaosRandom.nextBoolean()) {
+      if (!deadPool.isEmpty()) {
+        int index = chaosRandom.nextInt(deadPool.size());
+        JettySolrRunner jetty = deadPool.get(index).jetty;
+        if (jetty.isStopped() && !ChaosMonkey.start(jetty)) {
+          return;
+        }
+        deadPool.remove(index);
+        starts.incrementAndGet();
+        return;
+      }
+    }
+    
+    int rnd = chaosRandom.nextInt(10);
+    
+    if (expireSessions && rnd < EXPIRE_PERCENT) {
+      expireRandomSession();
+    } 
+    
+    if (causeConnectionLoss && rnd < CONLOSS_PERCENT) {
+      randomConnectionLoss();
+    }
+    
+    CloudJettyRunner cjetty;
+    if (chaosRandom.nextBoolean()) {
+      cjetty = stopRandomShard();
+    } else {
+      cjetty = killRandomShard();
+    }
+    if (cjetty == null) {
+      // we cannot kill
+    } else {
+      deadPool.add(cjetty);
+    }
+  }
+  
   public int getStarts() {
     return starts.get();
   }
