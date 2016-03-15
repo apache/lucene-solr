@@ -133,7 +133,7 @@ public class Test2BPoints extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = DirectoryReader.open(w);
     IndexSearcher s = new IndexSearcher(r);
-    assertEquals(numDocs, s.count(LongPoint.newRangeQuery("long", new long[] {Long.MIN_VALUE, Long.MAX_VALUE}, new long[] {Long.MIN_VALUE, Long.MAX_VALUE})));
+    assertEquals(numDocs, s.count(LongPoint.newRangeQuery("long", new long[] {Long.MIN_VALUE, Long.MIN_VALUE}, new long[] {Long.MAX_VALUE, Long.MAX_VALUE})));
     assertTrue(r.leaves().get(0).reader().getPointValues().size("long") > Integer.MAX_VALUE);
     r.close();
     w.close();
