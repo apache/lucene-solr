@@ -50,6 +50,7 @@ import org.apache.solr.update.RollbackUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.RecordingJSONParser;
 import org.noggit.JSONParser;
+import org.noggit.JSONParser.ParseException;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,7 +112,10 @@ public class JsonLoader extends ContentStreamLoader {
         }
 
         this.processUpdate(reader);
-      } finally {
+      } catch (ParseException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot parse provided JSON: " + e.getMessage());
+      }
+      finally {
         IOUtils.closeQuietly(reader);
       }
     }

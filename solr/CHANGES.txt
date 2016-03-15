@@ -425,6 +425,9 @@ Other Changes
 
 * SOLR-8799: Improve error message when tuple can't be read by SolrJ JDBC (Kevin Risden, Joel Bernstein)
 
+* SOLR-8836: Return 400, and a SolrException when an invalid json is provided to the update handler
+  instead of 500. (Jason Gerlowski via Anshum Gupta)
+
 ==================  5.5.1 ==================
 
 Bug Fixes
