@@ -21,8 +21,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.function.IntSupplier;
+import java.util.function.Supplier;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -37,9 +41,13 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LegacyLongField;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -70,6 +78,7 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -564,6 +573,55 @@ public class TestMemoryIndexAgainstRAMDir extends BaseTokenStreamTestCase {
 
     assertEquals(controlLeafReader.getNormValues("text").get(0), leafReader.getNormValues("text").get(0));
 
+    controlIndexReader.close();
+    dir.close();
+  }
+
+  public void testPointValuesMemoryIndexVsNormalIndex() throws Exception {
+    int size = atLeast(12);
+
+    List<Integer> randomValues = new ArrayList<>();
+
+    Document doc = new Document();
+    for (Integer randomInteger : random().ints(size).toArray()) {
+      doc.add(new IntPoint("int", randomInteger));
+      randomValues.add(randomInteger);
+      doc.add(new LongPoint("long", randomInteger));
+      doc.add(new FloatPoint("float", randomInteger));
+      doc.add(new DoublePoint("double", randomInteger));
+    }
+
+    MockAnalyzer mockAnalyzer = new MockAnalyzer(random());
+    MemoryIndex memoryIndex = MemoryIndex.fromDocument(doc, mockAnalyzer);
+    IndexSearcher memoryIndexSearcher = memoryIndex.createSearcher();
+
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random(), mockAnalyzer));
+    writer.addDocument(doc);
+    writer.close();
+    IndexReader controlIndexReader = DirectoryReader.open(dir);
+    IndexSearcher controlIndexSearcher = new IndexSearcher(controlIndexReader);
+
+    Supplier<Integer> valueSupplier = () -> randomValues.get(random().nextInt(randomValues.size()));
+    Query[] queries = new Query[] {
+        IntPoint.newExactQuery("int", valueSupplier.get()),
+        LongPoint.newExactQuery("long", valueSupplier.get()),
+        FloatPoint.newExactQuery("float", valueSupplier.get()),
+        DoublePoint.newExactQuery("double", valueSupplier.get()),
+        IntPoint.newSetQuery("int", valueSupplier.get(), valueSupplier.get()),
+        LongPoint.newSetQuery("long", valueSupplier.get(), valueSupplier.get()),
+        FloatPoint.newSetQuery("float", valueSupplier.get(), valueSupplier.get()),
+        DoublePoint.newSetQuery("double", valueSupplier.get(), valueSupplier.get()),
+        IntPoint.newRangeQuery("int", valueSupplier.get(), valueSupplier.get()),
+        LongPoint.newRangeQuery("long", valueSupplier.get(), valueSupplier.get()),
+        FloatPoint.newRangeQuery("float", valueSupplier.get(), valueSupplier.get()),
+        DoublePoint.newRangeQuery("double", valueSupplier.get(), valueSupplier.get())
+    };
+    for (Query query : queries) {
+      assertEquals(controlIndexSearcher.count(query), controlIndexSearcher.count(query));
+    }
+
+    memoryIndexSearcher.getIndexReader().close();
     controlIndexReader.close();
     dir.close();
   }
