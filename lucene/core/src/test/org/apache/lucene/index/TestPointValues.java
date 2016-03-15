@@ -501,7 +501,7 @@ public class TestPointValues extends LuceneTestCase {
     doc.add(new IntPoint("int", 17));
     for(int i=0;i<300000;i++) {
       w.addDocument(doc);
-      if (false && random().nextInt(1000) == 17) {
+      if (random().nextInt(1000) == 17) {
         w.commit();
       }
     }
