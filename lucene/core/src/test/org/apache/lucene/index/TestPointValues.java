@@ -22,12 +22,6 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FilterCodec;
-import org.apache.lucene.codecs.PointsFormat;
-import org.apache.lucene.codecs.PointsReader;
-import org.apache.lucene.codecs.PointsWriter;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoublePoint;
@@ -656,5 +650,61 @@ public class TestPointValues extends LuceneTestCase {
     // Make sure CheckIndex in fact declares that it is testing points!
     assertTrue(output.toString(IOUtils.UTF_8).contains("test: points..."));
     dir.close();
+  }
+
+  public void testMergedStats() throws IOException {
+    final int iters = atLeast(3);
+    for (int iter = 0; iter < iters; ++iter) {
+      doTestMergedStats();
+    }
+  }
+
+  private static byte[][] randomBinaryValue(int numDims, int numBytesPerDim) {
+    byte[][] bytes = new byte[numDims][];
+    for (int i = 0; i < numDims; ++i) {
+      bytes[i] = new byte[numBytesPerDim];
+      random().nextBytes(bytes[i]);
+    }
+    return bytes;
+  }
+
+  private void doTestMergedStats() throws IOException {
+    final int numDims = TestUtil.nextInt(random(), 1, 8);
+    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 16);
+    Directory dir = new RAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
+    final int numDocs = TestUtil.nextInt(random(), 10, 20);
+    for (int i = 0; i < numDocs; ++i) {
+      Document doc = new Document();
+      final int numPoints = random().nextInt(3);
+      for (int j = 0; j < numPoints; ++j) {
+        doc.add(new BinaryPoint("field", randomBinaryValue(numDims, numBytesPerDim)));
+      }
+      w.addDocument(doc);
+      if (random().nextBoolean()) {
+        DirectoryReader.open(w).close();
+      }
+    }
+
+    final IndexReader reader1 = DirectoryReader.open(w);
+    w.forceMerge(1);
+    final IndexReader reader2 = DirectoryReader.open(w);
+    final PointValues expected = getOnlyLeafReader(reader2).getPointValues();
+    if (expected == null) {
+      assertNull(PointValues.getMinPackedValue(reader1, "field"));
+      assertNull(PointValues.getMaxPackedValue(reader1, "field"));
+      assertEquals(0, PointValues.getDocCount(reader1, "field"));
+      assertEquals(0, PointValues.size(reader1, "field"));
+    } else {
+      assertArrayEquals(
+          expected.getMinPackedValue("field"),
+          PointValues.getMinPackedValue(reader1, "field"));
+      assertArrayEquals(
+          expected.getMaxPackedValue("field"),
+          PointValues.getMaxPackedValue(reader1, "field"));
+      assertEquals(expected.getDocCount("field"), PointValues.getDocCount(reader1, "field"));
+      assertEquals(expected.size("field"),  PointValues.size(reader1, "field"));
+    }
+    IOUtils.close(w, reader1, reader2, dir);
   }
 }
