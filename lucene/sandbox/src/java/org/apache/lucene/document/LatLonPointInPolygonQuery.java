@@ -23,15 +23,23 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
 import org.apache.lucene.spatial.util.GeoUtils;
 
@@ -110,9 +118,6 @@ final class LatLonPointInPolygonQuery extends Query {
     // I don't use RandomAccessWeight here: it's no good to approximate with "match all docs"; this is an inverted structure and should be
     // used in the first pass:
 
-    // TODO: except that the polygon verify is costly!  The approximation should be all docs in all overlapping cells, and matches() should
-    // then check the polygon
-
     return new ConstantScoreWeight(this) {
 
       @Override
@@ -130,22 +135,28 @@ final class LatLonPointInPolygonQuery extends Query {
         }
         LatLonPoint.checkCompatible(fieldInfo);
 
+        // approximation (postfiltering has not yet been applied)
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
+        // subset of documents that need no postfiltering, this is purely an optimization
+        final BitSet preApproved;
+        // dumb heuristic: if the field is really sparse, use a sparse impl
+        if (values.getDocCount(field) * 100L < reader.maxDoc()) {
+          preApproved = new SparseFixedBitSet(reader.maxDoc());
+        } else {
+          preApproved = new FixedBitSet(reader.maxDoc());
+        }
         values.intersect(field,
                          new IntersectVisitor() {
                            @Override
                            public void visit(int docID) {
                              result.add(docID);
+                             preApproved.set(docID);
                            }
 
                            @Override
                            public void visit(int docID, byte[] packedValue) {
-                             assert packedValue.length == 8;
-                             double lat = LatLonPoint.decodeLatitude(packedValue, 0);
-                             double lon = LatLonPoint.decodeLongitude(packedValue, Integer.BYTES);
-                             if (GeoRelationUtils.pointInPolygon(polyLons, polyLats, lat, lon)) {
-                               result.add(docID);
-                             }
+                             // TODO: range checks
+                             result.add(docID);
                            }
 
                            @Override
@@ -172,7 +183,41 @@ final class LatLonPointInPolygonQuery extends Query {
                            }
                          });
 
-        return new ConstantScoreScorer(this, score(), result.build().iterator());
+        DocIdSet set = result.build();
+        final DocIdSetIterator disi = set.iterator();
+        if (disi == null) {
+          return null;
+        }
+
+        // return two-phase iterator using docvalues to postfilter candidates
+        SortedNumericDocValues docValues = DocValues.getSortedNumeric(reader, field);
+        TwoPhaseIterator iterator = new TwoPhaseIterator(disi) {
+          @Override
+          public boolean matches() throws IOException {
+            int docId = disi.docID();
+            if (preApproved.get(docId)) {
+              return true;
+            } else {
+              docValues.setDocument(docId);
+              int count = docValues.count();
+              for (int i = 0; i < count; i++) {
+                long encoded = docValues.valueAt(i);
+                double docLatitude = LatLonPoint.decodeLatitude((int)(encoded >> 32));
+                double docLongitude = LatLonPoint.decodeLongitude((int)(encoded & 0xFFFFFFFF));
+                if (GeoRelationUtils.pointInPolygon(polyLons, polyLats, docLatitude, docLongitude)) {
+                  return true;
+                }
+              }
+              return false;
+            }
+          }
+
+          @Override
+          public float matchCost() {
+            return 20 * polyLons.length; // TODO: make this fancier, but currently linear with number of vertices
+          }
+        };
+        return new ConstantScoreScorer(this, score(), iterator);
       }
     };
   }
