@@ -45,6 +45,8 @@ New Features
   https://github.com/locationtech/spatial4j/blob/master/FORMATS.md
   To return the FeatureCollection as the root element, add '&omitHeader=true" (ryan)
 
+* SOLR-8859: AbstractSpatialFieldType will now convert Shapes to/from Strings
+  using the SpatialContext.  (ryan)
 
 Bug Fixes
 ----------------------
