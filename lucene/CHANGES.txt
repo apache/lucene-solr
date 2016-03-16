@@ -23,6 +23,9 @@ Optimizations
 
 * LUCENE-7105: Optimize LatLonPoint's newDistanceQuery. (Robert Muir)
 
+* LUCENE-7109: LatLonPoint's newPolygonQuery supports two-phase 
+  iteration. (Robert Muir)
+
 * LUCENE-7097: IntroSorter now recurses to 2 * log_2(count) quicksort
   stack depth before switching to heapsort (Adrien Grand, Mike McCandless)
 
