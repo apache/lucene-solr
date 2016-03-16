@@ -130,6 +130,12 @@ Upgrading from Solr 5.x
 * SOLR-8736: The deprecated GET methods for schema are now accessible through the bulk API. The output
   has less details and is not backward compatible.
 
+* In the past, Solr guaranteed that retrieval of multi-valued fields would preserve the order of values.
+  Because values may now be retrieved from column-stored fields (docValues="true"), in conjunction with the
+  fact that docValues do not currently preserve order, means that users should set useDocValuesAsStored="false"
+  to prevent future optizations from using the column-stored values over the row-stored values when
+  fields have both stored="true" and docValues="true".
+
 Detailed Change List
 ----------------------
 
@@ -441,6 +447,9 @@ Other Changes
 
 * SOLR-8836: Return 400, and a SolrException when an invalid json is provided to the update handler
   instead of 500. (Jason Gerlowski via Anshum Gupta)
+
+* SOLR-8740: docValues are now enabled by default for most non-text (string, date, and numeric) fields
+  in the schema templates. (yonik)
 
 ==================  5.5.1 ==================
 
