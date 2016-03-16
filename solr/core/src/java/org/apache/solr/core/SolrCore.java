@@ -2123,10 +2123,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final PluginBag<QueryResponseWriter> responseWriters = new PluginBag<>(QueryResponseWriter.class, this);
   public static final Map<String ,QueryResponseWriter> DEFAULT_RESPONSE_WRITERS ;
   static{
-    HashMap<String, QueryResponseWriter> m= new HashMap<>(14, 1);
+    HashMap<String, QueryResponseWriter> m= new HashMap<>(15, 1);
     m.put("xml", new XMLResponseWriter());
     m.put("standard", m.get("xml"));
     m.put(CommonParams.JSON, new JSONResponseWriter());
+    m.put("geojson", new GeoJSONResponseWriter());
     m.put("python", new PythonResponseWriter());
     m.put("php", new PHPResponseWriter());
     m.put("phps", new PHPSerializedResponseWriter());
