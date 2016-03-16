@@ -317,6 +317,9 @@ Bug Fixes
 * SOLR-8835: JSON Facet API: fix faceting exception on multi-valued numeric fields that
   have docValues. (yonik)
 
+* SOLR-8838: Returning non-stored docValues is incorrect for negative floats and doubles.
+  (Ishan Chattopadhyaya, Steve Rowe)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
