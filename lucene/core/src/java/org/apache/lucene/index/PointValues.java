@@ -23,10 +23,10 @@ import java.net.InetAddress;
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.bkd.BKDWriter;
 
 /** 
@@ -85,6 +85,94 @@ public abstract class PointValues {
 
   /** Maximum number of dimensions */
   public static final int MAX_DIMENSIONS = BKDWriter.MAX_DIMS;
+
+  /** Return the cumulated number of points across all leaves of the given
+   * {@link IndexReader}.
+   *  @see PointValues#size(String) */
+  public static long size(IndexReader reader, String field) throws IOException {
+    long size = 0;
+    for (LeafReaderContext ctx : reader.leaves()) {
+      PointValues values = ctx.reader().getPointValues();
+      if (values != null) {
+        size += values.size(field);
+      }
+    }
+    return size;
+  }
+
+  /** Return the cumulated number of docs that have points across all leaves
+   * of the given {@link IndexReader}.
+   *  @see PointValues#getDocCount(String) */
+  public static int getDocCount(IndexReader reader, String field) throws IOException {
+    int count = 0;
+    for (LeafReaderContext ctx : reader.leaves()) {
+      PointValues values = ctx.reader().getPointValues();
+      if (values != null) {
+        count += values.getDocCount(field);
+      }
+    }
+    return count;
+  }
+
+  /** Return the minimum packed values across all leaves of the given
+   * {@link IndexReader}.
+   *  @see PointValues#getMinPackedValue(String) */
+  public static byte[] getMinPackedValue(IndexReader reader, String field) throws IOException {
+    byte[] minValue = null;
+    for (LeafReaderContext ctx : reader.leaves()) {
+      PointValues values = ctx.reader().getPointValues();
+      if (values == null) {
+        continue;
+      }
+      byte[] leafMinValue = values.getMinPackedValue(field);
+      if (leafMinValue == null) {
+        continue;
+      }
+      if (minValue == null) {
+        minValue = leafMinValue.clone();
+      } else {
+        final int numDimensions = values.getNumDimensions(field);
+        final int numBytesPerDimension = values.getBytesPerDimension(field);
+        for (int i = 0; i < numDimensions; ++i) {
+          int offset = i * numBytesPerDimension;
+          if (StringHelper.compare(numBytesPerDimension, leafMinValue, offset, minValue, offset) < 0) {
+            System.arraycopy(leafMinValue, offset, minValue, offset, numBytesPerDimension);
+          }
+        }
+      }
+    }
+    return minValue;
+  }
+
+  /** Return the maximum packed values across all leaves of the given
+   * {@link IndexReader}.
+   *  @see PointValues#getMaxPackedValue(String) */
+  public static byte[] getMaxPackedValue(IndexReader reader, String field) throws IOException {
+    byte[] maxValue = null;
+    for (LeafReaderContext ctx : reader.leaves()) {
+      PointValues values = ctx.reader().getPointValues();
+      if (values == null) {
+        continue;
+      }
+      byte[] leafMaxValue = values.getMaxPackedValue(field);
+      if (leafMaxValue == null) {
+        continue;
+      }
+      if (maxValue == null) {
+        maxValue = leafMaxValue.clone();
+      } else {
+        final int numDimensions = values.getNumDimensions(field);
+        final int numBytesPerDimension = values.getBytesPerDimension(field);
+        for (int i = 0; i < numDimensions; ++i) {
+          int offset = i * numBytesPerDimension;
+          if (StringHelper.compare(numBytesPerDimension, leafMaxValue, offset, maxValue, offset) > 0) {
+            System.arraycopy(leafMaxValue, offset, maxValue, offset, numBytesPerDimension);
+          }
+        }
+      }
+    }
+    return maxValue;
+  }
 
   /** Default constructor */
   protected PointValues() {
