@@ -390,6 +390,13 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     }
   }
 
+  /**
+   * @return The Spatial Context for this field type
+   */
+  public SpatialContext getSpatialContext() {
+    return ctx;
+  }
+
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, f.stringValue(), true);

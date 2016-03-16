@@ -34,6 +34,18 @@ Detailed Change List
 New Features
 ----------------------
 
+* SOLR-8814: Support GeoJSON response writer and general spatial formatting.  Adding
+     &wt=geojson&geojson.field=<your geometry field>
+  Will return a FeatureCollection for each SolrDocumentList and a Feature with the
+  requested geometry for each SolrDocument.  The requested geometry field needs
+  to either extend AbstractSpatialFieldType or store a GeoJSON string.  This also adds
+  a [geo] DocumentTransformer that can return the Shape in a variety of formats:
+    &fl=[geo f=<your geometry field> w=(GeoJSON|WKT|POLY)]
+  The default format is GeoJSON.  For information on the supported formats, see:
+  https://github.com/locationtech/spatial4j/blob/master/FORMATS.md
+  To return the FeatureCollection as the root element, add '&omitHeader=true" (ryan)
+
+
 Bug Fixes
 ----------------------
 

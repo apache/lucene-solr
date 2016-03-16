@@ -70,6 +70,7 @@
     <field name="bbox" type="bbox" />
 
     <dynamicField name="bboxD_*" type="bbox" indexed="true" />
+    <dynamicField name="str_*" type="string" indexed="true" stored="true"/>
 
   </fields>
 
