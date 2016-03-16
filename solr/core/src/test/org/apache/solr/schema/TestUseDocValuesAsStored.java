@@ -71,7 +71,6 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   private static final Pattern STORED_FIELD_NAME_PATTERN = Pattern.compile("_dv$");
 
   static {
-    // Copy of DateTimeFormatter.ISO_INSTANT with fixed 3 digit milliseconds
     START_RANDOM_EPOCH_MILLIS = LocalDateTime.of(1970, Month.JANUARY, 1, 0, 0)
         .toInstant(ZoneOffset.UTC).toEpochMilli();
     END_RANDOM_EPOCH_MILLIS = LocalDateTime.of(2030, Month.DECEMBER, 31, 23, 59, 59, 999_000_000)
