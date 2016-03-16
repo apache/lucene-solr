@@ -131,6 +131,9 @@ Bug Fixes
 * SOLR-8804: Fix a race condition in the ClusterStatus API call whereby the call would fail when a concurrent delete
   collection api command was executed (Alexey Serba, Varun Thacker)
 
+* SOLR-8838: Returning non-stored docValues is incorrect for negative floats and doubles.
+  (Ishan Chattopadhyaya, Steve Rowe)
+
 Other Changes
 ----------------------
 
