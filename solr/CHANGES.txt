@@ -31,6 +31,8 @@ Bug Fixes
 * SOLR-8728: ReplicaAssigner throws NPE when a partial list of nodes are only participating in replica
   placement. splitshard should preassign nodes using rules, if rules are present (noble, Shai Erera)
 
+* SOLR-8838: Returning non-stored docValues is incorrect for negative floats and doubles.
+  (Ishan Chattopadhyaya, Steve Rowe)
 
 ======================= 5.5.0 =======================
 

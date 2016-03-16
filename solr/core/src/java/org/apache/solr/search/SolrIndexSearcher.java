@@ -821,9 +821,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
               if (schemaField.getType() instanceof TrieIntField) {
                 val = ((Long) val).intValue();
               } else if (schemaField.getType() instanceof TrieFloatField) {
-                val = NumericUtils.sortableIntToFloat(((Long) val).intValue());
+                val = Float.intBitsToFloat(((Long)val).intValue());
               } else if (schemaField.getType() instanceof TrieDoubleField) {
-                val = NumericUtils.sortableLongToDouble((long) val);
+                val = Double.longBitsToDouble((long) val);
               } else if (schemaField.getType() instanceof TrieDateField) {
                 val = new Date((long) val);
               } else if (schemaField.getType() instanceof EnumField) {
