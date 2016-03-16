@@ -82,7 +82,7 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
   }
 
   @Override
-  protected NRShape parseShape(String str) {
+  public NRShape parseShape(String str) {
     if (str.contains(" TO ")) {
       //TODO parsing range syntax doesn't support DateMath on either side or exclusive/inclusive
       try {
@@ -121,7 +121,7 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
   }
 
   @Override
-  protected String shapeToString(Shape shape) {
+  public String shapeToString(Shape shape) {
     if (shape instanceof UnitNRShape) {
       UnitNRShape unitShape = (UnitNRShape) shape;
       if (unitShape.getLevel() == tree.getMaxLevels()) {

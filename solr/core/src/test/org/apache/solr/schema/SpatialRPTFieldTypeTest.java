@@ -24,6 +24,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.junit.After;
 import org.junit.Before;
+import org.locationtech.spatial4j.shape.Shape;
 
 public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   
@@ -201,7 +202,35 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     );
   }
 
-  private void setupRPTField(String distanceUnits, String geo) throws Exception {
+  public void testShapeToFromStringWKT() throws Exception {
+    // Check WKT
+    setupRPTField("miles", "true", "WKT");
+
+    AbstractSpatialFieldType ftype = (AbstractSpatialFieldType)
+        h.getCore().getLatestSchema().getField("geo").getType();
+
+    String wkt = "POINT (1 2)";
+    Shape shape = ftype.parseShape(wkt);
+    String out = ftype.shapeToString(shape);
+
+    assertEquals(wkt, out);
+  }
+
+  public void testShapeToFromStringGeoJSON() throws Exception {
+    // Check WKT
+    setupRPTField("miles", "true", "GeoJSON");
+
+    AbstractSpatialFieldType ftype = (AbstractSpatialFieldType)
+        h.getCore().getLatestSchema().getField("geo").getType();
+
+    String json = "{\"type\":\"Point\",\"coordinates\":[1,2]}";
+    Shape shape = ftype.parseShape(json);
+    String out = ftype.shapeToString(shape);
+
+    assertEquals(json, out);
+  }
+
+  private void setupRPTField(String distanceUnits, String geo, String format) throws Exception {
     deleteCore();
     File managedSchemaFile = new File(tmpConfDir, "managed-schema");
     Files.delete(managedSchemaFile.toPath()); // Delete managed-schema so it won't block parsing a new schema
@@ -220,6 +249,9 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
       rptMap.put("distanceUnits", distanceUnits);
     if(geo!=null)
       rptMap.put("geo", geo);
+    if(format!=null) {
+      rptMap.put("format", format);
+    }
     rptFieldType.init(oldSchema, rptMap);
     rptFieldType.setTypeName("location_rpt");
     SchemaField newField = new SchemaField("geo", rptFieldType, SchemaField.STORED | SchemaField.INDEXED, null);
@@ -228,5 +260,9 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
     h.getCore().setLatestSchema(newSchema);
 
     assertU(delQ("*:*"));
+  }
+
+  private void setupRPTField(String distanceUnits, String geo) throws Exception {
+    setupRPTField(distanceUnits, geo, null);
   }
 }
