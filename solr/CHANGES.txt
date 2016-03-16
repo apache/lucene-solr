@@ -274,6 +274,9 @@ Bug Fixes
 * SOLR-8790: Collections API responses contain node name in the core-level responses that are
   returned. (Anshum Gupta)
 
+* SOLR-8838: Returning non-stored docValues is incorrect for negative floats and doubles.
+  (Ishan Chattopadhyaya, Steve Rowe)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
@@ -390,7 +393,7 @@ Other Changes
 
 * SOLR-8758: Add a new SolrCloudTestCase class, using MiniSolrCloudCluster (Alan
   Woodward)
-  
+
 * SOLR-8764: Remove all deprecated methods and classes from master prior to the 6.0 release. (Steve Rowe)
 
 * SOLR-8780: Remove unused OverseerCollectionMessageHandler#getClusterStatus method. (Varun Thacker)
