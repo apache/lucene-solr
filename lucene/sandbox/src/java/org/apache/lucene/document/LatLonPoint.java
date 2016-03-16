@@ -336,10 +336,6 @@ public class LatLonPoint extends Field {
    * (missing values sort last).
    * <p>
    * If a document contains multiple values for the field, the <i>closest</i> distance to the location is used.
-   * <p>
-   * <b>NOTE</b>: distance sorting might be expensive for many documents. Consider restricting the document
-   * set with a {@link #newBoxQuery box}, {@link #newDistanceQuery radius} radius, or {@link #newPolygonQuery polygon}
-   * query for better performance
    * 
    * @param field field name. cannot be null.
    * @param latitude latitude at the center: must be within standard +/-90 coordinate bounds.
