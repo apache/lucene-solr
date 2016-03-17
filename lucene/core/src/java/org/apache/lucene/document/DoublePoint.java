@@ -172,7 +172,9 @@ public final class DoublePoint extends Field {
    * {@link #newRangeQuery(String, double[], double[])} instead.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting {@code lowerValue = Double.NEGATIVE_INFINITY} or {@code upperValue = Double.POSITIVE_INFINITY}. 
+   * by setting {@code lowerValue = Double.NEGATIVE_INFINITY} or {@code upperValue = Double.POSITIVE_INFINITY}.
+   * <p> Ranges are inclusive. For exclusive ranges, pass {@code Math#nextUp(lowerValue)}
+   * or {@code Math.nextDown(upperValue)}.
    * <p>
    * Range comparisons are consistent with {@link Double#compareTo(Double)}.
    *
@@ -190,7 +192,9 @@ public final class DoublePoint extends Field {
    * Create a range query for n-dimensional double values.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting {@code lowerValue[i] = Double.NEGATIVE_INFINITY} or {@code upperValue[i] = Double.POSITIVE_INFINITY}. 
+   * by setting {@code lowerValue[i] = Double.NEGATIVE_INFINITY} or {@code upperValue[i] = Double.POSITIVE_INFINITY}.
+   * <p> Ranges are inclusive. For exclusive ranges, pass {@code Math#nextUp(lowerValue[i])}
+   * or {@code Math.nextDown(upperValue[i])}.
    * <p>
    * Range comparisons are consistent with {@link Double#compareTo(Double)}.
    *

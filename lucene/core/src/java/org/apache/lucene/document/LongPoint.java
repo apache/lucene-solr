@@ -174,7 +174,8 @@ public final class LongPoint extends Field {
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting {@code lowerValue = Long.MIN_VALUE} or {@code upperValue = Long.MAX_VALUE}. 
    * <p>
-   * Ranges are inclusive. For exclusive ranges, pass {@code lowerValue + 1} or {@code upperValue - 1}
+   * Ranges are inclusive. For exclusive ranges, pass {@code Math.addExact(lowerValue, 1)}
+   * or {@code Math.addExact(upperValue, -1)}.
    *
    * @param field field name. must not be {@code null}.
    * @param lowerValue lower portion of the range (inclusive).
@@ -192,7 +193,8 @@ public final class LongPoint extends Field {
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting {@code lowerValue[i] = Long.MIN_VALUE} or {@code upperValue[i] = Long.MAX_VALUE}. 
    * <p>
-   * Ranges are inclusive. For exclusive ranges, pass {@code lowerValue[i] + 1} or {@code upperValue[i] - 1}
+   * Ranges are inclusive. For exclusive ranges, pass {@code Math.addExact(lowerValue[i], 1)}
+   * or {@code Math.addExact(upperValue[i], -1)}.
    *
    * @param field field name. must not be {@code null}.
    * @param lowerValue lower portion of the range (inclusive). must not be {@code null}.
