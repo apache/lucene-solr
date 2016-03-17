@@ -69,8 +69,8 @@ Other Changes
 * SOLR-8866: UpdateLog will now throw an exception if it doesn't know how to serialize a value.
   (David Smiley)
 
-* SOLR-8842: security rules made more foolproof by asking the requesthandler  about the well known
-  permission name.   The APIs are also modified to ue 'index' as the unique identifier instead of name.
+* SOLR-8842: security rules made foolproof by asking the requesthandler  about the well known
+  permission name.  The APIs are also modified to use 'index' as the unique identifier instead of name.
   Name is an optional attribute   now and only to be used when specifying well-known permissions (noble)
 
 ==================  6.0.0 ==================
