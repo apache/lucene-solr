@@ -61,6 +61,8 @@ Other Changes
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
   (Jason Gerlowski, Benoit Vanalderweireldt, shalin)
 
+* SOLR-8860: Remove back-compat handling of router format made in SOLR-4221 in 4.5.0. (shalin)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
