@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.queries.function;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -140,8 +140,8 @@ public abstract class FunctionValues {
    * Yields a {@link Scorer} that matches all documents,
    * and that which produces scores equal to {@link #floatVal(int)}.
    */
-  public ValueSourceScorer getScorer(IndexReader reader) {
-    return new ValueSourceScorer(reader, this) {
+  public ValueSourceScorer getScorer(LeafReaderContext readerContext) {
+    return new ValueSourceScorer(readerContext, this) {
       @Override
       public boolean matches(int doc) {
         return true;
@@ -157,7 +157,7 @@ public abstract class FunctionValues {
   // because it needs different behavior depending on the type of fields.  There is also
   // a setup cost - parsing and normalizing params, and doing a binary search on the StringIndex.
   // TODO: change "reader" to LeafReaderContext
-  public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
+  public ValueSourceScorer getRangeScorer(LeafReaderContext readerContext, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
     float lower;
     float upper;
 
@@ -176,36 +176,40 @@ public abstract class FunctionValues {
     final float u = upper;
 
     if (includeLower && includeUpper) {
-      return new ValueSourceScorer(reader, this) {
+      return new ValueSourceScorer(readerContext, this) {
         @Override
         public boolean matches(int doc) {
+          if (!exists(doc)) return false;
           float docVal = floatVal(doc);
           return docVal >= l && docVal <= u;
         }
       };
     }
     else if (includeLower && !includeUpper) {
-       return new ValueSourceScorer(reader, this) {
+       return new ValueSourceScorer(readerContext, this) {
         @Override
         public boolean matches(int doc) {
+          if (!exists(doc)) return false;
           float docVal = floatVal(doc);
           return docVal >= l && docVal < u;
         }
       };
     }
     else if (!includeLower && includeUpper) {
-       return new ValueSourceScorer(reader, this) {
+       return new ValueSourceScorer(readerContext, this) {
         @Override
         public boolean matches(int doc) {
+          if (!exists(doc)) return false;
           float docVal = floatVal(doc);
           return docVal > l && docVal <= u;
         }
       };
     }
     else {
-       return new ValueSourceScorer(reader, this) {
+       return new ValueSourceScorer(readerContext, this) {
         @Override
         public boolean matches(int doc) {
+          if (!exists(doc)) return false;
           float docVal = floatVal(doc);
           return docVal > l && docVal < u;
         }

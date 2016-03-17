@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -119,7 +118,7 @@ public class EnumFieldSource extends FieldCacheSource {
       }
 
       @Override
-      public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
+      public ValueSourceScorer getRangeScorer(LeafReaderContext readerContext, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
         Integer lower = stringValueToIntValue(lowerVal);
         Integer upper = stringValueToIntValue(upperVal);
 
@@ -140,12 +139,11 @@ public class EnumFieldSource extends FieldCacheSource {
         final int ll = lower;
         final int uu = upper;
 
-        return new ValueSourceScorer(reader, this) {
+        return new ValueSourceScorer(readerContext, this) {
           @Override
           public boolean matches(int doc) {
+            if (!exists(doc)) return false;
             int val = intVal(doc);
-            // only check for deleted if it's the default value
-            // if (val==0 && reader.isDeleted(doc)) return false;
             return val >= ll && val <= uu;
           }
         };

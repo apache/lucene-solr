@@ -3,6 +3,13 @@ Lucene Change Log
 For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
+======================= Lucene 5.5.1 =======================
+
+Bug Fixes
+
+* SOLR-8867: FunctionValues.getRangeScorer now takes a LeafReaderContext instead
+  of an IndexReader, and avoids matching documents without a value in the field
+  for numeric fields. (yonik)
 
 ======================= Lucene 5.5.0 =======================
 

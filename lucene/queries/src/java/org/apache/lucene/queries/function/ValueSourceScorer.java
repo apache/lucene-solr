@@ -18,7 +18,7 @@ package org.apache.lucene.queries.function;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -43,11 +43,10 @@ public abstract class ValueSourceScorer extends Scorer {
   private final TwoPhaseIterator twoPhaseIterator;
   private final DocIdSetIterator disi;
 
-  //TODO use LeafReaderContext not IndexReader?
-  protected ValueSourceScorer(IndexReader reader, FunctionValues values) {
+  protected ValueSourceScorer(LeafReaderContext readerContext, FunctionValues values) {
     super(null);//no weight
     this.values = values;
-    final DocIdSetIterator approximation = DocIdSetIterator.all(reader.maxDoc()); // no approximation!
+    final DocIdSetIterator approximation = DocIdSetIterator.all(readerContext.reader().maxDoc()); // no approximation!
     this.twoPhaseIterator = new TwoPhaseIterator(approximation) {
       @Override
       public boolean matches() throws IOException {
