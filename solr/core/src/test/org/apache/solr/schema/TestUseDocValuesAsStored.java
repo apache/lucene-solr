@@ -25,12 +25,8 @@ import java.io.File;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.Month;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -40,6 +36,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.apache.solr.util.DOMUtil;
+import org.apache.solr.util.DateFormatUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -71,11 +68,9 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   private static final Pattern STORED_FIELD_NAME_PATTERN = Pattern.compile("_dv$");
 
   static {
-    START_RANDOM_EPOCH_MILLIS = LocalDateTime.of(1970, Month.JANUARY, 1, 0, 0)
-        .toInstant(ZoneOffset.UTC).toEpochMilli();
-    END_RANDOM_EPOCH_MILLIS = LocalDateTime.of(2030, Month.DECEMBER, 31, 23, 59, 59, 999_000_000)
-        .toInstant(ZoneOffset.UTC).toEpochMilli();
     try {
+      START_RANDOM_EPOCH_MILLIS = DateFormatUtil.parseDate("1970-01-01T00:00:00").getTime();
+      END_RANDOM_EPOCH_MILLIS = DateFormatUtil.parseDate("2030-12-31T23:59:59.999").getTime();
       DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
       InputStream stream = TestUseDocValuesAsStored.class.getResourceAsStream("/solr/collection1/conf/enumsConfig.xml");
       Document doc = builder.parse(new InputSource(IOUtils.getDecodingReader(stream, StandardCharsets.UTF_8)));
@@ -216,8 +211,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
         }
         case "date": {
           long epochMillis = TestUtil.nextLong(random(), START_RANDOM_EPOCH_MILLIS, END_RANDOM_EPOCH_MILLIS);
-          LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneOffset.UTC);
-          values[i] = dateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + 'Z';
+          values[i] = DateFormatUtil.formatExternal(new Date(epochMillis));
           break;
         }
         default: throw new Exception("unknown type '" + valueType + "'");
