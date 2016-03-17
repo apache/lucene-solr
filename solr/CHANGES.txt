@@ -335,6 +335,10 @@ Bug Fixes
 * SOLR-8838: Returning non-stored docValues is incorrect for negative floats and doubles.
   (Ishan Chattopadhyaya, Steve Rowe)
 
+* SOLR-8867: {!frange} queries will now avoid matching documents without a value in the
+  numeric field.  For more complex functions, FunctionValues.exists() must also return true
+  for the document to match.  (yonik)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been

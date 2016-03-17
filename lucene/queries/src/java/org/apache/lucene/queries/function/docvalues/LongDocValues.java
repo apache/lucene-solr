@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.queries.function.docvalues;
 
-import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.ValueSourceScorer;
@@ -87,7 +87,7 @@ public abstract class LongDocValues extends FunctionValues {
   }
   
   @Override
-  public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
+  public ValueSourceScorer getRangeScorer(LeafReaderContext readerContext, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
     long lower,upper;
 
     // instead of using separate comparison functions, adjust the endpoints.
@@ -109,12 +109,11 @@ public abstract class LongDocValues extends FunctionValues {
     final long ll = lower;
     final long uu = upper;
 
-    return new ValueSourceScorer(reader, this) {
+    return new ValueSourceScorer(readerContext, this) {
       @Override
       public boolean matches(int doc) {
+        if (!exists(doc)) return false;
         long val = longVal(doc);
-        // only check for deleted if it's the default value
-        // if (val==0 && reader.isDeleted(doc)) return false;
         return val >= ll && val <= uu;
       }
     };

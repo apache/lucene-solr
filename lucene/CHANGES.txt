@@ -154,6 +154,10 @@ API Changes
   FilterCollector, FilterDirectory.  And some Filter* classes in
   lucene-test-framework too. (David Smiley)
 
+* SOLR-8867: FunctionValues.getRangeScorer now takes a LeafReaderContext instead
+  of an IndexReader, and avoids matching documents without a value in the field
+  for numeric fields. (yonik)
+
 Optimizations
 
 * LUCENE-6891: Use prefix coding when writing points in 

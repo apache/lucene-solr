@@ -201,14 +201,15 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     final String[] fields = {"foo_s","foo_i","foo_l","foo_f","foo_d"
             ,"foo_ti","foo_tl","foo_tf","foo_td"
     };
-    final int l=5;
+    final int l=-5;
     final int u=25;
 
 
     createIndex(15, new DocProcessor() {
       @Override
       public void process(SolrInputDocument doc) {
-        addInt(doc, l,u, fields);
+        // 10% of the docs have missing values
+        if (r.nextInt(10)!=0) addInt(doc, l,u, fields);
       }
     });
     assertU(commit());
