@@ -78,7 +78,7 @@ public class ValueSourceRangeFilter extends SolrFilter {
      return BitsFilteredDocIdSet.wrap(new DocIdSet() {
        @Override
        public DocIdSetIterator iterator() throws IOException {
-         Scorer scorer = valueSource.getValues(context, readerContext).getRangeScorer(readerContext.reader(), lowerVal, upperVal, includeLower, includeUpper);
+         Scorer scorer = valueSource.getValues(context, readerContext).getRangeScorer(readerContext, lowerVal, upperVal, includeLower, includeUpper);
          return scorer == null ? null : scorer.iterator();
        }
        @Override
