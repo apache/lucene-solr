@@ -66,6 +66,9 @@ Other Changes
 
 * SOLR-8860: Remove back-compat handling of router format made in SOLR-4221 in 4.5.0. (shalin)
 
+* SOLR-8866: UpdateLog will now throw an exception if it doesn't know how to serialize a value.
+  (David Smiley)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

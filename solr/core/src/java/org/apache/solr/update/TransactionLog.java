@@ -95,7 +95,9 @@ public class TransactionLog implements Closeable {
         codec.writeByteArray(br.bytes, br.offset, br.length);
         return null;
       }
-      return o;
+      // Fallback: we have no idea how to serialize this.  Be noisy to prevent insidious bugs
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "TransactionLog doesn't know how to serialize " + o.getClass() + "; try implementing ObjectResolver?");
     }
   };
 
