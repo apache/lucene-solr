@@ -125,6 +125,9 @@ Other Changes
     test-framework jar so users subclassing SolrTestCaseJ4 don't need to preserve magic paths.
   (hossman)
 
+* SOLR-8866: UpdateLog will now throw an exception if it doesn't know how to serialize a value.
+  (David Smiley)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
