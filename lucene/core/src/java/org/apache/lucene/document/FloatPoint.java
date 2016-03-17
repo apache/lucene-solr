@@ -172,7 +172,9 @@ public final class FloatPoint extends Field {
    * {@link #newRangeQuery(String, float[], float[])} instead.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting {@code lowerValue = Float.NEGATIVE_INFINITY} or {@code upperValue = Float.POSITIVE_INFINITY}. 
+   * by setting {@code lowerValue = Float.NEGATIVE_INFINITY} or {@code upperValue = Float.POSITIVE_INFINITY}.
+   * <p> Ranges are inclusive. For exclusive ranges, pass {@code Math#nextUp(lowerValue)}
+   * or {@code Math.nextDown(upperValue)}.
    * <p>
    * Range comparisons are consistent with {@link Float#compareTo(Float)}.
    *
@@ -190,7 +192,9 @@ public final class FloatPoint extends Field {
    * Create a range query for n-dimensional float values.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting {@code lowerValue[i] = Float.NEGATIVE_INFINITY} or {@code upperValue[i] = Float.POSITIVE_INFINITY}. 
+   * by setting {@code lowerValue[i] = Float.NEGATIVE_INFINITY} or {@code upperValue[i] = Float.POSITIVE_INFINITY}.
+   * <p> Ranges are inclusive. For exclusive ranges, pass {@code Math#nextUp(lowerValue[i])}
+   * or {@code Math.nextDown(upperValue[i])}.
    * <p>
    * Range comparisons are consistent with {@link Float#compareTo(Float)}.
    *
