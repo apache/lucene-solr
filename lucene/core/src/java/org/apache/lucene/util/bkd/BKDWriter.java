@@ -977,12 +977,14 @@ public class BKDWriter implements Closeable {
       System.arraycopy(reader.packedValue(), splitDim*bytesPerDim, scratch1, 0, bytesPerDim);
       if (numDims > 1) {
 
+        assert ordBitSet.get(reader.ord()) == false;
         ordBitSet.set(reader.ord());
 
         // Start at 1 because we already did the first value above (so we could keep the split value):
         for(int i=1;i<rightCount;i++) {
           result = reader.next();
           assert result;
+          assert ordBitSet.get(reader.ord()) == false;
           ordBitSet.set(reader.ord());
         }
       }
