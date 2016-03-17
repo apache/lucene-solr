@@ -56,6 +56,9 @@ Optimizations
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
   (Scott Blum via shalin)
 
+* SOLR-8745: Deprecate costly ZkStateReader.updateClusterState(), replace with a narrow
+  forceUpdateCollection(collection) (Scott Blum via shalin)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
@@ -345,9 +348,6 @@ Optimizations
   (Mark Miller)
 
 * SOLR-8720: ZkController#publishAndWaitForDownStates should use #publishNodeAsDown. (Mark Miller)
-
-* SOLR-8745: Deprecate costly ZkStateReader.updateClusterState(), replace with a narrow
-  forceUpdateCollection(collection) (Scott Blum via shalin)
 
 Other Changes
 ----------------------
