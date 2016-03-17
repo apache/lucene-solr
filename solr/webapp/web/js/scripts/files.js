@@ -162,7 +162,7 @@ sammy.get
 
           var endpoint = file_endpoint + '?file=' + selected_file;
 
-          var content_type_map = { xml : 'text/xml', html : 'text/html', js : 'text/javascript', json : 'application/json', 'css' : 'text/css' };
+          var content_type_map = { xml : 'text/xml', 'xsl' : 'text/xml', html : 'text/html', js : 'text/javascript', json : 'application/json', 'css' : 'text/css' };
           if (selected_file == 'managed-schema') {
             endpoint += '&contentType=' + 'text/xml' + ';charset=utf-8';
           } else {
