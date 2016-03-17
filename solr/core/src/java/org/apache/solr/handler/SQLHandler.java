@@ -59,6 +59,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.util.List;
@@ -70,7 +72,7 @@ import org.slf4j.LoggerFactory;
 
 import com.facebook.presto.sql.parser.SqlParser;
 
-public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
+public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , PermissionNameProvider {
 
   private static String defaultZkhost = null;
   private static String defaultWorkerCollection = null;
@@ -91,6 +93,11 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware {
       defaultZkhost = core.getCoreDescriptor().getCoreContainer().getZkController().getZkServerAddress();
       defaultWorkerCollection = core.getCoreDescriptor().getCollectionName();
     }
+  }
+
+  @Override
+  public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
+    return PermissionNameProvider.Name.READ_PERM;
   }
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {

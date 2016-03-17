@@ -36,14 +36,17 @@ import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.handler.loader.XMLLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
 /**
  * UpdateHandler that uses content-type to pick the right Loader
  */
-public class UpdateRequestHandler extends ContentStreamHandlerBase {
+public class UpdateRequestHandler extends ContentStreamHandlerBase implements PermissionNameProvider {
 
   // XML Constants
   public static final String ADD = "add";
@@ -150,6 +153,10 @@ public class UpdateRequestHandler extends ContentStreamHandlerBase {
     return registry;
   }
 
+  @Override
+  public PermissionNameProvider.Name getPermissionName(AuthorizationContext ctx) {
+    return UPDATE_PERM;
+  }
 
   @Override
   protected ContentStreamLoader newLoader(SolrQueryRequest req, final UpdateRequestProcessor processor) {

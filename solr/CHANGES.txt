@@ -30,6 +30,9 @@ Detailed Change List
 * SOLR-8765: Enforce required parameters at query construction time in the SolrJ
   Collections API, add static factory methods, and deprecate old setter methods.
   (Alan Woodward, Jason Gerlowski)
+* SOLR-8842: authorization APIs do not use name as an identifier for  a permission
+  for update, delete   commands and 'before' attribute (noble)
+
 
 New Features
 ----------------------
@@ -68,6 +71,10 @@ Other Changes
 
 * SOLR-8866: UpdateLog will now throw an exception if it doesn't know how to serialize a value.
   (David Smiley)
+
+* SOLR-8842: security rules made more foolproof by asking the requesthandler  about the well known
+  permission name.   The APIs are also modified to ue 'index' as the unique identifier instead of name.
+  Name is an optional attribute   now and only to be used when specifying well-known permissions (noble)
 
 ==================  6.0.0 ==================
 

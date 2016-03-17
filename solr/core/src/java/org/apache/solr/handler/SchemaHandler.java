@@ -42,13 +42,15 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.schema.ZkIndexSchemaReader;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.CommonParams.JSON;
 
-public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware {
+public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean isImmutableConfigSet = false;
 
@@ -96,6 +98,18 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware {
       }
     } else {
       handleGET(req, rsp);
+    }
+  }
+
+  @Override
+  public PermissionNameProvider.Name getPermissionName(AuthorizationContext ctx) {
+    switch (ctx.getHttpMethod()) {
+      case "GET":
+        return PermissionNameProvider.Name.SCHEMA_READ_PERM;
+      case "POST":
+        return PermissionNameProvider.Name.SCHEMA_EDIT_PERM;
+      default:
+        return null;
     }
   }
 

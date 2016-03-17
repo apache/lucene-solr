@@ -23,6 +23,8 @@ import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.handler.ContentStreamHandlerBase;
@@ -45,7 +47,7 @@ import java.util.Map;
  * Handler for rich documents like PDF or Word or any other file format that Tika handles that need the text to be extracted
  * first from the document.
  */
-public class ExtractingRequestHandler extends ContentStreamHandlerBase implements SolrCoreAware {
+public class ExtractingRequestHandler extends ContentStreamHandlerBase implements SolrCoreAware , PermissionNameProvider {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -60,6 +62,11 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
   protected Collection<String> dateFormats = DateUtil.DEFAULT_DATE_FORMATS;
   protected SolrContentHandlerFactory factory;
 
+
+  @Override
+  public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
+    return PermissionNameProvider.Name.READ_PERM;
+  }
 
   @Override
   public void init(NamedList args) {

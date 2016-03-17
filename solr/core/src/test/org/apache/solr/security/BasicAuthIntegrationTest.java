@@ -140,8 +140,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     httpPost = new HttpPost(baseUrl + authzPrefix);
     setBasicAuthHeader(httpPost, "harry", "HarryIsUberCool");
     httpPost.setEntity(new ByteArrayEntity(Utils.toJSON(singletonMap("set-permission", Utils.makeMap
-        ("name", "x-update",
-            "collection", "x",
+        ("collection", "x",
             "path", "/update/*",
             "role", "dev")))));
 

@@ -93,6 +93,12 @@ public class CommandOperation {
   }
 
   private Object getMapVal(String key) {
+    if("".equals(key)){
+      if (commandData instanceof Map) {
+        addError("value of the command is an object should be primitive");
+      }
+      return commandData;
+    }
     if (commandData instanceof Map) {
       Map metaData = (Map) commandData;
       return metaData.get(key);
@@ -297,4 +303,25 @@ public class CommandOperation {
   }
 
 
+  public Integer getInt(String name, Integer def) {
+    Object o = getVal(name);
+    if (o == null) return def;
+    if (o instanceof Number) {
+      Number number = (Number) o;
+      return number.intValue();
+    } else {
+      try {
+        return Integer.parseInt(o.toString());
+      } catch (NumberFormatException e) {
+        addError(StrUtils.formatString("{0} is not a valid integer", name));
+        return null;
+      }
+    }
+  }
+
+  public Integer getInt(String name) {
+    Object o = getVal(name);
+    if(o == null) return null;
+    return getInt(name, null);
+  }
 }
