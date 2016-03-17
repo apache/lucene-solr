@@ -101,6 +101,9 @@ Other Changes
 
 * SOLR-9053: Upgrade commons-fileupload to 1.3.1, fixing a potential vulnerability (Jeff Field, Mike Drob via janhoy)
 
+* SOLR-8866: UpdateLog will now throw an exception if it doesn't know how to serialize a value.
+  (David Smiley)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes

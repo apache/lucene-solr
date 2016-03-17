@@ -207,7 +207,9 @@ public class JavaBinCodec {
         if (writeKnownType(tmpVal)) return;
       }
     }
-
+    // Fallback to do *something*.
+    // note: if the user of this codec doesn't want this (e.g. UpdateLog) it can supply an ObjectResolver that does
+    //  something else like throw an exception.
     writeVal(val.getClass().getName() + ':' + val.toString());
   }
 
