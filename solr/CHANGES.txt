@@ -74,7 +74,7 @@ Carrot2 3.12.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
-Jetty 9.3.6.v20151106
+Jetty 9.3.8.v20160314
 
 System Requirements
 ----------------------
@@ -409,7 +409,7 @@ Other Changes
 
 * SOLR-8529: Improve JdbcTest to not use plain assert statements (Kevin Risden, Joel Bernstein)
 
-* SOLR-7339: Upgrade Jetty to v9.3.6.v20151106. (Gregg Donovan, shalin, Mark Miller)
+* SOLR-7339: Upgrade Jetty to v9.3.8.v20160314. (Gregg Donovan, shalin, Mark Miller, Steve Rowe)
 
 * SOLR-5730: Make Lucene's SortingMergePolicy and EarlyTerminatingSortingCollector configurable in Solr.
   (Christine Poerschke, hossmann, Tomás Fernández Löbbe, Shai Erera)
