@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.lucene.index.ExitableDirectoryReader;
-import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentList;
@@ -45,6 +44,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.facet.FacetModule;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
@@ -60,8 +61,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  * Refer SOLR-281
  *
  */
-public class SearchHandler extends RequestHandlerBase implements SolrCoreAware , PluginInfoInitialized
-{
+public class SearchHandler extends RequestHandlerBase implements SolrCoreAware , PluginInfoInitialized, PermissionNameProvider {
   static final String INIT_COMPONENTS = "components";
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
@@ -96,6 +96,11 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
         break;
       }
     }
+  }
+
+  @Override
+  public PermissionNameProvider.Name getPermissionName(AuthorizationContext ctx) {
+    return PermissionNameProvider.Name.READ_PERM;
   }
 
   /**

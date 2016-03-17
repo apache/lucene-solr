@@ -50,17 +50,24 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StreamHandler extends RequestHandlerBase implements SolrCoreAware {
+public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
 
   static SolrClientCache clientCache = new SolrClientCache();
   private StreamFactory streamFactory = new StreamFactory();
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
   private Map<String, DaemonStream> daemons = new HashMap();
+
+  @Override
+  public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
+    return PermissionNameProvider.Name.READ_PERM;
+  }
 
   public void inform(SolrCore core) {
     

@@ -985,6 +985,11 @@ public class HttpSolrCall {
       }
 
       @Override
+      public Object getHandler() {
+        return handler;
+      }
+
+      @Override
       public String toString() {
         StringBuilder response = new StringBuilder("userPrincipal: [").append(getUserPrincipal()).append("]")
             .append(" type: [").append(requestType.toString()).append("], collections: [");

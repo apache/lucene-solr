@@ -62,6 +62,7 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -77,6 +78,8 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -122,7 +125,7 @@ import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
-public class CollectionsHandler extends RequestHandlerBase {
+public class CollectionsHandler extends RequestHandlerBase implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final CoreContainer coreContainer;
@@ -144,6 +147,16 @@ public class CollectionsHandler extends RequestHandlerBase {
     this.coreContainer = coreContainer;
   }
 
+  @Override
+  public PermissionNameProvider.Name getPermissionName(AuthorizationContext ctx) {
+    String action = ctx.getParams().get("action");
+    if (action == null) return null;
+    CollectionParams.CollectionAction collectionAction = CollectionParams.CollectionAction.get(action);
+    if (collectionAction == null) return null;
+    return collectionAction.isWrite ?
+        PermissionNameProvider.Name.COLL_EDIT_PERM :
+        PermissionNameProvider.Name.COLL_READ_PERM;
+  }
 
   @Override
   final public void init(NamedList args) {
