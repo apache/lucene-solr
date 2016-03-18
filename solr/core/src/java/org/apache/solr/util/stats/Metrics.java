@@ -30,6 +30,8 @@ public enum Metrics {;   // empty enum, this is just a container for static meth
   public static final String REGISTRY_NAME_PREFIX = "solr.registry";
   public static final String DEFAULT_REGISTRY = MetricRegistry.name(REGISTRY_NAME_PREFIX, "default");
 
+  public static String mkName(String name, String... names) { return MetricRegistry.name(name, names); }
+  public static String mkName(Class<?> klass, String... names) { return MetricRegistry.name(klass, names); }
   /**
    * Use to get a Timer that you intend to use internally, and will never need to report metrics for.
    * @return
@@ -48,13 +50,22 @@ public enum Metrics {;   // empty enum, this is just a container for static meth
   }
 
   /**
-   * Use to get a named (shared, persistent) Timer from a specified registry.
+   * Use to get a named (shared, persistent) Timer from a specified shared registry.
    * @param name A name that can be used to get this same Timer instance again
    * @param registry The name of the registry to get this timer from
    * @return
    */
   public static Timer namedTimer(String name, String registry) {
     return SharedMetricRegistries.getOrCreate(overridableRegistryName(registry)).timer(name);
+  }
+
+  /**
+   * Gets a shared MetricRegistry by name, respecting overrides
+   * @param name
+   * @return
+   */
+  public static MetricRegistry registryFor(String name) {
+    return SharedMetricRegistries.getOrCreate(overridableRegistryName(name));
   }
 
   /**

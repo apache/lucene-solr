@@ -56,10 +56,11 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   protected boolean httpCaching = true;
 
   // Statistics
+  public static final String REGISTRY_NAME = "requesthandler";
   private final AtomicLong numRequests = new AtomicLong();
   private final AtomicLong numErrors = new AtomicLong();
   private final AtomicLong numTimeouts = new AtomicLong();
-  private final Timer requestTimes = new Timer();
+  private Timer requestTimes = new Timer();
 
   private final long handlerStart;
 
@@ -250,7 +251,12 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   }
 
   public void setPluginInfo(PluginInfo pluginInfo){
-    if(this.pluginInfo==null) this.pluginInfo = pluginInfo;
+    if(this.pluginInfo==null) {
+      // if a request handler has a name, use a persistent, reportable timer under that name
+      if (pluginInfo.name != null)
+        requestTimes = Metrics.namedTimer(Metrics.mkName(this.getClass(), pluginInfo.name), REGISTRY_NAME);
+      this.pluginInfo = pluginInfo;
+    }
   }
 
   public PluginInfo getPluginInfo(){

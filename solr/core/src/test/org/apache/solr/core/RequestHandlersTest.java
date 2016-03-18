@@ -16,9 +16,12 @@
  */
 package org.apache.solr.core;
 
+import com.codahale.metrics.SharedMetricRegistries;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.util.stats.Metrics;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -112,5 +115,8 @@ public class RequestHandlersTest extends SolrTestCaseJ4 {
     Double termTime = (Double) termStats.get("avgTimePerRequest");
 
     assertFalse("RequestHandlers should not share statistics!", updateTime.equals(termTime));
+
+    assertTrue("Named RequestHandlers should use a shared registry",
+        Metrics.registryFor(RequestHandlerBase.REGISTRY_NAME).getNames().contains(Metrics.mkName(updateHandler.getClass(), "/update")));
   }
 }
