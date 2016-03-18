@@ -29,6 +29,9 @@ Optimizations
 * LUCENE-7097: IntroSorter now recurses to 2 * log_2(count) quicksort
   stack depth before switching to heapsort (Adrien Grand, Mike McCandless)
 
+* LUCENE-7115: Speed up FieldCache.CacheEntry toString by setting initial
+  StringBuilder capacity (Gregory Chanan)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
