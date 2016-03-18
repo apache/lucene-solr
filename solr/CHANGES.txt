@@ -77,6 +77,8 @@ Other Changes
   permission name.  The APIs are also modified to use 'index' as the unique identifier instead of name.
   Name is an optional attribute   now and only to be used when specifying well-known permissions (noble)
 
+* SOLR-8869: Optionally disable printing field cache entries in SolrFieldCacheMBean (Gregory Chanan)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
