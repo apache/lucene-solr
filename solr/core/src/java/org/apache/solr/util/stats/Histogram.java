@@ -30,7 +30,9 @@ import static java.lang.Math.sqrt;
  *
  * @see <a href="http://www.johndcook.com/standard_deviation.html">Accurately computing running
  *      variance</a>
+ * @deprecated Use the metrics-core library's classes instead
  */
+@Deprecated
 public class Histogram {
 
   private static final int DEFAULT_SAMPLE_SIZE = 1028;

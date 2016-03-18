@@ -27,7 +27,9 @@ import static java.lang.Math.floor;
 
 /**
  * A statistical snapshot of a {@link Snapshot}.
+ * @deprecated Use the metrics-core library's classes instead
  */
+@Deprecated
 public class Snapshot {
   private static final double MEDIAN_Q = 0.5;
   private static final double P75_Q = 0.75;

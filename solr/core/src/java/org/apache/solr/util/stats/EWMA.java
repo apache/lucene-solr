@@ -32,7 +32,9 @@ import static java.lang.Math.exp;
  *      It Works</a>
  * @see <a href="http://www.teamquest.com/pdfs/whitepaper/ldavg2.pdf">UNIX Load Average Part 2: Not
  *      Your Average Average</a>
+ * @deprecated Use the metrics-core library's classes instead
  */
+@Deprecated
 public class EWMA {
   private static final int INTERVAL = 5;
   private static final double SECONDS_PER_MINUTE = 60.0;

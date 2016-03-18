@@ -27,7 +27,9 @@ import org.apache.solr.common.util.SuppressForbidden;
 
 /**
  * An abstraction for how time passes. It is passed to {@link Timer} to track timing.
+ * @deprecated Use the metrics-core library's classes instead
  */
+@Deprecated
 public abstract class Clock {
   /**
    * Returns the current time tick.

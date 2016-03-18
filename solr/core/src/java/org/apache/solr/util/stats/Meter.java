@@ -28,7 +28,10 @@ import java.util.concurrent.atomic.AtomicLong;
  * exponentially-weighted moving average throughputs.
  *
  * @see <a href="http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average">EMA</a>
+ *
+ * @deprecated Use the metrics-core library's classes instead
  */
+@Deprecated
 public class Meter {
 
   private static final long TICK_INTERVAL = TimeUnit.SECONDS.toNanos(5);

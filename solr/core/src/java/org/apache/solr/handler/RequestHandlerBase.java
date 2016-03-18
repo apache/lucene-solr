@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler;
 
+import com.codahale.metrics.Snapshot;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -31,14 +32,14 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrPluginUtils;
-import org.apache.solr.util.stats.Snapshot;
-import org.apache.solr.util.stats.Timer;
-import org.apache.solr.util.stats.TimerContext;
+import org.apache.solr.util.stats.Metrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.codahale.metrics.Timer;
 
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.solr.core.RequestParams.USEPARAM;
@@ -146,7 +147,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
     numRequests.incrementAndGet();
-    TimerContext timer = requestTimes.time();
+    Timer.Context timer = requestTimes.time();
     try {
       if(pluginInfo != null && pluginInfo.attributes.containsKey(USEPARAM)) req.getContext().put(USEPARAM,pluginInfo.attributes.get(USEPARAM));
       SolrPluginUtils.setDefaults(this, req, defaults, appends, invariants);
@@ -265,19 +266,10 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     lst.add("requests", numRequests.longValue());
     lst.add("errors", numErrors.longValue());
     lst.add("timeouts", numTimeouts.longValue());
-    lst.add("totalTime", requestTimes.getSum());
-    lst.add("avgRequestsPerSecond", requestTimes.getMeanRate());
-    lst.add("5minRateReqsPerSecond", requestTimes.getFiveMinuteRate());
-    lst.add("15minRateReqsPerSecond", requestTimes.getFifteenMinuteRate());
-    lst.add("avgTimePerRequest", requestTimes.getMean());
-    lst.add("medianRequestTime", snapshot.getMedian());
-    lst.add("75thPcRequestTime", snapshot.get75thPercentile());
-    lst.add("95thPcRequestTime", snapshot.get95thPercentile());
-    lst.add("99thPcRequestTime", snapshot.get99thPercentile());
-    lst.add("999thPcRequestTime", snapshot.get999thPercentile());
+    Metrics.addTimerMetrics(lst, requestTimes);
     return lst;
   }
-  
+
 }
 
 

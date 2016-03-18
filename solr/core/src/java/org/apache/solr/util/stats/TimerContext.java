@@ -26,7 +26,9 @@ import java.util.concurrent.TimeUnit;
  * A timing context.
  *
  * @see Timer#time()
+ * @deprecated Use the metrics-core library's classes instead
  */
+@Deprecated
 public class TimerContext {
   private final Timer timer;
   private final Clock clock;

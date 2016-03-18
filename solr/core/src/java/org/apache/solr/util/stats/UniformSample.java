@@ -31,7 +31,9 @@ import java.util.concurrent.atomic.AtomicLongArray;
  * statistically representative sample.
  *
  * @see <a href="http://www.cs.umd.edu/~samir/498/vitter.pdf">Random Sampling with a Reservoir</a>
+ * @deprecated Use the metrics-core library's classes instead
  */
+@Deprecated
 public class UniformSample implements Sample {
 
   private static final int BITS_PER_LONG = 63;

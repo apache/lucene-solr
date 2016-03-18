@@ -22,7 +22,9 @@ package org.apache.solr.util.stats;
 
 /**
  * A statistically representative sample of a data stream.
+ * @deprecated Use the metrics-core library's classes instead
  */
+@Deprecated
 public interface Sample {
   /**
    * Clears all recorded values.

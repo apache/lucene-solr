@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.Timer;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
@@ -39,7 +40,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -352,7 +352,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   protected LeaderStatus amILeader() {
     String statsName = "collection_am_i_leader";
-    TimerContext timerContext = stats.time(statsName);
+    Timer.Context timerContext = stats.time(statsName);
     boolean success = true;
     try {
       ZkNodeProps props = ZkNodeProps.load(zkStateReader.getZkClient().getData(
@@ -425,7 +425,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     public void run() {
       String statsName = messageHandler.getTimerName(operation);
-      final TimerContext timerContext = stats.time(statsName);
+      final Timer.Context timerContext = stats.time(statsName);
 
       boolean success = false;
       final String asyncId = message.getStr(ASYNC);

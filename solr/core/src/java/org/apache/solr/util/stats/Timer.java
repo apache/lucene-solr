@@ -28,7 +28,9 @@ import java.util.concurrent.TimeUnit;
 /**
  * A timer metric which aggregates timing durations and provides duration statistics, plus
  * throughput statistics via {@link Meter}.
+ * @deprecated Use the metrics-core library's classes instead
  */
+@Deprecated
 public class Timer {
 
   private final TimeUnit durationUnit, rateUnit;
