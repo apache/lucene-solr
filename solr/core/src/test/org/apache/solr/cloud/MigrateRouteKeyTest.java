@@ -72,7 +72,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
     boolean ruleRemoved = false;
     long expiryTime = finishTime + TimeUnit.NANOSECONDS.convert(60, TimeUnit.SECONDS);
     while (System.nanoTime() < expiryTime) {
-      getCommonCloudSolrClient().getZkStateReader().updateClusterState();
+      getCommonCloudSolrClient().getZkStateReader().forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
       state = getCommonCloudSolrClient().getZkStateReader().getClusterState();
       slice = state.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD2);
       Map<String,RoutingRule> routingRules = slice.getRoutingRules();
@@ -186,7 +186,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
       log.info("Response from target collection: " + response);
       assertEquals("DocCount on target collection does not match", splitKeyCount[0], response.getResults().getNumFound());
 
-      getCommonCloudSolrClient().getZkStateReader().updateClusterState();
+      getCommonCloudSolrClient().getZkStateReader().forceUpdateCollection(AbstractDistribZkTestBase.DEFAULT_COLLECTION);
       ClusterState state = getCommonCloudSolrClient().getZkStateReader().getClusterState();
       Slice slice = state.getSlice(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD2);
       assertNotNull("Routing rule map is null", slice.getRoutingRules());

@@ -56,7 +56,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
-    LeafReader merged = getOnlySegmentReader(ir2);
+    LeafReader merged = getOnlyLeafReader(ir2);
     iw.close();
     
     NumericDocValues multi = MultiDocValues.getNumericValues(ir, "numbers");
@@ -91,7 +91,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
-    LeafReader merged = getOnlySegmentReader(ir2);
+    LeafReader merged = getOnlyLeafReader(ir2);
     iw.close();
     
     BinaryDocValues multi = MultiDocValues.getBinaryValues(ir, "bytes");
@@ -131,7 +131,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
-    LeafReader merged = getOnlySegmentReader(ir2);
+    LeafReader merged = getOnlyLeafReader(ir2);
     iw.close();
     
     SortedDocValues multi = MultiDocValues.getSortedValues(ir, "bytes");
@@ -173,7 +173,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
-    LeafReader merged = getOnlySegmentReader(ir2);
+    LeafReader merged = getOnlyLeafReader(ir2);
     iw.close();
     
     SortedDocValues multi = MultiDocValues.getSortedValues(ir, "bytes");
@@ -214,7 +214,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
-    LeafReader merged = getOnlySegmentReader(ir2);
+    LeafReader merged = getOnlyLeafReader(ir2);
     iw.close();
     
     SortedSetDocValues multi = MultiDocValues.getSortedSetValues(ir, "bytes");
@@ -276,7 +276,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
-    LeafReader merged = getOnlySegmentReader(ir2);
+    LeafReader merged = getOnlyLeafReader(ir2);
     iw.close();
     
     SortedSetDocValues multi = MultiDocValues.getSortedSetValues(ir, "bytes");
@@ -337,7 +337,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
-    LeafReader merged = getOnlySegmentReader(ir2);
+    LeafReader merged = getOnlyLeafReader(ir2);
     iw.close();
     
     SortedNumericDocValues multi = MultiDocValues.getSortedNumericValues(ir, "nums");
@@ -388,7 +388,7 @@ public class TestMultiDocValues extends LuceneTestCase {
     DirectoryReader ir = iw.getReader();
     iw.forceMerge(1);
     DirectoryReader ir2 = iw.getReader();
-    LeafReader merged = getOnlySegmentReader(ir2);
+    LeafReader merged = getOnlyLeafReader(ir2);
     iw.close();
     
     Bits multi = MultiDocValues.getDocsWithField(ir, "numbers");

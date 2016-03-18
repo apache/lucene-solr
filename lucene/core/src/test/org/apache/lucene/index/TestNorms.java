@@ -111,8 +111,8 @@ public class TestNorms extends LuceneTestCase {
   public void testMaxByteNorms() throws IOException {
     Directory dir = newFSDirectory(createTempDir("TestNorms.testMaxByteNorms"));
     buildIndex(dir);
-    LeafReader open = SlowCompositeReaderWrapper.wrap(DirectoryReader.open(dir));
-    NumericDocValues normValues = open.getNormValues(byteTestField);
+    DirectoryReader open = DirectoryReader.open(dir);
+    NumericDocValues normValues = MultiDocValues.getNormValues(open, byteTestField);
     assertNotNull(normValues);
     for (int i = 0; i < open.maxDoc(); i++) {
       Document document = open.document(i);
@@ -133,7 +133,7 @@ public class TestNorms extends LuceneTestCase {
     Similarity provider = new MySimProvider();
     config.setSimilarity(provider);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, config);
-    final LineFileDocs docs = new LineFileDocs(random, true);
+    final LineFileDocs docs = new LineFileDocs(random);
     int num = atLeast(100);
     for (int i = 0; i < num; i++) {
       Document doc = docs.nextDoc();

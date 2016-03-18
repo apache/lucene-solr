@@ -105,7 +105,7 @@ public abstract class FilterCodec extends Codec {
   }
 
   @Override
-  public PointFormat pointFormat() {
-    return delegate.pointFormat();
+  public PointsFormat pointsFormat() {
+    return delegate.pointsFormat();
   }
 }

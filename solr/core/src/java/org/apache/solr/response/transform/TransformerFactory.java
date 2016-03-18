@@ -49,5 +49,6 @@ public abstract class TransformerFactory implements NamedListInitializedPlugin
     defaultFactories.put( "child", new ChildDocTransformerFactory() );
     defaultFactories.put( "json", new RawValueTransformerFactory("json") );
     defaultFactories.put( "xml", new RawValueTransformerFactory("xml") );
+    defaultFactories.put( "geo", new GeoTransformerFactory() );
   }
 }

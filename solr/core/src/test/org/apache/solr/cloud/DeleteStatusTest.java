@@ -17,101 +17,129 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class DeleteStatusTest extends AbstractFullDistribZkTestBase {
+public class DeleteStatusTest extends SolrCloudTestCase {
+
+  public static final int MAX_WAIT_TIMEOUT = 30;
+
+  @BeforeClass
+  public static void createCluster() throws Exception {
+    configureCluster(2)
+        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .configure();
+  }
+
+  // Basically equivalent to RequestStatus.waitFor(), but doesn't delete the id from the queue
+  private static RequestStatusState waitForRequestState(String id, SolrClient client, int timeout)
+      throws IOException, SolrServerException, InterruptedException {
+    RequestStatusState state = RequestStatusState.SUBMITTED;
+    long endTime = System.nanoTime() + TimeUnit.SECONDS.toNanos(MAX_WAIT_TIMEOUT);
+    while (System.nanoTime() < endTime) {
+      state = CollectionAdminRequest.requestStatus(id).process(client).getRequestStatus();
+      if (state == RequestStatusState.COMPLETED)
+        break;
+      assumeTrue("Error creating collection - skipping test", state != RequestStatusState.FAILED);
+      TimeUnit.SECONDS.sleep(1);
+    }
+    assumeTrue("Timed out creating collection - skipping test", state == RequestStatusState.COMPLETED);
+    return state;
+  }
 
   @Test
-  public void testDeleteStatus() throws IOException, SolrServerException {
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-    create.setCollectionName("requeststatus")
-        .setConfigName("conf1")
-        .setReplicationFactor(1)
-        .setNumShards(1)
-        .setAsyncId("collectioncreate")
-        .process(cloudClient);
+  public void testAsyncIdsMayBeDeleted() throws Exception {
 
-    RequestStatusState state = getRequestStateAfterCompletion("collectioncreate", 30, cloudClient);
+    final CloudSolrClient client = cluster.getSolrClient();
+
+    final String collection = "deletestatus";
+    final String asyncId = CollectionAdminRequest.createCollection(collection, "conf1", 1, 1).processAsync(client);
+
+    waitForRequestState(asyncId, client, MAX_WAIT_TIMEOUT);
+
+    assertEquals(RequestStatusState.COMPLETED,
+        CollectionAdminRequest.requestStatus(asyncId).process(client).getRequestStatus());
+
+    CollectionAdminResponse rsp = CollectionAdminRequest.deleteAsyncId(asyncId).process(client);
+    assertEquals("successfully removed stored response for [" + asyncId + "]", rsp.getResponse().get("status"));
+
+    assertEquals(RequestStatusState.NOT_FOUND,
+        CollectionAdminRequest.requestStatus(asyncId).process(client).getRequestStatus());
+
+  }
+
+  @Test
+  public void testDeletingNonExistentRequests() throws Exception {
+
+    final CloudSolrClient client = cluster.getSolrClient();
+
+    CollectionAdminResponse rsp = CollectionAdminRequest.deleteAsyncId("foo").process(client);
+    assertEquals("[foo] not found in stored responses", rsp.getResponse().get("status"));
+
+  }
+
+  @Test
+  public void testProcessAndWaitDeletesAsyncIds() throws IOException, SolrServerException, InterruptedException {
+
+    final CloudSolrClient client = cluster.getSolrClient();
+
+    RequestStatusState state = CollectionAdminRequest.createCollection("requeststatus", "conf1", 1, 1)
+                                  .processAndWait("request1", client, MAX_WAIT_TIMEOUT);
     assertSame(RequestStatusState.COMPLETED, state);
 
-    // Let's delete the stored response now
-    CollectionAdminRequest.DeleteStatus deleteStatus = new CollectionAdminRequest.DeleteStatus();
-    CollectionAdminResponse rsp = deleteStatus
-        .setRequestId("collectioncreate")
-        .process(cloudClient);
-    assertEquals("successfully removed stored response for [collectioncreate]", rsp.getResponse().get("status"));
+    // using processAndWait deletes the requestid
+    state = CollectionAdminRequest.requestStatus("request1").process(client).getRequestStatus();
+    assertSame("Request id was not deleted by processAndWait call", RequestStatusState.NOT_FOUND, state);
 
-    // Make sure that the response was deleted from zk
-    state = getRequestState("collectioncreate", cloudClient);
-    assertSame(RequestStatusState.NOT_FOUND, state);
-
-    // Try deleting the same requestid again
-    deleteStatus = new CollectionAdminRequest.DeleteStatus();
-    rsp = deleteStatus
-        .setRequestId("collectioncreate")
-        .process(cloudClient);
-    assertEquals("[collectioncreate] not found in stored responses", rsp.getResponse().get("status"));
-
-    // Let's try deleting a non-existent status
-    deleteStatus = new CollectionAdminRequest.DeleteStatus();
-    rsp = deleteStatus
-        .setRequestId("foo")
-        .process(cloudClient);
-    assertEquals("[foo] not found in stored responses", rsp.getResponse().get("status"));
   }
 
   @Test
   public void testDeleteStatusFlush() throws Exception {
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-    create.setConfigName("conf1")
-        .setCollectionName("foo")
-        .setAsyncId("foo")
-        .setNumShards(1)
-        .setReplicationFactor(1)
-        .process(cloudClient);
 
-    create = new CollectionAdminRequest.Create();
-    create.setConfigName("conf1")
-        .setCollectionName("bar")
-        .setAsyncId("bar")
-        .setNumShards(1)
-        .setReplicationFactor(1)
-        .process(cloudClient);
+    final CloudSolrClient client = cluster.getSolrClient();
 
-    RequestStatusState state = getRequestStateAfterCompletion("foo", 30, cloudClient);
-    assertEquals(RequestStatusState.COMPLETED, state);
+    String id1 = CollectionAdminRequest.createCollection("flush1", "conf1", 1, 1).processAsync(client);
+    String id2 = CollectionAdminRequest.createCollection("flush2", "conf1", 1, 1).processAsync(client);
 
-    state = getRequestStateAfterCompletion("bar", 30, cloudClient);
-    assertEquals(RequestStatusState.COMPLETED, state);
+    assertEquals(RequestStatusState.COMPLETED, waitForRequestState(id1, client, MAX_WAIT_TIMEOUT));
+    assertEquals(RequestStatusState.COMPLETED, waitForRequestState(id2, client, MAX_WAIT_TIMEOUT));
 
-    CollectionAdminRequest.DeleteStatus deleteStatus = new CollectionAdminRequest.DeleteStatus();
-    deleteStatus.setFlush(true)
-        .process(cloudClient);
+    CollectionAdminRequest.deleteAllAsyncIds().process(client);
 
-    assertEquals(RequestStatusState.NOT_FOUND, getRequestState("foo", cloudClient));
-    assertEquals(RequestStatusState.NOT_FOUND, getRequestState("bar", cloudClient));
+    assertEquals(RequestStatusState.NOT_FOUND,
+        CollectionAdminRequest.requestStatus(id1).process(client).getRequestStatus());
+    assertEquals(RequestStatusState.NOT_FOUND,
+        CollectionAdminRequest.requestStatus(id2).process(client).getRequestStatus());
 
-    deleteStatus = new CollectionAdminRequest.DeleteStatus();
+  }
+
+  @Test
+  @SuppressWarnings("deprecation")
+  public void testDeprecatedConstructorValidation() throws Exception {
+
+    final CloudSolrClient client = cluster.getSolrClient();
+
     try {
-      deleteStatus.process(cloudClient);
+      new CollectionAdminRequest.DeleteStatus().process(client);
       fail("delete status should have failed");
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("Either requestid or flush parameter must be specified."));
     }
 
-    deleteStatus = new CollectionAdminRequest.DeleteStatus();
     try {
-      deleteStatus.setFlush(true)
+      new CollectionAdminRequest.DeleteStatus().setFlush(true)
           .setRequestId("foo")
-          .process(cloudClient);
+          .process(client);
       fail("delete status should have failed");
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("Both requestid and flush parameters can not be specified together."));
     }
   }

@@ -411,17 +411,32 @@ final class Lucene54DocValuesConsumer extends DocValuesConsumer implements Close
   
   /** expert: writes a value dictionary for a sorted/sortedset field */
   private void addTermsDict(FieldInfo field, final Iterable<BytesRef> values) throws IOException {
-    // first check if it's a "fixed-length" terms dict
+    // first check if it's a "fixed-length" terms dict, and compressibility if so
     int minLength = Integer.MAX_VALUE;
     int maxLength = Integer.MIN_VALUE;
     long numValues = 0;
+    BytesRefBuilder previousValue = new BytesRefBuilder();
+    long prefixSum = 0; // only valid for fixed-width data, as we have a choice there
     for (BytesRef v : values) {
       minLength = Math.min(minLength, v.length);
       maxLength = Math.max(maxLength, v.length);
+      if (minLength == maxLength) {
+        int termPosition = (int) (numValues & INTERVAL_MASK);
+        if (termPosition == 0) {
+          // first term in block, save it away to compare against the last term later
+          previousValue.copyBytes(v);
+        } else if (termPosition == INTERVAL_COUNT - 1) {
+          // last term in block, accumulate shared prefix against first term
+          prefixSum += StringHelper.bytesDifference(previousValue.get(), v);
+        }
+      }
       numValues++;
     }
-    if (minLength == maxLength) {
-      // no index needed: direct addressing by mult
+    // for fixed width data, look at the avg(shared prefix) before deciding how to encode:
+    // prefix compression "costs" worst case 2 bytes per term because we must store suffix lengths.
+    // so if we share at least 3 bytes on average, always compress.
+    if (minLength == maxLength && prefixSum <= 3*(numValues >> INTERVAL_SHIFT)) {
+      // no index needed: not very compressible, direct addressing by mult
       addBinaryField(field, values);
     } else if (numValues < REVERSE_INTERVAL_COUNT) {
       // low cardinality: waste a few KB of ram, but can't really use fancy index etc

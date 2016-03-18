@@ -568,7 +568,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    BinaryDocValues dv = getOnlySegmentReader(ireader).getBinaryDocValues("field");
+    BinaryDocValues dv = getOnlyLeafReader(ireader).getBinaryDocValues("field");
     assertEquals(new BytesRef(), dv.get(0));
     
     ireader.close();
@@ -743,7 +743,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
+    SortedDocValues dv = getOnlyLeafReader(ireader).getSortedDocValues("field");
     if (codecSupportsDocsWithField()) {
       assertEquals(-1, dv.getOrd(0));
       assertEquals(0, dv.getValueCount());
@@ -833,7 +833,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
+    SortedDocValues dv = getOnlyLeafReader(ireader).getSortedDocValues("field");
     assertEquals(3, dv.getValueCount());
     
     TermsEnum termsEnum = dv.termsEnum();
@@ -1077,7 +1077,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     TopDocs search = searcher.search(query.build(), 10);
     assertEquals(5, search.totalHits);
     ScoreDoc[] scoreDocs = search.scoreDocs;
-    NumericDocValues docValues = getOnlySegmentReader(reader).getNumericDocValues("docId");
+    NumericDocValues docValues = getOnlyLeafReader(reader).getNumericDocValues("docId");
     for (int i = 0; i < scoreDocs.length; i++) {
       assertEquals(i, scoreDocs[i].doc);
       assertEquals(i, docValues.get(scoreDocs[i].doc));
@@ -1154,12 +1154,11 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       int ord = docValues.lookupTerm(expected);
       assertEquals(i, ord);
     }
-    LeafReader slowR = SlowCompositeReaderWrapper.wrap(reader);
     Set<Entry<String, String>> entrySet = docToString.entrySet();
 
     for (Entry<String, String> entry : entrySet) {
       // pk lookup
-      PostingsEnum termPostingsEnum = slowR.postings(new Term("id", entry.getKey()));
+      PostingsEnum termPostingsEnum = TestUtil.docs(random(), reader, "id", new BytesRef(entry.getKey()), null, 0);
       int docId = termPostingsEnum.nextDoc();
       expected = new BytesRef(entry.getValue());
       final BytesRef actual = docValues.get(docId);
@@ -1516,7 +1515,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     
     dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
@@ -1542,7 +1541,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     
     dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
@@ -1551,7 +1550,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     BytesRef bytes = dv.lookupOrd(0);
     assertEquals(new BytesRef("hello"), bytes);
     
-    dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field2");
+    dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field2");
 
     dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
@@ -1585,7 +1584,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(2, dv.getValueCount());
     
     dv.setDocument(0);
@@ -1619,7 +1618,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     
     dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
@@ -1649,7 +1648,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     
     dv.setDocument(0);
     assertEquals(0, dv.nextOrd());
@@ -1689,7 +1688,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(3, dv.getValueCount());
     
     dv.setDocument(0);
@@ -1733,7 +1732,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(1, dv.getValueCount());
     
     dv.setDocument(0);
@@ -1767,7 +1766,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(1, dv.getValueCount());
 
     dv.setDocument(0);
@@ -1800,7 +1799,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(1, dv.getValueCount());
 
     dv.setDocument(1);
@@ -1834,7 +1833,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(1, dv.getValueCount());
 
     dv.setDocument(1);
@@ -1870,7 +1869,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(0, dv.getValueCount());
     
     ireader.close();
@@ -1894,7 +1893,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     assertEquals(3, dv.getValueCount());
     
     TermsEnum termsEnum = dv.termsEnum();
@@ -2784,13 +2783,12 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       IndexReader r = w.getReader();
       w.close();
 
-      LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
-      BinaryDocValues values = ar.getBinaryDocValues("field");
+      BinaryDocValues values = MultiDocValues.getBinaryValues(r, "field");
       for(int j=0;j<5;j++) {
         BytesRef result = values.get(0);
         assertTrue(result.length == 0 || result.length == 1<<i);
       }
-      ar.close();
+      r.close();
       dir.close();
     }
   }
@@ -2866,7 +2864,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    NumericDocValues dv = getOnlySegmentReader(ireader).getNumericDocValues("field");
+    NumericDocValues dv = getOnlyLeafReader(ireader).getNumericDocValues("field");
     assertEquals(0, dv.get(0));
     
     ireader.close();
@@ -3003,7 +3001,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
     
-    SortedNumericDocValues dv = getOnlySegmentReader(ireader).getSortedNumericDocValues("field");
+    SortedNumericDocValues dv = getOnlyLeafReader(ireader).getSortedNumericDocValues("field");
     dv.setDocument(0);
     assertEquals(0, dv.count());
     
@@ -3033,7 +3031,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
+    SortedDocValues dv = getOnlyLeafReader(ireader).getSortedDocValues("field");
     doTestSortedSetEnumAdvanceIndependently(DocValues.singleton(dv));
 
     ireader.close();
@@ -3064,7 +3062,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     doTestSortedSetEnumAdvanceIndependently(dv);
 
     ireader.close();
@@ -3170,7 +3168,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    SortedDocValues dv = getOnlySegmentReader(ireader).getSortedDocValues("field");
+    SortedDocValues dv = getOnlyLeafReader(ireader).getSortedDocValues("field");
     for (int i = 0; i < numEmptyDocs; ++i) {
       assertEquals(-1, dv.getOrd(i));
     }
@@ -3202,7 +3200,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    SortedSetDocValues dv = getOnlySegmentReader(ireader).getSortedSetDocValues("field");
+    SortedSetDocValues dv = getOnlyLeafReader(ireader).getSortedSetDocValues("field");
     for (int i = 0; i < numEmptyDocs; ++i) {
       dv.setDocument(i);
       assertEquals(-1L, dv.nextOrd());
@@ -3235,8 +3233,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    NumericDocValues dv = getOnlySegmentReader(ireader).getNumericDocValues("field");
-    Bits docsWithField = getOnlySegmentReader(ireader).getDocsWithField("field");
+    NumericDocValues dv = getOnlyLeafReader(ireader).getNumericDocValues("field");
+    Bits docsWithField = getOnlyLeafReader(ireader).getDocsWithField("field");
     for (int i = 0; i < numEmptyDocs; ++i) {
       assertEquals(0, dv.get(i));
       assertFalse(docsWithField.get(i));
@@ -3269,7 +3267,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    SortedNumericDocValues dv = getOnlySegmentReader(ireader).getSortedNumericDocValues("field");
+    SortedNumericDocValues dv = getOnlyLeafReader(ireader).getSortedNumericDocValues("field");
     for (int i = 0; i < numEmptyDocs; ++i) {
       dv.setDocument(i);
       assertEquals(0, dv.count());
@@ -3302,8 +3300,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     DirectoryReader ireader = iwriter.getReader();
     iwriter.close();
 
-    BinaryDocValues dv = getOnlySegmentReader(ireader).getBinaryDocValues("field");
-    Bits docsWithField = getOnlySegmentReader(ireader).getDocsWithField("field");
+    BinaryDocValues dv = getOnlyLeafReader(ireader).getBinaryDocValues("field");
+    Bits docsWithField = getOnlyLeafReader(ireader).getDocsWithField("field");
     for (int i = 0; i < numEmptyDocs; ++i) {
       assertEquals(new BytesRef(), dv.get(i));
       assertFalse(docsWithField.get(i));

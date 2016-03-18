@@ -148,7 +148,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     IndexWriterConfig conf = new IndexWriterConfig(analyzer)
       .setMergePolicy(mp).setUseCompoundFile(false);
     IndexWriter writer = new IndexWriter(dir, conf);
-    LineFileDocs docs = new LineFileDocs(null, true);
+    LineFileDocs docs = new LineFileDocs(null);
     for(int i=0;i<50;i++) {
       writer.addDocument(docs.nextDoc());
     }

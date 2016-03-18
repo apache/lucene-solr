@@ -194,7 +194,7 @@ public class EnumField extends PrimitiveFieldType {
     if (sf.multiValued()) {
       return Type.SORTED_SET_INTEGER;
     } else {
-      return Type.INTEGER;
+      return Type.LEGACY_INTEGER;
     }
   }
 

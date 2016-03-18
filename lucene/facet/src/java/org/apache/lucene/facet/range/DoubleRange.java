@@ -32,7 +32,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.NumericUtils;
 
 /** Represents a range over double values.
@@ -50,7 +49,7 @@ public final class DoubleRange extends Range {
     super(label);
 
     // TODO: if DoubleDocValuesField used
-    // LegacyNumericUtils.doubleToSortableLong format (instead of
+    // NumericUtils.doubleToSortableLong format (instead of
     // Double.doubleToRawLongBits) we could do comparisons
     // in long space 
 

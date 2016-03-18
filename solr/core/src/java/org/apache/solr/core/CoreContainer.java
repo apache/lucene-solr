@@ -62,6 +62,7 @@ import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.HttpClientInterceptorPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.SecurityPluginHolder;
+import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.zookeeper.KeeperException;
@@ -804,9 +805,7 @@ public class CoreContainer {
     SolrCore core = null;
     try {
       MDCLoggingContext.setCore(core);
-      if (!SolrIdentifierValidator.validateCoreName(dcore.getName())) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.CORE, dcore.getName()));
-      }
+      SolrIdentifierValidator.validateCoreName(dcore.getName());
       if (zkSys.getZkController() != null) {
         zkSys.getZkController().preRegister(dcore);
       }
@@ -918,8 +917,9 @@ public class CoreContainer {
       log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
       SolrCore newCore = core.reload(coreConfig);
       registerCore(name, newCore, false);
-    }
-    catch (Exception e) {
+    } catch (SolrCoreState.CoreIsClosedException e) {
+      throw e;
+    } catch (Exception e) {
       coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
     }
@@ -1009,10 +1009,7 @@ public class CoreContainer {
   }
 
   public void rename(String name, String toName) {
-    if (!SolrIdentifierValidator.validateCoreName(toName)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.CORE,
-          toName));
-    }
+    SolrIdentifierValidator.validateCoreName(toName);
     try (SolrCore core = getCore(name)) {
       if (core != null) {
         registerCore(toName, core, true);

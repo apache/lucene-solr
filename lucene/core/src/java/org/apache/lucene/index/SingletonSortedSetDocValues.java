@@ -33,7 +33,6 @@ final class SingletonSortedSetDocValues extends RandomAccessOrds {
   /** Creates a multi-valued view over the provided SortedDocValues */
   public SingletonSortedSetDocValues(SortedDocValues in) {
     this.in = in;
-    assert NO_MORE_ORDS == -1; // this allows our nextOrd() to work for missing values without a check
   }
 
   /** Return the wrapped {@link SortedDocValues} */

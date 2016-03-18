@@ -17,7 +17,9 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
+import java.util.Collection;
 
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
@@ -38,6 +40,7 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>{@link #newRangeQuery(String, double, double)} for matching a 1D range.
  *   <li>{@link #newRangeQuery(String, double[], double[])} for matching points/ranges in n-dimensional space.
  * </ul> 
+ * @see PointValues
  */
 public final class DoublePoint extends Field {
 
@@ -169,7 +172,9 @@ public final class DoublePoint extends Field {
    * {@link #newRangeQuery(String, double[], double[])} instead.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting {@code lowerValue = Double.NEGATIVE_INFINITY} or {@code upperValue = Double.POSITIVE_INFINITY}. 
+   * by setting {@code lowerValue = Double.NEGATIVE_INFINITY} or {@code upperValue = Double.POSITIVE_INFINITY}.
+   * <p> Ranges are inclusive. For exclusive ranges, pass {@code Math#nextUp(lowerValue)}
+   * or {@code Math.nextDown(upperValue)}.
    * <p>
    * Range comparisons are consistent with {@link Double#compareTo(Double)}.
    *
@@ -187,7 +192,9 @@ public final class DoublePoint extends Field {
    * Create a range query for n-dimensional double values.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting {@code lowerValue[i] = Double.NEGATIVE_INFINITY} or {@code upperValue[i] = Double.POSITIVE_INFINITY}. 
+   * by setting {@code lowerValue[i] = Double.NEGATIVE_INFINITY} or {@code upperValue[i] = Double.POSITIVE_INFINITY}.
+   * <p> Ranges are inclusive. For exclusive ranges, pass {@code Math#nextUp(lowerValue[i])}
+   * or {@code Math.nextDown(upperValue[i])}.
    * <p>
    * Range comparisons are consistent with {@link Double#compareTo(Double)}.
    *
@@ -244,5 +251,20 @@ public final class DoublePoint extends Field {
         return Double.toString(decodeDimension(value, 0));
       }
     };
+  }
+  
+  /**
+   * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
+   * 
+   * @param field field name. must not be {@code null}.
+   * @param values all values to match
+   */
+  public static Query newSetQuery(String field, Collection<Double> values) {
+    Double[] boxed = values.toArray(new Double[0]);
+    double[] unboxed = new double[boxed.length];
+    for (int i = 0; i < boxed.length; i++) {
+      unboxed[i] = boxed[i];
+    }
+    return newSetQuery(field, unboxed);
   }
 }

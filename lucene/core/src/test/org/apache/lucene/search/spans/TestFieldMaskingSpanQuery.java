@@ -116,8 +116,9 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
                                          field("first",  "bubba"),
                                          field("last",   "jones")     }));
     reader = writer.getReader();
+    writer.forceMerge(1);
     writer.close();
-    searcher = newSearcher(reader);
+    searcher = new IndexSearcher(getOnlyLeafReader(reader));
   }
 
   @AfterClass
@@ -251,7 +252,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     SpanQuery q  = new SpanOrQuery(q1, new FieldMaskingSpanQuery(q2, "gender"));
     check(q, new int[] { 0, 1, 2, 3, 4 });
 
-    Spans span = MultiSpansWrapper.wrap(searcher.getIndexReader(), q);
+    Spans span = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(span, 0,0,1);
     assertNext(span, 1,0,1);
     assertNext(span, 1,1,2);
@@ -273,8 +274,8 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     check(qA, new int[] { 0, 1, 2, 4 });
     check(qB, new int[] { 0, 1, 2, 4 });
   
-    Spans spanA = MultiSpansWrapper.wrap(searcher.getIndexReader(), qA);
-    Spans spanB = MultiSpansWrapper.wrap(searcher.getIndexReader(), qB);
+    Spans spanA = qA.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
+    Spans spanB = qB.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     
     while (spanA.nextDoc() != Spans.NO_MORE_DOCS) {
       assertNotSame("spanB not still going", Spans.NO_MORE_DOCS, spanB.nextDoc());
@@ -299,7 +300,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
         new FieldMaskingSpanQuery(qB, "id") }, -1, false );
     check(q, new int[] { 0, 1, 2, 3 });
 
-    Spans span = MultiSpansWrapper.wrap(searcher.getIndexReader(), q);
+    Spans span = q.createWeight(searcher, false).getSpans(searcher.getIndexReader().leaves().get(0), SpanWeight.Postings.POSITIONS);
     assertNext(span, 0,0,1);
     assertNext(span, 1,1,2);
     assertNext(span, 2,0,1);

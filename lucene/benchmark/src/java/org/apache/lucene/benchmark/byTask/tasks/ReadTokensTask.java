@@ -26,11 +26,7 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LegacyDoubleField;
-import org.apache.lucene.document.LegacyFloatField;
-import org.apache.lucene.document.LegacyIntField;
-import org.apache.lucene.document.LegacyLongField;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 
 /**
@@ -73,11 +69,8 @@ public class ReadTokensTask extends PerfTask {
     Analyzer analyzer = getRunData().getAnalyzer();
     int tokenCount = 0;
     for(final IndexableField field : fields) {
-      if (!field.fieldType().tokenized() ||
-          field instanceof LegacyIntField ||
-          field instanceof LegacyLongField ||
-          field instanceof LegacyFloatField ||
-          field instanceof LegacyDoubleField) {
+      if (field.fieldType().indexOptions() == IndexOptions.NONE ||
+          field.fieldType().tokenized() == false) {
         continue;
       }
       

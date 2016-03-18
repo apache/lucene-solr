@@ -27,7 +27,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.TestUtil;
@@ -75,9 +74,9 @@ public class DataSplitterTest extends LuceneTestCase {
     }
 
     indexWriter.commit();
+    indexWriter.forceMerge(1);
 
-    originalIndex = SlowCompositeReaderWrapper.wrap(indexWriter.getReader());
-
+    originalIndex = getOnlyLeafReader(indexWriter.getReader());
   }
 
   @Override

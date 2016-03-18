@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -38,7 +39,7 @@ public class TestLatLonPoint extends LuceneTestCase {
     
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = newSearcher(reader, false);
+    IndexSearcher searcher = newSearcher(reader);
     assertEquals(1, searcher.count(LatLonPoint.newBoxQuery("field", 18, 19, -66, -65)));
 
     reader.close();
@@ -55,6 +56,9 @@ public class TestLatLonPoint extends LuceneTestCase {
     
     // distance query does not quantize inputs
     assertEquals("field:18.0,19.0 +/- 25.0 meters", LatLonPoint.newDistanceQuery("field", 18, 19, 25).toString());
+    
+    // sort field
+    assertEquals("<distance:\"field\" latitude=18.0 longitude=19.0>", LatLonPoint.newDistanceSort("field", 18.0, 19.0).toString());
   }
   
   /** Valid values that should not cause exception */
@@ -155,6 +159,16 @@ public class TestLatLonPoint extends LuceneTestCase {
     assertEquals(-180.0, LatLonPoint.decodeLongitude(LatLonPoint.encodeLongitude(-180.0)), ENCODING_TOLERANCE);
   }
 
+  public void testEncodeDecodeExtremeValues() throws Exception {
+    assertEquals(Integer.MIN_VALUE, LatLonPoint.encodeLatitude(-90.0));
+    assertEquals(0, LatLonPoint.encodeLatitude(0.0));
+    assertEquals(Integer.MAX_VALUE, LatLonPoint.encodeLatitude(90.0));
+
+    assertEquals(Integer.MIN_VALUE, LatLonPoint.encodeLongitude(-180.0));
+    assertEquals(0, LatLonPoint.encodeLatitude(0.0));
+    assertEquals(Integer.MAX_VALUE, LatLonPoint.encodeLongitude(180.0));
+  }
+
   public void testEncodeDecodeIsStable() throws Exception {
     int iters = atLeast(1000);
     for(int iter=0;iter<iters;iter++) {
@@ -170,4 +184,23 @@ public class TestLatLonPoint extends LuceneTestCase {
       assertEquals(lonEnc, lonEnc2, 0.0);
     }
   }
+
+  public void testQueryEquals() throws Exception {
+    Query q = LatLonPoint.newBoxQuery("field", 50, 70, -40, 20);
+    assertEquals(q, LatLonPoint.newBoxQuery("field", 50, 70, -40, 20));
+    assertFalse(q.equals(LatLonPoint.newBoxQuery("field", 50, 70, -40, 10)));
+
+    q = LatLonPoint.newDistanceQuery("field", 50, 70, 10000);
+    assertEquals(q, LatLonPoint.newDistanceQuery("field", 50, 70, 10000));
+    assertFalse(q.equals(LatLonPoint.newDistanceQuery("field", 50, 70, 11000)));
+    assertFalse(q.equals(LatLonPoint.newDistanceQuery("field", 50, 60, 10000)));
+
+                
+    double[] polyLats1 = new double[] {30, 40, 40, 30, 30};
+    double[] polyLons1 = new double[] {90, 90, -40, -40, 90};
+    double[] polyLats2 = new double[] {20, 40, 40, 20, 20};
+    q = LatLonPoint.newPolygonQuery("field", polyLats1, polyLons1);
+    assertEquals(q, LatLonPoint.newPolygonQuery("field", polyLats1, polyLons1));
+    assertFalse(q.equals(LatLonPoint.newPolygonQuery("field", polyLats2, polyLons1)));
+  }     
 }

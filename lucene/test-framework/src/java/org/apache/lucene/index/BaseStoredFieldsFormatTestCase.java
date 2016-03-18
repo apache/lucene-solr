@@ -33,20 +33,15 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FieldType.LegacyNumericType;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LegacyFloatField;
-import org.apache.lucene.document.LegacyIntField;
-import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -244,51 +239,44 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     final int numDocs = atLeast(500);
     final Number[] answers = new Number[numDocs];
-    final LegacyNumericType[] typeAnswers = new LegacyNumericType[numDocs];
+    final Class<?>[] typeAnswers = new Class<?>[numDocs];
     for(int id=0;id<numDocs;id++) {
       Document doc = new Document();
       final Field nf;
-      final Field sf;
       final Number answer;
-      final LegacyNumericType typeAnswer;
+      final Class<?> typeAnswer;
       if (random().nextBoolean()) {
         // float/double
         if (random().nextBoolean()) {
           final float f = random().nextFloat();
           answer = Float.valueOf(f);
-          nf = new LegacyFloatField("nf", f, Field.Store.NO);
-          sf = new StoredField("nf", f);
-          typeAnswer = LegacyNumericType.FLOAT;
+          nf = new StoredField("nf", f);
+          typeAnswer = Float.class;
         } else {
           final double d = random().nextDouble();
           answer = Double.valueOf(d);
-          nf = new LegacyDoubleField("nf", d, Field.Store.NO);
-          sf = new StoredField("nf", d);
-          typeAnswer = LegacyNumericType.DOUBLE;
+          nf = new StoredField("nf", d);
+          typeAnswer = Double.class;
         }
       } else {
         // int/long
         if (random().nextBoolean()) {
           final int i = random().nextInt();
           answer = Integer.valueOf(i);
-          nf = new LegacyIntField("nf", i, Field.Store.NO);
-          sf = new StoredField("nf", i);
-          typeAnswer = LegacyNumericType.INT;
+          nf = new StoredField("nf", i);
+          typeAnswer = Integer.class;
         } else {
           final long l = random().nextLong();
           answer = Long.valueOf(l);
-          nf = new LegacyLongField("nf", l, Field.Store.NO);
-          sf = new StoredField("nf", l);
-          typeAnswer = LegacyNumericType.LONG;
+          nf = new StoredField("nf", l);
+          typeAnswer = Long.class;
         }
       }
       doc.add(nf);
-      doc.add(sf);
       answers[id] = answer;
       typeAnswers[id] = typeAnswer;
-      FieldType ft = new FieldType(LegacyIntField.TYPE_STORED);
-      ft.setNumericPrecisionStep(Integer.MAX_VALUE);
-      doc.add(new LegacyIntField("id", id, ft));
+      doc.add(new StoredField("id", id));
+      doc.add(new IntPoint("id", id));
       doc.add(new NumericDocValuesField("id", id));
       w.addDocument(doc);
     }
@@ -348,10 +336,10 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     List<Field> fields = Arrays.asList(
         new Field("bytes", bytes, ft),
         new Field("string", string, ft),
-        new LegacyLongField("long", l, Store.YES),
-        new LegacyIntField("int", i, Store.YES),
-        new LegacyFloatField("float", f, Store.YES),
-        new LegacyDoubleField("double", d, Store.YES)
+        new StoredField("long", l),
+        new StoredField("int", i),
+        new StoredField("float", f),
+        new StoredField("double", d)
     );
 
     for (int k = 0; k < 100; ++k) {
@@ -519,11 +507,14 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     final FieldType type = new FieldType(StringField.TYPE_STORED);
     type.setIndexOptions(IndexOptions.NONE);
     type.freeze();
-    LegacyIntField id = new LegacyIntField("id", 0, Store.YES);
+    IntPoint id = new IntPoint("id", 0);
+    StoredField idStored = new StoredField("id", 0);
     for (int i = 0; i < data.length; ++i) {
       Document doc = new Document();
       doc.add(id);
+      doc.add(idStored);
       id.setIntValue(i);
+      idStored.setIntValue(i);
       for (int j = 0; j < data[i].length; ++j) {
         Field f = new Field("bytes" + j, data[i][j], type);
         doc.add(f);
@@ -546,7 +537,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     for (int i = 0; i < 10; ++i) {
       final int min = random().nextInt(data.length);
       final int max = min + random().nextInt(20);
-      iw.deleteDocuments(LegacyNumericRangeQuery.newIntRange("id", min, max, true, false));
+      iw.deleteDocuments(IntPoint.newRangeQuery("id", min, max-1));
     }
 
     iw.forceMerge(2); // force merges with deletions
@@ -798,7 +789,7 @@ public abstract class BaseStoredFieldsFormatTestCase extends BaseIndexFileFormat
     iw.addIndexes(dirs);
     iw.forceMerge(1);
     
-    LeafReader ir = getOnlySegmentReader(DirectoryReader.open(iw));
+    LeafReader ir = getOnlyLeafReader(DirectoryReader.open(iw));
     for (int i = 0; i < ir.maxDoc(); i++) {
       Document doc = ir.document(i);
       assertEquals(10, doc.getFields().size());

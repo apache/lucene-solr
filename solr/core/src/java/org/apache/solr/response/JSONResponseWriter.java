@@ -70,8 +70,8 @@ public class JSONResponseWriter implements QueryResponseWriter {
 }
 
 class JSONWriter extends TextResponseWriter {
+  protected String wrapperFunction;
   private String namedListStyle;
-  private String wrapperFunction;
 
   private static final String JSON_NL_STYLE="json.nl";
   private static final String JSON_NL_MAP="map";

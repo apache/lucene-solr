@@ -131,7 +131,7 @@ public class FilterFileSystem extends FileSystem {
 
         @Override
         public FileStore next() {
-          return new FilterFileStore(iterator.next(), parent.getScheme());
+          return new FilterFileStore(iterator.next(), parent.getScheme()) {};
         }
         
         @Override

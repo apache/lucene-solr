@@ -16,6 +16,11 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -28,11 +33,6 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * This class is experimental and subject to change.
@@ -110,11 +110,7 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
      */
     @Override
     public void setCoreName(String coreName) {
-      if (!SolrIdentifierValidator.validateCoreName(coreName)) {
-        throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.CORE,
-            coreName));
-      }
-      this.core = coreName;
+      this.core = SolrIdentifierValidator.validateCoreName(coreName);
     }
     
     @Override
@@ -559,14 +555,9 @@ public class CoreAdminRequest extends SolrRequest<CoreAdminResponse> {
    */
   public static CoreAdminResponse renameCore(String coreName, String newName, SolrClient client )
       throws SolrServerException, IOException {
-    if (!SolrIdentifierValidator.validateCoreName(newName)) {
-      throw new IllegalArgumentException(SolrIdentifierValidator.getIdentifierMessage(SolrIdentifierValidator.IdentifierType.CORE,
-          newName));
-    }
-    
     CoreAdminRequest req = new CoreAdminRequest();
     req.setCoreName(coreName);
-    req.setOtherCoreName(newName);
+    req.setOtherCoreName(SolrIdentifierValidator.validateCoreName(newName));
     req.setAction( CoreAdminAction.RENAME );
     return req.process( client );
   }

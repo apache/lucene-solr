@@ -77,6 +77,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     clusterStatusWithRouteKey();
     clusterStatusAliasTest();
     clusterStatusRolesTest();
+    clusterStatusBadCollectionTest();
     replicaPropTest();
     clusterStatusZNodeVersion();
     testClusterStateMigration();
@@ -315,6 +316,24 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       assertNotNull(overseer);
       assertEquals(1, overseer.size());
       assertTrue(overseer.contains(replica.getNodeName()));
+    }
+  }
+
+  private void clusterStatusBadCollectionTest() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CLUSTERSTATUS.toString());
+      params.set("collection", "bad_collection_name");
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      try {
+        client.request(request);
+        fail("Collection does not exist. An exception should be thrown");
+      } catch (SolrException e) {
+        //expected
+        assertTrue(e.getMessage().contains("Collection: bad_collection_name not found"));
+      }
     }
   }
 
@@ -625,7 +644,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
           .setCollectionName("testClusterStateMigration")
           .process(client);
 
-      client.getZkStateReader().updateClusterState();
+      client.getZkStateReader().forceUpdateCollection("testClusterStateMigration");
 
       assertEquals(2, client.getZkStateReader().getClusterState().getCollection("testClusterStateMigration").getStateFormat());
 
@@ -735,7 +754,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private Map<String, String> getProps(CloudSolrClient client, String collectionName, String replicaName, String... props)
       throws KeeperException, InterruptedException {
 
-    client.getZkStateReader().updateClusterState();
+    client.getZkStateReader().forceUpdateCollection(collectionName);
     ClusterState clusterState = client.getZkStateReader().getClusterState();
     Replica replica = clusterState.getReplica(collectionName, replicaName);
     if (replica == null) {

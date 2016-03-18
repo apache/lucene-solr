@@ -30,45 +30,6 @@ public class TestFieldCollectionResource extends SolrRestletTestBase {
             "(/response/arr[@name='fields']/lst/str[@name='name'])[3] = '_version_'");
   }
 
-  @Test
-  public void testGetTwoFields() throws IOException {
-    assertQ("/schema/fields?indent=on&wt=xml&fl=id,_version_",
-            "count(/response/arr[@name='fields']/lst/str[@name='name']) = 2",
-            "(/response/arr[@name='fields']/lst/str[@name='name'])[1] = 'id'",
-            "(/response/arr[@name='fields']/lst/str[@name='name'])[2] = '_version_'");
-  }
-  
-  @Test
-  public void testGetThreeFieldsDontIncludeDynamic() throws IOException {
-    // 
-    assertQ("/schema/fields?indent=on&wt=xml&fl=id,_version_,price_i",
-            "count(/response/arr[@name='fields']/lst/str[@name='name']) = 2",
-            "(/response/arr[@name='fields']/lst/str[@name='name'])[1] = 'id'",
-            "(/response/arr[@name='fields']/lst/str[@name='name'])[2] = '_version_'");
-  }
-
-  @Test
-  public void testGetThreeFieldsIncludeDynamic() throws IOException {
-    assertQ("/schema/fields?indent=on&wt=xml&fl=id,_version_,price_i&includeDynamic=on",
-
-            "count(/response/arr[@name='fields']/lst/str[@name='name']) = 3",
-
-            "(/response/arr[@name='fields']/lst/str[@name='name'])[1] = 'id'",
-
-            "(/response/arr[@name='fields']/lst/str[@name='name'])[2] = '_version_'",
-
-            "(/response/arr[@name='fields']/lst/str[@name='name'])[3] = 'price_i'",
-
-            "/response/arr[@name='fields']/lst[    str[@name='name']='price_i'    "
-           +"                                  and str[@name='dynamicBase']='*_i']");
-  }
-
-  @Test
-  public void testNotFoundFields() throws IOException {
-    assertQ("/schema/fields?indent=on&wt=xml&fl=not_in_there,this_one_either",
-            "count(/response/arr[@name='fields']) = 1",
-            "count(/response/arr[@name='fields']/lst/str[@name='name']) = 0");
-  }
 
   @Test
   public void testJsonGetAllFields() throws Exception {
@@ -78,10 +39,4 @@ public class TestFieldCollectionResource extends SolrRestletTestBase {
              "/fields/[2]/name=='_version_'");
   }
 
-  @Test
-  public void testJsonGetTwoFields() throws Exception {
-    assertJQ("/schema/fields?indent=on&fl=id,_version_&wt=xml", // assertJQ should fix the wt param to be json
-             "/fields/[0]/name=='id'",
-             "/fields/[1]/name=='_version_'");
-  }
 }

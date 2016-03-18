@@ -37,11 +37,12 @@ import org.apache.solr.util.RestTestHarness;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+@Ignore
 public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String SUCCESS_XPATH = "/response/lst[@name='responseHeader']/int[@name='status'][.='0']";

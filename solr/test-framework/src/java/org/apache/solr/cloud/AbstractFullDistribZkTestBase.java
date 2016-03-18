@@ -626,7 +626,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   
   protected void updateMappingsFromZk(List<JettySolrRunner> jettys, List<SolrClient> clients, boolean allowOverSharding) throws Exception {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    zkStateReader.updateClusterState();
+    zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
     cloudJettys.clear();
     shardToJetty.clear();
 
@@ -1814,7 +1814,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     Map<String,Replica> notLeaders = new HashMap<>();
 
     ZkStateReader zkr = cloudClient.getZkStateReader();
-    zkr.updateClusterState(); // force the state to be fresh
+    zkr.forceUpdateCollection(testCollectionName); // force the state to be fresh
 
     ClusterState cs = zkr.getClusterState();
     Collection<Slice> slices = cs.getActiveSlices(testCollectionName);
@@ -1824,10 +1824,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     long maxWaitMs = maxWaitSecs * 1000L;
     Replica leader = null;
     while (waitMs < maxWaitMs && !allReplicasUp) {
-      // refresh state every 2 secs
-      if (waitMs % 2000 == 0)
-        cloudClient.getZkStateReader().updateClusterState();
-
       cs = cloudClient.getZkStateReader().getClusterState();
       assertNotNull(cs);
       Slice shard = cs.getSlice(testCollectionName, shardId);
@@ -1879,7 +1875,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected String printClusterStateInfo(String collection) throws Exception {
-    cloudClient.getZkStateReader().updateClusterState();
+    cloudClient.getZkStateReader().forceUpdateCollection(collection);
     String cs = null;
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     if (collection != null) {

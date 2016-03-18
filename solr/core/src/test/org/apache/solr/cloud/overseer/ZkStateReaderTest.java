@@ -94,7 +94,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         assertFalse(exists);
 
         if (explicitRefresh) {
-          reader.updateClusterState();
+          reader.forceUpdateCollection("c1");
         } else {
           for (int i = 0; i < 100; ++i) {
             if (reader.getClusterState().hasCollection("c1")) {
@@ -122,7 +122,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         assertTrue(exists);
 
         if (explicitRefresh) {
-          reader.updateClusterState();
+          reader.forceUpdateCollection("c1");
         } else {
           for (int i = 0; i < 100; ++i) {
             if (reader.getClusterState().getCollection("c1").getStateFormat() == 2) {
@@ -167,7 +167,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
           new DocCollection("c1", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0, ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json"));
       writer.enqueueUpdate(reader.getClusterState(), c1, null);
       writer.writePendingUpdates();
-      reader.updateClusterState();
+      reader.forceUpdateCollection("c1");
 
       assertTrue(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
       reader.addCollectionWatch("c1");

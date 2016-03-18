@@ -444,7 +444,7 @@
 
   <!-- copy KEYS to the release folder -->
   <target name="-dist-keys">
-   <get src="http://people.apache.org/keys/group/lucene.asc" 
+   <get src="http://home.apache.org/keys/group/lucene.asc" 
         dest="${package.dir}/KEYS"/>
   </target>
  
@@ -809,18 +809,4 @@
     <contrib-crawl target="-append-module-dependencies-properties"/>
   </target>
 
-  <target name="example" depends="server">
-    <!-- no description so -p doesn't list it -->
-    <echo>
-
-    ! ! ! NOTICE NOTICE NOTICE ! ! !
-
-    'ant example' is no longer recomended
-
-    Use 'ant server' instead
-
-    'ant example' is going to be removed at some point
-
-    </echo>
-  </target>
 </project>

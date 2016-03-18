@@ -18,22 +18,32 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.spatial.util.GeoDistanceUtils;
 import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.SparseFixedBitSet;
+import org.apache.lucene.util.StringHelper;
 
 /**
  * Distance query for {@link LatLonPoint}.
@@ -66,16 +76,41 @@ final class LatLonPointDistanceQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     GeoRect box = GeoUtils.circleToBBox(longitude, latitude, radiusMeters);
-    final GeoRect box1;
-    final GeoRect box2;
+    // create bounding box(es) for the distance range
+    // these are pre-encoded with LatLonPoint's encoding
+    final byte minLat[] = new byte[Integer.BYTES];
+    final byte maxLat[] = new byte[Integer.BYTES];
+    final byte minLon[] = new byte[Integer.BYTES];
+    final byte maxLon[] = new byte[Integer.BYTES];
+    // second set of longitude ranges to check (for cross-dateline case)
+    final byte minLon2[] = new byte[Integer.BYTES];
+
+    NumericUtils.intToSortableBytes(LatLonPoint.encodeLatitude(box.minLat), minLat, 0);
+    NumericUtils.intToSortableBytes(LatLonPoint.encodeLatitude(box.maxLat), maxLat, 0);
 
     // crosses dateline: split
-    if (box.maxLon < box.minLon) {
-      box1 = new GeoRect(-180.0, box.maxLon, box.minLat, box.maxLat);
-      box2 = new GeoRect(box.minLon, 180.0, box.minLat, box.maxLat);
+    if (box.crossesDateline()) {
+      // box1
+      NumericUtils.intToSortableBytes(Integer.MIN_VALUE, minLon, 0);
+      NumericUtils.intToSortableBytes(LatLonPoint.encodeLongitude(box.maxLon), maxLon, 0);
+      // box2
+      NumericUtils.intToSortableBytes(LatLonPoint.encodeLongitude(box.minLon), minLon2, 0);
     } else {
-      box1 = box;
-      box2 = null;
+      NumericUtils.intToSortableBytes(LatLonPoint.encodeLongitude(box.minLon), minLon, 0);
+      NumericUtils.intToSortableBytes(LatLonPoint.encodeLongitude(box.maxLon), maxLon, 0);
+      // disable box2
+      NumericUtils.intToSortableBytes(Integer.MAX_VALUE, minLon2, 0);
+    }
+
+    // compute a maximum partial haversin: unless our box is crazy, we can use this bound
+    // to reject edge cases faster in matches()
+    final double minPartialDistance;
+    if (box.maxLon - longitude < 90 && longitude - box.minLon < 90) {
+      minPartialDistance = Math.max(LatLonPointDistanceComparator.haversin1(latitude, longitude, latitude, box.maxLon),
+                                    LatLonPointDistanceComparator.haversin1(latitude, longitude, box.maxLat, longitude));
+      assert LatLonPointDistanceComparator.haversin2(minPartialDistance) >= radiusMeters;
+    } else {
+      minPartialDistance = Double.POSITIVE_INFINITY;
     }
 
     return new ConstantScoreWeight(this) {
@@ -95,22 +130,48 @@ final class LatLonPointDistanceQuery extends Query {
         }
         LatLonPoint.checkCompatible(fieldInfo);
         
+        // approximation (postfiltering has not yet been applied)
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
+        // subset of documents that need no postfiltering, this is purely an optimization
+        final BitSet preApproved;
+        // dumb heuristic: if the field is really sparse, use a sparse impl
+        if (values.getDocCount(field) * 100L < reader.maxDoc()) {
+          preApproved = new SparseFixedBitSet(reader.maxDoc());
+        } else {
+          preApproved = new FixedBitSet(reader.maxDoc());
+        }
         values.intersect(field,
                          new IntersectVisitor() {
                            @Override
+                           public void grow(int count) {
+                             result.grow(count);
+                           }
+
+                           @Override
                            public void visit(int docID) {
                              result.add(docID);
+                             preApproved.set(docID);
                            }
 
                            @Override
                            public void visit(int docID, byte[] packedValue) {
-                             assert packedValue.length == 8;
-                             double lat = LatLonPoint.decodeLatitude(packedValue, 0);
-                             double lon = LatLonPoint.decodeLongitude(packedValue, Integer.BYTES);
-                             if (GeoDistanceUtils.haversin(latitude, longitude, lat, lon) <= radiusMeters) {
-                               visit(docID);
+                             // we bounds check individual values, as subtrees may cross, but we are being sent the values anyway:
+                             // this reduces the amount of docvalues fetches (improves approximation)
+
+                             if (StringHelper.compare(Integer.BYTES, packedValue, 0, maxLat, 0) > 0 ||
+                                 StringHelper.compare(Integer.BYTES, packedValue, 0, minLat, 0) < 0) {
+                               // latitude out of bounding box range
+                               return;
                              }
+
+                             if ((StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, maxLon, 0) > 0 ||
+                                  StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, minLon, 0) < 0)
+                                 && StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, minLon2, 0) < 0) {
+                               // longitude out of bounding box range
+                               return;
+                             }
+
+                             result.add(docID);
                            }
                            
                            // algorithm: we create a bounding box (two bounding boxes if we cross the dateline).
@@ -119,16 +180,25 @@ final class LatLonPointDistanceQuery extends Query {
                            // 3. recurse naively.
                            @Override
                            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+                             if (StringHelper.compare(Integer.BYTES, minPackedValue, 0, maxLat, 0) > 0 ||
+                                 StringHelper.compare(Integer.BYTES, maxPackedValue, 0, minLat, 0) < 0) {
+                               // latitude out of bounding box range
+                               return Relation.CELL_OUTSIDE_QUERY;
+                             }
+
+                             if ((StringHelper.compare(Integer.BYTES, minPackedValue, Integer.BYTES, maxLon, 0) > 0 ||
+                                  StringHelper.compare(Integer.BYTES, maxPackedValue, Integer.BYTES, minLon, 0) < 0)
+                                 && StringHelper.compare(Integer.BYTES, maxPackedValue, Integer.BYTES, minLon2, 0) < 0) {
+                               // longitude out of bounding box range
+                               return Relation.CELL_OUTSIDE_QUERY;
+                             }
+
                              double latMin = LatLonPoint.decodeLatitude(minPackedValue, 0);
                              double lonMin = LatLonPoint.decodeLongitude(minPackedValue, Integer.BYTES);
                              double latMax = LatLonPoint.decodeLatitude(maxPackedValue, 0);
                              double lonMax = LatLonPoint.decodeLongitude(maxPackedValue, Integer.BYTES);
-                             
-                             if ((latMax < box1.minLat || lonMax < box1.minLon || latMin > box1.maxLat || lonMin > box1.maxLon) && 
-                                 (box2 == null || latMax < box2.minLat || lonMax < box2.minLon || latMin > box2.maxLat || lonMin > box2.maxLon)) {
-                               // we are fully outside of bounding box(es), don't proceed any further.
-                               return Relation.CELL_OUTSIDE_QUERY;
-                             } else if (lonMax - longitude < 90 && longitude - lonMin < 90 &&
+
+                             if (lonMax - longitude < 90 && longitude - lonMin < 90 &&
                                  GeoDistanceUtils.haversin(latitude, longitude, latMin, lonMin) <= radiusMeters &&
                                  GeoDistanceUtils.haversin(latitude, longitude, latMin, lonMax) <= radiusMeters &&
                                  GeoDistanceUtils.haversin(latitude, longitude, latMax, lonMin) <= radiusMeters &&
@@ -142,7 +212,49 @@ final class LatLonPointDistanceQuery extends Query {
                            }
                          });
 
-        return new ConstantScoreScorer(this, score(), result.build().iterator());
+        DocIdSet set = result.build();
+        final DocIdSetIterator disi = set.iterator();
+        if (disi == null) {
+          return null;
+        }
+
+        // return two-phase iterator using docvalues to postfilter candidates
+        SortedNumericDocValues docValues = DocValues.getSortedNumeric(reader, field);
+        TwoPhaseIterator iterator = new TwoPhaseIterator(disi) {
+          @Override
+          public boolean matches() throws IOException {
+            int docId = disi.docID();
+            if (preApproved.get(docId)) {
+              return true;
+            } else {
+              docValues.setDocument(docId);
+              int count = docValues.count();
+              for (int i = 0; i < count; i++) {
+                long encoded = docValues.valueAt(i);
+                double docLatitude = LatLonPoint.decodeLatitude((int)(encoded >> 32));
+                double docLongitude = LatLonPoint.decodeLongitude((int)(encoded & 0xFFFFFFFF));
+
+                // first check the partial distance, if its more than that, it can't be <= radiusMeters
+                double h1 = LatLonPointDistanceComparator.haversin1(latitude, longitude, docLatitude, docLongitude);
+                if (h1 > minPartialDistance) {
+                  continue;
+                }
+
+                // fully confirm with part 2:
+                if (LatLonPointDistanceComparator.haversin2(h1) <= radiusMeters) {
+                  return true;
+                }
+              }
+              return false;
+            }
+          }
+
+          @Override
+          public float matchCost() {
+            return 20; // TODO: make this fancier
+          }
+        };
+        return new ConstantScoreScorer(this, score(), iterator);
       }
     };
   }

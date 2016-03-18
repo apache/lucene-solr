@@ -284,7 +284,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
     TestUtil.checkIndex(dir);
 
-    SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(dir));
+    LeafReader reader = getOnlyLeafReader(DirectoryReader.open(dir));
     FieldInfos fi = reader.getFieldInfos();
     // f1
     assertFalse("f1 should have no norms", fi.fieldInfo("f1").hasNorms());

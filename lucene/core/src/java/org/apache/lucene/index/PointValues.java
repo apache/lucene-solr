@@ -17,17 +17,65 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.math.BigInteger;
+import java.net.InetAddress;
 
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.bkd.BKDWriter;
 
-/** Allows recursively visiting point values indexed with {@link IntPoint},
- *  {@link FloatPoint}, {@link LongPoint}, {@link DoublePoint}
- *  or {@link BinaryPoint}.
+/** 
+ * Access to indexed numeric values.
+ * <p>
+ * Points represent numeric values and are indexed differently than ordinary text. Instead of an inverted index, 
+ * points are indexed with datastructures such as <a href="https://en.wikipedia.org/wiki/K-d_tree">KD-trees</a>. 
+ * These structures are optimized for operations such as <i>range</i>, <i>distance</i>, <i>nearest-neighbor</i>, 
+ * and <i>point-in-polygon</i> queries. 
+ * <h1>Basic Point Types</h1>
+ * <table summary="Basic point types in Java and Lucene">
+ *   <tr><th>Java type</th><th>Lucene class</th></tr>
+ *   <tr><td>{@code int}</td><td>{@link IntPoint}</td></tr>
+ *   <tr><td>{@code long}</td><td>{@link LongPoint}</td></tr>
+ *   <tr><td>{@code float}</td><td>{@link FloatPoint}</td></tr>
+ *   <tr><td>{@code double}</td><td>{@link DoublePoint}</td></tr>
+ *   <tr><td>{@code byte[]}</td><td>{@link BinaryPoint}</td></tr>
+ *   <tr><td>{@link BigInteger}</td><td><a href="{@docRoot}/../sandbox/org/apache/lucene/document/BigIntegerPoint.html">BigIntegerPoint</a>*</td></tr>
+ *   <tr><td>{@link InetAddress}</td><td><a href="{@docRoot}/../sandbox/org/apache/lucene/document/InetAddressPoint.html">InetAddressPoint</a>*</td></tr>
+ * </table>
+ * * in the <i>lucene-sandbox</i> jar<br>
+ * <p>
+ * Basic Lucene point types behave like their java peers: for example {@link IntPoint} represents a signed 32-bit 
+ * {@link Integer}, supporting values ranging from {@link Integer#MIN_VALUE} to {@link Integer#MAX_VALUE}, ordered
+ * consistent with {@link Integer#compareTo(Integer)}. In addition to indexing support, point classes also contain 
+ * static methods (such as {@link IntPoint#newRangeQuery(String, int, int)}) for creating common queries. For example:
+ * <pre class="prettyprint">
+ *   // add year 1970 to document
+ *   document.add(new IntPoint("year", 1970));
+ *   // index document
+ *   writer.addDocument(document);
+ *   ...
+ *   // issue range query of 1960-1980
+ *   Query query = IntPoint.newRangeQuery("year", 1960, 1980);
+ *   TopDocs docs = searcher.search(query, ...);
+ * </pre>
+ * <h1>Geospatial Point Types</h1>
+ * Although basic point types such as {@link DoublePoint} support points in multi-dimensional space too, Lucene has
+ * specialized classes for location data. These classes are optimized for location data: they are more space-efficient and 
+ * support special operations such as <i>distance</i> and <i>polygon</i> queries. There are currently two implementations:
+ * <br>
+ * <ol>
+ *   <li><a href="{@docRoot}/../sandbox/org/apache/lucene/document/LatLonPoint.html">LatLonPoint</a> in <i>lucene-sandbox</i>: indexes {@code (latitude,longitude)} as {@code (x,y)} in two-dimensional space.
+ *   <li><a href="{@docRoot}/../spatial3d/org/apache/lucene/spatial3d/Geo3DPoint.html">Geo3DPoint</a>* in <i>lucene-spatial3d</i>: indexes {@code (latitude,longitude)} as {@code (x,y,z)} in three-dimensional space.
+ * </ol>
+ * * does <b>not</b> support altitude, 3D here means "uses three dimensions under-the-hood"<br>
+ * <h1>Advanced usage</h1>
+ * Custom structures can be created on top of single- or multi- dimensional basic types, on top of 
+ * {@link BinaryPoint} for more flexibility, or via custom {@link Field} subclasses.
  *
  *  @lucene.experimental */
 public abstract class PointValues {
@@ -37,6 +85,94 @@ public abstract class PointValues {
 
   /** Maximum number of dimensions */
   public static final int MAX_DIMENSIONS = BKDWriter.MAX_DIMS;
+
+  /** Return the cumulated number of points across all leaves of the given
+   * {@link IndexReader}.
+   *  @see PointValues#size(String) */
+  public static long size(IndexReader reader, String field) throws IOException {
+    long size = 0;
+    for (LeafReaderContext ctx : reader.leaves()) {
+      PointValues values = ctx.reader().getPointValues();
+      if (values != null) {
+        size += values.size(field);
+      }
+    }
+    return size;
+  }
+
+  /** Return the cumulated number of docs that have points across all leaves
+   * of the given {@link IndexReader}.
+   *  @see PointValues#getDocCount(String) */
+  public static int getDocCount(IndexReader reader, String field) throws IOException {
+    int count = 0;
+    for (LeafReaderContext ctx : reader.leaves()) {
+      PointValues values = ctx.reader().getPointValues();
+      if (values != null) {
+        count += values.getDocCount(field);
+      }
+    }
+    return count;
+  }
+
+  /** Return the minimum packed values across all leaves of the given
+   * {@link IndexReader}.
+   *  @see PointValues#getMinPackedValue(String) */
+  public static byte[] getMinPackedValue(IndexReader reader, String field) throws IOException {
+    byte[] minValue = null;
+    for (LeafReaderContext ctx : reader.leaves()) {
+      PointValues values = ctx.reader().getPointValues();
+      if (values == null) {
+        continue;
+      }
+      byte[] leafMinValue = values.getMinPackedValue(field);
+      if (leafMinValue == null) {
+        continue;
+      }
+      if (minValue == null) {
+        minValue = leafMinValue.clone();
+      } else {
+        final int numDimensions = values.getNumDimensions(field);
+        final int numBytesPerDimension = values.getBytesPerDimension(field);
+        for (int i = 0; i < numDimensions; ++i) {
+          int offset = i * numBytesPerDimension;
+          if (StringHelper.compare(numBytesPerDimension, leafMinValue, offset, minValue, offset) < 0) {
+            System.arraycopy(leafMinValue, offset, minValue, offset, numBytesPerDimension);
+          }
+        }
+      }
+    }
+    return minValue;
+  }
+
+  /** Return the maximum packed values across all leaves of the given
+   * {@link IndexReader}.
+   *  @see PointValues#getMaxPackedValue(String) */
+  public static byte[] getMaxPackedValue(IndexReader reader, String field) throws IOException {
+    byte[] maxValue = null;
+    for (LeafReaderContext ctx : reader.leaves()) {
+      PointValues values = ctx.reader().getPointValues();
+      if (values == null) {
+        continue;
+      }
+      byte[] leafMaxValue = values.getMaxPackedValue(field);
+      if (leafMaxValue == null) {
+        continue;
+      }
+      if (maxValue == null) {
+        maxValue = leafMaxValue.clone();
+      } else {
+        final int numDimensions = values.getNumDimensions(field);
+        final int numBytesPerDimension = values.getBytesPerDimension(field);
+        for (int i = 0; i < numDimensions; ++i) {
+          int offset = i * numBytesPerDimension;
+          if (StringHelper.compare(numBytesPerDimension, leafMaxValue, offset, maxValue, offset) > 0) {
+            System.arraycopy(leafMaxValue, offset, maxValue, offset, numBytesPerDimension);
+          }
+        }
+      }
+    }
+    return maxValue;
+  }
 
   /** Default constructor */
   protected PointValues() {

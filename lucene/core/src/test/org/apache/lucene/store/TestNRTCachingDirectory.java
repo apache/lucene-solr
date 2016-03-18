@@ -56,7 +56,7 @@ public class TestNRTCachingDirectory extends BaseDirectoryTestCase {
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
     IndexWriterConfig conf = newIndexWriterConfig(analyzer);
     RandomIndexWriter w = new RandomIndexWriter(random(), cachedDir, conf);
-    final LineFileDocs docs = new LineFileDocs(random(), true);
+    final LineFileDocs docs = new LineFileDocs(random());
     final int numDocs = TestUtil.nextInt(random(), 100, 400);
 
     if (VERBOSE) {

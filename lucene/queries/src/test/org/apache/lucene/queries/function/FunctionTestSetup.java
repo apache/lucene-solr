@@ -21,12 +21,10 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LegacyFloatField;
-import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
@@ -143,11 +141,11 @@ public abstract class FunctionTestSetup extends LuceneTestCase {
     f = newField(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), customType2); // for regular search
     d.add(f);
 
-    f = new LegacyIntField(INT_FIELD, scoreAndID, Store.YES); // for function scoring
+    f = new StoredField(INT_FIELD, scoreAndID); // for function scoring
     d.add(f);
     d.add(new NumericDocValuesField(INT_FIELD, scoreAndID));
 
-    f = new LegacyFloatField(FLOAT_FIELD, scoreAndID, Store.YES); // for function scoring
+    f = new StoredField(FLOAT_FIELD, scoreAndID); // for function scoring
     d.add(f);
     d.add(new NumericDocValuesField(FLOAT_FIELD, Float.floatToRawIntBits(scoreAndID)));
 

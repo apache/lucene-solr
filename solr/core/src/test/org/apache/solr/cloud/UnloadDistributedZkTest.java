@@ -187,7 +187,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     }
     ZkStateReader zkStateReader = getCommonCloudSolrClient().getZkStateReader();
     
-    zkStateReader.updateClusterState();
+    zkStateReader.forceUpdateCollection("unloadcollection");
 
     int slices = zkStateReader.getClusterState().getCollection("unloadcollection").getSlices().size();
     assertEquals(1, slices);
@@ -203,7 +203,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       createCmd.setDataDir(getDataDir(core2dataDir));
       adminClient.request(createCmd);
     }
-    zkStateReader.updateClusterState();
+    zkStateReader.forceUpdateCollection("unloadcollection");
     slices = zkStateReader.getClusterState().getCollection("unloadcollection").getSlices().size();
     assertEquals(1, slices);
     

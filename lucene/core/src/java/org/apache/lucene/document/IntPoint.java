@@ -17,7 +17,9 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
+import java.util.Collection;
 
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
@@ -38,6 +40,7 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>{@link #newRangeQuery(String, int, int)} for matching a 1D range.
  *   <li>{@link #newRangeQuery(String, int[], int[])} for matching points/ranges in n-dimensional space.
  * </ul>
+ * @see PointValues
  */
 public final class IntPoint extends Field {
 
@@ -169,9 +172,10 @@ public final class IntPoint extends Field {
    * {@link #newRangeQuery(String, int[], int[])} instead.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting {@code lowerValue = Integer.MIN_VALUE} or {@code upperValue = Integer.MAX_VALUE}. 
+   * by setting {@code lowerValue = Integer.MIN_VALUE} or {@code upperValue = Integer.MAX_VALUE}.
    * <p>
-   * Ranges are inclusive. For exclusive ranges, pass {@code lowerValue + 1} or {@code upperValue - 1}
+   * Ranges are inclusive. For exclusive ranges, pass {@code Math.addExact(lowerValue, 1)}
+   * or {@code Math.addExact(upperValue, -1)}.
    *
    * @param field field name. must not be {@code null}.
    * @param lowerValue lower portion of the range (inclusive).
@@ -189,7 +193,8 @@ public final class IntPoint extends Field {
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
    * by setting {@code lowerValue[i] = Integer.MIN_VALUE} or {@code upperValue[i] = Integer.MAX_VALUE}. 
    * <p>
-   * Ranges are inclusive. For exclusive ranges, pass {@code lowerValue[i] + 1} or {@code upperValue[i] - 1}
+   * Ranges are inclusive. For exclusive ranges, pass {@code Math.addExact(lowerValue[i], 1)}
+   * or {@code Math.addExact(upperValue[i], -1)}.
    *
    * @param field field name. must not be {@code null}.
    * @param lowerValue lower portion of the range (inclusive). must not be {@code null}.
@@ -244,5 +249,20 @@ public final class IntPoint extends Field {
         return Integer.toString(decodeDimension(value, 0));
       }
     };
+  }
+  
+  /**
+   * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
+   * 
+   * @param field field name. must not be {@code null}.
+   * @param values all values to match
+   */
+  public static Query newSetQuery(String field, Collection<Integer> values) {
+    Integer[] boxed = values.toArray(new Integer[0]);
+    int[] unboxed = new int[boxed.length];
+    for (int i = 0; i < boxed.length; i++) {
+      unboxed[i] = boxed[i];
+    }
+    return newSetQuery(field, unboxed);
   }
 }

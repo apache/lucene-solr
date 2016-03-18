@@ -233,7 +233,8 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       writer.enqueueUpdate(reader.getClusterState(), c1, null);
       writer.writePendingUpdates();
 
-      reader.updateClusterState();
+      reader.forceUpdateCollection("c1");
+      reader.forceUpdateCollection("c2");
       ClusterState clusterState = reader.getClusterState(); // keep a reference to the current cluster state object
       assertTrue(clusterState.hasCollection("c1"));
       assertFalse(clusterState.hasCollection("c2"));
@@ -257,7 +258,6 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         // expected
       }
 
-      reader.updateClusterState();
       try {
         writer.enqueueUpdate(reader.getClusterState(), c2, null);
         fail("enqueueUpdate after BadVersionException should not have suceeded");
@@ -317,7 +317,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       zkClient.setData(ZkStateReader.getCollectionPath("c2"), data, true);
 
       // get the most up-to-date state
-      reader.updateClusterState();
+      reader.forceUpdateCollection("c2");
       state = reader.getClusterState();
       assertTrue(state.hasCollection("c2"));
       assertEquals(sharedClusterStateVersion, (int) state.getZkClusterStateVersion());
@@ -328,7 +328,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       assertTrue(writer.hasPendingUpdates());
 
       // get the most up-to-date state
-      reader.updateClusterState();
+      reader.forceUpdateCollection("c2");
       state = reader.getClusterState();
 
       // enqueue a stateFormat=1 collection which should cause a flush
@@ -336,7 +336,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
           new DocCollection("c1", new HashMap<String, Slice>(), new HashMap<String, Object>(), DocRouter.DEFAULT, 0, ZkStateReader.CLUSTER_STATE));
 
       try {
-        state = writer.enqueueUpdate(state, c1, null);
+        writer.enqueueUpdate(state, c1, null);
         fail("Enqueue should not have succeeded");
       } catch (KeeperException.BadVersionException bve) {
         // expected

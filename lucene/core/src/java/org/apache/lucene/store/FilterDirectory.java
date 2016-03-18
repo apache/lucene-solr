@@ -29,7 +29,7 @@ import java.util.Collection;
  *  {@link Directory} or {@link BaseDirectory} rather than try to reuse
  *  functionality of existing {@link Directory}s by extending this class.
  *  @lucene.internal */
-public class FilterDirectory extends Directory {
+public abstract class FilterDirectory extends Directory {
 
   /** Get the wrapped instance by <code>dir</code> as long as this reader is
    *  an instance of {@link FilterDirectory}.  */

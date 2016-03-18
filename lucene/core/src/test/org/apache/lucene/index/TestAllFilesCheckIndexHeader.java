@@ -87,6 +87,12 @@ public class TestAllFilesCheckIndexHeader extends LuceneTestCase {
   private void checkOneFile(Directory dir, String victim) throws IOException {
     try (BaseDirectoryWrapper dirCopy = newDirectory()) {
       dirCopy.setCheckIndexOnClose(false);
+
+      if (dirCopy instanceof MockDirectoryWrapper) {
+        // The while(true) loop below, under rarish circumstances, can sometimes double write:
+        ((MockDirectoryWrapper) dirCopy).setPreventDoubleWrite(false);
+      }
+
       long victimLength = dir.fileLength(victim);
       int wrongBytes = TestUtil.nextInt(random(), 1, (int) Math.min(100, victimLength));
       assert victimLength > 0;
@@ -132,7 +138,7 @@ public class TestAllFilesCheckIndexHeader extends LuceneTestCase {
 
       // CheckIndex should also fail:
       try {
-        TestUtil.checkIndex(dirCopy, true, true);
+        TestUtil.checkIndex(dirCopy, true, true, null);
         fail("wrong bytes not detected after randomizing first " + wrongBytes + " bytes out of " + victimLength + " for file " + victim);
       } catch (CorruptIndexException | EOFException | IndexFormatTooOldException e) {
         // expected

@@ -41,7 +41,7 @@ public class TestTermsEnum extends LuceneTestCase {
 
   public void test() throws Exception {
     Random random = new Random(random().nextLong());
-    final LineFileDocs docs = new LineFileDocs(random, true);
+    final LineFileDocs docs = new LineFileDocs(random);
     final Directory d = newDirectory();
     MockAnalyzer analyzer = new MockAnalyzer(random());
     analyzer.setMaxTokenLength(TestUtil.nextInt(random(), 1, IndexWriter.MAX_TERM_LENGTH));
@@ -732,7 +732,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    LeafReader sub = getOnlySegmentReader(r);
+    LeafReader sub = getOnlyLeafReader(r);
     Terms terms = sub.fields().terms("field");
     Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();
     CompiledAutomaton ca = new CompiledAutomaton(automaton, false, false);    
@@ -786,7 +786,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    LeafReader sub = getOnlySegmentReader(r);
+    LeafReader sub = getOnlyLeafReader(r);
     Terms terms = sub.fields().terms("field");
 
     Automaton automaton = new RegExp(".*d", RegExp.NONE).toAutomaton();
@@ -840,7 +840,7 @@ public class TestTermsEnum extends LuceneTestCase {
     w.forceMerge(1);
     DirectoryReader r = w.getReader();
     w.close();
-    LeafReader sub = getOnlySegmentReader(r);
+    LeafReader sub = getOnlyLeafReader(r);
     Terms terms = sub.fields().terms("field");
 
     Automaton automaton = new RegExp(".*", RegExp.NONE).toAutomaton();  // accept ALL

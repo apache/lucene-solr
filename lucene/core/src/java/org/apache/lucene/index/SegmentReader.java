@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.util.Collections;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
 import org.apache.lucene.store.Directory;
@@ -220,7 +220,7 @@ public final class SegmentReader extends CodecReader {
   @Override
   public PointValues getPointValues() {
     ensureOpen();
-    return core.pointReader;
+    return core.pointsReader;
   }
 
   @Override
@@ -242,9 +242,9 @@ public final class SegmentReader extends CodecReader {
   }
 
   @Override
-  public PointReader getPointReader() {
+  public PointsReader getPointsReader() {
     ensureOpen();
-    return core.pointReader;
+    return core.pointsReader;
   }
 
   @Override

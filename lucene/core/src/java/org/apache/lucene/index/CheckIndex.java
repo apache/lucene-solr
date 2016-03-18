@@ -33,9 +33,9 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.PointReader;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.NormsProducer;
+import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
@@ -567,8 +567,6 @@ public final class CheckIndex implements Closeable {
         input.close();
     }
 
-    String sFormat = "";
-
     result.segmentsFileName = segmentsFileName;
     result.numSegments = numSegments;
     result.userData = sis.getUserData();
@@ -591,7 +589,7 @@ public final class CheckIndex implements Closeable {
     }
 
     msg(infoStream, "Segments file=" + segmentsFileName + " numSegments=" + numSegments
-        + " " + versionString + " id=" + StringHelper.idToString(sis.getId()) + " format=" + sFormat + userDataString);
+        + " " + versionString + " id=" + StringHelper.idToString(sis.getId()) + userDataString);
 
     if (onlySegments != null) {
       result.partial = true;
@@ -1685,13 +1683,18 @@ public final class CheckIndex implements Closeable {
    * @lucene.experimental
    */
   public static Status.PointsStatus testPoints(CodecReader reader, PrintStream infoStream, boolean failFast) throws IOException {
+    if (infoStream != null) {
+      infoStream.print("    test: points..............");
+    }
+    long startNS = System.nanoTime();
     FieldInfos fieldInfos = reader.getFieldInfos();
     Status.PointsStatus status = new Status.PointsStatus();
     try {
+
       if (fieldInfos.hasPointValues()) {
-        PointReader values = reader.getPointReader();
+        PointsReader values = reader.getPointsReader();
         if (values == null) {
-          throw new RuntimeException("there are fields with points, but reader.getPointReader() is null");
+          throw new RuntimeException("there are fields with points, but reader.getPointsReader() is null");
         }
         for (FieldInfo fieldInfo : fieldInfos) {
           if (fieldInfo.getPointDimensionCount() > 0) {
@@ -1842,6 +1845,8 @@ public final class CheckIndex implements Closeable {
           }
         }
       }
+      msg(infoStream, String.format(Locale.ROOT, "OK [%d fields, %d points] [took %.3f sec]", status.totalValueFields, status.totalValuePoints, nsToSec(System.nanoTime()-startNS)));
+
     } catch (Throwable e) {
       if (failFast) {
         IOUtils.reThrow(e);

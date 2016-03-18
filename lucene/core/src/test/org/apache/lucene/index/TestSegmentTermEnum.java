@@ -79,7 +79,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
                                 .setCodec(TestUtil.alwaysPostingsFormat(TestUtil.getDefaultPostingsFormat())));
     addDoc(writer, "aaa bbb");
     writer.close();
-    SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(dir));
+    LeafReader reader = getOnlyLeafReader(DirectoryReader.open(dir));
     TermsEnum terms = reader.fields().terms("content").iterator();
     assertNotNull(terms.next());
     assertEquals("aaa", terms.term().utf8ToString());

@@ -21,9 +21,14 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.Objects;
 
+import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.FieldType.LegacyNumericType;
+import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.FilteredTermsEnum;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
@@ -158,7 +163,12 @@ import org.apache.lucene.index.Term; // for javadocs
  * precision step). This query type was developed for a geographic portal, where the performance for
  * e.g. bounding boxes or exact date/time stamps is important.</p>
  *
- * @deprecated Please use {@link PointRangeQuery} instead
+ * @deprecated Instead index with {@link IntPoint}, {@link LongPoint}, {@link FloatPoint}, {@link DoublePoint}, and
+ *             create range queries with {@link IntPoint#newRangeQuery(String, int, int) IntPoint.newRangeQuery()},
+ *             {@link LongPoint#newRangeQuery(String, long, long) LongPoint.newRangeQuery()},
+ *             {@link FloatPoint#newRangeQuery(String, float, float) FloatPoint.newRangeQuery()},
+ *             {@link DoublePoint#newRangeQuery(String, double, double) DoublePoint.newRangeQuery()} respectively.
+ *             See {@link PointValues} for background information on Points.
  *
  * @since 2.9
  **/

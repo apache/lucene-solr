@@ -29,7 +29,8 @@ import org.apache.lucene.queryparser.flexible.core.QueryParserHelper;
 import org.apache.lucene.queryparser.flexible.core.config.QueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.standard.builders.StandardQueryTreeBuilder;
 import org.apache.lucene.queryparser.flexible.standard.config.FuzzyConfig;
-import org.apache.lucene.queryparser.flexible.standard.config.NumericConfig;
+import org.apache.lucene.queryparser.flexible.standard.config.LegacyNumericConfig;
+import org.apache.lucene.queryparser.flexible.standard.config.PointsConfig;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.ConfigurationKeys;
 import org.apache.lucene.queryparser.flexible.standard.config.StandardQueryConfigHandler.Operator;
@@ -322,12 +323,30 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
     
   }
   
-  public void setNumericConfigMap(Map<String,NumericConfig> numericConfigMap) {
-    getQueryConfigHandler().set(ConfigurationKeys.NUMERIC_CONFIG_MAP, numericConfigMap);
+  /**
+   * Sets field configuration for legacy numeric fields
+   * @deprecated Index with points instead and use {@link #setPointsConfigMap(Map)}
+   */
+  @Deprecated
+  public void setLegacyNumericConfigMap(Map<String,LegacyNumericConfig> legacyNumericConfigMap) {
+    getQueryConfigHandler().set(ConfigurationKeys.LEGACY_NUMERIC_CONFIG_MAP, legacyNumericConfigMap);
   }
   
-  public Map<String,NumericConfig> getNumericConfigMap() {
-    return getQueryConfigHandler().get(ConfigurationKeys.NUMERIC_CONFIG_MAP);
+  /**
+   * Gets field configuration for legacy numeric fields
+   * @deprecated Index with points instead and use {@link #getPointsConfigMap()}
+   */
+  @Deprecated
+  public Map<String,LegacyNumericConfig> getLegacyNumericConfigMap() {
+    return getQueryConfigHandler().get(ConfigurationKeys.LEGACY_NUMERIC_CONFIG_MAP);
+  }
+  
+  public void setPointsConfigMap(Map<String,PointsConfig> pointsConfigMap) {
+    getQueryConfigHandler().set(ConfigurationKeys.POINTS_CONFIG_MAP, pointsConfigMap);
+  }
+  
+  public Map<String,PointsConfig> getPointsConfigMap() {
+    return getQueryConfigHandler().get(ConfigurationKeys.POINTS_CONFIG_MAP);
   }
   
   /**

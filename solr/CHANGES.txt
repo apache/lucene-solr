@@ -22,9 +22,31 @@ See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 ==================  6.1.0 ==================
 Detailed Change List
 ----------------------
+* SOLR-8782: Add asynchronous sugar methods to the SolrJ Collections API.  You
+  can now call .processAsync() to run a method asynchronously, or
+  .processAndWait() to wait for a call to finish without holding HTTP
+  collections open.  (Alan Woodward)
+
+* SOLR-8765: Enforce required parameters at query construction time in the SolrJ
+  Collections API, add static factory methods, and deprecate old setter methods.
+  (Alan Woodward, Jason Gerlowski)
 
 New Features
 ----------------------
+
+* SOLR-8814: Support GeoJSON response writer and general spatial formatting.  Adding
+     &wt=geojson&geojson.field=<your geometry field>
+  Will return a FeatureCollection for each SolrDocumentList and a Feature with the
+  requested geometry for each SolrDocument.  The requested geometry field needs
+  to either extend AbstractSpatialFieldType or store a GeoJSON string.  This also adds
+  a [geo] DocumentTransformer that can return the Shape in a variety of formats:
+    &fl=[geo f=<your geometry field> w=(GeoJSON|WKT|POLY)]
+  The default format is GeoJSON.  For information on the supported formats, see:
+  https://github.com/locationtech/spatial4j/blob/master/FORMATS.md
+  To return the FeatureCollection as the root element, add '&omitHeader=true" (ryan)
+
+* SOLR-8859: AbstractSpatialFieldType will now convert Shapes to/from Strings
+  using the SpatialContext.  (ryan)
 
 Bug Fixes
 ----------------------
@@ -34,10 +56,18 @@ Optimizations
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
   (Scott Blum via shalin)
 
+* SOLR-8745: Deprecate costly ZkStateReader.updateClusterState(), replace with a narrow
+  forceUpdateCollection(collection) (Scott Blum via shalin)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
   (Jason Gerlowski, Benoit Vanalderweireldt, shalin)
+
+* SOLR-8860: Remove back-compat handling of router format made in SOLR-4221 in 4.5.0. (shalin)
+
+* SOLR-8866: UpdateLog will now throw an exception if it doesn't know how to serialize a value.
+  (David Smiley)
 
 ==================  6.0.0 ==================
 
@@ -50,7 +80,7 @@ Carrot2 3.12.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
 Apache ZooKeeper 3.4.6
-Jetty 9.3.6.v20151106
+Jetty 9.3.8.v20160314
 
 System Requirements
 ----------------------
@@ -104,6 +134,15 @@ Upgrading from Solr 5.x
 * SOLR-8698: 'useParams' attribute specified in request handler cannot be overridden from request params
 
 * When requesting stats in date fields, "sum" is now a double value instead of a date. See SOLR-8671
+
+* SOLR-8736: The deprecated GET methods for schema are now accessible through the bulk API. The output
+  has less details and is not backward compatible.
+
+* In the past, Solr guaranteed that retrieval of multi-valued fields would preserve the order of values.
+  Because values may now be retrieved from column-stored fields (docValues="true"), in conjunction with the
+  fact that docValues do not currently preserve order, means that users should set useDocValuesAsStored="false"
+  to prevent future optizations from using the column-stored values over the row-stored values when
+  fields have both stored="true" and docValues="true".
 
 Detailed Change List
 ----------------------
@@ -183,6 +222,8 @@ New Features
 * SOLR-8522: Make it possible to use ip fragments in replica placement rules , such as ip_1, ip_2 etc (Arcadius Ahouansou, noble)
 
 * SOLR-8698: params.json can now specify 'appends' and 'invariants' (noble)
+
+* SOLR-8831: allow _version_ field to be retrievable via docValues (yonik)
 
 
 Bug Fixes
@@ -266,6 +307,26 @@ Bug Fixes
   placement. splitshard should preassign nodes using rules, if rules are present (noble, Shai Erera)
 
 * SOLR-8779: Fix missing InterruptedException handling in ZkStateReader.java (Varun Thacker)
+
+* SOLR-8449: Fix the core restore functionality to allow restoring multiple times on the same core
+  (Johannes Brucher, Varun Thacker)
+
+* SOLR-8155: JSON Facet API - field faceting on a multi-valued string field without
+  docValues (i.e. UnInvertedField implementation), but with a prefix or with a sort
+  other than count, resulted in incorrect results.  This has been fixed, and facet.prefix
+  support for facet.method=uif has been enabled. (Mikhail Khludnev, yonik)
+
+* SOLR-8790: Collections API responses contain node name in the core-level responses that are
+  returned. (Anshum Gupta)
+
+* SOLR-8804: Fix a race condition in the ClusterStatus API call whereby the call would fail when a concurrent delete
+  collection api command was executed (Alexey Serba, Varun Thacker)
+
+* SOLR-8835: JSON Facet API: fix faceting exception on multi-valued numeric fields that
+  have docValues. (yonik)
+
+* SOLR-8838: Returning non-stored docValues is incorrect for negative floats and doubles.
+  (Ishan Chattopadhyaya, Steve Rowe)
 
 Optimizations
 ----------------------
@@ -351,7 +412,7 @@ Other Changes
 
 * SOLR-8529: Improve JdbcTest to not use plain assert statements (Kevin Risden, Joel Bernstein)
 
-* SOLR-7339: Upgrade Jetty to v9.3.6.v20151106. (Gregg Donovan, shalin, Mark Miller)
+* SOLR-7339: Upgrade Jetty to v9.3.8.v20160314. (Gregg Donovan, shalin, Mark Miller, Steve Rowe)
 
 * SOLR-5730: Make Lucene's SortingMergePolicy and EarlyTerminatingSortingCollector configurable in Solr.
   (Christine Poerschke, hossmann, Tomás Fernández Löbbe, Shai Erera)
@@ -384,6 +445,20 @@ Other Changes
 * SOLR-8758: Add a new SolrCloudTestCase class, using MiniSolrCloudCluster (Alan
   Woodward)
 
+* SOLR-8736: schema GET operations on fields, dynamicFields, fieldTypes, copyField are
+  reimplemented as a part of the bulk API with less details (noble)
+
+* SOLR-8766: Remove deprecated <admin> tag in solrconfig.xml and support for admin/gettableFiles
+  (noble, Jason Gerlowski, Varun Thacker)
+
+* SOLR-8799: Improve error message when tuple can't be read by SolrJ JDBC (Kevin Risden, Joel Bernstein)
+
+* SOLR-8836: Return 400, and a SolrException when an invalid json is provided to the update handler
+  instead of 500. (Jason Gerlowski via Anshum Gupta)
+
+* SOLR-8740: docValues are now enabled by default for most non-text (string, date, and numeric) fields
+  in the schema templates. (yonik)
+
 ==================  5.5.1 ==================
 
 Bug Fixes
@@ -398,6 +473,11 @@ Bug Fixes
 
 * SOLR-8712: Variable solr.core.instanceDir was not being resolved (Kristine
   Jetzke, Shawn Heisey, Alan Woodward)
+
+* SOLR-8793: Fix Core admin status API to not fail when computing the size of the segments_N
+  file if the file no longer exists (for example, if a commit happened and the IndexReader
+  hasn't refreshed yet). In this case the reported size of the file is -1.
+  (Shai Erera, Alexey Serba, Richard Coggins)
 
 ======================= 5.5.0 =======================
 

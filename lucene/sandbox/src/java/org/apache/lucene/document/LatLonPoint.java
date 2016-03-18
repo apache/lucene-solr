@@ -18,13 +18,16 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
-
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.util.GeoUtils;
 
 /** 
@@ -34,20 +37,24 @@ import org.apache.lucene.spatial.util.GeoUtils;
  * efficient.  Multiple values for the same field in one document
  * is allowed. 
  * <p>
- * This field defines static factory methods for creating common queries:
+ * This field defines static factory methods for common operations:
  * <ul>
  *   <li>{@link #newBoxQuery newBoxQuery()} for matching points within a bounding box.
  *   <li>{@link #newDistanceQuery newDistanceQuery()} for matching points within a specified distance.
+ *   <li>{@link #newDistanceSort newDistanceSort()} for ordering documents by distance from a specified location. 
  *   <li>{@link #newPolygonQuery newPolygonQuery()} for matching points within an arbitrary polygon.
  * </ul>
  * <p>
  * <b>WARNING</b>: Values are indexed with some loss of precision, incurring up to 1E-7 error from the
  * original {@code double} values. 
+ * @see PointValues
  */
 // TODO ^^^ that is very sandy and hurts the API, usage, and tests tremendously, because what the user passes
 // to the field is not actually what gets indexed. Float would be 1E-5 error vs 1E-7, but it might be
 // a better tradeoff? then it would be completely transparent to the user and lucene would be "lossless".
 public class LatLonPoint extends Field {
+  private long currentValue;
+
   /**
    * Type for an indexed LatLonPoint
    * <p>
@@ -56,6 +63,7 @@ public class LatLonPoint extends Field {
   public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDimensions(2, Integer.BYTES);
+    TYPE.setDocValuesType(DocValuesType.SORTED_NUMERIC);
     TYPE.freeze();
   }
   
@@ -67,9 +75,12 @@ public class LatLonPoint extends Field {
    */
   public void setLocationValue(double latitude, double longitude) {
     byte[] bytes = new byte[8];
-    NumericUtils.intToSortableBytes(encodeLatitude(latitude), bytes, 0);
-    NumericUtils.intToSortableBytes(encodeLongitude(longitude), bytes, Integer.BYTES);
+    int latitudeEncoded = encodeLatitude(latitude);
+    int longitudeEncoded = encodeLongitude(longitude);
+    NumericUtils.intToSortableBytes(latitudeEncoded, bytes, 0);
+    NumericUtils.intToSortableBytes(longitudeEncoded, bytes, Integer.BYTES);
     fieldsData = new BytesRef(bytes);
+    currentValue = (((long)latitudeEncoded) << 32) | (longitudeEncoded & 0xFFFFFFFFL);
   }
 
   /** 
@@ -85,8 +96,10 @@ public class LatLonPoint extends Field {
   }
 
   private static final int BITS = 32;
-  private static final double LONGITUDE_SCALE = (0x1L<<BITS)/360.0D;
-  private static final double LATITUDE_SCALE = (0x1L<<BITS)/180.0D;
+  private static final double LONGITUDE_ENCODE = (0x1L<<BITS)/360.0D;
+  private static final double LONGITUDE_DECODE = 1/LONGITUDE_ENCODE;
+  private static final double LATITUDE_ENCODE  = (0x1L<<BITS)/180.0D;
+  private static final double LATITUDE_DECODE  =  1/LATITUDE_ENCODE;
   
   @Override
   public String toString() {
@@ -96,13 +109,23 @@ public class LatLonPoint extends Field {
     result.append(name);
     result.append(':');
 
-    BytesRef bytes = (BytesRef) fieldsData;
-    result.append(decodeLatitude(BytesRef.deepCopyOf(bytes).bytes, 0));
+    result.append(decodeLatitude((int)(currentValue >> 32)));
     result.append(',');
-    result.append(decodeLongitude(BytesRef.deepCopyOf(bytes).bytes, Integer.BYTES));
+    result.append(decodeLongitude((int)(currentValue & 0xFFFFFFFF)));
 
     result.append('>');
     return result.toString();
+  }
+
+  /**
+   * Returns a 64-bit long, where the upper 32 bits are the encoded latitude,
+   * and the lower 32 bits are the encoded longitude.
+   * @see #decodeLatitude(int)
+   * @see #decodeLongitude(int)
+   */
+  @Override
+  public Number numericValue() {
+    return currentValue;
   }
 
   // public helper methods (e.g. for queries)
@@ -121,7 +144,7 @@ public class LatLonPoint extends Field {
     if (latitude == 90.0D) {
       latitude = Math.nextDown(latitude);
     }
-    return Math.toIntExact((long) (latitude * LATITUDE_SCALE));
+    return Math.toIntExact((long) (latitude * LATITUDE_ENCODE));
   }
 
   /** 
@@ -138,7 +161,7 @@ public class LatLonPoint extends Field {
     if (longitude == 180.0D) {
       longitude = Math.nextDown(longitude);
     }
-    return Math.toIntExact((long) (longitude * LONGITUDE_SCALE));
+    return Math.toIntExact((long) (longitude * LONGITUDE_ENCODE));
   }
 
   /** 
@@ -147,7 +170,7 @@ public class LatLonPoint extends Field {
    * @return decoded latitude value.
    */
   public static double decodeLatitude(int encoded) {
-    double result = encoded / LATITUDE_SCALE;
+    double result = encoded * LATITUDE_DECODE;
     assert GeoUtils.isValidLat(result);
     return result;
   }
@@ -168,7 +191,7 @@ public class LatLonPoint extends Field {
    * @return decoded longitude value.
    */  
   public static double decodeLongitude(int encoded) {
-    double result = encoded / LONGITUDE_SCALE;
+    double result = encoded * LONGITUDE_DECODE;
     assert GeoUtils.isValidLon(result);
     return result;
   }
@@ -195,14 +218,20 @@ public class LatLonPoint extends Field {
 
   /** helper: checks a fieldinfo and throws exception if its definitely not a LatLonPoint */
   static void checkCompatible(FieldInfo fieldInfo) {
-    if (fieldInfo.getPointDimensionCount() != TYPE.pointDimensionCount()) {
+    // point/dv properties could be "unset", if you e.g. used only StoredField with this same name in the segment.
+    if (fieldInfo.getPointDimensionCount() != 0 && fieldInfo.getPointDimensionCount() != TYPE.pointDimensionCount()) {
       throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\" was indexed with numDims=" + fieldInfo.getPointDimensionCount() + 
                                          " but this point type has numDims=" + TYPE.pointDimensionCount() + 
                                          ", is the field really a LatLonPoint?");
     }
-    if (fieldInfo.getPointNumBytes() != TYPE.pointNumBytes()) {
+    if (fieldInfo.getPointNumBytes() != 0 && fieldInfo.getPointNumBytes() != TYPE.pointNumBytes()) {
       throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + 
                                          " but this point type has bytesPerDim=" + TYPE.pointNumBytes() + 
+                                         ", is the field really a LatLonPoint?");
+    }
+    if (fieldInfo.getDocValuesType() != DocValuesType.NONE && fieldInfo.getDocValuesType() != TYPE.docValuesType()) {
+      throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\" was indexed with docValuesType=" + fieldInfo.getDocValuesType() + 
+                                         " but this point type has docValuesType=" + TYPE.docValuesType() + 
                                          ", is the field really a LatLonPoint?");
     }
   }
@@ -295,5 +324,26 @@ public class LatLonPoint extends Field {
    */
   public static Query newPolygonQuery(String field, double[] polyLats, double[] polyLons) {
     return new LatLonPointInPolygonQuery(field, polyLats, polyLons);
+  }
+
+  /**
+   * Creates a SortField for sorting by distance from a location.
+   * <p>
+   * This sort orders documents by ascending distance from the location. The value returned in {@link FieldDoc} for
+   * the hits contains a Double instance with the distance in meters.
+   * <p>
+   * If a document is missing the field, then by default it is treated as having {@link Double#POSITIVE_INFINITY} distance
+   * (missing values sort last).
+   * <p>
+   * If a document contains multiple values for the field, the <i>closest</i> distance to the location is used.
+   * 
+   * @param field field name. cannot be null.
+   * @param latitude latitude at the center: must be within standard +/-90 coordinate bounds.
+   * @param longitude longitude at the center: must be within standard +/-180 coordinate bounds.
+   * @return SortField ordering documents by distance
+   * @throws IllegalArgumentException if {@code field} is null or location has invalid coordinates.
+   */
+  public static SortField newDistanceSort(String field, double latitude, double longitude) {
+    return new LatLonPointSortField(field, latitude, longitude);
   }
 }

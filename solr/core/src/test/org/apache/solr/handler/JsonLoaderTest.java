@@ -181,6 +181,26 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     req.close();
   }
 
+  @Test
+  public void testInvalidJsonProducesBadRequestSolrException() throws Exception
+  {
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    BufferingRequestProcessor p = new BufferingRequestProcessor(null);
+    JsonLoader loader = new JsonLoader();
+    String invalidJsonString = "}{";
+    
+    try(SolrQueryRequest req = req()) {
+      try {
+        loader.load(req, rsp, new ContentStreamBase.StringStream(invalidJsonString), p);
+        fail("Expected invalid JSON to produce a SolrException.");
+      } catch (SolrException expectedException) {
+        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, expectedException.code());
+        assertTrue(expectedException.getMessage().contains("Cannot parse"));
+        assertTrue(expectedException.getMessage().contains("JSON"));
+      }
+    }
+  }
+
   public void testSimpleFormatInAdd() throws Exception
   {
     String str = "{'add':[{'id':'1'},{'id':'2'}]}".replace('\'', '"');

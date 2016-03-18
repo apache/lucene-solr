@@ -146,6 +146,7 @@ public class TestMiniSolrCloudClusterBase extends LuceneTestCase {
       try (SolrZkClient zkClient = new SolrZkClient
           (miniCluster.getZkServer().getZkAddress(), AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null);
            ZkStateReader zkStateReader = new ZkStateReader(zkClient)) {
+        zkStateReader.createClusterStateWatchersAndUpdate();
         AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
 
         // modify/query collection
@@ -160,7 +161,7 @@ public class TestMiniSolrCloudClusterBase extends LuceneTestCase {
         assertEquals(1, rsp.getResults().getNumFound());
 
         // remove a server not hosting any replicas
-        zkStateReader.updateClusterState();
+        zkStateReader.forceUpdateCollection(collectionName);
         ClusterState clusterState = zkStateReader.getClusterState();
         HashMap<String, JettySolrRunner> jettyMap = new HashMap<String, JettySolrRunner>();
         for (JettySolrRunner jetty : miniCluster.getJettySolrRunners()) {

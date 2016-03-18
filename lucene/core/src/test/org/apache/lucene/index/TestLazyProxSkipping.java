@@ -104,7 +104,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         writer.forceMerge(1);
         writer.close();
 
-      SegmentReader reader = getOnlySegmentReader(DirectoryReader.open(directory));
+      LeafReader reader = getOnlyLeafReader(DirectoryReader.open(directory));
 
       this.searcher = newSearcher(reader);
     }

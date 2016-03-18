@@ -23,6 +23,7 @@ import java.lang.reflect.Modifier;
 import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.LuceneTestCase;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
@@ -70,6 +71,10 @@ public class TestFieldType extends LuceneTestCase {
     FieldType ft10 = new FieldType();
     ft10.setStoreTermVectors(true);
     assertFalse(ft10.equals(ft));
+    
+    FieldType ft11 = new FieldType();
+    ft11.setDimensions(1, 4);
+    assertFalse(ft11.equals(ft));
   }
 
   public void testPointsToString() {
@@ -90,14 +95,16 @@ public class TestFieldType extends LuceneTestCase {
   }
 
   private static FieldType randomFieldType() throws Exception {
+    // setDimensions handled special as values must be in-bounds.
+    Method setDimensionsMethod = FieldType.class.getMethod("setDimensions", int.class, int.class);
     FieldType ft = new FieldType();
     for (Method method : FieldType.class.getMethods()) {
-      if ((method.getModifiers() & Modifier.PUBLIC) != 0 && method.getName().startsWith("set")) {
+      if (method.getName().startsWith("set")) {
         final Class<?>[] parameterTypes = method.getParameterTypes();
         final Object[] args = new Object[parameterTypes.length];
-        if (method.getName().equals("setPointDimensions")) {
-          args[0] = 1 + random().nextInt(15);
-          args[1] = 1 + random().nextInt(100);
+        if (method.equals(setDimensionsMethod)) {
+          args[0] = 1 + random().nextInt(PointValues.MAX_DIMENSIONS);
+          args[1] = 1 + random().nextInt(PointValues.MAX_NUM_BYTES);
         } else {
           for (int i = 0; i < args.length; ++i) {
             args[i] = randomValue(parameterTypes[i]);

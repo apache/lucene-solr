@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.util.BitSet;
 
 import org.apache.lucene.codecs.FilterCodec;
-import org.apache.lucene.codecs.PointFormat;
-import org.apache.lucene.codecs.PointReader;
-import org.apache.lucene.codecs.PointWriter;
-import org.apache.lucene.codecs.lucene60.Lucene60PointReader;
-import org.apache.lucene.codecs.lucene60.Lucene60PointWriter;
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.codecs.PointsWriter;
+import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
+import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -36,8 +36,8 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.spatial.util.GeoDistanceUtils;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.bkd.BKDWriter;
 
 /** Simple tests for {@link LatLonPoint#newDistanceQuery} */
@@ -55,7 +55,7 @@ public class TestLatLonPointDistanceQuery extends LuceneTestCase {
     
     // search within 50km and verify we found our doc
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = newSearcher(reader, false);
+    IndexSearcher searcher = newSearcher(reader);
     assertEquals(1, searcher.count(LatLonPoint.newDistanceQuery("field", 18, -65, 50_000)));
 
     reader.close();
@@ -119,16 +119,16 @@ public class TestLatLonPointDistanceQuery extends LuceneTestCase {
     int pointsInLeaf = 2 + random().nextInt(4);
     iwc.setCodec(new FilterCodec("Lucene60", TestUtil.getDefaultCodec()) {
       @Override
-      public PointFormat pointFormat() {
-        return new PointFormat() {
+      public PointsFormat pointsFormat() {
+        return new PointsFormat() {
           @Override
-          public PointWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-            return new Lucene60PointWriter(writeState, pointsInLeaf, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
+          public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
+            return new Lucene60PointsWriter(writeState, pointsInLeaf, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
           }
 
           @Override
-          public PointReader fieldsReader(SegmentReadState readState) throws IOException {
-            return new Lucene60PointReader(readState);
+          public PointsReader fieldsReader(SegmentReadState readState) throws IOException {
+            return new Lucene60PointsReader(readState);
           }
         };
       }
@@ -148,7 +148,7 @@ public class TestLatLonPointDistanceQuery extends LuceneTestCase {
       writer.addDocument(doc);
     }
     IndexReader reader = writer.getReader();
-    IndexSearcher searcher = new IndexSearcher(reader);
+    IndexSearcher searcher = newSearcher(reader);
 
     for (int i = 0; i < numQueries; i++) {
       double lat = -90 + 180.0 * random().nextDouble();

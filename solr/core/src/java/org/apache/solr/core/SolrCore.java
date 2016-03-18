@@ -534,8 +534,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
     // Create the index if it doesn't exist.
     if(!indexExists) {
-      log.warn(logid+"Solr index directory '" + new File(indexDir) + "' doesn't exist."
-              + " Creating new index...");
+      log.warn(logid + "Solr index directory '" + new File(indexDir) + "' doesn't exist."
+          + " Creating new index...");
 
       SolrIndexWriter writer = SolrIndexWriter.create(this, "SolrCore.initIndex", indexDir, getDirectoryFactory(), true,
                                                       getLatestSchema(), solrConfig.indexConfig, solrDelPolicy, codec);
@@ -725,9 +725,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
-
-      // Handle things that should eventually go away
-      initDeprecatedSupport();
 
       statsCache = initStatsCache();
 
@@ -2126,10 +2123,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private final PluginBag<QueryResponseWriter> responseWriters = new PluginBag<>(QueryResponseWriter.class, this);
   public static final Map<String ,QueryResponseWriter> DEFAULT_RESPONSE_WRITERS ;
   static{
-    HashMap<String, QueryResponseWriter> m= new HashMap<>(14, 1);
+    HashMap<String, QueryResponseWriter> m= new HashMap<>(15, 1);
     m.put("xml", new XMLResponseWriter());
     m.put("standard", m.get("xml"));
     m.put(CommonParams.JSON, new JSONResponseWriter());
+    m.put("geojson", new GeoJSONResponseWriter());
     m.put("python", new PythonResponseWriter());
     m.put("php", new PHPResponseWriter());
     m.put("phps", new PHPSerializedResponseWriter());
@@ -2267,54 +2265,6 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
   public ValueSourceParser getValueSourceParser(String parserName) {
     return valueSourceParsers.get(parserName);
-  }
-
-  /**
-   * Manage anything that should be taken care of in case configs change
-   */
-  private void initDeprecatedSupport()
-  {
-    // TODO -- this should be removed in deprecation release...
-    String gettable = solrConfig.get("admin/gettableFiles", null );
-    if( gettable != null ) {
-      log.warn(
-          "solrconfig.xml uses deprecated <admin/gettableFiles>, Please "+
-          "update your config to use the ShowFileRequestHandler." );
-      if( getRequestHandler( "/admin/file" ) == null ) {
-        NamedList<String> invariants = new NamedList<>();
-
-        // Hide everything...
-        Set<String> hide = new HashSet<>();
-
-        for (String file : solrConfig.getResourceLoader().listConfigDir()) {
-          hide.add(file.toUpperCase(Locale.ROOT));
-        }
-
-        // except the "gettable" list
-        StringTokenizer st = new StringTokenizer( gettable );
-        while( st.hasMoreTokens() ) {
-          hide.remove( st.nextToken().toUpperCase(Locale.ROOT) );
-        }
-        for( String s : hide ) {
-          invariants.add( ShowFileRequestHandler.HIDDEN, s );
-        }
-
-        NamedList<Object> args = new NamedList<>();
-        args.add( "invariants", invariants );
-        ShowFileRequestHandler handler = new ShowFileRequestHandler();
-        handler.init( args );
-        reqHandlers.register("/admin/file", handler);
-
-        log.warn( "adding ShowFileRequestHandler with hidden files: "+hide );
-      }
-    }
-
-    String facetSort = solrConfig.get("//bool[@name='facet.sort']", null);
-    if (facetSort != null) {
-      log.warn(
-          "solrconfig.xml uses deprecated <bool name='facet.sort'>. Please "+
-          "update your config to use <string name='facet.sort'>.");
-    }
   }
 
   /**
@@ -2552,7 +2502,11 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
           checkStale(zkClient, solrConfigPath, overlayVersion) ||
           checkStale(zkClient, managedSchmaResourcePath, managedSchemaVersion)) {
         log.info("core reload {}", coreName);
-        cc.reload(coreName);
+        try {
+          cc.reload(coreName);
+        } catch (SolrCoreState.CoreIsClosedException e) {
+          /*no problem this core is already closed*/
+        }
         return;
       }
       //some files in conf directory may have  other than managedschema, overlay, params

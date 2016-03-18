@@ -7,7 +7,27 @@ http://s.apache.org/luceneversions
 (No Changes)
 
 ======================= Lucene 6.1.0 =======================
-(No Changes)
+
+New Features
+
+* LUCENE-7099: Add LatLonPoint.newDistanceSort to the sandbox's
+  LatLonPoint. (Robert Muir)
+
+Optimizations
+
+* LUCENE-7071: Reduce bytes copying in OfflineSorter, giving ~10%
+  speedup on merging 2D LatLonPoint values (Mike McCandless)
+
+* LUCENE-7099: LatLonPoint's newDistanceQuery supports two-phase
+  iteration. (Robert Muir)
+
+* LUCENE-7105: Optimize LatLonPoint's newDistanceQuery. (Robert Muir)
+
+* LUCENE-7109: LatLonPoint's newPolygonQuery supports two-phase 
+  iteration. (Robert Muir)
+
+* LUCENE-7097: IntroSorter now recurses to 2 * log_2(count) quicksort
+  stack depth before switching to heapsort (Adrien Grand, Mike McCandless)
 
 ======================= Lucene 6.0.0 =======================
 
@@ -125,6 +145,15 @@ API Changes
 * LUCENE-7064: MultiPhraseQuery is now immutable and should be constructed
   with MultiPhraseQuery.Builder. (Luc Vanlerberghe via Adrien Grand)
 
+* LUCENE-7072: Geo3DPoint always uses WGS84 planet model.
+  (Robert Muir, Mike McCandless)
+
+* LUCENE-7056: Geo3D classes are in different packages now. (David Smiley)
+
+* LUCENE-6952: These classes are now abstract: FilterCodecReader, FilterLeafReader,
+  FilterCollector, FilterDirectory.  And some Filter* classes in
+  lucene-test-framework too. (David Smiley)
+
 Optimizations
 
 * LUCENE-6891: Use prefix coding when writing points in 
@@ -141,6 +170,9 @@ Optimizations
 
 * LUCENE-7050: TermsQuery is now cached more aggressively by the default
   query caching policy. (Adrien Grand)
+
+* LUCENE-7066: PointRangeQuery got optimized for the case that all documents
+  have a value and all points from the segment match. (Adrien Grand)
 
 Changes in Runtime Behavior
 
@@ -169,9 +201,21 @@ Bug Fixes
   On top of that with score mode average, the explain would fail with a NPE.
   (Martijn van Groningen)
 
+* LUCENE-7101: OfflineSorter had O(N^2) merge cost, and used too many
+  temporary file descriptors, for large sorts (Mike McCandless)
+
 Other
 
 * LUCENE-7035: Upgrade icu4j to 56.1/unicode 8. (Robert Muir)
+
+* LUCENE-7087: Let MemoryIndex#fromDocument(...) accept 'Iterable<? extends IndexableField>'
+  as document instead of 'Document'. (Martijn van Groningen)
+
+* LUCENE-7091: Add doc values support to MemoryIndex
+  (Martijn van Groningen, David Smiley)
+
+* LUCENE-7093: Add point values support to MemoryIndex
+  (Martijn van Groningen, Mike McCandless)
 
 ======================= Lucene 5.5.0 =======================
 

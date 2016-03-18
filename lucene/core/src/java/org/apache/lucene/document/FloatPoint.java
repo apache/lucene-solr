@@ -17,7 +17,9 @@
 package org.apache.lucene.document;
 
 import java.util.Arrays;
+import java.util.Collection;
 
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
@@ -38,6 +40,7 @@ import org.apache.lucene.util.NumericUtils;
  *   <li>{@link #newRangeQuery(String, float, float)} for matching a 1D range.
  *   <li>{@link #newRangeQuery(String, float[], float[])} for matching points/ranges in n-dimensional space.
  * </ul>
+ * @see PointValues
  */
 public final class FloatPoint extends Field {
 
@@ -169,7 +172,9 @@ public final class FloatPoint extends Field {
    * {@link #newRangeQuery(String, float[], float[])} instead.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting {@code lowerValue = Float.NEGATIVE_INFINITY} or {@code upperValue = Float.POSITIVE_INFINITY}. 
+   * by setting {@code lowerValue = Float.NEGATIVE_INFINITY} or {@code upperValue = Float.POSITIVE_INFINITY}.
+   * <p> Ranges are inclusive. For exclusive ranges, pass {@code Math#nextUp(lowerValue)}
+   * or {@code Math.nextDown(upperValue)}.
    * <p>
    * Range comparisons are consistent with {@link Float#compareTo(Float)}.
    *
@@ -187,7 +192,9 @@ public final class FloatPoint extends Field {
    * Create a range query for n-dimensional float values.
    * <p>
    * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
-   * by setting {@code lowerValue[i] = Float.NEGATIVE_INFINITY} or {@code upperValue[i] = Float.POSITIVE_INFINITY}. 
+   * by setting {@code lowerValue[i] = Float.NEGATIVE_INFINITY} or {@code upperValue[i] = Float.POSITIVE_INFINITY}.
+   * <p> Ranges are inclusive. For exclusive ranges, pass {@code Math#nextUp(lowerValue[i])}
+   * or {@code Math.nextDown(upperValue[i])}.
    * <p>
    * Range comparisons are consistent with {@link Float#compareTo(Float)}.
    *
@@ -244,5 +251,20 @@ public final class FloatPoint extends Field {
         return Float.toString(decodeDimension(value, 0));
       }
     };
+  }
+
+  /**
+   * Create a query matching any of the specified 1D values.  This is the points equivalent of {@code TermsQuery}.
+   * 
+   * @param field field name. must not be {@code null}.
+   * @param values all values to match
+   */
+  public static Query newSetQuery(String field, Collection<Float> values) {
+    Float[] boxed = values.toArray(new Float[0]);
+    float[] unboxed = new float[boxed.length];
+    for (int i = 0; i < boxed.length; i++) {
+      unboxed[i] = boxed[i];
+    }
+    return newSetQuery(field, unboxed);
   }
 }
