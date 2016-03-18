@@ -31,6 +31,8 @@ import org.apache.solr.core.SolrInfoMBean;
  */
 public class SolrFieldCacheMBean implements SolrInfoMBean {
 
+  private boolean disableEntryList = Boolean.getBoolean("disableSolrFieldCacheMBeanEntryList");
+
   @Override
   public String getName() { return this.getClass().getName(); }
   @Override
@@ -52,8 +54,10 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
     NamedList stats = new SimpleOrderedMap();
     String[] entries = UninvertingReader.getUninvertedStats();
     stats.add("entries_count", entries.length);
-    for (int i = 0; i < entries.length; i++) {
-      stats.add("entry#" + i, entries[i]);
+    if (!disableEntryList) {
+      for (int i = 0; i < entries.length; i++) {
+        stats.add("entry#" + i, entries[i]);
+      }
     }
     return stats;
   }

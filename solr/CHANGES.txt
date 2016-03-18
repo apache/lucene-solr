@@ -83,6 +83,8 @@ Other Changes
 * SOLR-5616: Simplifies grouping code to use ResponseBuilder.needDocList() to determine if it needs to
   generate a doc list for grouped results. (Steven Bower, Keith Laban, Dennis Gove)
 
+* SOLR-8869: Optionally disable printing field cache entries in SolrFieldCacheMBean (Gregory Chanan)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
