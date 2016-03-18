@@ -52,7 +52,7 @@ public class RestoreCore implements Callable<Boolean> {
     return doRestore();
   }
 
-  private boolean doRestore() throws Exception {
+  public boolean doRestore() throws Exception {
 
     Path backupPath = Paths.get(backupLocation).resolve(backupName);
     String restoreIndexName = "restore." + backupName;

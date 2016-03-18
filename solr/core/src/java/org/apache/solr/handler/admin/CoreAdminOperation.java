@@ -60,6 +60,8 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.handler.RestoreCore;
+import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -80,6 +82,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.BACKUPCORE;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.CREATE;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.FORCEPREPAREFORLEADERSHIP;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.INVOKE;
@@ -94,6 +97,7 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQU
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTRECOVERY;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTSTATUS;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTSYNCSHARD;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.RESTORECORE;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.SPLIT;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.SWAP;
@@ -851,6 +855,73 @@ enum CoreAdminOperation {
         }
       }
 
+    }
+  },
+  BACKUPCORE_OP(BACKUPCORE) {
+    @Override
+    public void call(CallInfo callInfo) throws IOException {
+      ZkController zkController = callInfo.handler.coreContainer.getZkController();
+      if (zkController == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Internal SolrCloud API");
+      }
+
+      final SolrParams params = callInfo.req.getParams();
+      String cname = params.get(CoreAdminParams.CORE);
+      if (cname == null) {
+        throw new IllegalArgumentException(CoreAdminParams.CORE + " is required");
+      }
+
+      String name = params.get(NAME);
+      if (name == null) {
+        throw new IllegalArgumentException(CoreAdminParams.NAME + " is required");
+      }
+
+      String location = params.get("location");
+      if (name == null) {
+        throw new IllegalArgumentException("location is required");
+      }
+
+      try (SolrCore core = callInfo.handler.coreContainer.getCore(cname)) {
+        SnapShooter snapShooter = new SnapShooter(core, location, name);
+        snapShooter.validateCreateSnapshot();
+        NamedList details = snapShooter.createSnapshot();
+        if (details.get("snapShootException") != null) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to backup core=" + core.getName());
+        }
+      }
+    }
+  },
+  RESTORECORE_OP(RESTORECORE) {
+    @Override
+    public void call(CallInfo callInfo) throws Exception {
+      ZkController zkController = callInfo.handler.coreContainer.getZkController();
+      if (zkController == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Only valid for SolrCloud");
+      }
+
+      final SolrParams params = callInfo.req.getParams();
+      String cname = params.get(CoreAdminParams.CORE);
+      if (cname == null) {
+        throw new IllegalArgumentException(CoreAdminParams.CORE + " is required");
+      }
+
+      String name = params.get(NAME);
+      if (name == null) {
+        throw new IllegalArgumentException(CoreAdminParams.NAME + " is required");
+      }
+
+      String location = params.get("location");
+      if (name == null) {
+        throw new IllegalArgumentException("location is required");
+      }
+
+      try (SolrCore core = callInfo.handler.coreContainer.getCore(cname)) {
+        RestoreCore restoreCore = new RestoreCore(core, location, name);
+        boolean success = restoreCore.doRestore();
+        if (!success) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to restore core=" + core.getName());
+        }
+      }
     }
   };
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

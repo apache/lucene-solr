@@ -37,6 +37,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +76,7 @@ public class SnapShooter {
   }
 
   void createSnapAsync(final IndexCommit indexCommit, final int numberToKeep, final ReplicationHandler replicationHandler) {
-    replicationHandler.core.getDeletionPolicy().saveCommitPoint(indexCommit.getGeneration());
+    solrCore.getDeletionPolicy().saveCommitPoint(indexCommit.getGeneration());
 
     new Thread() {
       @Override
@@ -112,7 +114,7 @@ public class SnapShooter {
     }.start();
   }
 
-  void validateCreateSnapshot() throws IOException {
+  public void validateCreateSnapshot() throws IOException {
     snapShotDir = new File(snapDir, directoryName);
     if (snapShotDir.exists()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -122,6 +124,43 @@ public class SnapShooter {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "Unable to create snapshot directory: " + snapShotDir.getAbsolutePath());
     }
+  }
+
+  //nocommit - copy pasted from createSnapshot. Need to reconcile tho
+  public NamedList createSnapshot() {
+    RefCounted<SolrIndexSearcher> searcher = solrCore.getSearcher();
+    IndexCommit indexCommit = null;
+
+    NamedList<Object> details = new NamedList<>();
+    try {
+      details.add("startTime", new Date().toString());
+      LOG.info("Creating backup snapshot " + (snapshotName == null ? "<not named>" : snapshotName) + " at " + snapDir);
+
+      indexCommit = searcher.get().getIndexReader().getIndexCommit();
+      Collection<String> files = indexCommit.getFileNames();
+
+      Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
+      try {
+        copyFiles(dir, files, snapShotDir);
+      } finally {
+        solrCore.getDirectoryFactory().release(dir);
+      }
+
+      details.add("fileCount", files.size());
+      details.add("status", "success");
+      details.add("snapshotCompletedAt", new Date().toString());
+      details.add("snapshotName", snapshotName);
+      LOG.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName) +
+          " at " + snapDir);
+    } catch (Exception e) {
+      IndexFetcher.delTree(snapShotDir);
+      LOG.error("Exception while creating snapshot", e);
+      details.add("snapShootException", e.getMessage());
+    } finally {
+      solrCore.getDeletionPolicy().releaseCommitPoint(indexCommit.getGeneration());
+      searcher.decref();
+    }
+    return details;
   }
 
   void createSnapshot(final IndexCommit indexCommit, ReplicationHandler replicationHandler) {
@@ -149,7 +188,7 @@ public class SnapShooter {
       LOG.error("Exception while creating snapshot", e);
       details.add("snapShootException", e.getMessage());
     } finally {
-      replicationHandler.core.getDeletionPolicy().releaseCommitPoint(indexCommit.getGeneration());
+      solrCore.getDeletionPolicy().releaseCommitPoint(indexCommit.getGeneration());
       replicationHandler.snapShootDetails = details;
     }
   }

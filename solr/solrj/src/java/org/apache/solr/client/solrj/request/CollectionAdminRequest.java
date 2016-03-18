@@ -410,6 +410,82 @@ public abstract class CollectionAdminRequest <Q extends CollectionAdminRequest<Q
     }
   }
 
+  // BACKUP request
+  public static class Backup extends AsyncCollectionAdminRequest<Backup> {
+    protected String location;
+    protected String name;
+    protected String collection;
+
+    public String getLocation() {
+      return location;
+    }
+
+    public Backup setLocation(String location) {
+      this.location = location;
+      return this;
+    }
+
+    public Backup(String name, String collection) {
+      this.name = name;
+      this.collection = collection;
+      action = CollectionAction.BACKUP;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set(CoreAdminParams.COLLECTION, collection);
+      params.set(CoreAdminParams.NAME, name);
+      if (location != null) {
+        params.set("location", location);
+      }
+      return params;
+    }
+
+    @Override
+    protected Backup getThis() {
+      return this;
+    }
+  }
+
+  // RESTORE request
+  public static class Restore extends AsyncCollectionAdminRequest<Restore> {
+    protected String location;
+    protected String name;
+    protected String collection;
+
+    public String getLocation() {
+      return location;
+    }
+
+    public Restore setLocation(String location) {
+      this.location = location;
+      return this;
+    }
+
+    public Restore(String name, String collection) {
+      this.name = name;
+      this.collection = collection;
+      action = CollectionAction.RESTORE;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set(CoreAdminParams.COLLECTION, collection);
+      params.set(CoreAdminParams.NAME, name);
+      if (location != null) {
+        params.set("location", location);
+      }
+      return params;
+    }
+
+    @Override
+    protected Restore getThis() {
+      return this;
+    }
+  }
+
   // CREATESHARD request
   public static class CreateShard extends CollectionShardAsyncAdminRequest<CreateShard> {
     protected String nodeSet;

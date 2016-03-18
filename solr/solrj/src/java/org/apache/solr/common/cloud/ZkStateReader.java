@@ -133,7 +133,8 @@ public class ZkStateReader implements Closeable {
   public static final Set<String> KNOWN_CLUSTER_PROPS = unmodifiableSet(new HashSet<>(asList(
       LEGACY_CLOUD,
       URL_SCHEME,
-      AUTO_ADD_REPLICAS)));
+      AUTO_ADD_REPLICAS,
+      "location")));
 
   /**
    * Returns config set name for collection.
