@@ -17,49 +17,32 @@
 
 package org.apache.solr.cloud;
 
-import java.io.File;
-
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.util.NamedList;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
 
-public class TestCloudBackupRestore extends SolrTestCaseJ4 {
+public class TestCloudBackupRestore extends SolrCloudTestCase {
 
-  static Logger log = LoggerFactory.getLogger(TestCloudBackupRestore.class);
+  private static Logger log = LoggerFactory.getLogger(TestCloudBackupRestore.class);
 
-  private MiniSolrCloudCluster solrCluster;
+  private static final int NUM_SHARDS = 2;
 
-  @Override
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-    solrCluster = new MiniSolrCloudCluster(2, createTempDir(), buildJettyConfig("/solr"));
-    final File configDir = getFile("solr").toPath().resolve("collection1/conf").toFile();
-    solrCluster.uploadConfigDir(configDir, "conf1");
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-  }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    solrCluster.shutdown();
-    super.tearDown();
+  @BeforeClass
+  public static void createCluster() throws Exception {
+    configureCluster(2)
+        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .configure();
   }
 
   @Test
@@ -67,28 +50,26 @@ public class TestCloudBackupRestore extends SolrTestCaseJ4 {
     String collectionName = "backuprestore";
     String restoreCollectionName = collectionName + "_restored";
     boolean isImplicit = random().nextBoolean();
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create()
-        .setCollectionName(collectionName)
-        .setConfigName("conf1")
-        .setReplicationFactor(TestUtil.nextInt(random(), 1, 2))
-        .setMaxShardsPerNode(2);
+    int numReplicas = TestUtil.nextInt(random(), 1, 2);
+    CollectionAdminRequest.Create create =
+        CollectionAdminRequest.createCollection(collectionName, "conf1", NUM_SHARDS, numReplicas);
+    create.setMaxShardsPerNode(NUM_SHARDS);
     if (isImplicit) { //implicit router
       create.setRouterName(ImplicitDocRouter.NAME);
-      create.setShards("shard1,shard2");
+      create.setNumShards(null);//erase it
+      create.setShards("shard1,shard2"); // however still same number as NUM_SHARDS; we assume this later
       create.setRouterField("shard_s");
-    } else {
-      create.setNumShards(2);
     }
-
-    create.process(solrCluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish("backuprestore", solrCluster.getSolrClient().getZkStateReader(), false, true, 30);
+//TODO nocommit test shard split & custom doc route?
+    create.process(cluster.getSolrClient());
+    waitForCollection(collectionName);
     indexDocs(collectionName);
     testBackupAndRestore(collectionName, restoreCollectionName, isImplicit);
   }
 
   private void indexDocs(String collectionName) throws Exception {
     int numDocs = TestUtil.nextInt(random(), 10, 100);
-    CloudSolrClient client = solrCluster.getSolrClient();
+    CloudSolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(collectionName);
     for (int i=0; i<numDocs; i++) {
       //We index the shard_s fields for whichever router gets chosen but only use it when implicit router was selected
@@ -109,7 +90,7 @@ public class TestCloudBackupRestore extends SolrTestCaseJ4 {
 
   private void testBackupAndRestore(String collectionName, String restoreCollectionName, boolean isImplicit) throws Exception {
     String backupName = "mytestbackup";
-    CloudSolrClient client = solrCluster.getSolrClient();
+    CloudSolrClient client = cluster.getSolrClient();
     long totalDocs = client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound();
     long shard1Docs = 0, shard2Docs = 0;
     if (isImplicit) {
@@ -121,29 +102,19 @@ public class TestCloudBackupRestore extends SolrTestCaseJ4 {
     String location = createTempDir().toFile().getAbsolutePath();
 
     log.info("Triggering Backup command");
-    //Run backup command
-    CollectionAdminRequest.Backup backup = new CollectionAdminRequest.Backup(backupName, collectionName)
+
+    CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
         .setLocation(location);
-    NamedList<Object> rsp = solrCluster.getSolrClient().request(backup);
+    NamedList<Object> rsp = cluster.getSolrClient().request(backup);
     assertEquals(0, ((NamedList)rsp.get("responseHeader")).get("status"));
 
     log.info("Triggering Restore command");
 
-    //Restore
-    CollectionAdminRequest.Restore restore = new CollectionAdminRequest.Restore(backupName, restoreCollectionName)
+    CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
         .setLocation(location);
-    rsp = solrCluster.getSolrClient().request(restore);
+    rsp = cluster.getSolrClient().request(restore);
     assertEquals(0, ((NamedList)rsp.get("responseHeader")).get("status"));
-
-    client.getZkStateReader().updateClusterState();
-    DocCollection restoreCollection = null;
-    while (restoreCollection == null)  {
-      try {
-        restoreCollection = client.getZkStateReader().getClusterState().getCollection(restoreCollectionName);
-      } catch (SolrException e) {
-        Thread.sleep(100); //wait for cluster state to update
-      }
-    }
+    waitForCollection(restoreCollectionName);
 
     //Check the number of results are the same
     long restoredNumDocs = client.query(restoreCollectionName, new SolrQuery("*:*")).getResults().getNumFound();
@@ -158,9 +129,17 @@ public class TestCloudBackupRestore extends SolrTestCaseJ4 {
     }
 
     DocCollection backupCollection = client.getZkStateReader().getClusterState().getCollection(collectionName);
+    DocCollection restoreCollection = client.getZkStateReader().getClusterState().getCollection(restoreCollectionName);
+
     assertEquals(backupCollection.getReplicationFactor(), restoreCollection.getReplicationFactor());
 
-    assertEquals( "restore.conf1", solrCluster.getSolrClient().getZkStateReader().readConfigName(restoreCollectionName));
+    assertEquals("restore.conf1", cluster.getSolrClient().getZkStateReader().readConfigName(restoreCollectionName));
+  }
+
+  public void waitForCollection(String collection) throws Exception {
+    AbstractFullDistribZkTestBase.waitForCollection(cluster.getSolrClient().getZkStateReader(), collection, NUM_SHARDS);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);
+    AbstractDistribZkTestBase.assertAllActive(collection, cluster.getSolrClient().getZkStateReader());
   }
 
 }

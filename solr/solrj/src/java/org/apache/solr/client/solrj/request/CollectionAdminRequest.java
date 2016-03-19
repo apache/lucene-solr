@@ -527,11 +527,33 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
+  public static Backup backupCollection(String collection, String backupName) {
+    return new Backup(collection, backupName);
+  }
+
   // BACKUP request
-  public static class Backup extends AsyncCollectionAdminRequest<Backup> {
+  public static class Backup extends AsyncCollectionSpecificAdminRequest {
+    protected final String name;
     protected String location;
-    protected String name;
-    protected String collection;
+
+    public Backup(String collection, String name) {
+      super(CollectionAction.BACKUP, collection);
+      this.name = name;
+    }
+
+    @Override
+    @Deprecated
+    public Backup setAsyncId(String id) {
+      this.asyncId = id;
+      return this;
+    }
+
+    @Override
+    @Deprecated
+    public Backup setCollectionName(String collection) {
+      this.collection = collection;
+      return this;
+    }
 
     public String getLocation() {
       return location;
@@ -542,34 +564,42 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
-    public Backup(String name, String collection) {
-      this.name = name;
-      this.collection = collection;
-      action = CollectionAction.BACKUP;
-    }
-
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CoreAdminParams.COLLECTION, collection);
       params.set(CoreAdminParams.NAME, name);
-      if (location != null) {
-        params.set("location", location);
-      }
+      params.set("location", location); //note: optional
       return params;
     }
 
-    @Override
-    protected Backup getThis() {
-      return this;
-    }
+  }
+
+  public static Restore restoreCollection(String collection, String backupName) {
+    return new Restore(collection, backupName);
   }
 
   // RESTORE request
-  public static class Restore extends AsyncCollectionAdminRequest<Restore> {
+  public static class Restore extends AsyncCollectionSpecificAdminRequest {
+    protected final String name;
     protected String location;
-    protected String name;
-    protected String collection;
+
+    public Restore(String collection, String name) {
+      super(CollectionAction.RESTORE, collection);
+      this.name = name;
+    }
+
+    @Override
+    public Restore setAsyncId(String id) {
+      this.asyncId = id;
+      return this;
+    }
+
+    @Override
+    public Restore setCollectionName(String collection) {
+      this.collection = collection;
+      return this;
+    }
 
     public String getLocation() {
       return location;
@@ -580,27 +610,15 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
-    public Restore(String name, String collection) {
-      this.name = name;
-      this.collection = collection;
-      action = CollectionAction.RESTORE;
-    }
-
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CoreAdminParams.COLLECTION, collection);
       params.set(CoreAdminParams.NAME, name);
-      if (location != null) {
-        params.set("location", location);
-      }
+      params.set("location", location); //note: optional
       return params;
     }
 
-    @Override
-    protected Restore getThis() {
-      return this;
-    }
   }
 
   /**

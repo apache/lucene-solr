@@ -101,7 +101,7 @@ public class ClusterStateMutator {
       collectionProps.put("autoCreated", "true");
     }
 
-    String znode = message.getInt(DocCollection.STATE_FORMAT, 1) == 1 ? null
+    String znode = message.getInt(DocCollection.STATE_FORMAT, 2) == 1 ? null
         : ZkStateReader.getCollectionPath(cName);
 
     DocCollection newCollection = new DocCollection(cName,

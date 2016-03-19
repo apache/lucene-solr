@@ -17,8 +17,10 @@
 package org.apache.solr.cloud;
 
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.lang.invoke.MethodHandles;
@@ -50,6 +52,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -335,46 +338,27 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     String location = message.getStr("location");
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     final String asyncId = message.getStr(ASYNC);
-    Map<String, String> requestMap = null;
-    if (asyncId != null) {
-      requestMap = new HashMap<>();
-    }
+    Map<String, String> requestMap = new HashMap<>();
+
     Path backupPath = Paths.get(location).resolve(name).toAbsolutePath();
 
-    if (!Files.exists(backupPath)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Backup directory does not exist: " + backupPath.toString());
-    }
+    Path backupZkPath =  backupPath.resolve("zk_backup");
 
-    Path zkBackup =  backupPath.resolve("zk_backup");
-    if (!Files.exists(zkBackup)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Backup zk directory does not exist: " + backupPath.toString());
-    }
+    Path backupZkPropsPath = backupZkPath.resolve("backup.properties");
 
-    Path propertiesPath = zkBackup.resolve("backup.properties");
-    if (!Files.exists(propertiesPath)) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "backup.properties file does not exist: " + backupPath.toString());
-    }
-
-    FileInputStream in = null;
-    Properties properties = null;
-    try {
-      in = new FileInputStream(propertiesPath.toAbsolutePath().toString());
-      properties = new Properties();
+    Properties properties = new Properties();
+    try (InputStream in = Files.newInputStream(backupZkPropsPath)) {
       properties.load(new InputStreamReader(in, StandardCharsets.UTF_8));
     } catch (IOException e) {
       String errorMsg = String.format(Locale.ROOT, "Could not load properties from %s: %s:",
-          propertiesPath.toAbsolutePath().toString(), e.toString());
+          backupZkPropsPath.toAbsolutePath().toString(), e.toString());
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, errorMsg);
-    } finally {
-      IOUtils.closeQuietly(in);
     }
 
     String backupCollection = (String) properties.get("collectionName");
-    Path collectionStatePath = zkBackup.resolve("collection_state_backup.json");
+    Path collectionStatePath = backupZkPath.resolve("collection_state_backup.json");
     byte[] data = Files.readAllBytes(collectionStatePath);
+    @SuppressWarnings("unchecked")
     Map<String, Object> collectionProps = (Map<String, Object>) ((Map<String, Object>) Utils.fromJSON(data)).get(backupCollection);
 
     //Download the configs
@@ -383,42 +367,46 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     //Use a name such as restore.<restore_name>.<original_config_name>
     // in ZK for the configs
     String restoreConfigName = "restore." + configName;
-    zkStateReader.getConfigManager().uploadConfigDir(zkBackup.resolve("configs").resolve(configName), restoreConfigName);
+    zkStateReader.getConfigManager().uploadConfigDir(backupZkPath.resolve("configs").resolve(configName), restoreConfigName);
 
     log.debug("Starting restore into collection={} with backup_name={} at location={}", restoreCollectionName, name,
-        backupPath.toString());
+        backupPath);
 
     //Create core-less collection
-    Map<String, Object> propMap = new HashMap<>();
-    propMap.put(NAME, restoreCollectionName);
-    propMap.put(CREATE_NODE_SET, CREATE_NODE_SET_EMPTY); //no cores
-    propMap.put("collection.configName", restoreConfigName);
-    // add async param
-    if (asyncId != null) {
-      propMap.put(ASYNC, asyncId);
-    }
-    String router = (String) ((Map)collectionProps.get("router")).get("name");
-    propMap.put("router.name", router);
-    Map slices = (Map) collectionProps.get(SHARDS_PROP);
-    if (slices != null) { //Implicit routers may not have a shards defined
-      propMap.put(NUM_SLICES, slices.size());
-    }
-    if (ImplicitDocRouter.NAME.equals(router)) {
-      Iterator keys = ((Map) collectionProps.get(SHARDS_PROP)).keySet().iterator();
-      StringBuilder shardsBuilder = new StringBuilder();
-      while (keys.hasNext()) {
-        String shard = (String) keys.next();
-        shardsBuilder.append(shard);
-        shardsBuilder.append(",");
+    {
+      Map<String, Object> propMap = new HashMap<>();
+      propMap.put(NAME, restoreCollectionName);
+      propMap.put(CREATE_NODE_SET, CREATE_NODE_SET_EMPTY); //no cores
+      propMap.put("collection.configName", restoreConfigName);
+      // add async param
+      if (asyncId != null) {
+        propMap.put(ASYNC, asyncId);
       }
-      String shards = shardsBuilder.deleteCharAt(shardsBuilder.length()-1).toString();
-      propMap.put(SHARDS_PROP, shards);
-    }
-    propMap.put(MAX_SHARDS_PER_NODE, Integer.parseInt((String) collectionProps.get(MAX_SHARDS_PER_NODE)));
-    propMap.put(ZkStateReader.AUTO_ADD_REPLICAS, Boolean.parseBoolean((String) collectionProps.get(ZkStateReader.AUTO_ADD_REPLICAS)));
-    propMap.put(Overseer.QUEUE_OPERATION, CREATE.toString());
+      String router = (String) ((Map)collectionProps.get("router")).get("name");
+      propMap.put("router.name", router);
+      Map slices = (Map) collectionProps.get(SHARDS_PROP);
+      if (slices != null) { //Implicit routers may not have a shards defined
+        propMap.put(NUM_SLICES, slices.size());
+      }
+      if (ImplicitDocRouter.NAME.equals(router)) {
+        Iterator keys = ((Map) collectionProps.get(SHARDS_PROP)).keySet().iterator();
+        StringBuilder shardsBuilder = new StringBuilder();
+        while (keys.hasNext()) {
+          String shard = (String) keys.next();
+          shardsBuilder.append(shard);
+          shardsBuilder.append(",");
+        }
+        String shards = shardsBuilder.deleteCharAt(shardsBuilder.length()-1).toString();//delete trailing comma
+        propMap.put(SHARDS_PROP, shards);
+      }
+      // TODO nocommit loop all from a list and blacklist those we know could never work.
+      //     The user could always edit the properties file if they need to.
+      propMap.put(MAX_SHARDS_PER_NODE, Integer.parseInt((String) collectionProps.get(MAX_SHARDS_PER_NODE)));
+      propMap.put(ZkStateReader.AUTO_ADD_REPLICAS, Boolean.parseBoolean((String) collectionProps.get(ZkStateReader.AUTO_ADD_REPLICAS)));
+      propMap.put(Overseer.QUEUE_OPERATION, CREATE.toString());
 
-    createCollection(zkStateReader.getClusterState(), new ZkNodeProps(propMap), new NamedList());
+      createCollection(zkStateReader.getClusterState(), new ZkNodeProps(propMap), new NamedList());
+    }
 
     //No need to wait. CreateCollection takes care of it by calling waitToSeeReplicasInState()
     DocCollection restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
@@ -426,21 +414,24 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       throw new SolrException(ErrorCode.SERVER_ERROR, "Could not create restore collection");
     }
 
-    //Mark all shards in CONSTRUCTION STATE while we restore the data
     DistributedQueue inQueue = Overseer.getStateUpdateQueue(zkStateReader.getZkClient());
-    propMap = new HashMap<>();
-    propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
-    for (Slice shard : restoreCollection.getSlices()) {
-      propMap.put(shard.getName(), Slice.State.CONSTRUCTION.toString());
+
+    //Mark all shards in CONSTRUCTION STATE while we restore the data
+    {
+      Map<String, Object> propMap = new HashMap<>();
+      propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
+      for (Slice shard : restoreCollection.getSlices()) {
+        propMap.put(shard.getName(), Slice.State.CONSTRUCTION.toString());
+      }
+      propMap.put(ZkStateReader.COLLECTION_PROP, restoreCollectionName);
+      inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
     }
-    propMap.put(ZkStateReader.COLLECTION_PROP, restoreCollectionName);
-    inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
 
     ClusterState clusterState = zkStateReader.getClusterState();
     //Create one replica per shard and copy backed up data to it
     for (Slice slice: restoreCollection.getSlices()) {
       log.debug("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
-      propMap = new HashMap<>();
+      HashMap<String, Object> propMap = new HashMap<>();
       propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
       propMap.put(COLLECTION_PROP, restoreCollectionName);
       propMap.put(SHARD_ID_PROP, slice.getName());
@@ -465,50 +456,55 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     processResponses(new NamedList(), shardHandler, true, "Could not restore core", asyncId, requestMap);
 
     //Mark all shards in ACTIVE STATE
-    propMap = new HashMap<>();
-    propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
-    propMap.put(ZkStateReader.COLLECTION_PROP, restoreCollectionName);
-    for (Slice shard : restoreCollection.getSlices()) {
-      propMap.put(shard.getName(), Slice.State.ACTIVE.toString());
+
+    {
+      HashMap<String, Object> propMap = new HashMap<>();
+      propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
+      propMap.put(ZkStateReader.COLLECTION_PROP, restoreCollectionName);
+      for (Slice shard : restoreCollection.getSlices()) {
+        propMap.put(shard.getName(), Slice.State.ACTIVE.toString());
+      }
+      inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
     }
-    inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
 
     //refresh the location copy of collection state
     restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
 
     //Update the replicationFactor to be 1 as that's what it is currently. Otherwise addreplica assigns wrong core names
-    propMap = new HashMap<>();
-    propMap.put(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower());
-    propMap.put(COLLECTION_PROP, restoreCollectionName);
-    propMap.put(REPLICATION_FACTOR, 1);
-    inQueue.offer(Utils.toJSON(message));
+    {
+      HashMap<String, Object> propMap = new HashMap<>();
+      propMap.put(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower());
+      propMap.put(COLLECTION_PROP, restoreCollectionName);
+      propMap.put(REPLICATION_FACTOR, 1);
+      inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
+    }
 
     //Add the remaining replicas for each shard
     int numReplicas = Integer.parseInt((String) collectionProps.get(REPLICATION_FACTOR));
-    for (Slice slice: restoreCollection.getSlices()) {
-      for(int i=1; i<numReplicas; i++) {
-        log.debug("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
-        propMap = new HashMap<>();
-        propMap.put(COLLECTION_PROP, restoreCollectionName);
-        propMap.put(SHARD_ID_PROP, slice.getName());
-        // add async param
-        if (asyncId != null) {
-          propMap.put(ASYNC, asyncId);
-        }
-        addReplica(zkStateReader.getClusterState(), new ZkNodeProps(propMap), results);
-      }
-    }
-
     if (numReplicas > 1) {
+      for (Slice slice: restoreCollection.getSlices()) {
+        for(int i=1; i<numReplicas; i++) {
+          log.debug("Adding replica for shard={} collection={} ", slice.getName(), restoreCollection);
+          HashMap<String, Object> propMap = new HashMap<>();
+          propMap.put(COLLECTION_PROP, restoreCollectionName);
+          propMap.put(SHARD_ID_PROP, slice.getName());
+          // add async param
+          if (asyncId != null) {
+            propMap.put(ASYNC, asyncId);
+          }
+          addReplica(zkStateReader.getClusterState(), new ZkNodeProps(propMap), results);
+        }
+      }
+
       //Update the replicationFactor property in cluster state for this collection
       log.info("Modifying replication factor to the expected value of={}", numReplicas);
-      propMap = new HashMap<>();
+      HashMap<String, Object>propMap = new HashMap<>();
       propMap.put(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MODIFYCOLLECTION.toLower());
       propMap.put(COLLECTION_PROP, restoreCollectionName);
       propMap.put(REPLICATION_FACTOR, numReplicas);
-      inQueue.offer(Utils.toJSON(message));
+      inQueue.offer(Utils.toJSON(new ZkNodeProps(propMap)));
+      //nocommit do we need to wait for the result to be done before returning?
     }
-
   }
 
   private void processBackupAction(ZkNodeProps message, NamedList results) throws IOException, KeeperException, InterruptedException {
@@ -527,11 +523,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     //Validating if the directory already exists.
     if (Files.exists(backupPath)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Backup directory already exists: " + backupPath.toString());
+          "Backup directory already exists: " + backupPath);
     }
 
     log.debug("Starting backup of collection={} with backup_name={} at location={}", collectionName, name,
-        backupPath.toString());
+        backupPath);
 
     for (Slice slice : zkStateReader.getClusterState().getActiveSlices(collectionName)) {
       Replica replica = slice.getLeader();
@@ -575,16 +571,14 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     //TODO: Add MD5 of the configset. If during restore the same name configset exists then we can compare checksums to see if they are the same.
     //if they are not the same then we can throw and error or have a 'overwriteConfig' flag
     //TODO save numDocs for the shardLeader. We can use it to sanity check the restore.
-    OutputStreamWriter os = new OutputStreamWriter(new FileOutputStream(propertiesPath.toAbsolutePath().toString()), StandardCharsets.UTF_8);
 
-    try {
+    try (OutputStreamWriter os = new OutputStreamWriter(
+        new FileOutputStream(propertiesPath.toAbsolutePath().toString()), StandardCharsets.UTF_8)) {
       properties.store(os, "Snapshot properties file");
     } catch (IOException e) {
       String errorMsg = String.format(Locale.ROOT, "Could not write properties to %s: %s:",
           propertiesPath.toAbsolutePath().toString(), e.toString());
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, errorMsg);
-    } finally {
-      IOUtils.closeQuietly(os);
+      throw new SolrException(ErrorCode.SERVER_ERROR, errorMsg);
     }
 
     log.debug("Completed backing up ZK data for backup={}", name);

@@ -97,6 +97,8 @@ public class ZkStateReader implements Closeable {
 
   public static final String URL_SCHEME = "urlScheme";
 
+  public static final String BACKUP_LOCATION = "location";
+
   /** A view of the current state of all collections; combines all the different state sources into a single view. */
   protected volatile ClusterState clusterState;
 
@@ -134,7 +136,7 @@ public class ZkStateReader implements Closeable {
       LEGACY_CLOUD,
       URL_SCHEME,
       AUTO_ADD_REPLICAS,
-      "location")));
+      BACKUP_LOCATION)));
 
   /**
    * Returns config set name for collection.
