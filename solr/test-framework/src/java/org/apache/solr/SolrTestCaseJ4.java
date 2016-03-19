@@ -265,6 +265,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
       // clean up static
       sslConfig = null;
+      testSolrHome = null;
     }
     
     IpTables.unblockAllPorts();

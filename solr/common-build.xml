@@ -152,10 +152,13 @@
 
   <!-- 
     We don't want to run HDFS tests on Windows, because they require Cygwin.
-    If you have Cygwin or manually raised permgen, you can override this property on command line:
+    We don't want to run HDFS tests on Java 9 Jigsaw, because Hadoop/HDFS is completely broken with Java's module system.
   -->
   <condition property="tests.disableHdfs" value="true">
-    <os family="windows"/>
+    <or>
+      <os family="windows"/>
+      <available classname="java.lang.reflect.Module"/>
+    </or>
   </condition>
 
   <target name="validate" depends="compile-tools">

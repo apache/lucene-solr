@@ -25,6 +25,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.ListMultimap;
 import com.typesafe.config.Config;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
@@ -63,6 +64,8 @@ public abstract class AbstractSolrMorphlineZkTestBase extends AbstractFullDistri
   
   @BeforeClass
   public static void setupClass() throws Exception {
+    assumeFalse("This test fails on Java 9 (https://issues.apache.org/jira/browse/SOLR-8876)", Constants.JRE_IS_MINIMUM_JAVA9);
+    
     assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
         new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));
     solrHomeDirectory = createTempDir().toFile();
