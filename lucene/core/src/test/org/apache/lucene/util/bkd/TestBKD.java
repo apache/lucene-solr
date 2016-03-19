@@ -24,9 +24,12 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.store.CorruptingIndexOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -399,27 +402,27 @@ public class TestBKD extends LuceneTestCase {
     // Keep retrying until we 1) we allow a big enough heap, and 2) we hit a random IOExc from MDW:
     boolean done = false;
     while (done == false) {
-      try (MockDirectoryWrapper dir = newMockFSDirectory(createTempDir())) {
-        try {
-          dir.setRandomIOExceptionRate(0.05);
-          dir.setRandomIOExceptionRateOnOpen(0.05);
-          verify(dir, docValues, null, numDims, numBytesPerDim, 50, maxMBHeap);
-        } catch (IllegalArgumentException iae) {
-          // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry w/ more heap
-          assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
-          maxMBHeap *= 1.25;
-        } catch (IOException ioe) {
-          if (ioe.getMessage().contains("a random IOException")) {
-            // BKDWriter should fully clean up after itself:
-            done = true;
-          } else {
-            throw ioe;
-          }
+      MockDirectoryWrapper dir = newMockFSDirectory(createTempDir());
+      try {
+        dir.setRandomIOExceptionRate(0.05);
+        dir.setRandomIOExceptionRateOnOpen(0.05);
+        verify(dir, docValues, null, numDims, numBytesPerDim, 50, maxMBHeap);
+      } catch (IllegalArgumentException iae) {
+        // This just means we got a too-small maxMB for the maxPointsInLeafNode; just retry w/ more heap
+        assertTrue(iae.getMessage().contains("either increase maxMBSortInHeap or decrease maxPointsInLeafNode"));
+        maxMBHeap *= 1.25;
+      } catch (IOException ioe) {
+        if (ioe.getMessage().contains("a random IOException")) {
+          // BKDWriter should fully clean up after itself:
+          done = true;
+        } else {
+          throw ioe;
         }
-
-        String[] files = dir.listAll();
-        assertTrue("files=" + Arrays.toString(files), files.length == 0 || Arrays.equals(files, new String[] {"extra0"}));
       }
+
+      String[] files = dir.listAll();
+      assertTrue("files=" + Arrays.toString(files), files.length == 0 || Arrays.equals(files, new String[] {"extra0"}));
+      dir.close();
     }
   }
 
@@ -774,5 +777,124 @@ public class TestBKD extends LuceneTestCase {
       dir = newDirectory();
     }
     return dir;
+  }
+
+  /** Make sure corruption on an input sort file is caught, even if BKDWriter doesn't get angry */
+  public void testBitFlippedOnPartition1() throws Exception {
+
+    // Generate fixed data set:
+    int numDocs = atLeast(10000);
+    int numBytesPerDim = 4;
+    int numDims = 3;
+
+    byte[][][] docValues = new byte[numDocs][][];
+    byte counter = 0;
+
+    for(int docID=0;docID<numDocs;docID++) {
+      byte[][] values = new byte[numDims][];
+      for(int dim=0;dim<numDims;dim++) {
+        values[dim] = new byte[numBytesPerDim];
+        for(int i=0;i<values[dim].length;i++) {
+          values[dim][i] = counter;
+          counter++;
+        }
+      }
+      docValues[docID] = values;
+    }
+
+    try (Directory dir0 = newMockDirectory()) {
+      if (dir0 instanceof MockDirectoryWrapper) {
+        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
+      }
+
+      Directory dir = new FilterDirectory(dir0) {
+        boolean corrupted;
+        @Override
+        public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+          IndexOutput out = in.createTempOutput(prefix, suffix, context);
+          if (corrupted == false && prefix.equals("_0_bkd1") && suffix.equals("sort")) {
+            corrupted = true;
+            return new CorruptingIndexOutput(dir0, 22, out);
+          } else {
+            return out;
+          }
+        }
+      };
+
+      CorruptIndexException e = expectThrows(CorruptIndexException.class, () -> {
+          verify(dir, docValues, null, numDims, numBytesPerDim, 50, 0.1);
+        });
+      assertTrue(e.getMessage().contains("checksum failed (hardware problem?)"));
+    }
+  }
+
+  /** Make sure corruption on a recursed partition is caught, when BKDWriter does get angry */
+  public void testBitFlippedOnPartition2() throws Exception {
+
+    // Generate fixed data set:
+    int numDocs = atLeast(10000);
+    int numBytesPerDim = 4;
+    int numDims = 3;
+
+    byte[][][] docValues = new byte[numDocs][][];
+    byte counter = 0;
+
+    for(int docID=0;docID<numDocs;docID++) {
+      byte[][] values = new byte[numDims][];
+      for(int dim=0;dim<numDims;dim++) {
+        values[dim] = new byte[numBytesPerDim];
+        for(int i=0;i<values[dim].length;i++) {
+          values[dim][i] = counter;
+          counter++;
+        }
+      }
+      docValues[docID] = values;
+    }
+
+    try (Directory dir0 = newMockDirectory()) {
+      if (dir0 instanceof MockDirectoryWrapper) {
+        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
+      }
+
+      Directory dir = new FilterDirectory(dir0) {
+        boolean corrupted;
+        @Override
+        public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+          IndexOutput out = in.createTempOutput(prefix, suffix, context);
+          //System.out.println("prefix=" + prefix + " suffix=" + suffix);
+          if (corrupted == false && suffix.equals("bkd_left1")) {
+            //System.out.println("now corrupt byte=" + x + " prefix=" + prefix + " suffix=" + suffix);
+            corrupted = true;
+            return new CorruptingIndexOutput(dir0, 22072, out);
+          } else {
+            return out;
+          }
+        }
+      };
+
+      Throwable t;
+
+      if (TEST_ASSERTS_ENABLED) {
+        t = expectThrows(AssertionError.class, () -> {
+            verify(dir, docValues, null, numDims, numBytesPerDim, 50, 0.1);
+          });
+      } else {
+        t = expectThrows(ArrayIndexOutOfBoundsException.class, () -> {
+            verify(dir, docValues, null, numDims, numBytesPerDim, 50, 0.1);
+          });
+      }
+      assertCorruptionDetected(t);
+    }
+  }
+
+  private void assertCorruptionDetected(Throwable t) {
+    for(Throwable suppressed : t.getSuppressed()) {
+      if (suppressed instanceof CorruptIndexException) {
+        if (suppressed.getMessage().contains("checksum failed (hardware problem?)")) {
+          return;
+        }
+      }
+    }
+    fail("did not see a supporessed CorruptIndexException");
   }
 }

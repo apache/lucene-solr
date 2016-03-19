@@ -18,6 +18,8 @@ package org.apache.lucene.util.bkd;
 
 import java.io.IOException;
 
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -65,15 +67,22 @@ final class OfflinePointWriter implements PointWriter {
   }
 
   @Override
-  public PointReader getReader(long start) throws IOException {
+  public PointReader getReader(long start, long length) throws IOException {
     assert closed;
-    return new OfflinePointReader(tempDir, out.getName(), packedBytesLength, start, count-start, longOrds);
+    assert start + length <= count: "start=" + start + " length=" + length + " count=" + count;
+    return new OfflinePointReader(tempDir, out.getName(), packedBytesLength, start, length, longOrds);
   }
 
   @Override
   public void close() throws IOException {
-    out.close();
-    closed = true;
+    if (closed == false) {
+      try {
+        CodecUtil.writeFooter(out);
+      } finally {
+        out.close();
+        closed = true;
+      }
+    }
   }
 
   @Override
@@ -86,4 +95,3 @@ final class OfflinePointWriter implements PointWriter {
     return "OfflinePointWriter(count=" + count + " tempFileName=" + out.getName() + ")";
   }
 }
-

@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
@@ -30,9 +31,9 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
+import org.apache.lucene.util.OfflineSorter;
 
 /**
  * This wrapper buffers incoming elements and makes sure they are sorted based on given comparator.
@@ -176,9 +177,7 @@ public class SortedInputIterator implements InputIterator {
     OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix, tieBreakByCostComparator);
     tempInput = tempDir.createTempOutput(tempFileNamePrefix, "input", IOContext.DEFAULT);
     
-    final OfflineSorter.ByteSequencesWriter writer = new OfflineSorter.ByteSequencesWriter(tempInput);
-    boolean success = false;
-    try {
+    try (OfflineSorter.ByteSequencesWriter writer = new OfflineSorter.ByteSequencesWriter(tempInput)) {
       BytesRef spare;
       byte[] buffer = new byte[0];
       ByteArrayDataOutput output = new ByteArrayDataOutput(buffer);
@@ -186,23 +185,11 @@ public class SortedInputIterator implements InputIterator {
       while ((spare = source.next()) != null) {
         encode(writer, output, buffer, spare, source.payload(), source.contexts(), source.weight());
       }
-      writer.close();
-      tempSortedFileName = sorter.sort(tempInput.getName());
-      ByteSequencesReader reader = new OfflineSorter.ByteSequencesReader(tempDir.openInput(tempSortedFileName, IOContext.READONCE));
-      success = true;
-      return reader;
-      
-    } finally {
-      if (success) {
-        IOUtils.close(writer);
-      } else {
-        try {
-          IOUtils.closeWhileHandlingException(writer);
-        } finally {
-          close();
-        }
-      }
+      CodecUtil.writeFooter(tempInput);
     }
+
+    tempSortedFileName = sorter.sort(tempInput.getName());
+    return new OfflineSorter.ByteSequencesReader(tempDir.openChecksumInput(tempSortedFileName, IOContext.READONCE), tempSortedFileName);
   }
   
   private void close() throws IOException {

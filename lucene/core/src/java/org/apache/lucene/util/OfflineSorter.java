@@ -25,6 +25,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -238,8 +240,7 @@ public class OfflineSorter {
     TrackingDirectoryWrapper trackingDir = new TrackingDirectoryWrapper(dir);
 
     boolean success = false;
-    try (ByteSequencesReader is = getReader(dir.openInput(inputFileName, IOContext.READONCE))) {
-
+    try (ByteSequencesReader is = getReader(dir.openChecksumInput(inputFileName, IOContext.READONCE), inputFileName)) {
       int lineCount;
       while ((lineCount = readPartition(is)) > 0) {
         segments.add(sortPartition(trackingDir));
@@ -271,6 +272,8 @@ public class OfflineSorter {
       String result;
       if (segments.isEmpty()) {
         try (IndexOutput out = trackingDir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT)) {
+          // Write empty file footer
+          CodecUtil.writeFooter(out);
           result = out.getName();
         }
       } else {
@@ -281,6 +284,9 @@ public class OfflineSorter {
       assert trackingDir.getCreatedFiles().size() == 1 && trackingDir.getCreatedFiles().contains(result);
 
       sortInfo.totalTime = (System.currentTimeMillis() - sortInfo.totalTime); 
+
+      CodecUtil.checkFooter(is.in);
+
       success = true;
 
       return result;
@@ -312,7 +318,17 @@ public class OfflineSorter {
       // Clean up the buffer for the next partition.
       buffer.clear();
 
+      CodecUtil.writeFooter(out.out);
+
       return tempFile.getName();
+    }
+  }
+
+  /** Called on exception, to check whether the checksum is also corrupt in this source, and add that 
+   *  information (checksum matched or didn't) as a suppressed exception. */
+  private void verifyChecksum(Throwable priorException, ByteSequencesReader reader) throws IOException {
+    try (ChecksumIndexInput in = dir.openChecksumInput(reader.name, IOContext.READONCE)) {
+      CodecUtil.checkFooter(in, priorException);
     }
   }
 
@@ -338,16 +354,20 @@ public class OfflineSorter {
 
     String newSegmentName = null;
 
-    try (IndexOutput out = trackingDir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT);
-         ByteSequencesWriter writer = getWriter(out);) {
+    try (ByteSequencesWriter writer = getWriter(trackingDir.createTempOutput(tempFileNamePrefix, "sort", IOContext.DEFAULT))) {
 
-      newSegmentName = out.getName();
+      newSegmentName = writer.out.getName();
       
       // Open streams and read the top for each file
       for (int i = 0; i < segmentsToMerge.size(); i++) {
-        streams[i] = getReader(dir.openInput(segmentsToMerge.get(i), IOContext.READONCE));
+        streams[i] = getReader(dir.openChecksumInput(segmentsToMerge.get(i), IOContext.READONCE), segmentsToMerge.get(i));
         BytesRefBuilder bytes = new BytesRefBuilder();
-        boolean result = streams[i].read(bytes);
+        boolean result = false;
+        try {
+          result = streams[i].read(bytes);
+        } catch (Throwable t) {
+          verifyChecksum(t, streams[i]);
+        }
         assert result;
         queue.insertWithOverflow(new FileAndTop(i, bytes));
       }
@@ -359,11 +379,24 @@ public class OfflineSorter {
       FileAndTop top;
       while ((top = queue.top()) != null) {
         writer.write(top.current.bytes(), 0, top.current.length());
-        if (!streams[top.fd].read(top.current)) {
-          queue.pop();
-        } else {
-          queue.updateTop();
+        boolean result = false;
+        try {
+          result = streams[top.fd].read(top.current);
+        } catch (Throwable t) {
+          verifyChecksum(t, streams[top.fd]);
         }
+
+        if (result) {
+          queue.updateTop();
+        } else {
+          queue.pop();
+        }
+      }
+
+      CodecUtil.writeFooter(writer.out);
+
+      for(ByteSequencesReader reader : streams) {
+        CodecUtil.checkFooter(reader.in);
       }
   
       sortInfo.mergeTime += System.currentTimeMillis() - start;
@@ -384,7 +417,16 @@ public class OfflineSorter {
   int readPartition(ByteSequencesReader reader) throws IOException {
     long start = System.currentTimeMillis();
     final BytesRefBuilder scratch = new BytesRefBuilder();
-    while (reader.read(scratch)) {
+    while (true) {
+      boolean result = false;
+      try {
+        result = reader.read(scratch);
+      } catch (Throwable t) {
+        verifyChecksum(t, reader);
+      }
+      if (result == false) {
+        break;
+      }
       buffer.append(scratch.get());
       // Account for the created objects.
       // (buffer slots do not account to buffer size.) 
@@ -412,13 +454,14 @@ public class OfflineSorter {
   }
 
   /** Subclasses can override to change how byte sequences are read from disk. */
-  protected ByteSequencesReader getReader(IndexInput in) throws IOException {
-    return new ByteSequencesReader(in);
+  protected ByteSequencesReader getReader(ChecksumIndexInput in, String name) throws IOException {
+    return new ByteSequencesReader(in, name);
   }
 
   /**
    * Utility class to emit length-prefixed byte[] entries to an output stream for sorting.
-   * Complementary to {@link ByteSequencesReader}.
+   * Complementary to {@link ByteSequencesReader}.  You must use {@link CodecUtil#writeFooter}
+   * to write a footer at the end of the input file.
    */
   public static class ByteSequencesWriter implements Closeable {
     protected final IndexOutput out;
@@ -476,11 +519,15 @@ public class OfflineSorter {
    * Complementary to {@link ByteSequencesWriter}.
    */
   public static class ByteSequencesReader implements Closeable {
-    protected final IndexInput in;
+    protected final String name;
+    protected final ChecksumIndexInput in;
+    protected final long end;
 
     /** Constructs a ByteSequencesReader from the provided IndexInput */
-    public ByteSequencesReader(IndexInput in) {
+    public ByteSequencesReader(ChecksumIndexInput in, String name) {
       this.in = in;
+      this.name = name;
+      end = in.length() - CodecUtil.footerLength();
     }
 
     /**
@@ -492,13 +539,11 @@ public class OfflineSorter {
      * @throws EOFException if the file ends before the full sequence is read.
      */
     public boolean read(BytesRefBuilder ref) throws IOException {
-      short length;
-      try {
-        length = in.readShort();
-      } catch (EOFException e) {
+      if (in.getFilePointer() >= end) {
         return false;
       }
 
+      short length = in.readShort();
       ref.grow(length);
       ref.setLength(length);
       in.readBytes(ref.bytes(), 0, length);

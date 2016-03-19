@@ -135,7 +135,8 @@ final class HeapPointWriter implements PointWriter {
   }
 
   @Override
-  public PointReader getReader(long start) {
+  public PointReader getReader(long start, long length) {
+    assert start + length <= docIDs.length: "start=" + start + " length=" + length + " docIDs.length=" + docIDs.length;
     return new HeapPointReader(blocks, valuesPerBlock, packedBytesLength, ords, ordsLong, docIDs, (int) start, nextWrite);
   }
 
@@ -150,6 +151,6 @@ final class HeapPointWriter implements PointWriter {
 
   @Override
   public String toString() {
-    return "HeapPointWriter(count=" + nextWrite + " alloc=" + ords.length + ")";
+    return "HeapPointWriter(count=" + nextWrite + " alloc=" + docIDs.length + ")";
   }
 }
