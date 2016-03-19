@@ -438,9 +438,9 @@ public final class CodecUtil {
     long remaining = in.length() - in.getFilePointer();
     long expected = footerLength();
     if (remaining < expected) {
-      throw new CorruptIndexException("misplaced codec footer (file truncated?): remaining=" + remaining + ", expected=" + expected, in);
+      throw new CorruptIndexException("misplaced codec footer (file truncated?): remaining=" + remaining + ", expected=" + expected + ", fp=" + in.getFilePointer(), in);
     } else if (remaining > expected) {
-      throw new CorruptIndexException("misplaced codec footer (file extended?): remaining=" + remaining + ", expected=" + expected, in);
+      throw new CorruptIndexException("misplaced codec footer (file extended?): remaining=" + remaining + ", expected=" + expected + ", fp=" + in.getFilePointer(), in);
     }
     
     final int magic = in.readInt();

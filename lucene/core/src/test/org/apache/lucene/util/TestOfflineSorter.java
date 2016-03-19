@@ -17,6 +17,7 @@
 package org.apache.lucene.util;
 
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -25,7 +26,11 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.store.CorruptingIndexOutput;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -106,6 +111,29 @@ public class TestOfflineSorter extends LuceneTestCase {
     byte [][] bytes = data.toArray(new byte[data.size()][]);
     return bytes;
   }
+
+  // Generates same data every time:
+  private byte[][] generateFixed(int howMuchDataInBytes) {
+    ArrayList<byte[]> data = new ArrayList<>();
+    int length = 256;
+    byte counter = 0;
+    while (howMuchDataInBytes > 0) {
+      byte[] current = new byte[length];
+      for(int i=0;i<current.length;i++) {
+        current[i] = counter;
+        counter++;
+      }
+      data.add(current);
+      howMuchDataInBytes -= current.length;
+
+      length--;
+      if (length <= 128) {
+        length = 256;
+      }
+    }
+    byte [][] bytes = data.toArray(new byte[data.size()][]);
+    return bytes;
+  }
   
   static final Comparator<byte[]> unsignedByteOrderComparator = new Comparator<byte[]>() {
     @Override
@@ -173,6 +201,7 @@ public class TestOfflineSorter extends LuceneTestCase {
       for (byte [] datum : data) {
         w.write(datum);
       }
+      CodecUtil.writeFooter(out);
     }
   }
   
@@ -225,5 +254,177 @@ public class TestOfflineSorter extends LuceneTestCase {
     }
 
     assertFalse(failed.get());
+  }
+
+  /** Make sure corruption on the incoming (unsorted) file is caught, even if the corruption didn't confuse OfflineSorter! */
+  public void testBitFlippedOnInput1() throws Exception {
+
+    try (Directory dir0 = newMockDirectory()) {
+      if (dir0 instanceof MockDirectoryWrapper) {
+        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
+      }
+
+      Directory dir = new FilterDirectory(dir0) {
+        @Override
+        public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+          IndexOutput out = in.createTempOutput(prefix, suffix, context);
+          if (prefix.equals("unsorted")) {
+            return new CorruptingIndexOutput(dir0, 22, out);
+          } else {
+            return out;
+          }
+        }
+      };
+
+      IndexOutput unsorted = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
+      writeAll(unsorted, generateFixed(10*1024));
+
+      CorruptIndexException e = expectThrows(CorruptIndexException.class, () -> {
+          new OfflineSorter(dir, "foo").sort(unsorted.getName());
+        });
+      assertTrue(e.getMessage().contains("checksum failed (hardware problem?)"));
+    }
+  }
+
+  /** Make sure corruption on the incoming (unsorted) file is caught, if the corruption did confuse OfflineSorter! */
+  public void testBitFlippedOnInput2() throws Exception {
+
+    try (Directory dir0 = newMockDirectory()) {
+      if (dir0 instanceof MockDirectoryWrapper) {
+        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
+      }
+
+      Directory dir = new FilterDirectory(dir0) {
+        @Override
+        public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+          IndexOutput out = in.createTempOutput(prefix, suffix, context);
+          if (prefix.equals("unsorted")) {
+            return new CorruptingIndexOutput(dir0, 22, out) {
+              @Override
+              protected void corruptFile() throws IOException {
+                String newTempName;
+                try(IndexOutput tmpOut = dir0.createTempOutput("tmp", "tmp", IOContext.DEFAULT);
+                    IndexInput in = dir0.openInput(out.getName(), IOContext.DEFAULT)) {
+                  newTempName = tmpOut.getName();
+                  // Replace length at the end with a too-long value:
+                  short v = in.readShort();
+                  assertEquals(256, v);
+                  tmpOut.writeShort(Short.MAX_VALUE);
+                  tmpOut.copyBytes(in, in.length()-Short.BYTES);
+                }
+
+                // Delete original and copy corrupt version back:
+                dir0.deleteFile(out.getName());
+                dir0.copyFrom(dir0, newTempName, out.getName(), IOContext.DEFAULT);
+                dir0.deleteFile(newTempName);
+              }
+            };
+          } else {
+            return out;
+          }
+        }
+      };
+
+      IndexOutput unsorted = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
+      writeAll(unsorted, generateFixed(5*1024));
+
+      // This corruption made OfflineSorter fail with its own exception, but we verify it also went and added (as suppressed) that the
+      // checksum was wrong:
+      EOFException e = expectThrows(EOFException.class, () -> {
+          new OfflineSorter(dir, "foo").sort(unsorted.getName());
+        });
+      assertEquals(1, e.getSuppressed().length);
+      assertTrue(e.getSuppressed()[0] instanceof CorruptIndexException);
+      assertTrue(e.getSuppressed()[0].getMessage().contains("checksum failed (hardware problem?)"));
+    }
+  }
+
+  /** Make sure corruption on a temp file (partition) is caught, even if the corruption didn't confuse OfflineSorter! */
+  public void testBitFlippedOnPartition1() throws Exception {
+
+    try (Directory dir0 = newMockDirectory()) {
+      if (dir0 instanceof MockDirectoryWrapper) {
+        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
+      }
+
+      Directory dir = new FilterDirectory(dir0) {
+
+        boolean corrupted;
+
+        @Override
+        public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+          IndexOutput out = in.createTempOutput(prefix, suffix, context);
+          if (corrupted == false && suffix.equals("sort")) {
+            corrupted = true;
+            return new CorruptingIndexOutput(dir0, 544677, out);
+          } else {
+            return out;
+          }
+        }
+      };
+
+      IndexOutput unsorted = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
+      writeAll(unsorted, generateFixed((int) (OfflineSorter.MB * 3)));
+
+      CorruptIndexException e = expectThrows(CorruptIndexException.class, () -> {
+          new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 10).sort(unsorted.getName());
+        });
+      assertTrue(e.getMessage().contains("checksum failed (hardware problem?)"));
+    }
+  }
+
+  /** Make sure corruption on a temp file (partition) is caught, if the corruption did confuse OfflineSorter! */
+  public void testBitFlippedOnPartition2() throws Exception {
+
+    try (Directory dir0 = newMockDirectory()) {
+      if (dir0 instanceof MockDirectoryWrapper) {
+        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
+      }
+
+      Directory dir = new FilterDirectory(dir0) {
+
+        boolean corrupted;
+
+        @Override
+        public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
+          IndexOutput out = in.createTempOutput(prefix, suffix, context);
+          if (corrupted == false && suffix.equals("sort")) {
+            corrupted = true;
+            return new CorruptingIndexOutput(dir0, 544677, out) {
+              @Override
+              protected void corruptFile() throws IOException {
+                String newTempName;
+                try(IndexOutput tmpOut = dir0.createTempOutput("tmp", "tmp", IOContext.DEFAULT);
+                    IndexInput in = dir0.openInput(out.getName(), IOContext.DEFAULT)) {
+                  newTempName = tmpOut.getName();
+                  tmpOut.copyBytes(in, 1025905);
+                  short v = in.readShort();
+                  assertEquals(254, v);
+                  tmpOut.writeShort(Short.MAX_VALUE);
+                  tmpOut.copyBytes(in, in.length()-1025905-Short.BYTES);
+                }
+
+                // Delete original and copy corrupt version back:
+                dir0.deleteFile(out.getName());
+                dir0.copyFrom(dir0, newTempName, out.getName(), IOContext.DEFAULT);
+                dir0.deleteFile(newTempName);
+              }
+            };
+          } else {
+            return out;
+          }
+        }
+      };
+
+      IndexOutput unsorted = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
+      writeAll(unsorted, generateFixed((int) (OfflineSorter.MB * 3)));
+
+      EOFException e = expectThrows(EOFException.class, () -> {
+          new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 10).sort(unsorted.getName());
+        });
+      assertEquals(1, e.getSuppressed().length);
+      assertTrue(e.getSuppressed()[0] instanceof CorruptIndexException);
+      assertTrue(e.getSuppressed()[0].getMessage().contains("checksum failed (hardware problem?)"));
+    }
   }
 }

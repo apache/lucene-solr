@@ -17,7 +17,6 @@
 package org.apache.lucene.util.bkd;
 
 import java.io.Closeable;
-import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,8 +26,9 @@ import java.util.List;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.ArrayUtil;
@@ -218,7 +218,7 @@ public class BKDWriter implements Closeable {
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
     offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds, "spill");
     tempInput = offlinePointWriter.out;
-    PointReader reader = heapPointWriter.getReader(0);
+    PointReader reader = heapPointWriter.getReader(0, pointCount);
     for(int i=0;i<pointCount;i++) {
       boolean hasNext = reader.next();
       assert hasNext;
@@ -750,23 +750,21 @@ public class BKDWriter implements Closeable {
 
           /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
           @Override
-          protected ByteSequencesReader getReader(IndexInput in) throws IOException {
-            return new ByteSequencesReader(in) {
+          protected ByteSequencesReader getReader(ChecksumIndexInput in, String name) throws IOException {
+            return new ByteSequencesReader(in, name) {
               @Override
               public boolean read(BytesRefBuilder ref) throws IOException {
-                ref.grow(bytesPerDoc);
-                try {
-                  in.readBytes(ref.bytes(), 0, bytesPerDoc);
-                } catch (EOFException eofe) {
+                if (in.getFilePointer() >= end) {
                   return false;
                 }
+                ref.grow(bytesPerDoc);
+                in.readBytes(ref.bytes(), 0, bytesPerDoc);
                 ref.setLength(bytesPerDoc);
                 return true;
               }
             };
           }
         };
-
       sorter.sort(tempInput.getName());
 
       assert lastWriter[0] != null;
@@ -785,7 +783,7 @@ public class BKDWriter implements Closeable {
   public long finish(IndexOutput out) throws IOException {
     // System.out.println("\nBKDTreeWriter.finish pointCount=" + pointCount + " out=" + out + " heapWriter=" + heapPointWriter);
 
-    // TODO: specialize the 1D case?  it's much faster at indexing time (no partitioning on recruse...)
+    // TODO: specialize the 1D case?  it's much faster at indexing time (no partitioning on recurse...)
 
     // Catch user silliness:
     if (heapPointWriter == null && tempInput == null) {
@@ -964,13 +962,32 @@ public class BKDWriter implements Closeable {
     }
   }
 
+  /** Called on exception, to check whether the checksum is also corrupt in this source, and add that 
+   *  information (checksum matched or didn't) as a suppressed exception. */
+  private void verifyChecksum(Throwable priorException, PointWriter writer) throws IOException {
+    // TODO: we could improve this, to always validate checksum as we recurse, if we shared left and
+    // right reader after recursing to children, and possibly within recursed children,
+    // since all together they make a single pass through the file.  But this is a sizable re-org,
+    // and would mean leaving readers (IndexInputs) open for longer:
+    if (writer instanceof OfflinePointWriter) {
+      // We are reading from a temp file; go verify the checksum:
+      String tempFileName = ((OfflinePointWriter) writer).out.getName();
+      try (ChecksumIndexInput in = tempDir.openChecksumInput(tempFileName, IOContext.READONCE)) {
+        CodecUtil.checkFooter(in, priorException);
+      }
+    } else {
+      // We are reading from heap; nothing to add:
+      IOUtils.reThrow(priorException);
+    }
+  }
+
   /** Marks bits for the ords (points) that belong in the right sub tree (those docs that have values >= the splitValue). */
   private byte[] markRightTree(long rightCount, int splitDim, PathSlice source, LongBitSet ordBitSet) throws IOException {
 
     // Now we mark ords that fall into the right half, so we can partition on all other dims that are not the split dim:
 
     // Read the split value, then mark all ords in the right tree (larger than the split value):
-    try (PointReader reader = source.writer.getReader(source.start + source.count - rightCount)) {
+    try (PointReader reader = source.writer.getReader(source.start + source.count - rightCount, rightCount)) {
       boolean result = reader.next();
       assert result;
 
@@ -983,11 +1000,15 @@ public class BKDWriter implements Closeable {
         // Start at 1 because we already did the first value above (so we could keep the split value):
         for(int i=1;i<rightCount;i++) {
           result = reader.next();
-          assert result;
-          assert ordBitSet.get(reader.ord()) == false;
+          if (result == false) {
+            throw new IllegalStateException("did not see enough points from reader=" + reader);
+          }
+          assert ordBitSet.get(reader.ord()) == false: "ord=" + reader.ord() + " was seen twice from " + source.writer;
           ordBitSet.set(reader.ord());
         }
       }
+    } catch (Throwable t) {
+      verifyChecksum(t, source.writer);
     }
 
     return scratch1;
@@ -1024,13 +1045,12 @@ public class BKDWriter implements Closeable {
     return splitDim;
   }
 
-  /** Only called in the 1D case, to pull a partition back into heap once
-   *  the point count is low enough while recursing. */
+  /** Pull a partition back into heap once the point count is low enough while recursing. */
   private PathSlice switchToHeap(PathSlice source) throws IOException {
     int count = Math.toIntExact(source.count);
     try (
        PointWriter writer = new HeapPointWriter(count, count, packedBytesLength, longOrds);
-       PointReader reader = source.writer.getReader(source.start);
+       PointReader reader = source.writer.getReader(source.start, source.count);
        ) {
       for(int i=0;i<count;i++) {
         boolean hasNext = reader.next();
@@ -1038,6 +1058,11 @@ public class BKDWriter implements Closeable {
         writer.append(reader.packedValue(), reader.ord(), reader.docID());
       }
       return new PathSlice(writer, 0, count);
+    } catch (Throwable t) {
+      verifyChecksum(t, source.writer);
+
+      // Dead code but javac disagrees:
+      return null;
     }
   }
 
@@ -1174,14 +1199,17 @@ public class BKDWriter implements Closeable {
 
         try (PointWriter leftPointWriter = getPointWriter(leftCount, "left" + dim);
              PointWriter rightPointWriter = getPointWriter(source.count - leftCount, "right" + dim);
-             PointReader reader = slices[dim].writer.getReader(slices[dim].start);) {
+             PointReader reader = slices[dim].writer.getReader(slices[dim].start, slices[dim].count);) {
 
           long nextRightCount = reader.split(source.count, ordBitSet, leftPointWriter, rightPointWriter, dim == dimToClear);
+          if (rightCount != nextRightCount) {
+            throw new IllegalStateException("wrong number of points in split: expected=" + rightCount + " but actual=" + nextRightCount);
+          }
 
           leftSlices[dim] = new PathSlice(leftPointWriter, 0, leftCount);
           rightSlices[dim] = new PathSlice(rightPointWriter, 0, rightCount);
-
-          assert rightCount == nextRightCount: "rightCount=" + rightCount + " nextRightCount=" + nextRightCount;
+        } catch (Throwable t) {
+          verifyChecksum(t, slices[dim].writer);
         }
       }
 

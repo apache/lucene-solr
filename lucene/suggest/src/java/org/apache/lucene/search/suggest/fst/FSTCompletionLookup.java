@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.search.suggest.InputIterator;
 import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.fst.FSTCompletion.Completion;
@@ -198,6 +199,7 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
         writer.write(buffer, 0, output.getPosition());
         inputLineCount++;
       }
+      CodecUtil.writeFooter(tempInput);
       writer.close();
 
       // We don't know the distribution of scores and we need to bucket them, so we'll sort
@@ -208,7 +210,7 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
       FSTCompletionBuilder builder = new FSTCompletionBuilder(
           buckets, externalSorter, sharedTailLength);
 
-      reader = new OfflineSorter.ByteSequencesReader(tempDir.openInput(tempSortedFileName, IOContext.READONCE));
+      reader = new OfflineSorter.ByteSequencesReader(tempDir.openChecksumInput(tempSortedFileName, IOContext.READONCE), tempSortedFileName);
       long line = 0;
       int previousBucket = 0;
       int previousScore = 0;

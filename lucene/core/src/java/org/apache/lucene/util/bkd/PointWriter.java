@@ -28,7 +28,7 @@ interface PointWriter extends Closeable {
   void append(byte[] packedValue, long ord, int docID) throws IOException;
 
   /** Returns a {@link PointReader} iterator to step through all previously added points */
-  PointReader getReader(long startPoint) throws IOException;
+  PointReader getReader(long startPoint, long length) throws IOException;
 
   /** Removes any temp files behind this writer */
   void destroy() throws IOException;
