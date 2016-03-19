@@ -56,6 +56,8 @@ public class SaslZkACLProviderTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() {
+    assumeFalse("FIXME: This test fails on Java 9 (https://issues.apache.org/jira/browse/SOLR-8052)", Constants.JRE_IS_MINIMUM_JAVA9);
+    
     assumeFalse("FIXME: SOLR-7040: This test fails under IBM J9",
                 Constants.JAVA_VENDOR.startsWith("IBM"));
     System.setProperty("solrcloud.skip.autorecovery", "true");
