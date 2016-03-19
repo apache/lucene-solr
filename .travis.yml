@@ -4,11 +4,11 @@ jdk:
 git:
   depth: 1
 env:
- - DIR=. COMMAND="ant precommit"
- - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.client.solrj.io.stream.Stream*Test test"
- - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.client.solrj.io.sql.* test"
- - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.handler.TestSQLHandler test"
- - DIR=solr COMMAND="ant package"
+ - DIR=. COMMAND="ant precommit" ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
+ - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.client.solrj.io.stream.Stream*Test test" ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
+ - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.client.solrj.io.sql.* test" ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
+ - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.handler.TestSQLHandler test" ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
+ - DIR=solr COMMAND="ant package" ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
 matrix:
   fast_finish: true
 script:
