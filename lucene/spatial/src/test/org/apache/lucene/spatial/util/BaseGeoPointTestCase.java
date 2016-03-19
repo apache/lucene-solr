@@ -47,7 +47,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
@@ -56,9 +55,6 @@ import org.junit.BeforeClass;
 public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected static final String FIELD_NAME = "point";
-
-  private static final double LON_SCALE = (0x1L<< GeoEncodingUtils.BITS)/360.0D;
-  private static final double LAT_SCALE = (0x1L<< GeoEncodingUtils.BITS)/180.0D;
 
   private static double originLat;
   private static double originLon;
@@ -99,7 +95,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     double[] lons = new double[numPoints];
     Arrays.fill(lons, theLon);
 
-    verify(small, lats, lons);
+    verify(small, lats, lons, false);
   }
 
   public void testAllLatEqual() throws Exception {
@@ -150,7 +146,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       lats[docID] = lat;
     }
 
-    verify(small, lats, lons);
+    verify(small, lats, lons, false);
   }
 
   public void testAllLonEqual() throws Exception {
@@ -203,7 +199,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       lons[docID] = theLon;
     }
 
-    verify(small, lats, lons);
+    verify(small, lats, lons, false);
   }
 
   public void testMultiValued() throws Exception {
@@ -330,21 +326,25 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   public void testRandomTiny() throws Exception {
     // Make sure single-leaf-node case is OK:
-    doTestRandom(10);
+    doTestRandom(10, false);
   }
 
   public void testRandomMedium() throws Exception {
-    doTestRandom(10000);
+    doTestRandom(10000, false);
+  }
+
+  public void testRandomWithThreads() throws Exception {
+    doTestRandom(10000, true);
   }
 
   @Nightly
   public void testRandomBig() throws Exception {
     assumeFalse("Direct codec can OOME on this test", TestUtil.getDocValuesFormat(FIELD_NAME).equals("Direct"));
     assumeFalse("Memory codec can OOME on this test", TestUtil.getDocValuesFormat(FIELD_NAME).equals("Memory"));
-    doTestRandom(200000);
+    doTestRandom(200000, false);
   }
 
-  private void doTestRandom(int count) throws Exception {
+  private void doTestRandom(int count, boolean useThreads) throws Exception {
 
     int numPoints = atLeast(count);
 
@@ -412,7 +412,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       }
     }
 
-    verify(small, lats, lons);
+    verify(small, lats, lons, useThreads);
   }
 
   public double randomLat(boolean small) {
@@ -572,7 +572,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     protected abstract void describe(int docID, double lat, double lon);
   }
 
-  protected void verify(boolean small, double[] lats, double[] lons) throws Exception {
+  protected void verify(boolean small, double[] lats, double[] lons, boolean useThreads) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
     // Else we can get O(N^2) merging:
     int mbd = iwc.getMaxBufferedDocs();
@@ -617,7 +617,12 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     IndexSearcher s = newSearcher(r, false);
 
     // Make sure queries are thread safe:
-    int numThreads = TestUtil.nextInt(random(), 2, 5);
+    int numThreads;
+    if (useThreads) {
+      numThreads = TestUtil.nextInt(random(), 2, 5);
+    } else {
+      numThreads = 1;
+    }
 
     List<Thread> threads = new ArrayList<>();
     final int iters = atLeast(75);
@@ -638,7 +643,9 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           }
 
           private void _run() throws Exception {
-            startingGun.await();
+            if (useThreads) {
+              startingGun.await();
+            }
 
             NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
 
@@ -769,12 +776,19 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           }
       };
       thread.setName("T" + i);
-      thread.start();
+      if (useThreads) {
+        thread.start();
+      } else {
+        // Just run with main thread:
+        thread.run();
+      }
       threads.add(thread);
     }
-    startingGun.countDown();
-    for(Thread thread : threads) {
-      thread.join();
+    if (useThreads) {
+      startingGun.countDown();
+      for(Thread thread : threads) {
+        thread.join();
+      }
     }
     IOUtils.close(r, dir);
     assertFalse(failed.get());
@@ -782,7 +796,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   public void testRectBoundariesAreInclusive() throws Exception {
     GeoRect rect = randomRect(random().nextBoolean(), false);
-    Query query = newRectQuery(FIELD_NAME, rect);
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
