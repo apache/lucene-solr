@@ -11,7 +11,7 @@
     },
     "files":
         [
-        {"includePattern": "solr/package/(solr-.*-SNAPSHOT.tgz)", "uploadPattern": "$1"}
+        {"includePattern": "solr/package/(solr-.*-SNAPSHOT.tgz)$", "uploadPattern": "$1"}
         ],
     "publish": true
 }

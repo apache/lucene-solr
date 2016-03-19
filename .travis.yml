@@ -1,31 +1,34 @@
 language: java
 jdk:
-  - oraclejdk8
+- oraclejdk8
 addons:
   apt:
     packages:
-      - python3
+    - python3
 git:
   depth: 1
 env:
- - DIR=. COMMAND="ant precommit" ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
- - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.client.solrj.io.stream.Stream*Test test" ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
- - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.client.solrj.io.sql.* test" ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
- - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.handler.TestSQLHandler test" ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
- - DIR=solr COMMAND="ant package" ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
+- DIR=. COMMAND="ant precommit" ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
+- DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.client.solrj.io.stream.Stream*Test
+  test" ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
+- DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.client.solrj.io.sql.* test"
+  ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
+- DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.handler.TestSQLHandler test"
+  ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
+- DIR=solr COMMAND="ant package" ANT_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m"
 matrix:
   fast_finish: true
 script:
-  - ant ivy-bootstrap
-  - cd $DIR
-  - $COMMAND
+- ant ivy-bootstrap
+- cd $DIR
+- "$COMMAND"
 before_deploy: cd .. && sed -i'' -e "s/BRANCH/${TRAVIS_BRANCH}/g" descriptor.json
 deploy:
   provider: bintray
-  file: "descriptor.json"
-  user: "risdenk"
+  file: descriptor.json
+  user: risdenk
   key:
-    - secure: "NwKxqFIBES+ARFnswthWyG4ZbORoT6M6Ukuv1d7GncRAztz63IrrCGvU7Eo/Sf67AY9iuysuYfR6GuZ+hrSrVy/+Xm3eNB2P4FFIdaA5CDDwhpeE/CHA/EddO9jF6I5V7trVmXettk2iGb7U2fZK1q5jp9wNd1v1ecSm7fRurALNXWugxgtYNUfAaz9wOwlrWwbIaPXzqoIz3Nczd4ZcePDqjfFrYdCxPDrLPxH6LVOfkGyGbyrD1Fjv7N68T0ZZNnzGt7zGfi9LxgfI1YTIWm391KHYcHDrDNedEcF7UzhY2SRQhhVPJWmuwvB4xCuhAHLXi1KZUj0DkzRN3ITZK40Nagp2nHZu3w9MVi51cjpLY6QjeUi0TGqz7p1nhXl9+7/TycmLZOn9XOZZkiKUqcycl/hu+JYsjrOKMAfKCsKQrc1fz/FCeHZBYoo+3TEooflDPfrTr8K5kdYRxn/DJPX3wGESBx9FjnKGZ75nmESErVcMDSl/SrqB+eYG4sVQIBbm2ZeZwKMXd09Z6IBH72uyXvx1K+l+lTULMeBfNSoFYaQ3FVACixejpGykyigXtRex3CfnWkxUoUzkYTHe82oe+ltwQxON2H2P1Phk2B+eD9koXYxTccLFr4k5/tZt0UCp/bflWXVamA3OBxBErdgkFyUVZQWKVli9cpLZtGE="
+    secure: bfmp9NCfEcy7PtbL4it8g/oYqRpvlL3oL+NZKkcgzU9XTkYLSPO4J+ZfGV6A6lmnEK3eY7V7lXPDkOO6sZHBteiLIedMRu4DEUjMYFpuUKiTr1ML9ZBZ+Z9z5Rw1QBJh79s8KYILMw8+TZV8r497nwQCrY/cLnt6MbLOmknEny6VVCJu42nessvzOKIWLV0ATHlFj2BCrHdG7DxAuHVBTTPLU8YoAFFHellLpbqqWbg/L8QQbA0chV114WVLr17g3a7+Rnad8SJhXj67RKkWB9r4usTbg1HKg5GYsRdQLr5PQycXuFBjcirUp5q4/GUZT8Ze0qLsYVRTyLIS4Oh6C3+V2oqp2tWzJvIdheRxxwPZBrZiEZa/uOizkkSHPigatFN0KqxaDchtIXgMKpjnEv31gH6tlihd7ey0SeQXrucME3x0hdt2cKQjTPAHAqnMF8S8n/wLaLkbMvjQH6wiAN0hkarzyM82jZqDqONviH+zv7dvkc9vUCFdiOyYiB8c3/9gWlT2eNBrUadFfujBX1IxE+mpt0lQNTx5tzwoNnYaJo55AxsT6+BZCsGQFPNg312sH8wdICQJ9Jm1ItZeWCxhvh2MCAM496FRXiwabsAoBhO2mUYigUr6gYSI8h93yQGTHWcGkceZG6yMzzwMHnZNRL2PNPixgRb4497dSIs=
   skip_cleanup: true
   on:
     all_branches: true
