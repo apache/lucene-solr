@@ -4,12 +4,25 @@ jdk:
 git:
   depth: 1
 env:
+ - DIR=. COMMAND="ant precommit"
  - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.client.solrj.io.stream.Stream*Test test"
  - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.client.solrj.io.sql.* test"
  - DIR=solr COMMAND="ant -Dtests.class=org.apache.solr.handler.TestSQLHandler test"
+ - DIR=solr COMMAND="ant package"
 matrix:
   fast_finish: true
 script:
   - ant ivy-bootstrap
   - cd $DIR
   - $COMMAND
+before_deploy: cd .. && sed -i'' -e "s/BRANCH/${TRAVIS_BRANCH}/g" descriptor.json
+deploy:
+  provider: bintray
+  file: "descriptor.json"
+  user: "risdenk"
+  key:
+    - secure: "NwKxqFIBES+ARFnswthWyG4ZbORoT6M6Ukuv1d7GncRAztz63IrrCGvU7Eo/Sf67AY9iuysuYfR6GuZ+hrSrVy/+Xm3eNB2P4FFIdaA5CDDwhpeE/CHA/EddO9jF6I5V7trVmXettk2iGb7U2fZK1q5jp9wNd1v1ecSm7fRurALNXWugxgtYNUfAaz9wOwlrWwbIaPXzqoIz3Nczd4ZcePDqjfFrYdCxPDrLPxH6LVOfkGyGbyrD1Fjv7N68T0ZZNnzGt7zGfi9LxgfI1YTIWm391KHYcHDrDNedEcF7UzhY2SRQhhVPJWmuwvB4xCuhAHLXi1KZUj0DkzRN3ITZK40Nagp2nHZu3w9MVi51cjpLY6QjeUi0TGqz7p1nhXl9+7/TycmLZOn9XOZZkiKUqcycl/hu+JYsjrOKMAfKCsKQrc1fz/FCeHZBYoo+3TEooflDPfrTr8K5kdYRxn/DJPX3wGESBx9FjnKGZ75nmESErVcMDSl/SrqB+eYG4sVQIBbm2ZeZwKMXd09Z6IBH72uyXvx1K+l+lTULMeBfNSoFYaQ3FVACixejpGykyigXtRex3CfnWkxUoUzkYTHe82oe+ltwQxON2H2P1Phk2B+eD9koXYxTccLFr4k5/tZt0UCp/bflWXVamA3OBxBErdgkFyUVZQWKVli9cpLZtGE="
+  skip_cleanup: true
+  on:
+    all_branches: true
+    condition: $COMMAND = "ant package"

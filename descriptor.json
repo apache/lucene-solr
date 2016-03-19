@@ -1,0 +1,17 @@
+{
+    "package": {
+        "name": "solr-test",
+        "repo": "generic",
+        "subject": "risdenk"
+    },
+    "version": {
+        "name": "BRANCH",
+        "desc": "BRANCH",
+        "gpgSign": false
+    },
+    "files":
+        [
+        {"includePattern": "solr/package/(solr-.*-SNAPSHOT.tgz)", "uploadPattern": "$1"}
+        ],
+    "publish": true
+}
