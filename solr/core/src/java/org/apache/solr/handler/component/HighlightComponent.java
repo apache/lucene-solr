@@ -70,6 +70,7 @@ public class HighlightComponent extends SearchComponent implements PluginInfoIni
     SolrParams params = rb.req.getParams();
     rb.doHighlights = highlighter.isHighlightingEnabled(params);
     if(rb.doHighlights){
+      rb.setNeedDocList(true);
       String hlq = params.get(HighlightParams.Q);
       String hlparser = Objects.firstNonNull(params.get(HighlightParams.QPARSER),
                                               params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE));
