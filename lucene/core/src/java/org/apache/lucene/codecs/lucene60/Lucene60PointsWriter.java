@@ -82,6 +82,8 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
   @Override
   public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
 
+    boolean singleValuePerDoc = values.size(fieldInfo.name) == values.getDocCount(fieldInfo.name);
+
     try (BKDWriter writer = new BKDWriter(writeState.segmentInfo.maxDoc(),
                                           writeState.directory,
                                           writeState.segmentInfo.name,
@@ -89,7 +91,8 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                           fieldInfo.getPointNumBytes(),
                                           maxPointsInLeafNode,
                                           maxMBSortInHeap,
-                                          values.size(fieldInfo.name))) {
+                                          values.size(fieldInfo.name),
+                                          singleValuePerDoc)) {
 
       values.intersect(fieldInfo.name, new IntersectVisitor() {
           @Override
@@ -133,6 +136,8 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
       if (fieldInfo.getPointDimensionCount() != 0) {
         if (fieldInfo.getPointDimensionCount() == 1) {
 
+          boolean singleValuePerDoc = true;
+
           // Worst case total maximum size (if none of the points are deleted):
           long totMaxSize = 0;
           for(int i=0;i<mergeState.pointsReaders.length;i++) {
@@ -142,6 +147,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
               FieldInfo readerFieldInfo = readerFieldInfos.fieldInfo(fieldInfo.name);
               if (readerFieldInfo != null) {
                 totMaxSize += reader.size(fieldInfo.name);
+                singleValuePerDoc &= reader.size(fieldInfo.name) == reader.getDocCount(fieldInfo.name);
               }
             }
           }
@@ -157,7 +163,8 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                                 fieldInfo.getPointNumBytes(),
                                                 maxPointsInLeafNode,
                                                 maxMBSortInHeap,
-                                                totMaxSize)) {
+                                                totMaxSize,
+                                                singleValuePerDoc)) {
             List<BKDReader> bkdReaders = new ArrayList<>();
             List<MergeState.DocMap> docMaps = new ArrayList<>();
             List<Integer> docIDBases = new ArrayList<>();

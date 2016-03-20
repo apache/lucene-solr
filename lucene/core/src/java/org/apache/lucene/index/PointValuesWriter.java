@@ -32,6 +32,8 @@ class PointValuesWriter {
   private final Counter iwBytesUsed;
   private int[] docIDs;
   private int numPoints;
+  private int numDocs;
+  private int lastDocID = -1;
   private final byte[] packedValue;
 
   public PointValuesWriter(DocumentsWriterPerThread docWriter, FieldInfo fieldInfo) {
@@ -57,6 +59,10 @@ class PointValuesWriter {
     }
     bytes.append(value);
     docIDs[numPoints] = docID;
+    if (docID != lastDocID) {
+      numDocs++;
+      lastDocID = docID;
+    }
     numPoints++;
   }
 
@@ -116,7 +122,7 @@ class PointValuesWriter {
 
                         @Override
                         public int getDocCount(String fieldName) {
-                          throw new UnsupportedOperationException();
+                          return numDocs;
                         }
                       });
   }

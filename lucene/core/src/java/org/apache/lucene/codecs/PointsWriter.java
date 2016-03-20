@@ -42,16 +42,19 @@ public abstract class PointsWriter implements Closeable {
    *  a faster but more complex implementation. */
   protected void mergeOneField(MergeState mergeState, FieldInfo fieldInfo) throws IOException {
     long maxPointCount = 0;
+    int docCount = 0;
     for (int i=0;i<mergeState.pointsReaders.length;i++) {
       PointsReader pointsReader = mergeState.pointsReaders[i];
       if (pointsReader != null) {
         FieldInfo readerFieldInfo = mergeState.fieldInfos[i].fieldInfo(fieldInfo.name);
         if (readerFieldInfo != null) {
           maxPointCount += pointsReader.size(fieldInfo.name);
+          docCount += pointsReader.getDocCount(fieldInfo.name);
         }
       }
     }
     final long finalMaxPointCount = maxPointCount;
+    final int finalDocCount = docCount;
     writeField(fieldInfo,
                new PointsReader() {
                  @Override
@@ -141,7 +144,7 @@ public abstract class PointsWriter implements Closeable {
 
                  @Override
                  public int getDocCount(String fieldName) {
-                   throw new UnsupportedOperationException();
+                   return finalDocCount;
                  }
                });
   }

@@ -31,17 +31,24 @@ final class HeapPointWriter implements PointWriter {
   final int maxSize;
   final int valuesPerBlock;
   final int packedBytesLength;
+  final boolean singleValuePerDoc;
   // NOTE: can't use ByteBlockPool because we need random-write access when sorting in heap
   final List<byte[]> blocks = new ArrayList<>();
 
-  public HeapPointWriter(int initSize, int maxSize, int packedBytesLength, boolean longOrds) {
+  public HeapPointWriter(int initSize, int maxSize, int packedBytesLength, boolean longOrds, boolean singleValuePerDoc) {
     docIDs = new int[initSize];
     this.maxSize = maxSize;
     this.packedBytesLength = packedBytesLength;
-    if (longOrds) {
-      this.ordsLong = new long[initSize];
+    this.singleValuePerDoc = singleValuePerDoc;
+    if (singleValuePerDoc) {
+      this.ordsLong = null;
+      this.ords = null;
     } else {
-      this.ords = new int[initSize];
+      if (longOrds) {
+        this.ordsLong = new long[initSize];
+      } else {
+        this.ords = new int[initSize];
+      }
     }
     // 4K per page, unless each value is > 4K:
     valuesPerBlock = Math.max(1, 4096/packedBytesLength);
@@ -52,12 +59,14 @@ final class HeapPointWriter implements PointWriter {
       throw new IllegalStateException("docIDs.length=" + docIDs.length + " other.nextWrite=" + other.nextWrite);
     }
     System.arraycopy(other.docIDs, 0, docIDs, 0, other.nextWrite);
-    if (other.ords != null) {
-      assert this.ords != null;
-      System.arraycopy(other.ords, 0, ords, 0, other.nextWrite);
-    } else {
-      assert this.ordsLong != null;
-      System.arraycopy(other.ordsLong, 0, ordsLong, 0, other.nextWrite);
+    if (singleValuePerDoc == false) {
+      if (other.ords != null) {
+        assert this.ords != null;
+        System.arraycopy(other.ords, 0, ords, 0, other.nextWrite);
+      } else {
+        assert this.ordsLong != null;
+        System.arraycopy(other.ordsLong, 0, ordsLong, 0, other.nextWrite);
+      }
     }
 
     for(byte[] block : other.blocks) {
@@ -117,18 +126,22 @@ final class HeapPointWriter implements PointWriter {
       int nextSize = Math.min(maxSize, ArrayUtil.oversize(nextWrite+1, Integer.BYTES));
       assert nextSize > nextWrite: "nextSize=" + nextSize + " vs nextWrite=" + nextWrite;
       docIDs = growExact(docIDs, nextSize);
-      if (ordsLong != null) {
-        ordsLong = growExact(ordsLong, nextSize);
-      } else {
-        ords = growExact(ords, nextSize);
+      if (singleValuePerDoc == false) {
+        if (ordsLong != null) {
+          ordsLong = growExact(ordsLong, nextSize);
+        } else {
+          ords = growExact(ords, nextSize);
+        }
       }
     }
     writePackedValue(nextWrite, packedValue);
-    if (ordsLong != null) {
-      ordsLong[nextWrite] = ord;
-    } else {
-      assert ord <= Integer.MAX_VALUE;
-      ords[nextWrite] = (int) ord;
+    if (singleValuePerDoc == false) {
+      if (ordsLong != null) {
+        ordsLong[nextWrite] = ord;
+      } else {
+        assert ord <= Integer.MAX_VALUE;
+        ords[nextWrite] = (int) ord;
+      }
     }
     docIDs[nextWrite] = docID;
     nextWrite++;
@@ -137,7 +150,7 @@ final class HeapPointWriter implements PointWriter {
   @Override
   public PointReader getReader(long start, long length) {
     assert start + length <= docIDs.length: "start=" + start + " length=" + length + " docIDs.length=" + docIDs.length;
-    return new HeapPointReader(blocks, valuesPerBlock, packedBytesLength, ords, ordsLong, docIDs, (int) start, nextWrite);
+    return new HeapPointReader(blocks, valuesPerBlock, packedBytesLength, ords, ordsLong, docIDs, (int) start, nextWrite, singleValuePerDoc);
   }
 
   @Override
