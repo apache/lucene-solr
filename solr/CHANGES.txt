@@ -366,6 +366,9 @@ Optimizations
 
 * SOLR-8720: ZkController#publishAndWaitForDownStates should use #publishNodeAsDown. (Mark Miller)
 
+* SOLR-8082: Can't query against negative float or double values when indexed="false"
+  docValues="true" multiValued="false".  (hossman, Ishan Chattopadhyaya, yonik, Steve Rowe)
+
 Other Changes
 ----------------------
 
