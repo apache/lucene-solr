@@ -126,16 +126,6 @@ public final class FloatPoint extends Field {
     return result.toString();
   }
   
-  /** Encode n-dimensional float values into binary encoding */
-  private static byte[][] encode(float value[]) {
-    byte[][] encoded = new byte[value.length][];
-    for (int i = 0; i < value.length; i++) {
-      encoded[i] = new byte[Float.BYTES];
-      encodeDimension(value[i], encoded[i], 0);
-    }
-    return encoded;
-  }
-  
   // public helper methods (e.g. for queries)
   
   /** Encode single float dimension */
@@ -207,7 +197,7 @@ public final class FloatPoint extends Field {
    */
   public static Query newRangeQuery(String field, float[] lowerValue, float[] upperValue) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, encode(lowerValue), encode(upperValue)) {
+    return new PointRangeQuery(field, pack(lowerValue).bytes, pack(upperValue).bytes, lowerValue.length) {
       @Override
       protected String toString(int dimension, byte[] value) {
         return Float.toString(decodeDimension(value, 0));
