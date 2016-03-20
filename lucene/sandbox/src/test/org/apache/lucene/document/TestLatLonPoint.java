@@ -186,21 +186,27 @@ public class TestLatLonPoint extends LuceneTestCase {
   }
 
   public void testQueryEquals() throws Exception {
-    Query q = LatLonPoint.newBoxQuery("field", 50, 70, -40, 20);
-    assertEquals(q, LatLonPoint.newBoxQuery("field", 50, 70, -40, 20));
-    assertFalse(q.equals(LatLonPoint.newBoxQuery("field", 50, 70, -40, 10)));
+    Query q1 = LatLonPoint.newBoxQuery("field", 50, 70, -40, 20);
+    Query q2 = LatLonPoint.newBoxQuery("field", 50, 70, -40, 20);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(LatLonPoint.newBoxQuery("field", 50, 70, -40, 10)));
 
-    q = LatLonPoint.newDistanceQuery("field", 50, 70, 10000);
-    assertEquals(q, LatLonPoint.newDistanceQuery("field", 50, 70, 10000));
-    assertFalse(q.equals(LatLonPoint.newDistanceQuery("field", 50, 70, 11000)));
-    assertFalse(q.equals(LatLonPoint.newDistanceQuery("field", 50, 60, 10000)));
+    q1 = LatLonPoint.newDistanceQuery("field", 50, 70, 10000);
+    q2 = LatLonPoint.newDistanceQuery("field", 50, 70, 10000);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(LatLonPoint.newDistanceQuery("field", 50, 70, 11000)));
+    assertFalse(q1.equals(LatLonPoint.newDistanceQuery("field", 50, 60, 10000)));
 
                 
     double[] polyLats1 = new double[] {30, 40, 40, 30, 30};
     double[] polyLons1 = new double[] {90, 90, -40, -40, 90};
     double[] polyLats2 = new double[] {20, 40, 40, 20, 20};
-    q = LatLonPoint.newPolygonQuery("field", polyLats1, polyLons1);
-    assertEquals(q, LatLonPoint.newPolygonQuery("field", polyLats1, polyLons1));
-    assertFalse(q.equals(LatLonPoint.newPolygonQuery("field", polyLats2, polyLons1)));
+    q1 = LatLonPoint.newPolygonQuery("field", polyLats1, polyLons1);
+    q2 = LatLonPoint.newPolygonQuery("field", polyLats1, polyLons1);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(LatLonPoint.newPolygonQuery("field", polyLats2, polyLons1)));
   }     
 }
