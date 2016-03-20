@@ -2342,7 +2342,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.4"
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.6"
       inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
     <taskdef name="groovy"
       classname="org.codehaus.groovy.ant.Groovy"
@@ -2417,7 +2417,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   </target>
 
   <target name="resolve-pegdown" unless="pegdown.loaded" depends="resolve-groovy">
-    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.5.0"
+    <ivy:cachepath organisation="org.pegdown" module="pegdown" revision="1.6.0"
       inline="true" conf="default" transitive="true" pathid="pegdown.classpath"/>
     <groovy classpathref="pegdown.classpath"><![CDATA[
       import org.apache.tools.ant.AntTypeDefinition;
