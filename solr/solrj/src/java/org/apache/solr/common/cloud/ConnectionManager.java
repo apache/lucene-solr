@@ -37,8 +37,7 @@ public class ConnectionManager implements Watcher {
 
   private final ZkClientConnectionStrategy connectionStrategy;
 
-  //expert: mutable for testing
-  private String zkServerAddress;
+  private final String zkServerAddress;
 
   
 
@@ -254,10 +253,5 @@ public class ConnectionManager implements Watcher {
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
           "", e);
     }
-  }
-  
-  //expert: mutable for testing
-  public void setZkServerAddress(String zkServerAddress) {
-    this.zkServerAddress = zkServerAddress;
   }
 }
