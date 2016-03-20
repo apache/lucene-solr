@@ -62,6 +62,9 @@ public abstract class PointRangeQuery extends Query {
   protected PointRangeQuery(String field, byte[] lowerPoint, byte[] upperPoint, int numDims) {
     checkArgs(field, lowerPoint, upperPoint);
     this.field = field;
+    if (numDims <= 0) {
+      throw new IllegalArgumentException("numDims must be positive, got " + numDims);
+    }
     if (lowerPoint.length == 0) {
       throw new IllegalArgumentException("lowerPoint has length of zero");
     }
@@ -70,9 +73,6 @@ public abstract class PointRangeQuery extends Query {
     }
     if (lowerPoint.length != upperPoint.length) {
       throw new IllegalArgumentException("lowerPoint has length=" + numDims + " but upperPoint has different length=" + upperPoint.length);
-    }
-    if (numDims <= 0) {
-      throw new IllegalArgumentException("numDims must be positive, got " + numDims);
     }
     this.numDims = numDims;
     this.bytesPerDim = lowerPoint.length / numDims;
