@@ -40,10 +40,13 @@ import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BooleanQuery.Builder;
 import org.apache.lucene.search.DocValuesRangeQuery;
 import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedSetSelector;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.BytesRef;
@@ -56,7 +59,9 @@ import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.lucene.util.mutable.MutableValueLong;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.FunctionRangeQuery;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.util.DateFormatUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -351,10 +356,7 @@ public class TrieField extends PrimitiveFieldType {
         break;
       case FLOAT:
         if (matchOnly) {
-          query = DocValuesRangeQuery.newLongRange(field.getName(),
-                min == null ? null : (long) NumericUtils.floatToSortableInt(Float.parseFloat(min)),
-                max == null ? null : (long) NumericUtils.floatToSortableInt(Float.parseFloat(max)),
-                minInclusive, maxInclusive);
+          return getRangeQueryForFloatDoubleDocValues(field, min, max, minInclusive, maxInclusive);
         } else {
           query = LegacyNumericRangeQuery.newFloatRange(field.getName(), ps,
               min == null ? null : Float.parseFloat(min),
@@ -377,10 +379,7 @@ public class TrieField extends PrimitiveFieldType {
         break;
       case DOUBLE:
         if (matchOnly) {
-          query = DocValuesRangeQuery.newLongRange(field.getName(),
-                min == null ? null : NumericUtils.doubleToSortableLong(Double.parseDouble(min)),
-                max == null ? null : NumericUtils.doubleToSortableLong(Double.parseDouble(max)),
-                minInclusive, maxInclusive);
+          return getRangeQueryForFloatDoubleDocValues(field, min, max, minInclusive, maxInclusive);
         } else {
           query = LegacyNumericRangeQuery.newDoubleRange(field.getName(), ps,
               min == null ? null : Double.parseDouble(min),
@@ -407,7 +406,53 @@ public class TrieField extends PrimitiveFieldType {
 
     return query;
   }
-  
+
+  private static long FLOAT_NEGATIVE_INFINITY_BITS = (long)Float.floatToIntBits(Float.NEGATIVE_INFINITY);
+  private static long DOUBLE_NEGATIVE_INFINITY_BITS = Double.doubleToLongBits(Double.NEGATIVE_INFINITY);
+  private static long FLOAT_POSITIVE_INFINITY_BITS = (long)Float.floatToIntBits(Float.POSITIVE_INFINITY);
+  private static long DOUBLE_POSITIVE_INFINITY_BITS = Double.doubleToLongBits(Double.POSITIVE_INFINITY);
+  private static long FLOAT_MINUS_ZERO_BITS = (long)Float.floatToIntBits(-0f);
+  private static long DOUBLE_MINUS_ZERO_BITS = Double.doubleToLongBits(-0d);
+  private static long FLOAT_ZERO_BITS = (long)Float.floatToIntBits(0f);
+  private static long DOUBLE_ZERO_BITS = Double.doubleToLongBits(0d);
+
+  private Query getRangeQueryForFloatDoubleDocValues(SchemaField sf, String min, String max, boolean minInclusive, boolean maxInclusive) {
+    Query query;
+    String fieldName = sf.getName();
+
+    Number minVal = min == null ? null : type == TrieTypes.FLOAT ? Float.parseFloat(min): Double.parseDouble(min);
+    Number maxVal = max == null ? null : type == TrieTypes.FLOAT ? Float.parseFloat(max): Double.parseDouble(max);
+    
+    Long minBits = 
+        min == null ? null : type == TrieTypes.FLOAT ? (long) Float.floatToIntBits(minVal.floatValue()): Double.doubleToLongBits(minVal.doubleValue());
+    Long maxBits = 
+        max == null ? null : type == TrieTypes.FLOAT ? (long) Float.floatToIntBits(maxVal.floatValue()): Double.doubleToLongBits(maxVal.doubleValue());
+    
+    long negativeInfinityBits = type == TrieTypes.FLOAT ? FLOAT_NEGATIVE_INFINITY_BITS : DOUBLE_NEGATIVE_INFINITY_BITS;
+    long positiveInfinityBits = type == TrieTypes.FLOAT ? FLOAT_POSITIVE_INFINITY_BITS : DOUBLE_POSITIVE_INFINITY_BITS;
+    long minusZeroBits = type == TrieTypes.FLOAT ? FLOAT_MINUS_ZERO_BITS : DOUBLE_MINUS_ZERO_BITS;
+    long zeroBits = type == TrieTypes.FLOAT ? FLOAT_ZERO_BITS : DOUBLE_ZERO_BITS;
+    
+    // If min is negative (or -0d) and max is positive (or +0d), then issue a FunctionRangeQuery
+    if ((minVal == null || minVal.doubleValue() < 0d || minBits == minusZeroBits) && 
+        (maxVal == null || (maxVal.doubleValue() > 0d || maxBits == zeroBits))) {
+
+      ValueSource vs = getValueSource(sf, null);
+      query = new FunctionRangeQuery(new ValueSourceRangeFilter(vs, min, max, minInclusive, maxInclusive));
+
+    } else { // If both max and min are negative (or -0d), then issue range query with max and min reversed
+      if ((minVal == null || minVal.doubleValue() < 0d || minBits == minusZeroBits) &&
+          (maxVal != null && (maxVal.doubleValue() < 0d || maxBits == minusZeroBits))) {
+        query = DocValuesRangeQuery.newLongRange
+            (fieldName, maxBits, (min == null ? negativeInfinityBits : minBits), maxInclusive, minInclusive);
+      } else { // If both max and min are positive, then issue range query
+        query = DocValuesRangeQuery.newLongRange
+            (fieldName, minBits, (max == null ? positiveInfinityBits : maxBits), minInclusive, maxInclusive);
+      }
+    }
+    return query;
+  }
+
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     if (!field.indexed() && field.hasDocValues()) {
