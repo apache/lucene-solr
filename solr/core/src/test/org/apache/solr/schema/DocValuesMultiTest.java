@@ -33,6 +33,18 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig-basic.xml", "schema-docValuesMulti.xml");
+    
+    // sanity check our schema meets our expectations
+    final IndexSchema schema = h.getCore().getLatestSchema();
+    for (String f : new String[] {"floatdv", "intdv", "doubledv", "longdv", "datedv", "stringdv"}) {
+      final SchemaField sf = schema.getField(f);
+      assertTrue(f + " is not multiValued, test is useless, who changed the schema?",
+                 sf.multiValued());
+      assertFalse(f + " is indexed, test is useless, who changed the schema?",
+                  sf.indexed());
+      assertTrue(f + " has no docValues, test is useless, who changed the schema?",
+                 sf.hasDocValues());
+    }
   }
 
   public void setUp() throws Exception {
@@ -117,9 +129,10 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
    */
   public void testFloatDocValuesMatch() throws Exception {
     assertU(adoc("id", "1", "floatdv", "2"));
-    assertU(adoc("id", "2", "floatdv", "5"));
+    assertU(adoc("id", "2", "floatdv", "-5"));
     assertU(adoc("id", "3", "floatdv", "3.0", "floatdv", "-1.3", "floatdv", "2.2"));
     assertU(adoc("id", "4", "floatdv", "3"));
+    assertU(adoc("id", "5", "floatdv", "-0.5"));
     assertU(commit());
     
     // float: termquery
@@ -131,10 +144,62 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
     
     // float: rangequery
     assertQ(req("q", "floatdv:[-1 TO 2.5]", "sort", "id asc"),
-        "//*[@numFound='2']",
-        "//result/doc[1]/str[@name='id'][.=1]",
-        "//result/doc[2]/str[@name='id'][.=3]"
+            "//*[@numFound='3']",
+            "//result/doc[1]/str[@name='id'][.=1]",
+            "//result/doc[2]/str[@name='id'][.=3]",
+            "//result/doc[3]/str[@name='id'][.=5]"
     );
+
+    // (neg) float: rangequery
+    assertQ(req("q", "floatdv:[-6 TO -4]", "sort", "id asc"),
+            "//*[@numFound='1']",
+            "//result/doc[1]/str[@name='id'][.=2]"
+            );
+    
+    // (neg) float: termquery
+    assertQ(req("q", "floatdv:\"-5\"", "sort", "id asc"),
+            "//*[@numFound='1']",
+            "//result/doc[1]/str[@name='id'][.=2]"
+            );
+  }
+  
+  /** Tests the ability to do basic queries (without scoring, just match-only) on
+   *  double docvalues fields that are not inverted (indexed "forward" only)
+   */
+  public void testDoubleDocValuesMatch() throws Exception {
+    assertU(adoc("id", "1", "doubledv", "2"));
+    assertU(adoc("id", "2", "doubledv", "-5"));
+    assertU(adoc("id", "3", "doubledv", "3.0", "doubledv", "-1.3", "doubledv", "2.2"));
+    assertU(adoc("id", "4", "doubledv", "3"));
+    assertU(adoc("id", "5", "doubledv", "-0.5"));
+    assertU(commit());
+    
+    // double: termquery
+    assertQ(req("q", "doubledv:3", "sort", "id asc"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/str[@name='id'][.=3]",
+        "//result/doc[2]/str[@name='id'][.=4]"
+    );
+    
+    // double: rangequery
+    assertQ(req("q", "doubledv:[-1 TO 2.5]", "sort", "id asc"),
+            "//*[@numFound='3']",
+            "//result/doc[1]/str[@name='id'][.=1]",
+            "//result/doc[2]/str[@name='id'][.=3]",
+            "//result/doc[3]/str[@name='id'][.=5]"
+    );
+
+    // (neg) double: rangequery
+    assertQ(req("q", "doubledv:[-6 TO -4]", "sort", "id asc"),
+            "//*[@numFound='1']",
+            "//result/doc[1]/str[@name='id'][.=2]"
+            );
+    
+    // (neg) double: termquery
+    assertQ(req("q", "doubledv:\"-5\"", "sort", "id asc"),
+            "//*[@numFound='1']",
+            "//result/doc[1]/str[@name='id'][.=2]"
+            );
   }
   
   public void testDocValuesFacetingSimple() {
