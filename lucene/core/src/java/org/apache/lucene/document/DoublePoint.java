@@ -126,16 +126,6 @@ public final class DoublePoint extends Field {
     return result.toString();
   }
   
-  /** Encode n-dimensional double point into binary encoding */
-  private static byte[][] encode(double value[]) {
-    byte[][] encoded = new byte[value.length][];
-    for (int i = 0; i < value.length; i++) {
-      encoded[i] = new byte[Double.BYTES];
-      encodeDimension(value[i], encoded[i], 0);
-    }
-    return encoded;
-  }
-  
   // public helper methods (e.g. for queries)
   
   /** Encode single double dimension */
@@ -207,7 +197,7 @@ public final class DoublePoint extends Field {
    */
   public static Query newRangeQuery(String field, double[] lowerValue, double[] upperValue) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, encode(lowerValue), encode(upperValue)) {
+    return new PointRangeQuery(field, pack(lowerValue).bytes, pack(upperValue).bytes, lowerValue.length) {
       @Override
       protected String toString(int dimension, byte[] value) {
         return Double.toString(decodeDimension(value, 0));

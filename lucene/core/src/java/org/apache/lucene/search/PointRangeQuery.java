@@ -47,8 +47,8 @@ public abstract class PointRangeQuery extends Query {
   final String field;
   final int numDims;
   final int bytesPerDim;
-  final byte[][] lowerPoint;
-  final byte[][] upperPoint;
+  final byte[] lowerPoint;
+  final byte[] upperPoint;
 
   /** 
    * Expert: create a multidimensional range query for point values.
@@ -56,40 +56,26 @@ public abstract class PointRangeQuery extends Query {
    * @param field field name. must not be {@code null}.
    * @param lowerPoint lower portion of the range (inclusive).
    * @param upperPoint upper portion of the range (inclusive).
+   * @param numDims number of dimensions.
    * @throws IllegalArgumentException if {@code field} is null, or if {@code lowerValue.length != upperValue.length}
    */
-  protected PointRangeQuery(String field, byte[][] lowerPoint, byte[][] upperPoint) {
+  protected PointRangeQuery(String field, byte[] lowerPoint, byte[] upperPoint, int numDims) {
     checkArgs(field, lowerPoint, upperPoint);
     this.field = field;
     if (lowerPoint.length == 0) {
       throw new IllegalArgumentException("lowerPoint has length of zero");
     }
-    this.numDims = lowerPoint.length;
-
-    if (upperPoint.length != numDims) {
+    if (lowerPoint.length % numDims != 0) {
+      throw new IllegalArgumentException("lowerPoint is not a fixed multiple of numDims");
+    }
+    if (upperPoint.length != upperPoint.length) {
       throw new IllegalArgumentException("lowerPoint has length=" + numDims + " but upperPoint has different length=" + upperPoint.length);
     }
+    this.numDims = numDims;
+    this.bytesPerDim = lowerPoint.length / numDims;
+
     this.lowerPoint = lowerPoint;
     this.upperPoint = upperPoint;
-
-    if (lowerPoint[0] == null) {
-      throw new IllegalArgumentException("lowerPoint[0] is null");
-    }
-    this.bytesPerDim = lowerPoint[0].length;
-    for (int i = 0; i < numDims; i++) {
-      if (lowerPoint[i] == null) {
-        throw new IllegalArgumentException("lowerPoint[" + i + "] is null");
-      }
-      if (upperPoint[i] == null) {
-        throw new IllegalArgumentException("upperPoint[" + i + "] is null");
-      }
-      if (lowerPoint[i].length != bytesPerDim) {
-        throw new IllegalArgumentException("all dimensions must have same bytes length, but saw " + bytesPerDim + " and " + lowerPoint[i].length);
-      }
-      if (upperPoint[i].length != bytesPerDim) {
-        throw new IllegalArgumentException("all dimensions must have same bytes length, but saw " + bytesPerDim + " and " + upperPoint[i].length);
-      }
-    }
   }
 
   /** 
@@ -116,8 +102,7 @@ public abstract class PointRangeQuery extends Query {
 
     return new ConstantScoreWeight(this) {
 
-      private DocIdSet buildMatchingDocIdSet(LeafReader reader, PointValues values,
-          byte[] packedLower, byte[] packedUpper) throws IOException {
+      private DocIdSet buildMatchingDocIdSet(LeafReader reader, PointValues values) throws IOException {
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
 
         values.intersect(field,
@@ -137,11 +122,11 @@ public abstract class PointRangeQuery extends Query {
               public void visit(int docID, byte[] packedValue) {
                 for(int dim=0;dim<numDims;dim++) {
                   int offset = dim*bytesPerDim;
-                  if (StringHelper.compare(bytesPerDim, packedValue, offset, packedLower, offset) < 0) {
+                  if (StringHelper.compare(bytesPerDim, packedValue, offset, lowerPoint, offset) < 0) {
                     // Doc's value is too low, in this dimension
                     return;
                   }
-                  if (StringHelper.compare(bytesPerDim, packedValue, offset, packedUpper, offset) > 0) {
+                  if (StringHelper.compare(bytesPerDim, packedValue, offset, upperPoint, offset) > 0) {
                     // Doc's value is too high, in this dimension
                     return;
                   }
@@ -159,13 +144,13 @@ public abstract class PointRangeQuery extends Query {
                 for(int dim=0;dim<numDims;dim++) {
                   int offset = dim*bytesPerDim;
 
-                  if (StringHelper.compare(bytesPerDim, minPackedValue, offset, packedUpper, offset) > 0 ||
-                      StringHelper.compare(bytesPerDim, maxPackedValue, offset, packedLower, offset) < 0) {
+                  if (StringHelper.compare(bytesPerDim, minPackedValue, offset, upperPoint, offset) > 0 ||
+                      StringHelper.compare(bytesPerDim, maxPackedValue, offset, lowerPoint, offset) < 0) {
                     return Relation.CELL_OUTSIDE_QUERY;
                   }
 
-                  crosses |= StringHelper.compare(bytesPerDim, minPackedValue, offset, packedLower, offset) < 0 ||
-                    StringHelper.compare(bytesPerDim, maxPackedValue, offset, packedUpper, offset) > 0;
+                  crosses |= StringHelper.compare(bytesPerDim, minPackedValue, offset, lowerPoint, offset) < 0 ||
+                    StringHelper.compare(bytesPerDim, maxPackedValue, offset, upperPoint, offset) > 0;
                 }
 
                 if (crosses) {
@@ -197,16 +182,6 @@ public abstract class PointRangeQuery extends Query {
         if (bytesPerDim != fieldInfo.getPointNumBytes()) {
           throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + " but this query has bytesPerDim=" + bytesPerDim);
         }
-        int bytesPerDim = fieldInfo.getPointNumBytes();
-
-        byte[] packedLower = new byte[numDims * bytesPerDim];
-        byte[] packedUpper = new byte[numDims * bytesPerDim];
-
-        // Carefully pack lower and upper bounds
-        for(int dim=0;dim<numDims;dim++) {
-          System.arraycopy(lowerPoint[dim], 0, packedLower, dim*bytesPerDim, bytesPerDim);
-          System.arraycopy(upperPoint[dim], 0, packedUpper, dim*bytesPerDim, bytesPerDim);
-        }
 
         boolean allDocsMatch;
         if (values.getDocCount(field) == reader.maxDoc()) {
@@ -215,8 +190,8 @@ public abstract class PointRangeQuery extends Query {
           allDocsMatch = true;
           for (int i = 0; i < numDims; ++i) {
             int offset = i * bytesPerDim;
-            if (StringHelper.compare(bytesPerDim, packedLower, offset, fieldPackedLower, offset) > 0
-                || StringHelper.compare(bytesPerDim, packedUpper, offset, fieldPackedUpper, offset) < 0) {
+            if (StringHelper.compare(bytesPerDim, lowerPoint, offset, fieldPackedLower, offset) > 0
+                || StringHelper.compare(bytesPerDim, upperPoint, offset, fieldPackedUpper, offset) < 0) {
               allDocsMatch = false;
               break;
             }
@@ -230,7 +205,7 @@ public abstract class PointRangeQuery extends Query {
           // all docs have a value and all points are within bounds, so everything matches
           iterator = DocIdSetIterator.all(reader.maxDoc());
         } else {
-          iterator = buildMatchingDocIdSet(reader, values, packedLower, packedUpper).iterator();
+          iterator = buildMatchingDocIdSet(reader, values).iterator();
         }
 
         return new ConstantScoreScorer(this, score(), iterator);
@@ -263,15 +238,12 @@ public abstract class PointRangeQuery extends Query {
       return false;
     }
 
-    // Cannot use Arrays.equals here, because it in turn uses byte[].equals
-    // to compare each value, which only uses "=="
-    for(int dim=0;dim<numDims;dim++) {
-      if (Arrays.equals(lowerPoint[dim], q.lowerPoint[dim]) == false) {
-        return false;
-      }
-      if (Arrays.equals(upperPoint[dim], q.upperPoint[dim]) == false) {
-        return false;
-      }
+    if (!Arrays.equals(lowerPoint, q.lowerPoint)) {
+      return false;
+    }
+    
+    if (!Arrays.equals(upperPoint, q.upperPoint)) {
+      return false;
     }
 
     return true;
@@ -290,11 +262,13 @@ public abstract class PointRangeQuery extends Query {
       if (i > 0) {
         sb.append(',');
       }
+      
+      int startOffset = bytesPerDim * i;
 
       sb.append('[');
-      sb.append(toString(i, lowerPoint[i]));
+      sb.append(toString(i, Arrays.copyOfRange(lowerPoint, startOffset, startOffset + bytesPerDim)));
       sb.append(" TO ");
-      sb.append(toString(i, upperPoint[i]));
+      sb.append(toString(i, Arrays.copyOfRange(upperPoint, startOffset, startOffset + bytesPerDim)));
       sb.append(']');
     }
 

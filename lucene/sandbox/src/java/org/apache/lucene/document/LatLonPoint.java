@@ -206,13 +206,11 @@ public class LatLonPoint extends Field {
     return decodeLongitude(NumericUtils.sortableBytesToInt(src, offset));
   }
   
-  /** sugar encodes a single point as a 2D byte array */
-  private static byte[][] encode(double latitude, double longitude) {
-    byte[][] bytes = new byte[2][];
-    bytes[0] = new byte[4];
-    NumericUtils.intToSortableBytes(encodeLatitude(latitude), bytes[0], 0);
-    bytes[1] = new byte[4];
-    NumericUtils.intToSortableBytes(encodeLongitude(longitude), bytes[1], 0);
+  /** sugar encodes a single point as a byte array */
+  private static byte[] encode(double latitude, double longitude) {
+    byte[] bytes = new byte[2 * Integer.BYTES];
+    NumericUtils.intToSortableBytes(encodeLatitude(latitude), bytes, 0);
+    NumericUtils.intToSortableBytes(encodeLongitude(longitude), bytes, Integer.BYTES);
     return bytes;
   }
 
@@ -251,8 +249,8 @@ public class LatLonPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null, or the box has invalid coordinates.
    */
   public static Query newBoxQuery(String field, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
-    byte[][] lower = encode(minLatitude, minLongitude);
-    byte[][] upper = encode(maxLatitude, maxLongitude);
+    byte[] lower = encode(minLatitude, minLongitude);
+    byte[] upper = encode(maxLatitude, maxLongitude);
     // Crosses date line: we just rewrite into OR of two bboxes, with longitude as an open range:
     if (maxLongitude < minLongitude) {
       // Disable coord here because a multi-valued doc could match both rects and get unfairly boosted:
@@ -260,19 +258,15 @@ public class LatLonPoint extends Field {
       q.setDisableCoord(true);
 
       // E.g.: maxLon = -179, minLon = 179
-      byte[][] leftOpen = new byte[2][];
-      leftOpen[0] = lower[0];
+      byte[] leftOpen = lower.clone();
       // leave longitude open
-      leftOpen[1] = new byte[Integer.BYTES];
-      NumericUtils.intToSortableBytes(Integer.MIN_VALUE, leftOpen[1], 0);
+      NumericUtils.intToSortableBytes(Integer.MIN_VALUE, leftOpen, Integer.BYTES);
       Query left = newBoxInternal(field, leftOpen, upper);
       q.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
 
-      byte[][] rightOpen = new byte[2][];
-      rightOpen[0] = upper[0];
+      byte[] rightOpen = upper.clone();
       // leave longitude open
-      rightOpen[1] = new byte[Integer.BYTES];
-      NumericUtils.intToSortableBytes(Integer.MAX_VALUE, rightOpen[1], 0);
+      NumericUtils.intToSortableBytes(Integer.MAX_VALUE, rightOpen, Integer.BYTES);
       Query right = newBoxInternal(field, lower, rightOpen);
       q.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
       return new ConstantScoreQuery(q.build());
@@ -281,8 +275,8 @@ public class LatLonPoint extends Field {
     }
   }
   
-  private static Query newBoxInternal(String field, byte[][] min, byte[][] max) {
-    return new PointRangeQuery(field, min, max) {
+  private static Query newBoxInternal(String field, byte[] min, byte[] max) {
+    return new PointRangeQuery(field, min, max, 2) {
       @Override
       protected String toString(int dimension, byte[] value) {
         if (dimension == 0) {

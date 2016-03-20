@@ -96,16 +96,22 @@ public class TestBigIntegerPoint extends LuceneTestCase {
   }
 
   public void testQueryEquals() throws Exception {
-    Query q = BigIntegerPoint.newRangeQuery("a", BigInteger.valueOf(0), BigInteger.valueOf(1000));
-    assertEquals(q, BigIntegerPoint.newRangeQuery("a", BigInteger.valueOf(0), BigInteger.valueOf(1000)));
-    assertFalse(q.equals(BigIntegerPoint.newRangeQuery("a", BigInteger.valueOf(1), BigInteger.valueOf(1000))));
+    Query q1 = BigIntegerPoint.newRangeQuery("a", BigInteger.valueOf(0), BigInteger.valueOf(1000));
+    Query q2 = BigIntegerPoint.newRangeQuery("a", BigInteger.valueOf(0), BigInteger.valueOf(1000));
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(BigIntegerPoint.newRangeQuery("a", BigInteger.valueOf(1), BigInteger.valueOf(1000))));
 
-    q = BigIntegerPoint.newExactQuery("a", BigInteger.valueOf(1000));
-    assertEquals(q, BigIntegerPoint.newExactQuery("a", BigInteger.valueOf(1000)));
-    assertFalse(q.equals(BigIntegerPoint.newExactQuery("a", BigInteger.valueOf(1))));
+    q1 = BigIntegerPoint.newExactQuery("a", BigInteger.valueOf(1000));
+    q2 = BigIntegerPoint.newExactQuery("a", BigInteger.valueOf(1000));
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(BigIntegerPoint.newExactQuery("a", BigInteger.valueOf(1))));
 
-    q = BigIntegerPoint.newSetQuery("a", BigInteger.valueOf(0), BigInteger.valueOf(1000), BigInteger.valueOf(17));
-    assertEquals(q, BigIntegerPoint.newSetQuery("a", BigInteger.valueOf(17), BigInteger.valueOf(0), BigInteger.valueOf(1000)));
-    assertFalse(q.equals(BigIntegerPoint.newSetQuery("a", BigInteger.valueOf(1), BigInteger.valueOf(17), BigInteger.valueOf(1000))));
+    q1 = BigIntegerPoint.newSetQuery("a", BigInteger.valueOf(0), BigInteger.valueOf(1000), BigInteger.valueOf(17));
+    q2 = BigIntegerPoint.newSetQuery("a", BigInteger.valueOf(17), BigInteger.valueOf(0), BigInteger.valueOf(1000));
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(BigIntegerPoint.newSetQuery("a", BigInteger.valueOf(1), BigInteger.valueOf(17), BigInteger.valueOf(1000))));
   }     
 }
