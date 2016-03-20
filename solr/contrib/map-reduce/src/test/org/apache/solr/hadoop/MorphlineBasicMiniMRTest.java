@@ -119,6 +119,7 @@ public class MorphlineBasicMiniMRTest extends SolrTestCaseJ4 {
     assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",
         Boolean.parseBoolean(System.getProperty("tests.disableHdfs", "false")));
     
+    assumeFalse("This test fails on Java 9 (https://issues.apache.org/jira/browse/SOLR-8876)", Constants.JRE_IS_MINIMUM_JAVA9);
     assumeFalse("FIXME: This test does not work with Windows because of native library requirements", Constants.WINDOWS);
     
     AbstractZkTestCase.SOLRHOME = solrHomeDirectory;
