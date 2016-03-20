@@ -16,29 +16,14 @@
  */
 package org.apache.lucene.util.bkd;
 
-import java.io.IOException;
-
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FilterCodec;
-import org.apache.lucene.codecs.PointsFormat;
-import org.apache.lucene.codecs.PointsReader;
-import org.apache.lucene.codecs.PointsWriter;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
-import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.LongPoint;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.LuceneTestCase.Monster;
-import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.TimeUnits;
 
 import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
@@ -55,7 +40,7 @@ public class Test2BBKDPoints extends LuceneTestCase {
 
     final int numDocs = (Integer.MAX_VALUE / 26) + 100;
 
-    BKDWriter w = new BKDWriter(numDocs, dir, "_0", 1, Long.BYTES, 26L * numDocs);
+    BKDWriter w = new BKDWriter(numDocs, dir, "_0", 1, Long.BYTES, 26L * numDocs, false);
     int counter = 0;
     byte[] packedBytes = new byte[Long.BYTES];
     for (int docID = 0; docID < numDocs; docID++) {
@@ -88,7 +73,7 @@ public class Test2BBKDPoints extends LuceneTestCase {
 
     final int numDocs = (Integer.MAX_VALUE / 26) + 100;
 
-    BKDWriter w = new BKDWriter(numDocs, dir, "_0", 2, Long.BYTES, 26L * numDocs);
+    BKDWriter w = new BKDWriter(numDocs, dir, "_0", 2, Long.BYTES, 26L * numDocs, false);
     int counter = 0;
     byte[] packedBytes = new byte[2*Long.BYTES];
     for (int docID = 0; docID < numDocs; docID++) {

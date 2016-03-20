@@ -32,18 +32,23 @@ final class OfflinePointReader extends PointReader {
   long countLeft;
   final IndexInput in;
   private final byte[] packedValue;
+  final boolean singleValuePerDoc;
   private long ord;
   private int docID;
   // true if ords are written as long (8 bytes), else 4 bytes
   private boolean longOrds;
   private boolean checked;
 
-  OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length, boolean longOrds) throws IOException {
+  OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length,
+                     boolean longOrds, boolean singleValuePerDoc) throws IOException {
+    this.singleValuePerDoc = singleValuePerDoc;
     int bytesPerDoc = packedBytesLength + Integer.BYTES;
-    if (longOrds) {
-      bytesPerDoc += Long.BYTES;
-    } else {
-      bytesPerDoc += Integer.BYTES;
+    if (singleValuePerDoc == false) {
+      if (longOrds) {
+        bytesPerDoc += Long.BYTES;
+      } else {
+        bytesPerDoc += Integer.BYTES;
+      }
     }
 
     if ((start + length) * bytesPerDoc + CodecUtil.footerLength() > tempDir.fileLength(tempFileName)) {
@@ -84,12 +89,16 @@ final class OfflinePointReader extends PointReader {
       assert countLeft == -1;
       return false;
     }
-    if (longOrds) {
-      ord = in.readLong();
+    if (singleValuePerDoc == false) {
+      if (longOrds) {
+        ord = in.readLong();
+      } else {
+        ord = in.readInt();
+      }
+      docID = in.readInt();
     } else {
-      ord = in.readInt();
+      ord = docID = in.readInt();
     }
-    docID = in.readInt();
     return true;
   }
 
@@ -135,10 +144,12 @@ final class OfflinePointReader extends PointReader {
     int packedBytesLength = packedValue.length;
 
     int bytesPerDoc = packedBytesLength + Integer.BYTES;
-    if (longOrds) {
-      bytesPerDoc += Long.BYTES;
-    } else {
-      bytesPerDoc += Integer.BYTES;
+    if (singleValuePerDoc == false) {
+      if (longOrds) {
+        bytesPerDoc += Long.BYTES;
+      } else {
+        bytesPerDoc += Integer.BYTES;
+      }
     }
 
     long rightCount = 0;
@@ -159,8 +170,10 @@ final class OfflinePointReader extends PointReader {
       if (longOrds) {
         ord = readLong(buffer, packedBytesLength);
       } else {
+        // This is either ord (multi-valued case) or docID (which we use as ord in the single valued case):
         ord = readInt(buffer, packedBytesLength);
       }
+
       if (rightTree.get(ord)) {
         rightOut.writeBytes(buffer, 0, bytesPerDoc);
         if (doClearBits) {
