@@ -20,6 +20,7 @@ See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 (No Changes)
 
 ==================  6.1.0 ==================
+
 Detailed Change List
 ----------------------
 * SOLR-8782: Add asynchronous sugar methods to the SolrJ Collections API.  You
@@ -30,13 +31,13 @@ Detailed Change List
 * SOLR-8765: Enforce required parameters at query construction time in the SolrJ
   Collections API, add static factory methods, and deprecate old setter methods.
   (Alan Woodward, Jason Gerlowski)
-* SOLR-8842: authorization APIs do not use name as an identifier for  a permission
-  for update, delete   commands and 'before' attribute (noble)
+ 
+* SOLR-8842: authorization APIs do not use name as an identifier for a permission
+  for update, delete commands and 'before' attribute (noble)
 
 
 New Features
 ----------------------
-
 * SOLR-8814: Support GeoJSON response writer and general spatial formatting.  Adding
      &wt=geojson&geojson.field=<your geometry field>
   Will return a FeatureCollection for each SolrDocumentList and a Feature with the
@@ -282,8 +283,9 @@ Bug Fixes
   
 * SOLR-8656: PeerSync should use same nUpdates everywhere. (Ramsey Haddad via Mark Miller)
 
-* SOLR-8697: Scope ZK election nodes by session to prevent elections from interfering with each other
-  and other small LeaderElector improvements. (Scott Blum via Mark Miller)
+* SOLR-8697, SOLR-8837: Scope ZK election nodes by session to prevent elections from interfering with each other
+  and other small LeaderElector improvements. (Scott Blum via Mark Miller, Alan
+  Woodward)
 
 * SOLR-8599: After a failed connection during construction of SolrZkClient attempt to retry until a connection
   can be made. (Keith Laban, Dennis Gove)
