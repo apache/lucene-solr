@@ -37,6 +37,9 @@ Bug Fixes
   on such dates was also affected.  With this fixed, this is the first release range faceting works on BC years.
   (David Smiley)
 
+* SOLR-8857: HdfsUpdateLog does not use configured or new default number of version buckets and is
+  hard coded to 256. (Mark Miller, yonik, Gregory Chanan)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
