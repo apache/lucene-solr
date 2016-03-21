@@ -289,10 +289,10 @@ public class GeoRelationUtils {
     }
     double w = Math.abs(rMaxX - rMinX);
     if (w <= 90.0) {
-      return GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, rMinX) <= radiusMeters
-          || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, rMinX) <= radiusMeters
-          || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, rMaxX) <= radiusMeters
-          || GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, rMaxX) <= radiusMeters;
+      return SloppyMath.haversinMeters(centerLat, centerLon, rMinY, rMinX) <= radiusMeters
+          || SloppyMath.haversinMeters(centerLat, centerLon, rMaxY, rMinX) <= radiusMeters
+          || SloppyMath.haversinMeters(centerLat, centerLon, rMaxY, rMaxX) <= radiusMeters
+          || SloppyMath.haversinMeters(centerLat, centerLon, rMinY, rMaxX) <= radiusMeters;
     }
     // partition
     w /= 4;
@@ -300,24 +300,24 @@ public class GeoRelationUtils {
     final double p2 = p1 + w;
     final double p3 = p2 + w;
 
-    return GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, rMinX) <= radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, rMinX) <= radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, p1) <= radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, p1) <= radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, p2) <= radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, p2) <= radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, p3) <= radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, p3) <= radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, rMaxX) <= radiusMeters
-        || GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, rMaxX) <= radiusMeters;
+    return SloppyMath.haversinMeters(centerLat, centerLon, rMinY, rMinX) <= radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMaxY, rMinX) <= radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMaxY, p1) <= radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMinY, p1) <= radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMinY, p2) <= radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMaxY, p2) <= radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMaxY, p3) <= radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMinY, p3) <= radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMaxY, rMaxX) <= radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMinY, rMaxX) <= radiusMeters;
   }
 
   private static boolean rectAnyCornersInCircleSloppy(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                                       final double centerLon, final double centerLat, final double radiusMeters) {
-    return SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 <= radiusMeters
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 <= radiusMeters
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 <= radiusMeters
-        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 <= radiusMeters;
+    return SloppyMath.haversinMeters(centerLat, centerLon, rMinY, rMinX) <= radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMaxY, rMinX) <= radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMaxY, rMaxX) <= radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMinY, rMaxX) <= radiusMeters;
   }
 
   /**
@@ -336,10 +336,10 @@ public class GeoRelationUtils {
     }
     // if span is less than 70 degrees we can approximate using distance alone
     if (Math.abs(rMaxX - rMinX) <= 70.0) {
-      return GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, rMinX) > radiusMeters
-          || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, rMinX) > radiusMeters
-          || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxY, rMaxX) > radiusMeters
-          || GeoDistanceUtils.haversin(centerLat, centerLon, rMinY, rMaxX) > radiusMeters;
+      return SloppyMath.haversinMeters(centerLat, centerLon, rMinY, rMinX) > radiusMeters
+          || SloppyMath.haversinMeters(centerLat, centerLon, rMaxY, rMinX) > radiusMeters
+          || SloppyMath.haversinMeters(centerLat, centerLon, rMaxY, rMaxX) > radiusMeters
+          || SloppyMath.haversinMeters(centerLat, centerLon, rMinY, rMaxX) > radiusMeters;
     }
     return rectCrossesOblateCircle(centerLon, centerLat, radiusMeters, rMinX, rMinY, rMaxX, rMaxY);
   }
@@ -363,10 +363,10 @@ public class GeoRelationUtils {
 
       final double d1, d2;
       // short-circuit if we find a corner outside the circle
-      if ( (d1 = GeoDistanceUtils.haversin(centerLat, centerLon, rMinLat, p1)) > radiusMeters
-          || (d2 = GeoDistanceUtils.haversin(centerLat, centerLon, rMinLat, maxLon)) > radiusMeters
-          || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxLat, p1) > radiusMeters
-          || GeoDistanceUtils.haversin(centerLat, centerLon, rMaxLat, maxLon) > radiusMeters) {
+      if ( (d1 = SloppyMath.haversinMeters(centerLat, centerLon, rMinLat, p1)) > radiusMeters
+          || (d2 = SloppyMath.haversinMeters(centerLat, centerLon, rMinLat, maxLon)) > radiusMeters
+          || SloppyMath.haversinMeters(centerLat, centerLon, rMaxLat, p1) > radiusMeters
+          || SloppyMath.haversinMeters(centerLat, centerLon, rMaxLat, maxLon) > radiusMeters) {
         return true;
       }
 
@@ -379,7 +379,7 @@ public class GeoRelationUtils {
           GeoProjectionUtils.bearingGreatCircle(maxLon, rMinLat, maxLon, rMaxLat), radiusMeters - d2, pt))[1] < rMinLat || pt[1] < rMaxLat
           || (pt = GeoProjectionUtils.pointFromLonLatBearingGreatCircle(maxLon, rMinLat,
           GeoProjectionUtils.bearingGreatCircle(maxLon, rMinLat, (midLon = p1 + 0.5*(maxLon - p1)), rMaxLat),
-          radiusMeters - GeoDistanceUtils.haversin(centerLat, centerLon, rMinLat, midLon), pt))[1] < rMinLat
+          radiusMeters - SloppyMath.haversinMeters(centerLat, centerLon, rMinLat, midLon), pt))[1] < rMinLat
           || pt[1] < rMaxLat == false ) {
         return true;
       }
@@ -390,10 +390,10 @@ public class GeoRelationUtils {
 
   private static boolean rectAnyCornersOutsideCircleSloppy(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
                                                            final double centerLon, final double centerLat, final double radiusMeters) {
-    return SloppyMath.haversin(centerLat, centerLon, rMinY, rMinX)*1000.0 > radiusMeters
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMinX)*1000.0 > radiusMeters
-        || SloppyMath.haversin(centerLat, centerLon, rMaxY, rMaxX)*1000.0 > radiusMeters
-        || SloppyMath.haversin(centerLat, centerLon, rMinY, rMaxX)*1000.0 > radiusMeters;
+    return SloppyMath.haversinMeters(centerLat, centerLon, rMinY, rMinX) > radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMaxY, rMinX) > radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMaxY, rMaxX) > radiusMeters
+        || SloppyMath.haversinMeters(centerLat, centerLon, rMinY, rMaxX) > radiusMeters;
   }
 
   /**
@@ -446,7 +446,7 @@ public class GeoRelationUtils {
                                                          final boolean approx) {
     double[] closestPt = {0, 0};
     GeoDistanceUtils.closestPointOnBBox(rMinX, rMinY, rMaxX, rMaxY, centerLon, centerLat, closestPt);
-    boolean haverShortCut = GeoDistanceUtils.haversin(centerLat, centerLon, closestPt[1], closestPt[0]) <= radiusMeters;
+    boolean haverShortCut = SloppyMath.haversinMeters(centerLat, centerLon, closestPt[1], closestPt[0]) <= radiusMeters;
     if (approx == true || haverShortCut == true) {
       return haverShortCut;
     }

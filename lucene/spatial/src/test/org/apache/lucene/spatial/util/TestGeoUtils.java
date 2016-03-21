@@ -26,6 +26,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SloppyMath;
 import org.junit.BeforeClass;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
@@ -315,7 +316,7 @@ public class TestGeoUtils extends LuceneTestCase {
         // Leaf cell: brute force check all docs that fall within this cell:
         for(int docID=0;docID<docLons.length;docID++) {
           if (cell.contains(docLons[docID], docLats[docID])) {
-            double distanceMeters = GeoDistanceUtils.haversin(centerLat, centerLon, docLats[docID], docLons[docID]);
+            double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, docLats[docID], docLons[docID]);
             if (distanceMeters <= radiusMeters) {
               if (VERBOSE) {
                 log.println("    check doc=" + docID + ": match!");
@@ -517,7 +518,7 @@ public class TestGeoUtils extends LuceneTestCase {
 
       // Done matching, now verify:
       for(int docID=0;docID<numDocs;docID++) {
-        double distanceMeters = GeoDistanceUtils.haversin(centerLat, centerLon, docLats[docID], docLons[docID]);
+        double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, docLats[docID], docLons[docID]);
         final Boolean expected;
         final double percentError = Math.abs(distanceMeters - radiusMeters) / distanceMeters;
         if (percentError <= DISTANCE_PCT_ERR) {

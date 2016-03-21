@@ -27,11 +27,11 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.spatial.util.GeoDistanceUtils;
 import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
 
 /** Simple tests for {@link LatLonPoint#newDistanceSort} */
@@ -63,13 +63,13 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
     
     FieldDoc d = (FieldDoc) td.scoreDocs[0];
-    assertEquals(462.61748421408186D, (Double)d.fields[0], 0.0D);
+    assertEquals(462.6174876948475D, (Double)d.fields[0], 0.0D);
     
     d = (FieldDoc) td.scoreDocs[1];
-    assertEquals(1056.1630445911035D, (Double)d.fields[0], 0.0D);
+    assertEquals(1056.163041670945D, (Double)d.fields[0], 0.0D);
     
     d = (FieldDoc) td.scoreDocs[2];
-    assertEquals(5291.798081404466D, (Double)d.fields[0], 0.0D);
+    assertEquals(5291.798081190281D, (Double)d.fields[0], 0.0D);
     
     reader.close();
     dir.close();
@@ -100,10 +100,10 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
     
     FieldDoc d = (FieldDoc) td.scoreDocs[0];
-    assertEquals(462.61748421408186D, (Double)d.fields[0], 0.0D);
+    assertEquals(462.6174876948475D, (Double)d.fields[0], 0.0D);
     
     d = (FieldDoc) td.scoreDocs[1];
-    assertEquals(1056.1630445911035D, (Double)d.fields[0], 0.0D);
+    assertEquals(1056.163041670945D, (Double)d.fields[0], 0.0D);
     
     d = (FieldDoc) td.scoreDocs[2];
     assertEquals(Double.POSITIVE_INFINITY, (Double)d.fields[0], 0.0D);
@@ -214,7 +214,7 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
         } else {
           double docLatitude = targetDoc.getField("lat").numericValue().doubleValue();
           double docLongitude = targetDoc.getField("lon").numericValue().doubleValue();
-          distance = GeoDistanceUtils.haversin(lat, lon, docLatitude, docLongitude);
+          distance = SloppyMath.haversinMeters(lat, lon, docLatitude, docLongitude);
         }
         int id = targetDoc.getField("id").numericValue().intValue();
         expected[doc] = new Result(id, distance);
@@ -251,26 +251,6 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     reader.close();
     writer.close();
     dir.close();
-  }
-
-  /** Test this method sorts the same way as real haversin */
-  public void testPartialHaversin() {
-    for (int i = 0; i < 100000; i++) {
-      double centerLat = -90 + 180.0 * random().nextDouble();
-      double centerLon = -180 + 360.0 * random().nextDouble();
-
-      double lat1 = -90 + 180.0 * random().nextDouble();
-      double lon1 = -180 + 360.0 * random().nextDouble();
-
-      double lat2 = -90 + 180.0 * random().nextDouble();
-      double lon2 = -180 + 360.0 * random().nextDouble();
-
-      int expected = Integer.signum(Double.compare(GeoDistanceUtils.haversin(centerLat, centerLon, lat1, lon1),
-                                                   GeoDistanceUtils.haversin(centerLat, centerLon, lat2, lon2)));
-      int actual = Integer.signum(Double.compare(LatLonPointDistanceComparator.haversin1(centerLat, centerLon, lat1, lon1),
-                                                 LatLonPointDistanceComparator.haversin1(centerLat, centerLon, lat2, lon2)));
-      assertEquals(expected, actual);
-    }
   }
   
   /** Test infinite radius covers whole earth */

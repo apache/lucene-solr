@@ -47,6 +47,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
 
@@ -724,7 +725,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
                     @Override
                     protected void describe(int docID, double pointLat, double pointLon) {
-                      double distanceMeters = GeoDistanceUtils.haversin(centerLat, centerLon, pointLat, pointLon);
+                      double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
                       System.out.println("  docID=" + docID + " centerLon=" + centerLon + " centerLat=" + centerLat
                           + " pointLon=" + pointLon + " pointLat=" + pointLat + " distanceMeters=" + distanceMeters
                           + " vs" + ((rangeQuery == true) ? " minRadiusMeters=" + minRadiusMeters : "") + " radiusMeters=" + radiusMeters);

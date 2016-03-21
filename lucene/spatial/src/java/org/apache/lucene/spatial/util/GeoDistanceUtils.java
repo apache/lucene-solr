@@ -34,28 +34,6 @@ public class GeoDistanceUtils {
   }
 
   /**
-   * Compute the great-circle distance using original haversine implementation published by Sinnot in:
-   * R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159
-   *
-   * NOTE: this differs from {@link org.apache.lucene.util.SloppyMath#haversin} in that it uses the semi-major axis
-   * of the earth instead of an approximation based on the average latitude of the two points (which can introduce an
-   * additional error up to .337%, or ~67.6 km at the equator)
-   */
-  public static double haversin(double lat1, double lon1, double lat2, double lon2) {
-    double dLat = TO_RADIANS * (lat2 - lat1);
-    double dLon = TO_RADIANS * (lon2 - lon1);
-    lat1 = TO_RADIANS * (lat1);
-    lat2 = TO_RADIANS * (lat2);
-
-    final double sinDLatO2 = SloppyMath.sin(dLat / 2);
-    final double sinDLonO2 = SloppyMath.sin(dLon / 2);
-
-    double a = sinDLatO2*sinDLatO2 + sinDLonO2 * sinDLonO2 * SloppyMath.cos(lat1) * SloppyMath.cos(lat2);
-    double c = 2 * SloppyMath.asin(Math.sqrt(a));
-    return (GeoProjectionUtils.SEMIMAJOR_AXIS * c);
-  }
-
-  /**
    * Compute the distance between two geo-points using vincenty distance formula
    * Vincenty uses the oblate spheroid whereas haversine uses unit sphere, this will give roughly
    * 22m better accuracy (in worst case) than haversine
@@ -138,12 +116,11 @@ public class GeoDistanceUtils {
    * @return Sloppy distance in degrees longitude for provided distance in meters
    */
   public static double distanceToDegreesLon(double lat, double distance) {
-    distance /= 1000.0;
     // convert latitude to radians
     lat = StrictMath.toRadians(lat);
 
     // get the diameter at the latitude
-    final double diameter = SloppyMath.earthDiameter(StrictMath.toRadians(lat));
+    final double diameter = 2 * GeoProjectionUtils.SEMIMAJOR_AXIS;
 
     // compute inverse haversine
     double a = StrictMath.sin(distance/diameter);
@@ -197,9 +174,9 @@ public class GeoDistanceUtils {
   /** Returns the maximum distance/radius (in meters) from the point 'center' before overlapping */
   public static double maxRadialDistanceMeters(final double centerLon, final double centerLat) {
     if (Math.abs(centerLat) == GeoUtils.MAX_LAT_INCL) {
-      return GeoDistanceUtils.haversin(centerLat, centerLon, 0, centerLon);
+      return SloppyMath.haversinMeters(centerLat, centerLon, 0, centerLon);
     }
-    return GeoDistanceUtils.haversin(centerLat, centerLon, centerLat, (GeoUtils.MAX_LON_INCL + centerLon) % 360);
+    return SloppyMath.haversinMeters(centerLat, centerLon, centerLat, (GeoUtils.MAX_LON_INCL + centerLon) % 360);
   }
 
   /**
@@ -210,8 +187,7 @@ public class GeoDistanceUtils {
    */
   public static double distanceToDegreesLat(double lat, double distance) {
     // get the diameter at the latitude
-    final double diameter = SloppyMath.earthDiameter(StrictMath.toRadians(lat));
-    distance /= 1000.0;
+    final double diameter = 2 * GeoProjectionUtils.SEMIMAJOR_AXIS;
 
     // compute inverse haversine
     double a = StrictMath.sin(distance/diameter);

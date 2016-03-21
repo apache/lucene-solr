@@ -19,9 +19,9 @@ package org.apache.lucene.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
-import org.apache.lucene.spatial.util.GeoDistanceUtils;
 import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.util.SloppyMath;
 
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   // TODO: remove this!
@@ -136,7 +136,7 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
   @Override
   protected Boolean circleContainsPoint(double centerLat, double centerLon, double radiusMeters, double pointLat, double pointLon) {
-    double distanceMeters = GeoDistanceUtils.haversin(centerLat, centerLon, pointLat, pointLon);
+    double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
     boolean result = distanceMeters <= radiusMeters;
     //System.out.println("  shouldMatch?  centerLon=" + centerLon + " centerLat=" + centerLat + " pointLon=" + pointLon + " pointLat=" + pointLat + " result=" + result + " distanceMeters=" + (distanceKM * 1000));
     return result;
@@ -144,7 +144,7 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
   @Override
   protected Boolean distanceRangeContainsPoint(double centerLat, double centerLon, double minRadiusMeters, double radiusMeters, double pointLat, double pointLon) {
-    final double d = GeoDistanceUtils.haversin(centerLat, centerLon, pointLat, pointLon);
+    final double d = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
     return d >= minRadiusMeters && d <= radiusMeters;
   }
 
@@ -199,7 +199,7 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
           }
         }
 
-        double distanceMeters = GeoDistanceUtils.haversin(centerLat, centerLon, lat, lon);
+        double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, lat, lon);
 
         // Haversin says it's within the circle:
         boolean haversinSays = distanceMeters <= radiusMeters;

@@ -31,7 +31,7 @@ import org.apache.lucene.spatial.util.GeoUtils;
  * the morton codes of the min and max lat/lon pairs that intersect the boundary of the point-radius
  * circle. Terms
  * passing this initial filter are then passed to a secondary {@code postFilter} method that verifies whether the
- * decoded lat/lon point fall within the specified query distance (see {@link org.apache.lucene.util.SloppyMath#haversin}.
+ * decoded lat/lon point fall within the specified query distance (see {@link org.apache.lucene.util.SloppyMath#haversinMeters(double, double, double, double)}.
  * All morton value comparisons are subject to the same precision tolerance defined in
  * {@value org.apache.lucene.spatial.util.GeoEncodingUtils#TOLERANCE} and distance comparisons are subject to the accuracy of the
  * haversine formula (from R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159)
