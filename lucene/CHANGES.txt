@@ -208,6 +208,9 @@ Bug Fixes
 * LUCENE-7101: OfflineSorter had O(N^2) merge cost, and used too many
   temporary file descriptors, for large sorts (Mike McCandless)
 
+* LUCENE-7111: DocValuesRangeQuery.newLongRange behaves incorrectly for
+  Long.MAX_VALUE and Long.MIN_VALUE (Ishan Chattopadhyaya via Steve Rowe)
+
 Other
 
 * LUCENE-7035: Upgrade icu4j to 56.1/unicode 8. (Robert Muir)
