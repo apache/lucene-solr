@@ -97,19 +97,12 @@ public class HdfsUpdateLog extends UpdateLog {
   
   @Override
   public void init(PluginInfo info) {
-    dataDir = (String) info.initArgs.get("dir");
-    
-    defaultSyncLevel = SyncLevel.getSyncLevel((String) info.initArgs
-        .get("syncLevel"));
-
-    numRecordsToKeep = objToInt(info.initArgs.get("numRecordsToKeep"), 100);
-    maxNumLogsToKeep = objToInt(info.initArgs.get("maxNumLogsToKeep"), 10);
+    super.init(info);
     
     tlogDfsReplication = (Integer) info.initArgs.get( "tlogDfsReplication");
     if (tlogDfsReplication == null) tlogDfsReplication = 1;
 
-    log.info("Initializing HdfsUpdateLog: dataDir={} defaultSyncLevel={} numRecordsToKeep={} maxNumLogsToKeep={} tlogDfsReplication={}",
-        dataDir, defaultSyncLevel, numRecordsToKeep, maxNumLogsToKeep, tlogDfsReplication);
+    log.info("Initializing HdfsUpdateLog: tlogDfsReplication={}", tlogDfsReplication);
   }
 
   private Configuration getConf() {
@@ -231,7 +224,7 @@ public class HdfsUpdateLog extends UpdateLog {
     }
     
     try {
-      versionInfo = new VersionInfo(this, 256);
+      versionInfo = new VersionInfo(this, numVersionBuckets);
     } catch (SolrException e) {
       log.error("Unable to use updateLog: " + e.getMessage(), e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
