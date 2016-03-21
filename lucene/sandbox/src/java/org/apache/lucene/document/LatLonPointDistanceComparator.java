@@ -26,7 +26,6 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.spatial.util.GeoProjectionUtils;
 import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
@@ -136,7 +135,7 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
       // only compute actual distance if its inside "competitive bounding box"
       double docLatitude = LatLonPoint.decodeLatitude(latitudeBits);
       double docLongitude = LatLonPoint.decodeLongitude(longitudeBits);
-      cmp = Math.max(cmp, Double.compare(bottom, haversin1(latitude, longitude, docLatitude, docLongitude)));
+      cmp = Math.max(cmp, Double.compare(bottom, SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude)));
       // once we compete in the PQ, no need to continue.
       if (cmp > 0) {
         return cmp;
@@ -182,23 +181,9 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
       long encoded = currentDocs.valueAt(i);
       double docLatitude = LatLonPoint.decodeLatitude((int)(encoded >> 32));
       double docLongitude = LatLonPoint.decodeLongitude((int)(encoded & 0xFFFFFFFF));
-      minValue = Math.min(minValue, haversin1(latitude, longitude, docLatitude, docLongitude));
+      minValue = Math.min(minValue, SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude));
     }
     return minValue;
-  }
-
-  // sort by first part of the haversin computation. note that this value is meaningless to the user.
-  // invoke haversin2() to "complete" the calculation and get a distance in meters.
-  static double haversin1(double lat1, double lon1, double lat2, double lon2) {
-    double dLat = SloppyMath.TO_RADIANS * (lat2 - lat1);
-    double dLon = SloppyMath.TO_RADIANS * (lon2 - lon1);
-    lat1 = SloppyMath.TO_RADIANS * (lat1);
-    lat2 = SloppyMath.TO_RADIANS * (lat2);
-
-    final double sinDLatO2 = SloppyMath.sin(dLat / 2);
-    final double sinDLonO2 = SloppyMath.sin(dLon / 2);
-
-    return sinDLatO2*sinDLatO2 + sinDLonO2 * sinDLonO2 * SloppyMath.cos(lat1) * SloppyMath.cos(lat2);
   }
 
   // second half of the haversin calculation, used to convert results from haversin1 (used internally
@@ -207,7 +192,6 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     if (Double.isInfinite(partial)) {
       return partial;
     }
-    double c = 2 * SloppyMath.asin(Math.sqrt(partial));
-    return (GeoProjectionUtils.SEMIMAJOR_AXIS * c);
+    return SloppyMath.haversinMeters(partial);
   }
 }

@@ -205,7 +205,7 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     if (radiusQueryCanBeWrong(centerLat, centerLon, pointLon, pointLat, radiusMeters)) {
       return null;
     } else {
-      return SloppyMath.haversin(centerLat, centerLon, pointLat, pointLon)*1000.0 <= radiusMeters;
+      return SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon) <= radiusMeters;
     }
   }
 
@@ -215,7 +215,7 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
         || radiusQueryCanBeWrong(centerLat, centerLon, pointLon, pointLat, radiusMeters)) {
       return null;
     } else {
-      final double d = SloppyMath.haversin(centerLat, centerLon, pointLat, pointLon)*1000.0;
+      final double d = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
       return d >= minRadiusMeters && d <= radiusMeters;
     }
   }
@@ -229,7 +229,7 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     ptLon = GeoEncodingUtils.mortonUnhashLon(hashedPt);
     ptLat = GeoEncodingUtils.mortonUnhashLat(hashedPt);
 
-    double ptDistance = SloppyMath.haversin(centerLat, centerLon, ptLat, ptLon)*1000.0;
+    double ptDistance = SloppyMath.haversinMeters(centerLat, centerLon, ptLat, ptLon);
     double delta = StrictMath.abs(ptDistance - radius);
 
     // if its within the distance error then it can be wrong

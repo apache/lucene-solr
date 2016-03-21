@@ -73,11 +73,11 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
      * The two-phase query approach. The parent {@link GeoPointTermsEnum} class matches
      * encoded terms that fall within the minimum bounding box of the point-radius circle. Those documents that pass
      * the initial bounding box filter are then post filter compared to the provided distance using the
-     * {@link org.apache.lucene.util.SloppyMath#haversin} method.
+     * {@link org.apache.lucene.util.SloppyMath#haversinMeters(double, double, double, double)} method.
      */
     @Override
     protected boolean postFilter(final double lon, final double lat) {
-      return (SloppyMath.haversin(distanceQuery.centerLat, centerLon, lat, lon) * 1000.0 <= distanceQuery.radiusMeters);
+      return SloppyMath.haversinMeters(distanceQuery.centerLat, centerLon, lat, lon) <= distanceQuery.radiusMeters;
     }
   }
 

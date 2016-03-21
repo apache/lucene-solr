@@ -18,6 +18,8 @@ package org.apache.lucene.spatial.util;
 
 import java.util.ArrayList;
 
+import org.apache.lucene.util.SloppyMath;
+
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.PI;
@@ -25,7 +27,6 @@ import static java.lang.Math.abs;
 
 import static org.apache.lucene.util.SloppyMath.asin;
 import static org.apache.lucene.util.SloppyMath.cos;
-import static org.apache.lucene.util.SloppyMath.sin;
 import static org.apache.lucene.util.SloppyMath.TO_DEGREES;
 import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
 import static org.apache.lucene.spatial.util.GeoEncodingUtils.TOLERANCE;
@@ -137,7 +138,7 @@ public final class GeoUtils {
     double maxLon;
 
     if (minLat > MIN_LAT_RADIANS && maxLat < MAX_LAT_RADIANS) {
-      double deltaLon = asin(sin(radDistance) / cos(radLat));
+      double deltaLon = asin(sloppySin(radDistance) / cos(radLat));
       minLon = radLon - deltaLon;
       if (minLon < MIN_LON_RADIANS) {
         minLon += 2d * PI;
@@ -183,5 +184,46 @@ public final class GeoUtils {
     // expand bounding box by TOLERANCE factor to handle round-off error
     return new GeoRect(max(minLon - TOLERANCE, MIN_LON_INCL), min(maxLon + TOLERANCE, MAX_LON_INCL),
         max(minLat - TOLERANCE, MIN_LAT_INCL), min(maxLat + TOLERANCE, MAX_LAT_INCL));
+  }
+  
+
+  // some sloppyish stuff, do we really need this to be done in a sloppy way?
+  // unless it is performance sensitive, we should try to remove.
+  static final double PIO2 = Math.PI / 2D;
+  /**
+   * Returns the trigonometric sine of an angle converted as a cos operation.
+   * <p>
+   * Note that this is not quite right... e.g. sin(0) != 0
+   * <p>
+   * Special cases:
+   * <ul>
+   *  <li>If the argument is {@code NaN} or an infinity, then the result is {@code NaN}.
+   * </ul>
+   * @param a an angle, in radians.
+   * @return the sine of the argument.
+   * @see Math#sin(double)
+   */
+  // TODO: deprecate/remove this? at least its no longer public.
+  static double sloppySin(double a) {
+    return cos(a - PIO2);
+  }
+  
+
+  /**
+   * Returns the trigonometric tangent of an angle converted in terms of a sin/cos operation.
+   * <p>
+   * Note that this is probably not quite right (untested)
+   * <p>
+   * Special cases:
+   * <ul>
+   *  <li>If the argument is {@code NaN} or an infinity, then the result is {@code NaN}.
+   * </ul>
+   * @param a an angle, in radians.
+   * @return the tangent of the argument.
+   * @see Math#sin(double) aand Math#cos(double)
+   */
+  // TODO: deprecate/remove this? at least its no longer public.
+  static double sloppyTan(double a) {
+    return sloppySin(a) / cos(a);
   }
 }

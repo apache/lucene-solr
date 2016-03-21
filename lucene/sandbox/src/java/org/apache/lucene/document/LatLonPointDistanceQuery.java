@@ -35,13 +35,13 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.spatial.util.GeoDistanceUtils;
 import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.lucene.util.StringHelper;
 
@@ -106,9 +106,8 @@ final class LatLonPointDistanceQuery extends Query {
     // to reject edge cases faster in matches()
     final double minPartialDistance;
     if (box.maxLon - longitude < 90 && longitude - box.minLon < 90) {
-      minPartialDistance = Math.max(LatLonPointDistanceComparator.haversin1(latitude, longitude, latitude, box.maxLon),
-                                    LatLonPointDistanceComparator.haversin1(latitude, longitude, box.maxLat, longitude));
-      assert LatLonPointDistanceComparator.haversin2(minPartialDistance) >= radiusMeters;
+      minPartialDistance = Math.max(SloppyMath.haversinSortKey(latitude, longitude, latitude, box.maxLon),
+                                    SloppyMath.haversinSortKey(latitude, longitude, box.maxLat, longitude));
     } else {
       minPartialDistance = Double.POSITIVE_INFINITY;
     }
@@ -199,10 +198,10 @@ final class LatLonPointDistanceQuery extends Query {
                              double lonMax = LatLonPoint.decodeLongitude(maxPackedValue, Integer.BYTES);
 
                              if (lonMax - longitude < 90 && longitude - lonMin < 90 &&
-                                 GeoDistanceUtils.haversin(latitude, longitude, latMin, lonMin) <= radiusMeters &&
-                                 GeoDistanceUtils.haversin(latitude, longitude, latMin, lonMax) <= radiusMeters &&
-                                 GeoDistanceUtils.haversin(latitude, longitude, latMax, lonMin) <= radiusMeters &&
-                                 GeoDistanceUtils.haversin(latitude, longitude, latMax, lonMax) <= radiusMeters) {
+                                 SloppyMath.haversinMeters(latitude, longitude, latMin, lonMin) <= radiusMeters &&
+                                 SloppyMath.haversinMeters(latitude, longitude, latMin, lonMax) <= radiusMeters &&
+                                 SloppyMath.haversinMeters(latitude, longitude, latMax, lonMin) <= radiusMeters &&
+                                 SloppyMath.haversinMeters(latitude, longitude, latMax, lonMax) <= radiusMeters) {
                                // we are fully enclosed, collect everything within this subtree
                                return Relation.CELL_INSIDE_QUERY;
                              } else {
@@ -235,13 +234,13 @@ final class LatLonPointDistanceQuery extends Query {
                 double docLongitude = LatLonPoint.decodeLongitude((int)(encoded & 0xFFFFFFFF));
 
                 // first check the partial distance, if its more than that, it can't be <= radiusMeters
-                double h1 = LatLonPointDistanceComparator.haversin1(latitude, longitude, docLatitude, docLongitude);
+                double h1 = SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude);
                 if (h1 > minPartialDistance) {
                   continue;
                 }
 
                 // fully confirm with part 2:
-                if (LatLonPointDistanceComparator.haversin2(h1) <= radiusMeters) {
+                if (SloppyMath.haversinMeters(h1) <= radiusMeters) {
                   return true;
                 }
               }
