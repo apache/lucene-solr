@@ -219,8 +219,9 @@ Bug Fixes
   
 * SOLR-8656: PeerSync should use same nUpdates everywhere. (Ramsey Haddad via Mark Miller)
 
-* SOLR-8697: Scope ZK election nodes by session to prevent elections from interfering with each other
-  and other small LeaderElector improvements. (Scott Blum via Mark Miller)
+* SOLR-8697, SOLR-8837: Scope ZK election nodes by session to prevent elections from interfering with each other
+  and other small LeaderElector improvements. (Scott Blum via Mark Miller, Alan
+  Woodward)
 
 * SOLR-8599: After a failed connection during construction of SolrZkClient attempt to retry until a connection
   can be made. (Keith Laban, Dennis Gove)
