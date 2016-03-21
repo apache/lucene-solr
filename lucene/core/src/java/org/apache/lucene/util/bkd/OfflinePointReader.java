@@ -39,6 +39,9 @@ final class OfflinePointReader extends PointReader {
   private boolean longOrds;
   private boolean checked;
 
+  // File name we are reading
+  final String name;
+
   OfflinePointReader(Directory tempDir, String tempFileName, int packedBytesLength, long start, long length,
                      boolean longOrds, boolean singleValuePerDoc) throws IOException {
     this.singleValuePerDoc = singleValuePerDoc;
@@ -67,6 +70,7 @@ final class OfflinePointReader extends PointReader {
       // at another level of the BKDWriter recursion
       in = tempDir.openInput(tempFileName, IOContext.READONCE);
     }
+    name = tempFileName;
 
     long seekFP = start * bytesPerDoc;
     in.seek(seekFP);
@@ -121,6 +125,7 @@ final class OfflinePointReader extends PointReader {
   public void close() throws IOException {
     try {
       if (countLeft == 0 && in instanceof ChecksumIndexInput && checked == false) {
+        //System.out.println("NOW CHECK: " + name);
         checked = true;
         CodecUtil.checkFooter((ChecksumIndexInput) in);
       }

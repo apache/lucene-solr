@@ -227,7 +227,7 @@ public class BKDWriter implements Closeable {
   private void spillToOffline() throws IOException {
 
     // For each .add we just append to this input file, then in .finish we sort this input and resursively build the tree:
-    offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds, "spill", singleValuePerDoc);
+    offlinePointWriter = new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds, "spill", 0, singleValuePerDoc);
     tempInput = offlinePointWriter.out;
     PointReader reader = heapPointWriter.getReader(0, pointCount);
     for(int i=0;i<pointCount;i++) {
@@ -851,6 +851,9 @@ public class BKDWriter implements Closeable {
     // Sort all docs once by each dimension:
     PathSlice[] sortedPointWriters = new PathSlice[numDims];
 
+    // This is only used on exception; on normal code paths we close all files we opened:
+    List<Closeable> toCloseHeroically = new ArrayList<>();
+
     boolean success = false;
     try {
       //long t0 = System.nanoTime();
@@ -872,7 +875,8 @@ public class BKDWriter implements Closeable {
             ordBitSet, out,
             minPackedValue, maxPackedValue,
             splitPackedValues,
-            leafBlockFPs);
+            leafBlockFPs,
+            toCloseHeroically);
 
       for(PathSlice slice : sortedPointWriters) {
         slice.writer.destroy();
@@ -886,11 +890,8 @@ public class BKDWriter implements Closeable {
       success = true;
     } finally {
       if (success == false) {
-        if (tempInput != null) {
-          IOUtils.closeWhileHandlingException(tempInput);
-        }
         IOUtils.deleteFilesIgnoringExceptions(tempDir, tempDir.getCreatedFiles());
-        tempInput = null;
+        IOUtils.closeWhileHandlingException(toCloseHeroically);
       }
     }
 
@@ -1010,6 +1011,8 @@ public class BKDWriter implements Closeable {
     // Now we mark ords that fall into the right half, so we can partition on all other dims that are not the split dim:
 
     // Read the split value, then mark all ords in the right tree (larger than the split value):
+
+    // TODO: find a way to also checksum this reader?  If we changed to markLeftTree, and scanned the final chunk, it could work?
     try (PointReader reader = source.writer.getReader(source.start + source.count - rightCount, rightCount)) {
       boolean result = reader.next();
       assert result;
@@ -1069,12 +1072,11 @@ public class BKDWriter implements Closeable {
   }
 
   /** Pull a partition back into heap once the point count is low enough while recursing. */
-  private PathSlice switchToHeap(PathSlice source) throws IOException {
+  private PathSlice switchToHeap(PathSlice source, List<Closeable> toCloseHeroically) throws IOException {
     int count = Math.toIntExact(source.count);
-    try (
-       PointWriter writer = new HeapPointWriter(count, count, packedBytesLength, longOrds, singleValuePerDoc);
-       PointReader reader = source.writer.getReader(source.start, source.count);
-       ) {
+    // Not inside the try because we don't want to close it here:
+    PointReader reader = source.writer.getSharedReader(source.start, source.count, toCloseHeroically);
+    try (PointWriter writer = new HeapPointWriter(count, count, packedBytesLength, longOrds, singleValuePerDoc)) {
       for(int i=0;i<count;i++) {
         boolean hasNext = reader.next();
         assert hasNext;
@@ -1096,7 +1098,8 @@ public class BKDWriter implements Closeable {
                      IndexOutput out,
                      byte[] minPackedValue, byte[] maxPackedValue,
                      byte[] splitPackedValues,
-                     long[] leafBlockFPs) throws IOException {
+                     long[] leafBlockFPs,
+                     List<Closeable> toCloseHeroically) throws IOException {
 
     for(PathSlice slice : slices) {
       assert slice.count == slices[0].count;
@@ -1104,7 +1107,7 @@ public class BKDWriter implements Closeable {
 
     if (numDims == 1 && slices[0].writer instanceof OfflinePointWriter && slices[0].count <= maxPointsSortInHeap) {
       // Special case for 1D, to cutover to heap once we recurse deeply enough:
-      slices[0] = switchToHeap(slices[0]);
+      slices[0] = switchToHeap(slices[0], toCloseHeroically);
     }
 
     if (nodeID >= leafNodeOffset) {
@@ -1114,7 +1117,7 @@ public class BKDWriter implements Closeable {
         if (slices[dim].writer instanceof HeapPointWriter == false) {
           // Adversarial cases can cause this, e.g. very lopsided data, all equal points, such that we started
           // offline, but then kept splitting only in one dimension, and so never had to rewrite into heap writer
-          slices[dim] = switchToHeap(slices[dim]);
+          slices[dim] = switchToHeap(slices[dim], toCloseHeroically);
         }
 
         PathSlice source = slices[dim];
@@ -1212,7 +1215,8 @@ public class BKDWriter implements Closeable {
       for(int dim=0;dim<numDims;dim++) {
 
         if (dim == splitDim) {
-          // No need to partition on this dim since it's a simple slice of the incoming already sorted slice.
+          // No need to partition on this dim since it's a simple slice of the incoming already sorted slice, and we
+          // will re-use its shared reader when visiting it as we recurse:
           leftSlices[dim] = new PathSlice(source.writer, source.start, leftCount);
           rightSlices[dim] = new PathSlice(source.writer, source.start + leftCount, rightCount);
           System.arraycopy(splitValue, 0, minSplitPackedValue, dim*bytesPerDim, bytesPerDim);
@@ -1220,9 +1224,12 @@ public class BKDWriter implements Closeable {
           continue;
         }
 
+        // Not inside the try because we don't want to close this one now, so that after recursion is done,
+        // we will have done a singel full sweep of the file:
+        PointReader reader = slices[dim].writer.getSharedReader(slices[dim].start, slices[dim].count, toCloseHeroically);
+
         try (PointWriter leftPointWriter = getPointWriter(leftCount, "left" + dim);
-             PointWriter rightPointWriter = getPointWriter(source.count - leftCount, "right" + dim);
-             PointReader reader = slices[dim].writer.getReader(slices[dim].start, slices[dim].count);) {
+             PointWriter rightPointWriter = getPointWriter(source.count - leftCount, "right" + dim)) {
 
           long nextRightCount = reader.split(source.count, ordBitSet, leftPointWriter, rightPointWriter, dim == dimToClear);
           if (rightCount != nextRightCount) {
@@ -1240,7 +1247,7 @@ public class BKDWriter implements Closeable {
       build(2*nodeID, leafNodeOffset, leftSlices,
             ordBitSet, out,
             minPackedValue, maxSplitPackedValue,
-            splitPackedValues, leafBlockFPs);
+            splitPackedValues, leafBlockFPs, toCloseHeroically);
       for(int dim=0;dim<numDims;dim++) {
         // Don't destroy the dim we split on because we just re-used what our caller above gave us for that dim:
         if (dim != splitDim) {
@@ -1253,7 +1260,7 @@ public class BKDWriter implements Closeable {
       build(2*nodeID+1, leafNodeOffset, rightSlices,
             ordBitSet, out,
             minSplitPackedValue, maxPackedValue,
-            splitPackedValues, leafBlockFPs);
+            splitPackedValues, leafBlockFPs, toCloseHeroically);
       for(int dim=0;dim<numDims;dim++) {
         // Don't destroy the dim we split on because we just re-used what our caller above gave us for that dim:
         if (dim != splitDim) {
@@ -1277,7 +1284,7 @@ public class BKDWriter implements Closeable {
       int size = Math.toIntExact(count);
       return new HeapPointWriter(size, size, packedBytesLength, longOrds, singleValuePerDoc);
     } else {
-      return new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds, desc, singleValuePerDoc);
+      return new OfflinePointWriter(tempDir, tempFileNamePrefix, packedBytesLength, longOrds, desc, count, singleValuePerDoc);
     }
   }
 }

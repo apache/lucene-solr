@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.util.bkd;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -150,6 +151,11 @@ final class HeapPointWriter implements PointWriter {
   @Override
   public PointReader getReader(long start, long length) {
     assert start + length <= docIDs.length: "start=" + start + " length=" + length + " docIDs.length=" + docIDs.length;
+    return new HeapPointReader(blocks, valuesPerBlock, packedBytesLength, ords, ordsLong, docIDs, (int) start, nextWrite, singleValuePerDoc);
+  }
+
+  @Override
+  public PointReader getSharedReader(long start, long length, List<Closeable> toCloseHeroically) {
     return new HeapPointReader(blocks, valuesPerBlock, packedBytesLength, ords, ordsLong, docIDs, (int) start, nextWrite, singleValuePerDoc);
   }
 

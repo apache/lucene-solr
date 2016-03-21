@@ -16,9 +16,12 @@
  */
 package org.apache.lucene.util.bkd;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
@@ -34,13 +37,19 @@ final class OfflinePointWriter implements PointWriter {
   private boolean closed;
   // true if ords are written as long (8 bytes), else 4 bytes
   private boolean longOrds;
+  private OfflinePointReader sharedReader;
+  private long nextSharedRead;
+  final long expectedCount;
 
-  public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, int packedBytesLength, boolean longOrds, String desc, boolean singleValuePerDoc) throws IOException {
+  /** Create a new writer with an unknown number of incoming points */
+  public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, int packedBytesLength,
+                            boolean longOrds, String desc, long expectedCount, boolean singleValuePerDoc) throws IOException {
     this.out = tempDir.createTempOutput(tempFileNamePrefix, "bkd_" + desc, IOContext.DEFAULT);
     this.tempDir = tempDir;
     this.packedBytesLength = packedBytesLength;
     this.longOrds = longOrds;
     this.singleValuePerDoc = singleValuePerDoc;
+    this.expectedCount = expectedCount;
   }
 
   /** Initializes on an already written/closed file, just so consumers can use {@link #getReader} to read the file. */
@@ -52,6 +61,7 @@ final class OfflinePointWriter implements PointWriter {
     closed = true;
     this.longOrds = longOrds;
     this.singleValuePerDoc = singleValuePerDoc;
+    this.expectedCount = 0;
   }
     
   @Override
@@ -68,18 +78,37 @@ final class OfflinePointWriter implements PointWriter {
     }
     out.writeInt(docID);
     count++;
+    assert expectedCount == 0 || count <= expectedCount;
   }
 
   @Override
   public PointReader getReader(long start, long length) throws IOException {
     assert closed;
     assert start + length <= count: "start=" + start + " length=" + length + " count=" + count;
+    assert expectedCount == 0 || count == expectedCount;
     return new OfflinePointReader(tempDir, out.getName(), packedBytesLength, start, length, longOrds, singleValuePerDoc);
+  }
+
+  @Override
+  public PointReader getSharedReader(long start, long length, List<Closeable> toCloseHeroically) throws IOException {
+    if (sharedReader == null) {
+      assert start == 0;
+      assert length <= count;
+      sharedReader = new OfflinePointReader(tempDir, out.getName(), packedBytesLength, 0, count, longOrds, singleValuePerDoc);
+      toCloseHeroically.add(sharedReader);
+      // Make sure the OfflinePointReader intends to verify its checksum:
+      assert sharedReader.in instanceof ChecksumIndexInput;
+    } else {
+      assert start == nextSharedRead: "start=" + start + " length=" + length + " nextSharedRead=" + nextSharedRead;
+    }
+    nextSharedRead += length;
+    return sharedReader;
   }
 
   @Override
   public void close() throws IOException {
     if (closed == false) {
+      assert sharedReader == null;
       try {
         CodecUtil.writeFooter(out);
       } finally {
@@ -91,6 +120,12 @@ final class OfflinePointWriter implements PointWriter {
 
   @Override
   public void destroy() throws IOException {
+    if (sharedReader != null) {
+      // At this point, the shared reader should have done a full sweep of the file:
+      assert nextSharedRead == count;
+      sharedReader.close();
+      sharedReader = null;
+    }
     tempDir.deleteFile(out.getName());
   }
 
