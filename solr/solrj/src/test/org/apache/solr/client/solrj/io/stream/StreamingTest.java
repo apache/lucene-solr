@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -226,7 +227,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
     assert(tuples.size() == 5);
-    assertOrder(tuples, 0,1,3,4,6);
+    assertOrder(tuples, 0, 1, 3, 4, 6);
 
     //Test the eofTuples
 
@@ -1369,7 +1370,59 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
   }
 
 
+  private void testDaemonTopicStream() throws Exception {
 
+    String zkHost = zkServer.getZkAddress();
+
+    StreamContext context = new StreamContext();
+    SolrClientCache cache = new SolrClientCache();
+    context.setSolrClientCache(cache);
+
+    Map params = new HashMap();
+    params.put("q","a_s:hello0");
+    params.put("rows", "500");
+    params.put("fl", "id");
+
+    TopicStream topicStream = new TopicStream(zkHost, "collection1", "collection1", "50000000", 1000000, params);
+
+    DaemonStream daemonStream = new DaemonStream(topicStream, "daemon1", 1000, 500);
+    daemonStream.setStreamContext(context);
+
+    daemonStream.open();
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
+    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
+    indexr(id, "3", "a_s", "hello0", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello0", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
+
+    commit();
+
+
+    for(int i=0; i<5; i++) {
+      daemonStream.read();
+    }
+
+
+    indexr(id, "5", "a_s", "hello0", "a_i", "4", "a_f", "4");
+    indexr(id, "6", "a_s", "hello0", "a_i", "4", "a_f", "4");
+
+    commit();
+
+    for(int i=0; i<2; i++) {
+      daemonStream.read();
+    }
+
+    daemonStream.shutdown();
+
+    Tuple tuple = daemonStream.read();
+
+    assertTrue(tuple.EOF);
+    daemonStream.close();
+    cache.close();
+    del("*:*");
+    commit();
+  }
 
   private void testParallelRollupStream() throws Exception {
 
@@ -1799,6 +1852,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     testSubFacetStream();
     testStatsStream();
     //testExceptionStream();
+    testDaemonTopicStream();
     testParallelEOF();
     testParallelUniqueStream();
     testParallelRankStream();

@@ -65,6 +65,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   private static final long serialVersionUID = 1;
 
   private long count;
+  private int runCount;
   private String id;
   protected long checkpointEvery;
 
@@ -98,6 +99,9 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     this.checkpointEvery = checkpointEvery;
     this.id = id;
     this.comp = new FieldComparator("_version_", ComparatorOrder.ASCENDING);
+    if(!params.containsKey("rows")) {
+      params.put("rows", "500");
+    }
   }
 
   public TopicStream(StreamExpression expression, StreamFactory factory) throws IOException{
@@ -257,6 +261,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   }
 
   public void close() throws IOException {
+    runCount = 0;
     try {
       persistCheckpoints();
     } finally {
@@ -277,10 +282,17 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     Tuple tuple = _read();
 
     if(tuple.EOF) {
+      if(runCount > 0) {
+        tuple.put("sleepMillis", 0);
+      } else {
+        tuple.put("sleepMillis", 1000);
+      }
+
       return tuple;
     }
 
     ++count;
+    ++runCount;
     if(checkpointEvery > -1 && (count % checkpointEvery) == 0) {
       persistCheckpoints();
     }
@@ -427,7 +439,9 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
       params.put("distrib", "false"); // We are the aggregator.
       String fl = params.get("fl");
       params.put("sort", "_version_ asc");
-      fl += ",_version_";
+      if(!fl.contains("_version_")) {
+        fl += ",_version_";
+      }
       params.put("fl", fl);
 
       Random random = new Random();
