@@ -12,6 +12,9 @@ Bug Fixes
   On top of that with score mode average, the explain would fail with a NPE.
   (Martijn van Groningen)
 
+* LUCENE-7111: DocValuesRangeQuery.newLongRange behaves incorrectly for
+  Long.MAX_VALUE and Long.MIN_VALUE (Ishan Chattopadhyaya via Steve Rowe)
+
 * LUCENE-7187: Block join queries' Weight#extractTerms(...) implementations
   should delegate to the wrapped weight. (Martijn van Groningen)
 
