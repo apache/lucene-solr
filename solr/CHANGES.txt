@@ -55,6 +55,9 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-8857: HdfsUpdateLog does not use configured or new default number of version buckets and is
+  hard coded to 256. (Mark Miller, yonik, Gregory Chanan)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
