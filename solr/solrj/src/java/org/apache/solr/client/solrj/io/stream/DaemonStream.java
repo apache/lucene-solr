@@ -266,7 +266,6 @@ public class DaemonStream extends TupleStream implements Expressible {
               }
             }
           } catch (IOException e) {
-            e.printStackTrace();
             exception = e;
             logger.error("Error in DaemonStream:" + id, e);
             ++errors;
@@ -275,7 +274,6 @@ public class DaemonStream extends TupleStream implements Expressible {
               break OUTER;
             }
           } catch (Throwable t) {
-            t.printStackTrace();
             logger.error("Fatal Error in DaemonStream:" + id, t);
             //For anything other then IOException break out of the loop and shutdown the thread.
             break OUTER;
