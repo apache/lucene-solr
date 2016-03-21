@@ -157,6 +157,9 @@ public final class DocValuesRangeQuery extends Query {
           } else if (includeLower) {
             min = (long) lowerVal;
           } else {
+            if ((long) lowerVal == Long.MAX_VALUE) {
+              return null;
+            }
             min = 1 + (long) lowerVal;
           }
 
@@ -166,6 +169,9 @@ public final class DocValuesRangeQuery extends Query {
           } else if (includeUpper) {
             max = (long) upperVal;
           } else {
+            if ((long) upperVal == Long.MIN_VALUE) {
+              return null;
+            }
             max = -1 + (long) upperVal;
           }
 
