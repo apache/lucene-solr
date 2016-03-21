@@ -30,10 +30,10 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.spatial.util.GeoDistanceUtils;
 import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.SloppyMath;
 
 /**
  * Distance query for {@link LatLonPoint}.
@@ -108,7 +108,7 @@ final class LatLonPointDistanceQuery extends Query {
                              assert packedValue.length == 8;
                              double lat = LatLonPoint.decodeLatitude(packedValue, 0);
                              double lon = LatLonPoint.decodeLongitude(packedValue, Integer.BYTES);
-                             if (GeoDistanceUtils.haversin(latitude, longitude, lat, lon) <= radiusMeters) {
+                             if (SloppyMath.haversinMeters(latitude, longitude, lat, lon) <= radiusMeters) {
                                visit(docID);
                              }
                            }
@@ -129,10 +129,10 @@ final class LatLonPointDistanceQuery extends Query {
                                // we are fully outside of bounding box(es), don't proceed any further.
                                return Relation.CELL_OUTSIDE_QUERY;
                              } else if (lonMax - longitude < 90 && longitude - lonMin < 90 &&
-                                 GeoDistanceUtils.haversin(latitude, longitude, latMin, lonMin) <= radiusMeters &&
-                                 GeoDistanceUtils.haversin(latitude, longitude, latMin, lonMax) <= radiusMeters &&
-                                 GeoDistanceUtils.haversin(latitude, longitude, latMax, lonMin) <= radiusMeters &&
-                                 GeoDistanceUtils.haversin(latitude, longitude, latMax, lonMax) <= radiusMeters) {
+                                 SloppyMath.haversinMeters(latitude, longitude, latMin, lonMin) <= radiusMeters &&
+                                 SloppyMath.haversinMeters(latitude, longitude, latMin, lonMax) <= radiusMeters &&
+                                 SloppyMath.haversinMeters(latitude, longitude, latMax, lonMin) <= radiusMeters &&
+                                 SloppyMath.haversinMeters(latitude, longitude, latMax, lonMax) <= radiusMeters) {
                                // we are fully enclosed, collect everything within this subtree
                                return Relation.CELL_INSIDE_QUERY;
                              } else {

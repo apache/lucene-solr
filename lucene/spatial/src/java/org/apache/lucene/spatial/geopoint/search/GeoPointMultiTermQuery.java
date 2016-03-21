@@ -105,7 +105,7 @@ abstract class GeoPointMultiTermQuery extends MultiTermQuery {
     double midLon = (minLon + maxLon) * 0.5;
     double midLat = (minLat + maxLat) * 0.5;
 
-    if (SloppyMath.haversin(minLat, minLon, midLat, midLon)*1000 > 1000000) {
+    if (SloppyMath.haversinMeters(minLat, minLon, midLat, midLon) > 1000000) {
       shiftFactor = 5;
     } else {
       shiftFactor = 4;

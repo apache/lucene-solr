@@ -20,9 +20,6 @@ import static java.lang.StrictMath.sqrt;
 
 import static org.apache.lucene.util.SloppyMath.asin;
 import static org.apache.lucene.util.SloppyMath.cos;
-import static org.apache.lucene.util.SloppyMath.sin;
-import static org.apache.lucene.util.SloppyMath.tan;
-import static org.apache.lucene.util.SloppyMath.PIO2;
 import static org.apache.lucene.util.SloppyMath.TO_DEGREES;
 import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
 
@@ -30,8 +27,11 @@ import static org.apache.lucene.spatial.util.GeoUtils.MAX_LAT_INCL;
 import static org.apache.lucene.spatial.util.GeoUtils.MAX_LON_INCL;
 import static org.apache.lucene.spatial.util.GeoUtils.MIN_LAT_INCL;
 import static org.apache.lucene.spatial.util.GeoUtils.MIN_LON_INCL;
+import static org.apache.lucene.spatial.util.GeoUtils.PIO2;
 import static org.apache.lucene.spatial.util.GeoUtils.normalizeLat;
 import static org.apache.lucene.spatial.util.GeoUtils.normalizeLon;
+import static org.apache.lucene.spatial.util.GeoUtils.sloppySin;
+import static org.apache.lucene.spatial.util.GeoUtils.sloppyTan;
 
 /**
  * Reusable geo-spatial projection utility methods.
@@ -149,7 +149,7 @@ public class GeoProjectionUtils {
     lon = TO_RADIANS * lon;
     lat = TO_RADIANS * lat;
 
-    final double sl = sin(lat);
+    final double sl = sloppySin(lat);
     final double s2 = sl*sl;
     final double cl = cos(lat);
 
@@ -170,7 +170,7 @@ public class GeoProjectionUtils {
 
     final double rn = SEMIMAJOR_AXIS / StrictMath.sqrt(1.0D - E2 * s2);
     ecf[0] = (rn+alt) * cl * cos(lon);
-    ecf[1] = (rn+alt) * cl * sin(lon);
+    ecf[1] = (rn+alt) * cl * sloppySin(lon);
     ecf[2] = ((rn*(1.0-E2))+alt)*sl;
 
     return ecf;
@@ -304,9 +304,9 @@ public class GeoProjectionUtils {
     originLon = TO_RADIANS * originLon;
     originLat = TO_RADIANS * originLat;
 
-    final double sLon = sin(originLon);
+    final double sLon = sloppySin(originLon);
     final double cLon = cos(originLon);
-    final double sLat = sin(originLat);
+    final double sLat = sloppySin(originLat);
     final double cLat = cos(originLat);
 
     phiMatrix[0][0] = -sLon;
@@ -338,9 +338,9 @@ public class GeoProjectionUtils {
     originLon = TO_RADIANS * originLon;
     originLat = TO_RADIANS * originLat;
 
-    final double sLat = sin(originLat);
+    final double sLat = sloppySin(originLat);
     final double cLat = cos(originLat);
-    final double sLon = sin(originLon);
+    final double sLon = sloppySin(originLon);
     final double cLon = cos(originLon);
 
     phiMatrix[0][0] = -sLon;
@@ -374,8 +374,8 @@ public class GeoProjectionUtils {
 
     final double alpha1 = TO_RADIANS * bearing;
     final double cosA1 = cos(alpha1);
-    final double sinA1 = sin(alpha1);
-    final double tanU1 = (1-FLATTENING) * tan(TO_RADIANS * lat);
+    final double sinA1 = sloppySin(alpha1);
+    final double tanU1 = (1-FLATTENING) * sloppyTan(TO_RADIANS * lat);
     final double cosU1 = 1 / StrictMath.sqrt((1+tanU1*tanU1));
     final double sinU1 = tanU1*cosU1;
     final double sig1 = StrictMath.atan2(tanU1, cosA1);
@@ -391,7 +391,7 @@ public class GeoProjectionUtils {
 
     do {
       cos2SigmaM = cos(2*sig1 + sigma);
-      sinSigma = sin(sigma);
+      sinSigma = sloppySin(sigma);
       cosSigma = cos(sigma);
 
       deltaSigma = B * sinSigma * (cos2SigmaM + (B/4D) * (cosSigma*(-1+2*cos2SigmaM*cos2SigmaM)-
@@ -435,12 +435,12 @@ public class GeoProjectionUtils {
     bearing *= TO_RADIANS;
 
     final double cLat = cos(lat);
-    final double sLat = sin(lat);
-    final double sinDoR = sin(dist / GeoProjectionUtils.SEMIMAJOR_AXIS);
+    final double sLat = sloppySin(lat);
+    final double sinDoR = sloppySin(dist / GeoProjectionUtils.SEMIMAJOR_AXIS);
     final double cosDoR = cos(dist / GeoProjectionUtils.SEMIMAJOR_AXIS);
 
     pt[1] = asin(sLat*cosDoR + cLat * sinDoR * cos(bearing));
-    pt[0] = TO_DEGREES * (lon + Math.atan2(sin(bearing) * sinDoR * cLat, cosDoR - sLat * sin(pt[1])));
+    pt[0] = TO_DEGREES * (lon + Math.atan2(sloppySin(bearing) * sinDoR * cLat, cosDoR - sLat * sloppySin(pt[1])));
     pt[1] *= TO_DEGREES;
 
     return pt;
@@ -458,8 +458,8 @@ public class GeoProjectionUtils {
     double dLon = (lon2 - lon1) * TO_RADIANS;
     lat2 *= TO_RADIANS;
     lat1 *= TO_RADIANS;
-    double y = sin(dLon) * cos(lat2);
-    double x = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dLon);
+    double y = sloppySin(dLon) * cos(lat2);
+    double x = cos(lat1) * sloppySin(lat2) - sloppySin(lat1) * cos(lat2) * cos(dLon);
     return Math.atan2(y, x) * TO_DEGREES;
   }
 }
