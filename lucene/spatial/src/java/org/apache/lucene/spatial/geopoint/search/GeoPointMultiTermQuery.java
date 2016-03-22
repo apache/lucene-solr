@@ -98,7 +98,7 @@ abstract class GeoPointMultiTermQuery extends MultiTermQuery {
    * Computes the maximum shift based on the diagonal distance of the bounding box
    */
   protected short computeMaxShift() {
-    // in this case a factor of 4 brings the detail level to ~0.002/0.001 degrees lon/lat respectively (or ~222m/111m)
+    // in this case a factor of 4 brings the detail level to ~0.001/0.002 degrees lat/lon respectively (or ~111m/222m)
     final short shiftFactor;
 
     // compute diagonal distance
