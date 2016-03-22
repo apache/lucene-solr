@@ -87,8 +87,8 @@ final class GeoPointNumericTermsEnum extends GeoPointTermsEnum {
     final short level = (short)((GeoEncodingUtils.BITS<<1)-res>>>1);
 
     // if cell is within and a factor of the precision step, or it crosses the edge of the shape add the range
-    final boolean within = res % GeoPointField.PRECISION_STEP == 0 && relationImpl.cellWithin(minLon, minLat, maxLon, maxLat);
-    if (within || (level == DETAIL_LEVEL && relationImpl.cellIntersectsShape(minLon, minLat, maxLon, maxLat))) {
+    final boolean within = res % GeoPointField.PRECISION_STEP == 0 && relationImpl.cellWithin(minLat, maxLat, minLon, maxLon);
+    if (within || (level == DETAIL_LEVEL && relationImpl.cellIntersectsShape(minLat, maxLat, minLon, maxLon))) {
       final short nextRes = (short)(res-1);
       if (nextRes % GeoPointField.PRECISION_STEP == 0) {
         rangeBounds.add(new Range(start, nextRes, !within));
@@ -96,7 +96,7 @@ final class GeoPointNumericTermsEnum extends GeoPointTermsEnum {
       } else {
         rangeBounds.add(new Range(start, res, !within));
       }
-    } else if (level < DETAIL_LEVEL && relationImpl.cellIntersectsMBR(minLon, minLat, maxLon, maxLat)) {
+    } else if (level < DETAIL_LEVEL && relationImpl.cellIntersectsMBR(minLat, maxLat, minLon, maxLon)) {
       computeRange(start, (short) (res - 1));
     }
   }

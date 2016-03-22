@@ -174,7 +174,7 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
       // TODO: randomly quantize radius too, to provoke exact math errors?
 
-      GeoRect bbox = GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters);
+      GeoRect bbox = GeoUtils.circleToBBox(centerLat, centerLon, radiusMeters);
 
       int numPointsToTry = 1000;
       for(int i=0;i<numPointsToTry;i++) {

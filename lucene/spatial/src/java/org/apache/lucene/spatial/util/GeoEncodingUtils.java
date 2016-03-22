@@ -32,8 +32,9 @@ import static org.apache.lucene.spatial.util.GeoUtils.MIN_LAT_INCL;
 public final class GeoEncodingUtils {
   /** number of bits used for quantizing latitude and longitude values */
   public static final short BITS = 31;
-  private static final double LON_SCALE = (0x1L<<BITS)/360.0D;
+
   private static final double LAT_SCALE = (0x1L<<BITS)/180.0D;
+  private static final double LON_SCALE = (0x1L<<BITS)/360.0D;
 
   /**
    * The maximum term length (used for <code>byte[]</code> buffer size)
@@ -50,10 +51,10 @@ public final class GeoEncodingUtils {
   }
 
   /**
-   * encode longitude, latitude geopoint values using morton encoding method
+   * encode latitude, longitude geopoint values using morton encoding method
    * https://en.wikipedia.org/wiki/Z-order_curve
    */
-  public static final Long mortonHash(final double lon, final double lat) {
+  public static final Long mortonHash(final double lat, final double lon) {
     return BitUtil.interleave(scaleLon(lon), scaleLat(lat));
   }
 

@@ -58,7 +58,7 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
 
   public GeoPointPrefixTermsEnum(final TermsEnum tenum, final GeoPointMultiTermQuery query) {
     super(tenum, query);
-    this.start = mortonHash(query.minLon, query.minLat);
+    this.start = mortonHash(query.minLat, query.minLon);
     this.currentRange = new Range(0, shift, true);
     // start shift at maxShift value (from computeMaxShift)
     this.shift = maxShift;
@@ -67,12 +67,12 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
     this.currEnd = currStart | mask;
   }
 
-  private boolean within(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return relationImpl.cellWithin(minLon, minLat, maxLon, maxLat);
+  private boolean within(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+    return relationImpl.cellWithin(minLat, maxLat, minLon, maxLon);
   }
 
-  private boolean boundary(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return shift == maxShift && relationImpl.cellIntersectsShape(minLon, minLat, maxLon, maxLat);
+  private boolean boundary(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+    return shift == maxShift && relationImpl.cellIntersectsShape(minLat, maxLat, minLon, maxLon);
   }
 
   private boolean nextWithin() {
@@ -100,7 +100,7 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
       maxLat = mortonUnhashLat(currEnd);
 
       // within or a boundary
-      if ((isWithin = within(minLon, minLat, maxLon, maxLat) == true) || boundary(minLon, minLat, maxLon, maxLat) == true) {
+      if ((isWithin = within(minLat, maxLat, minLon, maxLon) == true) || boundary(minLat, maxLat, minLon, maxLon) == true) {
         final int m;
         if (isWithin == false || (m = shift % GeoPointField.PRECISION_STEP) == 0) {
           setNextRange(isWithin == false);
@@ -116,7 +116,7 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
       }
 
       // within cell but not at a depth factor of PRECISION_STEP
-      if (isWithin == true || (relationImpl.cellIntersectsMBR(minLon, minLat, maxLon , maxLat) == true && shift != maxShift)) {
+      if (isWithin == true || (relationImpl.cellIntersectsMBR(minLat, maxLat, minLon, maxLon) == true && shift != maxShift)) {
         // descend: currStart need not change since shift handles end of range
         currEnd = currStart | (1L<<--shift) - 1;
       } else {

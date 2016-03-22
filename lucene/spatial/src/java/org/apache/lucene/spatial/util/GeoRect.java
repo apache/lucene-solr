@@ -18,19 +18,19 @@ package org.apache.lucene.spatial.util;
 
 /** Represents a lat/lon rectangle. */
 public class GeoRect {
-  /** minimum longitude value (in degrees) */
-  public final double minLon;
-  /** minimum latitude value (in degrees) */
-  public final double maxLon;
   /** maximum longitude value (in degrees) */
   public final double minLat;
+  /** minimum longitude value (in degrees) */
+  public final double minLon;
   /** maximum latitude value (in degrees) */
   public final double maxLat;
+  /** minimum latitude value (in degrees) */
+  public final double maxLon;
 
   /**
    * Constructs a bounding box by first validating the provided latitude and longitude coordinates
    */
-  public GeoRect(double minLon, double maxLon, double minLat, double maxLat) {
+  public GeoRect(double minLat, double maxLat, double minLon, double maxLon) {
     if (GeoUtils.isValidLon(minLon) == false) {
       throw new IllegalArgumentException("invalid minLon " + minLon);
     }

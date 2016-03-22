@@ -195,12 +195,12 @@ public class TestLatLonPointDistanceQuery extends LuceneTestCase {
       double lat = -90 + 180.0 * random().nextDouble();
       double lon = -180 + 360.0 * random().nextDouble();
       double radius = 50000000 * random().nextDouble();
-      GeoRect box = GeoUtils.circleToBBox(lon, lat, radius);
+      GeoRect box = GeoUtils.circleToBBox(lat, lon, radius);
       final GeoRect box1;
       final GeoRect box2;
       if (box.crossesDateline()) {
-        box1 = new GeoRect(-180, box.maxLon, box.minLat, box.maxLat);
-        box2 = new GeoRect(box.minLon, 180, box.minLat, box.maxLat);
+        box1 = new GeoRect(box.minLat, box.maxLat, -180, box.maxLon);
+        box2 = new GeoRect(box.minLat, box.maxLat, box.minLon, 180);
       } else {
         box1 = box;
         box2 = null;
@@ -223,7 +223,7 @@ public class TestLatLonPointDistanceQuery extends LuceneTestCase {
       double lat = -90 + 180.0 * random().nextDouble();
       double lon = -180 + 360.0 * random().nextDouble();
       double radius = 50000000 * random().nextDouble();
-      GeoRect box = GeoUtils.circleToBBox(lon, lat, radius);
+      GeoRect box = GeoUtils.circleToBBox(lat, lon, radius);
 
       if (box.maxLon - lon < 90 && lon - box.minLon < 90) {
         double minPartialDistance = Math.max(SloppyMath.haversinSortKey(lat, lon, lat, box.maxLon),

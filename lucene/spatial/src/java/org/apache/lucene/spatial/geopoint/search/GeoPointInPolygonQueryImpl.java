@@ -28,8 +28,8 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
   private final GeoPointInPolygonQuery polygonQuery;
 
   GeoPointInPolygonQueryImpl(final String field, final TermEncoding termEncoding, final GeoPointInPolygonQuery q,
-                             final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    super(field, termEncoding, minLon, minLat, maxLon, maxLat);
+                             final double minLat, final double maxLat, final double minLon, final double maxLon) {
+    super(field, termEncoding, minLat, maxLat, minLon, maxLon);
     polygonQuery = q;
   }
 
@@ -53,21 +53,21 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
     }
 
     @Override
-    protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectCrossesPolyApprox(minLon, minLat, maxLon, maxLat, polygonQuery.x, polygonQuery.y,
-          polygonQuery.minLon, polygonQuery.minLat, polygonQuery.maxLon, polygonQuery.maxLat);
+    protected boolean cellCrosses(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+      return GeoRelationUtils.rectCrossesPolyApprox(minLat, maxLat, minLon, maxLon, polygonQuery.polyLats, polygonQuery.polyLons,
+                                                    polygonQuery.minLat, polygonQuery.maxLat, polygonQuery.minLon, polygonQuery.maxLon);
     }
 
     @Override
-    protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectWithinPolyApprox(minLon, minLat, maxLon, maxLat, polygonQuery.x, polygonQuery.y,
-          polygonQuery.minLon, polygonQuery.minLat, polygonQuery.maxLon, polygonQuery.maxLat);
+    protected boolean cellWithin(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+      return GeoRelationUtils.rectWithinPolyApprox(minLat, maxLat, minLon, maxLon, polygonQuery.polyLats, polygonQuery.polyLons,
+                                                   polygonQuery.minLat, polygonQuery.maxLat, polygonQuery.minLon, polygonQuery.maxLon);
     }
 
     @Override
-    protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return cellContains(minLon, minLat, maxLon, maxLat) || cellWithin(minLon, minLat, maxLon, maxLat)
-          || cellCrosses(minLon, minLat, maxLon, maxLat);
+    protected boolean cellIntersectsShape(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+      return cellContains(minLat, maxLat, minLon, maxLon) || cellWithin(minLat, maxLat, minLon, maxLon)
+        || cellCrosses(minLat, maxLat, minLon, maxLon);
     }
 
     /**
@@ -78,8 +78,8 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
      * {@link org.apache.lucene.spatial.util.GeoRelationUtils#pointInPolygon} method.
      */
     @Override
-    protected boolean postFilter(final double lon, final double lat) {
-      return GeoRelationUtils.pointInPolygon(polygonQuery.x, polygonQuery.y, lat, lon);
+    protected boolean postFilter(final double lat, final double lon) {
+      return GeoRelationUtils.pointInPolygon(polygonQuery.polyLats, polygonQuery.polyLons, lat, lon);
     }
   }
 

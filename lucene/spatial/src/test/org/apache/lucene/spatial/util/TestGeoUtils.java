@@ -66,154 +66,13 @@ public class TestGeoUtils extends LuceneTestCase {
     }
   }
 
-  public void testGeoHash() {
-    int numPoints = atLeast(100);
-    String randomGeoHashString;
-    String mortonGeoHash;
-    long mortonLongFromGHLong, geoHashLong, mortonLongFromGHString;
-    int randomLevel;
-    for (int i = 0; i < numPoints; ++i) {
-      // random point
-      double lat = randomLat(false);
-      double lon = randomLon(false);
-
-      // compute geohash straight from lat/lon and from morton encoded value to ensure they're the same
-      randomGeoHashString = GeoHashUtils.stringEncode(lon, lat, randomLevel = random().nextInt(12 - 1) + 1);
-      mortonGeoHash = GeoHashUtils.stringEncodeFromMortonLong(GeoEncodingUtils.mortonHash(lon, lat), randomLevel);
-      assertEquals(randomGeoHashString, mortonGeoHash);
-
-      // v&v conversion from lat/lon or geohashstring to geohash long and back to geohash string
-      geoHashLong = (random().nextBoolean()) ? GeoHashUtils.longEncode(lon, lat, randomLevel) : GeoHashUtils.longEncode(randomGeoHashString);
-      assertEquals(randomGeoHashString, GeoHashUtils.stringEncode(geoHashLong));
-
-      // v&v conversion from geohash long to morton long
-      mortonLongFromGHString = GeoHashUtils.mortonEncode(randomGeoHashString);
-      mortonLongFromGHLong = GeoHashUtils.mortonEncode(geoHashLong);
-      assertEquals(mortonLongFromGHLong, mortonLongFromGHString);
-
-      // v&v lat/lon from geohash string and geohash long
-      assertEquals(GeoEncodingUtils.mortonUnhashLat(mortonLongFromGHString), GeoEncodingUtils.mortonUnhashLat(mortonLongFromGHLong), 0);
-      assertEquals(GeoEncodingUtils.mortonUnhashLon(mortonLongFromGHString), GeoEncodingUtils.mortonUnhashLon(mortonLongFromGHLong), 0);
-    }
-  }
-
-  /**
-   * Pass condition: lat=42.6, lng=-5.6 should be encoded as "ezs42e44yx96",
-   * lat=57.64911 lng=10.40744 should be encoded as "u4pruydqqvj8"
-   */
-  public void testEncode() {
-    String hash = GeoHashUtils.stringEncode(-5.6, 42.6, 12);
-    assertEquals("ezs42e44yx96", hash);
-
-    hash = GeoHashUtils.stringEncode(10.40744, 57.64911, 12);
-    assertEquals("u4pruydqqvj8", hash);
-  }
-
-  /**
-   * Pass condition: lat=52.3738007, lng=4.8909347 should be encoded and then
-   * decoded within 0.00001 of the original value
-   */
-  public void testDecodePreciseLongitudeLatitude() {
-    final String geohash = GeoHashUtils.stringEncode(4.8909347, 52.3738007);
-    final long hash = GeoHashUtils.mortonEncode(geohash);
-
-    assertEquals(52.3738007, GeoEncodingUtils.mortonUnhashLat(hash), 0.00001D);
-    assertEquals(4.8909347, GeoEncodingUtils.mortonUnhashLon(hash), 0.00001D);
-  }
-
-  /**
-   * Pass condition: lat=84.6, lng=10.5 should be encoded and then decoded
-   * within 0.00001 of the original value
-   */
-  public void testDecodeImpreciseLongitudeLatitude() {
-    final String geohash = GeoHashUtils.stringEncode(10.5, 84.6);
-
-    final long hash = GeoHashUtils.mortonEncode(geohash);
-
-    assertEquals(84.6, GeoEncodingUtils.mortonUnhashLat(hash), 0.00001D);
-    assertEquals(10.5, GeoEncodingUtils.mortonUnhashLon(hash), 0.00001D);
-  }
-
-  public void testDecodeEncode() {
-    final String geoHash = "u173zq37x014";
-    assertEquals(geoHash, GeoHashUtils.stringEncode(4.8909347, 52.3738007));
-    final long mortonHash = GeoHashUtils.mortonEncode(geoHash);
-    final double lon = GeoEncodingUtils.mortonUnhashLon(mortonHash);
-    final double lat = GeoEncodingUtils.mortonUnhashLat(mortonHash);
-    assertEquals(52.37380061d, GeoEncodingUtils.mortonUnhashLat(mortonHash), 0.000001d);
-    assertEquals(4.8909343d, GeoEncodingUtils.mortonUnhashLon(mortonHash), 0.000001d);
-
-    assertEquals(geoHash, GeoHashUtils.stringEncode(lon, lat));
-  }
-
-  public void testNeighbors() {
-    String geohash = "gcpv";
-    List<String> expectedNeighbors = new ArrayList<>();
-    expectedNeighbors.add("gcpw");
-    expectedNeighbors.add("gcpy");
-    expectedNeighbors.add("u10n");
-    expectedNeighbors.add("gcpt");
-    expectedNeighbors.add("u10j");
-    expectedNeighbors.add("gcps");
-    expectedNeighbors.add("gcpu");
-    expectedNeighbors.add("u10h");
-    Collection<? super String> neighbors = new ArrayList<>();
-    GeoHashUtils.addNeighbors(geohash, neighbors );
-    assertEquals(expectedNeighbors, neighbors);
-
-    // Border odd geohash
-    geohash = "u09x";
-    expectedNeighbors = new ArrayList<>();
-    expectedNeighbors.add("u0c2");
-    expectedNeighbors.add("u0c8");
-    expectedNeighbors.add("u0cb");
-    expectedNeighbors.add("u09r");
-    expectedNeighbors.add("u09z");
-    expectedNeighbors.add("u09q");
-    expectedNeighbors.add("u09w");
-    expectedNeighbors.add("u09y");
-    neighbors = new ArrayList<>();
-    GeoHashUtils.addNeighbors(geohash, neighbors);
-    assertEquals(expectedNeighbors, neighbors);
-
-    // Border even geohash
-    geohash = "u09tv";
-    expectedNeighbors = new ArrayList<>();
-    expectedNeighbors.add("u09wh");
-    expectedNeighbors.add("u09wj");
-    expectedNeighbors.add("u09wn");
-    expectedNeighbors.add("u09tu");
-    expectedNeighbors.add("u09ty");
-    expectedNeighbors.add("u09ts");
-    expectedNeighbors.add("u09tt");
-    expectedNeighbors.add("u09tw");
-    neighbors = new ArrayList<>();
-    GeoHashUtils.addNeighbors(geohash, neighbors );
-    assertEquals(expectedNeighbors, neighbors);
-
-    // Border even and odd geohash
-    geohash = "ezzzz";
-    expectedNeighbors = new ArrayList<>();
-    expectedNeighbors.add("gbpbn");
-    expectedNeighbors.add("gbpbp");
-    expectedNeighbors.add("u0000");
-    expectedNeighbors.add("ezzzy");
-    expectedNeighbors.add("spbpb");
-    expectedNeighbors.add("ezzzw");
-    expectedNeighbors.add("ezzzx");
-    expectedNeighbors.add("spbp8");
-    neighbors = new ArrayList<>();
-    GeoHashUtils.addNeighbors(geohash, neighbors );
-    assertEquals(expectedNeighbors, neighbors);
-  }
-
   public void testClosestPointOnBBox() {
     double[] result = new double[2];
-    GeoDistanceUtils.closestPointOnBBox(20, 30, 40, 50, 70, 70, result);
-    assertEquals(40.0, result[0], 0.0);
-    assertEquals(50.0, result[1], 0.0);
+    GeoDistanceUtils.closestPointOnBBox(30, 50, 20, 40, 70, 70, result);
+    assertEquals(50.0, result[0], 0.0);
+    assertEquals(40.0, result[1], 0.0);
 
-    GeoDistanceUtils.closestPointOnBBox(-20, -20, 0, 0, 70, 70, result);
+    GeoDistanceUtils.closestPointOnBBox(-20, 0, -20, 0, 70, 70, result);
     assertEquals(0.0, result[0], 0.0);
     assertEquals(0.0, result[1], 0.0);
   }
@@ -331,7 +190,7 @@ public class TestGeoUtils extends LuceneTestCase {
         }
       } else {
 
-        if (GeoRelationUtils.rectWithinCircle(cell.minLon, cell.minLat, cell.maxLon, cell.maxLat, centerLon, centerLat, radiusMeters)) {
+        if (GeoRelationUtils.rectWithinCircle(cell.minLat, cell.maxLat, cell.minLon, cell.maxLon, centerLat, centerLon, radiusMeters, false)) {
           // Query circle fully contains this cell, just addAll:
           if (VERBOSE) {
             log.println("    circle fully contains cell: now addAll");
@@ -345,14 +204,14 @@ public class TestGeoUtils extends LuceneTestCase {
             }
           }
           continue;
-        } else if (GeoRelationUtils.rectWithin(root.minLon, root.minLat, root.maxLon, root.maxLat,
-                                       cell.minLon, cell.minLat, cell.maxLon, cell.maxLat)) {
+        } else if (GeoRelationUtils.rectWithin(root.minLat, root.maxLat, root.minLon, root.maxLon,
+                                               cell.minLat, cell.maxLat, cell.minLon, cell.maxLon)) {
           // Fall through below to "recurse"
           if (VERBOSE) {
             log.println("    cell fully contains circle: keep splitting");
           }
-        } else if (GeoRelationUtils.rectCrossesCircle(cell.minLon, cell.minLat, cell.maxLon, cell.maxLat,
-                                              centerLon, centerLat, radiusMeters)) {
+        } else if (GeoRelationUtils.rectCrossesCircle(cell.minLat, cell.maxLat, cell.minLon, cell.maxLon,
+                                                      centerLat, centerLon, radiusMeters, false)) {
           // Fall through below to "recurse"
           if (VERBOSE) {
             log.println("    cell overlaps circle: keep splitting");
@@ -470,7 +329,7 @@ public class TestGeoUtils extends LuceneTestCase {
         log.println("\nTEST: iter=" + iter + " radiusMeters=" + radiusMeters + " centerLon=" + centerLon + " centerLat=" + centerLat);
       }
 
-      GeoRect bbox = GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters);
+      GeoRect bbox = GeoUtils.circleToBBox(centerLat, centerLon, radiusMeters);
       
       Set<Integer> hits = new HashSet<>();
 
@@ -555,7 +414,7 @@ public class TestGeoUtils extends LuceneTestCase {
     long decodedHash;
     BytesRefBuilder brb = new BytesRefBuilder();
     while (numIters-- >= 0) {
-      hash = GeoEncodingUtils.mortonHash(randomLon(false), randomLat(false));
+      hash = GeoEncodingUtils.mortonHash(randomLat(false), randomLon(false));
       for (int i=32; i<64; ++i) {
         GeoEncodingUtils.geoCodedToPrefixCoded(hash, i, brb);
         decodedHash = GeoEncodingUtils.prefixCodedToGeoCoded(brb.get());

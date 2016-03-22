@@ -65,14 +65,14 @@ final class LatLonPointDistanceQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    GeoRect box = GeoUtils.circleToBBox(longitude, latitude, radiusMeters);
+    GeoRect box = GeoUtils.circleToBBox(latitude, longitude, radiusMeters);
     final GeoRect box1;
     final GeoRect box2;
 
     // crosses dateline: split
     if (box.crossesDateline()) {
-      box1 = new GeoRect(-180.0, box.maxLon, box.minLat, box.maxLat);
-      box2 = new GeoRect(box.minLon, 180.0, box.minLat, box.maxLat);
+      box1 = new GeoRect(box.minLat, box.maxLat, -180.0, box.maxLon);
+      box2 = new GeoRect(box.minLat, box.maxLat, box.minLon, 180.0);
     } else {
       box1 = box;
       box2 = null;
