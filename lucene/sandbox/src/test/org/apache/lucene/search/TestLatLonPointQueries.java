@@ -53,28 +53,14 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
   @Override
   protected Boolean rectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
-
     assert Double.isNaN(pointLat) == false;
 
-    int rectLatMinEnc = LatLonPoint.encodeLatitude(rect.minLat);
-    int rectLatMaxEnc = LatLonPoint.encodeLatitude(rect.maxLat);
-    int rectLonMinEnc = LatLonPoint.encodeLongitude(rect.minLon);
-    int rectLonMaxEnc = LatLonPoint.encodeLongitude(rect.maxLon);
-
-    int pointLatEnc = LatLonPoint.encodeLatitude(pointLat);
-    int pointLonEnc = LatLonPoint.encodeLongitude(pointLon);
-
     if (rect.minLon < rect.maxLon) {
-      return pointLatEnc >= rectLatMinEnc &&
-        pointLatEnc <= rectLatMaxEnc &&
-        pointLonEnc >= rectLonMinEnc &&
-        pointLonEnc <= rectLonMaxEnc;
+      return GeoRelationUtils.pointInRectPrecise(pointLon, pointLat, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
     } else {
       // Rect crosses dateline:
-      return pointLatEnc >= rectLatMinEnc &&
-        pointLatEnc <= rectLatMaxEnc &&
-        (pointLonEnc >= rectLonMinEnc ||
-         pointLonEnc <= rectLonMaxEnc);
+      return GeoRelationUtils.pointInRectPrecise(pointLon, pointLat, -180.0, rect.minLat, rect.maxLon, rect.maxLat)
+          || GeoRelationUtils.pointInRectPrecise(pointLon, pointLat, rect.minLon, rect.minLat, 180.0, rect.maxLat);
     }
   }
 
