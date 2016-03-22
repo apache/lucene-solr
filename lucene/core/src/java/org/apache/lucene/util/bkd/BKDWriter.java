@@ -591,7 +591,7 @@ public class BKDWriter implements Closeable {
   // encoding and not have our own ByteSequencesReader/Writer
 
   /** Sort the heap writer by the specified dim */
-  private void sortHeapPointWriter(final HeapPointWriter writer, int start, int length, int dim) {
+  private void sortHeapPointWriter(final HeapPointWriter writer, int dim) {
 
     assert pointCount < Integer.MAX_VALUE;
     //int[] swapCount = new int[1];
@@ -676,7 +676,7 @@ public class BKDWriter implements Closeable {
         // can't matter at search time since we don't write ords into the index:
         return Integer.compare(writer.docIDs[i], writer.docIDs[j]);
       }
-    }.sort(start, start+length);
+    }.sort(0, Math.toIntExact(pointCount));
     //System.out.println("LEN=" + length + " SWAP=" + swapCount[0] + " CMP=" + cmpCount[0]);
   }
 
@@ -699,7 +699,7 @@ public class BKDWriter implements Closeable {
       }
 
       //long t0 = System.nanoTime();
-      sortHeapPointWriter(sorted, 0, (int) pointCount, dim);
+      sortHeapPointWriter(sorted, dim);
       //long t1 = System.nanoTime();
       //System.out.println("BKD: sort took " + ((t1-t0)/1000000.0) + " msec");
 
