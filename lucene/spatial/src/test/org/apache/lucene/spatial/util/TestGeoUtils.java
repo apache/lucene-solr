@@ -564,6 +564,47 @@ public class TestGeoUtils extends LuceneTestCase {
     }
   }
 
+  public void testMortonEncoding() throws Exception {
+    long hash = GeoEncodingUtils.mortonHash(180, 90);
+    assertEquals(180.0, GeoEncodingUtils.mortonUnhashLon(hash), 0);
+    assertEquals(90.0, GeoEncodingUtils.mortonUnhashLat(hash), 0);
+  }
+
+  public void testEncodeDecode() throws Exception {
+    int iters = atLeast(10000);
+    boolean small = random().nextBoolean();
+    for(int iter=0;iter<iters;iter++) {
+      double lat = randomLat(small);
+      double lon = randomLon(small);
+
+      long enc = GeoEncodingUtils.mortonHash(lon, lat);
+      double latEnc = GeoEncodingUtils.mortonUnhashLat(enc);
+      double lonEnc = GeoEncodingUtils.mortonUnhashLon(enc);
+
+      assertEquals("lat=" + lat + " latEnc=" + latEnc + " diff=" + (lat - latEnc), lat, latEnc, GeoEncodingUtils.TOLERANCE);
+      assertEquals("lon=" + lon + " lonEnc=" + lonEnc + " diff=" + (lon - lonEnc), lon, lonEnc, GeoEncodingUtils.TOLERANCE);
+    }
+  }
+
+  public void testScaleUnscaleIsStable() throws Exception {
+    int iters = atLeast(1000);
+    boolean small = random().nextBoolean();
+    for(int iter=0;iter<iters;iter++) {
+      double lat = randomLat(small);
+      double lon = randomLon(small);
+
+      long enc = GeoEncodingUtils.mortonHash(lon, lat);
+      double latEnc = GeoEncodingUtils.mortonUnhashLat(enc);
+      double lonEnc = GeoEncodingUtils.mortonUnhashLon(enc);
+
+      long enc2 = GeoEncodingUtils.mortonHash(lon, lat);
+      double latEnc2 = GeoEncodingUtils.mortonUnhashLat(enc2);
+      double lonEnc2 = GeoEncodingUtils.mortonUnhashLon(enc2);
+      assertEquals(latEnc, latEnc2, 0.0);
+      assertEquals(lonEnc, lonEnc2, 0.0);
+    }
+  }
+
   /** Returns random double min to max or up to 1% outside of that range */
   private double randomRangeMaybeSlightlyOutside(double min, double max) {
     return min + (random().nextDouble() + (0.5 - random().nextDouble()) * .02) * (max - min);
@@ -712,5 +753,9 @@ public class TestGeoUtils extends LuceneTestCase {
       assertEquals(90.0, rect.maxLat, 0.0D);
       assertFalse(rect.crossesDateline());
     }
+  }
+
+  public void testRectCrossesCircle() throws Exception {
+    assertTrue(GeoRelationUtils.rectCrossesCircle(-180, -90, 180, 0.0, 0.667, 0.0, 88000.0));
   }
 }

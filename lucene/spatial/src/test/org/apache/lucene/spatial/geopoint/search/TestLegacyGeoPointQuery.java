@@ -29,12 +29,11 @@ import org.apache.lucene.util.SloppyMath;
 import static org.apache.lucene.spatial.util.GeoDistanceUtils.DISTANCE_PCT_ERR;
 
 /**
- * random testing for GeoPoint query logic
- *
- * @lucene.experimental
+ * random testing for GeoPoint query logic (with deprecated numeric encoding)
+ * @deprecated remove this when TermEncoding.NUMERIC is removed
  */
-
-public class TestGeoPointQuery extends BaseGeoPointTestCase {
+@Deprecated
+public class TestLegacyGeoPointQuery extends BaseGeoPointTestCase {
 
   @Override
   protected boolean forceSmall() {
@@ -43,27 +42,27 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
 
   @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
-    doc.add(new GeoPointField(field, lon, lat, GeoPointField.PREFIX_TYPE_NOT_STORED));
+    doc.add(new GeoPointField(field, lon, lat, GeoPointField.NUMERIC_TYPE_NOT_STORED));
   }
 
   @Override
   protected Query newRectQuery(String field, GeoRect rect) {
-    return new GeoPointInBBoxQuery(field, TermEncoding.PREFIX, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
+    return new GeoPointInBBoxQuery(field, TermEncoding.NUMERIC, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
   }
 
   @Override
   protected Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters) {
-    return new GeoPointDistanceQuery(field, TermEncoding.PREFIX, centerLon, centerLat, radiusMeters);
+    return new GeoPointDistanceQuery(field, TermEncoding.NUMERIC, centerLon, centerLat, radiusMeters);
   }
 
   @Override
   protected Query newDistanceRangeQuery(String field, double centerLat, double centerLon, double minRadiusMeters, double radiusMeters) {
-    return new GeoPointDistanceRangeQuery(field, TermEncoding.PREFIX, centerLon, centerLat, minRadiusMeters, radiusMeters);
+    return new GeoPointDistanceRangeQuery(field, TermEncoding.NUMERIC, centerLon, centerLat, minRadiusMeters, radiusMeters);
   }
 
   @Override
   protected Query newPolygonQuery(String field, double[] lats, double[] lons) {
-    return new GeoPointInPolygonQuery(field, TermEncoding.PREFIX, lons, lats);
+    return new GeoPointInPolygonQuery(field, TermEncoding.NUMERIC, lons, lats);
   }
 
   @Override
