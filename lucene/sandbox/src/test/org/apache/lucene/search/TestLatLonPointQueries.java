@@ -20,12 +20,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
 import org.apache.lucene.spatial.util.GeoRect;
+import org.apache.lucene.spatial.util.GeoRelationUtils;
 import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
 
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
-  // TODO: remove this!
-  public static final double BKD_TOLERANCE = 1e-7;
 
   @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
@@ -89,49 +88,20 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
     return LatLonPoint.decodeLongitude(LatLonPoint.encodeLongitude(lonRaw));
   }
 
-  // todo reconcile with GeoUtils (see LUCENE-6996)
-  public static double compare(final double v1, final double v2) {
-    final double delta = v1-v2;
-    return Math.abs(delta) <= BKD_TOLERANCE ? 0 : delta;
-  }
-
   @Override
   protected Boolean polyRectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
     // TODO write better random polygon tests
-
-    assert Double.isNaN(pointLat) == false;
-
-    // TODO: this comment is wrong!  we have fixed the quantization error (we now pre-quantize all randomly generated test points) yet the test
-    // still fails if we remove this evil "return null":
     
-    // false positive/negatives due to quantization error exist for both rectangles and polygons
-    if (compare(pointLat, rect.minLat) == 0
-        || compare(pointLat, rect.maxLat) == 0
-        || compare(pointLon, rect.minLon) == 0
-        || compare(pointLon, rect.maxLon) == 0) {
-      return null;
-    }
+    // note: logic must be slightly different than rectContainsPoint, to satisfy
+    // insideness for cases exactly on boundaries.
+    
+    assert Double.isNaN(pointLat) == false;
+    assert rect.crossesDateline() == false;
+    double y[] = new double[] { rect.minLat, rect.maxLat, rect.maxLat, rect.minLat, rect.minLat };
+    double x[] = new double[] { rect.minLon, rect.minLon, rect.maxLon, rect.maxLon, rect.minLon };
 
-    int rectLatMinEnc = LatLonPoint.encodeLatitude(rect.minLat);
-    int rectLatMaxEnc = LatLonPoint.encodeLatitude(rect.maxLat);
-    int rectLonMinEnc = LatLonPoint.encodeLongitude(rect.minLon);
-    int rectLonMaxEnc = LatLonPoint.encodeLongitude(rect.maxLon);
-
-    int pointLatEnc = LatLonPoint.encodeLatitude(pointLat);
-    int pointLonEnc = LatLonPoint.encodeLongitude(pointLon);
-
-    if (rect.minLon < rect.maxLon) {
-      return pointLatEnc >= rectLatMinEnc &&
-        pointLatEnc <= rectLatMaxEnc &&
-        pointLonEnc >= rectLonMinEnc &&
-        pointLonEnc <= rectLonMaxEnc;
-    } else {
-      // Rect crosses dateline:
-      return pointLatEnc >= rectLatMinEnc &&
-        pointLatEnc <= rectLatMaxEnc &&
-        (pointLonEnc >= rectLonMinEnc ||
-         pointLonEnc <= rectLonMaxEnc);
-    }
+    // TODO: separately test this method is 100% correct, here treat it like a black box (like haversin)
+    return GeoRelationUtils.pointInPolygon(x, y, pointLat, pointLon);
   }
 
   @Override
