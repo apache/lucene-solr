@@ -28,8 +28,6 @@ import static org.apache.lucene.spatial.util.GeoUtils.MAX_LON_INCL;
 import static org.apache.lucene.spatial.util.GeoUtils.MIN_LAT_INCL;
 import static org.apache.lucene.spatial.util.GeoUtils.MIN_LON_INCL;
 import static org.apache.lucene.spatial.util.GeoUtils.PIO2;
-import static org.apache.lucene.spatial.util.GeoUtils.normalizeLat;
-import static org.apache.lucene.spatial.util.GeoUtils.normalizeLon;
 import static org.apache.lucene.spatial.util.GeoUtils.sloppySin;
 import static org.apache.lucene.spatial.util.GeoUtils.sloppyTan;
 

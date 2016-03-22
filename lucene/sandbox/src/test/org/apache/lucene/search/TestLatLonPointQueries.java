@@ -187,15 +187,15 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
           lon = randomLon(useSmallRanges);
         } else {
           // pick a lat/lon within the bbox or "slightly" outside it to try to improve test efficiency
-          lat = quantizeLat(GeoUtils.normalizeLat(randomRangeMaybeSlightlyOutside(bbox.minLat, bbox.maxLat)));
+          lat = quantizeLat(BaseGeoPointTestCase.normalizeLat(randomRangeMaybeSlightlyOutside(bbox.minLat, bbox.maxLat)));
           if (bbox.crossesDateline()) {
             if (random().nextBoolean()) {
-              lon = quantizeLon(GeoUtils.normalizeLon(randomRangeMaybeSlightlyOutside(bbox.maxLon, -180)));
+              lon = quantizeLon(BaseGeoPointTestCase.normalizeLon(randomRangeMaybeSlightlyOutside(bbox.maxLon, -180)));
             } else {
-              lon = quantizeLon(GeoUtils.normalizeLon(randomRangeMaybeSlightlyOutside(0, bbox.minLon)));
+              lon = quantizeLon(BaseGeoPointTestCase.normalizeLon(randomRangeMaybeSlightlyOutside(0, bbox.minLon)));
             }
           } else {
-            lon = quantizeLon(GeoUtils.normalizeLon(randomRangeMaybeSlightlyOutside(bbox.minLon, bbox.maxLon)));
+            lon = quantizeLon(BaseGeoPointTestCase.normalizeLon(randomRangeMaybeSlightlyOutside(bbox.minLon, bbox.maxLon)));
           }
         }
 

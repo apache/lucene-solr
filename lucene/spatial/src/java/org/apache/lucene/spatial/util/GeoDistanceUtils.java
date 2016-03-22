@@ -33,7 +33,7 @@ public class GeoDistanceUtils {
   private GeoDistanceUtils() {
   }
 
-  /**
+   /**
    * Computes distance between two points in a cartesian (x, y, {z - optional}) coordinate system
    */
   public static double linearDistance(double[] pt1, double[] pt2) {
@@ -115,23 +115,5 @@ public class GeoDistanceUtils {
       return SloppyMath.haversinMeters(centerLat, centerLon, 0, centerLon);
     }
     return SloppyMath.haversinMeters(centerLat, centerLon, centerLat, (GeoUtils.MAX_LON_INCL + centerLon) % 360);
-  }
-
-  /**
-   * Compute the inverse haversine to determine distance in degrees longitude for provided distance in meters
-   * @param lat latitude to compute delta degrees lon
-   * @param distance distance in meters to convert to degrees lon
-   * @return Sloppy distance in degrees longitude for provided distance in meters
-   */
-  public static double distanceToDegreesLat(double lat, double distance) {
-    // get the diameter at the latitude
-    final double diameter = 2 * GeoProjectionUtils.SEMIMAJOR_AXIS;
-
-    // compute inverse haversine
-    double a = StrictMath.sin(distance/diameter);
-    double h = StrictMath.min(1, a);
-    h *= h;
-
-    return StrictMath.toDegrees(StrictMath.acos(1-(2d*h)));
   }
 }

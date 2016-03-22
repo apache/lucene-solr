@@ -57,9 +57,9 @@ public class TestGeoUtils extends LuceneTestCase {
     latRange = 2 * (random().nextDouble() + 0.5);
 
     originLon = GeoUtils.MIN_LON_INCL + lonRange + (GeoUtils.MAX_LON_INCL - GeoUtils.MIN_LON_INCL - 2 * lonRange) * random().nextDouble();
-    originLon = GeoUtils.normalizeLon(originLon);
+    originLon = BaseGeoPointTestCase.normalizeLon(originLon);
     originLat = GeoUtils.MIN_LAT_INCL + latRange + (GeoUtils.MAX_LAT_INCL - GeoUtils.MIN_LAT_INCL - 2 * latRange) * random().nextDouble();
-    originLat = GeoUtils.normalizeLat(originLat);
+    originLat = BaseGeoPointTestCase.normalizeLat(originLat);
 
     if (VERBOSE) {
       System.out.println("TEST: originLon=" + originLon + " lonRange= " + lonRange + " originLat=" + originLat + " latRange=" + latRange);
@@ -131,7 +131,7 @@ public class TestGeoUtils extends LuceneTestCase {
   public double randomLat(boolean small) {
     double result;
     if (small) {
-      result = GeoUtils.normalizeLat(originLat + latRange * (random().nextDouble() - 0.5));
+      result = BaseGeoPointTestCase.normalizeLat(originLat + latRange * (random().nextDouble() - 0.5));
     } else {
       result = -90 + 180.0 * random().nextDouble();
     }
@@ -141,7 +141,7 @@ public class TestGeoUtils extends LuceneTestCase {
   public double randomLon(boolean small) {
     double result;
     if (small) {
-      result = GeoUtils.normalizeLon(originLon + lonRange * (random().nextDouble() - 0.5));
+      result = BaseGeoPointTestCase.normalizeLon(originLon + lonRange * (random().nextDouble() - 0.5));
     } else {
       result = -180 + 360.0 * random().nextDouble();
     }
