@@ -34,68 +34,6 @@ public class GeoDistanceUtils {
   }
 
   /**
-   * Compute the distance between two geo-points using vincenty distance formula
-   * Vincenty uses the oblate spheroid whereas haversine uses unit sphere, this will give roughly
-   * 22m better accuracy (in worst case) than haversine
-   *
-   * @param lonA longitudinal coordinate of point A (in degrees)
-   * @param latA latitudinal coordinate of point A (in degrees)
-   * @param lonB longitudinal coordinate of point B (in degrees)
-   * @param latB latitudinal coordinate of point B (in degrees)
-   * @return distance (in meters) between point A and point B
-   */
-  public static final double vincentyDistance(final double lonA, final double latA, final double lonB, final double latB) {
-    final double L = StrictMath.toRadians(lonB - lonA);
-    final double oF = 1 - GeoProjectionUtils.FLATTENING;
-    final double U1 = StrictMath.atan(oF * StrictMath.tan(StrictMath.toRadians(latA)));
-    final double U2 = StrictMath.atan(oF * StrictMath.tan(StrictMath.toRadians(latB)));
-    final double sU1 = StrictMath.sin(U1);
-    final double cU1 = StrictMath.cos(U1);
-    final double sU2 = StrictMath.sin(U2);
-    final double cU2 = StrictMath.cos(U2);
-
-    double sigma, sinSigma, cosSigma;
-    double sinAlpha, cos2Alpha, cos2SigmaM;
-    double lambda = L;
-    double lambdaP;
-    double iters = 100;
-    double sinLambda, cosLambda, c;
-
-    do {
-      sinLambda = StrictMath.sin(lambda);
-      cosLambda = Math.cos(lambda);
-      sinSigma = Math.sqrt((cU2 * sinLambda) * (cU2 * sinLambda) + (cU1 * sU2 - sU1 * cU2 * cosLambda)
-          * (cU1 * sU2 - sU1 * cU2 * cosLambda));
-      if (sinSigma == 0) {
-        return 0;
-      }
-
-      cosSigma = sU1 * sU2 + cU1 * cU2 * cosLambda;
-      sigma = Math.atan2(sinSigma, cosSigma);
-      sinAlpha = cU1 * cU2 * sinLambda / sinSigma;
-      cos2Alpha = 1 - sinAlpha * sinAlpha;
-      cos2SigmaM = cosSigma - 2 * sU1 * sU2 / cos2Alpha;
-
-      c = GeoProjectionUtils.FLATTENING/16 * cos2Alpha * (4 + GeoProjectionUtils.FLATTENING * (4 - 3 * cos2Alpha));
-      lambdaP = lambda;
-      lambda = L + (1 - c) * GeoProjectionUtils.FLATTENING * sinAlpha * (sigma + c * sinSigma * (cos2SigmaM + c * cosSigma *
-          (-1 + 2 * cos2SigmaM * cos2SigmaM)));
-    } while (StrictMath.abs(lambda - lambdaP) > 1E-12 && --iters > 0);
-
-    if (iters == 0) {
-      return 0;
-    }
-
-    final double uSq = cos2Alpha * (GeoProjectionUtils.SEMIMAJOR_AXIS2 - GeoProjectionUtils.SEMIMINOR_AXIS2) / (GeoProjectionUtils.SEMIMINOR_AXIS2);
-    final double A = 1 + uSq / 16384 * (4096 + uSq * (-768 + uSq * (320 - 175 * uSq)));
-    final double B = uSq / 1024 * (256 + uSq * (-128 + uSq * (74 - 47 * uSq)));
-    final double deltaSigma = B * sinSigma * (cos2SigmaM + B/4 * (cosSigma * (-1 + 2 * cos2SigmaM * cos2SigmaM) - B/6 * cos2SigmaM
-        * (-3 + 4 * sinSigma * sinSigma) * (-3 + 4 * cos2SigmaM * cos2SigmaM)));
-
-    return (GeoProjectionUtils.SEMIMINOR_AXIS * A * (sigma - deltaSigma));
-  }
-
-  /**
    * Computes distance between two points in a cartesian (x, y, {z - optional}) coordinate system
    */
   public static double linearDistance(double[] pt1, double[] pt2) {
@@ -133,11 +71,11 @@ public class GeoDistanceUtils {
 
   /**
    *  Finds the closest point within a rectangle (defined by rMinX, rMinY, rMaxX, rMaxY) to the given (lon, lat) point
-   *  the result is provided in closestPt.  When the point is outside the rectangle, the closest point is on an edge
+   *  the result is provided in closestPt (lat, lon).  When the point is outside the rectangle, the closest point is on an edge
    *  or corner of the rectangle; else, the closest point is the point itself.
    */
-  public static void closestPointOnBBox(final double rMinX, final double rMinY, final double rMaxX, final double rMaxY,
-                                        final double lon, final double lat, double[] closestPt) {
+  public static void closestPointOnBBox(final double rMinY, final double rMaxY, final double rMinX, final double rMaxX,
+                                        final double lat, final double lon, double[] closestPt) {
     assert closestPt != null && closestPt.length == 2;
 
     closestPt[0] = 0;
@@ -147,32 +85,32 @@ public class GeoDistanceUtils {
     boolean ySet = true;
 
     if (lon > rMaxX) {
-      closestPt[0] = rMaxX;
+      closestPt[1] = rMaxX;
     } else if (lon < rMinX) {
-      closestPt[0] = rMinX;
+      closestPt[1] = rMinX;
     } else {
       xSet = false;
     }
 
     if (lat > rMaxY) {
-      closestPt[1] = rMaxY;
+      closestPt[0] = rMaxY;
     } else if (lat < rMinY) {
-      closestPt[1] = rMinY;
+      closestPt[0] = rMinY;
     } else {
       ySet = false;
     }
 
-    if (closestPt[0] == 0 && xSet == false) {
-      closestPt[0] = lon;
+    if (closestPt[0] == 0 && ySet == false) {
+      closestPt[0] = lat;
     }
 
-    if (closestPt[1] == 0 && ySet == false) {
-      closestPt[1] = lat;
+    if (closestPt[1] == 0 && xSet == false) {
+      closestPt[1] = lon;
     }
   }
 
   /** Returns the maximum distance/radius (in meters) from the point 'center' before overlapping */
-  public static double maxRadialDistanceMeters(final double centerLon, final double centerLat) {
+  public static double maxRadialDistanceMeters(final double centerLat, final double centerLon) {
     if (Math.abs(centerLat) == GeoUtils.MAX_LAT_INCL) {
       return SloppyMath.haversinMeters(centerLat, centerLon, 0, centerLon);
     }

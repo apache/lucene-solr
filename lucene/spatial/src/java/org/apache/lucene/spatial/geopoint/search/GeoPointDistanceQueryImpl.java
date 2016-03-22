@@ -32,7 +32,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
 
   GeoPointDistanceQueryImpl(final String field, final TermEncoding termEncoding, final GeoPointDistanceQuery q,
                             final double centerLonUnwrapped, final GeoRect bbox) {
-    super(field, termEncoding, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
+    super(field, termEncoding, bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon);
     distanceQuery = q;
     centerLon = centerLonUnwrapped;
   }
@@ -53,20 +53,21 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
     }
 
     @Override
-    protected boolean cellCrosses(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectCrossesCircle(minLon, minLat, maxLon, maxLat,
-          centerLon, distanceQuery.centerLat, distanceQuery.radiusMeters, true);
+    protected boolean cellCrosses(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+      return GeoRelationUtils.rectCrossesCircle(minLat, maxLat, minLon, maxLon,
+                                                distanceQuery.centerLat, centerLon, distanceQuery.radiusMeters, true);
     }
 
     @Override
-    protected boolean cellWithin(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return GeoRelationUtils.rectWithinCircle(minLon, minLat, maxLon, maxLat,
-          centerLon, distanceQuery.centerLat, distanceQuery.radiusMeters, true);
+    protected boolean cellWithin(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+      return GeoRelationUtils.rectWithinCircle(minLat, maxLat, minLon, maxLon,
+                                               distanceQuery.centerLat, centerLon,
+                                               distanceQuery.radiusMeters, true);
     }
 
     @Override
-    protected boolean cellIntersectsShape(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-      return cellCrosses(minLon, minLat, maxLon, maxLat);
+    protected boolean cellIntersectsShape(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+      return cellCrosses(minLat, maxLat, minLon, maxLon);
     }
 
     /**
@@ -76,7 +77,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
      * {@link org.apache.lucene.util.SloppyMath#haversinMeters(double, double, double, double)} method.
      */
     @Override
-    protected boolean postFilter(final double lon, final double lat) {
+    protected boolean postFilter(final double lat, final double lon) {
       return SloppyMath.haversinMeters(distanceQuery.centerLat, centerLon, lat, lon) <= distanceQuery.radiusMeters;
     }
   }

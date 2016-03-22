@@ -37,9 +37,9 @@ public final class GeoPointDistanceRangeQuery extends GeoPointDistanceQuery {
    * Constructs a query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types within a minimum / maximum
    * distance (in meters) range from a given point
    */
-  public GeoPointDistanceRangeQuery(final String field, final double centerLon, final double centerLat,
+  public GeoPointDistanceRangeQuery(final String field, final double centerLat, final double centerLon,
                                     final double minRadiusMeters, final double maxRadiusMeters) {
-    this(field, TermEncoding.PREFIX, centerLon, centerLat, minRadiusMeters, maxRadiusMeters);
+    this(field, TermEncoding.PREFIX, centerLat, centerLon, minRadiusMeters, maxRadiusMeters);
   }
 
   /**
@@ -47,9 +47,9 @@ public final class GeoPointDistanceRangeQuery extends GeoPointDistanceQuery {
    * distance (in meters) range from a given point. Accepts an optional
    * {@link org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding}
    */
-  public GeoPointDistanceRangeQuery(final String field, final TermEncoding termEncoding, final double centerLon, final double centerLat,
+  public GeoPointDistanceRangeQuery(final String field, final TermEncoding termEncoding, final double centerLat, final double centerLon,
                                     final double minRadiusMeters, final double maxRadius) {
-    super(field, termEncoding, centerLon, centerLat, maxRadius);
+    super(field, termEncoding, centerLat, centerLon, maxRadius);
     this.minRadiusMeters = minRadiusMeters;
   }
 
@@ -64,7 +64,7 @@ public final class GeoPointDistanceRangeQuery extends GeoPointDistanceQuery {
     BooleanQuery.Builder bqb = new BooleanQuery.Builder();
 
     // create a new exclusion query
-    GeoPointDistanceQuery exclude = new GeoPointDistanceQuery(field, termEncoding, centerLon, centerLat, minRadiusMeters);
+    GeoPointDistanceQuery exclude = new GeoPointDistanceQuery(field, termEncoding, centerLat, centerLon, minRadiusMeters);
     // full map search
 //    if (radiusMeters >= GeoProjectionUtils.SEMIMINOR_AXIS) {
 //      bqb.add(new BooleanClause(new GeoPointInBBoxQuery(this.field, -180.0, -90.0, 180.0, 90.0), BooleanClause.Occur.MUST));
@@ -87,9 +87,9 @@ public final class GeoPointDistanceRangeQuery extends GeoPointDistanceQuery {
       sb.append(':');
     }
     return sb.append( " Center: [")
-        .append(centerLon)
-        .append(',')
         .append(centerLat)
+        .append(',')
+        .append(centerLon)
         .append(']')
         .append(" From Distance: ")
         .append(minRadiusMeters)
@@ -98,14 +98,14 @@ public final class GeoPointDistanceRangeQuery extends GeoPointDistanceQuery {
         .append(radiusMeters)
         .append(" m")
         .append(" Lower Left: [")
-        .append(minLon)
-        .append(',')
         .append(minLat)
+        .append(',')
+        .append(minLon)
         .append(']')
         .append(" Upper Right: [")
-        .append(maxLon)
-        .append(',')
         .append(maxLat)
+        .append(',')
+        .append(maxLon)
         .append("]")
         .toString();
   }

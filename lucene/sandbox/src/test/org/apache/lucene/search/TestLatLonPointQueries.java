@@ -55,11 +55,11 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
     assert Double.isNaN(pointLat) == false;
 
     if (rect.minLon < rect.maxLon) {
-      return GeoRelationUtils.pointInRectPrecise(pointLon, pointLat, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
+      return GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
     } else {
       // Rect crosses dateline:
-      return GeoRelationUtils.pointInRectPrecise(pointLon, pointLat, -180.0, rect.minLat, rect.maxLon, rect.maxLat)
-          || GeoRelationUtils.pointInRectPrecise(pointLon, pointLat, rect.minLon, rect.minLat, 180.0, rect.maxLat);
+      return GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, -180.0, rect.maxLon)
+        || GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, rect.minLon, 180.0);
     }
   }
 
@@ -82,11 +82,11 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
     
     assert Double.isNaN(pointLat) == false;
     assert rect.crossesDateline() == false;
-    double y[] = new double[] { rect.minLat, rect.maxLat, rect.maxLat, rect.minLat, rect.minLat };
-    double x[] = new double[] { rect.minLon, rect.minLon, rect.maxLon, rect.maxLon, rect.minLon };
+    double polyLats[] = new double[] { rect.minLat, rect.maxLat, rect.maxLat, rect.minLat, rect.minLat };
+    double polyLons[] = new double[] { rect.minLon, rect.minLon, rect.maxLon, rect.maxLon, rect.minLon };
 
     // TODO: separately test this method is 100% correct, here treat it like a black box (like haversin)
-    return GeoRelationUtils.pointInPolygon(x, y, pointLat, pointLon);
+    return GeoRelationUtils.pointInPolygon(polyLats, polyLons, pointLat, pointLon);
   }
 
   @Override

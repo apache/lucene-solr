@@ -47,30 +47,30 @@ import org.apache.lucene.spatial.util.GeoUtils;
 public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
   // polygon position arrays - this avoids the use of any objects or
   // or geo library dependencies
-  /** array of x (longitude) values (in degrees) */
-  protected final double[] x;
   /** array of y (latitude) values (in degrees) */
-  protected final double[] y;
+  protected final double[] polyLats;
+  /** array of x (longitude) values (in degrees) */
+  protected final double[] polyLons;
 
   /**
    * Constructs a new GeoPolygonQuery that will match encoded {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} terms
    * that fall within or on the boundary of the polygon defined by the input parameters.
    */
-  public GeoPointInPolygonQuery(final String field, final double[] polyLons, final double[] polyLats) {
-    this(field, TermEncoding.PREFIX, GeoUtils.polyToBBox(polyLons, polyLats), polyLons, polyLats);
+  public GeoPointInPolygonQuery(final String field, final double[] polyLats, final double[] polyLons) {
+    this(field, TermEncoding.PREFIX, GeoUtils.polyToBBox(polyLats, polyLons), polyLats, polyLons);
   }
 
   /**
    * Constructs a new GeoPolygonQuery that will match encoded {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} terms
    * that fall within or on the boundary of the polygon defined by the input parameters.
    */
-  public GeoPointInPolygonQuery(final String field, final TermEncoding termEncoding, final double[] polyLons, final double[] polyLats) {
-    this(field, termEncoding, GeoUtils.polyToBBox(polyLons, polyLats), polyLons, polyLats);
+  public GeoPointInPolygonQuery(final String field, final TermEncoding termEncoding, final double[] polyLats, final double[] polyLons) {
+    this(field, termEncoding, GeoUtils.polyToBBox(polyLats, polyLons), polyLats, polyLons);
   }
 
   /** Common constructor, used only internally. */
-  private GeoPointInPolygonQuery(final String field, TermEncoding termEncoding, GeoRect bbox, final double[] polyLons, final double[] polyLats) {
-    super(field, termEncoding, bbox.minLon, bbox.minLat, bbox.maxLon, bbox.maxLat);
+  private GeoPointInPolygonQuery(final String field, TermEncoding termEncoding, GeoRect bbox, final double[] polyLats, final double[] polyLons) {
+    super(field, termEncoding, bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon);
     if (polyLats.length != polyLons.length) {
       throw new IllegalArgumentException("polyLats and polyLons must be equal length");
     }
@@ -84,14 +84,14 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
       throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLons[0]=" + polyLons[0] + " polyLons[" + (polyLons.length-1) + "]=" + polyLons[polyLons.length-1]);
     }
 
-    this.x = polyLons;
-    this.y = polyLats;
+    this.polyLons = polyLons;
+    this.polyLats = polyLats;
   }
 
   /** throw exception if trying to change rewrite method */
   @Override
   public Query rewrite(IndexReader reader) {
-    return new GeoPointInPolygonQueryImpl(field, termEncoding, this, this.minLon, this.minLat, this.maxLon, this.maxLat);
+    return new GeoPointInPolygonQueryImpl(field, termEncoding, this, this.minLat, this.maxLat, this.minLon, this.maxLon);
   }
 
   @Override
@@ -102,8 +102,8 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
 
     GeoPointInPolygonQuery that = (GeoPointInPolygonQuery) o;
 
-    if (!Arrays.equals(x, that.x)) return false;
-    if (!Arrays.equals(y, that.y)) return false;
+    if (!Arrays.equals(polyLats, that.polyLats)) return false;
+    if (!Arrays.equals(polyLons, that.polyLons)) return false;
 
     return true;
   }
@@ -111,15 +111,15 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (x != null ? Arrays.hashCode(x) : 0);
-    result = 31 * result + (y != null ? Arrays.hashCode(y) : 0);
+    result = 31 * result + (polyLats != null ? Arrays.hashCode(polyLats) : 0);
+    result = 31 * result + (polyLons != null ? Arrays.hashCode(polyLons) : 0);
     return result;
   }
 
   /** print out this polygon query */
   @Override
   public String toString(String field) {
-    assert x.length == y.length;
+    assert polyLats.length == polyLons.length;
 
     final StringBuilder sb = new StringBuilder();
     sb.append(getClass().getSimpleName());
@@ -130,11 +130,11 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
       sb.append(':');
     }
     sb.append(" Points: ");
-    for (int i=0; i<x.length; ++i) {
+    for (int i=0; i<polyLats.length; ++i) {
       sb.append("[")
-          .append(x[i])
+          .append(polyLats[i])
           .append(", ")
-          .append(y[i])
+          .append(polyLons[i])
           .append("] ");
     }
 
@@ -146,7 +146,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
    * The returned array is not a copy so do not change it!
    */
   public double[] getLons() {
-    return this.x;
+    return this.polyLons;
   }
 
   /**
@@ -154,6 +154,6 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
    * The returned array is not a copy so do not change it!
    */
   public double[] getLats() {
-    return this.y;
+    return this.polyLats;
   }
 }
