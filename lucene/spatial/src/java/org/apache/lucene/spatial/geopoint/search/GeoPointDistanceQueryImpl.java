@@ -19,7 +19,6 @@ package org.apache.lucene.spatial.geopoint.search;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.GeoRelationUtils;
 import org.apache.lucene.util.SloppyMath;
 
 /** Package private implementation for the public facing GeoPointDistanceQuery delegate class.
@@ -54,15 +53,28 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
 
     @Override
     protected boolean cellCrosses(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return GeoRelationUtils.rectCrossesCircle(minLat, maxLat, minLon, maxLon,
-                                                distanceQuery.centerLat, centerLon, distanceQuery.radiusMeters, true);
+      if (maxLat < GeoPointDistanceQueryImpl.this.minLat ||
+          maxLon < GeoPointDistanceQueryImpl.this.minLon ||
+          minLat > GeoPointDistanceQueryImpl.this.maxLat ||
+          minLon > GeoPointDistanceQueryImpl.this.maxLon) {
+        return false;
+      } else {
+        return true;
+      }
     }
 
     @Override
     protected boolean cellWithin(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return GeoRelationUtils.rectWithinCircle(minLat, maxLat, minLon, maxLon,
-                                               distanceQuery.centerLat, centerLon,
-                                               distanceQuery.radiusMeters, true);
+      // TODO: we call cellCrosses because of how the termsEnum logic works, helps us avoid some haversin() calls here.
+      if (cellCrosses(minLat, maxLat, minLon, maxLon) && maxLon - centerLon < 90 && centerLon - minLon < 90 &&
+          SloppyMath.haversinMeters(distanceQuery.centerLat, centerLon, minLat, minLon) <= distanceQuery.radiusMeters &&
+          SloppyMath.haversinMeters(distanceQuery.centerLat, centerLon, minLat, maxLon) <= distanceQuery.radiusMeters &&
+          SloppyMath.haversinMeters(distanceQuery.centerLat, centerLon, maxLat, minLon) <= distanceQuery.radiusMeters &&
+          SloppyMath.haversinMeters(distanceQuery.centerLat, centerLon, maxLat, maxLon) <= distanceQuery.radiusMeters) {
+        // we are fully enclosed, collect everything within this subtree
+        return true;
+      }
+      return false;
     }
 
     @Override

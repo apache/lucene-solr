@@ -20,8 +20,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
 import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.GeoRelationUtils;
-import org.apache.lucene.util.SloppyMath;
 
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
@@ -51,19 +49,6 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Boolean rectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
-    assert Double.isNaN(pointLat) == false;
-
-    if (rect.minLon < rect.maxLon) {
-      return GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
-    } else {
-      // Rect crosses dateline:
-      return GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, -180.0, rect.maxLon)
-        || GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, rect.minLon, 180.0);
-    }
-  }
-
-  @Override
   protected double quantizeLat(double latRaw) {
     return LatLonPoint.decodeLatitude(LatLonPoint.encodeLatitude(latRaw));
   }
@@ -71,35 +56,5 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   @Override
   protected double quantizeLon(double lonRaw) {
     return LatLonPoint.decodeLongitude(LatLonPoint.encodeLongitude(lonRaw));
-  }
-
-  @Override
-  protected Boolean polyRectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
-    // TODO write better random polygon tests
-    
-    // note: logic must be slightly different than rectContainsPoint, to satisfy
-    // insideness for cases exactly on boundaries.
-    
-    assert Double.isNaN(pointLat) == false;
-    assert rect.crossesDateline() == false;
-    double polyLats[] = new double[] { rect.minLat, rect.maxLat, rect.maxLat, rect.minLat, rect.minLat };
-    double polyLons[] = new double[] { rect.minLon, rect.minLon, rect.maxLon, rect.maxLon, rect.minLon };
-
-    // TODO: separately test this method is 100% correct, here treat it like a black box (like haversin)
-    return GeoRelationUtils.pointInPolygon(polyLats, polyLons, pointLat, pointLon);
-  }
-
-  @Override
-  protected Boolean circleContainsPoint(double centerLat, double centerLon, double radiusMeters, double pointLat, double pointLon) {
-    double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
-    boolean result = distanceMeters <= radiusMeters;
-    //System.out.println("  shouldMatch?  centerLon=" + centerLon + " centerLat=" + centerLat + " pointLon=" + pointLon + " pointLat=" + pointLat + " result=" + result + " distanceMeters=" + (distanceKM * 1000));
-    return result;
-  }
-
-  @Override
-  protected Boolean distanceRangeContainsPoint(double centerLat, double centerLon, double minRadiusMeters, double radiusMeters, double pointLat, double pointLon) {
-    final double d = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
-    return d >= minRadiusMeters && d <= radiusMeters;
   }
 }

@@ -18,16 +18,12 @@ package org.apache.lucene.spatial.util;
 
 import org.apache.lucene.util.SloppyMath;
 
-import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
-
 /**
  * Reusable geo-spatial distance utility methods.
  *
  * @lucene.experimental
  */
 public class GeoDistanceUtils {
-  /** error threshold for point-distance queries (in percent) NOTE: Guideline from USGS is 0.005 **/
-  public static final double DISTANCE_PCT_ERR = 0.005;
 
   // No instance:
   private GeoDistanceUtils() {
@@ -58,7 +54,7 @@ public class GeoDistanceUtils {
     lat = StrictMath.toRadians(lat);
 
     // get the diameter at the latitude
-    final double diameter = 2 * GeoProjectionUtils.SEMIMAJOR_AXIS;
+    final double diameter = 2 * GeoUtils.SEMIMAJOR_AXIS;
 
     // compute inverse haversine
     double a = StrictMath.sin(distance/diameter);
@@ -125,7 +121,7 @@ public class GeoDistanceUtils {
    */
   public static double distanceToDegreesLat(double lat, double distance) {
     // get the diameter at the latitude
-    final double diameter = 2 * GeoProjectionUtils.SEMIMAJOR_AXIS;
+    final double diameter = 2 * GeoUtils.SEMIMAJOR_AXIS;
 
     // compute inverse haversine
     double a = StrictMath.sin(distance/diameter);

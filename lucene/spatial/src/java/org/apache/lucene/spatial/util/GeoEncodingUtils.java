@@ -84,12 +84,6 @@ public final class GeoEncodingUtils {
     return (val / LAT_SCALE) + MIN_LAT_INCL;
   }
 
-  /** Compare two position values within a {@link GeoEncodingUtils#TOLERANCE} factor */
-  public static double compare(final double v1, final double v2) {
-    final double delta = v1-v2;
-    return Math.abs(delta) <= TOLERANCE ? 0 : delta;
-  }
-
   /** Convert a geocoded morton long into a prefix coded geo term */
   public static void geoCodedToPrefixCoded(long hash, int shift, BytesRefBuilder bytes) {
     geoCodedToPrefixCodedBytes(hash, shift, bytes);
