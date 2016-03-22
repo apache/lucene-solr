@@ -58,6 +58,8 @@ Bug Fixes
 * SOLR-8857: HdfsUpdateLog does not use configured or new default number of version buckets and is
   hard coded to 256. (Mark Miller, yonik, Gregory Chanan)
 
+* SOLR-8855: The HDFS BlockDirectory should not clean up it's cache on shutdown. (Mark Miller)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
