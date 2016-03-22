@@ -99,8 +99,10 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
       maxLon = mortonUnhashLon(currEnd);
       maxLat = mortonUnhashLat(currEnd);
 
+      isWithin = false;
       // within or a boundary
-      if ((isWithin = within(minLat, maxLat, minLon, maxLon) == true) || boundary(minLat, maxLat, minLon, maxLon) == true) {
+      if (boundary(minLat, maxLat, minLon, maxLon) == true) {
+        isWithin = within(minLat, maxLat, minLon, maxLon);
         final int m;
         if (isWithin == false || (m = shift % GeoPointField.PRECISION_STEP) == 0) {
           setNextRange(isWithin == false);

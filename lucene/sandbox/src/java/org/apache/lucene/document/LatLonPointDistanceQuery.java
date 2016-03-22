@@ -104,12 +104,12 @@ final class LatLonPointDistanceQuery extends Query {
 
     // compute a maximum partial haversin: unless our box is crazy, we can use this bound
     // to reject edge cases faster in matches()
-    final double minPartialDistance;
+    final double maxPartialDistance;
     if (box.maxLon - longitude < 90 && longitude - box.minLon < 90) {
-      minPartialDistance = Math.max(SloppyMath.haversinSortKey(latitude, longitude, latitude, box.maxLon),
+      maxPartialDistance = Math.max(SloppyMath.haversinSortKey(latitude, longitude, latitude, box.maxLon),
                                     SloppyMath.haversinSortKey(latitude, longitude, box.maxLat, longitude));
     } else {
-      minPartialDistance = Double.POSITIVE_INFINITY;
+      maxPartialDistance = Double.POSITIVE_INFINITY;
     }
 
     return new ConstantScoreWeight(this) {
@@ -235,7 +235,7 @@ final class LatLonPointDistanceQuery extends Query {
 
                 // first check the partial distance, if its more than that, it can't be <= radiusMeters
                 double h1 = SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude);
-                if (h1 > minPartialDistance) {
+                if (h1 > maxPartialDistance) {
                   continue;
                 }
 
