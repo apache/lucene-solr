@@ -60,7 +60,7 @@ import static org.apache.lucene.spatial.geopoint.document.GeoPointField.PRECISIO
  *   document.add(geoPointField);
  *
  *   // query by bounding box (default uses TermEncoding.PREFIX)
- *   Query q = new GeoPointInBBoxQuery(fieldName1, minLon, minLat, maxLon, maxLat);
+ *   Query q = new GeoPointInBBoxQuery(fieldName1, minLat, maxLat, minLon, maxLon);
  *
  *   // using numeric terms
  *   geoPointField = new GeoPointField(fieldName2, lat, lon, GeoPointField.NUMERIC_TYPE_NOT_STORED);

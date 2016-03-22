@@ -82,8 +82,32 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     lonRange = 2 * (random().nextDouble() + 0.5);
     latRange = 2 * (random().nextDouble() + 0.5);
 
-    originLon = GeoUtils.normalizeLon(GeoUtils.MIN_LON_INCL + lonRange + (GeoUtils.MAX_LON_INCL - GeoUtils.MIN_LON_INCL - 2 * lonRange) * random().nextDouble());
-    originLat = GeoUtils.normalizeLat(GeoUtils.MIN_LAT_INCL + latRange + (GeoUtils.MAX_LAT_INCL - GeoUtils.MIN_LAT_INCL - 2 * latRange) * random().nextDouble());
+    originLon = normalizeLon(GeoUtils.MIN_LON_INCL + lonRange + (GeoUtils.MAX_LON_INCL - GeoUtils.MIN_LON_INCL - 2 * lonRange) * random().nextDouble());
+    originLat = normalizeLat(GeoUtils.MIN_LAT_INCL + latRange + (GeoUtils.MAX_LAT_INCL - GeoUtils.MIN_LAT_INCL - 2 * latRange) * random().nextDouble());
+  }
+
+  /** Puts longitude in range of -180 to +180. */
+  public static double normalizeLon(double lon_deg) {
+    if (lon_deg >= -180 && lon_deg <= 180) {
+      return lon_deg; //common case, and avoids slight double precision shifting
+    }
+    double off = (lon_deg + 180) % 360;
+    if (off < 0) {
+      return 180 + off;
+    } else if (off == 0 && lon_deg > 0) {
+      return 180;
+    } else {
+      return -180 + off;
+    }
+  }
+
+  /** Puts latitude in range of -90 to 90. */
+  public static double normalizeLat(double lat_deg) {
+    if (lat_deg >= -90 && lat_deg <= 90) {
+      return lat_deg; //common case, and avoids slight double precision shifting
+    }
+    double off = Math.abs((lat_deg + 90) % 360);
+    return (off <= 180 ? off : 360-off) - 90;
   }
 
   // A particularly tricky adversary for BKD tree:
@@ -403,7 +427,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   public double randomLat(boolean small) {
     double result;
     if (small) {
-      result = GeoUtils.normalizeLat(originLat + latRange * (random().nextDouble() - 0.5));
+      result = normalizeLat(originLat + latRange * (random().nextDouble() - 0.5));
     } else {
       result = -90 + 180.0 * random().nextDouble();
     }
@@ -413,7 +437,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   public double randomLon(boolean small) {
     double result;
     if (small) {
-      result = GeoUtils.normalizeLon(originLon + lonRange * (random().nextDouble() - 0.5));
+      result = normalizeLon(originLon + lonRange * (random().nextDouble() - 0.5));
     } else {
       result = -180 + 360.0 * random().nextDouble();
     }

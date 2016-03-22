@@ -72,30 +72,6 @@ public final class GeoUtils {
     return Double.isNaN(lon) == false && lon >= MIN_LON_INCL && lon <= MAX_LON_INCL;
   }
 
-  /** Puts longitude in range of -180 to +180. */
-  public static double normalizeLon(double lon_deg) {
-    if (lon_deg >= -180 && lon_deg <= 180) {
-      return lon_deg; //common case, and avoids slight double precision shifting
-    }
-    double off = (lon_deg + 180) % 360;
-    if (off < 0) {
-      return 180 + off;
-    } else if (off == 0 && lon_deg > 0) {
-      return 180;
-    } else {
-      return -180 + off;
-    }
-  }
-
-  /** Puts latitude in range of -90 to 90. */
-  public static double normalizeLat(double lat_deg) {
-    if (lat_deg >= -90 && lat_deg <= 90) {
-      return lat_deg; //common case, and avoids slight double precision shifting
-    }
-    double off = abs((lat_deg + 90) % 360);
-    return (off <= 180 ? off : 360-off) - 90;
-  }
-
   /** Compute Bounding Box for a circle using WGS-84 parameters */
   public static GeoRect circleToBBox(final double centerLat, final double centerLon, final double radiusMeters) {
     final double radLat = TO_RADIANS * centerLat;
@@ -129,8 +105,8 @@ public final class GeoUtils {
 
   /** Compute Bounding Box for a polygon using WGS-84 parameters */
   public static GeoRect polyToBBox(double[] polyLats, double[] polyLons) {
-    if (polyLons.length != polyLats.length) {
-      throw new IllegalArgumentException("polyLons and polyLats must be equal length");
+    if (polyLats.length != polyLons.length) {
+      throw new IllegalArgumentException("polyLats and polyLons must be equal length");
     }
 
     double minLon = Double.POSITIVE_INFINITY;
@@ -139,16 +115,16 @@ public final class GeoUtils {
     double maxLat = Double.NEGATIVE_INFINITY;
 
     for (int i=0;i<polyLats.length;i++) {
-      if (GeoUtils.isValidLon(polyLons[i]) == false) {
-        throw new IllegalArgumentException("invalid polyLons[" + i + "]=" + polyLons[i]);
-      }
       if (GeoUtils.isValidLat(polyLats[i]) == false) {
         throw new IllegalArgumentException("invalid polyLats[" + i + "]=" + polyLats[i]);
       }
-      minLon = min(polyLons[i], minLon);
-      maxLon = max(polyLons[i], maxLon);
+      if (GeoUtils.isValidLon(polyLons[i]) == false) {
+        throw new IllegalArgumentException("invalid polyLons[" + i + "]=" + polyLons[i]);
+      }
       minLat = min(polyLats[i], minLat);
       maxLat = max(polyLats[i], maxLat);
+      minLon = min(polyLons[i], minLon);
+      maxLon = max(polyLons[i], maxLon);
     }
     // expand bounding box by TOLERANCE factor to handle round-off error
     return new GeoRect(max(minLat - TOLERANCE, MIN_LAT_INCL), min(maxLat + TOLERANCE, MAX_LAT_INCL),
