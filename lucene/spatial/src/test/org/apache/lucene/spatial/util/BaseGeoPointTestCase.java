@@ -466,7 +466,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       lon1 = x;
     }
 
-    return new GeoRect(lon0, lon1, lat0, lat1);
+    return new GeoRect(lat0, lat1, lon0, lon1);
   }
 
   protected void initIndexWriterConfig(String field, IndexWriterConfig iwc) {

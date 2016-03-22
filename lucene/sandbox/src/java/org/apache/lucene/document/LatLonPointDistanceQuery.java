@@ -75,7 +75,7 @@ final class LatLonPointDistanceQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    GeoRect box = GeoUtils.circleToBBox(longitude, latitude, radiusMeters);
+    GeoRect box = GeoUtils.circleToBBox(latitude, longitude, radiusMeters);
     // create bounding box(es) for the distance range
     // these are pre-encoded with LatLonPoint's encoding
     final byte minLat[] = new byte[Integer.BYTES];

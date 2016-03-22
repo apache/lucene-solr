@@ -34,7 +34,6 @@ import static org.apache.lucene.spatial.util.GeoProjectionUtils.MAX_LAT_RADIANS;
 import static org.apache.lucene.spatial.util.GeoProjectionUtils.MAX_LON_RADIANS;
 import static org.apache.lucene.spatial.util.GeoProjectionUtils.MIN_LAT_RADIANS;
 import static org.apache.lucene.spatial.util.GeoProjectionUtils.MIN_LON_RADIANS;
-import static org.apache.lucene.spatial.util.GeoProjectionUtils.pointFromLonLatBearingGreatCircle;
 import static org.apache.lucene.spatial.util.GeoProjectionUtils.SEMIMAJOR_AXIS;
 
 /**
@@ -93,42 +92,8 @@ public final class GeoUtils {
     return (off <= 180 ? off : 360-off) - 90;
   }
 
-  /**
-   * Converts a given circle (defined as a point/radius) to an approximated line-segment polygon
-   *
-   * @param lon          longitudinal center of circle (in degrees)
-   * @param lat          latitudinal center of circle (in degrees)
-   * @param radiusMeters distance radius of circle (in meters)
-   * @return a list of lon/lat points representing the circle
-   */
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public static ArrayList<double[]> circleToPoly(final double lon, final double lat, final double radiusMeters) {
-    double angle;
-    // a little under-sampling (to limit the number of polygonal points): using archimedes estimation of pi
-    final int sides = 25;
-    ArrayList<double[]> geometry = new ArrayList();
-    double[] lons = new double[sides];
-    double[] lats = new double[sides];
-
-    double[] pt = new double[2];
-    final int sidesLen = sides - 1;
-    for (int i = 0; i < sidesLen; ++i) {
-      angle = (i * 360 / sides);
-      pt = pointFromLonLatBearingGreatCircle(lon, lat, angle, radiusMeters, pt);
-      lons[i] = pt[0];
-      lats[i] = pt[1];
-    }
-    // close the poly
-    lons[sidesLen] = lons[0];
-    lats[sidesLen] = lats[0];
-    geometry.add(lons);
-    geometry.add(lats);
-
-    return geometry;
-  }
-
   /** Compute Bounding Box for a circle using WGS-84 parameters */
-  public static GeoRect circleToBBox(final double centerLon, final double centerLat, final double radiusMeters) {
+  public static GeoRect circleToBBox(final double centerLat, final double centerLon, final double radiusMeters) {
     final double radLat = TO_RADIANS * centerLat;
     final double radLon = TO_RADIANS * centerLon;
     double radDistance = radiusMeters / SEMIMAJOR_AXIS;
@@ -155,11 +120,11 @@ public final class GeoUtils {
       maxLon = MAX_LON_RADIANS;
     }
 
-    return new GeoRect(TO_DEGREES * minLon, TO_DEGREES * maxLon, TO_DEGREES * minLat, TO_DEGREES * maxLat);
+    return new GeoRect(TO_DEGREES * minLat, TO_DEGREES * maxLat, TO_DEGREES * minLon, TO_DEGREES * maxLon);
   }
 
   /** Compute Bounding Box for a polygon using WGS-84 parameters */
-  public static GeoRect polyToBBox(double[] polyLons, double[] polyLats) {
+  public static GeoRect polyToBBox(double[] polyLats, double[] polyLons) {
     if (polyLons.length != polyLats.length) {
       throw new IllegalArgumentException("polyLons and polyLats must be equal length");
     }
@@ -182,14 +147,14 @@ public final class GeoUtils {
       maxLat = max(polyLats[i], maxLat);
     }
     // expand bounding box by TOLERANCE factor to handle round-off error
-    return new GeoRect(max(minLon - TOLERANCE, MIN_LON_INCL), min(maxLon + TOLERANCE, MAX_LON_INCL),
-        max(minLat - TOLERANCE, MIN_LAT_INCL), min(maxLat + TOLERANCE, MAX_LAT_INCL));
+    return new GeoRect(max(minLat - TOLERANCE, MIN_LAT_INCL), min(maxLat + TOLERANCE, MAX_LAT_INCL),
+                       max(minLon - TOLERANCE, MIN_LON_INCL), min(maxLon + TOLERANCE, MAX_LON_INCL));
   }
   
-
   // some sloppyish stuff, do we really need this to be done in a sloppy way?
   // unless it is performance sensitive, we should try to remove.
   static final double PIO2 = Math.PI / 2D;
+
   /**
    * Returns the trigonometric sine of an angle converted as a cos operation.
    * <p>

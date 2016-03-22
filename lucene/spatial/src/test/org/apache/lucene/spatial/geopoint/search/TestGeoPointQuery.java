@@ -43,27 +43,27 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
 
   @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
-    doc.add(new GeoPointField(field, lon, lat, GeoPointField.PREFIX_TYPE_NOT_STORED));
+    doc.add(new GeoPointField(field, lat, lon, GeoPointField.PREFIX_TYPE_NOT_STORED));
   }
 
   @Override
   protected Query newRectQuery(String field, GeoRect rect) {
-    return new GeoPointInBBoxQuery(field, TermEncoding.PREFIX, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
+    return new GeoPointInBBoxQuery(field, TermEncoding.PREFIX, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
   }
 
   @Override
   protected Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters) {
-    return new GeoPointDistanceQuery(field, TermEncoding.PREFIX, centerLon, centerLat, radiusMeters);
+    return new GeoPointDistanceQuery(field, TermEncoding.PREFIX, centerLat, centerLon, radiusMeters);
   }
 
   @Override
   protected Query newDistanceRangeQuery(String field, double centerLat, double centerLon, double minRadiusMeters, double radiusMeters) {
-    return new GeoPointDistanceRangeQuery(field, TermEncoding.PREFIX, centerLon, centerLat, minRadiusMeters, radiusMeters);
+    return new GeoPointDistanceRangeQuery(field, TermEncoding.PREFIX, centerLat, centerLon, minRadiusMeters, radiusMeters);
   }
 
   @Override
   protected Query newPolygonQuery(String field, double[] lats, double[] lons) {
-    return new GeoPointInPolygonQuery(field, TermEncoding.PREFIX, lons, lats);
+    return new GeoPointInPolygonQuery(field, TermEncoding.PREFIX, lats, lons);
   }
 
   @Override
@@ -77,11 +77,11 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     }
 
     if (rect.minLon < rect.maxLon) {
-      return GeoRelationUtils.pointInRectPrecise(pointLon, pointLat, rect.minLon, rect.minLat, rect.maxLon, rect.maxLat);
+      return GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
     } else {
       // Rect crosses dateline:
-      return GeoRelationUtils.pointInRectPrecise(pointLon, pointLat, -180.0, rect.minLat, rect.maxLon, rect.maxLat)
-          || GeoRelationUtils.pointInRectPrecise(pointLon, pointLat, rect.minLon, rect.minLat, 180.0, rect.maxLat);
+      return GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, -180.0, rect.maxLon)
+        || GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, rect.minLon, 180.0);
     }
   }
 
@@ -112,10 +112,10 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
 
   private static boolean radiusQueryCanBeWrong(double centerLat, double centerLon, double ptLon, double ptLat,
                                                final double radius) {
-    final long hashedCntr = GeoEncodingUtils.mortonHash(centerLon, centerLat);
+    final long hashedCntr = GeoEncodingUtils.mortonHash(centerLat, centerLon);
     centerLon = GeoEncodingUtils.mortonUnhashLon(hashedCntr);
     centerLat = GeoEncodingUtils.mortonUnhashLat(hashedCntr);
-    final long hashedPt = GeoEncodingUtils.mortonHash(ptLon, ptLat);
+    final long hashedPt = GeoEncodingUtils.mortonHash(ptLat, ptLon);
     ptLon = GeoEncodingUtils.mortonUnhashLon(hashedPt);
     ptLat = GeoEncodingUtils.mortonUnhashLat(hashedPt);
 

@@ -140,7 +140,7 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointMultiTermQu
               int count = sdv.count();
               for (int i = 0; i < count; i++) {
                 long hash = sdv.valueAt(i);
-                if (termsEnum.postFilter(mortonUnhashLon(hash), mortonUnhashLat(hash))) {
+                if (termsEnum.postFilter(mortonUnhashLat(hash), mortonUnhashLon(hash))) {
                   return true;
                 }
               }

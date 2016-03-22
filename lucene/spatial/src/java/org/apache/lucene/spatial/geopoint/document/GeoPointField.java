@@ -127,39 +127,39 @@ public final class GeoPointField extends Field {
 
   /** Creates a stored or un-stored GeoPointField
    *  @param name field name
-   *  @param lon longitude double value [-180.0 : 180.0]
    *  @param lat latitude double value [-90.0 : 90.0]
+   *  @param lon longitude double value [-180.0 : 180.0]
    *  @param stored Store.YES if the content should also be stored
    *  @throws IllegalArgumentException if the field name is null.
    */
-  public GeoPointField(String name, double lon, double lat, Store stored) {
-    this(name, lon, lat, getFieldType(stored));
+  public GeoPointField(String name, double lat, double lon, Store stored) {
+    this(name, lat, lon, getFieldType(stored));
   }
 
   /** Creates a stored or un-stored GeoPointField using the specified {@link TermEncoding} method
    *  @param name field name
-   *  @param lon longitude double value [-180.0 : 180.0]
    *  @param lat latitude double value [-90.0 : 90.0]
+   *  @param lon longitude double value [-180.0 : 180.0]
    *  @param termEncoding encoding type to use ({@link TermEncoding#NUMERIC} Terms, or {@link TermEncoding#PREFIX} only Terms)
    *  @param stored Store.YES if the content should also be stored
    *  @throws IllegalArgumentException if the field name is null.
    */
   @Deprecated
-  public GeoPointField(String name, double lon, double lat, TermEncoding termEncoding, Store stored) {
-    this(name, lon, lat, getFieldType(termEncoding, stored));
+  public GeoPointField(String name, double lat, double lon, TermEncoding termEncoding, Store stored) {
+    this(name, lat, lon, getFieldType(termEncoding, stored));
   }
 
   /** Expert: allows you to customize the {@link
    *  FieldType}.
    *  @param name field name
-   *  @param lon longitude double value [-180.0 : 180.0]
    *  @param lat latitude double value [-90.0 : 90.0]
+   *  @param lon longitude double value [-180.0 : 180.0]
    *  @param type customized field type: must have {@link FieldType#numericType()}
    *         of {@link org.apache.lucene.document.FieldType.LegacyNumericType#LONG}.
    *  @throws IllegalArgumentException if the field name or type is null, or
    *          if the field type does not have a LONG numericType()
    */
-  public GeoPointField(String name, double lon, double lat, FieldType type) {
+  public GeoPointField(String name, double lat, double lon, FieldType type) {
     super(name, type);
 
     // field must be indexed
@@ -181,7 +181,7 @@ public final class GeoPointField extends Field {
     }
 
     // set field data
-    fieldsData = GeoEncodingUtils.mortonHash(lon, lat);
+    fieldsData = GeoEncodingUtils.mortonHash(lat, lon);
   }
 
   private static FieldType getFieldType(Store stored) {
@@ -226,14 +226,14 @@ public final class GeoPointField extends Field {
     return reuse;
   }
 
-  /** access longitude value */
-  public double getLon() {
-    return GeoEncodingUtils.mortonUnhashLon((long) fieldsData);
-  }
-
   /** access latitude value */
   public double getLat() {
     return GeoEncodingUtils.mortonUnhashLat((long) fieldsData);
+  }
+
+  /** access longitude value */
+  public double getLon() {
+    return GeoEncodingUtils.mortonUnhashLon((long) fieldsData);
   }
 
   @Override
@@ -242,9 +242,9 @@ public final class GeoPointField extends Field {
       return null;
     }
     StringBuilder sb = new StringBuilder();
-    sb.append(GeoEncodingUtils.mortonUnhashLon((long) fieldsData));
-    sb.append(',');
     sb.append(GeoEncodingUtils.mortonUnhashLat((long) fieldsData));
+    sb.append(',');
+    sb.append(GeoEncodingUtils.mortonUnhashLon((long) fieldsData));
     return sb.toString();
   }
 }
