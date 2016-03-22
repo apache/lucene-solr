@@ -1390,6 +1390,26 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
 
     daemonStream.open();
 
+    // Wait for the checkpoint
+    CloudJettyRunner jetty = this.cloudJettys.get(0);
+
+    Map params1 = new HashMap();
+    params1.put("qt","/get");
+    params1.put("ids","50000000");
+    params1.put("fl","id");
+    int count = 0;
+    while(count == 0) {
+      SolrStream solrStream = new SolrStream(jetty.url, params1);
+      List<Tuple> tuples = getTuples(solrStream);
+      count = tuples.size();
+      if(count > 0) {
+        Tuple t = tuples.get(0);
+        assertTrue(t.getLong("id") == 50000000);
+      } else {
+        System.out.println("###### Waiting for checkpoint #######:" + count);
+      }
+    }
+
     indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
     indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
     indexr(id, "3", "a_s", "hello0", "a_i", "3", "a_f", "3");
