@@ -563,4 +563,154 @@ public class TestGeoUtils extends LuceneTestCase {
       }
     }
   }
+
+  /** Returns random double min to max or up to 1% outside of that range */
+  private double randomRangeMaybeSlightlyOutside(double min, double max) {
+    return min + (random().nextDouble() + (0.5 - random().nextDouble()) * .02) * (max - min);
+  }
+
+  // We rely heavily on GeoUtils.circleToBBox so we test it here:
+  public void testRandomCircleToBBox() throws Exception {
+    int iters = atLeast(1000);
+    for(int iter=0;iter<iters;iter++) {
+
+      boolean useSmallRanges = random().nextBoolean();
+
+      double radiusMeters;
+
+      double centerLat = randomLat(useSmallRanges);
+      double centerLon = randomLon(useSmallRanges);
+
+      if (useSmallRanges) {
+        // Approx 4 degrees lon at the equator:
+        radiusMeters = random().nextDouble() * 444000;
+      } else {
+        radiusMeters = random().nextDouble() * 50000000;
+      }
+
+      // TODO: randomly quantize radius too, to provoke exact math errors?
+
+      GeoRect bbox = GeoUtils.circleToBBox(centerLon, centerLat, radiusMeters);
+
+      int numPointsToTry = 1000;
+      for(int i=0;i<numPointsToTry;i++) {
+
+        double lat;
+        double lon;
+
+        if (random().nextBoolean()) {
+          lat = randomLat(useSmallRanges);
+          lon = randomLon(useSmallRanges);
+        } else {
+          // pick a lat/lon within the bbox or "slightly" outside it to try to improve test efficiency
+          lat = GeoUtils.normalizeLat(randomRangeMaybeSlightlyOutside(bbox.minLat, bbox.maxLat));
+          if (bbox.crossesDateline()) {
+            if (random().nextBoolean()) {
+              lon = GeoUtils.normalizeLon(randomRangeMaybeSlightlyOutside(bbox.maxLon, -180));
+            } else {
+              lon = GeoUtils.normalizeLon(randomRangeMaybeSlightlyOutside(0, bbox.minLon));
+            }
+          } else {
+            lon = GeoUtils.normalizeLon(randomRangeMaybeSlightlyOutside(bbox.minLon, bbox.maxLon));
+          }
+        }
+
+        double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, lat, lon);
+
+        // Haversin says it's within the circle:
+        boolean haversinSays = distanceMeters <= radiusMeters;
+
+        // BBox says its within the box:
+        boolean bboxSays;
+        if (bbox.crossesDateline()) {
+          if (lat >= bbox.minLat && lat <= bbox.maxLat) {
+            bboxSays = lon <= bbox.maxLon || lon >= bbox.minLon;
+          } else {
+            bboxSays = false;
+          }
+        } else {
+          bboxSays = lat >= bbox.minLat && lat <= bbox.maxLat && lon >= bbox.minLon && lon <= bbox.maxLon;
+        }
+
+        if (haversinSays) {
+          if (bboxSays == false) {
+            System.out.println("small=" + useSmallRanges + " centerLat=" + centerLat + " cetnerLon=" + centerLon + " radiusMeters=" + radiusMeters);
+            System.out.println("  bbox: lat=" + bbox.minLat + " to " + bbox.maxLat + " lon=" + bbox.minLon + " to " + bbox.maxLon);
+            System.out.println("  point: lat=" + lat + " lon=" + lon);
+            System.out.println("  haversin: " + distanceMeters);
+            fail("point was within the distance according to haversin, but the bbox doesn't contain it");
+          }
+        } else {
+          // it's fine if haversin said it was outside the radius and bbox said it was inside the box
+        }
+      }
+    }
+  }
+  
+  // similar to testRandomCircleToBBox, but different, less evil, maybe simpler
+  public void testBoundingBoxOpto() {
+    for (int i = 0; i < 1000; i++) {
+      double lat = -90 + 180.0 * random().nextDouble();
+      double lon = -180 + 360.0 * random().nextDouble();
+      double radius = 50000000 * random().nextDouble();
+      GeoRect box = GeoUtils.circleToBBox(lon, lat, radius);
+      final GeoRect box1;
+      final GeoRect box2;
+      if (box.crossesDateline()) {
+        box1 = new GeoRect(-180, box.maxLon, box.minLat, box.maxLat);
+        box2 = new GeoRect(box.minLon, 180, box.minLat, box.maxLat);
+      } else {
+        box1 = box;
+        box2 = null;
+      }
+      
+      for (int j = 0; j < 10000; j++) {
+        double lat2 = -90 + 180.0 * random().nextDouble();
+        double lon2 = -180 + 360.0 * random().nextDouble();
+        // if the point is within radius, then it should be in our bounding box
+        if (SloppyMath.haversinMeters(lat, lon, lat2, lon2) <= radius) {
+          assertTrue(lat >= box.minLat && lat <= box.maxLat);
+          assertTrue(lon >= box1.minLon && lon <= box1.maxLon || (box2 != null && lon >= box2.minLon && lon <= box2.maxLon));
+        }
+      }
+    }
+  }
+
+  // test we can use haversinSortKey() for distance queries.
+  public void testHaversinOpto() {
+    for (int i = 0; i < 1000; i++) {
+      double lat = -90 + 180.0 * random().nextDouble();
+      double lon = -180 + 360.0 * random().nextDouble();
+      double radius = 50000000 * random().nextDouble();
+      GeoRect box = GeoUtils.circleToBBox(lon, lat, radius);
+
+      if (box.maxLon - lon < 90 && lon - box.minLon < 90) {
+        double minPartialDistance = Math.max(SloppyMath.haversinSortKey(lat, lon, lat, box.maxLon),
+                                             SloppyMath.haversinSortKey(lat, lon, box.maxLat, lon));
+      
+        for (int j = 0; j < 10000; j++) {
+          double lat2 = -90 + 180.0 * random().nextDouble();
+          double lon2 = -180 + 360.0 * random().nextDouble();
+          // if the point is within radius, then it should be <= our sort key
+          if (SloppyMath.haversinMeters(lat, lon, lat2, lon2) <= radius) {
+            assertTrue(SloppyMath.haversinSortKey(lat, lon, lat2, lon2) <= minPartialDistance);
+          }
+        }
+      }
+    }
+  }
+
+  /** Test infinite radius covers whole earth */
+  public void testInfiniteRect() {
+    for (int i = 0; i < 1000; i++) {
+      double centerLat = -90 + 180.0 * random().nextDouble();
+      double centerLon = -180 + 360.0 * random().nextDouble();
+      GeoRect rect = GeoUtils.circleToBBox(centerLat, centerLon, Double.POSITIVE_INFINITY);
+      assertEquals(-180.0, rect.minLon, 0.0D);
+      assertEquals(180.0, rect.maxLon, 0.0D);
+      assertEquals(-90.0, rect.minLat, 0.0D);
+      assertEquals(90.0, rect.maxLat, 0.0D);
+      assertFalse(rect.crossesDateline());
+    }
+  }
 }

@@ -34,8 +34,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
@@ -188,56 +186,5 @@ public class TestLatLonPointDistanceQuery extends LuceneTestCase {
     reader.close();
     writer.close();
     dir.close();
-  }
-  
-  public void testBoundingBoxOpto() {
-    for (int i = 0; i < 1000; i++) {
-      double lat = -90 + 180.0 * random().nextDouble();
-      double lon = -180 + 360.0 * random().nextDouble();
-      double radius = 50000000 * random().nextDouble();
-      GeoRect box = GeoUtils.circleToBBox(lon, lat, radius);
-      final GeoRect box1;
-      final GeoRect box2;
-      if (box.crossesDateline()) {
-        box1 = new GeoRect(-180, box.maxLon, box.minLat, box.maxLat);
-        box2 = new GeoRect(box.minLon, 180, box.minLat, box.maxLat);
-      } else {
-        box1 = box;
-        box2 = null;
-      }
-      
-      for (int j = 0; j < 10000; j++) {
-        double lat2 = -90 + 180.0 * random().nextDouble();
-        double lon2 = -180 + 360.0 * random().nextDouble();
-        // if the point is within radius, then it should be in our bounding box
-        if (SloppyMath.haversinMeters(lat, lon, lat2, lon2) <= radius) {
-          assertTrue(lat >= box.minLat && lat <= box.maxLat);
-          assertTrue(lon >= box1.minLon && lon <= box1.maxLon || (box2 != null && lon >= box2.minLon && lon <= box2.maxLon));
-        }
-      }
-    }
-  }
-  
-  public void testHaversinOpto() {
-    for (int i = 0; i < 1000; i++) {
-      double lat = -90 + 180.0 * random().nextDouble();
-      double lon = -180 + 360.0 * random().nextDouble();
-      double radius = 50000000 * random().nextDouble();
-      GeoRect box = GeoUtils.circleToBBox(lon, lat, radius);
-
-      if (box.maxLon - lon < 90 && lon - box.minLon < 90) {
-        double minPartialDistance = Math.max(SloppyMath.haversinSortKey(lat, lon, lat, box.maxLon),
-                                             SloppyMath.haversinSortKey(lat, lon, box.maxLat, lon));
-      
-        for (int j = 0; j < 10000; j++) {
-          double lat2 = -90 + 180.0 * random().nextDouble();
-          double lon2 = -180 + 360.0 * random().nextDouble();
-          // if the point is within radius, then it should be <= our sort key
-          if (SloppyMath.haversinMeters(lat, lon, lat2, lon2) <= radius) {
-            assertTrue(SloppyMath.haversinSortKey(lat, lon, lat2, lon2) <= minPartialDistance);
-          }
-        }
-      }
-    }
   }
 }
