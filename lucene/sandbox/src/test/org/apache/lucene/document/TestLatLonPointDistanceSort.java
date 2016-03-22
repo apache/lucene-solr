@@ -27,8 +27,6 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
@@ -251,19 +249,5 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     reader.close();
     writer.close();
     dir.close();
-  }
-  
-  /** Test infinite radius covers whole earth */
-  public void testInfiniteRect() {
-    for (int i = 0; i < 100000; i++) {
-      double centerLat = -90 + 180.0 * random().nextDouble();
-      double centerLon = -180 + 360.0 * random().nextDouble();
-      GeoRect rect = GeoUtils.circleToBBox(centerLat, centerLon, Double.POSITIVE_INFINITY);
-      assertEquals(-180.0, rect.minLon, 0.0D);
-      assertEquals(180.0, rect.maxLon, 0.0D);
-      assertEquals(-90.0, rect.minLat, 0.0D);
-      assertEquals(90.0, rect.maxLat, 0.0D);
-      assertFalse(rect.crossesDateline());
-    }
   }
 }
