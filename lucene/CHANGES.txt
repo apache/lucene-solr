@@ -32,6 +32,10 @@ Optimizations
 * LUCENE-7115: Speed up FieldCache.CacheEntry toString by setting initial
   StringBuilder capacity (Gregory Chanan)
 
+Bug Fixes
+
+* LUCENE-7127: Fix corner case bugs in GeoPointDistanceQuery. (Robert Muir)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements

@@ -21,6 +21,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -28,9 +29,16 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.PointsFormat;
+import org.apache.lucene.codecs.PointsReader;
+import org.apache.lucene.codecs.PointsWriter;
+import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
+import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -39,16 +47,22 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.bkd.BKDWriter;
 import org.junit.BeforeClass;
 
 // TODO: cutover TestGeoUtils too?
@@ -72,17 +86,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     originLat = GeoUtils.normalizeLat(GeoUtils.MIN_LAT_INCL + latRange + (GeoUtils.MAX_LAT_INCL - GeoUtils.MIN_LAT_INCL - 2 * latRange) * random().nextDouble());
   }
 
-  /** Return true when testing on a non-small region may be too slow (GeoPoint*Query) */
-  protected boolean forceSmall() {
-    return false;
-  }
-
   // A particularly tricky adversary for BKD tree:
   public void testSamePointManyTimes() throws Exception {
-
-    // For GeoPointQuery, only run this test nightly:
-    assumeTrue("GeoPoint*Query is too slow otherwise", TEST_NIGHTLY || forceSmall() == false);
-
     int numPoints = atLeast(1000);
     boolean small = random().nextBoolean();
 
@@ -100,12 +105,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   }
 
   public void testAllLatEqual() throws Exception {
-
-    // For GeoPointQuery, only run this test nightly:
-    assumeTrue("GeoPoint*Query is too slow otherwise", TEST_NIGHTLY || forceSmall() == false);
-
     int numPoints = atLeast(10000);
-    boolean small = forceSmall() || random().nextBoolean();
+    boolean small = random().nextBoolean();
     double lat = randomLat(small);
     double[] lats = new double[numPoints];
     double[] lons = new double[numPoints];
@@ -151,12 +152,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   }
 
   public void testAllLonEqual() throws Exception {
-
-    // For GeoPointQuery, only run this test nightly:
-    assumeTrue("GeoPoint*Query is too slow otherwise", TEST_NIGHTLY || forceSmall() == false);
-
     int numPoints = atLeast(10000);
-    boolean small = forceSmall() || random().nextBoolean();
+    boolean small = random().nextBoolean();
     double theLon = randomLon(small);
     double[] lats = new double[numPoints];
     double[] lons = new double[numPoints];
@@ -204,10 +201,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   }
 
   public void testMultiValued() throws Exception {
-
-    // For GeoPointQuery, only run this test nightly:
-    assumeTrue("GeoPoint*Query is too slow otherwise", TEST_NIGHTLY || forceSmall() == false);
-
     int numPoints = atLeast(10000);
     // Every doc has 2 points:
     double[] lats = new double[2*numPoints];
@@ -289,19 +282,10 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         double latDoc2 = lats[2*docID+1];
         double lonDoc2 = lons[2*docID+1];
         
-        Boolean result1 = rectContainsPoint(rect, latDoc1, lonDoc1);
-        if (result1 == null) {
-          // borderline case: cannot test
-          continue;
-        }
+        boolean result1 = rectContainsPoint(rect, latDoc1, lonDoc1);
+        boolean result2 = rectContainsPoint(rect, latDoc2, lonDoc2);
 
-        Boolean result2 = rectContainsPoint(rect, latDoc2, lonDoc2);
-        if (result2 == null) {
-          // borderline case: cannot test
-          continue;
-        }
-
-        boolean expected = result1 == Boolean.TRUE || result2 == Boolean.TRUE;
+        boolean expected = result1 || result2;
 
         if (hits.get(docID) != expected) {
           String id = s.doc(docID).get("id");
@@ -447,6 +431,10 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   protected double quantizeLon(double lon) {
     return lon;
   }
+  
+  protected double maxRadius(double latitude, double longitude) {
+    return 50000000D; // bigger than earth, shouldnt matter
+  }
 
   protected GeoRect randomRect(boolean small, boolean canCrossDateLine) {
     double lat0 = randomLat(small);
@@ -482,16 +470,44 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected abstract Query newPolygonQuery(String field, double[] lats, double[] lons);
 
-  /** Returns null if it's borderline case */
-  protected abstract Boolean rectContainsPoint(GeoRect rect, double pointLat, double pointLon);
+  static final boolean rectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
+    assert Double.isNaN(pointLat) == false;
 
-  /** Returns null if it's borderline case */
-  protected abstract Boolean polyRectContainsPoint(GeoRect rect, double pointLat, double pointLon);
+    if (rect.minLon < rect.maxLon) {
+      return GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+    } else {
+      // Rect crosses dateline:
+      return GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, -180.0, rect.maxLon)
+        || GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, rect.minLon, 180.0);
+    }
+  }
+  
+  static final boolean polyRectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
+    // TODO write better random polygon tests
+    
+    // note: logic must be slightly different than rectContainsPoint, to satisfy
+    // insideness for cases exactly on boundaries.
+    
+    assert Double.isNaN(pointLat) == false;
+    assert rect.crossesDateline() == false;
+    double polyLats[] = new double[] { rect.minLat, rect.maxLat, rect.maxLat, rect.minLat, rect.minLat };
+    double polyLons[] = new double[] { rect.minLon, rect.minLon, rect.maxLon, rect.maxLon, rect.minLon };
 
-  /** Returns null if it's borderline case */
-  protected abstract Boolean circleContainsPoint(double centerLat, double centerLon, double radiusMeters, double pointLat, double pointLon);
+    // TODO: separately test this method is 100% correct, here treat it like a black box (like haversin)
+    return GeoRelationUtils.pointInPolygon(polyLats, polyLons, pointLat, pointLon);
+  }
 
-  protected abstract Boolean distanceRangeContainsPoint(double centerLat, double centerLon, double minRadiusMeters, double radiusMeters, double pointLat, double pointLon);
+  static final boolean circleContainsPoint(double centerLat, double centerLon, double radiusMeters, double pointLat, double pointLon) {
+    double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
+    boolean result = distanceMeters <= radiusMeters;
+    //System.out.println("  shouldMatch?  centerLon=" + centerLon + " centerLat=" + centerLat + " pointLon=" + pointLon + " pointLat=" + pointLat + " result=" + result + " distanceMeters=" + (distanceKM * 1000));
+    return result;
+  }
+
+  static final boolean distanceRangeContainsPoint(double centerLat, double centerLon, double minRadiusMeters, double radiusMeters, double pointLat, double pointLon) {
+    final double d = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
+    return d >= minRadiusMeters && d <= radiusMeters;
+  }
 
   private static abstract class VerifyHits {
 
@@ -525,7 +541,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
       for(int docID=0;docID<maxDoc;docID++) {
         int id = (int) docIDToID.get(docID);
-        Boolean expected;
+        boolean expected;
         if (deleted.contains(id)) {
           expected = false;
         } else if (Double.isNaN(lats[id])) {
@@ -534,8 +550,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           expected = shouldMatch(lats[id], lons[id]);
         }
 
-        // null means it's a borderline case which is allowed to be wrong:
-        if (expected != null && hits.get(docID) != expected) {
+        if (hits.get(docID) != expected) {
 
           // Print only one failed hit; add a true || in here to see all failures:
           if (failFast == false || failed.getAndSet(true) == false) {
@@ -568,7 +583,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     /** Return true if we definitely should match, false if we definitely
      *  should not match, and null if it's a borderline case which might
      *  go either way. */
-    protected abstract Boolean shouldMatch(double lat, double lon);
+    protected abstract boolean shouldMatch(double lat, double lon);
 
     protected abstract void describe(int docID, double lat, double lon);
   }
@@ -666,7 +681,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
                 verifyHits = new VerifyHits() {
                     @Override
-                    protected Boolean shouldMatch(double pointLat, double pointLon) {
+                    protected boolean shouldMatch(double pointLat, double pointLon) {
                       return rectContainsPoint(rect, pointLat, pointLon);
                     }
                     @Override
@@ -688,7 +703,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
                   radiusMeters = random().nextDouble() * 333000 + 1.0;
                 } else {
                   // So the query can cover at most 50% of the earth's surface:
-                  radiusMeters = random().nextDouble() * GeoProjectionUtils.SEMIMAJOR_AXIS * Math.PI / 2.0 + 1.0;
+                  radiusMeters = random().nextDouble() * GeoUtils.SEMIMAJOR_AXIS * Math.PI / 2.0 + 1.0;
                 }
 
                 // generate a random minimum radius between 1% and 95% the max radius
@@ -715,7 +730,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
                 verifyHits = new VerifyHits() {
                     @Override
-                    protected Boolean shouldMatch(double pointLat, double pointLon) {
+                    protected boolean shouldMatch(double pointLat, double pointLon) {
                       if (rangeQuery == false) {
                         return circleContainsPoint(centerLat, centerLon, radiusMeters, pointLat, pointLon);
                       } else {
@@ -755,7 +770,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
                 verifyHits = new VerifyHits() {
                     @Override
-                    protected Boolean shouldMatch(double pointLat, double pointLon) {
+                    protected boolean shouldMatch(double pointLat, double pointLon) {
                       return polyRectContainsPoint(bbox, pointLat, pointLon);
                     }
 
@@ -832,6 +847,97 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect)));
     r.close();
     w.close();
+    dir.close();
+  }
+  
+  /** Run a few iterations with just 10 docs, hopefully easy to debug */
+  public void testRandomDistance() throws Exception {
+    for (int iters = 0; iters < 100; iters++) {
+      doRandomDistanceTest(10, 100);
+    }
+  }
+    
+  /** Runs with thousands of docs */
+  @Nightly
+  public void testRandomDistanceHuge() throws Exception {
+    for (int iters = 0; iters < 10; iters++) {
+      doRandomDistanceTest(2000, 100);
+    }
+  }
+    
+  private void doRandomDistanceTest(int numDocs, int numQueries) throws IOException {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    int pointsInLeaf = 2 + random().nextInt(4);
+    iwc.setCodec(new FilterCodec("Lucene60", TestUtil.getDefaultCodec()) {
+      @Override
+      public PointsFormat pointsFormat() {
+        return new PointsFormat() {
+          @Override
+          public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
+            return new Lucene60PointsWriter(writeState, pointsInLeaf, BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP);
+          }
+  
+          @Override
+          public PointsReader fieldsReader(SegmentReadState readState) throws IOException {
+            return new Lucene60PointsReader(readState);
+          }
+        };
+      }
+    });
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
+  
+    for (int i = 0; i < numDocs; i++) {
+      double latRaw = -90 + 180.0 * random().nextDouble();
+      double lonRaw = -180 + 360.0 * random().nextDouble();
+      // pre-normalize up front, so we can just use quantized value for testing and do simple exact comparisons
+      double lat = quantizeLat(latRaw);
+      double lon = quantizeLon(lonRaw);
+      Document doc = new Document();
+      addPointToDoc("field", doc, lat, lon);
+      doc.add(new StoredField("lat", lat));
+      doc.add(new StoredField("lon", lon));
+      writer.addDocument(doc);
+    }
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+  
+    for (int i = 0; i < numQueries; i++) {
+      double lat = -90 + 180.0 * random().nextDouble();
+      double lon = -180 + 360.0 * random().nextDouble();
+      double radius = maxRadius(lat, lon) * random().nextDouble();
+  
+      BitSet expected = new BitSet();
+      for (int doc = 0; doc < reader.maxDoc(); doc++) {
+        double docLatitude = reader.document(doc).getField("lat").numericValue().doubleValue();
+        double docLongitude = reader.document(doc).getField("lon").numericValue().doubleValue();
+        double distance = SloppyMath.haversinMeters(lat, lon, docLatitude, docLongitude);
+        if (distance <= radius) {
+          expected.set(doc);
+        }
+      }
+  
+      TopDocs topDocs = searcher.search(newDistanceQuery("field", lat, lon, radius), reader.maxDoc(), Sort.INDEXORDER);
+      BitSet actual = new BitSet();
+      for (ScoreDoc doc : topDocs.scoreDocs) {
+        actual.set(doc.doc);
+      }
+      
+      try {
+        assertEquals(expected, actual);
+      } catch (AssertionError e) {
+        System.out.println("center: (" + lat + "," + lon + "), radius=" + radius);
+        for (int doc = 0; doc < reader.maxDoc(); doc++) {
+          double docLatitude = reader.document(doc).getField("lat").numericValue().doubleValue();
+          double docLongitude = reader.document(doc).getField("lon").numericValue().doubleValue();
+          double distance = SloppyMath.haversinMeters(lat, lon, docLatitude, docLongitude);
+          System.out.println("" + doc + ": (" + docLatitude + "," + docLongitude + "), distance=" + distance);
+        }
+        throw e;
+      }
+    }
+    reader.close();
+    writer.close();
     dir.close();
   }
 }
