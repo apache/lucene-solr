@@ -33,6 +33,7 @@ import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.LegacyLongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
@@ -121,11 +122,46 @@ public class TrieField extends PrimitiveFieldType {
   public Object toObject(IndexableField f) {
     final Number val = f.numericValue();
     if (val != null) {
+
+      if (f.fieldType().stored() == false && f.fieldType().docValuesType() == DocValuesType.NUMERIC ) {
+        long bits = val.longValue();
+        switch (type) {
+          case INTEGER:
+            return (int)bits;
+          case FLOAT:
+            return Float.intBitsToFloat((int)bits);
+          case LONG:
+            return bits;
+          case DOUBLE:
+            return Double.longBitsToDouble(bits);
+          case DATE:
+            return new Date(bits);
+          default:
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
+        }
+      }
+
+      // normal stored case
       return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
     } else {
-      // the old BinaryField encoding is no longer supported
-      return badFieldString(f);
+      // multi-valued numeric docValues currently use SortedSet on the indexed terms.
+      BytesRef term = f.binaryValue();
+      switch (type) {
+        case INTEGER:
+          return LegacyNumericUtils.prefixCodedToInt(term);
+        case FLOAT:
+          return NumericUtils.sortableIntToFloat(LegacyNumericUtils.prefixCodedToInt(term));
+        case LONG:
+          return LegacyNumericUtils.prefixCodedToLong(term);
+        case DOUBLE:
+          return NumericUtils.sortableLongToDouble(LegacyNumericUtils.prefixCodedToLong(term));
+        case DATE:
+          return new Date(LegacyNumericUtils.prefixCodedToLong(term));
+        default:
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
+      }
     }
+
   }
 
   @Override
