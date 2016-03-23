@@ -1896,11 +1896,14 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testPointRangeEquals() {
-    Query q1 = IntPoint.newRangeQuery("a", 0, 1000);
-    Query q2 = IntPoint.newRangeQuery("a", 0, 1000);
+    Query q1, q2;
+
+    q1 = IntPoint.newRangeQuery("a", 0, 1000);
+    q2 = IntPoint.newRangeQuery("a", 0, 1000);
     assertEquals(q1, q2);
     assertEquals(q1.hashCode(), q2.hashCode());
     assertFalse(q1.equals(IntPoint.newRangeQuery("a", 1, 1000)));
+    assertFalse(q1.equals(IntPoint.newRangeQuery("b", 0, 1000)));
 
     q1 = LongPoint.newRangeQuery("a", 0, 1000);
     q2 = LongPoint.newRangeQuery("a", 0, 1000);
@@ -1933,11 +1936,14 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testPointExactEquals() {
-    Query q1 = IntPoint.newExactQuery("a", 1000);
-    Query q2 = IntPoint.newExactQuery("a", 1000);
+    Query q1, q2;
+
+    q1 = IntPoint.newExactQuery("a", 1000);
+    q2 = IntPoint.newExactQuery("a", 1000);
     assertEquals(q1, q2);
     assertEquals(q1.hashCode(), q2.hashCode());
     assertFalse(q1.equals(IntPoint.newExactQuery("a", 1)));
+    assertFalse(q1.equals(IntPoint.newExactQuery("b", 1000)));
 
     q1 = LongPoint.newExactQuery("a", 1000);
     q2 = LongPoint.newExactQuery("a", 1000);
@@ -1969,11 +1975,13 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testPointInSetEquals() {
-    Query q1 = IntPoint.newSetQuery("a", 0, 1000, 17);
-    Query q2 = IntPoint.newSetQuery("a", 17, 0, 1000);
+    Query q1, q2;
+    q1 = IntPoint.newSetQuery("a", 0, 1000, 17);
+    q2 = IntPoint.newSetQuery("a", 17, 0, 1000);
     assertEquals(q1, q2);
     assertEquals(q1.hashCode(), q2.hashCode());
     assertFalse(q1.equals(IntPoint.newSetQuery("a", 1, 17, 1000)));
+    assertFalse(q1.equals(IntPoint.newSetQuery("b", 0, 1000, 17)));
 
     q1 = LongPoint.newSetQuery("a", 0, 1000, 17);
     q2 = LongPoint.newSetQuery("a", 17, 0, 1000);

@@ -187,6 +187,9 @@ final class PointInGeo3DShapeQuery extends Query {
     if (!super.equals(o)) return false;
 
     PointInGeo3DShapeQuery that = (PointInGeo3DShapeQuery) o;
+    if (field.equals(that.field) == false) {
+      return false;
+    }
 
     return shape.equals(that.shape);
   }
@@ -194,6 +197,7 @@ final class PointInGeo3DShapeQuery extends Query {
   @Override
   public int hashCode() {
     int result = super.hashCode();
+    result = 31 * result + field.hashCode();
     result = 31 * result + shape.hashCode();
     return result;
   }

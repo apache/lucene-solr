@@ -971,4 +971,47 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     writer.close();
     dir.close();
   }
+
+  public void testEquals() throws Exception {   
+    Query q1, q2;
+
+    GeoRect rect = randomRect(false, true);
+
+    q1 = newRectQuery("field", rect);
+    q2 = newRectQuery("field", rect);
+    assertEquals(q1, q2);
+    assertFalse(q1.equals(newRectQuery("field2", rect)));
+
+    double lat = randomLat(false);
+    double lon = randomLon(false);
+    q1 = newDistanceQuery("field", lat, lon, 10000.0);
+    q2 = newDistanceQuery("field", lat, lon, 10000.0);
+    assertEquals(q1, q2);
+    assertFalse(q1.equals(newDistanceQuery("field2", lat, lon, 10000.0)));
+
+    q1 = newDistanceRangeQuery("field", lat, lon, 10000.0, 100000.0);
+    if (q1 != null) {
+      // Not all subclasses can make distance range query!
+      q2 = newDistanceRangeQuery("field", lat, lon, 10000.0, 100000.0);
+      assertEquals(q1, q2);
+      assertFalse(q1.equals(newDistanceRangeQuery("field2", lat, lon, 10000.0, 100000.0)));
+    }
+
+    double[] lats = new double[5];
+    double[] lons = new double[5];
+    lats[0] = rect.minLat;
+    lons[0] = rect.minLon;
+    lats[1] = rect.maxLat;
+    lons[1] = rect.minLon;
+    lats[2] = rect.maxLat;
+    lons[2] = rect.maxLon;
+    lats[3] = rect.minLat;
+    lons[3] = rect.maxLon;
+    lats[4] = rect.minLat;
+    lons[4] = rect.minLon;
+    q1 = newPolygonQuery("field", lats, lons);
+    q2 = newPolygonQuery("field", lats, lons);
+    assertEquals(q1, q2);
+    assertFalse(q1.equals(newPolygonQuery("field2", lats, lons)));
+  }
 }
