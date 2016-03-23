@@ -295,7 +295,7 @@ final class LatLonPointDistanceQuery extends Query {
     if (!super.equals(obj)) return false;
     if (getClass() != obj.getClass()) return false;
     LatLonPointDistanceQuery other = (LatLonPointDistanceQuery) obj;
-    if (!field.equals(other.field)) return false;
+    if (field.equals(other.field) == false) return false;
     if (Double.doubleToLongBits(latitude) != Double.doubleToLongBits(other.latitude)) return false;
     if (Double.doubleToLongBits(longitude) != Double.doubleToLongBits(other.longitude)) return false;
     if (Double.doubleToLongBits(radiusMeters) != Double.doubleToLongBits(other.radiusMeters)) return false;

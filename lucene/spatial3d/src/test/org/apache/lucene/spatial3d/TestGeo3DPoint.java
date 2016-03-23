@@ -812,6 +812,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     GeoShape shape = randomShape(PlanetModel.WGS84);
     Query q = Geo3DPoint.newShapeQuery("point", shape);
     assertEquals(q, Geo3DPoint.newShapeQuery("point", shape));
+    assertFalse(q.equals(Geo3DPoint.newShapeQuery("point2", shape)));
     
     // make a different random shape:
     GeoShape shape2;

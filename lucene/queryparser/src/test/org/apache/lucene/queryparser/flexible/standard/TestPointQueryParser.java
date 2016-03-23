@@ -75,7 +75,7 @@ public class TestPointQueryParser extends LuceneTestCase {
     
     assertEquals(DoublePoint.newRangeQuery("doubleField", 1.5D, 3.6D),
                  parser.parse("doubleField:[1.5 TO 3.6]", "body"));
-    assertEquals(DoublePoint.newRangeQuery("floatField", 1.5D, 1.5D),
+    assertEquals(DoublePoint.newRangeQuery("doubleField", 1.5D, 1.5D),
                  parser.parse("doubleField:1.5", "body"));
   }
 
