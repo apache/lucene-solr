@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -36,7 +35,6 @@ import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -80,7 +78,6 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
   public void distribSetUp() throws Exception {
     super.distribSetUp();
   }
-
 
   @Override
   @After
@@ -444,9 +441,9 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
       con.setCatalog(zkServer.getZkAddress());
       assertEquals(zkServer.getZkAddress(), con.getCatalog());
 
-      assertEquals(collection, con.getSchema());
-      con.setSchema(collection);
-      assertEquals(collection, con.getSchema());
+      assertEquals(null, con.getSchema());
+      con.setSchema("myschema");
+      assertEquals(null, con.getSchema());
 
       DatabaseMetaData databaseMetaData = con.getMetaData();
       assertNotNull(databaseMetaData);
@@ -478,11 +475,19 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
       List<String> collections = new ArrayList<>();
       collections.addAll(cloudClient.getZkStateReader().getClusterState().getCollections());
       Collections.sort(collections);
+
       try(ResultSet rs = databaseMetaData.getSchemas()) {
+        assertFalse(rs.next());
+      }
+
+      try(ResultSet rs = databaseMetaData.getTables(zkServer.getZkAddress(), null, "%", null)) {
         for(String acollection : collections) {
           assertTrue(rs.next());
-          assertEquals(acollection, rs.getString("TABLE_SCHEM"));
-          assertEquals(zkServer.getZkAddress(), rs.getString("TABLE_CATALOG"));
+          assertEquals(zkServer.getZkAddress(), rs.getString("TABLE_CAT"));
+          assertNull(rs.getString("TABLE_SCHEM"));
+          assertEquals(acollection, rs.getString("TABLE_NAME"));
+          assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+          assertNull(rs.getString("REMARKS"));
         }
         assertFalse(rs.next());
       }

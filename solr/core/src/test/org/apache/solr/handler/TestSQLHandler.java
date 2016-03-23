@@ -18,6 +18,7 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestSQLHandler extends AbstractFullDistribZkTestBase {
@@ -99,6 +99,9 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     testParallelBasicGrouping();
     testParallelSelectDistinct();
     testParallelTimeSeriesGrouping();
+    testCatalogStream();
+    testSchemasStream();
+    testTablesStream();
   }
 
   private void testPredicate() throws Exception {
@@ -2415,6 +2418,74 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
     } finally {
       delete();
+    }
+  }
+
+  private void testCatalogStream() throws Exception {
+    CloudJettyRunner jetty = this.cloudJettys.get(0);
+
+    Map<String, Object> params = new HashMap<>();
+    params.put(CommonParams.QT, "/sql");
+    params.put("numWorkers", 2);
+    params.put("stmt", "select TABLE_CAT from _CATALOGS_");
+
+    SolrStream solrStream = new SolrStream(jetty.url, params);
+    List<Tuple> tuples = getTuples(solrStream);
+
+    assertEquals(tuples.size(), 1);
+    assertEquals(tuples.get(0).getString("TABLE_CAT"), zkServer.getZkAddress());
+  }
+
+  private void testSchemasStream() throws Exception {
+    CloudJettyRunner jetty = this.cloudJettys.get(0);
+
+    Map<String, Object> params = new HashMap<>();
+    params.put(CommonParams.QT, "/sql");
+    params.put("numWorkers", 2);
+    params.put("stmt", "select TABLE_SCHEM, TABLE_CATALOG from _SCHEMAS_");
+
+    SolrStream solrStream = new SolrStream(jetty.url, params);
+    List<Tuple> tuples = getTuples(solrStream);
+
+    assertEquals(tuples.size(), 0);
+  }
+
+  private void testTablesStream() throws Exception {
+    CloudJettyRunner jetty = this.cloudJettys.get(0);
+
+    Map<String, Object> params = new HashMap<>();
+    params.put(CommonParams.QT, "/sql");
+    params.put("numWorkers", 2);
+    params.put("stmt", "select TABLE_CAT, TABLE_SCHEM, TABLE_NAME, TABLE_TYPE, REMARKS from _TABLES_");
+
+    SolrStream solrStream = new SolrStream(jetty.url, params);
+    List<Tuple> tuples = getTuples(solrStream);
+
+    assertEquals(2, tuples.size());
+
+    List<String> collections = new ArrayList<>();
+    collections.addAll(cloudClient.getZkStateReader().getClusterState().getCollections());
+    Collections.sort(collections);
+    for (Tuple tuple : tuples) {
+      assertEquals(zkServer.getZkAddress(), tuple.getString("TABLE_CAT"));
+      assertNull(tuple.get("TABLE_SCHEM"));
+      assertTrue(collections.contains(tuple.getString("TABLE_NAME")));
+      assertEquals("TABLE", tuple.getString("TABLE_TYPE"));
+      assertNull(tuple.get("REMARKS"));
+    }
+
+    tuples = getTuples(solrStream);
+    assertEquals(2, tuples.size());
+
+    collections = new ArrayList<>();
+    collections.addAll(cloudClient.getZkStateReader().getClusterState().getCollections());
+    Collections.sort(collections);
+    for (Tuple tuple : tuples) {
+      assertEquals(zkServer.getZkAddress(), tuple.getString("TABLE_CAT"));
+      assertNull(tuple.get("TABLE_SCHEM"));
+      assertTrue(collections.contains(tuple.getString("TABLE_NAME")));
+      assertEquals("TABLE", tuple.getString("TABLE_TYPE"));
+      assertNull(tuple.get("REMARKS"));
     }
   }
 
