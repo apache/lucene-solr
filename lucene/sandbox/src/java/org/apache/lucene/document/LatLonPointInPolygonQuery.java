@@ -213,6 +213,9 @@ final class LatLonPointInPolygonQuery extends Query {
 
     LatLonPointInPolygonQuery that = (LatLonPointInPolygonQuery) o;
 
+    if (field.equals(that.field) == false) {
+      return false;
+    }
     if (Arrays.equals(polyLons, that.polyLons) == false) {
       return false;
     }
@@ -224,8 +227,9 @@ final class LatLonPointInPolygonQuery extends Query {
   }
 
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     int result = super.hashCode();
+    result = 31 * result + field.hashCode();
     result = 31 * result + Arrays.hashCode(polyLons);
     result = 31 * result + Arrays.hashCode(polyLats);
     return result;

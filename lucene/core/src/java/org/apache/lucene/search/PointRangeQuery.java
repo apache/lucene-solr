@@ -219,6 +219,7 @@ public abstract class PointRangeQuery extends Query {
   @Override
   public final int hashCode() {
     int hash = super.hashCode();
+    hash = 31 * hash + field.hashCode();
     hash = 31 * hash + Arrays.hashCode(lowerPoint);
     hash = 31 * hash + Arrays.hashCode(upperPoint);
     hash = 31 * hash + numDims;
@@ -233,6 +234,10 @@ public abstract class PointRangeQuery extends Query {
     }
 
     final PointRangeQuery q = (PointRangeQuery) other;
+    if (field.equals(q.field) == false) {
+      return false;
+    }
+
     if (q.numDims != numDims) {
       return false;
     }
@@ -241,11 +246,11 @@ public abstract class PointRangeQuery extends Query {
       return false;
     }
 
-    if (!Arrays.equals(lowerPoint, q.lowerPoint)) {
+    if (Arrays.equals(lowerPoint, q.lowerPoint) == false) {
       return false;
     }
     
-    if (!Arrays.equals(upperPoint, q.upperPoint)) {
+    if (Arrays.equals(upperPoint, q.upperPoint) == false) {
       return false;
     }
 
