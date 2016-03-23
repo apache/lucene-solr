@@ -16,13 +16,14 @@
  */
 package org.apache.lucene.spatial.geopoint.document;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.spatial.util.GeoEncodingUtils;
+import org.apache.lucene.spatial.util.GeoUtils;
 
 /**
  * <p>
@@ -161,6 +162,14 @@ public final class GeoPointField extends Field {
    */
   public GeoPointField(String name, double lat, double lon, FieldType type) {
     super(name, type);
+
+    if (GeoUtils.isValidLat(lat) == false) {
+      throw new IllegalArgumentException("invalid lat=" + lat + " for field \"" + name + "\"");
+    }
+
+    if (GeoUtils.isValidLon(lon) == false) {
+      throw new IllegalArgumentException("invalid lon=" + lon + " for field \"" + name + "\"");
+    }
 
     // field must be indexed
     // todo does it make sense here to provide the ability to store a GeoPointField but not index?

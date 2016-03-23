@@ -237,4 +237,19 @@ public class TestGeoPointField extends LuceneTestCase {
     TopDocs td = geoDistanceRangeQuery(0.0, 0.0, 10, 20000000, 20);
     assertEquals("GeoDistanceRangeQuery failed", 24, td.totalHits);
   }
+
+  public void testInvalidLatLon() throws Exception {
+    IllegalArgumentException e;
+    e= expectThrows(IllegalArgumentException.class,
+                    () -> {
+                      new GeoPointField("field", 180.0, 0.0, Field.Store.NO);
+                    });
+    assertEquals("invalid lat=180.0 for field \"field\"", e.getMessage());
+
+    e = expectThrows(IllegalArgumentException.class,
+                     () -> {
+                       new GeoPointField("field", 0.0, 190.0, Field.Store.NO);
+                     });
+    assertEquals("invalid lon=190.0 for field \"field\"", e.getMessage());
+  }
 }
