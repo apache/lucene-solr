@@ -495,6 +495,9 @@ Other Changes
 * SOLR-8819: Implement DatabaseMetaDataImpl getTables() and fix getSchemas(). (Trey Cahill,
   Joel Bernstein, Kevin Risden)
 
+* SOLR-8810: Implement Connection.setReadOnly, Statement.set/getFetchSize, 
+  ResultSet.getType (Kevin Risden)
+
 ==================  5.5.1 ==================
 
 Bug Fixes
