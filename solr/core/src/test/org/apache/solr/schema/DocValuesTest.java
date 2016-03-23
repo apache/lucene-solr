@@ -16,6 +16,7 @@
  */
 package org.apache.solr.schema;
 
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -102,9 +104,29 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         values = longDv.getType().getValueSource(longDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
         assertEquals(4L, values.longVal(0));
         assertEquals(4L, values.objectVal(0));
+
+        // check reversability of created fields
+        tstToObj(schema.getField("floatdv"), -1.5f);
+        tstToObj(schema.getField("floatdvs"), -1.5f);
+        tstToObj(schema.getField("doubledv"), -1.5d);
+        tstToObj(schema.getField("doubledvs"), -1.5d);
+        tstToObj(schema.getField("intdv"), -7);
+        tstToObj(schema.getField("intdvs"), -7);
+        tstToObj(schema.getField("longdv"), -11L);
+        tstToObj(schema.getField("longdvs"), -11L);
+        tstToObj(schema.getField("datedv"), new Date(1000));
+        tstToObj(schema.getField("datedvs"), new Date(1000));
+        
       } finally {
         searcherRef.decref();
       }
+    }
+  }
+
+  private void tstToObj(SchemaField sf, Object o) {
+    List<IndexableField> fields = sf.createFields(o, 1.0f);
+    for (IndexableField field : fields) {
+      assertEquals( sf.getType().toObject(field), o);
     }
   }
 

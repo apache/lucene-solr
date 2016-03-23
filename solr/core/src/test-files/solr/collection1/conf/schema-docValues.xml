@@ -67,6 +67,17 @@
     <field name="datedv" type="date" indexed="false" stored="false" docValues="true" default="1995-12-31T23:59:59.999Z" />
 
     <field name="stringdv" type="string" indexed="false" stored="false" docValues="true" default="solr" />
+
+    <field name="floatdvs" type="float" indexed="false" stored="false" docValues="true" default="1" />
+    <field name="intdvs" type="int" indexed="false" stored="false" docValues="true" default="2" />
+    <field name="doubledvs" type="double" indexed="false" stored="false" docValues="true" default="3" />
+    <field name="longdvs" type="long" indexed="false" stored="false" docValues="true" default="4" />
+    <field name="datedvs" type="date" indexed="false" stored="false" docValues="true" default="1995-12-31T23:59:59.999Z" />
+    <field name="stringdvs" type="string" indexed="false" stored="false" docValues="true" default="solr" />
+
+
+
+
   </fields>
 
   <uniqueKey>id</uniqueKey>

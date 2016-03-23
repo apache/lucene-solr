@@ -355,6 +355,9 @@ Bug Fixes
   numeric field.  For more complex functions, FunctionValues.exists() must also return true
   for the document to match.  (yonik)
 
+* SOLR-8886: Fix TrieField.toObject(IndexableField) to work for field with docValues
+  enabled. (yonik)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
