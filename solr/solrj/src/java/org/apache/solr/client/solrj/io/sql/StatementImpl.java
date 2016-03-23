@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Random;
@@ -240,12 +239,12 @@ class StatementImpl implements Statement {
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
-    throw new UnsupportedOperationException();
+
   }
 
   @Override
   public int getFetchSize() throws SQLException {
-    throw new UnsupportedOperationException();
+    return 0;
   }
 
   @Override

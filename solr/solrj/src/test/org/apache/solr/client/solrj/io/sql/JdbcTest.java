@@ -492,6 +492,10 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
         assertFalse(rs.next());
       }
 
+      assertTrue(con.isReadOnly());
+      con.setReadOnly(true);
+      assertTrue(con.isReadOnly());
+
       assertNull(con.getWarnings());
       con.clearWarnings();
       assertNull(con.getWarnings());
@@ -502,6 +506,10 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
         assertNull(statement.getWarnings());
         statement.clearWarnings();
         assertNull(statement.getWarnings());
+
+        assertEquals(0, statement.getFetchSize());
+        statement.setFetchSize(0);
+        assertEquals(0, statement.getFetchSize());
 
         try (ResultSet rs = statement.executeQuery(sql)) {
           assertEquals(statement, rs.getStatement());
@@ -564,6 +572,8 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
   }
 
   private void checkResultSet(ResultSet rs) throws Exception {
+    assertEquals(ResultSet.TYPE_FORWARD_ONLY, rs.getType());
+
     assertNull(rs.getWarnings());
     rs.clearWarnings();
     assertNull(rs.getWarnings());
