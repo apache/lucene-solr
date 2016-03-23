@@ -92,10 +92,21 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
   private final boolean blockCacheReadEnabled;
   private final boolean blockCacheWriteEnabled;
 
+  private boolean cacheMerges;
+  private boolean cacheReadOnce;
+
   public BlockDirectory(String dirName, Directory directory, Cache cache,
       Set<String> blockCacheFileTypes, boolean blockCacheReadEnabled,
       boolean blockCacheWriteEnabled) throws IOException {
+    this(dirName, directory, cache, blockCacheFileTypes, blockCacheReadEnabled, blockCacheWriteEnabled, true, true);
+  }
+  
+  public BlockDirectory(String dirName, Directory directory, Cache cache,
+      Set<String> blockCacheFileTypes, boolean blockCacheReadEnabled,
+      boolean blockCacheWriteEnabled, boolean cacheMerges, boolean cacheReadOnce) throws IOException {
     super(directory);
+    this.cacheMerges = cacheMerges;
+    this.cacheReadOnce = cacheReadOnce;
     this.dirName = dirName;
     blockSize = BLOCK_SIZE;
     this.cache = cache;
@@ -292,6 +303,17 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
       return false;
     }
     switch (context.context) {
+      // depending on params, we don't cache on merges or when only reading once
+      case MERGE: {
+        return cacheMerges;
+      }
+      case READ: {
+        if (context.readOnce) {
+          return cacheReadOnce;
+        } else {
+          return true;
+        }
+      }
       default: {
         return true;
       }
