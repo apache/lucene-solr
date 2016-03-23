@@ -152,7 +152,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public void setReadOnly(boolean readOnly) throws SQLException {
-    throw new UnsupportedOperationException();
+
   }
 
   @Override
