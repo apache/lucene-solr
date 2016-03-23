@@ -656,6 +656,13 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     // We can't wrap with "exotic" readers because the BKD query must see the BKDDVFormat:
     IndexSearcher s = newSearcher(r, false);
 
+    if (useThreads) {
+      // We must disable query cache otherwise test seed may not reproduce since different
+      // threads may or may not get a cache hit or miss depending on order the JVM
+      // schedules the threads:
+      s.setQueryCache(null);
+    }
+
     // Make sure queries are thread safe:
     int numThreads;
     if (useThreads) {
@@ -765,8 +772,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
                     @Override
                     protected void describe(int docID, double pointLat, double pointLon) {
                       double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
-                      System.out.println("  docID=" + docID + " centerLon=" + centerLon + " centerLat=" + centerLat
-                          + " pointLon=" + pointLon + " pointLat=" + pointLat + " distanceMeters=" + distanceMeters
+                      System.out.println("  docID=" + docID + " centerLat=" + centerLat + " centerLon=" + centerLon
+                          + " pointLat=" + pointLat + " pointLon=" + pointLon + " distanceMeters=" + distanceMeters
                           + " vs" + ((rangeQuery == true) ? " minRadiusMeters=" + minRadiusMeters : "") + " radiusMeters=" + radiusMeters);
                     }
                    };
