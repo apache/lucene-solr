@@ -52,6 +52,7 @@ import org.apache.solr.client.solrj.io.stream.UniqueStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -173,17 +174,11 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
       TupleStream sqlStream = null;
 
       if(sqlVistor.table.toUpperCase(Locale.ROOT).contains("_CATALOGS_")) {
-        if (!sqlVistor.fields.contains("TABLE_CAT")) {
-          throw new IOException("When querying _CATALOGS_, fields must contain column TABLE_CAT");
-        }
-
-        sqlStream = new CatalogsStream(defaultZkhost);
+        sqlStream = new SelectStream(new CatalogsStream(defaultZkhost), sqlVistor.columnAliases);
       } else if(sqlVistor.table.toUpperCase(Locale.ROOT).contains("_SCHEMAS_")) {
-        if (!sqlVistor.fields.contains("TABLE_SCHEM") || !sqlVistor.fields.contains("TABLE_CATALOG")) {
-          throw new IOException("When querying _SCHEMAS_, fields must contain both TABLE_SCHEM and TABLE_CATALOG");
-        }
-
-        sqlStream = new SchemasStream(defaultZkhost);
+        sqlStream = new SelectStream(new SchemasStream(defaultZkhost), sqlVistor.columnAliases);
+      } else if(sqlVistor.table.toUpperCase(Locale.ROOT).contains("_TABLES_")) {
+        sqlStream = new SelectStream(new TableStream(defaultZkhost), sqlVistor.columnAliases);
       } else if(sqlVistor.groupByQuery) {
         if(aggregationMode == AggregationMode.FACET) {
           sqlStream = doGroupByWithAggregatesFacets(sqlVistor);
@@ -1378,7 +1373,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     private int currentIndex = 0;
     private List<String> catalogs;
 
-    public CatalogsStream(String zkHost) {
+    CatalogsStream(String zkHost) {
       this.zkHost = zkHost;
     }
 
@@ -1392,7 +1387,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     }
 
     public Tuple read() throws IOException {
-      Map fields = new HashMap<>();
+      Map<String, String> fields = new HashMap<>();
       if (this.currentIndex < this.catalogs.size()) {
         fields.put("TABLE_CAT", this.catalogs.get(this.currentIndex));
         this.currentIndex += 1;
@@ -1418,10 +1413,8 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
   private static class SchemasStream extends TupleStream {
     private final String zkHost;
     private StreamContext context;
-    private int currentIndex = 0;
-    private List<String> schemas;
 
-    public SchemasStream(String zkHost) {
+    SchemasStream(String zkHost) {
       this.zkHost = zkHost;
     }
 
@@ -1430,18 +1423,62 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     }
 
     public void open() throws IOException {
-      this.schemas = new ArrayList<>();
 
-      CloudSolrClient cloudSolrClient = this.context.getSolrClientCache().getCloudSolrClient(this.zkHost);
-      this.schemas.addAll(cloudSolrClient.getZkStateReader().getClusterState().getCollections());
-      Collections.sort(this.schemas);
     }
 
     public Tuple read() throws IOException {
-      Map fields = new HashMap<>();
-      if (this.currentIndex < this.schemas.size()) {
-        fields.put("TABLE_SCHEM", this.schemas.get(this.currentIndex));
-        fields.put("TABLE_CATALOG", this.zkHost);
+      Map<String, String> fields = new HashMap<>();
+      fields.put("EOF", "true");
+      return new Tuple(fields);
+    }
+
+    public StreamComparator getStreamSort() {
+      return null;
+    }
+
+    public void close() throws IOException {
+
+    }
+
+    public void setStreamContext(StreamContext context) {
+      this.context = context;
+    }
+  }
+
+  private static class TableStream extends TupleStream {
+    private final String zkHost;
+    private StreamContext context;
+    private int currentIndex = 0;
+    private List<String> tables;
+
+    TableStream(String zkHost) {
+      this.zkHost = zkHost;
+    }
+
+    public List<TupleStream> children() {
+      return new ArrayList<>();
+    }
+
+    public void open() throws IOException {
+      this.tables = new ArrayList<>();
+
+      CloudSolrClient cloudSolrClient = this.context.getSolrClientCache().getCloudSolrClient(this.zkHost);
+      cloudSolrClient.connect();
+      ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+      if (zkStateReader.getClusterState().getCollections().size() != 0) {
+        this.tables.addAll(zkStateReader.getClusterState().getCollections());
+      }
+      Collections.sort(this.tables);
+    }
+
+    public Tuple read() throws IOException {
+      Map<String, String> fields = new HashMap<>();
+      if (this.currentIndex < this.tables.size()) {
+        fields.put("TABLE_CAT", this.zkHost);
+        fields.put("TABLE_SCHEM", null);
+        fields.put("TABLE_NAME", this.tables.get(this.currentIndex));
+        fields.put("TABLE_TYPE", "TABLE");
+        fields.put("REMARKS", null);
         this.currentIndex += 1;
       } else {
         fields.put("EOF", "true");

@@ -76,10 +76,10 @@ class StatementImpl implements Statement {
     try {
       ZkStateReader zkStateReader = this.connection.getClient().getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
-      Collection<Slice> slices = clusterState.getActiveSlices(this.connection.getSchema());
+      Collection<Slice> slices = clusterState.getActiveSlices(this.connection.getCollection());
 
       if(slices == null) {
-        throw new Exception("Collection not found:"+this.connection.getSchema());
+        throw new Exception("Collection not found:"+this.connection.getCollection());
       }
 
       List<Replica> shuffler = new ArrayList<>();

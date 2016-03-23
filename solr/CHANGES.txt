@@ -492,6 +492,9 @@ Other Changes
 * SOLR-8740: docValues are now enabled by default for most non-text (string, date, and numeric) fields
   in the schema templates. (yonik)
 
+* SOLR-8819: Implement DatabaseMetaDataImpl getTables() and fix getSchemas(). (Trey Cahill,
+  Joel Bernstein, Kevin Risden)
+
 ==================  5.5.1 ==================
 
 Bug Fixes
