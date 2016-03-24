@@ -864,22 +864,20 @@ public class TestBKD extends LuceneTestCase {
         }
       };
 
-      Throwable t;
-
-      if (TEST_ASSERTS_ENABLED) {
-        t = expectThrows(AssertionError.class, () -> {
-            verify(dir, docValues, null, numDims, numBytesPerDim, 50, 0.1);
-          });
-      } else {
-        t = expectThrows(ArrayIndexOutOfBoundsException.class, () -> {
-            verify(dir, docValues, null, numDims, numBytesPerDim, 50, 0.1);
-          });
-      }
+      Throwable t = expectThrows(CorruptIndexException.class, () -> {
+          verify(dir, docValues, null, numDims, numBytesPerDim, 50, 0.1);
+        });
       assertCorruptionDetected(t);
     }
   }
 
   private void assertCorruptionDetected(Throwable t) {
+    if (t instanceof CorruptIndexException) {
+      if (t.getMessage().contains("checksum failed (hardware problem?)")) {
+        return;
+      }
+    }
+
     for(Throwable suppressed : t.getSuppressed()) {
       if (suppressed instanceof CorruptIndexException) {
         if (suppressed.getMessage().contains("checksum failed (hardware problem?)")) {
@@ -887,7 +885,7 @@ public class TestBKD extends LuceneTestCase {
         }
       }
     }
-    fail("did not see a supporessed CorruptIndexException");
+    fail("did not see a suppressed CorruptIndexException");
   }
 
   public void testTieBreakOrder() throws Exception {

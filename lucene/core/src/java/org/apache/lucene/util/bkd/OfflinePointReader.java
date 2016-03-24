@@ -171,11 +171,13 @@ final class OfflinePointReader extends PointReader {
     byte[] buffer = new byte[bytesPerDoc];
     while (count > 0) {
       in.readBytes(buffer, 0, buffer.length);
+
       long ord;
-      if (longOrds) {
-        ord = readLong(buffer, packedBytesLength);
+      if (singleValuePerDoc == false) {
+        ord = readInt(buffer, packedBytesLength+Integer.BYTES);
+      } else if (longOrds) {
+        ord = readLong(buffer, packedBytesLength+Integer.BYTES);
       } else {
-        // This is either ord (multi-valued case) or docID (which we use as ord in the single valued case):
         ord = readInt(buffer, packedBytesLength);
       }
 
