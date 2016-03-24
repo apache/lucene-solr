@@ -163,6 +163,10 @@ public class DocTermOrds implements Accountable {
   /** Used while uninverting. */
   protected PostingsEnum postingsEnum;
 
+  /** If true, check and throw an exception if the field has docValues enabled.
+   * Normally, docValues should be used in preference to DocTermOrds. */
+  protected boolean checkForDocValues = true;
+
   /** Returns total bytes used. */
   public long ramBytesUsed() {
     // can cache the mem size since it shouldn't change
@@ -268,7 +272,7 @@ public class DocTermOrds implements Accountable {
   /** Call this only once (if you subclass!) */
   protected void uninvert(final LeafReader reader, Bits liveDocs, final BytesRef termPrefix) throws IOException {
     final FieldInfo info = reader.getFieldInfos().fieldInfo(field);
-    if (info != null && info.getDocValuesType() != DocValuesType.NONE) {
+    if (checkForDocValues && info != null && info.getDocValuesType() != DocValuesType.NONE) {
       throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
     }
     //System.out.println("DTO uninvert field=" + field + " prefix=" + termPrefix);
