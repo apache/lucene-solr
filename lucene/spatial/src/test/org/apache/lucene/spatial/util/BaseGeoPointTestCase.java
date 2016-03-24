@@ -19,14 +19,11 @@ package org.apache.lucene.spatial.util;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -325,7 +322,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     double[] lons = new double[numPoints];
     Arrays.fill(lons, theLon);
 
-    verify(small, lats, lons, false);
+    verify(small, lats, lons);
   }
 
   public void testAllLatEqual() throws Exception {
@@ -372,7 +369,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       lats[docID] = lat;
     }
 
-    verify(small, lats, lons, false);
+    verify(small, lats, lons);
   }
 
   public void testAllLonEqual() throws Exception {
@@ -421,7 +418,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       lons[docID] = theLon;
     }
 
-    verify(small, lats, lons, false);
+    verify(small, lats, lons);
   }
 
   public void testMultiValued() throws Exception {
@@ -535,25 +532,21 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   public void testRandomTiny() throws Exception {
     // Make sure single-leaf-node case is OK:
-    doTestRandom(10, false);
+    doTestRandom(10);
   }
 
   public void testRandomMedium() throws Exception {
-    doTestRandom(10000, false);
-  }
-
-  public void testRandomWithThreads() throws Exception {
-    doTestRandom(10000, true);
+    doTestRandom(10000);
   }
 
   @Nightly
   public void testRandomBig() throws Exception {
     assumeFalse("Direct codec can OOME on this test", TestUtil.getDocValuesFormat(FIELD_NAME).equals("Direct"));
     assumeFalse("Memory codec can OOME on this test", TestUtil.getDocValuesFormat(FIELD_NAME).equals("Memory"));
-    doTestRandom(200000, false);
+    doTestRandom(200000);
   }
 
-  private void doTestRandom(int count, boolean useThreads) throws Exception {
+  private void doTestRandom(int count) throws Exception {
 
     int numPoints = atLeast(count);
 
@@ -621,7 +614,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       }
     }
 
-    verify(small, lats, lons, useThreads);
+    verify(small, lats, lons);
   }
 
   public double randomLat(boolean small) {
@@ -808,7 +801,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     protected abstract void describe(int docID, double lat, double lon);
   }
 
-  protected void verify(boolean small, double[] lats, double[] lons, boolean useThreads) throws Exception {
+  protected void verify(boolean small, double[] lats, double[] lons) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
     // Else we can get O(N^2) merging:
     int mbd = iwc.getMaxBufferedDocs();
@@ -852,189 +845,138 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     // We can't wrap with "exotic" readers because the BKD query must see the BKDDVFormat:
     IndexSearcher s = newSearcher(r, false);
 
-    if (useThreads) {
-      // We must disable query cache otherwise test seed may not reproduce since different
-      // threads may or may not get a cache hit or miss depending on order the JVM
-      // schedules the threads:
-      s.setQueryCache(null);
-    }
-
-    // Make sure queries are thread safe:
-    int numThreads;
-    if (useThreads) {
-      numThreads = TestUtil.nextInt(random(), 2, 5);
-    } else {
-      numThreads = 1;
-    }
-
-    List<Thread> threads = new ArrayList<>();
     final int iters = atLeast(75);
 
-    final CountDownLatch startingGun = new CountDownLatch(1);
     final AtomicBoolean failed = new AtomicBoolean();
 
-    for(int i=0;i<numThreads;i++) {
-      Thread thread = new Thread() {
+    NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
+
+    for (int iter=0;iter<iters && failed.get() == false;iter++) {
+
+      if (VERBOSE) {
+        System.out.println("\n" + Thread.currentThread().getName() + ": TEST: iter=" + iter + " s=" + s);
+      }
+      Query query;
+      VerifyHits verifyHits;
+
+      if (random().nextBoolean()) {
+        // Rect: don't allow dateline crossing when testing small:
+        final GeoRect rect = randomRect(small, small == false);
+
+        query = newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+
+        verifyHits = new VerifyHits() {
           @Override
-          public void run() {
-            try {
-              _run();
-            } catch (Exception e) {
-              failed.set(true);
-              throw new RuntimeException(e);
+          protected boolean shouldMatch(double pointLat, double pointLon) {
+            return rectContainsPoint(rect, pointLat, pointLon);
+          }
+          @Override
+          protected void describe(int docID, double lat, double lon) {
+          }
+        };
+
+      } else if (random().nextBoolean()) {
+        // Distance
+        final boolean rangeQuery = random().nextBoolean();
+        final double centerLat = randomLat(small);
+        final double centerLon = randomLon(small);
+
+        double radiusMeters;
+        double minRadiusMeters;
+
+        if (small) {
+          // Approx 3 degrees lon at the equator:
+          radiusMeters = random().nextDouble() * 333000 + 1.0;
+        } else {
+          // So the query can cover at most 50% of the earth's surface:
+          radiusMeters = random().nextDouble() * GeoUtils.SEMIMAJOR_AXIS * Math.PI / 2.0 + 1.0;
+        }
+
+        // generate a random minimum radius between 1% and 95% the max radius
+        minRadiusMeters = (0.01 + 0.94 * random().nextDouble()) * radiusMeters;
+
+        if (VERBOSE) {
+          final DecimalFormat df = new DecimalFormat("#,###.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+          System.out.println("  radiusMeters = " + df.format(radiusMeters)
+          + ((rangeQuery == true) ? " minRadiusMeters = " + df.format(minRadiusMeters) : ""));
+        }
+
+        try {
+          if (rangeQuery == true) {
+            query = newDistanceRangeQuery(FIELD_NAME, centerLat, centerLon, minRadiusMeters, radiusMeters);
+          } else {
+            query = newDistanceQuery(FIELD_NAME, centerLat, centerLon, radiusMeters);
+          }
+        } catch (IllegalArgumentException e) {
+          if (e.getMessage().contains("exceeds maxRadius")) {
+            continue;
+          }
+          throw e;
+        }
+
+        verifyHits = new VerifyHits() {
+          @Override
+          protected boolean shouldMatch(double pointLat, double pointLon) {
+            if (rangeQuery == false) {
+              return circleContainsPoint(centerLat, centerLon, radiusMeters, pointLat, pointLon);
+            } else {
+              return distanceRangeContainsPoint(centerLat, centerLon, minRadiusMeters, radiusMeters, pointLat, pointLon);
             }
           }
 
-          private void _run() throws Exception {
-            if (useThreads) {
-              startingGun.await();
-            }
-
-            NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
-
-            for (int iter=0;iter<iters && failed.get() == false;iter++) {
-
-              if (VERBOSE) {
-                System.out.println("\n" + Thread.currentThread().getName() + ": TEST: iter=" + iter + " s=" + s);
-              }
-              Query query;
-              VerifyHits verifyHits;
-
-              if (random().nextBoolean()) {
-                // Rect: don't allow dateline crossing when testing small:
-                final GeoRect rect = randomRect(small, small == false);
-
-                query = newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
-
-                verifyHits = new VerifyHits() {
-                    @Override
-                    protected boolean shouldMatch(double pointLat, double pointLon) {
-                      return rectContainsPoint(rect, pointLat, pointLon);
-                    }
-                    @Override
-                    protected void describe(int docID, double lat, double lon) {
-                    }
-                  };
-
-              } else if (random().nextBoolean()) {
-                // Distance
-                final boolean rangeQuery = random().nextBoolean();
-                final double centerLat = randomLat(small);
-                final double centerLon = randomLon(small);
-
-                double radiusMeters;
-                double minRadiusMeters;
-
-                if (small) {
-                  // Approx 3 degrees lon at the equator:
-                  radiusMeters = random().nextDouble() * 333000 + 1.0;
-                } else {
-                  // So the query can cover at most 50% of the earth's surface:
-                  radiusMeters = random().nextDouble() * GeoUtils.SEMIMAJOR_AXIS * Math.PI / 2.0 + 1.0;
-                }
-
-                // generate a random minimum radius between 1% and 95% the max radius
-                minRadiusMeters = (0.01 + 0.94 * random().nextDouble()) * radiusMeters;
-
-                if (VERBOSE) {
-                  final DecimalFormat df = new DecimalFormat("#,###.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-                  System.out.println("  radiusMeters = " + df.format(radiusMeters)
-                      + ((rangeQuery == true) ? " minRadiusMeters = " + df.format(minRadiusMeters) : ""));
-                }
-
-                try {
-                  if (rangeQuery == true) {
-                    query = newDistanceRangeQuery(FIELD_NAME, centerLat, centerLon, minRadiusMeters, radiusMeters);
-                  } else {
-                    query = newDistanceQuery(FIELD_NAME, centerLat, centerLon, radiusMeters);
-                  }
-                } catch (IllegalArgumentException e) {
-                  if (e.getMessage().contains("exceeds maxRadius")) {
-                    continue;
-                  }
-                  throw e;
-                }
-
-                verifyHits = new VerifyHits() {
-                    @Override
-                    protected boolean shouldMatch(double pointLat, double pointLon) {
-                      if (rangeQuery == false) {
-                        return circleContainsPoint(centerLat, centerLon, radiusMeters, pointLat, pointLon);
-                      } else {
-                        return distanceRangeContainsPoint(centerLat, centerLon, minRadiusMeters, radiusMeters, pointLat, pointLon);
-                      }
-                    }
-
-                    @Override
-                    protected void describe(int docID, double pointLat, double pointLon) {
-                      double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
-                      System.out.println("  docID=" + docID + " centerLat=" + centerLat + " centerLon=" + centerLon
-                          + " pointLat=" + pointLat + " pointLon=" + pointLon + " distanceMeters=" + distanceMeters
-                          + " vs" + ((rangeQuery == true) ? " minRadiusMeters=" + minRadiusMeters : "") + " radiusMeters=" + radiusMeters);
-                    }
-                   };
-
-              // TODO: get poly query working with dateline crossing too (how?)!
-              } else {
-
-                // TODO: poly query can't handle dateline crossing yet:
-                final GeoRect bbox = randomRect(small, false);
-
-                // Polygon
-                double[] lats = new double[5];
-                double[] lons = new double[5];
-                lats[0] = bbox.minLat;
-                lons[0] = bbox.minLon;
-                lats[1] = bbox.maxLat;
-                lons[1] = bbox.minLon;
-                lats[2] = bbox.maxLat;
-                lons[2] = bbox.maxLon;
-                lats[3] = bbox.minLat;
-                lons[3] = bbox.maxLon;
-                lats[4] = bbox.minLat;
-                lons[4] = bbox.minLon;
-                query = newPolygonQuery(FIELD_NAME, lats, lons);
-
-                verifyHits = new VerifyHits() {
-                    @Override
-                    protected boolean shouldMatch(double pointLat, double pointLon) {
-                      return polyRectContainsPoint(bbox, pointLat, pointLon);
-                    }
-
-                    @Override
-                    protected void describe(int docID, double lat, double lon) {
-                    }
-                  };
-              }
-
-              if (query != null) {
-
-                if (VERBOSE) {
-                  System.out.println("  query=" + query);
-                }
-
-                verifyHits.test(failed, small, s, docIDToID, deleted, query, lats, lons);
-              }
-            }
+          @Override
+          protected void describe(int docID, double pointLat, double pointLon) {
+            double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
+            System.out.println("  docID=" + docID + " centerLat=" + centerLat + " centerLon=" + centerLon
+                + " pointLat=" + pointLat + " pointLon=" + pointLon + " distanceMeters=" + distanceMeters
+                + " vs" + ((rangeQuery == true) ? " minRadiusMeters=" + minRadiusMeters : "") + " radiusMeters=" + radiusMeters);
           }
-      };
-      thread.setName("T" + i);
-      if (useThreads) {
-        thread.start();
+        };
+
+        // TODO: get poly query working with dateline crossing too (how?)!
       } else {
-        // Just run with main thread:
-        thread.run();
+
+        // TODO: poly query can't handle dateline crossing yet:
+        final GeoRect bbox = randomRect(small, false);
+
+        // Polygon
+        double[] polyLats = new double[5];
+        double[] polyLons = new double[5];
+        polyLats[0] = bbox.minLat;
+        polyLons[0] = bbox.minLon;
+        polyLats[1] = bbox.maxLat;
+        polyLons[1] = bbox.minLon;
+        polyLats[2] = bbox.maxLat;
+        polyLons[2] = bbox.maxLon;
+        polyLats[3] = bbox.minLat;
+        polyLons[3] = bbox.maxLon;
+        polyLats[4] = bbox.minLat;
+        polyLons[4] = bbox.minLon;
+        query = newPolygonQuery(FIELD_NAME, polyLats, polyLons);
+
+        verifyHits = new VerifyHits() {
+          @Override
+          protected boolean shouldMatch(double pointLat, double pointLon) {
+            return polyRectContainsPoint(bbox, pointLat, pointLon);
+          }
+
+          @Override
+          protected void describe(int docID, double lat, double lon) {
+          }
+        };
       }
-      threads.add(thread);
-    }
-    if (useThreads) {
-      startingGun.countDown();
-      for(Thread thread : threads) {
-        thread.join();
+
+      if (query != null) {
+
+        if (VERBOSE) {
+          System.out.println("  query=" + query);
+        }
+
+        verifyHits.test(failed, small, s, docIDToID, deleted, query, lats, lons);
       }
     }
+
     IOUtils.close(r, dir);
-    assertFalse(failed.get());
   }
 
   public void testRectBoundariesAreInclusive() throws Exception {
