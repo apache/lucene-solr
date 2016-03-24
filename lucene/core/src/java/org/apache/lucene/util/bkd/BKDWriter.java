@@ -716,32 +716,20 @@ public class BKDWriter implements Closeable {
 
         @Override
         public int compare(BytesRef a, BytesRef b) {
-
-          // First compare the bytes on the dimension we are sorting on:
+          // First compare by the requested dimension we are sorting by:
           int cmp = StringHelper.compare(bytesPerDim, a.bytes, a.offset + bytesPerDim*dim, b.bytes, b.offset + bytesPerDim*dim);
 
           if (cmp != 0) {
             return cmp;
           }
 
-          // Tie-break by docID:
-          int offset;
-          if (singleValuePerDoc) {
-            offset = 0;
-          } else if (longOrds) {
-            offset = Long.BYTES;
-          } else {
-            offset = Integer.BYTES;
-          }
-          reader.reset(a.bytes, a.offset + packedBytesLength + offset, a.length);
-          final int docIDA = reader.readInt();
+          // Tie-break by docID ... no need to tie break on ord, for the case where the same doc has
+          // the same value in a given dimension indexed more than once: it can't matter at search
+          // time since we don't write ords into the index:
 
-          reader.reset(b.bytes, b.offset + packedBytesLength + offset, b.length);
-          final int docIDB = reader.readInt();
-
-          // No need to tie break on ord, for the case where the same doc has the same value in a given dimension indexed more than once: it
-          // can't matter at search time since we don't write ords into the index:
-          return Integer.compare(docIDA, docIDB);
+          return StringHelper.compare(Integer.BYTES,
+                                      a.bytes, a.offset + packedBytesLength,
+                                      b.bytes, b.offset + packedBytesLength);
         }
       };
 
