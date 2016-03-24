@@ -74,8 +74,8 @@ final class OfflinePointReader implements PointReader {
       assert countLeft == -1;
       return false;
     }
-    ord = in.readLong();
     docID = in.readInt();
+    ord = in.readLong();
     return true;
   }
 

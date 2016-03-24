@@ -889,4 +889,42 @@ public class TestBKD extends LuceneTestCase {
     }
     fail("did not see a supporessed CorruptIndexException");
   }
+
+  public void testTieBreakOrder() throws Exception {
+    try (Directory dir = newDirectory()) {
+      int numDocs = 10000;
+      BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", 1, 4, 2, 0.01f);
+      for(int i=0;i<numDocs;i++) {
+        w.add(new byte[Integer.BYTES], i);
+      }
+
+      IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
+      long fp = w.finish(out);
+      out.close();
+
+      IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
+      in.seek(fp);
+      BKDReader r = new BKDReader(in);
+      r.intersect(new IntersectVisitor() {
+          int lastDocID = -1;
+
+          @Override
+          public void visit(int docID) {
+            assertTrue("lastDocID=" + lastDocID + " docID=" + docID, docID > lastDocID);
+            lastDocID = docID;
+          }
+
+          @Override
+          public void visit(int docID, byte[] packedValue) {
+            visit(docID);
+          }
+
+          @Override
+          public Relation compare(byte[] minPacked, byte[] maxPacked) {
+            return Relation.CELL_CROSSES_QUERY;
+          }
+      });
+      in.close();
+    }
+  }
 }
