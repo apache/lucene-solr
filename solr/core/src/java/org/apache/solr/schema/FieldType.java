@@ -353,7 +353,12 @@ public abstract class FieldType extends FieldProperties {
     // currently used in writing XML of the search result (but perhaps
     // a more efficient toXML(IndexableField f, Writer w) should be used
     // in the future.
-    return f.stringValue();
+    String val = f.stringValue();
+    if (val == null) {
+      // docValues will use the binary value
+      val = f.binaryValue().utf8ToString();
+    }
+    return val;
   }
 
   /**
