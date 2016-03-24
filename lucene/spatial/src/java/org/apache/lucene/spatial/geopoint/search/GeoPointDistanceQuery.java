@@ -21,7 +21,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
-import org.apache.lucene.spatial.util.GeoDistanceUtils;
 import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoUtils;
 
@@ -49,12 +48,34 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
   /** distance (in meters) from lat, lon center location */
   protected final double radiusMeters;
 
+  // we must check these before passing to superclass or circleToBBox, or users can get a strange exception!
+  private static double checkRadius(double radiusMeters) {
+    if (Double.isFinite(radiusMeters) == false || radiusMeters < 0) {
+      throw new IllegalArgumentException("invalid radiusMeters " + radiusMeters);
+    }
+    return radiusMeters;
+  }
+  
+  private static double checkLatitude(double centerLat) {
+    if (GeoUtils.isValidLat(centerLat) == false) {
+      throw new IllegalArgumentException("invalid centerLat " + centerLat);
+    }
+    return centerLat;
+  }
+  
+  private static double checkLongitude(double centerLon) {
+    if (GeoUtils.isValidLon(centerLon) == false) {
+      throw new IllegalArgumentException("invalid centerLon " + centerLon);
+    }
+    return centerLon;
+  }
+  
   /**
    * Constructs a Query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types within a
    * distance (in meters) from a given point
    **/
   public GeoPointDistanceQuery(final String field, final double centerLat, final double centerLon, final double radiusMeters) {
-    this(field, TermEncoding.PREFIX, centerLat, centerLon, radiusMeters);
+    this(field, TermEncoding.PREFIX, checkLatitude(centerLat), checkLongitude(centerLon), checkRadius(radiusMeters));
   }
 
   /**
@@ -63,34 +84,12 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
    * {@link org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding} parameter
    **/
   public GeoPointDistanceQuery(final String field, final TermEncoding termEncoding, final double centerLat, final double centerLon, final double radiusMeters) {
-    this(field, termEncoding, GeoUtils.circleToBBox(centerLat, centerLon, radiusMeters), centerLat, centerLon, radiusMeters);
+    this(field, termEncoding, GeoUtils.circleToBBox(checkLatitude(centerLat), checkLongitude(centerLon), checkRadius(radiusMeters)), centerLat, centerLon, radiusMeters);
   }
 
   private GeoPointDistanceQuery(final String field, final TermEncoding termEncoding, final GeoRect bbox,
                                  final double centerLat, final double centerLon, final double radiusMeters) {
     super(field, termEncoding, bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon);
-    {
-      // check longitudinal overlap (restrict distance to maximum longitudinal radius)
-      // todo this restriction technically shouldn't be needed,
-      // its only purpose is to ensure the bounding box doesn't self overlap.
-      final double maxRadius = GeoDistanceUtils.maxRadialDistanceMeters(centerLat, centerLon);
-      if (radiusMeters > maxRadius) {
-        throw new IllegalArgumentException("radiusMeters " + radiusMeters + " exceeds maxRadius [" + maxRadius
-            + "] at location [" + centerLat + " " + centerLon + "]");
-      }
-    }
-
-    if (GeoUtils.isValidLat(centerLat) == false) {
-      throw new IllegalArgumentException("invalid centerLat " + centerLat);
-    }
-
-    if (GeoUtils.isValidLon(centerLon) == false) {
-      throw new IllegalArgumentException("invalid centerLon " + centerLon);
-    }
-
-    if (radiusMeters <= 0.0) {
-      throw new IllegalArgumentException("invalid radiusMeters " + radiusMeters);
-    }
 
     this.centerLat = centerLat;
     this.centerLon = centerLon;

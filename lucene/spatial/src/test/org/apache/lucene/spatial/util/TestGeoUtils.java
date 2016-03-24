@@ -298,4 +298,27 @@ public class TestGeoUtils extends LuceneTestCase {
       assertFalse(rect.crossesDateline());
     }
   }
+  
+  public void testPacManPolyQuery() throws Exception {
+    // pacman
+    double[] px = {0, 10, 10, 0, -8, -10, -8, 0, 10, 10, 0};
+    double[] py = {0, 5, 9, 10, 9, 0, -9, -10, -9, -5, 0};
+
+    // shape bbox
+    double xMinA = -10;
+    double xMaxA = 10;
+    double yMinA = -10;
+    double yMaxA = 10;
+
+    // candidate crosses cell
+    double xMin = 2;//-5;
+    double xMax = 11;//0.000001;
+    double yMin = -1;//0;
+    double yMax = 1;//5;
+
+    // test cell crossing poly
+    assertTrue(GeoRelationUtils.rectCrossesPolyApprox(yMin, yMax, xMin, yMax, py, px, yMinA, yMaxA, xMinA, xMaxA));
+    assertFalse(GeoRelationUtils.rectCrossesPolyApprox(0, 5, -5, 0.000001, py, px, yMin, yMax, xMin, xMax));
+    assertTrue(GeoRelationUtils.rectWithinPolyApprox(0, 5, -5, -2, py, px, yMin, yMax, xMin, xMax));
+  }
 }

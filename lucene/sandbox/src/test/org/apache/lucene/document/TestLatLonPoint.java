@@ -16,37 +16,11 @@
  */
 package org.apache.lucene.document;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** Simple tests for {@link LatLonPoint} */
 public class TestLatLonPoint extends LuceneTestCase {
 
-  /** Add a single point and search for it in a box */
-  // NOTE: we don't currently supply an exact search, only ranges, because of the lossiness...
-  public void testBoxQuery() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-
-    // add a doc with a point
-    Document document = new Document();
-    document.add(new LatLonPoint("field", 18.313694, -65.227444));
-    writer.addDocument(document);
-    
-    // search and verify we found our doc
-    IndexReader reader = writer.getReader();
-    IndexSearcher searcher = newSearcher(reader);
-    assertEquals(1, searcher.count(LatLonPoint.newBoxQuery("field", 18, 19, -66, -65)));
-
-    reader.close();
-    writer.close();
-    dir.close();
-  }
-    
   public void testToString() throws Exception {
     // looks crazy due to lossiness
     assertEquals("LatLonPoint <field:18.313693958334625,-65.22744392976165>",(new LatLonPoint("field", 18.313694, -65.227444)).toString());
@@ -59,79 +33,6 @@ public class TestLatLonPoint extends LuceneTestCase {
     
     // sort field
     assertEquals("<distance:\"field\" latitude=18.0 longitude=19.0>", LatLonPoint.newDistanceSort("field", 18.0, 19.0).toString());
-  }
-  
-  /** Valid values that should not cause exception */
-  public void testExtremeValues() {
-    new LatLonPoint("foo", 90.0, 180.0);
-    new LatLonPoint("foo", 90.0, -180.0);
-    new LatLonPoint("foo", -90.0, 180.0);
-    new LatLonPoint("foo", -90.0, -180.0);
-  }
-  
-  /** Invalid values */
-  public void testOutOfRangeValues() {
-    IllegalArgumentException expected;
-
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new LatLonPoint("foo", Math.nextUp(90.0), 50.0);
-    });
-    assertTrue(expected.getMessage().contains("invalid latitude"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new LatLonPoint("foo", Math.nextDown(-90.0), 50.0);
-    });
-    assertTrue(expected.getMessage().contains("invalid latitude"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new LatLonPoint("foo", 90.0, Math.nextUp(180.0));
-    });
-    assertTrue(expected.getMessage().contains("invalid longitude"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new LatLonPoint("foo", 90.0, Math.nextDown(-180.0));
-    });
-    assertTrue(expected.getMessage().contains("invalid longitude"));
-  }
-  
-  /** NaN: illegal */
-  public void testNaNValues() {
-    IllegalArgumentException expected;
-
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new LatLonPoint("foo", Double.NaN, 50.0);
-    });
-    assertTrue(expected.getMessage().contains("invalid latitude"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new LatLonPoint("foo", 50.0, Double.NaN);
-    });
-    assertTrue(expected.getMessage().contains("invalid longitude"));
-  }
-  
-  /** Inf: illegal */
-  public void testInfValues() {
-    IllegalArgumentException expected;
-
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new LatLonPoint("foo", Double.POSITIVE_INFINITY, 50.0);
-    });
-    assertTrue(expected.getMessage().contains("invalid latitude"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new LatLonPoint("foo", Double.NEGATIVE_INFINITY, 50.0);
-    });
-    assertTrue(expected.getMessage().contains("invalid latitude"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new LatLonPoint("foo", 50.0, Double.POSITIVE_INFINITY);
-    });
-    assertTrue(expected.getMessage().contains("invalid longitude"));
-    
-    expected = expectThrows(IllegalArgumentException.class, () -> {
-      new LatLonPoint("foo", 50.0, Double.NEGATIVE_INFINITY);
-    });
-    assertTrue(expected.getMessage().contains("invalid longitude"));
   }
    
   public void testEncodeDecode() throws Exception {
@@ -183,30 +84,5 @@ public class TestLatLonPoint extends LuceneTestCase {
       assertEquals(latEnc, latEnc2, 0.0);
       assertEquals(lonEnc, lonEnc2, 0.0);
     }
-  }
-
-  public void testQueryEquals() throws Exception {
-    Query q1 = LatLonPoint.newBoxQuery("field", 50, 70, -40, 20);
-    Query q2 = LatLonPoint.newBoxQuery("field", 50, 70, -40, 20);
-    assertEquals(q1, q2);
-    assertEquals(q1.hashCode(), q2.hashCode());
-    assertFalse(q1.equals(LatLonPoint.newBoxQuery("field", 50, 70, -40, 10)));
-
-    q1 = LatLonPoint.newDistanceQuery("field", 50, 70, 10000);
-    q2 = LatLonPoint.newDistanceQuery("field", 50, 70, 10000);
-    assertEquals(q1, q2);
-    assertEquals(q1.hashCode(), q2.hashCode());
-    assertFalse(q1.equals(LatLonPoint.newDistanceQuery("field", 50, 70, 11000)));
-    assertFalse(q1.equals(LatLonPoint.newDistanceQuery("field", 50, 60, 10000)));
-
-                
-    double[] polyLats1 = new double[] {30, 40, 40, 30, 30};
-    double[] polyLons1 = new double[] {90, 90, -40, -40, 90};
-    double[] polyLats2 = new double[] {20, 40, 40, 20, 20};
-    q1 = LatLonPoint.newPolygonQuery("field", polyLats1, polyLons1);
-    q2 = LatLonPoint.newPolygonQuery("field", polyLats1, polyLons1);
-    assertEquals(q1, q2);
-    assertEquals(q1.hashCode(), q2.hashCode());
-    assertFalse(q1.equals(LatLonPoint.newPolygonQuery("field", polyLats2, polyLons1)));
-  }     
+  }   
 }
