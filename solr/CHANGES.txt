@@ -358,6 +358,9 @@ Bug Fixes
 * SOLR-8886: Fix TrieField.toObject(IndexableField) to work for field with docValues
   enabled. (yonik)
 
+* SOLR-8891: Fix StrField.toObject and toExternal to work with docValue IndexableField
+  instances. (yonik)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
