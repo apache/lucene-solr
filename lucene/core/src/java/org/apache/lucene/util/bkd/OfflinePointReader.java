@@ -93,15 +93,15 @@ final class OfflinePointReader extends PointReader {
       assert countLeft == -1;
       return false;
     }
+    docID = in.readInt();
     if (singleValuePerDoc == false) {
       if (longOrds) {
         ord = in.readLong();
       } else {
         ord = in.readInt();
       }
-      docID = in.readInt();
     } else {
-      ord = docID = in.readInt();
+      ord = docID;
     }
     return true;
   }

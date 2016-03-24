@@ -68,6 +68,7 @@ final class OfflinePointWriter implements PointWriter {
   public void append(byte[] packedValue, long ord, int docID) throws IOException {
     assert packedValue.length == packedBytesLength;
     out.writeBytes(packedValue, 0, packedValue.length);
+    out.writeInt(docID);
     if (singleValuePerDoc == false) {
       if (longOrds) {
         out.writeLong(ord);
@@ -76,7 +77,6 @@ final class OfflinePointWriter implements PointWriter {
         out.writeInt((int) ord);
       }
     }
-    out.writeInt(docID);
     count++;
     assert expectedCount == 0 || count <= expectedCount;
   }
