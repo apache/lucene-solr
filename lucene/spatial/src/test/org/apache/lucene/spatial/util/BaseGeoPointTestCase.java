@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.PointsFormat;
 import org.apache.lucene.codecs.PointsReader;
@@ -39,6 +40,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -65,8 +67,17 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.bkd.BKDWriter;
 import org.junit.BeforeClass;
 
-// TODO: cutover TestGeoUtils too?
-
+/**
+ * Abstract class to do basic tests for a geospatial impl (high level
+ * fields and queries)
+ * NOTE: This test focuses on geospatial (distance queries, polygon
+ * queries, etc) indexing and search, not any underlying storage
+ * format or encoding: it merely supplies two hooks for the encoding
+ * so that tests can be exact. The [stretch] goal is for this test to be
+ * so thorough in testing a new geo impl that if this
+ * test passes, then all Lucene/Solr tests should also pass.  Ie,
+ * if there is some bug in a given geo impl that this
+ * test fails to catch then this test needs to be improved! */
 public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected static final String FIELD_NAME = "point";
@@ -108,6 +119,195 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     }
     double off = Math.abs((lat_deg + 90) % 360);
     return (off <= 180 ? off : 360-off) - 90;
+  }
+  
+  /** Valid values that should not cause exception */
+  public void testIndexExtremeValues() {
+    Document document = new Document();
+    addPointToDoc("foo", document, 90.0, 180.0);
+    addPointToDoc("foo", document, 90.0, -180.0);
+    addPointToDoc("foo", document, -90.0, 180.0);
+    addPointToDoc("foo", document, -90.0, -180.0);
+  }
+  
+  /** Invalid values */
+  public void testIndexOutOfRangeValues() {
+    Document document = new Document();
+    IllegalArgumentException expected;
+
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      addPointToDoc("foo", document, Math.nextUp(90.0), 50.0);
+    });
+    assertTrue(expected.getMessage().contains("invalid latitude"));
+    
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      addPointToDoc("foo", document, Math.nextDown(-90.0), 50.0);
+    });
+    assertTrue(expected.getMessage().contains("invalid latitude"));
+    
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      addPointToDoc("foo", document, 90.0, Math.nextUp(180.0));
+    });
+    assertTrue(expected.getMessage().contains("invalid longitude"));
+    
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      addPointToDoc("foo", document, 90.0, Math.nextDown(-180.0));
+    });
+    assertTrue(expected.getMessage().contains("invalid longitude"));
+  }
+  
+  /** NaN: illegal */
+  public void testIndexNaNValues() {
+    Document document = new Document();
+    IllegalArgumentException expected;
+
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      addPointToDoc("foo", document, Double.NaN, 50.0);
+    });
+    assertTrue(expected.getMessage().contains("invalid latitude"));
+    
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      addPointToDoc("foo", document, 50.0, Double.NaN);
+    });
+    assertTrue(expected.getMessage().contains("invalid longitude"));
+  }
+  
+  /** Inf: illegal */
+  public void testIndexInfValues() {
+    Document document = new Document();
+    IllegalArgumentException expected;
+
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      addPointToDoc("foo", document, Double.POSITIVE_INFINITY, 50.0);
+    });
+    assertTrue(expected.getMessage().contains("invalid latitude"));
+    
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      addPointToDoc("foo", document, Double.NEGATIVE_INFINITY, 50.0);
+    });
+    assertTrue(expected.getMessage().contains("invalid latitude"));
+    
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      addPointToDoc("foo", document, 50.0, Double.POSITIVE_INFINITY);
+    });
+    assertTrue(expected.getMessage().contains("invalid longitude"));
+    
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      addPointToDoc("foo", document, 50.0, Double.NEGATIVE_INFINITY);
+    });
+    assertTrue(expected.getMessage().contains("invalid longitude"));
+  }
+  
+  /** Add a single point and search for it in a box */
+  // NOTE: we don't currently supply an exact search, only ranges, because of the lossiness...
+  public void testBoxBasics() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    // add a doc with a point
+    Document document = new Document();
+    addPointToDoc("field", document, 18.313694, -65.227444);
+    writer.addDocument(document);
+    
+    // search and verify we found our doc
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    assertEquals(1, searcher.count(newRectQuery("field", 18, 19, -66, -65)));
+
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+  
+
+  // box should not accept invalid lat/lon
+  public void testBoxInvalidCoordinates() throws Exception {
+    expectThrows(Exception.class, () -> {
+      newRectQuery("field", -92.0, -91.0, 179.0, 181.0);
+    });
+  }
+
+  /** test we can search for a point */
+  public void testDistanceBasics() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    // add a doc with a location
+    Document document = new Document();
+    addPointToDoc("field", document, 18.313694, -65.227444);
+    writer.addDocument(document);
+    
+    // search within 50km and verify we found our doc
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    assertEquals(1, searcher.count(newDistanceQuery("field", 18, -65, 50_000)));
+
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+  
+  /** distance query should not accept invalid lat/lon as origin */
+  public void testDistanceIllegal() throws Exception {
+    expectThrows(Exception.class, () -> {
+      newDistanceQuery("field", 92.0, 181.0, 120000);
+    });
+  }
+  /** negative distance queries are not allowed */
+  public void testDistanceNegative() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      newDistanceQuery("field", 18, 19, -1);
+    });
+    assertTrue(expected.getMessage().contains("radiusMeters"));
+    assertTrue(expected.getMessage().contains("invalid"));
+  }
+  
+  /** NaN distance queries are not allowed */
+  public void testDistanceNaN() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      newDistanceQuery("field", 18, 19, Double.NaN);
+    });
+    assertTrue(expected.getMessage().contains("radiusMeters"));
+    assertTrue(expected.getMessage().contains("invalid"));
+  }
+  
+  /** Inf distance queries are not allowed */
+  public void testDistanceInf() {
+    IllegalArgumentException expected;
+    
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      newDistanceQuery("field", 18, 19, Double.POSITIVE_INFINITY);
+    });
+    assertTrue(expected.getMessage().contains("radiusMeters"));
+    assertTrue(expected.getMessage().contains("invalid"));
+    
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      newDistanceQuery("field", 18, 19, Double.NEGATIVE_INFINITY);
+    });
+    assertTrue(expected.getMessage(), expected.getMessage().contains("radiusMeters"));
+    assertTrue(expected.getMessage().contains("invalid"));
+  }
+  
+  /** test we can search for a polygon */
+  public void testPolygonBasics() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    // add a doc with a point
+    Document document = new Document();
+    addPointToDoc("field", document, 18.313694, -65.227444);
+    writer.addDocument(document);
+    
+    // search and verify we found our doc
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    assertEquals(1, searcher.count(newPolygonQuery("field",
+                                                   new double[] { 18, 18, 19, 19, 18 },
+                                                   new double[] { -66, -65, -65, -66, -66 })));
+
+    reader.close();
+    writer.close();
+    dir.close();
   }
 
   // A particularly tricky adversary for BKD tree:
@@ -275,7 +475,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         System.out.println("\nTEST: iter=" + iter + " rect=" + rect);
       }
 
-      Query query = newRectQuery(FIELD_NAME, rect);
+      Query query = newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
 
       final FixedBitSet hits = new FixedBitSet(r.maxDoc());
       s.search(query, new SimpleCollector() {
@@ -455,10 +655,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   protected double quantizeLon(double lon) {
     return lon;
   }
-  
-  protected double maxRadius(double latitude, double longitude) {
-    return 50000000D; // bigger than earth, shouldnt matter
-  }
 
   protected GeoRect randomRect(boolean small, boolean canCrossDateLine) {
     double lat0 = randomLat(small);
@@ -486,7 +682,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected abstract void addPointToDoc(String field, Document doc, double lat, double lon);
 
-  protected abstract Query newRectQuery(String field, GeoRect bbox);
+  protected abstract Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon);
 
   protected abstract Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters);
 
@@ -708,7 +904,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
                 // Rect: don't allow dateline crossing when testing small:
                 final GeoRect rect = randomRect(small, small == false);
 
-                query = newRectQuery(FIELD_NAME, rect);
+                query = newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
 
                 verifyHits = new VerifyHits() {
                     @Override
@@ -875,7 +1071,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     }
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r, false);
-    assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect)));
+    assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon)));
     r.close();
     w.close();
     dir.close();
@@ -936,7 +1132,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     for (int i = 0; i < numQueries; i++) {
       double lat = -90 + 180.0 * random().nextDouble();
       double lon = -180 + 360.0 * random().nextDouble();
-      double radius = maxRadius(lat, lon) * random().nextDouble();
+      double radius = 50000000D * random().nextDouble();
   
       BitSet expected = new BitSet();
       for (int doc = 0; doc < reader.maxDoc(); doc++) {
@@ -977,10 +1173,10 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
     GeoRect rect = randomRect(false, true);
 
-    q1 = newRectQuery("field", rect);
-    q2 = newRectQuery("field", rect);
+    q1 = newRectQuery("field", rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+    q2 = newRectQuery("field", rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
     assertEquals(q1, q2);
-    assertFalse(q1.equals(newRectQuery("field2", rect)));
+    assertFalse(q1.equals(newRectQuery("field2", rect.minLat, rect.maxLat, rect.minLon, rect.maxLon)));
 
     double lat = randomLat(false);
     double lon = randomLon(false);
@@ -1013,5 +1209,133 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     q2 = newPolygonQuery("field", lats, lons);
     assertEquals(q1, q2);
     assertFalse(q1.equals(newPolygonQuery("field2", lats, lons)));
+  }
+  
+  /** return topdocs over a small set of points in field "point" */
+  private TopDocs searchSmallSet(Query query, int size) throws Exception {
+    // this is a simple systematic test, indexing these points
+    double[][] pts = new double[][] {
+        { 32.763420,          -96.774             },
+        { 32.7559529921407,   -96.7759895324707   },
+        { 32.77866942010977,  -96.77701950073242  },
+        { 32.7756745755423,   -96.7706036567688   },
+        { 27.703618681345585, -139.73458170890808 },
+        { 32.94823588839368,  -96.4538113027811   },
+        { 33.06047141970814,  -96.65084838867188  },
+        { 32.778650,          -96.7772            },
+        { -88.56029371730983, -177.23537676036358 },
+        { 33.541429799076354, -26.779373834241003 },
+        { 26.774024500421728, -77.35379276106497  },
+        { -90.0,              -14.796283808944777 },
+        { 32.94823588839368,  -178.8538113027811  },
+        { 32.94823588839368,  178.8538113027811   },
+        { 40.720611,          -73.998776          },
+        { -44.5,              -179.5              }
+    };
+    
+    Directory directory = newDirectory();
+
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
+            newIndexWriterConfig(new MockAnalyzer(random()))
+                    .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
+                    .setMergePolicy(newLogMergePolicy()));
+
+    for (double p[] : pts) {
+        Document doc = new Document();
+        addPointToDoc("point", doc, p[0], p[1]);
+        writer.addDocument(doc);
+    }
+
+    // add explicit multi-valued docs
+    for (int i=0; i<pts.length; i+=2) {
+      Document doc = new Document();
+      addPointToDoc("point", doc, pts[i][0], pts[i][1]);
+      addPointToDoc("point", doc, pts[i+1][0], pts[i+1][1]);
+      writer.addDocument(doc);
+    }
+
+    // index random string documents
+    for (int i=0; i<random().nextInt(10); ++i) {
+      Document doc = new Document();
+      doc.add(new StringField("string", Integer.toString(i), Field.Store.NO));
+      writer.addDocument(doc);
+    }
+
+    IndexReader reader = writer.getReader();
+    writer.close();
+
+    IndexSearcher searcher = newSearcher(reader);
+    TopDocs topDocs = searcher.search(query, size);
+    reader.close();
+    directory.close();
+    return topDocs;
+  }
+  
+  public void testSmallSetRect() throws Exception {
+    TopDocs td = searchSmallSet(newRectQuery("point", 32.778650, 32.778950, -96.7772, -96.77690000), 5);
+    assertEquals(4, td.totalHits);
+  }
+
+  public void testSmallSetDateline() throws Exception {
+    TopDocs td = searchSmallSet(newRectQuery("point", -45.0, -44.0, 179.0, -179.0), 20);
+    assertEquals(2, td.totalHits);
+  }
+
+  public void testSmallSetMultiValued() throws Exception {
+    TopDocs td = searchSmallSet(newRectQuery("point", 32.7559529921407, 32.7756745755423, -96.4538113027811, -96.7706036567688), 20);
+    // 3 single valued docs + 2 multi-valued docs
+    assertEquals(5, td.totalHits);
+  }
+  
+  public void testSmallSetWholeMap() throws Exception {
+    TopDocs td = searchSmallSet(newRectQuery("point", GeoUtils.MIN_LAT_INCL, GeoUtils.MAX_LAT_INCL, GeoUtils.MIN_LON_INCL, GeoUtils.MAX_LON_INCL), 20);
+    assertEquals(24, td.totalHits);
+  }
+  
+  public void testSmallSetPoly() throws Exception {
+    TopDocs td = searchSmallSet(newPolygonQuery("point",
+        new double[]{33.073130, 32.9942669, 32.938386, 33.0374494,
+            33.1369762, 33.1162747, 33.073130, 33.073130},
+        new double[]{-96.7682647, -96.8280029, -96.6288757, -96.4929199,
+                     -96.6041564, -96.7449188, -96.76826477, -96.7682647}),
+        5);
+    assertEquals(2, td.totalHits);
+  }
+
+  public void testSmallSetPolyWholeMap() throws Exception {
+    TopDocs td = searchSmallSet(newPolygonQuery("point",
+                      new double[] {GeoUtils.MIN_LAT_INCL, GeoUtils.MAX_LAT_INCL, GeoUtils.MAX_LAT_INCL, GeoUtils.MIN_LAT_INCL, GeoUtils.MIN_LAT_INCL},
+                      new double[] {GeoUtils.MIN_LON_INCL, GeoUtils.MIN_LON_INCL, GeoUtils.MAX_LON_INCL, GeoUtils.MAX_LON_INCL, GeoUtils.MIN_LON_INCL}),
+                      20);    
+    assertEquals("testWholeMap failed", 24, td.totalHits);
+  }
+
+  public void testSmallSetDistance() throws Exception {
+    TopDocs td = searchSmallSet(newDistanceQuery("point", 32.94823588839368, -96.4538113027811, 6000), 20);
+    assertEquals(2, td.totalHits);
+  }
+  
+  public void testSmallSetTinyDistance() throws Exception {
+    TopDocs td = searchSmallSet(newDistanceQuery("point", 40.720611, -73.998776, 1), 20);
+    assertEquals(2, td.totalHits);
+  }
+
+  /** see https://issues.apache.org/jira/browse/LUCENE-6905 */
+  public void testSmallSetDistanceNotEmpty() throws Exception {
+    TopDocs td = searchSmallSet(newDistanceQuery("point", -88.56029371730983, -177.23537676036358, 7757.999232959935), 20);
+    assertEquals(2, td.totalHits);
+  }
+
+  /**
+   * Explicitly large
+   */
+  public void testSmallSetHugeDistance() throws Exception {
+    TopDocs td = searchSmallSet(newDistanceQuery("point", 32.94823588839368, -96.4538113027811, 6000000), 20);
+    assertEquals(16, td.totalHits);
+  }
+
+  public void testSmallSetDistanceDateline() throws Exception {
+    TopDocs td = searchSmallSet(newDistanceQuery("point", 32.94823588839368, -179.9538113027811, 120000), 20);
+    assertEquals(3, td.totalHits);
   }
 }

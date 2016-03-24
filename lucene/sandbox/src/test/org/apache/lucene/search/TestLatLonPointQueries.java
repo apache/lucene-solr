@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
-import org.apache.lucene.spatial.util.GeoRect;
 
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
@@ -29,8 +28,8 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Query newRectQuery(String field, GeoRect rect) {
-    return LatLonPoint.newBoxQuery(field, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+  protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
+    return LatLonPoint.newBoxQuery(field, minLat, maxLat, minLon, maxLon);
   }
 
   @Override

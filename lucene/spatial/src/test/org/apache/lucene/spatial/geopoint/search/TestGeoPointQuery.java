@@ -22,8 +22,6 @@ import org.apache.lucene.spatial.util.GeoEncodingUtils;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
-import org.apache.lucene.spatial.util.GeoDistanceUtils;
-import org.apache.lucene.spatial.util.GeoRect;
 
 /**
  * random testing for GeoPoint query logic
@@ -31,12 +29,6 @@ import org.apache.lucene.spatial.util.GeoRect;
  * @lucene.experimental
  */
 public class TestGeoPointQuery extends BaseGeoPointTestCase {
-
-  @Override
-  protected double maxRadius(double latitude, double longitude) {
-    // TODO: clean this up
-    return GeoDistanceUtils.maxRadialDistanceMeters(latitude, longitude);
-  }
   
   @Override
   protected double quantizeLat(double lat) {
@@ -54,8 +46,8 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Query newRectQuery(String field, GeoRect rect) {
-    return new GeoPointInBBoxQuery(field, TermEncoding.PREFIX, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+  protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
+    return new GeoPointInBBoxQuery(field, TermEncoding.PREFIX, minLat, maxLat, minLon, maxLon);
   }
 
   @Override
