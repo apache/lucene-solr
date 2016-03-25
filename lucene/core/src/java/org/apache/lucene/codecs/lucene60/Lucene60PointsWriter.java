@@ -41,9 +41,13 @@ import org.apache.lucene.util.bkd.BKDWriter;
 
 /** Writes dimensional values */
 public class Lucene60PointsWriter extends PointsWriter implements Closeable {
-  
+
+  /** Output used to write the BKD tree data file */
   protected final IndexOutput dataOut;
+
+  /** Maps field name to file pointer in the data file where the BKD index is located. */
   protected final Map<String,Long> indexFPs = new HashMap<>();
+
   final SegmentWriteState writeState;
   final int maxPointsInLeafNode;
   final double maxMBSortInHeap;
