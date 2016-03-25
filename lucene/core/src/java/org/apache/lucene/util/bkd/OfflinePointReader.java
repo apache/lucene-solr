@@ -33,6 +33,7 @@ final class OfflinePointReader extends PointReader {
   final IndexInput in;
   private final byte[] packedValue;
   final boolean singleValuePerDoc;
+  final int bytesPerDoc;
   private long ord;
   private int docID;
   // true if ords are written as long (8 bytes), else 4 bytes
@@ -53,6 +54,7 @@ final class OfflinePointReader extends PointReader {
         bytesPerDoc += Integer.BYTES;
       }
     }
+    this.bytesPerDoc = bytesPerDoc;
 
     if ((start + length) * bytesPerDoc + CodecUtil.footerLength() > tempDir.fileLength(tempFileName)) {
       throw new IllegalArgumentException("requested slice is beyond the length of this file: start=" + start + " length=" + length + " bytesPerDoc=" + bytesPerDoc + " fileLength=" + tempDir.fileLength(tempFileName) + " tempFileName=" + tempFileName);
@@ -131,6 +133,29 @@ final class OfflinePointReader extends PointReader {
       }
     } finally {
       in.close();
+    }
+  }
+
+  @Override
+  public void markOrds(long count, LongBitSet ordBitSet) throws IOException {
+    if (countLeft < count) {
+      throw new IllegalStateException("only " + countLeft + " points remain, but " + count + " were requested");
+    }
+    long fp = in.getFilePointer() + packedValue.length;
+    if (singleValuePerDoc == false) {
+      fp += Integer.BYTES;
+    }
+    for(long i=0;i<count;i++) {
+      in.seek(fp);
+      long ord;
+      if (longOrds) {
+        ord = in.readLong();
+      } else {
+        ord = in.readInt();
+      }
+      assert ordBitSet.get(ord) == false: "ord=" + ord + " i=" + i + " was seen twice from " + this;
+      ordBitSet.set(ord);
+      fp += bytesPerDoc;
     }
   }
 
