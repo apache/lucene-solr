@@ -1033,8 +1033,7 @@ public class BKDWriter implements Closeable {
     return true;
   }
 
-  // TODO: make this protected when we want to subclass to play with different splitting criteria
-  private int split(byte[] minPackedValue, byte[] maxPackedValue) {
+  protected int split(byte[] minPackedValue, byte[] maxPackedValue) {
     // Find which dim has the largest span so we can split on it:
     int splitDim = -1;
     for(int dim=0;dim<numDims;dim++) {
