@@ -224,6 +224,9 @@ Bug Fixes
 * LUCENE-7139: Fix bugs in geo3d's Vincenty surface distance
   implementation (Karl Wright via Mike McCandless)
 
+* LUCENE-7112: WeightedSpanTermExtractor.extractUnknownQuery is only called
+  on queries that could not be extracted. (Adrien Grand)
+
 Other
 
 * LUCENE-7035: Upgrade icu4j to 56.1/unicode 8. (Robert Muir)
