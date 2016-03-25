@@ -39,6 +39,18 @@ abstract class PointReader implements Closeable {
   /** DocID for this point */
   abstract int docID();
 
+  /** Iterates through the next {@code count} ords, marking them in the provided {@code ordBitSet}. */
+  public void markOrds(long count, LongBitSet ordBitSet) throws IOException {
+    for(int i=0;i<count;i++) {
+      boolean result = next();
+      if (result == false) {
+        throw new IllegalStateException("did not see enough points from reader=" + this);
+      }
+      assert ordBitSet.get(ord()) == false: "ord=" + ord() + " was seen twice from " + this;
+      ordBitSet.set(ord());
+    }
+  }
+
   /** Splits this reader into left and right partitions */
   public long split(long count, LongBitSet rightTree, PointWriter left, PointWriter right, boolean doClearBits) throws IOException {
 

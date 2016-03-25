@@ -1004,22 +1004,12 @@ public class BKDWriter implements Closeable {
     try (PointReader reader = source.writer.getReader(source.start + source.count - rightCount, rightCount)) {
       boolean result = reader.next();
       assert result;
-
       System.arraycopy(reader.packedValue(), splitDim*bytesPerDim, scratch1, 0, bytesPerDim);
       if (numDims > 1) {
-
         assert ordBitSet.get(reader.ord()) == false;
         ordBitSet.set(reader.ord());
-
-        // Start at 1 because we already did the first value above (so we could keep the split value):
-        for(int i=1;i<rightCount;i++) {
-          result = reader.next();
-          if (result == false) {
-            throw new IllegalStateException("did not see enough points from reader=" + reader);
-          }
-          assert ordBitSet.get(reader.ord()) == false: "ord=" + reader.ord() + " was seen twice from " + source.writer;
-          ordBitSet.set(reader.ord());
-        }
+        // Subtract 1 from rightCount because we already did the first value above (so we could record the split value):
+        reader.markOrds(rightCount-1, ordBitSet);
       }
     } catch (Throwable t) {
       verifyChecksum(t, source.writer);
