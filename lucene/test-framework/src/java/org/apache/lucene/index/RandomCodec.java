@@ -119,8 +119,6 @@ public class RandomCodec extends AssertingCodec {
                                                                    fieldInfo.getPointNumBytes(),
                                                                    maxPointsInLeafNode,
                                                                    maxMBSortInHeap,
-                                                                   values.size(fieldInfo.name),
-                                                                   singleValuePerDoc,
                                                                    bkdSplitRandomSeed ^ fieldInfo.name.hashCode())) {
                 values.intersect(fieldInfo.name, new IntersectVisitor() {
                     @Override
@@ -276,8 +274,8 @@ public class RandomCodec extends AssertingCodec {
 
     public RandomlySplittingBKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims,
                                       int bytesPerDim, int maxPointsInLeafNode, double maxMBSortInHeap,
-                                      long totalPointCount, boolean singleValuePerDoc, int randomSeed) throws IOException {
-      super(maxDoc, tempDir, tempFileNamePrefix, numDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount, singleValuePerDoc);
+                                      int randomSeed) throws IOException {
+      super(maxDoc, tempDir, tempFileNamePrefix, numDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap);
       this.random = new Random(randomSeed);
     }
 
