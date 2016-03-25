@@ -222,12 +222,13 @@ public class WeightedSpanTermExtractor {
         rewritten = origQuery.rewrite(reader);
       }
       if (rewritten != origQuery) {
-        // only rewrite once and then flatten again - the rewritten query could have a speacial treatment
+        // only rewrite once and then flatten again - the rewritten query could have a special treatment
         // if this method is overwritten in a subclass or above in the next recursion
         extract(rewritten, boost, terms);
-      } 
+      } else {
+        extractUnknownQuery(query, terms);
+      }
     }
-    extractUnknownQuery(query, terms);
   }
 
   protected void extractUnknownQuery(Query query,
