@@ -188,6 +188,30 @@ public class PlanetModel {
     return (x * x + y * y) * inverseAb * inverseAb + z * z * inverseC * inverseC - 1.0 > Vector.MINIMUM_RESOLUTION;
   }
   
+  /** Compute a GeoPoint that's a bisection between two other GeoPoints.
+   * @param pt1 is the first point.
+   * @param pt2 is the second point.
+   * @return the bisection point, or null if a unique one cannot be found.
+   */
+  public GeoPoint bisection(final GeoPoint pt1, final GeoPoint pt2) {
+    final double A0 = (pt1.x + pt2.x) * 0.5;
+    final double B0 = (pt1.y + pt2.y) * 0.5;
+    final double C0 = (pt1.z + pt2.z) * 0.5;
+      
+    final double denom = inverseAbSquared * A0 * A0 +
+      inverseAbSquared * B0 * B0 +
+      inverseCSquared * C0 * C0;
+          
+    if(denom < Vector.MINIMUM_RESOLUTION) {
+      // Bisection is undefined
+      return null;
+    }
+      
+    final double t = Math.sqrt(1.0 / denom);
+      
+    return new GeoPoint(t * A0, t * B0, t * C0);
+  }
+  
   /** Compute surface distance between two points.
    * @param pt1 is the first point.
    * @param pt2 is the second point.
