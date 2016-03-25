@@ -83,6 +83,25 @@ public class GeoPointTest extends LuceneTestCase {
     }
   }
 
+  @Test
+  public void testBisection() {
+    final int times = atLeast(100);
+    for (int i = 0; i < times; i++) {
+      final double p1Lat = (randomFloat() * 180.0 - 90.0) * DEGREES_TO_RADIANS;
+      final double p1Lon = (randomFloat() * 360.0 - 180.0) * DEGREES_TO_RADIANS;
+      final double p2Lat = (randomFloat() * 180.0 - 90.0) * DEGREES_TO_RADIANS;
+      final double p2Lon = (randomFloat() * 360.0 - 180.0) * DEGREES_TO_RADIANS;
+      final GeoPoint p1 = new GeoPoint(PlanetModel.WGS84, p1Lat, p1Lon);
+      final GeoPoint p2 = new GeoPoint(PlanetModel.WGS84, p2Lat, p2Lon);
+      final GeoPoint pMid = PlanetModel.WGS84.bisection(p1, p2);
+      if (pMid != null) {
+        final double arcDistance = p1.arcDistance(p2);
+        final double sum = pMid.arcDistance(p1) + pMid.arcDistance(p2);
+        assertEquals(arcDistance, sum, 1e-6);
+      }
+    }
+  }
+  
   @Test(expected = IllegalArgumentException.class)
   public void testBadLatLon() {
     new GeoPoint(PlanetModel.SPHERE, 50.0, 32.2);

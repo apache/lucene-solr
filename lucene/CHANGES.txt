@@ -13,6 +13,9 @@ New Features
 * LUCENE-7099: Add LatLonPoint.newDistanceSort to the sandbox's
   LatLonPoint. (Robert Muir)
 
+* LUCENE-7140: Add PlanetModel.bisection to spatial3d (Karl Wright via
+  Mike McCandless)
+
 Optimizations
 
 * LUCENE-7071: Reduce bytes copying in OfflineSorter, giving ~10%
