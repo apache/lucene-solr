@@ -240,6 +240,9 @@ Other
 * LUCENE-7093: Add point values support to MemoryIndex
   (Martijn van Groningen, Mike McCandless)
 
+* LUCENE-7095: Add point values support to the numeric field query time join.
+  (Martijn van Groningen, Mike McCandless)
+
 ======================= Lucene 5.5.0 =======================
 
 New Features
