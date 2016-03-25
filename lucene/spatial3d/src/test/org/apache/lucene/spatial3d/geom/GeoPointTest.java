@@ -68,8 +68,41 @@ public class GeoPointTest extends LuceneTestCase {
       final double surfaceDistance = PlanetModel.SPHERE.surfaceDistance(p1,p2);
       assertEquals(arcDistance, surfaceDistance, 1e-6);
     }
+
+    // Now try some WGS84 points (taken randomly and compared against a known-good implementation)
+    assertEquals(1.1444648695765323, PlanetModel.WGS84.surfaceDistance(
+      new GeoPoint(PlanetModel.WGS84, 0.038203808753702884, -0.6701260455506466),
+      new GeoPoint(PlanetModel.WGS84, -0.8453720422675458, 0.1737353153814496)), 1e-6);
+    assertEquals(1.4345148695890722, PlanetModel.WGS84.surfaceDistance(
+      new GeoPoint(PlanetModel.WGS84, 0.5220926323378574, 0.6758041581907408),
+      new GeoPoint(PlanetModel.WGS84, -0.8453720422675458, 0.1737353153814496)), 1e-6);
+    assertEquals(2.32418144616446, PlanetModel.WGS84.surfaceDistance(
+      new GeoPoint(PlanetModel.WGS84, 0.09541335760967473, 1.2091829760623236),
+      new GeoPoint(PlanetModel.WGS84, -0.8501591797459979, -2.3044806381627594)), 1e-6);
+    assertEquals(2.018421047005435, PlanetModel.WGS84.surfaceDistance(
+      new GeoPoint(PlanetModel.WGS84, 0.3402853531962009, -0.43544195327249957),
+      new GeoPoint(PlanetModel.WGS84, -0.8501591797459979, -2.3044806381627594)), 1e-6);
   }
 
+  @Test
+  public void testBisection() {
+    final int times = atLeast(100);
+    for (int i = 0; i < times; i++) {
+      final double p1Lat = (randomFloat() * 180.0 - 90.0) * DEGREES_TO_RADIANS;
+      final double p1Lon = (randomFloat() * 360.0 - 180.0) * DEGREES_TO_RADIANS;
+      final double p2Lat = (randomFloat() * 180.0 - 90.0) * DEGREES_TO_RADIANS;
+      final double p2Lon = (randomFloat() * 360.0 - 180.0) * DEGREES_TO_RADIANS;
+      final GeoPoint p1 = new GeoPoint(PlanetModel.WGS84, p1Lat, p1Lon);
+      final GeoPoint p2 = new GeoPoint(PlanetModel.WGS84, p2Lat, p2Lon);
+      final GeoPoint pMid = PlanetModel.WGS84.bisection(p1, p2);
+      if (pMid != null) {
+        final double arcDistance = p1.arcDistance(p2);
+        final double sum = pMid.arcDistance(p1) + pMid.arcDistance(p2);
+        assertEquals(arcDistance, sum, 1e-6);
+      }
+    }
+  }
+  
   @Test(expected = IllegalArgumentException.class)
   public void testBadLatLon() {
     new GeoPoint(PlanetModel.SPHERE, 50.0, 32.2);

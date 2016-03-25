@@ -10,6 +10,9 @@ New Features
 * LUCENE-7099: Add LatLonPoint.newDistanceSort to the sandbox's
   LatLonPoint. (Robert Muir)
 
+* LUCENE-7140: Add PlanetModel.bisection to spatial3d (Karl Wright via
+  Mike McCandless)
+
 Optimizations
 
 * LUCENE-7071: Reduce bytes copying in OfflineSorter, giving ~10%
@@ -211,6 +214,12 @@ Bug Fixes
 * LUCENE-7111: DocValuesRangeQuery.newLongRange behaves incorrectly for
   Long.MAX_VALUE and Long.MIN_VALUE (Ishan Chattopadhyaya via Steve Rowe)
 
+* LUCENE-7139: Fix bugs in geo3d's Vincenty surface distance
+  implementation (Karl Wright via Mike McCandless)
+
+* LUCENE-7112: WeightedSpanTermExtractor.extractUnknownQuery is only called
+  on queries that could not be extracted. (Adrien Grand)
+
 Other
 
 * LUCENE-7035: Upgrade icu4j to 56.1/unicode 8. (Robert Muir)
@@ -222,6 +231,9 @@ Other
   (Martijn van Groningen, David Smiley)
 
 * LUCENE-7093: Add point values support to MemoryIndex
+  (Martijn van Groningen, Mike McCandless)
+
+* LUCENE-7095: Add point values support to the numeric field query time join.
   (Martijn van Groningen, Mike McCandless)
 
 ======================= Lucene 5.5.0 =======================
