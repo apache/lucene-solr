@@ -264,6 +264,14 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertFalse( rf.wantsField( "id" ) );
     assertFalse(rf.wantsAllFields());
     assertNull(rf.getTransformer());
+
+    // Don't return 'store_rpt' just because it is required by the transformer
+    rf = new SolrReturnFields( req("fl", "[geo f=store_rpt]") );
+    assertFalse( rf.wantsScore() );
+    assertTrue(rf.wantsField("[geo]"));
+    assertFalse( rf.wantsField( "store_rpt" ) );
+    assertFalse(rf.wantsAllFields());
+    assertNotNull(rf.getTransformer());
   }
 
   @Test
