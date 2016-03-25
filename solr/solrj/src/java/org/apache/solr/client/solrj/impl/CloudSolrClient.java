@@ -54,6 +54,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.ToleratedUpdateError;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -72,6 +73,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.KeeperException;
@@ -726,6 +728,11 @@ public class CloudSolrClient extends SolrClient {
     int status = 0;
     Integer rf = null;
     Integer minRf = null;
+    
+    // TolerantUpdateProcessor
+    List<SimpleOrderedMap<String>> toleratedErrors = null; 
+    int maxToleratedErrors = Integer.MAX_VALUE;
+      
     for(int i=0; i<response.size(); i++) {
       NamedList shardResponse = (NamedList)response.getVal(i);
       NamedList header = (NamedList)shardResponse.get("responseHeader");      
@@ -741,6 +748,24 @@ public class CloudSolrClient extends SolrClient {
           rf = routeRf;
       }
       minRf = (Integer)header.get(UpdateRequest.MIN_REPFACT);
+
+      List<SimpleOrderedMap<String>> shardTolerantErrors = 
+        (List<SimpleOrderedMap<String>>) header.get("errors");
+      if (null != shardTolerantErrors) {
+        Integer shardMaxToleratedErrors = (Integer) header.get("maxErrors");
+        assert null != shardMaxToleratedErrors : "TolerantUpdateProcessor reported errors but not maxErrors";
+        // if we get into some weird state where the nodes disagree about the effective maxErrors,
+        // assume the min value seen to decide if we should fail.
+        maxToleratedErrors = Math.min(maxToleratedErrors,
+                                      ToleratedUpdateError.getEffectiveMaxErrors(shardMaxToleratedErrors.intValue()));
+        
+        if (null == toleratedErrors) {
+          toleratedErrors = new ArrayList<SimpleOrderedMap<String>>(shardTolerantErrors.size());
+        }
+        for (SimpleOrderedMap<String> err : shardTolerantErrors) {
+          toleratedErrors.add(err);
+        }
+      }
     }
 
     NamedList cheader = new NamedList();
@@ -750,7 +775,31 @@ public class CloudSolrClient extends SolrClient {
       cheader.add(UpdateRequest.REPFACT, rf);
     if (minRf != null)
       cheader.add(UpdateRequest.MIN_REPFACT, minRf);
-    
+    if (null != toleratedErrors) {
+      cheader.add("maxErrors", ToleratedUpdateError.getUserFriendlyMaxErrors(maxToleratedErrors));
+      cheader.add("errors", toleratedErrors);
+      if (maxToleratedErrors < toleratedErrors.size()) {
+        // cumulative errors are too high, we need to throw a client exception w/correct metadata
+
+        // NOTE: it shouldn't be possible for 1 == toleratedErrors.size(), because if that were the case
+        // then at least one shard should have thrown a real error before this, so we don't worry
+        // about having a more "singular" exception msg for that situation
+        StringBuilder msgBuf =  new StringBuilder()
+          .append(toleratedErrors.size()).append(" Async failures during distributed update: ");
+          
+        NamedList metadata = new NamedList<String>();
+        for (SimpleOrderedMap<String> err : toleratedErrors) {
+          ToleratedUpdateError te = ToleratedUpdateError.parseMap(err);
+          metadata.add(te.getMetadataKey(), te.getMetadataValue());
+          
+          msgBuf.append("\n").append(te.getMessage());
+        }
+        
+        SolrException toThrow = new SolrException(ErrorCode.BAD_REQUEST, msgBuf.toString());
+        toThrow.setMetadata(metadata);
+        throw toThrow;
+      }
+    }
     condensed.add("responseHeader", cheader);
     return condensed;
   }
@@ -786,6 +835,22 @@ public class CloudSolrClient extends SolrClient {
       super(errorCode, throwables.getVal(0).getMessage(), throwables.getVal(0));
       this.throwables = throwables;
       this.routes = routes;
+
+      // create a merged copy of the metadata from all wrapped exceptions
+      NamedList<String> metadata = new NamedList<String>();
+      for (int i = 0; i < throwables.size(); i++) {
+        Throwable t = throwables.getVal(i);
+        if (t instanceof SolrException) {
+          SolrException e = (SolrException) t;
+          NamedList<String> eMeta = e.getMetadata();
+          if (null != eMeta) {
+            metadata.addAll(eMeta);
+          }
+        }
+      }
+      if (0 < metadata.size()) {
+        this.setMetadata(metadata);
+      }
     }
 
     public NamedList<Throwable> getThrowables() {

@@ -96,4 +96,9 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
     assertConfigs("bad-solrconfig-unexpected-schema-attribute.xml", "schema-minimal.xml",
                   "Unexpected arg(s): {bogusParam=bogusValue}");
   }
+
+  public void testTolerantUpdateProcessorNoUniqueKey() throws Exception {
+    assertConfigs("solrconfig-tolerant-update-minimal.xml", "schema-minimal.xml",
+                  "requires a schema that includes a uniqueKey field");
+  }
 }

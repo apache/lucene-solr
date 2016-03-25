@@ -26,6 +26,7 @@
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
   <requestHandler name="standard" class="solr.StandardRequestHandler"></requestHandler>
+  <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
@@ -625,6 +626,22 @@
       <str name="responseMessage">Thou shall not issue an optimize, but commits are OK!</str>
       <bool name="ignoreOptimizeOnly">true</bool>
     </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="tolerant-chain-max-errors-10">
+    <processor class="solr.TolerantUpdateProcessorFactory">
+      <int name="maxErrors">10</int>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="tolerant-chain-max-errors-not-set">
+    <processor class="solr.TolerantUpdateProcessorFactory"/>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+  
+  <updateRequestProcessorChain name="not-tolerant">
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
 
