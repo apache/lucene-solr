@@ -52,6 +52,13 @@ New Features
 * SOLR-8859: AbstractSpatialFieldType will now convert Shapes to/from Strings
   using the SpatialContext.  (ryan)
 
+* SOLR-445: new ToleranteUpdateProcessorFactory to support skipping update commands that cause
+  failures when sending multiple updates in a single request.
+  (Erick Erickson, Tomás Fernández Löbbe, Anshum Gupta, hossman)
+
+* SOLR-8890: New static method in DistributedUpdateProcessorFactory to allow UpdateProcessorFactories
+  to indicate request params that should be forwarded when DUP distributes updates. (hossman)
+
 Bug Fixes
 ----------------------
 

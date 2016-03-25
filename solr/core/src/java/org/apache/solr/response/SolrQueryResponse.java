@@ -161,6 +161,10 @@ public class SolrQueryResponse {
 
   /**
    * Causes an error to be returned instead of the results.
+   * 
+   * In general, new calls to this method should not be added. In most cases
+   * you should simply throw an exception and let it bubble out to 
+   * RequestHandlerBase, which will set the exception thrown.
    */
   public void setException(Exception e) {
     err=e;
