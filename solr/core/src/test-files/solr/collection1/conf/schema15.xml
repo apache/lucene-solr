@@ -530,6 +530,7 @@
    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_ss"  type="string"  indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_l"  type="long"   indexed="true"  stored="true"/>
+   <dynamicField name="*_ll" type="long"   indexed="true"  stored="true"  multiValued="true"/>
    <dynamicField name="*_t"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="*_tt"  type="text"    indexed="true"  stored="true"/>
    <dynamicField name="*_ws"  type="nametext" indexed="true" stored="true"/>

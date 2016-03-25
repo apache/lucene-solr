@@ -361,6 +361,9 @@ Bug Fixes
 * SOLR-8891: Fix StrField.toObject and toExternal to work with docValue IndexableField
   instances. (yonik)
 
+* SOLR-8865: Real-time get sometimes fails to retrieve stored fields from docValues.
+  (Ishan Chattopadhyaya, yonik)
+
 Optimizations
 ----------------------
 * SOLR-7876: Speed up queries and operations that use many terms when timeAllowed has not been
