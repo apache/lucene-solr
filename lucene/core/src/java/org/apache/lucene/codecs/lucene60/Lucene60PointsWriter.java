@@ -42,8 +42,8 @@ import org.apache.lucene.util.bkd.BKDWriter;
 /** Writes dimensional values */
 public class Lucene60PointsWriter extends PointsWriter implements Closeable {
   
-  final IndexOutput dataOut;
-  final Map<String,Long> indexFPs = new HashMap<>();
+  protected final IndexOutput dataOut;
+  protected final Map<String,Long> indexFPs = new HashMap<>();
   final SegmentWriteState writeState;
   final int maxPointsInLeafNode;
   final double maxMBSortInHeap;
