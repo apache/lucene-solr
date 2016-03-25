@@ -130,6 +130,13 @@ public class SolrReturnFields extends ReturnFields {
       }
       augmenters.addTransformer( new RenameFieldTransformer( from, to, copy ) );
     }
+    if( !_wantsAllFields && !globs.isEmpty() ) {
+      // TODO??? need to fill up the fields with matching field names in the index
+      // and add them to okFieldNames?
+      // maybe just get all fields?
+      // this would disable field selection optimization... i think thatis OK
+      fields.clear(); // this will get all fields, and use wantsField to limit
+    }
 
     if( augmenters.size() == 1 ) {
       transformer = augmenters.getTransformer(0);
