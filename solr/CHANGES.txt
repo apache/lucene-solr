@@ -67,6 +67,9 @@ Bug Fixes
 
 * SOLR-8855: The HDFS BlockDirectory should not clean up it's cache on shutdown. (Mark Miller)
 
+* SOLR-8902: Make sure ReturnFields only returns the requested fields from (fl=) evn when 
+  DocumentTransformers ask for getExtraRequestFields()  (ryan)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
