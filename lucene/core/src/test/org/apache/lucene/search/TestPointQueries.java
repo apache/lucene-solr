@@ -2012,4 +2012,17 @@ public class TestPointQueries extends LuceneTestCase {
     other[2] = (byte) 5;
     assertFalse(q1.equals(BinaryPoint.newSetQuery("a", new byte[][] {zeros, other})));
   }
+
+  public void testInvalidPointLength() {
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
+                                              () -> {
+                                                new PointRangeQuery("field", new byte[4], new byte[8], 1) {
+                                                  @Override
+                                                  protected String toString(int dimension, byte[] value) {
+                                                    return "foo";
+                                                  }
+                                                };
+                                              });
+    assertEquals("lowerPoint has length=4 but upperPoint has different length=8", e.getMessage());
+  }
 }

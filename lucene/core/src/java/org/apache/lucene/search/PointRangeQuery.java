@@ -72,7 +72,7 @@ public abstract class PointRangeQuery extends Query {
       throw new IllegalArgumentException("lowerPoint is not a fixed multiple of numDims");
     }
     if (lowerPoint.length != upperPoint.length) {
-      throw new IllegalArgumentException("lowerPoint has length=" + numDims + " but upperPoint has different length=" + upperPoint.length);
+      throw new IllegalArgumentException("lowerPoint has length=" + lowerPoint.length + " but upperPoint has different length=" + upperPoint.length);
     }
     this.numDims = numDims;
     this.bytesPerDim = lowerPoint.length / numDims;
