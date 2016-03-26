@@ -39,7 +39,6 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OfflineSorter;
@@ -215,10 +214,13 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
       int previousBucket = 0;
       int previousScore = 0;
       ByteArrayDataInput input = new ByteArrayDataInput();
-      BytesRefBuilder tmp1 = new BytesRefBuilder();
       BytesRef tmp2 = new BytesRef();
-      while (reader.read(tmp1)) {
-        input.reset(tmp1.bytes());
+      while (true) {
+        BytesRef scratch = reader.next();
+        if (scratch == null) {
+          break;
+        }
+        input.reset(scratch.bytes, scratch.offset, scratch.length);
         int currentScore = input.readInt();
 
         int bucket;
@@ -231,9 +233,9 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
         previousBucket = bucket;
 
         // Only append the input, discard the weight.
-        tmp2.bytes = tmp1.bytes();
-        tmp2.offset = input.getPosition();
-        tmp2.length = tmp1.length() - input.getPosition();
+        tmp2.bytes = scratch.bytes;
+        tmp2.offset = scratch.offset + input.getPosition();
+        tmp2.length = scratch.length - input.getPosition();
         builder.add(tmp2, bucket);
 
         line++;
@@ -293,7 +295,7 @@ public class FSTCompletionLookup extends Lookup implements Accountable {
   @Override
   public synchronized boolean store(DataOutput output) throws IOException {
     output.writeVLong(count);
-    if (this.normalCompletion == null || normalCompletion.getFST() == null) {
+    if (normalCompletion == null || normalCompletion.getFST() == null) {
       return false;
     }
     normalCompletion.getFST().save(output);

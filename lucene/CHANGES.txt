@@ -16,6 +16,11 @@ New Features
 * LUCENE-7140: Add PlanetModel.bisection to spatial3d (Karl Wright via
   Mike McCandless)
 
+API Changes
+
+* LUCENE-7141: Switch OfflineSorter's ByteSequencesReader to
+  BytesRefIterator (Mike McCandless)
+
 Optimizations
 
 * LUCENE-7071: Reduce bytes copying in OfflineSorter, giving ~10%

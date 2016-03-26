@@ -346,7 +346,7 @@ public class OfflineSorter {
     PriorityQueue<FileAndTop> queue = new PriorityQueue<FileAndTop>(segmentsToMerge.size()) {
       @Override
       protected boolean lessThan(FileAndTop a, FileAndTop b) {
-        return comparator.compare(a.current.get(), b.current.get()) < 0;
+        return comparator.compare(a.current, b.current) < 0;
       }
     };
 
@@ -361,15 +361,14 @@ public class OfflineSorter {
       // Open streams and read the top for each file
       for (int i = 0; i < segmentsToMerge.size(); i++) {
         streams[i] = getReader(dir.openChecksumInput(segmentsToMerge.get(i), IOContext.READONCE), segmentsToMerge.get(i));
-        BytesRefBuilder bytes = new BytesRefBuilder();
-        boolean result = false;
+        BytesRef item = null;
         try {
-          result = streams[i].read(bytes);
+          item = streams[i].next();
         } catch (Throwable t) {
           verifyChecksum(t, streams[i]);
         }
-        assert result;
-        queue.insertWithOverflow(new FileAndTop(i, bytes));
+        assert item != null;
+        queue.insertWithOverflow(new FileAndTop(i, item));
       }
   
       // Unix utility sort() uses ordered array of files to pick the next line from, updating
@@ -378,15 +377,14 @@ public class OfflineSorter {
       // so it shouldn't make much of a difference (didn't check).
       FileAndTop top;
       while ((top = queue.top()) != null) {
-        writer.write(top.current.bytes(), 0, top.current.length());
-        boolean result = false;
+        writer.write(top.current);
         try {
-          result = streams[top.fd].read(top.current);
+          top.current = streams[top.fd].next();
         } catch (Throwable t) {
           verifyChecksum(t, streams[top.fd]);
         }
 
-        if (result) {
+        if (top.current != null) {
           queue.updateTop();
         } else {
           queue.pop();
@@ -416,18 +414,17 @@ public class OfflineSorter {
   /** Read in a single partition of data */
   int readPartition(ByteSequencesReader reader) throws IOException {
     long start = System.currentTimeMillis();
-    final BytesRefBuilder scratch = new BytesRefBuilder();
     while (true) {
-      boolean result = false;
+      BytesRef item = null;
       try {
-        result = reader.read(scratch);
+        item = reader.next();
       } catch (Throwable t) {
         verifyChecksum(t, reader);
       }
-      if (result == false) {
+      if (item == null) {
         break;
       }
-      buffer.append(scratch.get());
+      buffer.append(item);
       // Account for the created objects.
       // (buffer slots do not account to buffer size.) 
       if (bufferBytesUsed.get() > ramBufferSize.bytes) {
@@ -440,9 +437,9 @@ public class OfflineSorter {
 
   static class FileAndTop {
     final int fd;
-    final BytesRefBuilder current;
+    BytesRef current;
 
-    FileAndTop(int fd, BytesRefBuilder firstLine) {
+    FileAndTop(int fd, BytesRef firstLine) {
       this.fd = fd;
       this.current = firstLine;
     }
@@ -518,10 +515,11 @@ public class OfflineSorter {
    * Utility class to read length-prefixed byte[] entries from an input.
    * Complementary to {@link ByteSequencesWriter}.
    */
-  public static class ByteSequencesReader implements Closeable {
+  public static class ByteSequencesReader implements BytesRefIterator, Closeable {
     protected final String name;
     protected final ChecksumIndexInput in;
     protected final long end;
+    private final BytesRefBuilder ref = new BytesRefBuilder();
 
     /** Constructs a ByteSequencesReader from the provided IndexInput */
     public ByteSequencesReader(ChecksumIndexInput in, String name) {
@@ -538,16 +536,16 @@ public class OfflineSorter {
      * the header of the next sequence. Returns <code>true</code> otherwise.
      * @throws EOFException if the file ends before the full sequence is read.
      */
-    public boolean read(BytesRefBuilder ref) throws IOException {
+    public BytesRef next() throws IOException {
       if (in.getFilePointer() >= end) {
-        return false;
+        return null;
       }
 
       short length = in.readShort();
       ref.grow(length);
       ref.setLength(length);
       in.readBytes(ref.bytes(), 0, length);
-      return true;
+      return ref.get();
     }
 
     /**

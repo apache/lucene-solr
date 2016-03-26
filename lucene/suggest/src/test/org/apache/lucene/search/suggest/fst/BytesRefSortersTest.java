@@ -57,12 +57,13 @@ public class BytesRefSortersTest extends LuceneTestCase {
       sorter.add(new BytesRef(new byte [1]));
     });
 
-    BytesRef spare1;
-    BytesRef spare2;
-    while ((spare1 = i1.next()) != null && (spare2 = i2.next()) != null) {
+    while (true) {
+      BytesRef spare1 = i1.next();
+      BytesRef spare2 = i2.next();
       assertEquals(spare1, spare2);
+      if (spare1 == null) {
+        break;
+      }
     }
-    assertNull(i1.next());
-    assertNull(i2.next());
   }  
 }
