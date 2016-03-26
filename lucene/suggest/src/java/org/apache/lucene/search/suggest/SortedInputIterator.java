@@ -29,7 +29,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
@@ -53,7 +52,6 @@ public class SortedInputIterator implements InputIterator {
   private boolean done = false;
   
   private long weight;
-  private final BytesRefBuilder scratch = new BytesRefBuilder();
   private BytesRef payload = new BytesRef();
   private Set<BytesRef> contexts = null;
   
@@ -86,8 +84,8 @@ public class SortedInputIterator implements InputIterator {
     }
     try {
       ByteArrayDataInput input = new ByteArrayDataInput();
-      if (reader.read(scratch)) {
-        final BytesRef bytes = scratch.get();
+      BytesRef bytes = reader.next();
+      if (bytes != null) {
         weight = decode(bytes, input);
         if (hasPayloads) {
           payload = decodePayload(bytes, input);

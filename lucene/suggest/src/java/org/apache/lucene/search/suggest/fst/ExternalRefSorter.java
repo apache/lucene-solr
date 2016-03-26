@@ -24,7 +24,6 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.OfflineSorter;
@@ -105,9 +104,10 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
   /**
    * Iterate over byte refs in a file.
    */
+  // TODO: this class is a bit silly ... sole purpose is to "remove" Closeable from what #iterator returns:
   class ByteSequenceIterator implements BytesRefIterator {
     private final OfflineSorter.ByteSequencesReader reader;
-    private BytesRefBuilder scratch = new BytesRefBuilder();
+    private BytesRef scratch;
     
     public ByteSequenceIterator(OfflineSorter.ByteSequencesReader reader) {
       this.reader = reader;
@@ -115,20 +115,14 @@ public class ExternalRefSorter implements BytesRefSorter, Closeable {
     
     @Override
     public BytesRef next() throws IOException {
-      if (scratch == null) {
-        return null;
-      }
       boolean success = false;
       try {
-        if (reader.read(scratch) == false) {
-          IOUtils.close(reader);
-          scratch = null;
+        scratch = reader.next();
+        if (scratch == null) {
+          reader.close();
         }
         success = true;
-        if (scratch == null) {
-          return null;
-        }
-        return scratch.get();
+        return scratch;
       } finally {
         if (!success) {
           IOUtils.closeWhileHandlingException(reader);

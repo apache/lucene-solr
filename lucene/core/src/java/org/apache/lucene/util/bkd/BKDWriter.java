@@ -33,7 +33,6 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntroSorter;
@@ -736,6 +735,8 @@ public class BKDWriter implements Closeable {
       // TODO: this is sort of sneaky way to get the final OfflinePointWriter from OfflineSorter:
       IndexOutput[] lastWriter = new IndexOutput[1];
 
+      final BytesRef scratch = new BytesRef(new byte[bytesPerDoc]);
+
       OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, OfflineSorter.BufferSize.megabytes(Math.max(1, (long) maxMBSortInHeap)), OfflineSorter.MAX_TEMPFILES) {
 
           /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
@@ -756,14 +757,12 @@ public class BKDWriter implements Closeable {
           protected ByteSequencesReader getReader(ChecksumIndexInput in, String name) throws IOException {
             return new ByteSequencesReader(in, name) {
               @Override
-              public boolean read(BytesRefBuilder ref) throws IOException {
+              public BytesRef next() throws IOException {
                 if (in.getFilePointer() >= end) {
-                  return false;
+                  return null;
                 }
-                ref.grow(bytesPerDoc);
-                in.readBytes(ref.bytes(), 0, bytesPerDoc);
-                ref.setLength(bytesPerDoc);
-                return true;
+                in.readBytes(scratch.bytes, 0, bytesPerDoc);
+                return scratch;
               }
             };
           }

@@ -888,17 +888,20 @@ public class Dictionary {
     boolean success2 = false;
     
     try (ByteSequencesReader reader = new ByteSequencesReader(tempDir.openChecksumInput(sorted, IOContext.READONCE), sorted)) {
-      BytesRefBuilder scratchLine = new BytesRefBuilder();
     
       // TODO: the flags themselves can be double-chars (long) or also numeric
       // either way the trick is to encode them as char... but they must be parsed differently
     
       String currentEntry = null;
       IntsRefBuilder currentOrds = new IntsRefBuilder();
-    
-      String line;
-      while (reader.read(scratchLine)) {
-        line = scratchLine.get().utf8ToString();
+
+      while (true) {
+        BytesRef scratch = reader.next();
+        if (scratch == null) {
+          break;
+        }
+        
+        String line = scratch.utf8ToString();
         String entry;
         char wordForm[];
         int end;
