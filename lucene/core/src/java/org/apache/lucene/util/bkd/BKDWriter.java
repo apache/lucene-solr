@@ -735,8 +735,6 @@ public class BKDWriter implements Closeable {
       // TODO: this is sort of sneaky way to get the final OfflinePointWriter from OfflineSorter:
       IndexOutput[] lastWriter = new IndexOutput[1];
 
-      final BytesRef scratch = new BytesRef(new byte[bytesPerDoc]);
-
       OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, OfflineSorter.BufferSize.megabytes(Math.max(1, (long) maxMBSortInHeap)), OfflineSorter.MAX_TEMPFILES) {
 
           /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
@@ -756,6 +754,7 @@ public class BKDWriter implements Closeable {
           @Override
           protected ByteSequencesReader getReader(ChecksumIndexInput in, String name) throws IOException {
             return new ByteSequencesReader(in, name) {
+              final BytesRef scratch = new BytesRef(new byte[bytesPerDoc]);
               @Override
               public BytesRef next() throws IOException {
                 if (in.getFilePointer() >= end) {
