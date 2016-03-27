@@ -695,18 +695,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     }
   }
   
-  static final boolean polyRectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
-    // TODO write better random polygon tests
-    
-    // note: logic must be slightly different than rectContainsPoint, to satisfy
-    // insideness for cases exactly on boundaries.
-    
-    assert Double.isNaN(pointLat) == false;
-    assert rect.crossesDateline() == false;
-    double polyLats[] = new double[] { rect.minLat, rect.maxLat, rect.maxLat, rect.minLat, rect.minLat };
-    double polyLons[] = new double[] { rect.minLon, rect.minLon, rect.maxLon, rect.maxLon, rect.minLon };
-
-    // TODO: separately test this method is 100% correct, here treat it like a black box (like haversin)
+  static final boolean polygonContainsPoint(double polyLats[], double polyLons[], double pointLat, double pointLon) {
     return GeoRelationUtils.pointInPolygon(polyLats, polyLons, pointLat, pointLon);
   }
 
@@ -940,24 +929,42 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         final GeoRect bbox = randomRect(small, false);
 
         // Polygon
-        double[] polyLats = new double[5];
-        double[] polyLons = new double[5];
-        polyLats[0] = bbox.minLat;
-        polyLons[0] = bbox.minLon;
-        polyLats[1] = bbox.maxLat;
-        polyLons[1] = bbox.minLon;
-        polyLats[2] = bbox.maxLat;
-        polyLons[2] = bbox.maxLon;
-        polyLats[3] = bbox.minLat;
-        polyLons[3] = bbox.maxLon;
-        polyLats[4] = bbox.minLat;
-        polyLons[4] = bbox.minLon;
+        final double[] polyLats;
+        final double[] polyLons;
+        // TODO: factor this out, maybe if we add Polygon class?
+        if (random().nextBoolean()) {
+          // box
+          polyLats = new double[5];
+          polyLons = new double[5];
+          polyLats[0] = bbox.minLat;
+          polyLons[0] = bbox.minLon;
+          polyLats[1] = bbox.maxLat;
+          polyLons[1] = bbox.minLon;
+          polyLats[2] = bbox.maxLat;
+          polyLons[2] = bbox.maxLon;
+          polyLats[3] = bbox.minLat;
+          polyLons[3] = bbox.maxLon;
+          polyLats[4] = bbox.minLat;
+          polyLons[4] = bbox.minLon;
+        } else {
+          // right triangle
+          polyLats = new double[4];
+          polyLons = new double[4];
+          polyLats[0] = bbox.minLat;
+          polyLons[0] = bbox.minLon;
+          polyLats[1] = bbox.maxLat;
+          polyLons[1] = bbox.minLon;
+          polyLats[2] = bbox.maxLat;
+          polyLons[2] = bbox.maxLon;
+          polyLats[3] = bbox.minLat;
+          polyLons[3] = bbox.minLon;
+        }
         query = newPolygonQuery(FIELD_NAME, polyLats, polyLons);
 
         verifyHits = new VerifyHits() {
           @Override
           protected boolean shouldMatch(double pointLat, double pointLon) {
-            return polyRectContainsPoint(bbox, pointLat, pointLon);
+            return polygonContainsPoint(polyLats, polyLons, pointLat, pointLon);
           }
 
           @Override
