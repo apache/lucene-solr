@@ -94,15 +94,11 @@ final class LatLonPointInPolygonQuery extends Query {
     double maxLat = Double.NEGATIVE_INFINITY;
     for(int i=0;i<polyLats.length;i++) {
       double lat = polyLats[i];
-      if (GeoUtils.isValidLat(lat) == false) {
-        throw new IllegalArgumentException("polyLats[" + i + "]=" + lat + " is not a valid latitude");
-      }
+      GeoUtils.checkLatitude(lat);
       minLat = Math.min(minLat, lat);
       maxLat = Math.max(maxLat, lat);
       double lon = polyLons[i];
-      if (GeoUtils.isValidLon(lon) == false) {
-        throw new IllegalArgumentException("polyLons[" + i + "]=" + lat + " is not a valid longitude");
-      }
+      GeoUtils.checkLongitude(lon);
       minLon = Math.min(minLon, lon);
       maxLon = Math.max(maxLon, lon);
     }

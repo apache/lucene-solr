@@ -31,18 +31,10 @@ public class GeoRect {
    * Constructs a bounding box by first validating the provided latitude and longitude coordinates
    */
   public GeoRect(double minLat, double maxLat, double minLon, double maxLon) {
-    if (GeoUtils.isValidLon(minLon) == false) {
-      throw new IllegalArgumentException("invalid minLon " + minLon);
-    }
-    if (GeoUtils.isValidLon(maxLon) == false) {
-      throw new IllegalArgumentException("invalid maxLon " + maxLon);
-    }
-    if (GeoUtils.isValidLat(minLat) == false) {
-      throw new IllegalArgumentException("invalid minLat " + minLat);
-    }
-    if (GeoUtils.isValidLat(maxLat) == false) {
-      throw new IllegalArgumentException("invalid maxLat " + maxLat);
-    }
+    GeoUtils.checkLatitude(minLat);
+    GeoUtils.checkLatitude(maxLat);
+    GeoUtils.checkLongitude(minLon);
+    GeoUtils.checkLongitude(maxLon);
     this.minLon = minLon;
     this.maxLon = maxLon;
     this.minLat = minLat;
