@@ -163,13 +163,8 @@ public final class GeoPointField extends Field {
   public GeoPointField(String name, double lat, double lon, FieldType type) {
     super(name, type);
 
-    if (GeoUtils.isValidLat(lat) == false) {
-      throw new IllegalArgumentException("invalid lat=" + lat + " for field \"" + name + "\"");
-    }
-
-    if (GeoUtils.isValidLon(lon) == false) {
-      throw new IllegalArgumentException("invalid lon=" + lon + " for field \"" + name + "\"");
-    }
+    GeoUtils.checkLatitude(lat);
+    GeoUtils.checkLongitude(lon);
 
     // field must be indexed
     // todo does it make sense here to provide the ability to store a GeoPointField but not index?

@@ -71,6 +71,16 @@ public class GeoPointInBBoxQuery extends Query {
    * defined bounding box. Accepts optional {@link org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding} parameter
    */
   public GeoPointInBBoxQuery(final String field, final TermEncoding termEncoding, final double minLat, final double maxLat, final double minLon, final double maxLon) {
+    if (field == null) {
+      throw new IllegalArgumentException("field cannot be null");
+    }
+    if (termEncoding == null) {
+      throw new IllegalArgumentException("termEncoding cannot be null");
+    }
+    GeoUtils.checkLatitude(minLat);
+    GeoUtils.checkLatitude(maxLat);
+    GeoUtils.checkLongitude(minLon);
+    GeoUtils.checkLongitude(maxLon);
     this.field = field;
     this.minLat = minLat;
     this.maxLat = maxLat;

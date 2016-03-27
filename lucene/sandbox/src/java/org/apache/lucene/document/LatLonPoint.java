@@ -116,9 +116,7 @@ public class LatLonPoint extends Field {
    * @throws IllegalArgumentException if latitude is out of bounds
    */
   public static int encodeLatitude(double latitude) {
-    if (GeoUtils.isValidLat(latitude) == false) {
-      throw new IllegalArgumentException("invalid latitude: " + latitude + ", must be -90 to 90");
-    }
+    GeoUtils.checkLatitude(latitude);
     // the maximum possible value cannot be encoded without overflow
     if (latitude == 90.0D) {
       latitude = Math.nextDown(latitude);
@@ -133,9 +131,7 @@ public class LatLonPoint extends Field {
    * @throws IllegalArgumentException if longitude is out of bounds
    */
   public static int encodeLongitude(double longitude) {
-    if (GeoUtils.isValidLon(longitude) == false) {
-      throw new IllegalArgumentException("invalid longitude: " + longitude + ", must be -180 to 180");
-    }
+    GeoUtils.checkLongitude(longitude);
     // the maximum possible value cannot be encoded without overflow
     if (longitude == 180.0D) {
       longitude = Math.nextDown(longitude);
@@ -150,7 +146,7 @@ public class LatLonPoint extends Field {
    */
   public static double decodeLatitude(int encoded) {
     double result = encoded / LATITUDE_SCALE;
-    assert GeoUtils.isValidLat(result);
+    assert result >= GeoUtils.MIN_LAT_INCL && result <= GeoUtils.MAX_LAT_INCL;
     return result;
   }
   
@@ -171,7 +167,7 @@ public class LatLonPoint extends Field {
    */  
   public static double decodeLongitude(int encoded) {
     double result = encoded / LONGITUDE_SCALE;
-    assert GeoUtils.isValidLon(result);
+    assert result >= GeoUtils.MIN_LON_INCL && result <= GeoUtils.MAX_LON_INCL;
     return result;
   }
 
