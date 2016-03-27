@@ -110,8 +110,6 @@ public class RandomCodec extends AssertingCodec {
           @Override
           public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
 
-            boolean singleValuePerDoc = values.size(fieldInfo.name) == values.getDocCount(fieldInfo.name);
-
             try (BKDWriter writer = new RandomlySplittingBKDWriter(writeState.segmentInfo.maxDoc(),
                                                                    writeState.directory,
                                                                    writeState.segmentInfo.name,
