@@ -198,12 +198,15 @@ final class OfflinePointReader extends PointReader {
       in.readBytes(buffer, 0, buffer.length);
 
       long ord;
-      if (singleValuePerDoc == false) {
-        ord = readInt(buffer, packedBytesLength+Integer.BYTES);
-      } else if (longOrds) {
+      if (longOrds) {
+        // A long ord, after the docID:
         ord = readLong(buffer, packedBytesLength+Integer.BYTES);
-      } else {
+      } else if (singleValuePerDoc) {
+        // docID is the ord:
         ord = readInt(buffer, packedBytesLength);
+      } else {
+        // An int ord, after the docID:
+        ord = readInt(buffer, packedBytesLength+Integer.BYTES);
       }
 
       if (rightTree.get(ord)) {
