@@ -19,6 +19,7 @@ package org.apache.lucene.spatial.util;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
@@ -636,6 +637,86 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     }
     return quantizeLon(result);
   }
+  
+  // for pole crossing: used by surpriseMePolygon()
+  private static double wrapLat(double lat) {
+    //System.out.println("wrapLat " + lat);
+    if (lat > 90) {
+      //System.out.println("  " + (180 - lat));
+      return 180 - lat;
+    } else if (lat < -90) {
+      //System.out.println("  " + (-180 - lat));
+      return -180 - lat;
+    } else {
+      //System.out.println("  " + lat);
+      return lat;
+    }
+  }
+
+  // for dateline crossing: used by surpriseMePolygon()
+  // TODO: can we remove this? these should not cross dateline...
+  private static double wrapLon(double lon) {
+    //System.out.println("wrapLon " + lon);
+    if (lon > 180) {
+      //System.out.println("  " + (lon - 360));
+      return lon - 360;
+    } else if (lon < -180) {
+      //System.out.println("  " + (lon + 360));
+      return lon + 360;
+    } else {
+      //System.out.println("  " + lon);
+      return lon;
+    }
+  }
+
+  /** Returns {polyLats, polyLons} double[] array */
+  private double[][] surpriseMePolygon() {
+    // repeat until we get a poly that doesn't cross dateline:
+    newPoly:
+    while (true) {
+      //System.out.println("\nPOLY ITER");
+      double centerLat = randomLat(false);
+      double centerLon = randomLon(false);
+
+      double radius = 0.1 + 20 * random().nextDouble();
+      double radiusDelta = random().nextDouble();
+
+      ArrayList<Double> lats = new ArrayList<>();
+      ArrayList<Double> lons = new ArrayList<>();
+      double angle = 0.0;
+      while (true) {
+        angle += random().nextDouble()*40.0;
+        //System.out.println("  angle " + angle);
+        if (angle > 360) {
+          break;
+        }
+        double len = radius * (1.0 - radiusDelta + radiusDelta * random().nextDouble());
+        //System.out.println("    len=" + len);
+        double lat = wrapLat(centerLat + len * Math.cos(Math.toRadians(angle)));
+        double lon = centerLon + len * Math.sin(Math.toRadians(angle));
+        if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL) {
+          // cannot cross dateline: try again!
+          continue newPoly;
+        }
+        lats.add(wrapLat(lat));
+        lons.add(wrapLon(lon));
+
+        //System.out.println("    lat=" + lats.get(lats.size()-1) + " lon=" + lons.get(lons.size()-1));
+      }
+
+      // close it
+      lats.add(lats.get(0));
+      lons.add(lons.get(0));
+
+      double[] latsArray = new double[lats.size()];
+      double[] lonsArray = new double[lons.size()];
+      for(int i=0;i<lats.size();i++) {
+        latsArray[i] = lats.get(i);
+        lonsArray[i] = lons.get(i);
+      }
+      return new double[][] {latsArray, lonsArray};
+    }
+  }
 
   /** Override this to quantize randomly generated lat, so the test won't fail due to quantization errors, which are 1) annoying to debug,
    *  and 2) should never affect "real" usage terribly. */
@@ -932,32 +1013,41 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         final double[] polyLats;
         final double[] polyLons;
         // TODO: factor this out, maybe if we add Polygon class?
-        if (random().nextBoolean()) {
-          // box
-          polyLats = new double[5];
-          polyLons = new double[5];
-          polyLats[0] = bbox.minLat;
-          polyLons[0] = bbox.minLon;
-          polyLats[1] = bbox.maxLat;
-          polyLons[1] = bbox.minLon;
-          polyLats[2] = bbox.maxLat;
-          polyLons[2] = bbox.maxLon;
-          polyLats[3] = bbox.minLat;
-          polyLons[3] = bbox.maxLon;
-          polyLats[4] = bbox.minLat;
-          polyLons[4] = bbox.minLon;
-        } else {
-          // right triangle
-          polyLats = new double[4];
-          polyLons = new double[4];
-          polyLats[0] = bbox.minLat;
-          polyLons[0] = bbox.minLon;
-          polyLats[1] = bbox.maxLat;
-          polyLons[1] = bbox.minLon;
-          polyLats[2] = bbox.maxLat;
-          polyLons[2] = bbox.maxLon;
-          polyLats[3] = bbox.minLat;
-          polyLons[3] = bbox.minLon;
+        switch (random().nextInt(3)) {
+          case 0:
+            // box
+            polyLats = new double[5];
+            polyLons = new double[5];
+            polyLats[0] = bbox.minLat;
+            polyLons[0] = bbox.minLon;
+            polyLats[1] = bbox.maxLat;
+            polyLons[1] = bbox.minLon;
+            polyLats[2] = bbox.maxLat;
+            polyLons[2] = bbox.maxLon;
+            polyLats[3] = bbox.minLat;
+            polyLons[3] = bbox.maxLon;
+            polyLats[4] = bbox.minLat;
+            polyLons[4] = bbox.minLon;
+            break;
+          case 1:
+            // right triangle
+            polyLats = new double[4];
+            polyLons = new double[4];
+            polyLats[0] = bbox.minLat;
+            polyLons[0] = bbox.minLon;
+            polyLats[1] = bbox.maxLat;
+            polyLons[1] = bbox.minLon;
+            polyLats[2] = bbox.maxLat;
+            polyLons[2] = bbox.maxLon;
+            polyLats[3] = bbox.minLat;
+            polyLons[3] = bbox.minLon;
+            break;
+          default:
+            // surprise me!
+            double[][] res = surpriseMePolygon();
+            polyLats = res[0];
+            polyLons = res[1];
+            break;
         }
         query = newPolygonQuery(FIELD_NAME, polyLats, polyLons);
 
