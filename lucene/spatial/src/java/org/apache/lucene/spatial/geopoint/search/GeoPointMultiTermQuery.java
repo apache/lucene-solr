@@ -55,18 +55,10 @@ abstract class GeoPointMultiTermQuery extends MultiTermQuery {
   public GeoPointMultiTermQuery(String field, final TermEncoding termEncoding, final double minLat, final double maxLat, final double minLon, final double maxLon) {
     super(field);
 
-    if (GeoUtils.isValidLat(minLat) == false) {
-      throw new IllegalArgumentException("invalid minLat " + minLat);
-    }
-    if (GeoUtils.isValidLat(maxLat) == false) {
-      throw new IllegalArgumentException("invalid maxLat " + maxLat);
-    }
-    if (GeoUtils.isValidLon(minLon) == false) {
-      throw new IllegalArgumentException("invalid minLon " + minLon);
-    }
-    if (GeoUtils.isValidLon(maxLon) == false) {
-      throw new IllegalArgumentException("invalid maxLon " + maxLon);
-    }
+    GeoUtils.checkLatitude(minLat);
+    GeoUtils.checkLatitude(maxLat);
+    GeoUtils.checkLongitude(minLon);
+    GeoUtils.checkLongitude(maxLon);
 
     final long minHash = GeoEncodingUtils.mortonHash(minLat, minLon);
     final long maxHash = GeoEncodingUtils.mortonHash(maxLat, maxLon);

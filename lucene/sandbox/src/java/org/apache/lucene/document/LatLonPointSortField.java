@@ -34,12 +34,8 @@ final class LatLonPointSortField extends SortField {
     if (field == null) {
       throw new IllegalArgumentException("field cannot be null");
     }
-    if (GeoUtils.isValidLat(latitude) == false) {
-      throw new IllegalArgumentException("latitude: '" + latitude + "' is invalid");
-    }
-    if (GeoUtils.isValidLon(longitude) == false) {
-      throw new IllegalArgumentException("longitude: '" + longitude + "' is invalid");
-    }
+    GeoUtils.checkLatitude(latitude);
+    GeoUtils.checkLongitude(longitude);
     this.latitude = latitude;
     this.longitude = longitude;
     setMissingValue(Double.POSITIVE_INFINITY);

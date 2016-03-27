@@ -19,7 +19,6 @@ package org.apache.lucene.spatial.util;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.PI;
-import static java.lang.Math.abs;
 
 import static org.apache.lucene.util.SloppyMath.asin;
 import static org.apache.lucene.util.SloppyMath.cos;
@@ -63,13 +62,17 @@ public final class GeoUtils {
   }
 
   /** validates latitude value is within standard +/-90 coordinate bounds */
-  public static boolean isValidLat(double lat) {
-    return Double.isNaN(lat) == false && lat >= MIN_LAT_INCL && lat <= MAX_LAT_INCL;
+  public static void checkLatitude(double latitude) {
+    if (Double.isNaN(latitude) || latitude < MIN_LAT_INCL || latitude > MAX_LAT_INCL) {
+      throw new IllegalArgumentException("invalid latitude " +  latitude + "; must be between " + MIN_LAT_INCL + " and " + MAX_LAT_INCL);
+    }
   }
 
   /** validates longitude value is within standard +/-180 coordinate bounds */
-  public static boolean isValidLon(double lon) {
-    return Double.isNaN(lon) == false && lon >= MIN_LON_INCL && lon <= MAX_LON_INCL;
+  public static void checkLongitude(double longitude) {
+    if (Double.isNaN(longitude) || longitude < MIN_LON_INCL || longitude > MAX_LON_INCL) {
+      throw new IllegalArgumentException("invalid longitude " +  longitude + "; must be between " + MIN_LON_INCL + " and " + MAX_LON_INCL);
+    }
   }
 
   /** Compute Bounding Box for a circle using WGS-84 parameters */
@@ -115,12 +118,8 @@ public final class GeoUtils {
     double maxLat = Double.NEGATIVE_INFINITY;
 
     for (int i=0;i<polyLats.length;i++) {
-      if (GeoUtils.isValidLat(polyLats[i]) == false) {
-        throw new IllegalArgumentException("invalid polyLats[" + i + "]=" + polyLats[i]);
-      }
-      if (GeoUtils.isValidLon(polyLons[i]) == false) {
-        throw new IllegalArgumentException("invalid polyLons[" + i + "]=" + polyLons[i]);
-      }
+      checkLatitude(polyLats[i]);
+      checkLongitude(polyLons[i]);
       minLat = min(polyLats[i], minLat);
       maxLat = max(polyLats[i], maxLat);
       minLon = min(polyLons[i], minLon);

@@ -77,18 +77,10 @@ public class GeoPointInBBoxQuery extends Query {
     if (termEncoding == null) {
       throw new IllegalArgumentException("termEncoding cannot be null");
     }
-    if (GeoUtils.isValidLat(minLat) == false) {
-      throw new IllegalArgumentException("invalid minimum latitude: " + minLat + ", must be -90 to 90");
-    }
-    if (GeoUtils.isValidLat(maxLat) == false) {
-      throw new IllegalArgumentException("invalid maximum latitude: " + maxLat + ", must be -90 to 90");
-    }
-    if (GeoUtils.isValidLon(minLon) == false) {
-      throw new IllegalArgumentException("invalid minimum longitude: " + minLon + ", must be -180 to 180");
-    }
-    if (GeoUtils.isValidLon(maxLon) == false) {
-      throw new IllegalArgumentException("invalid maximum longitude: " + maxLon + ", must be -180 to 180");
-    }
+    GeoUtils.checkLatitude(minLat);
+    GeoUtils.checkLatitude(maxLat);
+    GeoUtils.checkLongitude(minLon);
+    GeoUtils.checkLongitude(maxLon);
     this.field = field;
     this.minLat = minLat;
     this.maxLat = maxLat;

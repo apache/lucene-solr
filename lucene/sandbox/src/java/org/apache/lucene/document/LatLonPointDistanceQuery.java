@@ -61,12 +61,8 @@ final class LatLonPointDistanceQuery extends Query {
     if (Double.isFinite(radiusMeters) == false || radiusMeters < 0) {
       throw new IllegalArgumentException("radiusMeters: '" + radiusMeters + "' is invalid");
     }
-    if (GeoUtils.isValidLat(latitude) == false) {
-      throw new IllegalArgumentException("latitude: '" + latitude + "' is invalid");
-    }
-    if (GeoUtils.isValidLon(longitude) == false) {
-      throw new IllegalArgumentException("longitude: '" + longitude + "' is invalid");
-    }
+    GeoUtils.checkLatitude(latitude);
+    GeoUtils.checkLongitude(longitude);
     this.field = field;
     this.latitude = latitude;
     this.longitude = longitude;

@@ -638,37 +638,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     return quantizeLon(result);
   }
   
-  // for pole crossing: used by surpriseMePolygon()
-  private static double wrapLat(double lat) {
-    //System.out.println("wrapLat " + lat);
-    if (lat > 90) {
-      //System.out.println("  " + (180 - lat));
-      return 180 - lat;
-    } else if (lat < -90) {
-      //System.out.println("  " + (-180 - lat));
-      return -180 - lat;
-    } else {
-      //System.out.println("  " + lat);
-      return lat;
-    }
-  }
-
-  // for dateline crossing: used by surpriseMePolygon()
-  // TODO: can we remove this? these should not cross dateline...
-  private static double wrapLon(double lon) {
-    //System.out.println("wrapLon " + lon);
-    if (lon > 180) {
-      //System.out.println("  " + (lon - 360));
-      return lon - 360;
-    } else if (lon < -180) {
-      //System.out.println("  " + (lon + 360));
-      return lon + 360;
-    } else {
-      //System.out.println("  " + lon);
-      return lon;
-    }
-  }
-
   /** Returns {polyLats, polyLons} double[] array */
   private double[][] surpriseMePolygon() {
     // repeat until we get a poly that doesn't cross dateline:
@@ -692,14 +661,27 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         }
         double len = radius * (1.0 - radiusDelta + radiusDelta * random().nextDouble());
         //System.out.println("    len=" + len);
-        double lat = wrapLat(centerLat + len * Math.cos(Math.toRadians(angle)));
+        double lat = centerLat + len * Math.cos(Math.toRadians(angle));
         double lon = centerLon + len * Math.sin(Math.toRadians(angle));
         if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL) {
           // cannot cross dateline: try again!
           continue newPoly;
         }
-        lats.add(wrapLat(lat));
-        lons.add(wrapLon(lon));
+        if (lat > 90) {
+          // cross the north pole
+          lat = 180 - lat;
+          lon = 180 - lon;
+        } else if (lat < -90) {
+          // cross the south pole
+          lat = -180 - lat;
+          lon = 180 - lon;
+        }
+        if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL) {
+          // cannot cross dateline: try again!
+          continue newPoly;
+        }
+        lats.add(lat);
+        lons.add(lon);
 
         //System.out.println("    lat=" + lats.get(lats.size()-1) + " lon=" + lons.get(lons.size()-1));
       }

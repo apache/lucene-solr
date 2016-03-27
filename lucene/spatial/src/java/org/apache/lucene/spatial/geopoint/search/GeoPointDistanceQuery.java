@@ -57,16 +57,12 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
   }
   
   private static double checkLatitude(double centerLat) {
-    if (GeoUtils.isValidLat(centerLat) == false) {
-      throw new IllegalArgumentException("invalid centerLat " + centerLat);
-    }
+    GeoUtils.checkLatitude(centerLat);
     return centerLat;
   }
   
   private static double checkLongitude(double centerLon) {
-    if (GeoUtils.isValidLon(centerLon) == false) {
-      throw new IllegalArgumentException("invalid centerLon " + centerLon);
-    }
+    GeoUtils.checkLongitude(centerLon);
     return centerLon;
   }
   
