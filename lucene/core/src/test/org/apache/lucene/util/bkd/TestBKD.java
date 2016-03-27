@@ -891,7 +891,7 @@ public class TestBKD extends LuceneTestCase {
   public void testTieBreakOrder() throws Exception {
     try (Directory dir = newDirectory()) {
       int numDocs = 10000;
-      BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", 1, 4, 2, 0.01f, numDocs, true);
+      BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", 1, Integer.BYTES, 2, 0.01f, numDocs, true);
       for(int i=0;i<numDocs;i++) {
         w.add(new byte[Integer.BYTES], i);
       }
@@ -925,4 +925,53 @@ public class TestBKD extends LuceneTestCase {
       in.close();
     }
   }
+
+  public void test2DLongOrdsOffline() throws Exception {
+    try (Directory dir = newDirectory()) {
+      int numDocs = 100000;
+      boolean singleValuePerDoc = false;
+      boolean longOrds = true;
+      int offlineSorterMaxTempFiles = TestUtil.nextInt(random(), 2, 20);
+      BKDWriter w = new BKDWriter(numDocs+1, dir, "tmp", 2, Integer.BYTES, 2, 0.01f, numDocs,
+                                  singleValuePerDoc, longOrds, 1, offlineSorterMaxTempFiles);
+      byte[] buffer = new byte[2*Integer.BYTES];
+      for(int i=0;i<numDocs;i++) {
+        random().nextBytes(buffer);
+        w.add(buffer, i);
+      }
+
+      IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT);
+      long fp = w.finish(out);
+      out.close();
+
+      IndexInput in = dir.openInput("bkd", IOContext.DEFAULT);
+      in.seek(fp);
+      BKDReader r = new BKDReader(in);
+      int[] count = new int[1];
+      r.intersect(new IntersectVisitor() {
+
+          @Override
+          public void visit(int docID) {
+            count[0]++;
+          }
+
+          @Override
+          public void visit(int docID, byte[] packedValue) {
+            visit(docID);
+          }
+
+          @Override
+          public Relation compare(byte[] minPacked, byte[] maxPacked) {
+            if (random().nextInt(7) == 1) {
+              return Relation.CELL_CROSSES_QUERY;
+            } else {
+              return Relation.CELL_INSIDE_QUERY;
+            }
+          }
+      });
+      assertEquals(numDocs, count[0]);
+      in.close();
+    }
+  }
+
 }

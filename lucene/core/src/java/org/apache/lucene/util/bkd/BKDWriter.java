@@ -128,21 +128,31 @@ public class BKDWriter implements Closeable {
   protected long pointCount;
 
   /** true if we have so many values that we must write ords using long (8 bytes) instead of int (4 bytes) */
-  private final boolean longOrds;
+  protected final boolean longOrds;
 
   /** An upper bound on how many points the caller will add (includes deletions) */
   private final long totalPointCount;
 
   /** True if every document has at most one value.  We specialize this case by not bothering to store the ord since it's redundant with docID.  */
-  private final boolean singleValuePerDoc;
+  protected final boolean singleValuePerDoc;
+
+  /** How much heap OfflineSorter is allowed to use */ 
+  protected final OfflineSorter.BufferSize offlineSorterBufferMB;
+
+  /** How much heap OfflineSorter is allowed to use */ 
+  protected final int offlineSorterMaxTempFiles;
 
   private final int maxDoc;
 
-  public BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim, long totalPointCount, boolean singleValuePerDoc) throws IOException {
-    this(maxDoc, tempDir, tempFileNamePrefix, numDims, bytesPerDim, DEFAULT_MAX_POINTS_IN_LEAF_NODE, DEFAULT_MAX_MB_SORT_IN_HEAP, totalPointCount, singleValuePerDoc);
+  public BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim,
+                   int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount, boolean singleValuePerDoc) throws IOException {
+    this(maxDoc, tempDir, tempFileNamePrefix, numDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount, singleValuePerDoc,
+         totalPointCount > Integer.MAX_VALUE, Math.max(1, (long) maxMBSortInHeap), OfflineSorter.MAX_TEMPFILES);
   }
 
-  public BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim, int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount, boolean singleValuePerDoc) throws IOException {
+  protected BKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims, int bytesPerDim,
+                      int maxPointsInLeafNode, double maxMBSortInHeap, long totalPointCount,
+                      boolean singleValuePerDoc, boolean longOrds, long offlineSorterBufferMB, int offlineSorterMaxTempFiles) throws IOException {
     verifyParams(numDims, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount);
     // We use tracking dir to deal with removing files on exception, so each place that
     // creates temp files doesn't need crazy try/finally/sucess logic:
@@ -153,6 +163,8 @@ public class BKDWriter implements Closeable {
     this.bytesPerDim = bytesPerDim;
     this.totalPointCount = totalPointCount;
     this.maxDoc = maxDoc;
+    this.offlineSorterBufferMB = OfflineSorter.BufferSize.megabytes(offlineSorterBufferMB);
+    this.offlineSorterMaxTempFiles = offlineSorterMaxTempFiles;
     docsSeen = new FixedBitSet(maxDoc);
     packedBytesLength = numDims * bytesPerDim;
 
@@ -166,7 +178,8 @@ public class BKDWriter implements Closeable {
     maxPackedValue = new byte[packedBytesLength];
 
     // If we may have more than 1+Integer.MAX_VALUE values, then we must encode ords with long (8 bytes), else we can use int (4 bytes).
-    longOrds = totalPointCount > Integer.MAX_VALUE;
+    this.longOrds = longOrds;
+
     this.singleValuePerDoc = singleValuePerDoc;
 
     // dimensional values (numDims * bytesPerDim) + ord (int or long) + docID (int)
@@ -735,7 +748,7 @@ public class BKDWriter implements Closeable {
       // TODO: this is sort of sneaky way to get the final OfflinePointWriter from OfflineSorter:
       IndexOutput[] lastWriter = new IndexOutput[1];
 
-      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, OfflineSorter.BufferSize.megabytes(Math.max(1, (long) maxMBSortInHeap)), OfflineSorter.MAX_TEMPFILES) {
+      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, offlineSorterBufferMB, offlineSorterMaxTempFiles) {
 
           /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
           @Override
