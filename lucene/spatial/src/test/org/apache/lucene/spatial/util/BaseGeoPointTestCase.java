@@ -82,41 +82,11 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   private static double originLat;
   private static double originLon;
-  private static double lonRange;
-  private static double latRange;
 
   @BeforeClass
   public static void beforeClassBase() throws Exception {
-    // Between 1.0 and 3.0:
-    lonRange = 2 * (random().nextDouble() + 0.5);
-    latRange = 2 * (random().nextDouble() + 0.5);
-
-    originLon = normalizeLon(GeoUtils.MIN_LON_INCL + lonRange + (GeoUtils.MAX_LON_INCL - GeoUtils.MIN_LON_INCL - 2 * lonRange) * random().nextDouble());
-    originLat = normalizeLat(GeoUtils.MIN_LAT_INCL + latRange + (GeoUtils.MAX_LAT_INCL - GeoUtils.MIN_LAT_INCL - 2 * latRange) * random().nextDouble());
-  }
-
-  /** Puts longitude in range of -180 to +180. */
-  public static double normalizeLon(double lon_deg) {
-    if (lon_deg >= -180 && lon_deg <= 180) {
-      return lon_deg; //common case, and avoids slight double precision shifting
-    }
-    double off = (lon_deg + 180) % 360;
-    if (off < 0) {
-      return 180 + off;
-    } else if (off == 0 && lon_deg > 0) {
-      return 180;
-    } else {
-      return -180 + off;
-    }
-  }
-
-  /** Puts latitude in range of -90 to 90. */
-  public static double normalizeLat(double lat_deg) {
-    if (lat_deg >= -90 && lat_deg <= 90) {
-      return lat_deg; //common case, and avoids slight double precision shifting
-    }
-    double off = Math.abs((lat_deg + 90) % 360);
-    return (off <= 180 ? off : 360-off) - 90;
+    originLon = GeoTestUtil.nextLongitude();
+    originLat = GeoTestUtil.nextLatitude();
   }
   
   /** Valid values that should not cause exception */
@@ -621,9 +591,9 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   public double randomLat(boolean small) {
     double result;
     if (small) {
-      result = normalizeLat(originLat + latRange * (random().nextDouble() - 0.5));
+      result = GeoTestUtil.nextLatitudeNear(originLat);
     } else {
-      result = -90 + 180.0 * random().nextDouble();
+      result = GeoTestUtil.nextLatitude();
     }
     return quantizeLat(result);
   }
@@ -631,9 +601,9 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   public double randomLon(boolean small) {
     double result;
     if (small) {
-      result = normalizeLon(originLon + lonRange * (random().nextDouble() - 0.5));
+      result = GeoTestUtil.nextLongitudeNear(originLon);
     } else {
-      result = -180 + 360.0 * random().nextDouble();
+      result = GeoTestUtil.nextLongitude();
     }
     return quantizeLon(result);
   }
@@ -1107,8 +1077,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
   
     for (int i = 0; i < numDocs; i++) {
-      double latRaw = -90 + 180.0 * random().nextDouble();
-      double lonRaw = -180 + 360.0 * random().nextDouble();
+      double latRaw = GeoTestUtil.nextLatitude();
+      double lonRaw = GeoTestUtil.nextLongitude();
       // pre-normalize up front, so we can just use quantized value for testing and do simple exact comparisons
       double lat = quantizeLat(latRaw);
       double lon = quantizeLon(lonRaw);
@@ -1122,8 +1092,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
   
     for (int i = 0; i < numQueries; i++) {
-      double lat = -90 + 180.0 * random().nextDouble();
-      double lon = -180 + 360.0 * random().nextDouble();
+      double lat = GeoTestUtil.nextLatitude();
+      double lon = GeoTestUtil.nextLongitude();
       double radius = 50000000D * random().nextDouble();
   
       BitSet expected = new BitSet();
