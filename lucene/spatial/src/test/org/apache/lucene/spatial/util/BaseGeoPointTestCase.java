@@ -45,6 +45,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SegmentReadState;
@@ -57,6 +58,7 @@ import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -432,10 +434,9 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     IndexReader r = w.getReader();
     w.close();
 
-    // We can't wrap with "exotic" readers because the BKD query must see the BKDDVFormat:
-    IndexSearcher s = newSearcher(r, false);
+    IndexSearcher s = newSearcher(r);
 
-    int iters = atLeast(75);
+    int iters = atLeast(25);
     for (int iter=0;iter<iters;iter++) {
       GeoRect rect = randomRect(small, small == false);
 
@@ -482,9 +483,9 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         if (hits.get(docID) != expected) {
           String id = s.doc(docID).get("id");
           if (expected) {
-            System.out.println(Thread.currentThread().getName() + ": id=" + id + " docID=" + docID + " should match but did not");
+            System.out.println("TEST: id=" + id + " docID=" + docID + " should match but did not");
           } else {
-            System.out.println(Thread.currentThread().getName() + ": id=" + id + " docID=" + docID + " should not match but did");
+            System.out.println("TEST: id=" + id + " docID=" + docID + " should not match but did");
           }
           System.out.println("  rect=" + rect);
           System.out.println("  lat=" + latDoc1 + " lon=" + lonDoc1 + "\n  lat=" + latDoc2 + " lon=" + lonDoc2);
@@ -737,86 +738,13 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     return result;
   }
 
-  private static abstract class VerifyHits {
-
-    public void test(AtomicBoolean failed, boolean small, IndexSearcher s, NumericDocValues docIDToID, Set<Integer> deleted, Query query, double[] lats, double[] lons) throws Exception {
-      int maxDoc = s.getIndexReader().maxDoc();
-      final FixedBitSet hits = new FixedBitSet(maxDoc);
-      s.search(query, new SimpleCollector() {
-
-          private int docBase;
-
-          @Override
-          public boolean needsScores() {
-            return false;
-          }
-
-          @Override
-          protected void doSetNextReader(LeafReaderContext context) throws IOException {
-            docBase = context.docBase;
-          }
-
-          @Override
-          public void collect(int doc) {
-            hits.set(docBase+doc);
-          }
-        });
-
-      boolean fail = false;
-
-      // Change to false to see all wrong hits:
-      boolean failFast = true;
-
-      for(int docID=0;docID<maxDoc;docID++) {
-        int id = (int) docIDToID.get(docID);
-        boolean expected;
-        if (deleted.contains(id)) {
-          expected = false;
-        } else if (Double.isNaN(lats[id])) {
-          expected = false;
-        } else {
-          expected = shouldMatch(lats[id], lons[id]);
-        }
-
-        if (hits.get(docID) != expected) {
-
-          // Print only one failed hit; add a true || in here to see all failures:
-          if (failFast == false || failed.getAndSet(true) == false) {
-            if (expected) {
-              System.out.println(Thread.currentThread().getName() + ": id=" + id + " should match but did not");
-            } else {
-              System.out.println(Thread.currentThread().getName() + ": id=" + id + " should not match but did");
-            }
-            System.out.println("  small=" + small + " query=" + query +
-                               " docID=" + docID + "\n  lat=" + lats[id] + " lon=" + lons[id] +
-                               "\n  deleted?=" + deleted.contains(id));
-            if (Double.isNaN(lats[id]) == false) {
-              describe(docID, lats[id], lons[id]);
-            }
-            if (failFast) {
-              fail("wrong hit (first of possibly more)");
-            } else {
-              fail = true;
-            }
-          }
-        }
-      }
-
-      if (fail) {
-        failed.set(true);
-        fail("some hits were wrong");
-      }
-    }
-
-    /** Return true if we definitely should match, false if we definitely
-     *  should not match, and null if it's a borderline case which might
-     *  go either way. */
-    protected abstract boolean shouldMatch(double lat, double lon);
-
-    protected abstract void describe(int docID, double lat, double lon);
+  private void verify(boolean small, double[] lats, double[] lons) throws Exception {
+    verifyRandomRectangles(small, lats, lons);
+    verifyRandomDistances(small, lats, lons);
+    verifyRandomPolygons(small, lats, lons);
   }
 
-  protected void verify(boolean small, double[] lats, double[] lons) throws Exception {
+  protected void verifyRandomRectangles(boolean small, double[] lats, double[] lons) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
     // Else we can get O(N^2) merging:
     int mbd = iwc.getMaxBufferedDocs();
@@ -857,142 +785,400 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     final IndexReader r = DirectoryReader.open(w);
     w.close();
 
-    // We can't wrap with "exotic" readers because the BKD query must see the BKDDVFormat:
+    IndexSearcher s = newSearcher(r);
+
+    int iters = atLeast(25);
+
+    NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
+
+    Bits liveDocs = MultiFields.getLiveDocs(s.getIndexReader());
+    int maxDoc = s.getIndexReader().maxDoc();
+
+    for (int iter=0;iter<iters;iter++) {
+
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter + " s=" + s);
+      }
+      
+      // Rect: don't allow dateline crossing when testing small:
+      GeoRect rect = randomRect(small, small == false);
+
+      Query query = newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+
+      if (VERBOSE) {
+        System.out.println("  query=" + query);
+      }
+
+      final FixedBitSet hits = new FixedBitSet(maxDoc);
+      s.search(query, new SimpleCollector() {
+
+          private int docBase;
+
+          @Override
+          public boolean needsScores() {
+            return false;
+          }
+
+          @Override
+          protected void doSetNextReader(LeafReaderContext context) throws IOException {
+            docBase = context.docBase;
+          }
+
+          @Override
+          public void collect(int doc) {
+            hits.set(docBase+doc);
+          }
+        });
+
+      boolean fail = false;
+      for(int docID=0;docID<maxDoc;docID++) {
+        int id = (int) docIDToID.get(docID);
+        boolean expected;
+        if (liveDocs != null && liveDocs.get(docID) == false) {
+          // document is deleted
+          expected = false;
+        } else if (Double.isNaN(lats[id])) {
+          expected = false;
+        } else {
+          expected = rectContainsPoint(rect, lats[id], lons[id]);
+        }
+
+        if (hits.get(docID) != expected) {
+          StringBuilder b = new StringBuilder();
+
+          if (expected) {
+            b.append("FAIL: id=" + id + " should match but did not\n");
+          } else {
+            b.append("FAIL: id=" + id + " should not match but did\n");
+          }
+          b.append("  query=" + query + " docID=" + docID + "\n");
+          b.append("  lat=" + lats[id] + " lon=" + lons[id] + "\n");
+          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          if (true) {
+            fail("wrong hit (first of possibly more):\n\n" + b);
+          } else {
+            System.out.println(b.toString());
+            fail = true;
+          }
+        }
+      }
+      if (fail) {
+        fail("some hits were wrong");
+      }
+    }
+
+    IOUtils.close(r, dir);
+  }
+
+  protected void verifyRandomDistances(boolean small, double[] lats, double[] lons) throws Exception {
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    // Else we can get O(N^2) merging:
+    int mbd = iwc.getMaxBufferedDocs();
+    if (mbd != -1 && mbd < lats.length/100) {
+      iwc.setMaxBufferedDocs(lats.length/100);
+    }
+    Directory dir;
+    if (lats.length > 100000) {
+      dir = newFSDirectory(createTempDir(getClass().getSimpleName()));
+    } else {
+      dir = newDirectory();
+    }
+
+    Set<Integer> deleted = new HashSet<>();
+    // RandomIndexWriter is too slow here:
+    IndexWriter w = new IndexWriter(dir, iwc);
+    for(int id=0;id<lats.length;id++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", ""+id, Field.Store.NO));
+      doc.add(new NumericDocValuesField("id", id));
+      if (Double.isNaN(lats[id]) == false) {
+        addPointToDoc(FIELD_NAME, doc, lats[id], lons[id]);
+      }
+      w.addDocument(doc);
+      if (id > 0 && random().nextInt(100) == 42) {
+        int idToDelete = random().nextInt(id);
+        w.deleteDocuments(new Term("id", ""+idToDelete));
+        deleted.add(idToDelete);
+        if (VERBOSE) {
+          System.out.println("  delete id=" + idToDelete);
+        }
+      }
+    }
+
+    if (random().nextBoolean()) {
+      w.forceMerge(1);
+    }
+    final IndexReader r = DirectoryReader.open(w);
+    w.close();
+
+    IndexSearcher s = newSearcher(r);
+
+    int iters = atLeast(25);
+
+    NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
+
+    Bits liveDocs = MultiFields.getLiveDocs(s.getIndexReader());
+    int maxDoc = s.getIndexReader().maxDoc();
+
+    for (int iter=0;iter<iters;iter++) {
+
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + iter + " s=" + s);
+      }
+
+      // Distance
+      final double centerLat = randomLat(small);
+      final double centerLon = randomLon(small);
+
+      final double radiusMeters;
+      if (small) {
+        // Approx 3 degrees lon at the equator:
+        radiusMeters = random().nextDouble() * 333000 + 1.0;
+      } else {
+        // So the query can cover at most 50% of the earth's surface:
+        radiusMeters = random().nextDouble() * GeoUtils.SEMIMAJOR_AXIS * Math.PI / 2.0 + 1.0;
+      }
+
+      if (VERBOSE) {
+        final DecimalFormat df = new DecimalFormat("#,###.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
+        System.out.println("  radiusMeters = " + df.format(radiusMeters));
+      }
+
+      Query query = newDistanceQuery(FIELD_NAME, centerLat, centerLon, radiusMeters);
+
+      if (VERBOSE) {
+        System.out.println("  query=" + query);
+      }
+
+      final FixedBitSet hits = new FixedBitSet(maxDoc);
+      s.search(query, new SimpleCollector() {
+
+          private int docBase;
+
+          @Override
+          public boolean needsScores() {
+            return false;
+          }
+
+          @Override
+          protected void doSetNextReader(LeafReaderContext context) throws IOException {
+            docBase = context.docBase;
+          }
+
+          @Override
+          public void collect(int doc) {
+            hits.set(docBase+doc);
+          }
+        });
+
+      boolean fail = false;
+      for(int docID=0;docID<maxDoc;docID++) {
+        int id = (int) docIDToID.get(docID);
+        boolean expected;
+        if (liveDocs != null && liveDocs.get(docID) == false) {
+          // document is deleted
+          expected = false;
+        } else if (Double.isNaN(lats[id])) {
+          expected = false;
+        } else {
+          expected = circleContainsPoint(centerLat, centerLon, radiusMeters, lats[id], lons[id]);
+        }
+
+        if (hits.get(docID) != expected) {
+          StringBuilder b = new StringBuilder();
+
+          if (expected) {
+            b.append("FAIL: id=" + id + " should match but did not\n");
+          } else {
+            b.append("FAIL: id=" + id + " should not match but did\n");
+          }
+          b.append("  query=" + query + " docID=" + docID + "\n");
+          b.append("  lat=" + lats[id] + " lon=" + lons[id] + "\n");
+          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          if (Double.isNaN(lats[id]) == false) {
+            double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, lats[id], lons[id]);
+            b.append("  centerLat=" + centerLat + " centerLon=" + centerLon + " distanceMeters=" + distanceMeters + " vs radiusMeters=" + radiusMeters);
+          }
+          if (true) {
+            fail("wrong hit (first of possibly more):\n\n" + b);
+          } else {
+            System.out.println(b.toString());
+            fail = true;
+          }
+        }
+      }
+      if (fail) {
+        fail("some hits were wrong");
+      }
+    }
+
+    IOUtils.close(r, dir);
+  }
+
+  protected void verifyRandomPolygons(boolean small, double[] lats, double[] lons) throws Exception {
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    // Else we can get O(N^2) merging:
+    int mbd = iwc.getMaxBufferedDocs();
+    if (mbd != -1 && mbd < lats.length/100) {
+      iwc.setMaxBufferedDocs(lats.length/100);
+    }
+    Directory dir;
+    if (lats.length > 100000) {
+      dir = newFSDirectory(createTempDir(getClass().getSimpleName()));
+    } else {
+      dir = newDirectory();
+    }
+
+    Set<Integer> deleted = new HashSet<>();
+    // RandomIndexWriter is too slow here:
+    IndexWriter w = new IndexWriter(dir, iwc);
+    for(int id=0;id<lats.length;id++) {
+      Document doc = new Document();
+      doc.add(newStringField("id", ""+id, Field.Store.NO));
+      doc.add(new NumericDocValuesField("id", id));
+      if (Double.isNaN(lats[id]) == false) {
+        addPointToDoc(FIELD_NAME, doc, lats[id], lons[id]);
+      }
+      w.addDocument(doc);
+      if (id > 0 && random().nextInt(100) == 42) {
+        int idToDelete = random().nextInt(id);
+        w.deleteDocuments(new Term("id", ""+idToDelete));
+        deleted.add(idToDelete);
+        if (VERBOSE) {
+          System.out.println("  delete id=" + idToDelete);
+        }
+      }
+    }
+
+    if (random().nextBoolean()) {
+      w.forceMerge(1);
+    }
+    final IndexReader r = DirectoryReader.open(w);
+    w.close();
+
+    // nocommit can we wrap again?
+    // We can't wrap with "exotic" readers because points needs to work:
     IndexSearcher s = newSearcher(r, false);
 
     final int iters = atLeast(75);
 
-    final AtomicBoolean failed = new AtomicBoolean();
-
     NumericDocValues docIDToID = MultiDocValues.getNumericValues(r, "id");
 
-    for (int iter=0;iter<iters && failed.get() == false;iter++) {
+    Bits liveDocs = MultiFields.getLiveDocs(s.getIndexReader());
+    int maxDoc = s.getIndexReader().maxDoc();
+
+    for (int iter=0;iter<iters;iter++) {
 
       if (VERBOSE) {
-        System.out.println("\n" + Thread.currentThread().getName() + ": TEST: iter=" + iter + " s=" + s);
+        System.out.println("\nTEST: iter=" + iter + " s=" + s);
       }
-      Query query;
-      VerifyHits verifyHits;
 
-      if (random().nextBoolean()) {
-        // Rect: don't allow dateline crossing when testing small:
-        final GeoRect rect = randomRect(small, small == false);
+      // TODO: poly query can't handle dateline crossing yet:
+      final GeoRect bbox = randomRect(small, false);
 
-        query = newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+      // Polygon
+      final double[] polyLats;
+      final double[] polyLons;
+      // TODO: factor this out, maybe if we add Polygon class?
+      switch (random().nextInt(3)) {
+      case 0:
+        // box
+        polyLats = new double[5];
+        polyLons = new double[5];
+        polyLats[0] = bbox.minLat;
+        polyLons[0] = bbox.minLon;
+        polyLats[1] = bbox.maxLat;
+        polyLons[1] = bbox.minLon;
+        polyLats[2] = bbox.maxLat;
+        polyLons[2] = bbox.maxLon;
+        polyLats[3] = bbox.minLat;
+        polyLons[3] = bbox.maxLon;
+        polyLats[4] = bbox.minLat;
+        polyLons[4] = bbox.minLon;
+        break;
+      case 1:
+        // right triangle
+        polyLats = new double[4];
+        polyLons = new double[4];
+        polyLats[0] = bbox.minLat;
+        polyLons[0] = bbox.minLon;
+        polyLats[1] = bbox.maxLat;
+        polyLons[1] = bbox.minLon;
+        polyLats[2] = bbox.maxLat;
+        polyLons[2] = bbox.maxLon;
+        polyLats[3] = bbox.minLat;
+        polyLons[3] = bbox.minLon;
+        break;
+      default:
+        // surprise me!
+        double[][] res = surpriseMePolygon();
+        polyLats = res[0];
+        polyLons = res[1];
+        break;
+      }
+      Query query = newPolygonQuery(FIELD_NAME, polyLats, polyLons);
 
-        verifyHits = new VerifyHits() {
+      if (VERBOSE) {
+        System.out.println("  query=" + query);
+      }
+
+      final FixedBitSet hits = new FixedBitSet(maxDoc);
+      s.search(query, new SimpleCollector() {
+
+          private int docBase;
+
           @Override
-          protected boolean shouldMatch(double pointLat, double pointLon) {
-            return rectContainsPoint(rect, pointLat, pointLon);
+          public boolean needsScores() {
+            return false;
           }
+
           @Override
-          protected void describe(int docID, double lat, double lon) {
+          protected void doSetNextReader(LeafReaderContext context) throws IOException {
+            docBase = context.docBase;
           }
-        };
 
-      } else if (random().nextBoolean()) {
-        // Distance
-        final double centerLat = randomLat(small);
-        final double centerLon = randomLon(small);
+          @Override
+          public void collect(int doc) {
+            hits.set(docBase+doc);
+          }
+        });
 
-        final double radiusMeters;
-        if (small) {
-          // Approx 3 degrees lon at the equator:
-          radiusMeters = random().nextDouble() * 333000 + 1.0;
+      boolean fail = false;
+      for(int docID=0;docID<maxDoc;docID++) {
+        int id = (int) docIDToID.get(docID);
+        boolean expected;
+        if (liveDocs != null && liveDocs.get(docID) == false) {
+          // document is deleted
+          expected = false;
+        } else if (Double.isNaN(lats[id])) {
+          expected = false;
         } else {
-          // So the query can cover at most 50% of the earth's surface:
-          radiusMeters = random().nextDouble() * GeoUtils.SEMIMAJOR_AXIS * Math.PI / 2.0 + 1.0;
+          expected = polygonContainsPoint(polyLats, polyLons, lats[id], lons[id]);
         }
 
-        if (VERBOSE) {
-          final DecimalFormat df = new DecimalFormat("#,###.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-          System.out.println("  radiusMeters = " + df.format(radiusMeters));
+        if (hits.get(docID) != expected) {
+          StringBuilder b = new StringBuilder();
+
+          if (expected) {
+            b.append("FAIL: id=" + id + " should match but did not\n");
+          } else {
+            b.append("FAIL: id=" + id + " should not match but did\n");
+          }
+          b.append("  query=" + query + " docID=" + docID + "\n");
+          b.append("  lat=" + lats[id] + " lon=" + lons[id] + "\n");
+          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append("  polyLats=" + Arrays.toString(polyLats));
+          b.append("  polyLons=" + Arrays.toString(polyLons));
+          if (true) {
+            fail("wrong hit (first of possibly more):\n\n" + b);
+          } else {
+            System.out.println(b.toString());
+            fail = true;
+          }
         }
-
-        query = newDistanceQuery(FIELD_NAME, centerLat, centerLon, radiusMeters);
-
-        verifyHits = new VerifyHits() {
-          @Override
-          protected boolean shouldMatch(double pointLat, double pointLon) {
-            return circleContainsPoint(centerLat, centerLon, radiusMeters, pointLat, pointLon);
-          }
-
-          @Override
-          protected void describe(int docID, double pointLat, double pointLon) {
-            double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
-            System.out.println("  docID=" + docID + " centerLat=" + centerLat + " centerLon=" + centerLon
-                + " pointLat=" + pointLat + " pointLon=" + pointLon + " distanceMeters=" + distanceMeters
-                + " vs radiusMeters=" + radiusMeters);
-          }
-        };
-
-        // TODO: get poly query working with dateline crossing too (how?)!
-      } else {
-
-        // TODO: poly query can't handle dateline crossing yet:
-        final GeoRect bbox = randomRect(small, false);
-
-        // Polygon
-        final double[] polyLats;
-        final double[] polyLons;
-        // TODO: factor this out, maybe if we add Polygon class?
-        switch (random().nextInt(3)) {
-          case 0:
-            // box
-            polyLats = new double[5];
-            polyLons = new double[5];
-            polyLats[0] = bbox.minLat;
-            polyLons[0] = bbox.minLon;
-            polyLats[1] = bbox.maxLat;
-            polyLons[1] = bbox.minLon;
-            polyLats[2] = bbox.maxLat;
-            polyLons[2] = bbox.maxLon;
-            polyLats[3] = bbox.minLat;
-            polyLons[3] = bbox.maxLon;
-            polyLats[4] = bbox.minLat;
-            polyLons[4] = bbox.minLon;
-            break;
-          case 1:
-            // right triangle
-            polyLats = new double[4];
-            polyLons = new double[4];
-            polyLats[0] = bbox.minLat;
-            polyLons[0] = bbox.minLon;
-            polyLats[1] = bbox.maxLat;
-            polyLons[1] = bbox.minLon;
-            polyLats[2] = bbox.maxLat;
-            polyLons[2] = bbox.maxLon;
-            polyLats[3] = bbox.minLat;
-            polyLons[3] = bbox.minLon;
-            break;
-          default:
-            // surprise me!
-            double[][] res = surpriseMePolygon();
-            polyLats = res[0];
-            polyLons = res[1];
-            break;
-        }
-        query = newPolygonQuery(FIELD_NAME, polyLats, polyLons);
-
-        verifyHits = new VerifyHits() {
-          @Override
-          protected boolean shouldMatch(double pointLat, double pointLon) {
-            return polygonContainsPoint(polyLats, polyLons, pointLat, pointLon);
-          }
-
-          @Override
-          protected void describe(int docID, double lat, double lon) {
-          }
-        };
       }
-
-      if (query != null) {
-
-        if (VERBOSE) {
-          System.out.println("  query=" + query);
-        }
-
-        verifyHits.test(failed, small, s, docIDToID, deleted, query, lats, lons);
+      if (fail) {
+        fail("some hits were wrong");
       }
     }
 
