@@ -27,6 +27,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.spatial.util.GeoTestUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
@@ -182,8 +183,8 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
       doc.add(new StoredField("id", i));
       doc.add(new NumericDocValuesField("id", i));
       if (random().nextInt(10) > 7) {
-        double latRaw = -90 + 180.0 * random().nextDouble();
-        double lonRaw = -180 + 360.0 * random().nextDouble();
+        double latRaw = GeoTestUtil.nextLatitude();
+        double lonRaw = GeoTestUtil.nextLongitude();
         // pre-normalize up front, so we can just use quantized value for testing and do simple exact comparisons
         double lat = LatLonPoint.decodeLatitude(LatLonPoint.encodeLatitude(latRaw));
         double lon = LatLonPoint.decodeLongitude(LatLonPoint.encodeLongitude(lonRaw));
@@ -198,8 +199,8 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
 
     for (int i = 0; i < numQueries; i++) {
-      double lat = -90 + 180.0 * random().nextDouble();
-      double lon = -180 + 360.0 * random().nextDouble();
+      double lat = GeoTestUtil.nextLatitude();
+      double lon = GeoTestUtil.nextLongitude();
       double missingValue = Double.POSITIVE_INFINITY;
 
       Result expected[] = new Result[reader.maxDoc()];
