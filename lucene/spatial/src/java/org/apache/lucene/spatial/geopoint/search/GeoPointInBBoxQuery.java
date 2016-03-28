@@ -72,10 +72,10 @@ public class GeoPointInBBoxQuery extends Query {
    */
   public GeoPointInBBoxQuery(final String field, final TermEncoding termEncoding, final double minLat, final double maxLat, final double minLon, final double maxLon) {
     if (field == null) {
-      throw new IllegalArgumentException("field cannot be null");
+      throw new IllegalArgumentException("field must not be null");
     }
     if (termEncoding == null) {
-      throw new IllegalArgumentException("termEncoding cannot be null");
+      throw new IllegalArgumentException("termEncoding must not be null");
     }
     GeoUtils.checkLatitude(minLat);
     GeoUtils.checkLatitude(maxLat);

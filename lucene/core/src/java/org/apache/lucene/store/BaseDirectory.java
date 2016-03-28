@@ -35,7 +35,7 @@ public abstract class BaseDirectory extends Directory {
   protected BaseDirectory(LockFactory lockFactory) {
     super();
     if (lockFactory == null) {
-      throw new NullPointerException("LockFactory cannot be null, use an explicit instance!");
+      throw new NullPointerException("LockFactory must not be null, use an explicit instance!");
     }
     this.lockFactory = lockFactory;
   }

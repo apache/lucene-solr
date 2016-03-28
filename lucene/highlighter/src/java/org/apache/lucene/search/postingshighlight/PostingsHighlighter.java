@@ -465,7 +465,7 @@ public class PostingsHighlighter {
 
     PassageFormatter fieldFormatter = getFormatter(field);
     if (fieldFormatter == null) {
-      throw new NullPointerException("PassageFormatter cannot be null");
+      throw new NullPointerException("PassageFormatter must not be null");
     }
     
     // check if we should do any multiterm processing
@@ -550,7 +550,7 @@ public class PostingsHighlighter {
       TermsEnum termsEnum, PostingsEnum[] postings, int n) throws IOException {
     PassageScorer scorer = getScorer(field);
     if (scorer == null) {
-      throw new NullPointerException("PassageScorer cannot be null");
+      throw new NullPointerException("PassageScorer must not be null");
     }
     PriorityQueue<OffsetsEnum> pq = new PriorityQueue<>();
     float weights[] = new float[terms.length];

@@ -1592,7 +1592,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       final Field f = updates[i];
       final DocValuesType dvType = f.fieldType().docValuesType();
       if (dvType == null) {
-        throw new NullPointerException("DocValuesType cannot be null (field: \"" + f.name() + "\")");
+        throw new NullPointerException("DocValuesType must not be null (field: \"" + f.name() + "\")");
       }
       if (dvType == DocValuesType.NONE) {
         throw new IllegalArgumentException("can only update NUMERIC or BINARY fields! field=" + f.name());

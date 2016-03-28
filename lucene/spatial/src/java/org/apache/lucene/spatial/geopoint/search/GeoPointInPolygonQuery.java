@@ -71,19 +71,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
   /** Common constructor, used only internally. */
   private GeoPointInPolygonQuery(final String field, TermEncoding termEncoding, GeoRect bbox, final double[] polyLats, final double[] polyLons) {
     super(field, termEncoding, bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon);
-    if (polyLats.length != polyLons.length) {
-      throw new IllegalArgumentException("polyLats and polyLons must be equal length");
-    }
-    if (polyLats.length < 4) {
-      throw new IllegalArgumentException("at least 4 polygon points required");
-    }
-    if (polyLats[0] != polyLats[polyLats.length-1]) {
-      throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLats[0]=" + polyLats[0] + " polyLats[" + (polyLats.length-1) + "]=" + polyLats[polyLats.length-1]);
-    }
-    if (polyLons[0] != polyLons[polyLons.length-1]) {
-      throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLons[0]=" + polyLons[0] + " polyLons[" + (polyLons.length-1) + "]=" + polyLons[polyLons.length-1]);
-    }
-
+    GeoUtils.checkPolygon(polyLats,  polyLons);
     this.polyLons = polyLons;
     this.polyLats = polyLats;
   }
@@ -111,8 +99,8 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
   @Override
   public int hashCode() {
     int result = super.hashCode();
-    result = 31 * result + (polyLats != null ? Arrays.hashCode(polyLats) : 0);
-    result = 31 * result + (polyLons != null ? Arrays.hashCode(polyLons) : 0);
+    result = 31 * result + Arrays.hashCode(polyLats);
+    result = 31 * result + Arrays.hashCode(polyLons);
     return result;
   }
 

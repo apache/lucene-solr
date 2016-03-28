@@ -48,7 +48,7 @@ public class LegacyNumericFieldConfigListener implements FieldConfigListener {
   public LegacyNumericFieldConfigListener(QueryConfigHandler config) {
     
     if (config == null) {
-      throw new IllegalArgumentException("config cannot be null!");
+      throw new IllegalArgumentException("config must not be null!");
     }
     
     this.config = config;

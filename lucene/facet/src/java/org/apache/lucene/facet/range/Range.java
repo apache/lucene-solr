@@ -31,7 +31,7 @@ public abstract class Range {
   /** Sole constructor. */
   protected Range(String label) {
     if (label == null) {
-      throw new NullPointerException("label cannot be null");
+      throw new NullPointerException("label must not be null");
     }
     this.label = label;
   }

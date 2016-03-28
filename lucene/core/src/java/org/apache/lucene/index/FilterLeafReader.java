@@ -67,7 +67,7 @@ public abstract class FilterLeafReader extends LeafReader {
      */
     public FilterFields(Fields in) {
       if (in == null) {
-        throw new NullPointerException("incoming Fields cannot be null");
+        throw new NullPointerException("incoming Fields must not be null");
       }
       this.in = in;
     }
@@ -103,7 +103,7 @@ public abstract class FilterLeafReader extends LeafReader {
      */
     public FilterTerms(Terms in) {
       if (in == null) {
-        throw new NullPointerException("incoming Terms cannot be null");
+        throw new NullPointerException("incoming Terms must not be null");
       }
       this.in = in;
     }
@@ -170,7 +170,7 @@ public abstract class FilterLeafReader extends LeafReader {
      */
     public FilterTermsEnum(TermsEnum in) {
       if (in == null) {
-        throw new NullPointerException("incoming TermsEnum cannot be null");
+        throw new NullPointerException("incoming TermsEnum must not be null");
       }
       this.in = in;
     }
@@ -233,7 +233,7 @@ public abstract class FilterLeafReader extends LeafReader {
      */
     public FilterPostingsEnum(PostingsEnum in) {
       if (in == null) {
-        throw new NullPointerException("incoming PostingsEnum cannot be null");
+        throw new NullPointerException("incoming PostingsEnum must not be null");
       }
       this.in = in;
     }
@@ -300,7 +300,7 @@ public abstract class FilterLeafReader extends LeafReader {
   public FilterLeafReader(LeafReader in) {
     super();
     if (in == null) {
-      throw new NullPointerException("incoming LeafReader cannot be null");
+      throw new NullPointerException("incoming LeafReader must not be null");
     }
     this.in = in;
     in.registerParentReader(this);

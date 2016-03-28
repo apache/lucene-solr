@@ -63,8 +63,8 @@ public final class FieldInfo {
                    long dvGen, Map<String,String> attributes, int pointDimensionCount, int pointNumBytes) {
     this.name = Objects.requireNonNull(name);
     this.number = number;
-    this.docValuesType = Objects.requireNonNull(docValues, "DocValuesType cannot be null (field: \"" + name + "\")");
-    this.indexOptions = Objects.requireNonNull(indexOptions, "IndexOptions cannot be null (field: \"" + name + "\")");
+    this.docValuesType = Objects.requireNonNull(docValues, "DocValuesType must not be null (field: \"" + name + "\")");
+    this.indexOptions = Objects.requireNonNull(indexOptions, "IndexOptions must not be null (field: \"" + name + "\")");
     if (indexOptions != IndexOptions.NONE) {
       this.storeTermVector = storeTermVector;
       this.storePayloads = storePayloads;
@@ -130,7 +130,7 @@ public final class FieldInfo {
   void update(boolean storeTermVector, boolean omitNorms, boolean storePayloads, IndexOptions indexOptions,
               int dimensionCount, int dimensionNumBytes) {
     if (indexOptions == null) {
-      throw new NullPointerException("IndexOptions cannot be null (field: \"" + name + "\")");
+      throw new NullPointerException("IndexOptions must not be null (field: \"" + name + "\")");
     }
     //System.out.println("FI.update field=" + name + " indexed=" + indexed + " omitNorms=" + omitNorms + " this.omitNorms=" + this.omitNorms);
     if (this.indexOptions != indexOptions) {
@@ -201,7 +201,7 @@ public final class FieldInfo {
 
   void setDocValuesType(DocValuesType type) {
     if (type == null) {
-      throw new NullPointerException("DocValuesType cannot be null (field: \"" + name + "\")");
+      throw new NullPointerException("DocValuesType must not be null (field: \"" + name + "\")");
     }
     if (docValuesType != DocValuesType.NONE && type != DocValuesType.NONE && docValuesType != type) {
       throw new IllegalArgumentException("cannot change DocValues type from " + docValuesType + " to " + type + " for field \"" + name + "\"");

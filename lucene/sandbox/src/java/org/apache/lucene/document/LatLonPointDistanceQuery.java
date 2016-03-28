@@ -56,7 +56,7 @@ final class LatLonPointDistanceQuery extends Query {
 
   public LatLonPointDistanceQuery(String field, double latitude, double longitude, double radiusMeters) {
     if (field == null) {
-      throw new IllegalArgumentException("field cannot be null");
+      throw new IllegalArgumentException("field must not be null");
     }
     if (Double.isFinite(radiusMeters) == false || radiusMeters < 0) {
       throw new IllegalArgumentException("radiusMeters: '" + radiusMeters + "' is invalid");

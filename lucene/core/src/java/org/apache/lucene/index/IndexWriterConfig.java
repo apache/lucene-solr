@@ -160,7 +160,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    * like NFS that do not support "delete on last close" semantics, which
    * Lucene's "point in time" search normally relies on.
    * <p>
-   * <b>NOTE:</b> the deletion policy cannot be null.
+   * <b>NOTE:</b> the deletion policy must not be null.
    *
    * <p>Only takes effect when IndexWriter is first created. 
    */
@@ -197,7 +197,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   /**
    * Expert: set the {@link Similarity} implementation used by this IndexWriter.
    * <p>
-   * <b>NOTE:</b> the similarity cannot be null.
+   * <b>NOTE:</b> the similarity must not be null.
    *
    * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setSimilarity(Similarity similarity) {
@@ -217,7 +217,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    * Expert: sets the merge scheduler used by this writer. The default is
    * {@link ConcurrentMergeScheduler}.
    * <p>
-   * <b>NOTE:</b> the merge scheduler cannot be null.
+   * <b>NOTE:</b> the merge scheduler must not be null.
    *
    * <p>Only takes effect when IndexWriter is first created. */
   public IndexWriterConfig setMergeScheduler(MergeScheduler mergeScheduler) {

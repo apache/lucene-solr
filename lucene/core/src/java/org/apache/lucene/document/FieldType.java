@@ -292,7 +292,7 @@ public class FieldType implements IndexableFieldType  {
   public void setIndexOptions(IndexOptions value) {
     checkIfFrozen();
     if (value == null) {
-      throw new NullPointerException("IndexOptions cannot be null");
+      throw new NullPointerException("IndexOptions must not be null");
     }
     this.indexOptions = value;
   }
@@ -482,7 +482,7 @@ public class FieldType implements IndexableFieldType  {
   public void setDocValuesType(DocValuesType type) {
     checkIfFrozen();
     if (type == null) {
-      throw new NullPointerException("DocValuesType cannot be null");
+      throw new NullPointerException("DocValuesType must not be null");
     }
     docValuesType = type;
   }
