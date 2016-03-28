@@ -212,7 +212,7 @@ solrAdminServices.factory('System',
   }])
 .factory('Query',
     ['$resource', function($resource) {
-       var resource = $resource('/solr/:core:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
+       var resource = $resource('/solr/:core/:handler', {core: '@core', handler: '@handler', '_':Date.now()}, {
            "query": {
              method: "GET",
              transformResponse: function (data) {
@@ -230,7 +230,7 @@ solrAdminServices.factory('System',
                    }
                }
            }
-           return "/solr/" + params.core + params.handler + "?" + qs.sort().join("&");
+           return "/solr/" + params.core + "/" + params.handler + "?" + qs.sort().join("&");
        }
        return resource;
 }])
