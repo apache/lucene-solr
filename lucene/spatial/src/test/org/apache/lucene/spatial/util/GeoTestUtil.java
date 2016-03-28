@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.spatial.util;
 
+import java.util.ArrayList;
 import java.util.Random;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -27,7 +28,6 @@ public class GeoTestUtil {
   public static double nextLatitude() {
     return -90 + 180.0 * random().nextDouble();
   }
-
   
   /** returns next pseudorandom longitude (anywhere) */
   public static double nextLongitude() {
@@ -66,6 +66,171 @@ public class GeoTestUtil {
     GeoUtils.checkLongitude(minLongitude);
     GeoUtils.checkLongitude(maxLongitude);
     return normalizeLongitude(randomRangeMaybeSlightlyOutside(minLongitude, maxLongitude));
+  }
+  
+  /** returns next pseudorandom box: can cross the 180th meridian */
+  public static GeoRect nextBox() {
+    return nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), true);
+  }
+  
+  /** returns next pseudorandom box, can cross the 180th meridian, kinda close to {@code otherLatitude} and {@code otherLongitude} */
+  public static GeoRect nextBoxNear(double otherLatitude, double otherLongitude) {
+    GeoUtils.checkLongitude(otherLongitude);
+    GeoUtils.checkLongitude(otherLongitude);
+    return nextBoxInternal(nextLatitudeNear(otherLatitude), nextLatitudeNear(otherLatitude), 
+                           nextLongitudeNear(otherLongitude), nextLongitudeNear(otherLongitude), true);
+  }
+  
+  /** returns next pseudorandom polygon */
+  public static double[][] nextPolygon() {
+    if (random().nextBoolean()) {
+      return surpriseMePolygon(null, null);
+    }
+
+    GeoRect box = nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), false);
+    if (random().nextBoolean()) {
+      // box
+      return boxPolygon(box);
+    } else {
+      // triangle
+      return trianglePolygon(box);
+    }
+  }
+  
+  /** returns next pseudorandom polygon, kinda close to {@code otherLatitude} and {@code otherLongitude} */
+  public static double[][] nextPolygonNear(double otherLatitude, double otherLongitude) {
+    if (random().nextBoolean()) {
+      return surpriseMePolygon(otherLatitude, otherLongitude);
+    }
+
+    GeoRect box = nextBoxInternal(nextLatitudeNear(otherLatitude), nextLatitudeNear(otherLatitude), 
+                                  nextLongitudeNear(otherLongitude), nextLongitudeNear(otherLongitude), false);
+    if (random().nextBoolean()) {
+      // box
+      return boxPolygon(box);
+    } else {
+      // triangle
+      return trianglePolygon(box);
+    }
+  }
+
+  private static GeoRect nextBoxInternal(double lat0, double lat1, double lon0, double lon1, boolean canCrossDateLine) {
+    if (lat1 < lat0) {
+      double x = lat0;
+      lat0 = lat1;
+      lat1 = x;
+    }
+
+    if (canCrossDateLine == false && lon1 < lon0) {
+      double x = lon0;
+      lon0 = lon1;
+      lon1 = x;
+    }
+
+    return new GeoRect(lat0, lat1, lon0, lon1);
+  }
+  
+  private static double[][] boxPolygon(GeoRect box) {
+    assert box.crossesDateline() == false;
+    final double[] polyLats = new double[5];
+    final double[] polyLons = new double[5];
+    polyLats[0] = box.minLat;
+    polyLons[0] = box.minLon;
+    polyLats[1] = box.maxLat;
+    polyLons[1] = box.minLon;
+    polyLats[2] = box.maxLat;
+    polyLons[2] = box.maxLon;
+    polyLats[3] = box.minLat;
+    polyLons[3] = box.maxLon;
+    polyLats[4] = box.minLat;
+    polyLons[4] = box.minLon;
+    return new double[][] { polyLats, polyLons };
+  }
+  
+  private static double[][] trianglePolygon(GeoRect box) {
+    assert box.crossesDateline() == false;
+    final double[] polyLats = new double[4];
+    final double[] polyLons = new double[4];
+    polyLats[0] = box.minLat;
+    polyLons[0] = box.minLon;
+    polyLats[1] = box.maxLat;
+    polyLons[1] = box.minLon;
+    polyLats[2] = box.maxLat;
+    polyLons[2] = box.maxLon;
+    polyLats[3] = box.minLat;
+    polyLons[3] = box.minLon;
+    return new double[][] { polyLats, polyLons };
+  }
+  
+  /** Returns {polyLats, polyLons} double[] array */
+  private static double[][] surpriseMePolygon(Double otherLatitude, Double otherLongitude) {
+    // repeat until we get a poly that doesn't cross dateline:
+    newPoly:
+    while (true) {
+      //System.out.println("\nPOLY ITER");
+      final double centerLat;
+      final double centerLon;
+      if (otherLatitude == null) {
+        centerLat = nextLatitude();
+        centerLon = nextLongitude();
+      } else {
+        GeoUtils.checkLatitude(otherLatitude);
+        GeoUtils.checkLongitude(otherLongitude);
+        centerLat = nextLatitudeNear(otherLatitude);
+        centerLon = nextLongitudeNear(otherLongitude);
+      }
+
+      double radius = 0.1 + 20 * random().nextDouble();
+      double radiusDelta = random().nextDouble();
+
+      ArrayList<Double> lats = new ArrayList<>();
+      ArrayList<Double> lons = new ArrayList<>();
+      double angle = 0.0;
+      while (true) {
+        angle += random().nextDouble()*40.0;
+        //System.out.println("  angle " + angle);
+        if (angle > 360) {
+          break;
+        }
+        double len = radius * (1.0 - radiusDelta + radiusDelta * random().nextDouble());
+        //System.out.println("    len=" + len);
+        double lat = centerLat + len * Math.cos(Math.toRadians(angle));
+        double lon = centerLon + len * Math.sin(Math.toRadians(angle));
+        if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL) {
+          // cannot cross dateline: try again!
+          continue newPoly;
+        }
+        if (lat > 90) {
+          // cross the north pole
+          lat = 180 - lat;
+          lon = 180 - lon;
+        } else if (lat < -90) {
+          // cross the south pole
+          lat = -180 - lat;
+          lon = 180 - lon;
+        }
+        if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL) {
+          // cannot cross dateline: try again!
+          continue newPoly;
+        }
+        lats.add(lat);
+        lons.add(lon);
+
+        //System.out.println("    lat=" + lats.get(lats.size()-1) + " lon=" + lons.get(lons.size()-1));
+      }
+
+      // close it
+      lats.add(lats.get(0));
+      lons.add(lons.get(0));
+
+      double[] latsArray = new double[lats.size()];
+      double[] lonsArray = new double[lons.size()];
+      for(int i=0;i<lats.size();i++) {
+        latsArray[i] = lats.get(i);
+        lonsArray[i] = lons.get(i);
+      }
+      return new double[][] {latsArray, lonsArray};
+    }
   }
   
   /** Returns random double min to max or up to 1% outside of that range */
