@@ -534,6 +534,9 @@ Bug Fixes
   hasn't refreshed yet). In this case the reported size of the file is -1.
   (Shai Erera, Alexey Serba, Richard Coggins)
 
+* SOLR-8870: AngularJS Query tab no longer URL-encodes the /select part of the request, fixing possible 404 issue
+  when Solr is behind a proxy. Also, now supports old-style &qt param when handler not prefixed with "/" (janhoy)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
