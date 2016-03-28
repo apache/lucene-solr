@@ -43,11 +43,6 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Query newDistanceRangeQuery(String field, double centerLat, double centerLon, double minRadiusMeters, double radiusMeters) {
-    return null;
-  }
-
-  @Override
   protected Query newPolygonQuery(String field, double[] lats, double[] lons) {
     return LatLonPoint.newPolygonQuery(field, lats, lons);
   }
@@ -140,12 +135,6 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
     boolean result = distanceMeters <= radiusMeters;
     //System.out.println("  shouldMatch?  centerLon=" + centerLon + " centerLat=" + centerLat + " pointLon=" + pointLon + " pointLat=" + pointLat + " result=" + result + " distanceMeters=" + (distanceKM * 1000));
     return result;
-  }
-
-  @Override
-  protected Boolean distanceRangeContainsPoint(double centerLat, double centerLon, double minRadiusMeters, double radiusMeters, double pointLat, double pointLon) {
-    final double d = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
-    return d >= minRadiusMeters && d <= radiusMeters;
   }
 
   /** Returns random double min to max or up to 1% outside of that range */

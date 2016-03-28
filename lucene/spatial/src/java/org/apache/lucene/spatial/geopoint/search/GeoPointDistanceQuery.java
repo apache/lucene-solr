@@ -80,13 +80,8 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
       }
     }
 
-    if (GeoUtils.isValidLat(centerLat) == false) {
-      throw new IllegalArgumentException("invalid centerLat " + centerLat);
-    }
-
-    if (GeoUtils.isValidLon(centerLon) == false) {
-      throw new IllegalArgumentException("invalid centerLon " + centerLon);
-    }
+    GeoUtils.checkLatitude(centerLat);
+    GeoUtils.checkLongitude(centerLon);
 
     if (radiusMeters <= 0.0) {
       throw new IllegalArgumentException("invalid radiusMeters " + radiusMeters);

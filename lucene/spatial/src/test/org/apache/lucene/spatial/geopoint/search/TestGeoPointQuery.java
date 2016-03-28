@@ -78,11 +78,6 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Query newDistanceRangeQuery(String field, double centerLat, double centerLon, double minRadiusMeters, double radiusMeters) {
-    return new GeoPointDistanceRangeQuery(field, termEncoding, centerLat, centerLon, minRadiusMeters, radiusMeters);
-  }
-
-  @Override
   protected Query newPolygonQuery(String field, double[] lats, double[] lons) {
     return new GeoPointInPolygonQuery(field, termEncoding, lats, lons);
   }
@@ -211,17 +206,6 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     }
   }
 
-  @Override
-  protected Boolean distanceRangeContainsPoint(double centerLat, double centerLon, double minRadiusMeters, double radiusMeters, double pointLat, double pointLon) {
-    if (radiusQueryCanBeWrong(centerLat, centerLon, pointLon, pointLat, minRadiusMeters)
-        || radiusQueryCanBeWrong(centerLat, centerLon, pointLon, pointLat, radiusMeters)) {
-      return null;
-    } else {
-      final double d = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
-      return d >= minRadiusMeters && d <= radiusMeters;
-    }
-  }
-
   private static boolean radiusQueryCanBeWrong(double centerLat, double centerLon, double ptLon, double ptLat,
                                                final double radius) {
     final long hashedCntr = GeoEncodingUtils.mortonHash(centerLat, centerLon);
@@ -240,12 +224,6 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
 
   public void testRectCrossesCircle() throws Exception {
     assertTrue(GeoRelationUtils.rectCrossesCircle(-90, 0.0, -180, 180, 0.0, 0.667, 88000.0, false));
-  }
-
-  private TopDocs geoDistanceRangeQuery(double lat, double lon, double minRadius, double maxRadius, int limit)
-      throws Exception {
-    GeoPointDistanceRangeQuery q = new GeoPointDistanceRangeQuery(FIELD_NAME, termEncoding, lat, lon, minRadius, maxRadius);
-    return searcher.search(q, limit);
   }
 
   public void testBBoxQuery() throws Exception {
@@ -356,11 +334,6 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     });
   }
 
-  public void testMaxDistanceRangeQuery() throws Exception {
-    TopDocs td = geoDistanceRangeQuery(0.0, 0.0, 10, 20000000, 20);
-    assertEquals("GeoDistanceRangeQuery failed", 24, td.totalHits);
-  }
-
   public void testMortonEncoding() throws Exception {
     long hash = GeoEncodingUtils.mortonHash(90, 180);
     assertEquals(180.0, GeoEncodingUtils.mortonUnhashLon(hash), 0);
@@ -408,12 +381,12 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
                     () -> {
                       new GeoPointField("field", 180.0, 0.0, Field.Store.NO);
                     });
-    assertEquals("invalid lat=180.0 for field \"field\"", e.getMessage());
+    assertEquals("invalid latitude 180.0; must be between -90.0 and 90.0", e.getMessage());
 
     e = expectThrows(IllegalArgumentException.class,
                      () -> {
                        new GeoPointField("field", 0.0, 190.0, Field.Store.NO);
                      });
-    assertEquals("invalid lon=190.0 for field \"field\"", e.getMessage());
+    assertEquals("invalid longitude 190.0; must be between -180.0 and 180.0", e.getMessage());
   }
 }
