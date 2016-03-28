@@ -232,6 +232,9 @@ Bug Fixes
 * LUCENE-7112: WeightedSpanTermExtractor.extractUnknownQuery is only called
   on queries that could not be extracted. (Adrien Grand)
 
+* LUCENE-7126: Remove GeoPointDistanceRangeQuery. This query was implemented
+  with boolean NOT, and incorrect for multi-valued documents. (Robert Muir)
+
 Other
 
 * LUCENE-7035: Upgrade icu4j to 56.1/unicode 8. (Robert Muir)
