@@ -969,9 +969,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     final IndexReader r = DirectoryReader.open(w);
     w.close();
 
-    // nocommit can we wrap again?
     // We can't wrap with "exotic" readers because points needs to work:
-    IndexSearcher s = newSearcher(r, false);
+    IndexSearcher s = newSearcher(r);
 
     final int iters = atLeast(75);
 
