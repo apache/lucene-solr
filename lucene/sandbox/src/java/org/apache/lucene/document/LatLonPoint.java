@@ -236,7 +236,7 @@ public class LatLonPoint extends Field {
    * Create a query for matching a bounding box.
    * <p>
    * The box may cross over the dateline.
-   * @param field field name. cannot be null.
+   * @param field field name. must not be null.
    * @param minLatitude latitude lower bound: must be within standard +/-90 coordinate bounds.
    * @param maxLatitude latitude upper bound: must be within standard +/-90 coordinate bounds.
    * @param minLongitude longitude lower bound: must be within standard +/-180 coordinate bounds.
@@ -288,7 +288,7 @@ public class LatLonPoint extends Field {
   
   /**
    * Create a query for matching points within the specified distance of the supplied location.
-   * @param field field name. cannot be null.
+   * @param field field name. must not be null.
    * @param latitude latitude at the center: must be within standard +/-90 coordinate bounds.
    * @param longitude longitude at the center: must be within standard +/-180 coordinate bounds.
    * @param radiusMeters maximum distance from the center in meters: must be non-negative and finite.
@@ -303,7 +303,7 @@ public class LatLonPoint extends Field {
    * Create a query for matching a polygon.
    * <p>
    * The supplied {@code polyLats}/{@code polyLons} must be clockwise or counter-clockwise.
-   * @param field field name. cannot be null.
+   * @param field field name. must not be null.
    * @param polyLats latitude values for points of the polygon: must be within standard +/-90 coordinate bounds.
    * @param polyLons longitude values for points of the polygon: must be within standard +/-180 coordinate bounds.
    * @return query matching points within this polygon
@@ -327,7 +327,7 @@ public class LatLonPoint extends Field {
    * <p>
    * If a document contains multiple values for the field, the <i>closest</i> distance to the location is used.
    * 
-   * @param field field name. cannot be null.
+   * @param field field name. must not be null.
    * @param latitude latitude at the center: must be within standard +/-90 coordinate bounds.
    * @param longitude longitude at the center: must be within standard +/-180 coordinate bounds.
    * @return SortField ordering documents by distance

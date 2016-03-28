@@ -81,10 +81,10 @@ public final class IntPoint extends Field {
 
   private static BytesRef pack(int... point) {
     if (point == null) {
-      throw new IllegalArgumentException("point cannot be null");
+      throw new IllegalArgumentException("point must not be null");
     }
     if (point.length == 0) {
-      throw new IllegalArgumentException("point cannot be 0 dimensions");
+      throw new IllegalArgumentException("point must not be 0 dimensions");
     }
     byte[] packed = new byte[point.length * Integer.BYTES];
     

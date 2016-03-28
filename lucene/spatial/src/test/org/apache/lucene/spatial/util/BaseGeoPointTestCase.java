@@ -186,7 +186,14 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     writer.close();
     dir.close();
   }
-  
+
+  /** null field name not allowed */
+  public void testBoxNull() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      newRectQuery(null, 18, 19, -66, -65);
+    });
+    assertTrue(expected.getMessage().contains("field must not be null"));
+  }
 
   // box should not accept invalid lat/lon
   public void testBoxInvalidCoordinates() throws Exception {
@@ -215,12 +222,21 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     dir.close();
   }
   
+  /** null field name not allowed */
+  public void testDistanceNull() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      newDistanceQuery(null, 18, -65, 50_000);
+    });
+    assertTrue(expected.getMessage().contains("field must not be null"));
+  }
+  
   /** distance query should not accept invalid lat/lon as origin */
   public void testDistanceIllegal() throws Exception {
     expectThrows(Exception.class, () -> {
       newDistanceQuery("field", 92.0, 181.0, 120000);
     });
   }
+
   /** negative distance queries are not allowed */
   public void testDistanceNegative() {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
@@ -276,6 +292,66 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     reader.close();
     writer.close();
     dir.close();
+  }
+  
+  /** null field name not allowed */
+  public void testPolygonNullField() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      newPolygonQuery(null, 
+          new double[] { 18, 18, 19, 19, 18 },
+          new double[] { -66, -65, -65, -66, -66 });
+    });
+    assertTrue(expected.getMessage().contains("field must not be null"));
+  }
+  
+  /** null polyLats not allowed */
+  public void testPolygonNullPolyLats() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      newPolygonQuery("test", 
+          null,
+          new double[] { -66, -65, -65, -66, -66 });
+    });
+    assertTrue(expected.getMessage().contains("polyLats must not be null"));
+  }
+  
+  /** null polyLons not allowed */
+  public void testPolygonNullPolyLons() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      newPolygonQuery("test", 
+          new double[] { 18, 18, 19, 19, 18 },
+          null);
+    });
+    assertTrue(expected.getMessage().contains("polyLons must not be null"));
+  }
+  
+  /** polygon needs at least 3 vertices */
+  public void testPolygonLine() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      newPolygonQuery("test", 
+          new double[] { 18, 18, 18  },
+          new double[] { -66, -65, -66 });
+    });
+    assertTrue(expected.getMessage().contains("at least 4 polygon points required"));
+  }
+  
+  /** polygon needs same number of latitudes as longitudes */
+  public void testPolygonBogus() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      newPolygonQuery("test", 
+          new double[] { 18, 18, 19, 19 },
+          new double[] { -66, -65, -65, -66, -66 });
+    });
+    assertTrue(expected.getMessage().contains("must be equal length"));
+  }
+  
+  /** polygon must be closed */
+  public void testPolygonNotClosed() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      newPolygonQuery("test", 
+          new double[] { 18, 18, 19, 19, 19 },
+          new double[] { -66, -65, -65, -66, -67 });
+    });
+    assertTrue(expected.getMessage(), expected.getMessage().contains("it must close itself"));
   }
 
   // A particularly tricky adversary for BKD tree:

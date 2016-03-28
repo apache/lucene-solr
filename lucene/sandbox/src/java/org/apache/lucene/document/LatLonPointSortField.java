@@ -32,7 +32,7 @@ final class LatLonPointSortField extends SortField {
   LatLonPointSortField(String field, double latitude, double longitude) {
     super(field, SortField.Type.CUSTOM);
     if (field == null) {
-      throw new IllegalArgumentException("field cannot be null");
+      throw new IllegalArgumentException("field must not be null");
     }
     GeoUtils.checkLatitude(latitude);
     GeoUtils.checkLongitude(longitude);

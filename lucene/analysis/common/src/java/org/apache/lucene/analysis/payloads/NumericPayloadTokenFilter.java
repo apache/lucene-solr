@@ -41,7 +41,7 @@ public class NumericPayloadTokenFilter extends TokenFilter {
   public NumericPayloadTokenFilter(TokenStream input, float payload, String typeMatch) {
     super(input);
     if (typeMatch == null) {
-      throw new IllegalArgumentException("typeMatch cannot be null");
+      throw new IllegalArgumentException("typeMatch must not be null");
     }
     //Need to encode the payload
     thePayload = new BytesRef(PayloadHelper.encodeFloat(payload));

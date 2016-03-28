@@ -62,7 +62,7 @@ public class PointRangeQueryNode extends AbstractRangeQueryNode<PointQueryNode> 
       boolean lowerInclusive, boolean upperInclusive, PointsConfig pointsConfig) throws QueryNodeException {
     
     if (pointsConfig == null) {
-      throw new IllegalArgumentException("pointsConfig cannot be null!");
+      throw new IllegalArgumentException("pointsConfig must not be null!");
     }
     
     Class<? extends Number> lowerNumberType, upperNumberType;

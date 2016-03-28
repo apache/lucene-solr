@@ -81,10 +81,10 @@ public final class DoublePoint extends Field {
 
   private static BytesRef pack(double... point) {
     if (point == null) {
-      throw new IllegalArgumentException("point cannot be null");
+      throw new IllegalArgumentException("point must not be null");
     }
     if (point.length == 0) {
-      throw new IllegalArgumentException("point cannot be 0 dimensions");
+      throw new IllegalArgumentException("point must not be 0 dimensions");
     }
     byte[] packed = new byte[point.length * Double.BYTES];
     

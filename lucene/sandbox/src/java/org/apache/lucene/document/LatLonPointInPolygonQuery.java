@@ -40,6 +40,7 @@ import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.SparseFixedBitSet;
+import org.apache.lucene.spatial.util.GeoRect;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
 import org.apache.lucene.spatial.util.GeoUtils;
 
@@ -60,52 +61,20 @@ final class LatLonPointInPolygonQuery extends Query {
 
   /** The lats/lons must be clockwise or counter-clockwise. */
   public LatLonPointInPolygonQuery(String field, double[] polyLats, double[] polyLons) {
-    this.field = field;
     if (field == null) {
-      throw new IllegalArgumentException("field cannot be null");
+      throw new IllegalArgumentException("field must not be null");
     }
-    if (polyLats == null) {
-      throw new IllegalArgumentException("polyLats cannot be null");
-    }
-    if (polyLons == null) {
-      throw new IllegalArgumentException("polyLons cannot be null");
-    }
-    if (polyLats.length != polyLons.length) {
-      throw new IllegalArgumentException("polyLats and polyLons must be equal length");
-    }
-    if (polyLats.length < 4) {
-      throw new IllegalArgumentException("at least 4 polygon points required");
-    }
-    if (polyLats[0] != polyLats[polyLats.length-1]) {
-      throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLats[0]=" + polyLats[0] + " polyLats[" + (polyLats.length-1) + "]=" + polyLats[polyLats.length-1]);
-    }
-    if (polyLons[0] != polyLons[polyLons.length-1]) {
-      throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLons[0]=" + polyLons[0] + " polyLons[" + (polyLons.length-1) + "]=" + polyLons[polyLons.length-1]);
-    }
-
+    GeoUtils.checkPolygon(polyLats,  polyLons);
+    this.field = field;
     this.polyLats = polyLats;
     this.polyLons = polyLons;
 
     // TODO: we could also compute the maximal inner bounding box, to make relations faster to compute?
-
-    double minLon = Double.POSITIVE_INFINITY;
-    double minLat = Double.POSITIVE_INFINITY;
-    double maxLon = Double.NEGATIVE_INFINITY;
-    double maxLat = Double.NEGATIVE_INFINITY;
-    for(int i=0;i<polyLats.length;i++) {
-      double lat = polyLats[i];
-      GeoUtils.checkLatitude(lat);
-      minLat = Math.min(minLat, lat);
-      maxLat = Math.max(maxLat, lat);
-      double lon = polyLons[i];
-      GeoUtils.checkLongitude(lon);
-      minLon = Math.min(minLon, lon);
-      maxLon = Math.max(maxLon, lon);
-    }
-    this.minLon = minLon;
-    this.maxLon = maxLon;
-    this.minLat = minLat;
-    this.maxLat = maxLat;
+    GeoRect box = GeoUtils.polyToBBox(polyLats, polyLons);
+    this.minLon = box.minLon;
+    this.maxLon = box.maxLon;
+    this.minLat = box.minLat;
+    this.maxLat = box.maxLat;
   }
 
   @Override

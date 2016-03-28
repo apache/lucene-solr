@@ -35,7 +35,7 @@ public class PrefixQuery extends AutomatonQuery {
     // It's OK to pass unlimited maxDeterminizedStates: the automaton is born small and determinized:
     super(prefix, toAutomaton(prefix.bytes()), Integer.MAX_VALUE, true);
     if (prefix == null) {
-      throw new NullPointerException("prefix cannot be null");
+      throw new NullPointerException("prefix must not be null");
     }
   }
 

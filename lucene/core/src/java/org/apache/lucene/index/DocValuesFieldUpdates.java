@@ -137,7 +137,7 @@ abstract class DocValuesFieldUpdates {
   protected DocValuesFieldUpdates(String field, DocValuesType type) {
     this.field = field;
     if (type == null) {
-      throw new NullPointerException("DocValuesType cannot be null");
+      throw new NullPointerException("DocValuesType must not be null");
     }
     this.type = type;
   }

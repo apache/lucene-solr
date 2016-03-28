@@ -68,7 +68,7 @@ public class InetAddressPoint extends Field {
   /** Change the values of this field */
   public void setInetAddressValue(InetAddress value) {
     if (value == null) {
-      throw new IllegalArgumentException("point cannot be null");
+      throw new IllegalArgumentException("point must not be null");
     }
     fieldsData = new BytesRef(encode(value));
   }
@@ -165,7 +165,7 @@ public class InetAddressPoint extends Field {
    */
   public static Query newPrefixQuery(String field, InetAddress value, int prefixLength) {
     if (value == null) {
-      throw new IllegalArgumentException("InetAddress cannot be null");
+      throw new IllegalArgumentException("InetAddress must not be null");
     }
     if (prefixLength < 0 || prefixLength > 8 * value.getAddress().length) {
       throw new IllegalArgumentException("illegal prefixLength '" + prefixLength + "'. Must be 0-32 for IPv4 ranges, 0-128 for IPv6 ranges");

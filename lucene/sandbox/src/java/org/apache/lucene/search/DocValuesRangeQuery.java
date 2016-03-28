@@ -141,7 +141,7 @@ public final class DocValuesRangeQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     if (lowerVal == null && upperVal == null) {
-      throw new IllegalStateException("Both min and max values cannot be null, call rewrite first");
+      throw new IllegalStateException("Both min and max values must not be null, call rewrite first");
     }
     return new RandomAccessWeight(DocValuesRangeQuery.this) {
       

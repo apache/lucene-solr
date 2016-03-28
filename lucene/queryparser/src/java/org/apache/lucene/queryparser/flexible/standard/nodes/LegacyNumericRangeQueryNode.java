@@ -88,7 +88,7 @@ public class LegacyNumericRangeQueryNode extends
       boolean lowerInclusive, boolean upperInclusive, LegacyNumericConfig numericConfig) throws QueryNodeException {
     
     if (numericConfig == null) {
-      throw new IllegalArgumentException("numericConfig cannot be null!");
+      throw new IllegalArgumentException("numericConfig must not be null!");
     }
     
     LegacyNumericType lowerNumberType, upperNumberType;

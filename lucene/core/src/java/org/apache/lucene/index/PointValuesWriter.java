@@ -48,7 +48,7 @@ class PointValuesWriter {
   // TODO: if exactly the same value is added to exactly the same doc, should we dedup?
   public void addPackedValue(int docID, BytesRef value) {
     if (value == null) {
-      throw new IllegalArgumentException("field=" + fieldInfo.name + ": point value cannot be null");
+      throw new IllegalArgumentException("field=" + fieldInfo.name + ": point value must not be null");
     }
     if (value.length != fieldInfo.getPointDimensionCount() * fieldInfo.getPointNumBytes()) {
       throw new IllegalArgumentException("field=" + fieldInfo.name + ": this field's value has length=" + value.length + " but should be " + (fieldInfo.getPointDimensionCount() * fieldInfo.getPointNumBytes()));

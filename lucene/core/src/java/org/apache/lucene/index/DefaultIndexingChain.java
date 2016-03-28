@@ -440,7 +440,7 @@ final class DefaultIndexingChain extends DocConsumer {
 
     DocValuesType dvType = fieldType.docValuesType();
     if (dvType == null) {
-      throw new NullPointerException("docValuesType cannot be null (field: \"" + fieldName + "\")");
+      throw new NullPointerException("docValuesType must not be null (field: \"" + fieldName + "\")");
     }
     if (dvType != DocValuesType.NONE) {
       if (fp == null) {

@@ -449,7 +449,7 @@ public final class UnicodeUtil {
    *    content is prematurely truncated.
    */
   public static int UTF8toUTF32(final BytesRef utf8, final int[] ints) {
-    // TODO: ints cannot be null, should be an assert
+    // TODO: ints must not be null, should be an assert
     int utf32Count = 0;
     int utf8Upto = utf8.offset;
     final byte[] bytes = utf8.bytes;
