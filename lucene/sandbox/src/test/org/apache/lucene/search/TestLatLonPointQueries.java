@@ -38,11 +38,6 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Query newDistanceRangeQuery(String field, double centerLat, double centerLon, double minRadiusMeters, double radiusMeters) {
-    return null;
-  }
-
-  @Override
   protected Query newPolygonQuery(String field, double[] lats, double[] lons) {
     return LatLonPoint.newPolygonQuery(field, lats, lons);
   }

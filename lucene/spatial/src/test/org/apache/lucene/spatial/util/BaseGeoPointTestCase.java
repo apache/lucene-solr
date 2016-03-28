@@ -742,8 +742,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected abstract Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters);
 
-  protected abstract Query newDistanceRangeQuery(String field, double centerLat, double centerLon, double minRadiusMeters, double radiusMeters);
-
   protected abstract Query newPolygonQuery(String field, double[] lats, double[] lons);
 
   static final boolean rectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
@@ -767,11 +765,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     boolean result = distanceMeters <= radiusMeters;
     //System.out.println("  shouldMatch?  centerLon=" + centerLon + " centerLat=" + centerLat + " pointLon=" + pointLon + " pointLat=" + pointLat + " result=" + result + " distanceMeters=" + (distanceKM * 1000));
     return result;
-  }
-
-  static final boolean distanceRangeContainsPoint(double centerLat, double centerLon, double minRadiusMeters, double radiusMeters, double pointLat, double pointLon) {
-    final double d = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
-    return d >= minRadiusMeters && d <= radiusMeters;
   }
 
   private static abstract class VerifyHits {
@@ -929,13 +922,10 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
       } else if (random().nextBoolean()) {
         // Distance
-        final boolean rangeQuery = random().nextBoolean();
         final double centerLat = randomLat(small);
         final double centerLon = randomLon(small);
 
-        double radiusMeters;
-        double minRadiusMeters;
-
+        final double radiusMeters;
         if (small) {
           // Approx 3 degrees lon at the equator:
           radiusMeters = random().nextDouble() * 333000 + 1.0;
@@ -944,36 +934,17 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           radiusMeters = random().nextDouble() * GeoUtils.SEMIMAJOR_AXIS * Math.PI / 2.0 + 1.0;
         }
 
-        // generate a random minimum radius between 1% and 95% the max radius
-        minRadiusMeters = (0.01 + 0.94 * random().nextDouble()) * radiusMeters;
-
         if (VERBOSE) {
           final DecimalFormat df = new DecimalFormat("#,###.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-          System.out.println("  radiusMeters = " + df.format(radiusMeters)
-          + ((rangeQuery == true) ? " minRadiusMeters = " + df.format(minRadiusMeters) : ""));
+          System.out.println("  radiusMeters = " + df.format(radiusMeters));
         }
 
-        try {
-          if (rangeQuery == true) {
-            query = newDistanceRangeQuery(FIELD_NAME, centerLat, centerLon, minRadiusMeters, radiusMeters);
-          } else {
-            query = newDistanceQuery(FIELD_NAME, centerLat, centerLon, radiusMeters);
-          }
-        } catch (IllegalArgumentException e) {
-          if (e.getMessage().contains("exceeds maxRadius")) {
-            continue;
-          }
-          throw e;
-        }
+        query = newDistanceQuery(FIELD_NAME, centerLat, centerLon, radiusMeters);
 
         verifyHits = new VerifyHits() {
           @Override
           protected boolean shouldMatch(double pointLat, double pointLon) {
-            if (rangeQuery == false) {
-              return circleContainsPoint(centerLat, centerLon, radiusMeters, pointLat, pointLon);
-            } else {
-              return distanceRangeContainsPoint(centerLat, centerLon, minRadiusMeters, radiusMeters, pointLat, pointLon);
-            }
+            return circleContainsPoint(centerLat, centerLon, radiusMeters, pointLat, pointLon);
           }
 
           @Override
@@ -981,7 +952,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
             double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, pointLat, pointLon);
             System.out.println("  docID=" + docID + " centerLat=" + centerLat + " centerLon=" + centerLon
                 + " pointLat=" + pointLat + " pointLon=" + pointLon + " distanceMeters=" + distanceMeters
-                + " vs" + ((rangeQuery == true) ? " minRadiusMeters=" + minRadiusMeters : "") + " radiusMeters=" + radiusMeters);
+                + " vs radiusMeters=" + radiusMeters);
           }
         };
 
@@ -1205,14 +1176,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     q2 = newDistanceQuery("field", lat, lon, 10000.0);
     assertEquals(q1, q2);
     assertFalse(q1.equals(newDistanceQuery("field2", lat, lon, 10000.0)));
-
-    q1 = newDistanceRangeQuery("field", lat, lon, 10000.0, 100000.0);
-    if (q1 != null) {
-      // Not all subclasses can make distance range query!
-      q2 = newDistanceRangeQuery("field", lat, lon, 10000.0, 100000.0);
-      assertEquals(q1, q2);
-      assertFalse(q1.equals(newDistanceRangeQuery("field2", lat, lon, 10000.0, 100000.0)));
-    }
 
     double[] lats = new double[5];
     double[] lons = new double[5];
