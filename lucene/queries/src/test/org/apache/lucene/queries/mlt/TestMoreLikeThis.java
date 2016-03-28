@@ -18,6 +18,7 @@ package org.apache.lucene.queries.mlt;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,8 +41,14 @@ import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Test;
 
 public class TestMoreLikeThis extends LuceneTestCase {
+
+  private static final String SHOP_TYPE = "type";
+  private static final String FOR_SALE = "weSell";
+  private static final String NOT_FOR_SALE = "weDontSell";
+
   private Directory directory;
   private IndexReader reader;
   private IndexSearcher searcher;
@@ -246,5 +253,80 @@ public class TestMoreLikeThis extends LuceneTestCase {
     return generatedStrings;
   }
 
+  private int addShopDoc(RandomIndexWriter writer, String type, String[] weSell, String[] weDontSell) throws IOException {
+    Document doc = new Document();
+    doc.add(newTextField(SHOP_TYPE, type, Field.Store.YES));
+    for (String item : weSell) {
+      doc.add(newTextField(FOR_SALE, item, Field.Store.YES));
+    }
+    for (String item : weDontSell) {
+      doc.add(newTextField(NOT_FOR_SALE, item, Field.Store.YES));
+    }
+    writer.addDocument(doc);
+    return writer.numDocs() - 1;
+  }
+
+  public void testMultiFieldShouldReturnPerFieldBooleanQuery() throws Exception {
+    IndexReader reader = null;
+    Directory dir = newDirectory();
+    Analyzer analyzer = new MockAnalyzer(random(), MockTokenizer.WHITESPACE, false);
+    try {
+      int maxQueryTerms = 25;
+
+      String[] itShopItemForSale = new String[]{"watch", "ipod", "asrock", "imac", "macbookpro", "monitor", "keyboard", "mouse", "speakers"};
+      String[] itShopItemNotForSale = new String[]{"tie", "trousers", "shoes", "skirt", "hat"};
+
+      String[] clothesShopItemForSale = new String[]{"tie", "trousers", "shoes", "skirt", "hat"};
+      String[] clothesShopItemNotForSale = new String[]{"watch", "ipod", "asrock", "imac", "macbookpro", "monitor", "keyboard", "mouse", "speakers"};
+
+      // add series of shop docs
+      RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+      for (int i = 0; i < 100; i++) {
+        addShopDoc(writer, "it", itShopItemForSale, itShopItemNotForSale);
+      }
+      for (int i = 0; i < 10; i++) {
+        addShopDoc(writer, "clothes", clothesShopItemForSale, clothesShopItemNotForSale);
+      }
+      // Input Document is a clothes shop
+      int inputDocId = addShopDoc(writer, "clothes", clothesShopItemForSale, clothesShopItemNotForSale);
+      reader = writer.getReader();
+      writer.close();
+
+      // setup MLT query
+      MoreLikeThis mlt = new MoreLikeThis(reader);
+
+      mlt.setAnalyzer(analyzer);
+      mlt.setMaxQueryTerms(maxQueryTerms);
+      mlt.setMinDocFreq(1);
+      mlt.setMinTermFreq(1);
+      mlt.setMinWordLen(1);
+      mlt.setFieldNames(new String[]{FOR_SALE, NOT_FOR_SALE});
+
+      // perform MLT query
+      BooleanQuery query = (BooleanQuery) mlt.like(inputDocId);
+      Collection<BooleanClause> clauses = query.clauses();
+
+      Collection<BooleanClause> expectedClothesShopClauses = new ArrayList<BooleanClause>();
+      for (String itemForSale : clothesShopItemForSale) {
+        BooleanClause booleanClause = new BooleanClause(new TermQuery(new Term(FOR_SALE, itemForSale)), BooleanClause.Occur.SHOULD);
+        expectedClothesShopClauses.add(booleanClause);
+      }
+      for (String itemNotForSale : clothesShopItemNotForSale) {
+        BooleanClause booleanClause = new BooleanClause(new TermQuery(new Term(NOT_FOR_SALE, itemNotForSale)), BooleanClause.Occur.SHOULD);
+        expectedClothesShopClauses.add(booleanClause);
+      }
+
+      for (BooleanClause expectedClause : expectedClothesShopClauses) {
+        assertTrue(clauses.contains(expectedClause));
+      }
+    } finally {
+      // clean up
+      if (reader != null) {
+        reader.close();
+      }
+      dir.close();
+      analyzer.close();
+    }
+  }
   // TODO: add tests for the MoreLikeThisQuery
 }
