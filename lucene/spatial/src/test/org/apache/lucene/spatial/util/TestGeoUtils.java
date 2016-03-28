@@ -28,9 +28,6 @@ import org.junit.BeforeClass;
  */
 public class TestGeoUtils extends LuceneTestCase {
 
-  private static final double LON_SCALE = (0x1L<<GeoEncodingUtils.BITS)/360.0D;
-  private static final double LAT_SCALE = (0x1L<<GeoEncodingUtils.BITS)/180.0D;
-
   // Global bounding box we will "cover" in the random test; we have to make this "smallish" else the queries take very long:
   private static double originLat;
   private static double originLon;
@@ -39,22 +36,6 @@ public class TestGeoUtils extends LuceneTestCase {
   public static void beforeClass() throws Exception {
     originLon = GeoTestUtil.nextLongitude();
     originLat = GeoTestUtil.nextLatitude();
-  }
-
-  public long scaleLon(final double val) {
-    return (long) ((val-GeoUtils.MIN_LON_INCL) * LON_SCALE);
-  }
-
-  public long scaleLat(final double val) {
-    return (long) ((val-GeoUtils.MIN_LAT_INCL) * LAT_SCALE);
-  }
-
-  public double unscaleLon(final long val) {
-    return (val / LON_SCALE) + GeoUtils.MIN_LON_INCL;
-  }
-
-  public double unscaleLat(final long val) {
-    return (val / LAT_SCALE) + GeoUtils.MIN_LAT_INCL;
   }
 
   public double randomLat(boolean small) {
