@@ -726,11 +726,16 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   private void verify(boolean small, double[] lats, double[] lons) throws Exception {
     // quantize each value the same way the index does
+    // NaN means missing for the doc!!!!!
     for (int i = 0; i < lats.length; i++) {
-      lats[i] = quantizeLat(lats[i]);
+      if (!Double.isNaN(lats[i])) {
+        lats[i] = quantizeLat(lats[i]);
+      }
     }
     for (int i = 0; i < lons.length; i++) {
-      lons[i] = quantizeLon(lons[i]);
+      if (!Double.isNaN(lons[i])) {
+        lons[i] = quantizeLon(lons[i]);
+      }
     }
     verifyRandomRectangles(small, lats, lons);
     verifyRandomDistances(small, lats, lons);
