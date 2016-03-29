@@ -109,7 +109,8 @@ public final class GeoUtils {
   public static GeoRect circleToBBox(final double centerLat, final double centerLon, final double radiusMeters) {
     final double radLat = TO_RADIANS * centerLat;
     final double radLon = TO_RADIANS * centerLon;
-    double radDistance = radiusMeters / SEMIMAJOR_AXIS;
+    // LUCENE-7143
+    double radDistance = (radiusMeters + 7E-2) / SEMIMAJOR_AXIS;
     double minLat = radLat - radDistance;
     double maxLat = radLat + radDistance;
     double minLon;
@@ -176,4 +177,51 @@ public final class GeoUtils {
     return cos(a - PIO2);
   }
 
+  /** maximum error from {@link #axisLat(double, double)}. logic must be prepared to handle this */
+  public static final double AXISLAT_ERROR = 0.1D / SEMIMAJOR_AXIS * TO_DEGREES;
+
+  /**
+   * Calculate the latitude of a circle's intersections with its bbox meridians.
+   * <p>
+   * <b>NOTE:</b> the returned value will be +/- {@link #AXISLAT_ERROR} of the actual value.
+   * @param centerLat The latitude of the circle center
+   * @param radiusMeters The radius of the circle in meters
+   * @return A latitude
+   */
+  public static double axisLat(double centerLat, double radiusMeters) {
+    // A spherical triangle with:
+    // r is the radius of the circle in radians
+    // l1 is the latitude of the circle center
+    // l2 is the latitude of the point at which the circle intersect's its bbox longitudes
+    // We know r is tangent to the bbox meridians at l2, therefore it is a right angle.
+    // So from the law of cosines, with the angle of l1 being 90, we have:
+    // cos(l1) = cos(r) * cos(l2) + sin(r) * sin(l2) * cos(90)
+    // The second part cancels out because cos(90) == 0, so we have:
+    // cos(l1) = cos(r) * cos(l2)
+    // Solving for l2, we get:
+    // l2 = acos( cos(l1) / cos(r) )
+    // We ensure r is in the range (0, PI/2) and l1 in the range (0, PI/2]. This means we
+    // cannot divide by 0, and we will always get a positive value in the range [0, 1) as
+    // the argument to arc cosine, resulting in a range (0, PI/2].
+
+    double l1 = TO_RADIANS * centerLat;
+    double r = (radiusMeters + 7E-2) / SEMIMAJOR_AXIS;
+
+    // if we are within radius range of a pole, the lat is the pole itself
+    if (Math.abs(l1) + r >= MAX_LAT_RADIANS) {
+      return centerLat >= 0 ? MAX_LAT_INCL : MIN_LAT_INCL;
+    }
+
+    // adjust l1 as distance from closest pole, to form a right triangle with bbox meridians
+    // and ensure it is in the range (0, PI/2]
+    l1 = centerLat >= 0 ? PIO2 - l1 : l1 + PIO2;
+
+    double l2 = Math.acos(Math.cos(l1) / Math.cos(r));
+    assert !Double.isNaN(l2);
+
+    // now adjust back to range [-pi/2, pi/2], ie latitude in radians
+    l2 = centerLat >= 0 ? PIO2 - l2 : l2 - PIO2;
+
+    return TO_DEGREES * l2;
+  }
 }

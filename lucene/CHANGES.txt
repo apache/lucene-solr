@@ -40,6 +40,9 @@ Optimizations
 * LUCENE-7115: Speed up FieldCache.CacheEntry toString by setting initial
   StringBuilder capacity (Gregory Chanan)
 
+* LUCENE-7147: Improve disjoint check for geo distance query traversal
+  (Ryan Ernst, Robert Muir, Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-7127: Fix corner case bugs in GeoPointDistanceQuery. (Robert Muir)

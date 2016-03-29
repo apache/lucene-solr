@@ -108,6 +108,8 @@ final class LatLonPointDistanceQuery extends Query {
       maxPartialDistance = Double.POSITIVE_INFINITY;
     }
 
+    final double axisLat = GeoUtils.axisLat(latitude, radiusMeters);
+
     return new ConstantScoreWeight(this) {
 
       @Override
@@ -171,8 +173,9 @@ final class LatLonPointDistanceQuery extends Query {
                            
                            // algorithm: we create a bounding box (two bounding boxes if we cross the dateline).
                            // 1. check our bounding box(es) first. if the subtree is entirely outside of those, bail.
-                           // 2. see if the subtree is fully contained. if the subtree is enormous along the x axis, wrapping half way around the world, etc: then this can't work, just go to step 3.
-                           // 3. recurse naively.
+                           // 2. check if the subtree is disjoint. it may cross the bounding box but not intersect with circle
+                           // 3. see if the subtree is fully contained. if the subtree is enormous along the x axis, wrapping half way around the world, etc: then this can't work, just go to step 3.
+                           // 4. recurse naively (subtrees crossing over circle edge)
                            @Override
                            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
                              if (StringHelper.compare(Integer.BYTES, minPackedValue, 0, maxLat, 0) > 0 ||
@@ -192,6 +195,17 @@ final class LatLonPointDistanceQuery extends Query {
                              double lonMin = LatLonPoint.decodeLongitude(minPackedValue, Integer.BYTES);
                              double latMax = LatLonPoint.decodeLatitude(maxPackedValue, 0);
                              double lonMax = LatLonPoint.decodeLongitude(maxPackedValue, Integer.BYTES);
+
+                             if ((longitude < lonMin || longitude > lonMax) && (axisLat+GeoUtils.AXISLAT_ERROR < latMin || axisLat-GeoUtils.AXISLAT_ERROR > latMax)) {
+                               // circle not fully inside / crossing axis
+                               if (SloppyMath.haversinMeters(latitude, longitude, latMin, lonMin) > radiusMeters &&
+                                   SloppyMath.haversinMeters(latitude, longitude, latMin, lonMax) > radiusMeters &&
+                                   SloppyMath.haversinMeters(latitude, longitude, latMax, lonMin) > radiusMeters &&
+                                   SloppyMath.haversinMeters(latitude, longitude, latMax, lonMax) > radiusMeters) {
+                                 // no points inside
+                                 return Relation.CELL_OUTSIDE_QUERY;
+                               }
+                             }
 
                              if (lonMax - longitude < 90 && longitude - lonMin < 90 &&
                                  SloppyMath.haversinMeters(latitude, longitude, latMin, lonMin) <= radiusMeters &&
