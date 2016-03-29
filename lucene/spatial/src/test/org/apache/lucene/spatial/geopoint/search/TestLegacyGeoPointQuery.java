@@ -70,4 +70,9 @@ public class TestLegacyGeoPointQuery extends BaseGeoPointTestCase {
   public void testRandomDistanceHuge() throws Exception {
     assumeTrue("legacy encoding is too slow/hangs on this test", false);
   }
+
+  @Override
+  public void testSamePointManyTimes() throws Exception {
+    assumeTrue("legacy encoding goes OOM on this test", false);
+  }
 }
