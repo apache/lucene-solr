@@ -17,7 +17,10 @@
 package org.apache.lucene.spatial.util;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+
+import org.apache.lucene.util.SloppyMath;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
 
@@ -265,5 +268,233 @@ public class GeoTestUtil {
   /** Keep it simple, we don't need to take arbitrary Random for geo tests */
   private static Random random() {
    return RandomizedContext.current().getRandom();
+  }
+  
+  // craziness for plotting stuff :)
+  
+  private static double wrapLat(double lat) {
+    //System.out.println("wrapLat " + lat);
+    if (lat > 90) {
+      //System.out.println("  " + (180 - lat));
+      return 180 - lat;
+    } else if (lat < -90) {
+      //System.out.println("  " + (-180 - lat));
+      return -180 - lat;
+    } else {
+      //System.out.println("  " + lat);
+      return lat;
+    }
+  }
+
+  private static double wrapLon(double lon) {
+    //System.out.println("wrapLon " + lon);
+    if (lon > 180) {
+      //System.out.println("  " + (lon - 360));
+      return lon - 360;
+    } else if (lon < -180) {
+      //System.out.println("  " + (lon + 360));
+      return lon + 360;
+    } else {
+      //System.out.println("  " + lon);
+      return lon;
+    }
+  }
+  
+  private static void drawRectApproximatelyOnEarthSurface(String name, String color, double minLat, double maxLat, double minLon, double maxLon) {
+    int steps = 20;
+    System.out.println("        var " + name + " = WE.polygon([");
+    System.out.println("          // min -> max lat, min lon");
+    for(int i=0;i<steps;i++) {
+      System.out.println("          [" + (minLat + (maxLat - minLat) * i / steps) + ", " + minLon + "],");
+    }
+    System.out.println("          // max lat, min -> max lon");
+    for(int i=0;i<steps;i++) {
+      System.out.println("          [" + (maxLat + ", " + (minLon + (maxLon - minLon) * i / steps)) + "],");
+    }
+    System.out.println("          // max -> min lat, max lon");
+    for(int i=0;i<steps;i++) {
+      System.out.println("          [" + (minLat + (maxLat - minLat) * (steps-i) / steps) + ", " + maxLon + "],");
+    }
+    System.out.println("          // min lat, max -> min lon");
+    for(int i=0;i<steps;i++) {
+      System.out.println("          [" + minLat + ", " + (minLon + (maxLon - minLon) * (steps-i) / steps) + "],");
+    }
+    System.out.println("          // min lat, min lon");
+    System.out.println("          [" + minLat + ", " + minLon + "]");
+    System.out.println("        ], {color: \"" + color + "\", fillColor: \"" + color + "\"});");
+    System.out.println("        " + name + ".addTo(earth);");
+  }
+  
+  private static void plotLatApproximatelyOnEarthSurface(String name, String color, double lat, double minLon, double maxLon) {
+    System.out.println("        var " + name + " = WE.polygon([");
+    double lon;
+    for(lon = minLon;lon<=maxLon;lon += (maxLon-minLon)/36) {
+      System.out.println("          [" + lat + ", " + lon + "],");
+    }
+    System.out.println("          [" + lat + ", " + maxLon + "],");
+    lon -= (maxLon-minLon)/36;
+    for(;lon>=minLon;lon -= (maxLon-minLon)/36) {
+      System.out.println("          [" + lat + ", " + lon + "],");
+    }
+    System.out.println("        ], {color: \"" + color + "\", fillColor: \"#ffffff\", opacity: " + (color.equals("#ffffff") ? "0.3" : "1") + ", fillOpacity: 0.0001});");
+    System.out.println("        " + name + ".addTo(earth);");
+  }
+
+  private static void plotLonApproximatelyOnEarthSurface(String name, String color, double lon, double minLat, double maxLat) {
+    System.out.println("        var " + name + " = WE.polygon([");
+    double lat;
+    for(lat = minLat;lat<=maxLat;lat += (maxLat-minLat)/36) {
+      System.out.println("          [" + lat + ", " + lon + "],");
+    }
+    System.out.println("          [" + maxLat + ", " + lon + "],");
+    lat -= (maxLat-minLat)/36;
+    for(;lat>=minLat;lat -= (maxLat-minLat)/36) {
+      System.out.println("          [" + lat + ", " + lon + "],");
+    }
+    System.out.println("        ], {color: \"" + color + "\", fillColor: \"#ffffff\", opacity: " + (color.equals("#ffffff") ? "0.3" : "1") + ", fillOpacity: 0.0001});");
+    System.out.println("        " + name + ".addTo(earth);");
+  }
+
+  // http://www.webglearth.org has API details:
+  public static void polysToWebGLEarth(List<double[][]> polys) {
+    System.out.println("<!DOCTYPE HTML>");
+    System.out.println("<html>");
+    System.out.println("  <head>");
+    System.out.println("    <script src=\"http://www.webglearth.com/v2/api.js\"></script>");
+    System.out.println("    <script>");
+    System.out.println("      function initialize() {");
+    System.out.println("        var earth = new WE.map('earth_div');");
+
+    int count = 0;
+    for (double[][] poly : polys) {
+      System.out.println("        var poly" + count + " = WE.polygon([");
+      for(int i=0;i<poly[0].length;i++) {
+        double lat = poly[0][i];
+        double lon = poly[1][i];
+        System.out.println("          [" + lat + ", " + lon + "],");
+      }
+      System.out.println("        ], {color: '#00ff00'});");    
+      System.out.println("        poly" + count + ".addTo(earth);");
+    }
+
+    System.out.println("        WE.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{");
+    System.out.println("          attribution: '© OpenStreetMap contributors'");
+    System.out.println("        }).addTo(earth);");
+    System.out.println("      }");
+    System.out.println("    </script>");
+    System.out.println("    <style>");
+    System.out.println("      html, body{padding: 0; margin: 0;}");
+    System.out.println("      #earth_div{top: 0; right: 0; bottom: 0; left: 0; position: absolute !important;}");
+    System.out.println("    </style>");
+    System.out.println("    <title>WebGL Earth API: Hello World</title>");
+    System.out.println("  </head>");
+    System.out.println("  <body onload=\"initialize()\">");
+    System.out.println("    <div id=\"earth_div\"></div>");
+    System.out.println("  </body>");
+    System.out.println("</html>");
+  }
+
+  // http://www.webglearth.org has API details:
+  public static void toWebGLEarth(double rectMinLatitude, double rectMaxLatitude,
+                                   double rectMinLongitude, double rectMaxLongitude,
+                                   double centerLatitude, double centerLongitude,
+                                   double radiusMeters) {
+    GeoRect box = GeoUtils.circleToBBox(centerLatitude, centerLongitude, radiusMeters);
+    System.out.println("<!DOCTYPE HTML>");
+    System.out.println("<html>");
+    System.out.println("  <head>");
+    System.out.println("    <script src=\"http://www.webglearth.com/v2/api.js\"></script>");
+    System.out.println("    <script>");
+    System.out.println("      function initialize() {");
+    System.out.println("        var earth = new WE.map('earth_div', {center: [" + centerLatitude + ", " + centerLongitude + "]});");
+    System.out.println("        var marker = WE.marker([" + centerLatitude + ", " + centerLongitude + "]).addTo(earth);");
+    drawRectApproximatelyOnEarthSurface("cell", "#ff0000", rectMinLatitude, rectMaxLatitude, rectMinLongitude, rectMaxLongitude);
+    System.out.println("        var polygonB = WE.polygon([");
+    StringBuilder b = new StringBuilder();
+    inverseHaversin(b, centerLatitude, centerLongitude, radiusMeters);
+    System.out.println(b);
+    System.out.println("        ], {color: '#00ff00'});");    
+    System.out.println("        polygonB.addTo(earth);");
+    drawRectApproximatelyOnEarthSurface("bbox", "#00ff00", box.minLat, box.maxLat, box.minLon, box.maxLon);
+    System.out.println("        WE.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{");
+    System.out.println("          attribution: '© OpenStreetMap contributors'");
+    System.out.println("        }).addTo(earth);");
+    plotLatApproximatelyOnEarthSurface("lat0", "#ffffff", 4.68, 0.0, 360.0);
+    plotLatApproximatelyOnEarthSurface("lat1", "#ffffff", 180-93.09, 0.0, 360.0);
+    plotLatApproximatelyOnEarthSurface("axisLat", "#00ff00", GeoUtils.axisLat(centerLatitude, radiusMeters), box.minLon, box.maxLon);
+    plotLonApproximatelyOnEarthSurface("axisLon", "#00ff00", centerLongitude, box.minLat, box.maxLat);
+    System.out.println("      }");
+    System.out.println("    </script>");
+    System.out.println("    <style>");
+    System.out.println("      html, body{padding: 0; margin: 0;}");
+    System.out.println("      #earth_div{top: 0; right: 0; bottom: 0; left: 0; position: absolute !important;}");
+    System.out.println("    </style>");
+    System.out.println("    <title>WebGL Earth API: Hello World</title>");
+    System.out.println("  </head>");
+    System.out.println("  <body onload=\"initialize()\">");
+    System.out.println("    <div id=\"earth_div\"></div>");
+    System.out.println("  </body>");
+    System.out.println("</html>");
+  }
+
+  private static void inverseHaversin(StringBuilder b, double centerLat, double centerLon, double radiusMeters) {
+    double angle = 0;
+    int steps = 100;
+
+    newAngle:
+    while (angle < 360) {
+      double x = Math.cos(Math.toRadians(angle));
+      double y = Math.sin(Math.toRadians(angle));
+      double factor = 2.0;
+      double step = 1.0;
+      int last = 0;
+      double lastDistanceMeters = 0.0;
+      //System.out.println("angle " + angle + " slope=" + slope);
+      while (true) {
+        double lat = wrapLat(centerLat + y * factor);
+        double lon = wrapLon(centerLon + x * factor);
+        double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, lat, lon);
+
+        if (last == 1 && distanceMeters < lastDistanceMeters) {
+          // For large enough circles, some angles are not possible:
+          //System.out.println("  done: give up on angle " + angle);
+          angle += 360./steps;
+          continue newAngle;
+        }
+        if (last == -1 && distanceMeters > lastDistanceMeters) {
+          // For large enough circles, some angles are not possible:
+          //System.out.println("  done: give up on angle " + angle);
+          angle += 360./steps;
+          continue newAngle;
+        }
+        lastDistanceMeters = distanceMeters;
+
+        //System.out.println("  iter lat=" + lat + " lon=" + lon + " distance=" + distanceMeters + " vs " + radiusMeters);
+        if (Math.abs(distanceMeters - radiusMeters) < 0.1) {
+          b.append("          [" + lat + ", " + lon + "],\n");
+          break;
+        }
+        if (distanceMeters > radiusMeters) {
+          // too big
+          //System.out.println("    smaller");
+          factor -= step;
+          if (last == 1) {
+            //System.out.println("      half-step");
+            step /= 2.0;
+          }
+          last = -1;
+        } else if (distanceMeters < radiusMeters) {
+          // too small
+          //System.out.println("    bigger");
+          factor += step;
+          if (last == -1) {
+            //System.out.println("      half-step");
+            step /= 2.0;
+          }
+          last = 1;
+        }
+      }
+      angle += 360./steps;
+    }
   }
 }

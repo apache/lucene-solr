@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.spatial.util;
 
+import java.util.Locale;
+
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
@@ -319,5 +321,137 @@ public class TestGeoUtils extends LuceneTestCase {
         }
       }
     }
+  }
+
+  public void testAxisLat() {
+    double earthCircumference = 2D * Math.PI * GeoUtils.SEMIMAJOR_AXIS;
+    assertEquals(90, GeoUtils.axisLat(0, earthCircumference / 4), 0.0D);
+
+    for (int i = 0; i < 100; ++i) {
+      boolean reallyBig = random().nextInt(10) == 0;
+      final double maxRadius = reallyBig ? 1.1 * earthCircumference : earthCircumference / 8;
+      final double radius = maxRadius * random().nextDouble();
+      double prevAxisLat = GeoUtils.axisLat(0.0D, radius);
+      for (double lat = 0.1D; lat < 90D; lat += 0.1D) {
+        double nextAxisLat = GeoUtils.axisLat(lat, radius);
+        GeoRect bbox = GeoUtils.circleToBBox(lat, 180D, radius);
+        double dist = SloppyMath.haversinMeters(lat, 180D, nextAxisLat, bbox.maxLon);
+        if (nextAxisLat < GeoUtils.MAX_LAT_INCL) {
+          assertEquals("lat = " + lat, dist, radius, 0.1D);
+        }
+        assertTrue("lat = " + lat, prevAxisLat <= nextAxisLat);
+        prevAxisLat = nextAxisLat;
+      }
+
+      prevAxisLat = GeoUtils.axisLat(-0.0D, radius);
+      for (double lat = -0.1D; lat > -90D; lat -= 0.1D) {
+        double nextAxisLat = GeoUtils.axisLat(lat, radius);
+        GeoRect bbox = GeoUtils.circleToBBox(lat, 180D, radius);
+        double dist = SloppyMath.haversinMeters(lat, 180D, nextAxisLat, bbox.maxLon);
+        if (nextAxisLat > GeoUtils.MIN_LAT_INCL) {
+          assertEquals("lat = " + lat, dist, radius, 0.1D);
+        }
+        assertTrue("lat = " + lat, prevAxisLat >= nextAxisLat);
+        prevAxisLat = nextAxisLat;
+      }
+    }
+  }
+  
+  // TODO: does not really belong here, but we test it like this for now
+  // we can make a fake IndexReader to send boxes directly to Point visitors instead?
+  public void testCircleOpto() throws Exception {
+    for (int i = 0; i < 50; i++) {
+      // circle
+      final double centerLat = -90 + 180.0 * random().nextDouble();
+      final double centerLon = -180 + 360.0 * random().nextDouble();
+      final double radius = 50_000_000D * random().nextDouble();
+      final GeoRect box = GeoUtils.circleToBBox(centerLat, centerLon, radius);
+      // TODO: remove this leniency!
+      if (box.crossesDateline()) {
+        --i; // try again...
+        continue;
+      }
+      final double axisLat = GeoUtils.axisLat(centerLat, radius);
+
+      for (int k = 0; k < 1000; ++k) {
+
+        double[] latBounds = {-90, box.minLat, axisLat, box.maxLat, 90};
+        double[] lonBounds = {-180, box.minLon, centerLon, box.maxLon, 180};
+        // first choose an upper left corner
+        int maxLatRow = random().nextInt(4);
+        double latMax = randomInRange(latBounds[maxLatRow], latBounds[maxLatRow + 1]);
+        int minLonCol = random().nextInt(4);
+        double lonMin = randomInRange(lonBounds[minLonCol], lonBounds[minLonCol + 1]);
+        // now choose a lower right corner
+        int minLatMaxRow = maxLatRow == 3 ? 3 : maxLatRow + 1; // make sure it will at least cross into the bbox
+        int minLatRow = random().nextInt(minLatMaxRow);
+        double latMin = randomInRange(latBounds[minLatRow], Math.min(latBounds[minLatRow + 1], latMax));
+        int maxLonMinCol = Math.max(minLonCol, 1); // make sure it will at least cross into the bbox
+        int maxLonCol = maxLonMinCol + random().nextInt(4 - maxLonMinCol);
+        double lonMax = randomInRange(Math.max(lonBounds[maxLonCol], lonMin), lonBounds[maxLonCol + 1]);
+
+        assert latMax >= latMin;
+        assert lonMax >= lonMin;
+
+        if (isDisjoint(centerLat, centerLon, radius, axisLat, latMin, latMax, lonMin, lonMax)) {
+          // intersects says false: test a ton of points
+          for (int j = 0; j < 200; j++) {
+            double lat = latMin + (latMax - latMin) * random().nextDouble();
+            double lon = lonMin + (lonMax - lonMin) * random().nextDouble();
+
+            if (random().nextBoolean()) {
+              // explicitly test an edge
+              int edge = random().nextInt(4);
+              if (edge == 0) {
+                lat = latMin;
+              } else if (edge == 1) {
+                lat = latMax;
+              } else if (edge == 2) {
+                lon = lonMin;
+              } else if (edge == 3) {
+                lon = lonMax;
+              }
+            }
+            double distance = SloppyMath.haversinMeters(centerLat, centerLon, lat, lon);
+            try {
+            assertTrue(String.format(Locale.ROOT, "\nisDisjoint(\n" +
+                    "centerLat=%s\n" +
+                    "centerLon=%s\n" +
+                    "radius=%s\n" +
+                    "latMin=%s\n" +
+                    "latMax=%s\n" +
+                    "lonMin=%s\n" +
+                    "lonMax=%s) == false BUT\n" +
+                    "haversin(%s, %s, %s, %s) = %s\nbbox=%s",
+                centerLat, centerLon, radius, latMin, latMax, lonMin, lonMax,
+                centerLat, centerLon, lat, lon, distance, GeoUtils.circleToBBox(centerLat, centerLon, radius)),
+                distance > radius);
+            } catch (AssertionError e) {
+              GeoTestUtil.toWebGLEarth(latMin, latMax, lonMin, lonMax, centerLat, centerLon, radius);
+              throw e;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  static double randomInRange(double min, double max) {
+    return min + (max - min) * random().nextDouble();
+  }
+  
+  static boolean isDisjoint(double centerLat, double centerLon, double radius, double axisLat, double latMin, double latMax, double lonMin, double lonMax) {
+    if ((centerLon < lonMin || centerLon > lonMax) && (axisLat+GeoUtils.AXISLAT_ERROR < latMin || axisLat-GeoUtils.AXISLAT_ERROR > latMax)) {
+      // circle not fully inside / crossing axis
+      if (SloppyMath.haversinMeters(centerLat, centerLon, latMin, lonMin) > radius &&
+          SloppyMath.haversinMeters(centerLat, centerLon, latMin, lonMax) > radius &&
+          SloppyMath.haversinMeters(centerLat, centerLon, latMax, lonMin) > radius &&
+          SloppyMath.haversinMeters(centerLat, centerLon, latMax, lonMax) > radius) {
+        // no points inside
+        return true;
+      }
+    }
+    
+    return false;
   }
 }
