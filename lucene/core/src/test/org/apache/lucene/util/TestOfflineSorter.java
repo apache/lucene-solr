@@ -76,8 +76,8 @@ public class TestOfflineSorter extends LuceneTestCase {
   public void testIntermediateMerges() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer, binary merging.
     try (Directory dir = newDirectory()) {
-      SortInfo info = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 2), 
-          generateRandom((int)OfflineSorter.MB * 20));
+      SortInfo info = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 2, -1), 
+                                generateRandom((int)OfflineSorter.MB * 20));
       assertTrue(info.mergeRounds > 10);
     }
   }
@@ -85,7 +85,7 @@ public class TestOfflineSorter extends LuceneTestCase {
   public void testSmallRandom() throws Exception {
     // Sort 20 mb worth of data with 1mb buffer.
     try (Directory dir = newDirectory()) {
-      SortInfo sortInfo = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), OfflineSorter.MAX_TEMPFILES),
+      SortInfo sortInfo = checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), OfflineSorter.MAX_TEMPFILES, -1),
                                     generateRandom((int)OfflineSorter.MB * 20));
       assertEquals(3, sortInfo.mergeRounds);
     }
@@ -95,7 +95,7 @@ public class TestOfflineSorter extends LuceneTestCase {
   public void testLargerRandom() throws Exception {
     // Sort 100MB worth of data with 15mb buffer.
     try (Directory dir = newFSDirectory(createTempDir())) {
-      checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(16), OfflineSorter.MAX_TEMPFILES), 
+      checkSort(dir, new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(16), OfflineSorter.MAX_TEMPFILES, -1), 
                 generateRandom((int)OfflineSorter.MB * 100));
     }
   }
@@ -367,7 +367,7 @@ public class TestOfflineSorter extends LuceneTestCase {
       writeAll(unsorted, generateFixed((int) (OfflineSorter.MB * 3)));
 
       CorruptIndexException e = expectThrows(CorruptIndexException.class, () -> {
-          new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 10).sort(unsorted.getName());
+          new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 10, -1).sort(unsorted.getName());
         });
       assertTrue(e.getMessage().contains("checksum failed (hardware problem?)"));
     }
@@ -420,11 +420,67 @@ public class TestOfflineSorter extends LuceneTestCase {
       writeAll(unsorted, generateFixed((int) (OfflineSorter.MB * 3)));
 
       EOFException e = expectThrows(EOFException.class, () -> {
-          new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 10).sort(unsorted.getName());
+          new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(1), 10, -1).sort(unsorted.getName());
         });
       assertEquals(1, e.getSuppressed().length);
       assertTrue(e.getSuppressed()[0] instanceof CorruptIndexException);
       assertTrue(e.getSuppressed()[0].getMessage().contains("checksum failed (hardware problem?)"));
     }
+  }
+
+  public void testFixedLengthHeap() throws Exception {
+    // Make sure the RAM accounting is correct, i.e. if we are sorting fixed width
+    // ints (4 bytes) then the heap used is really only 4 bytes per value:
+    Directory dir = newDirectory();
+    IndexOutput out = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
+    try (ByteSequencesWriter w = new OfflineSorter.ByteSequencesWriter(out)) {
+      byte[] bytes = new byte[Integer.BYTES];
+      for (int i=0;i<1024*1024;i++) {
+        random().nextBytes(bytes);
+        w.write(bytes);
+      }
+      CodecUtil.writeFooter(out);
+    }
+
+    OfflineSorter sorter = new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(4), OfflineSorter.MAX_TEMPFILES, Integer.BYTES);
+    sorter.sort(out.getName());
+    // 1 MB of ints with 4 MH heap allowed should have been sorted in a single heap partition:
+    assertEquals(0, sorter.sortInfo.mergeRounds);
+    dir.close();
+  }
+
+  public void testFixedLengthLiesLiesLies() throws Exception {
+    // Make sure OfflineSorter catches me if I lie about the fixed value length:
+    Directory dir = newDirectory();
+    IndexOutput out = dir.createTempOutput("unsorted", "tmp", IOContext.DEFAULT);
+    try (ByteSequencesWriter w = new OfflineSorter.ByteSequencesWriter(out)) {
+      byte[] bytes = new byte[Integer.BYTES];
+      random().nextBytes(bytes);
+      w.write(bytes);
+      CodecUtil.writeFooter(out);
+    }
+
+    OfflineSorter sorter = new OfflineSorter(dir, "foo", OfflineSorter.DEFAULT_COMPARATOR, BufferSize.megabytes(4), OfflineSorter.MAX_TEMPFILES, Long.BYTES);
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
+      sorter.sort(out.getName());
+      });
+    assertEquals("value length is 4 but is supposed to always be 8", e.getMessage());
+    dir.close();
+  }
+
+  public void testInvalidFixedLength() throws Exception {
+    IllegalArgumentException e;
+    e = expectThrows(IllegalArgumentException.class,
+                     () -> {
+                       new OfflineSorter(null, "foo", OfflineSorter.DEFAULT_COMPARATOR,
+                                         BufferSize.megabytes(1), OfflineSorter.MAX_TEMPFILES, 0);
+                     });
+    assertEquals("valueLength must be 1 .. 32767; got: 0", e.getMessage());
+    e = expectThrows(IllegalArgumentException.class,
+                     () -> {
+                       new OfflineSorter(null, "foo", OfflineSorter.DEFAULT_COMPARATOR,
+                                         BufferSize.megabytes(1), OfflineSorter.MAX_TEMPFILES, Integer.MAX_VALUE);
+                     });
+    assertEquals("valueLength must be 1 .. 32767; got: 2147483647", e.getMessage());
   }
 }
