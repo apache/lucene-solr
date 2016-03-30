@@ -17,23 +17,6 @@
 package org.apache.solr.handler.extraction;
 
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.DateUtil;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.handler.ContentStreamHandlerBase;
-import org.apache.solr.handler.loader.ContentStreamLoader;
-import org.apache.tika.config.TikaConfig;
-import org.apache.tika.mime.MimeTypeException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -41,6 +24,22 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.ContentStreamHandlerBase;
+import org.apache.solr.handler.loader.ContentStreamLoader;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.tika.config.TikaConfig;
+import org.apache.tika.mime.MimeTypeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -59,7 +58,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
   protected ParseContextConfig parseContextConfig;
 
 
-  protected Collection<String> dateFormats = DateUtil.DEFAULT_DATE_FORMATS;
+  protected Collection<String> dateFormats = ExtractionDateUtil.DEFAULT_DATE_FORMATS;
   protected SolrContentHandlerFactory factory;
 
 

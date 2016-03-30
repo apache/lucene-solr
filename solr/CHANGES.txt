@@ -180,6 +180,9 @@ Upgrading from Solr 5.x
   When there is a non-zero number of milliseconds, it is padded with zeros to 3 digits. Negative year (BC) dates are
   now possible.  Parsing: It is now an error to supply a portion of the date out of its, range, like 67 seconds.
 
+* SolrJ no longer includes DateUtil. If for some reason you need to format or parse dates, simply use Instant.format()
+  and Instant.parse().
+
 Detailed Change List
 ----------------------
 
@@ -521,6 +524,9 @@ Other Changes
 * SOLR-8904: All dates are formatted via Instant.toString() (ISO-8601); see Solr upgrade notes for differences. Will
   now parse (and format) dates with a leading '+' or '-' (BC dates or dates > 4 digit year.
   [value] and ms() and contrib/analytics now parse with date math. (David Smiley)
+
+* SOLR-8904: DateUtil in SolrJ moved to the extraction contrib as ExtractionDateUtil.  Obsolete methods were removed.
+  (David Smiley)
 
 ==================  5.5.1 ==================
 

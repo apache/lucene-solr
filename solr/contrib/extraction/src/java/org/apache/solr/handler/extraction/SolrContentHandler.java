@@ -17,7 +17,6 @@
 package org.apache.solr.handler.extraction;
 
 import java.lang.invoke.MethodHandles;
-import java.text.DateFormat;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,7 +30,6 @@ import java.util.Set;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
@@ -83,7 +81,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   private Set<String> literalFieldNames = null;
   
   public SolrContentHandler(Metadata metadata, SolrParams params, IndexSchema schema) {
-    this(metadata, params, schema, DateUtil.DEFAULT_DATE_FORMATS);
+    this(metadata, params, schema, ExtractionDateUtil.DEFAULT_DATE_FORMATS);
   }
 
 
@@ -317,7 +315,7 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
   /**
    * Can be used to transform input values based on their {@link org.apache.solr.schema.SchemaField}
    * <p>
-   * This implementation only formats dates using the {@link org.apache.solr.common.util.DateUtil}.
+   * This implementation only formats dates using the {@link ExtractionDateUtil}.
    *
    * @param val    The value to transform
    * @param schFld The {@link org.apache.solr.schema.SchemaField}
@@ -328,10 +326,8 @@ public class SolrContentHandler extends DefaultHandler implements ExtractingPara
     if (schFld != null && schFld.getType() instanceof TrieDateField) {
       //try to transform the date
       try {
-        Date date = DateUtil.parseDate(val, dateFormats);
-        DateFormat df = DateUtil.getThreadLocalDateFormat();
-        result = df.format(date);
-
+        Date date = ExtractionDateUtil.parseDate(val, dateFormats); // may throw
+        result = date.toInstant().toString();//ISO format
       } catch (Exception e) {
         // Let the specific fieldType handle errors
         // throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid value: " + val + " for field: " + schFld, e);
