@@ -31,6 +31,7 @@ final class OfflinePointWriter implements PointWriter {
 
   final Directory tempDir;
   final IndexOutput out;
+  final String name;
   final int packedBytesLength;
   final boolean singleValuePerDoc;
   long count;
@@ -45,6 +46,7 @@ final class OfflinePointWriter implements PointWriter {
   public OfflinePointWriter(Directory tempDir, String tempFileNamePrefix, int packedBytesLength,
                             boolean longOrds, String desc, long expectedCount, boolean singleValuePerDoc) throws IOException {
     this.out = tempDir.createTempOutput(tempFileNamePrefix, "bkd_" + desc, IOContext.DEFAULT);
+    this.name = out.getName();
     this.tempDir = tempDir;
     this.packedBytesLength = packedBytesLength;
     this.longOrds = longOrds;
@@ -53,8 +55,9 @@ final class OfflinePointWriter implements PointWriter {
   }
 
   /** Initializes on an already written/closed file, just so consumers can use {@link #getReader} to read the file. */
-  public OfflinePointWriter(Directory tempDir, IndexOutput out, int packedBytesLength, long count, boolean longOrds, boolean singleValuePerDoc) {
-    this.out = out;
+  public OfflinePointWriter(Directory tempDir, String name, int packedBytesLength, long count, boolean longOrds, boolean singleValuePerDoc) {
+    this.out = null;
+    this.name = name;
     this.tempDir = tempDir;
     this.packedBytesLength = packedBytesLength;
     this.count = count;
@@ -86,7 +89,7 @@ final class OfflinePointWriter implements PointWriter {
     assert closed;
     assert start + length <= count: "start=" + start + " length=" + length + " count=" + count;
     assert expectedCount == 0 || count == expectedCount;
-    return new OfflinePointReader(tempDir, out.getName(), packedBytesLength, start, length, longOrds, singleValuePerDoc);
+    return new OfflinePointReader(tempDir, name, packedBytesLength, start, length, longOrds, singleValuePerDoc);
   }
 
   @Override
@@ -94,7 +97,7 @@ final class OfflinePointWriter implements PointWriter {
     if (sharedReader == null) {
       assert start == 0;
       assert length <= count;
-      sharedReader = new OfflinePointReader(tempDir, out.getName(), packedBytesLength, 0, count, longOrds, singleValuePerDoc);
+      sharedReader = new OfflinePointReader(tempDir, name, packedBytesLength, 0, count, longOrds, singleValuePerDoc);
       toCloseHeroically.add(sharedReader);
       // Make sure the OfflinePointReader intends to verify its checksum:
       assert sharedReader.in instanceof ChecksumIndexInput;
@@ -126,11 +129,11 @@ final class OfflinePointWriter implements PointWriter {
       sharedReader.close();
       sharedReader = null;
     }
-    tempDir.deleteFile(out.getName());
+    tempDir.deleteFile(name);
   }
 
   @Override
   public String toString() {
-    return "OfflinePointWriter(count=" + count + " tempFileName=" + out.getName() + ")";
+    return "OfflinePointWriter(count=" + count + " tempFileName=" + name + ")";
   }
 }

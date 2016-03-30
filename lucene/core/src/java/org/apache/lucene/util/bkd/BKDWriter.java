@@ -722,6 +722,8 @@ public class BKDWriter implements Closeable {
       // Offline sort:
       assert tempInput != null;
 
+      final int offset = bytesPerDim * dim;
+
       Comparator<BytesRef> cmp = new Comparator<BytesRef>() {
  
         final ByteArrayDataInput reader = new ByteArrayDataInput();
@@ -729,7 +731,7 @@ public class BKDWriter implements Closeable {
         @Override
         public int compare(BytesRef a, BytesRef b) {
           // First compare by the requested dimension we are sorting by:
-          int cmp = StringHelper.compare(bytesPerDim, a.bytes, a.offset + bytesPerDim*dim, b.bytes, b.offset + bytesPerDim*dim);
+          int cmp = StringHelper.compare(bytesPerDim, a.bytes, a.offset + offset, b.bytes, b.offset + offset);
 
           if (cmp != 0) {
             return cmp;
@@ -745,15 +747,11 @@ public class BKDWriter implements Closeable {
         }
       };
 
-      // TODO: this is sort of sneaky way to get the final OfflinePointWriter from OfflineSorter:
-      IndexOutput[] lastWriter = new IndexOutput[1];
-
-      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, offlineSorterBufferMB, offlineSorterMaxTempFiles) {
+      OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix + "_bkd" + dim, cmp, offlineSorterBufferMB, offlineSorterMaxTempFiles, bytesPerDoc) {
 
           /** We write/read fixed-byte-width file that {@link OfflinePointReader} can read. */
           @Override
           protected ByteSequencesWriter getWriter(IndexOutput out) {
-            lastWriter[0] = out;
             return new ByteSequencesWriter(out) {
               @Override
               public void write(byte[] bytes, int off, int len) throws IOException {
@@ -779,11 +777,10 @@ public class BKDWriter implements Closeable {
             };
           }
         };
-      sorter.sort(tempInput.getName());
 
-      assert lastWriter[0] != null;
+      String name = sorter.sort(tempInput.getName());
 
-      return new OfflinePointWriter(tempDir, lastWriter[0], packedBytesLength, pointCount, longOrds, singleValuePerDoc);
+      return new OfflinePointWriter(tempDir, name, packedBytesLength, pointCount, longOrds, singleValuePerDoc);
     }
   }
 
@@ -994,7 +991,7 @@ public class BKDWriter implements Closeable {
     // and would mean leaving readers (IndexInputs) open for longer:
     if (writer instanceof OfflinePointWriter) {
       // We are reading from a temp file; go verify the checksum:
-      String tempFileName = ((OfflinePointWriter) writer).out.getName();
+      String tempFileName = ((OfflinePointWriter) writer).name;
       try (ChecksumIndexInput in = tempDir.openChecksumInput(tempFileName, IOContext.READONCE)) {
         CodecUtil.checkFooter(in, priorException);
       }
