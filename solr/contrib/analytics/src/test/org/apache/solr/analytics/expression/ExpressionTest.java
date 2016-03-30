@@ -16,21 +16,21 @@
  */
 package org.apache.solr.analytics.expression;
 
-import com.google.common.collect.ObjectArrays;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Scanner;
 
+import com.google.common.collect.ObjectArrays;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.analytics.AbstractAnalyticsStatsTest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.DateFormatUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Scanner;
 
 public class ExpressionTest extends AbstractAnalyticsStatsTest {
   private static final String fileName = "/analytics/requestFiles/expressions.txt";
@@ -156,20 +156,19 @@ public class ExpressionTest extends AbstractAnalyticsStatsTest {
     assertEquals(getRawResponse(), 10, result, 0.0);
   }
 
-  @SuppressWarnings("deprecation")
   @Test
   public void dateMathTest() throws Exception {
     String math = (String) getStatResult("dmr", "cme", VAL_TYPE.STRING);
-    DateMathParser date = new DateMathParser();
-    date.setNow(DateFormatUtil.parseDate((String) getStatResult("dmr", "median", VAL_TYPE.DATE)));
+    DateMathParser dateMathParser = new DateMathParser();
+    dateMathParser.setNow(new Date(Instant.parse((String) getStatResult("dmr", "median", VAL_TYPE.DATE)).toEpochMilli()));
     String dateMath = (String) getStatResult("dmr", "dmme", VAL_TYPE.DATE);
-    assertEquals(getRawResponse(), DateFormatUtil.parseDate(dateMath), date.parseMath(math));
+    assertEquals(getRawResponse(), new Date(Instant.parse(dateMath).toEpochMilli()), dateMathParser.parseMath(math));
 
     math = (String) getStatResult("dmr", "cma", VAL_TYPE.STRING);
-    date = new DateMathParser();
-    date.setNow(DateFormatUtil.parseDate((String) getStatResult("dmr", "max", VAL_TYPE.DATE)));
+    dateMathParser = new DateMathParser();
+    dateMathParser.setNow(new Date(Instant.parse((String) getStatResult("dmr", "max", VAL_TYPE.DATE)).toEpochMilli()));
     dateMath = (String) getStatResult("dmr", "dmma", VAL_TYPE.DATE);
-    assertEquals(getRawResponse(), DateFormatUtil.parseDate(dateMath), date.parseMath(math));
+    assertEquals(getRawResponse(), new Date(Instant.parse(dateMath).toEpochMilli()), dateMathParser.parseMath(math));
   }
 
   @Test

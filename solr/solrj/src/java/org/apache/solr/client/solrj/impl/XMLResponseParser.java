@@ -16,30 +16,29 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.DateUtil;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.XMLErrorLogger;
-import org.apache.solr.common.EmptyEntityResolver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-
 import java.io.InputStream;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
+import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.common.EmptyEntityResolver;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.XMLErrorLogger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -173,7 +172,7 @@ public class XMLResponseParser extends ResponseParser
       @Override 
       public Date read( String txt ) { 
         try {
-          return DateUtil.parseDate(txt);      
+          return new Date(Instant.parse(txt).toEpochMilli());
         }
         catch( Exception ex ) {
           ex.printStackTrace();

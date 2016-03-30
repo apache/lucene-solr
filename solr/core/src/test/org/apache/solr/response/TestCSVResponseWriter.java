@@ -16,16 +16,18 @@
  */
 package org.apache.solr.response;
 
+import java.io.StringWriter;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Date;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrReturnFields;
-import org.junit.*;
-
-import java.io.StringWriter;
-import java.util.Arrays;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 public class TestCSVResponseWriter extends SolrTestCaseJ4 {
   @BeforeClass
@@ -123,7 +125,7 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     d.addField("foo_b",false);
     d.addField("foo_f",1.414f);
     d.addField("foo_d",-1.0E300);
-    d.addField("foo_dt", DateUtil.parseDate("2000-01-02T03:04:05Z"));
+    d.addField("foo_dt", new Date(Instant.parse("2000-01-02T03:04:05Z").toEpochMilli()));
     d.addField("score", "2.718");
 
     d = new SolrDocument();

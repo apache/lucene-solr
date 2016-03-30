@@ -176,6 +176,10 @@ Upgrading from Solr 5.x
   to prevent future optizations from using the column-stored values over the row-stored values when
   fields have both stored="true" and docValues="true".
 
+* Formatted date-times from Solr have some differences. If the year is more than 4 digits, there is a leading '+'.
+  When there is a non-zero number of milliseconds, it is padded with zeros to 3 digits. Negative year (BC) dates are
+  now possible.  Parsing: It is now an error to supply a portion of the date out of its, range, like 67 seconds.
+
 Detailed Change List
 ----------------------
 
@@ -513,6 +517,10 @@ Other Changes
 
 * SOLR-8810: Implement Connection.setReadOnly, Statement.set/getFetchSize, 
   ResultSet.getType (Kevin Risden)
+
+* SOLR-8904: All dates are formatted via Instant.toString() (ISO-8601); see Solr upgrade notes for differences. Will
+  now parse (and format) dates with a leading '+' or '-' (BC dates or dates > 4 digit year.
+  [value] and ms() and contrib/analytics now parse with date math. (David Smiley)
 
 ==================  5.5.1 ==================
 

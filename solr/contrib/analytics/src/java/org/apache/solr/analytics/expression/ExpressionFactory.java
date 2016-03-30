@@ -16,7 +16,6 @@
  */
 package org.apache.solr.analytics.expression;
 
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +23,7 @@ import org.apache.solr.analytics.statistics.StatsCollector;
 import org.apache.solr.analytics.util.AnalyticsParams;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.util.DateFormatUtil;
+import org.apache.solr.util.DateMathParser;
 
 public class ExpressionFactory {
 
@@ -81,11 +80,7 @@ public class ExpressionFactory {
         throw new SolrException(ErrorCode.BAD_REQUEST, "The constant "+operands+" cannot be converted into a number.",e);
       }
     } else if (topOperation.equals(AnalyticsParams.CONSTANT_DATE)) {
-      try {
-        return new ConstantDateExpression(DateFormatUtil.parseDate(operands));
-      } catch (ParseException e) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "The constant "+operands+" cannot be converted into a date.",e);
-      }
+      return new ConstantDateExpression(DateMathParser.parseMath(null, operands));
     } else if (topOperation.equals(AnalyticsParams.CONSTANT_STRING)) {
       operands = expression.substring(paren+1, expression.lastIndexOf(')'));
       return new ConstantStringExpression(operands);

@@ -16,7 +16,14 @@
  */
 package org.apache.solr.search;
 
-import org.locationtech.spatial4j.distance.DistanceUtils;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -27,8 +34,8 @@ import org.apache.lucene.queries.function.docvalues.BoolDocValues;
 import org.apache.lucene.queries.function.docvalues.DoubleDocValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.*;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spell.JaroWinklerDistance;
@@ -39,7 +46,11 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.schema.*;
+import org.apache.solr.schema.CurrencyField;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.StrField;
+import org.apache.solr.schema.TextField;
 import org.apache.solr.search.facet.AggValueSource;
 import org.apache.solr.search.facet.AvgAgg;
 import org.apache.solr.search.facet.CountAgg;
@@ -53,12 +64,16 @@ import org.apache.solr.search.facet.UniqueAgg;
 import org.apache.solr.search.function.CollapseScoreFunction;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.function.ReverseOrdFieldSource;
-import org.apache.solr.search.function.distance.*;
-import org.apache.solr.util.DateFormatUtil;
+import org.apache.solr.search.function.distance.GeoDistValueSourceParser;
+import org.apache.solr.search.function.distance.GeohashFunction;
+import org.apache.solr.search.function.distance.GeohashHaversineFunction;
+import org.apache.solr.search.function.distance.HaversineFunction;
+import org.apache.solr.search.function.distance.SquaredEuclideanFunction;
+import org.apache.solr.search.function.distance.StringDistanceFunction;
+import org.apache.solr.search.function.distance.VectorDistanceFunction;
+import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
-
-import java.io.IOException;
-import java.util.*;
+import org.locationtech.spatial4j.distance.DistanceUtils;
 
 /**
  * A factory that parses user queries to generate ValueSource instances.
@@ -993,8 +1008,10 @@ class DateValueSourceParser extends ValueSourceParser {
 
   public Date getDate(FunctionQParser fp, String arg) {
     if (arg == null) return null;
-    if (arg.startsWith("NOW") || (arg.length() > 0 && Character.isDigit(arg.charAt(0)))) {
-      return DateFormatUtil.parseMathLenient(null, arg, fp.req);
+    // check character index 1 to be a digit.  Index 0 might be a +/-.
+    if (arg.startsWith("NOW") || (arg.length() > 1 && Character.isDigit(arg.charAt(1)))) {
+      Date now = null;//TODO pull from params?
+      return DateMathParser.parseMath(now, arg);
     }
     return null;
   }

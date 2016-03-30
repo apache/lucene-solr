@@ -17,11 +17,12 @@
 package org.apache.solr.analytics.util.valuesource;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Map;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
@@ -31,7 +32,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LegacyNumericUtils;
 import org.apache.lucene.util.mutable.MutableValue;
 import org.apache.lucene.util.mutable.MutableValueDate;
-import org.apache.solr.util.DateFormatUtil;
 
 /**
  * Extends {@link LongFieldSource} to have a field source that takes in 
@@ -53,7 +53,7 @@ public class DateFieldSource extends LongFieldSource {
 
   @SuppressWarnings("deprecation")
   public String longToString(long val) {
-    return DateFormatUtil.formatExternal((Date)longToObject(val));
+    return Instant.ofEpochMilli(val).toString();
   }
 
   @Override
