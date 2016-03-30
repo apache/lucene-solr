@@ -31,7 +31,7 @@ public class TestTestInjection extends LuceneTestCase {
   
   @AfterClass
   public static void cleanup() {
-  
+    TestInjection.reset();
   }
   
   public void testBasics() {
