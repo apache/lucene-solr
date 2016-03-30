@@ -14,13 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.extraction;
-
+package org.apache.solr.common.util;
+import java.io.IOException;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -34,7 +32,7 @@ import java.util.TimeZone;
 /**
  * This class has some code from HttpClient DateUtil.
  */
-public class ExtractionDateUtil {
+public class DateUtil {
   //start HttpClient
   /**
    * Date format pattern used to parse HTTP date headers in RFC 1123 format.
@@ -70,12 +68,6 @@ public class ExtractionDateUtil {
   //---------------------------------------------------------------------------------------
 
   /**
-   * Differs by {@link DateTimeFormatter#ISO_INSTANT} in that it's lenient.
-   */
-  public static final DateTimeFormatter ISO_8601_PARSER = new DateTimeFormatterBuilder()
-      .parseCaseInsensitive().parseLenient().appendInstant().toFormatter(Locale.ROOT);
-
-  /**
    * A suite of default date formats that can be parsed, and thus transformed to the Solr specific format
    */
   public static final Collection<String> DEFAULT_DATE_FORMATS = new ArrayList<>();
@@ -103,12 +95,9 @@ public class ExtractionDateUtil {
   }
 
   public static Date parseDate(String d, Collection<String> fmts) throws ParseException {
-    if (d.length() > 0 && d.charAt(d.length() - 1) == 'Z') {
-      try {
-        return new Date(ISO_8601_PARSER.parse(d, Instant::from).toEpochMilli());
-      } catch (Exception e) {
-        //ignore; perhaps we can parse with one of the formats below...
-      }
+    // 2007-04-26T08:05:04Z
+    if (d.endsWith("Z") && d.length() > 20) {
+      return getThreadLocalDateFormat().parse(d);
     }
     return parseDate(d, fmts, null);
   }
@@ -151,7 +140,6 @@ public class ExtractionDateUtil {
       dateValue = dateValue.substring(1, dateValue.length() - 1);
     }
 
-    //TODO upgrade to Java 8 DateTimeFormatter. But how to deal with the GMT as a default?
     SimpleDateFormat dateParser = null;
     Iterator formatIter = dateFormats.iterator();
 
@@ -174,5 +162,98 @@ public class ExtractionDateUtil {
     // we were unable to parse the date
     throw new ParseException("Unable to parse the date " + dateValue, 0);
   }
+
+
+  /**
+   * Returns a formatter that can be use by the current thread if needed to
+   * convert Date objects to the Internal representation.
+   *
+   * @return The {@link java.text.DateFormat} for the current thread
+   */
+  public static DateFormat getThreadLocalDateFormat() {
+    return fmtThreadLocal.get();
+  }
+
+  public static TimeZone UTC = TimeZone.getTimeZone("UTC");
+  private static ThreadLocalDateFormat fmtThreadLocal = new ThreadLocalDateFormat();
+
+  private static class ThreadLocalDateFormat extends ThreadLocal<DateFormat> {
+    DateFormat proto;
+
+    public ThreadLocalDateFormat() {
+      super();
+      //2007-04-26T08:05:04Z
+      SimpleDateFormat tmp = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.ROOT);
+      tmp.setTimeZone(UTC);
+      proto = tmp;
+    }
+
+    @Override
+    protected DateFormat initialValue() {
+      return (DateFormat) proto.clone();
+    }
+  }
+
+  /** Formats the date and returns the calendar instance that was used (which may be reused) */
+  public static Calendar formatDate(Date date, Calendar cal, Appendable out) throws IOException {
+    // using a stringBuilder for numbers can be nice since
+    // a temporary string isn't used (it's added directly to the
+    // builder's buffer.
+
+    StringBuilder sb = out instanceof StringBuilder ? (StringBuilder)out : new StringBuilder();
+    if (cal==null) cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.ROOT);
+    cal.setTime(date);
+
+    int i = cal.get(Calendar.YEAR);
+    sb.append(i);
+    sb.append('-');
+    i = cal.get(Calendar.MONTH) + 1;  // 0 based, so add 1
+    if (i<10) sb.append('0');
+    sb.append(i);
+    sb.append('-');
+    i=cal.get(Calendar.DAY_OF_MONTH);
+    if (i<10) sb.append('0');
+    sb.append(i);
+    sb.append('T');
+    i=cal.get(Calendar.HOUR_OF_DAY); // 24 hour time format
+    if (i<10) sb.append('0');
+    sb.append(i);
+    sb.append(':');
+    i=cal.get(Calendar.MINUTE);
+    if (i<10) sb.append('0');
+    sb.append(i);
+    sb.append(':');
+    i=cal.get(Calendar.SECOND);
+    if (i<10) sb.append('0');
+    sb.append(i);
+    i=cal.get(Calendar.MILLISECOND);
+    if (i != 0) {
+      sb.append('.');
+      if (i<100) sb.append('0');
+      if (i<10) sb.append('0');
+      sb.append(i);
+
+      // handle canonical format specifying fractional
+      // seconds shall not end in '0'.  Given the slowness of
+      // integer div/mod, simply checking the last character
+      // is probably the fastest way to check.
+      int lastIdx = sb.length()-1;
+      if (sb.charAt(lastIdx)=='0') {
+        lastIdx--;
+        if (sb.charAt(lastIdx)=='0') {
+          lastIdx--;
+        }
+        sb.setLength(lastIdx+1);
+      }
+
+    }
+    sb.append('Z');
+
+    if (out != sb)
+      out.append(sb);
+
+    return cal;
+  }
+
 
 }
