@@ -16,16 +16,6 @@
  */
 package org.apache.solr.client.solrj.util;
 
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.util.Base64;
-import org.apache.solr.common.util.ContentStream;
-import org.apache.solr.common.util.ContentStreamBase;
-import org.apache.solr.common.util.DateUtil;
-import org.apache.solr.common.util.XML;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -35,6 +25,14 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.Base64;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.XML;
 
 
 /**
@@ -111,7 +109,7 @@ public class ClientUtils
 
   private static void writeVal(Writer writer, float boost, String name, Object v, String update) throws IOException {
     if (v instanceof Date) {
-      v = DateUtil.getThreadLocalDateFormat().format( (Date)v );
+      v = ((Date)v).toInstant().toString();
     } else if (v instanceof byte[]) {
       byte[] bytes = (byte[]) v;
       v = Base64.byteArrayToBase64(bytes, 0, bytes.length);

@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 
+import com.google.common.collect.Iterables;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -60,9 +61,6 @@ import org.apache.solr.search.Filter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.util.DateFormatUtil;
-
-import com.google.common.collect.Iterables;
 
 /**
  * A <code>FacetingAccumulator</code> manages the StatsCollectors and Expressions for facets.
@@ -376,7 +374,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
         if (expressionName.equals(expressionNames[count])) {
           Comparable value = facetExpressions[count].getValue();
           if (value.getClass().equals(Date.class)) {
-            return DateFormatUtil.formatExternal((Date)value);
+            return ((Date)value).toInstant().toString();
           } else {
             return value.toString();
           }
@@ -430,7 +428,7 @@ public class FacetingAccumulator extends BasicAccumulator implements FacetValueA
         if (expressionName.equals(expressionNames[count])) {
           Comparable value = facetExpressions[count].getValue();
           if (value.getClass().equals(Date.class)) {
-            return DateFormatUtil.formatExternal((Date)value);
+            return ((Date)value).toInstant().toString();
           } else {
             return value.toString();
           }

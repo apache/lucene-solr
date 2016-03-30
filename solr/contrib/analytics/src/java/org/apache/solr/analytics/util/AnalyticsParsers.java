@@ -17,8 +17,8 @@
 package org.apache.solr.analytics.util;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Arrays;
-import java.util.Date;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LegacyNumericUtils;
@@ -29,7 +29,6 @@ import org.apache.solr.schema.TrieDoubleField;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
-import org.apache.solr.util.DateFormatUtil;
 
 /** 
  * Class to hold the parsers used for Solr Analytics.
@@ -149,7 +148,7 @@ public class AnalyticsParsers {
     @SuppressWarnings("deprecation")
     public String parse(BytesRef bytes) throws IOException {
       try {
-        return DateFormatUtil.formatExternal(new Date(LegacyNumericUtils.prefixCodedToLong(bytes)));
+        return Instant.ofEpochMilli(LegacyNumericUtils.prefixCodedToLong(bytes)).toString();
       } catch (NumberFormatException e) {
         throw new IOException("The byte array "+Arrays.toString(bytes.bytes)+" cannot be converted to a date.");
       }
@@ -157,7 +156,7 @@ public class AnalyticsParsers {
     @SuppressWarnings("deprecation")
     @Override
     public String parseNum(long l) {
-      return ""+DateFormatUtil.formatExternal(new Date(l));
+      return Instant.ofEpochMilli(l).toString();
     }
   };
   

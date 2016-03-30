@@ -16,14 +16,6 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrQuery.SortClause;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.FacetParams;
-
-import junit.framework.Assert;
-import org.apache.solr.common.util.DateUtil;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -32,6 +24,12 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
+
+import junit.framework.Assert;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.SolrQuery.SortClause;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.FacetParams;
 
 /**
  * 
@@ -301,8 +299,8 @@ public class SolrQueryTest extends LuceneTestCase {
     q.addDateRangeFacet("field", start, end, "+1MONTH");
     assertEquals("true", q.get(FacetParams.FACET));
     assertEquals("field", q.get(FacetParams.FACET_RANGE));
-    assertEquals(DateUtil.getThreadLocalDateFormat().format(start), q.get("f.field." + FacetParams.FACET_RANGE_START));
-    assertEquals(DateUtil.getThreadLocalDateFormat().format(end), q.get("f.field." + FacetParams.FACET_RANGE_END));
+    assertEquals(start.toInstant().toString(), q.get("f.field." + FacetParams.FACET_RANGE_START));
+    assertEquals(end.toInstant().toString(), q.get("f.field." + FacetParams.FACET_RANGE_END));
     assertEquals("+1MONTH", q.get("f.field." + FacetParams.FACET_RANGE_GAP));
   }
 

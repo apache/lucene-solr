@@ -16,17 +16,22 @@
  */
 package org.apache.solr.util;
 
-import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.common.params.CommonParams; //jdoc
-
-import java.util.Date;
+import java.text.ParseException;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
 import java.util.Calendar;
-import java.util.TimeZone;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.HashMap;
-import java.text.ParseException;
+import java.util.TimeZone;
 import java.util.regex.Pattern;
+
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.request.SolrRequestInfo;
 
 /**
  * A Simple Utility class for parsing "math" like strings relating to Dates.
@@ -92,13 +97,21 @@ import java.util.regex.Pattern;
  * @see SolrRequestInfo#getNOW
  */
 public class DateMathParser  {
-  
-  public static TimeZone UTC = TimeZone.getTimeZone("UTC");
+
+  public static final TimeZone UTC = TimeZone.getTimeZone("UTC");
 
   /** Default TimeZone for DateMath rounding (UTC) */
   public static final TimeZone DEFAULT_MATH_TZ = UTC;
+
   /** Default Locale for DateMath rounding (Locale.ROOT) */
   public static final Locale DEFAULT_MATH_LOCALE = Locale.ROOT;
+
+  /**
+   * Differs by {@link DateTimeFormatter#ISO_INSTANT} in that it's lenient.
+   * @see #parseNoMath(String)
+   */
+  public static final DateTimeFormatter PARSER = new DateTimeFormatterBuilder()
+      .parseCaseInsensitive().parseLenient().appendInstant().toFormatter(Locale.ROOT);
 
   /**
    * A mapping from (uppercased) String labels idenyifying time units,
@@ -114,6 +127,7 @@ public class DateMathParser  {
    * @see Calendar
    */
   public static final Map<String,Integer> CALENDAR_UNITS = makeUnitsMap();
+
 
   /** @see #CALENDAR_UNITS */
   private static Map<String,Integer> makeUnitsMap() {
@@ -213,7 +227,60 @@ public class DateMathParser  {
 
   }
 
-  
+  /**
+   * Parses a String which may be a date (in the standard ISO-8601 format)
+   * followed by an optional math expression.
+   * @param now an optional fixed date to use as "NOW"
+   * @param val the string to parse
+   */
+  public static Date parseMath(Date now, String val) {
+    String math;
+    final DateMathParser p = new DateMathParser();
+
+    if (null != now) p.setNow(now);
+
+    if (val.startsWith("NOW")) {
+      math = val.substring("NOW".length());
+    } else {
+      final int zz = val.indexOf('Z');
+      if (zz == -1) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Invalid Date String:'" + val + '\'');
+      }
+      math = val.substring(zz+1);
+      try {
+        p.setNow(parseNoMath(val.substring(0, zz + 1)));
+      } catch (DateTimeParseException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Invalid Date in Date Math String:'" + val + '\'', e);
+      }
+    }
+
+    if (null == math || math.equals("")) {
+      return p.getNow();
+    }
+
+    try {
+      return p.parseMath(math);
+    } catch (ParseException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Invalid Date Math String:'" +val+'\'',e);
+    }
+  }
+
+  /**
+   * Parsing Solr dates <b>without DateMath</b>.
+   * This is the standard/pervasive ISO-8601 UTC format but is configured with some leniency.
+   *
+   * Callers should almost always call {@link #parseMath(Date, String)} instead.
+   *
+   * @throws DateTimeParseException if it can't parse
+   */
+  private static Date parseNoMath(String val) {
+    //TODO write the equivalent of a Date::from; avoids Instant -> Date
+    return new Date(PARSER.parse(val, Instant::from).toEpochMilli());
+  }
+
   private TimeZone zone;
   private Locale loc;
   private Date now;
@@ -227,7 +294,6 @@ public class DateMathParser  {
    */
   public DateMathParser() {
     this(null, DEFAULT_MATH_LOCALE);
-    
   }
 
   /**

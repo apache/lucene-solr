@@ -20,7 +20,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
-import java.util.Date;
+import java.time.Instant;
 import java.util.Locale;
 
 import org.apache.commons.io.FileUtils;
@@ -34,7 +34,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -308,8 +307,7 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
     if ( enable ) {
       try {
         // write out when the file was created
-        FileUtils.write(healthcheck, 
-                        DateFormatUtil.formatExternal(new Date()), "UTF-8");
+        FileUtils.write(healthcheck, Instant.now().toString(), "UTF-8");
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
                                 "Unable to write healthcheck flag file", e);

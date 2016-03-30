@@ -22,14 +22,12 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import java.io.File;
-
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -71,9 +69,9 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   private static final Pattern STORED_FIELD_NAME_PATTERN = Pattern.compile("_dv$");
 
   static {
-    START_RANDOM_EPOCH_MILLIS = LocalDateTime.of(1970, Month.JANUARY, 1, 0, 0)
+    START_RANDOM_EPOCH_MILLIS = LocalDateTime.of(-11000, Month.JANUARY, 1, 0, 0)// BC
         .toInstant(ZoneOffset.UTC).toEpochMilli();
-    END_RANDOM_EPOCH_MILLIS = LocalDateTime.of(2030, Month.DECEMBER, 31, 23, 59, 59, 999_000_000)
+    END_RANDOM_EPOCH_MILLIS = LocalDateTime.of(11000, Month.DECEMBER, 31, 23, 59, 59, 999_000_000) // AD, 5 digit year
         .toInstant(ZoneOffset.UTC).toEpochMilli();
     try {
       DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -216,8 +214,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
         }
         case "date": {
           long epochMillis = TestUtil.nextLong(random(), START_RANDOM_EPOCH_MILLIS, END_RANDOM_EPOCH_MILLIS);
-          LocalDateTime dateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(epochMillis), ZoneOffset.UTC);
-          values[i] = dateTime.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + 'Z';
+          values[i] = Instant.ofEpochMilli(epochMillis).toString();
           break;
         }
         default: throw new Exception("unknown type '" + valueType + "'");

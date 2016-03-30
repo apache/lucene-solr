@@ -17,7 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.EnumSet;
@@ -39,8 +38,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.DateFormatUtil;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,7 +162,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
                   "Unable to range facet on tried field of unexpected type:" + this.facetOn);
       }
     } else if (ft instanceof DateRangeField) {
-      calc = new DateRangeFieldEndpointCalculator(this, null);
+      calc = new DateRangeEndpointCalculator(this, null);
     } else {
       throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,
@@ -703,56 +700,19 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
                                        final Date now) {
       super(rangeFacetRequest);
       this.now = now;
-      if (!(field.getType() instanceof TrieDateField)) {
-        throw new IllegalArgumentException
-            (TYPE_ERR_MSG);
+      if (!(field.getType() instanceof TrieDateField) && !(field.getType() instanceof DateRangeField)) {
+        throw new IllegalArgumentException(TYPE_ERR_MSG);
       }
     }
 
     @Override
     public String formatValue(Date val) {
-      return DateFormatUtil.formatExternal(val);
+      return val.toInstant().toString();
     }
 
     @Override
     protected Date parseVal(String rawval) {
-      return DateFormatUtil.parseMath(now, rawval);
-    }
-
-    @Override
-    protected Object parseGap(final String rawval) {
-      return rawval;
-    }
-
-    @Override
-    public Date parseAndAddGap(Date value, String gap) throws java.text.ParseException {
-      final DateMathParser dmp = new DateMathParser();
-      dmp.setNow(value);
-      return dmp.parseMath(gap);
-    }
-  }
-
-  private static class DateRangeFieldEndpointCalculator
-      extends RangeEndpointCalculator<Date> {
-    private final Date now;
-
-    public DateRangeFieldEndpointCalculator(final RangeFacetRequest rangeFacetRequest,
-                                            final Date now) {
-      super(rangeFacetRequest);
-      this.now = now;
-      if (!(field.getType() instanceof DateRangeField)) {
-        throw new IllegalArgumentException(DateRangeEndpointCalculator.TYPE_ERR_MSG);
-      }
-    }
-
-    @Override
-    public String formatValue(Date val) {
-      return DateFormatUtil.formatExternal(val);
-    }
-
-    @Override
-    protected Date parseVal(String rawval) {
-      return ((DateRangeField) field.getType()).parseMath(now, rawval);
+      return DateMathParser.parseMath(now, rawval);
     }
 
     @Override
