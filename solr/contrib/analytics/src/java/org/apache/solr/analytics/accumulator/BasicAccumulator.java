@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.base.Supplier;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.analytics.expression.Expression;
 import org.apache.solr.analytics.expression.ExpressionFactory;
@@ -36,11 +37,8 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.DateFormatUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Supplier;
 
 /**
  * A <code>BasicAccumulator</code> manages the ValueCounters and Expressions without regard to Facets.
@@ -143,7 +141,7 @@ public class BasicAccumulator extends ValueAccumulator {
       if (expressionName.equals(expressionNames[count])) {
         Comparable value = expressions[count].getValue();
         if (value.getClass().equals(Date.class)) {
-          return DateFormatUtil.formatExternal((Date)value);
+          return ((Date)value).toInstant().toString();
         } else {
           return value.toString();
         }

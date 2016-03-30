@@ -18,45 +18,41 @@ package org.apache.solr.update.processor;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-
-import org.apache.solr.common.SolrException;
-
-import static org.apache.solr.common.SolrException.ErrorCode.*;
-
-import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.core.CloseHook;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.DeleteUpdateCommand;
-import org.apache.solr.util.DateMathParser;
-import org.apache.solr.util.DateFormatUtil;
-import org.apache.solr.util.DefaultSolrThreadFactory;
-import org.apache.solr.util.plugin.SolrCoreAware;
-
 import java.text.ParseException;
-import java.util.Comparator;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DeleteUpdateCommand;
+import org.apache.solr.util.DateMathParser;
+import org.apache.solr.util.DefaultSolrThreadFactory;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 /**
  * <p>
@@ -404,7 +400,7 @@ public final class DocExpirationUpdateProcessorFactory
           try {
             DeleteUpdateCommand del = new DeleteUpdateCommand(req);
             del.setQuery("{!cache=false}" + expireField + ":[* TO " +
-                         DateFormatUtil.formatExternal(SolrRequestInfo.getRequestInfo().getNOW())
+                SolrRequestInfo.getRequestInfo().getNOW().toInstant()
                          + "]");
             proc.processDelete(del);
             

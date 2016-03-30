@@ -16,6 +16,16 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -29,21 +39,10 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.DateFormatUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import static org.apache.solr.common.params.FacetParams.FACET;
 import static org.apache.solr.common.params.FacetParams.FACET_LIMIT;
@@ -474,7 +473,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     // otherwise, build up a term filter...
     String prefix = "{!term f=" + constraint.getField() + "}";
     if (value instanceof Date) {
-      return prefix + DateFormatUtil.formatExternal((Date)value);
+      return prefix + ((Date) value).toInstant();
     } else {
       return prefix + value;
     }

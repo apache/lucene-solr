@@ -27,7 +27,6 @@ import java.util.Set;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
@@ -282,16 +281,7 @@ public abstract class ManagedResource {
    * Returns this resource's initialization timestamp.
    */
   public String getInitializedOn() {
-    if (initializedOn == null)
-      return null;
-    
-    StringBuilder dateBuf = new StringBuilder();
-    try {
-      DateUtil.formatDate(initializedOn, null, dateBuf);
-    } catch (IOException e) {
-      // safe to ignore
-    }
-    return dateBuf.toString();
+    return initializedOn == null ? null : initializedOn.toInstant().toString();
   }
 
   /**
@@ -299,17 +289,7 @@ public abstract class ManagedResource {
    * or null if this resource has not been updated since initialization.
    */
   public String getUpdatedSinceInitialization() {
-    String dateStr = null;
-    if (lastUpdateSinceInitialization != null) {
-      StringBuilder dateBuf = new StringBuilder();
-      try {
-        DateUtil.formatDate(lastUpdateSinceInitialization, null, dateBuf);
-        dateStr = dateBuf.toString(); 
-      } catch (IOException e) {
-        // safe to ignore here
-      }
-    }
-    return dateStr;
+    return lastUpdateSinceInitialization == null ? null : lastUpdateSinceInitialization.toInstant().toString();
   }
 
   /**

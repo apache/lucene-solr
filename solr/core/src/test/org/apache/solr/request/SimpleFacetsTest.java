@@ -36,7 +36,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.TimeZoneUtils;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -790,8 +789,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     //note: add_doc duplicates bday to bday_drf and a_tdt to a_drf (date range field)
     add_doc(i, "201",  f, "1976-07-04T12:08:56.235Z", ff, "1900-01-01T"+ooo);
     add_doc(i, "202",  f, "1976-07-05T00:00:00.000Z", ff, "1976-07-01T"+ooo);
-    add_doc(i, "203",  f, "1976-07-15T00:07:67.890Z", ff, "1976-07-04T"+ooo);
-    add_doc(i, "204",  f, "1976-07-21T00:07:67.890Z", ff, "1976-07-05T"+ooo);
+    add_doc(i, "203",  f, "1976-07-15T00:07:57.890Z", ff, "1976-07-04T"+ooo);
+    add_doc(i, "204",  f, "1976-07-21T00:07:57.890Z", ff, "1976-07-05T"+ooo);
     add_doc(i, "205",  f, "1976-07-13T12:12:25.255Z", ff, "1976-07-05T"+xxx);
     add_doc(i, "206",  f, "1976-07-03T17:01:23.456Z", ff, "1976-07-07T"+ooo);
     add_doc(i, "207",  f, "1976-07-12T12:12:25.255Z", ff, "1976-07-13T"+ooo);
@@ -3006,8 +3005,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     }
     int gapNum = random().nextInt(100) + 1;
     
-    params.add(FacetParams.FACET_RANGE_START, DateFormatUtil.formatExternal(dates[0]));
-    params.add(FacetParams.FACET_RANGE_END, DateFormatUtil.formatExternal(dates[1]));
+    params.add(FacetParams.FACET_RANGE_START, dates[0].toInstant().toString());
+    params.add(FacetParams.FACET_RANGE_END, dates[1].toInstant().toString());
     params.add(FacetParams.FACET_RANGE_GAP, String.format(Locale.ROOT, "+%d%s", gapNum, gapUnit));
     addCommonRandomRangeParams(params);
     params.add(FacetParams.FACET_RANGE, field);

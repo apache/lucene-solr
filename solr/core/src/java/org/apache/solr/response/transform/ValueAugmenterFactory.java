@@ -20,9 +20,9 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.DateMathParser;
 
 /**
  *
@@ -48,7 +48,7 @@ public class ValueAugmenterFactory extends TransformerFactory
         if( "int".equals( type ) ) return Integer.valueOf( val );
         if( "double".equals( type ) ) return Double.valueOf( val );
         if( "float".equals( type ) ) return Float.valueOf( val );
-        if( "date".equals( type ) ) return DateUtil.parseDate(val);
+        if( "date".equals( type ) ) return DateMathParser.parseMath(null, val );
       }
       catch( Exception ex ) {
         throw new SolrException( ErrorCode.BAD_REQUEST,

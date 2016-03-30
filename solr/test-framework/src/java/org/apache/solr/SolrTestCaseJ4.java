@@ -37,7 +37,18 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
 import java.util.logging.Level;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -86,7 +97,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.SSLTestConfig;
@@ -2036,7 +2046,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    * @see #randomSkewedDate
    */
   public static String randomDate() {
-    return DateFormatUtil.formatExternal(new Date(random().nextLong()));
+    return Instant.ofEpochMilli(random().nextLong()).toString();
   }
 
   /** 

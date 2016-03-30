@@ -34,7 +34,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
-import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.DateMathParser;
 
 public class FacetRange extends FacetRequest {
@@ -546,11 +545,11 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     @Override
     public String formatValue(Comparable val) {
-      return DateFormatUtil.formatExternal( (Date)val );
+      return ((Date)val).toInstant().toString();
     }
     @Override
     protected Date parseStr(String rawval) {
-      return DateFormatUtil.parseMath(now, rawval);
+      return DateMathParser.parseMath(now, rawval);
     }
     @Override
     protected Object parseGap(final String rawval) {

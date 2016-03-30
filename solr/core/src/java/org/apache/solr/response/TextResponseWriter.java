@@ -40,7 +40,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
-import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.FastWriter;
 
 /** Base class for text-oriented response writers.
@@ -335,7 +334,7 @@ public abstract class TextResponseWriter {
 
 
   public void writeDate(String name, Date val) throws IOException {
-    writeDate(name, DateFormatUtil.formatExternal(val));
+    writeDate(name, val.toInstant().toString());
   }
   
 

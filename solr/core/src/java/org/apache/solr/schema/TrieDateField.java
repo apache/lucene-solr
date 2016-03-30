@@ -19,8 +19,7 @@ package org.apache.solr.schema;
 import java.util.Date;
 
 import org.apache.lucene.index.IndexableField;
-import org.apache.solr.update.processor.TimestampUpdateProcessorFactory; //jdoc
-import org.apache.solr.util.DateFormatUtil;
+import org.apache.solr.update.processor.TimestampUpdateProcessorFactory;
 import org.apache.solr.util.DateMathParser;
 
 /**
@@ -96,7 +95,7 @@ public class TrieDateField extends TrieField implements DateValueFieldType {
   @Override
   public Object toNativeType(Object val) {
     if (val instanceof String) {
-      return DateFormatUtil.parseMath(null, (String)val);
+      return DateMathParser.parseMath(null, (String)val);
     }
     return super.toNativeType(val);
   }
