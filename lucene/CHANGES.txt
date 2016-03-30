@@ -118,6 +118,12 @@ New Features
 
 API Changes
 
+* LUCENE-7094: BBoxStrategy and PointVectorStrategy now support
+  PointValues (in addition to legacy numeric trie).  Their APIs
+  were changed a little and also made more consistent.  PointValues/Trie
+  is optional, DocValues is optional, stored value is optional.
+  (Nick Knize, David Smiley)
+
 * LUCENE-6067: Accountable.getChildResources has a default
   implementation returning the empty list.  (Robert Muir)
 

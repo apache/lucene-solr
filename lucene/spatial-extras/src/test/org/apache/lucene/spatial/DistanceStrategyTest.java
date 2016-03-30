@@ -22,11 +22,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Shape;
-import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
@@ -37,6 +32,9 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.junit.Test;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Shape;
 
 public class DistanceStrategyTest extends StrategyTestCase {
   @ParametersFactory(argumentFormatting = "strategy=%s")
@@ -59,10 +57,18 @@ public class DistanceStrategyTest extends StrategyTestCase {
     strategy = new RecursivePrefixTreeStrategy(grid, "recursive_packedquad");
     ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
-    strategy = new PointVectorStrategy(ctx, "pointvector");
+    strategy = PointVectorStrategy.newInstance(ctx, "pointvector");
     ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
-    strategy = new BBoxStrategy(ctx, "bbox");
+//  Can't test this without un-inverting since PVS legacy config didn't have docValues.
+//    However, note that Solr's tests use UninvertingReader and thus test this.
+//    strategy = PointVectorStrategy.newLegacyInstance(ctx, "pointvector_legacy");
+//    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
+
+    strategy = BBoxStrategy.newInstance(ctx, "bbox");
+    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
+
+    strategy = BBoxStrategy.newLegacyInstance(ctx, "bbox_legacy");
     ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
     strategy = new SerializedDVStrategy(ctx, "serialized");
@@ -74,22 +80,6 @@ public class DistanceStrategyTest extends StrategyTestCase {
   public DistanceStrategyTest(String suiteName, SpatialStrategy strategy) {
     this.ctx = strategy.getSpatialContext();
     this.strategy = strategy;
-  }
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    if (strategy instanceof BBoxStrategy && random().nextBoolean()) {//disable indexing sometimes
-      BBoxStrategy bboxStrategy = (BBoxStrategy)strategy;
-      final FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
-      fieldType.setIndexOptions(IndexOptions.NONE);
-      bboxStrategy.setFieldType(fieldType);
-    }
-  }
-
-  @Override
-  protected boolean needsDocValues() {
-    return true;
   }
 
   @Test
@@ -108,9 +98,9 @@ public class DistanceStrategyTest extends StrategyTestCase {
 
   @Test
   public void testRecipScore() throws IOException {
-    Point p100 = ctx.makePoint(2, 1);
+    Point p100 = ctx.makePoint(2.02, 0.98);
     adoc("100", p100);
-    Point p101 = ctx.makePoint(-1, 4);
+    Point p101 = ctx.makePoint(-1.001, 4.001);
     adoc("101", p101);
     adoc("103", (Shape)null);//test score for nothing
     adoc("999", ctx.makePoint(2, 1));//test deleted
