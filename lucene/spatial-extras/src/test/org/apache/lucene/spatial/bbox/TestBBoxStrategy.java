@@ -19,12 +19,6 @@ package org.apache.lucene.spatial.bbox;
 import java.io.IOException;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.context.SpatialContextFactory;
-import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.locationtech.spatial4j.shape.Rectangle;
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.impl.RectangleImpl;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
@@ -36,13 +30,14 @@ import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.util.ShapeAreaValueSource;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.context.SpatialContextFactory;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.impl.RectangleImpl;
 
 public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
-
-  @Override
-  protected boolean needsDocValues() {
-    return true;
-  }
 
   @Override
   protected Shape randomIndexedShape() {
@@ -97,13 +92,17 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
       factory.worldBounds = new RectangleImpl(-300, 300, -100, 100, null);
       this.ctx = factory.newSpatialContext();
     }
-    this.strategy = new BBoxStrategy(ctx, "bbox");
+    // randomly test legacy (numeric) and point based bbox strategy
+    if (random().nextBoolean()) {
+      this.strategy = BBoxStrategy.newInstance(ctx, "bbox");
+    } else {
+      this.strategy = BBoxStrategy.newLegacyInstance(ctx, "bbox");
+    }
     //test we can disable docValues for predicate tests
     if (random().nextBoolean()) {
-      BBoxStrategy bboxStrategy = (BBoxStrategy) strategy;
-      FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
+      FieldType fieldType = new FieldType(((BBoxStrategy)strategy).getFieldType());
       fieldType.setDocValuesType(DocValuesType.NONE);
-      bboxStrategy.setFieldType(fieldType);
+      strategy = new BBoxStrategy(ctx, strategy.getFieldName(), fieldType);
     }
     for (SpatialOperation operation : SpatialOperation.values()) {
       if (operation == SpatialOperation.Overlaps)
@@ -189,7 +188,11 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
 
   private void setupGeo() {
     this.ctx = SpatialContext.GEO;
-    this.strategy = new BBoxStrategy(ctx, "bbox");
+    if (random().nextBoolean()) {
+      this.strategy = BBoxStrategy.newInstance(ctx, "bbox");
+    } else {
+      this.strategy = BBoxStrategy.newLegacyInstance(ctx, "bbox");
+    }
   }
 
   // OLD STATIC TESTS (worthless?)
@@ -225,8 +228,29 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
     return shape.getBoundingBox();
   }
 
+  private BBoxStrategy setupNeedsDocValuesOnly() throws IOException {
+    this.ctx = SpatialContext.GEO;
+    FieldType fieldType;
+    // random  legacy or not legacy
+    String FIELD_PREFIX = "bbox";
+    if (random().nextBoolean()) {
+      fieldType = new FieldType(BBoxStrategy.DEFAULT_FIELDTYPE);
+      if (random().nextBoolean()) {
+        fieldType.setDimensions(0, 0);
+      }
+    } else {
+      fieldType = new FieldType(BBoxStrategy.LEGACY_FIELDTYPE);
+      if (random().nextBoolean()) {
+        fieldType.setIndexOptions(IndexOptions.NONE);
+      }
+    }
+
+    strategy = new BBoxStrategy(ctx, FIELD_PREFIX, fieldType);
+    return (BBoxStrategy)strategy;
+  }
+
   public void testOverlapRatio() throws IOException {
-    setupGeo();
+    setupNeedsDocValuesOnly();
 
     //Simply assert null shape results in 0
     adoc("999", (Shape) null);
@@ -279,14 +303,7 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
   }
 
   public void testAreaValueSource() throws IOException {
-    setupGeo();
-    //test we can disable indexed for this test
-    BBoxStrategy bboxStrategy = (BBoxStrategy) strategy;
-    if (random().nextBoolean()) {
-      FieldType fieldType = new FieldType(bboxStrategy.getFieldType());
-      fieldType.setIndexOptions(IndexOptions.NONE);
-      bboxStrategy.setFieldType(fieldType);
-    }
+    BBoxStrategy bboxStrategy = setupNeedsDocValuesOnly();
 
     adoc("100", ctx.makeRectangle(0, 20, 40, 80));
     adoc("999", (Shape) null);
@@ -298,4 +315,5 @@ public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
     checkValueSource(new ShapeAreaValueSource(bboxStrategy.makeShapeValueSource(), ctx, true, 2.0),
         new float[]{783.86f, 0f}, 0.01f); // testing with a different multiplier
   }
+
 }

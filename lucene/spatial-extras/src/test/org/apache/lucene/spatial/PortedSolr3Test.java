@@ -22,10 +22,6 @@ import java.util.List;
 import java.util.Set;
 
 import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.TermQueryPrefixTreeStrategy;
@@ -36,6 +32,10 @@ import org.apache.lucene.spatial.query.SpatialArgs;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.junit.Test;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * Based off of Solr 3's SpatialFilterTest.
@@ -62,7 +62,10 @@ public class PortedSolr3Test extends StrategyTestCase {
     strategy = new TermQueryPrefixTreeStrategy(grid, "termquery_geohash");
     ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
-    strategy = new PointVectorStrategy(ctx, "pointvector");
+    strategy = PointVectorStrategy.newInstance(ctx, "pointvector");
+    ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
+
+    strategy = PointVectorStrategy.newInstance(ctx, "pointvector_legacy");
     ctorArgs.add(new Object[]{strategy.getFieldName(), strategy});
 
     return ctorArgs;

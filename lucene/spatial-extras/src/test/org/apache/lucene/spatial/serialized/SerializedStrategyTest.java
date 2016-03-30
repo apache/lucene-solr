@@ -18,11 +18,11 @@ package org.apache.lucene.spatial.serialized;
 
 import java.io.IOException;
 
-import org.locationtech.spatial4j.context.SpatialContext;
 import org.apache.lucene.spatial.SpatialMatchConcern;
 import org.apache.lucene.spatial.StrategyTestCase;
 import org.junit.Before;
 import org.junit.Test;
+import org.locationtech.spatial4j.context.SpatialContext;
 
 public class SerializedStrategyTest extends StrategyTestCase {
 
@@ -32,11 +32,6 @@ public class SerializedStrategyTest extends StrategyTestCase {
     super.setUp();
     this.ctx = SpatialContext.GEO;
     this.strategy = new SerializedDVStrategy(ctx, "serialized");
-  }
-
-  @Override
-  protected boolean needsDocValues() {
-    return (strategy instanceof SerializedDVStrategy);
   }
 
   @Test
