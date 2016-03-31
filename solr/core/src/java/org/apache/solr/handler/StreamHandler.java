@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
 import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
 import org.apache.solr.client.solrj.io.ops.GroupOperation;
@@ -115,6 +116,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("complement", ComplementStream.class)
          .withFunctionName("daemon", DaemonStream.class)
          .withFunctionName("topic", TopicStream.class)
+         .withFunctionName("shortestPath", ShortestPathStream.class)
 
 
     // metrics
