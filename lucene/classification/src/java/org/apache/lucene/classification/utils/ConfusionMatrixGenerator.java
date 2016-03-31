@@ -106,11 +106,11 @@ public class ConfusionMatrixGenerator {
                     if (aLong != null) {
                       stringLongMap.put(classified, aLong + 1);
                     } else {
-                      stringLongMap.put(classified, 1l);
+                      stringLongMap.put(classified, 1L);
                     }
                   } else {
                     stringLongMap = new HashMap<>();
-                    stringLongMap.put(classified, 1l);
+                    stringLongMap.put(classified, 1L);
                     counts.put(correctAnswer, stringLongMap);
                   }
 
@@ -225,23 +225,29 @@ public class ConfusionMatrixGenerator {
      */
     public double getAccuracy() {
       if (this.accuracy == -1) {
-        double cc = 0d;
-        double wc = 0d;
-        for (Map.Entry<String, Map<String, Long>> entry : linearizedMatrix.entrySet()) {
-          String correctAnswer = entry.getKey();
-          for (Map.Entry<String, Long> classifiedAnswers : entry.getValue().entrySet()) {
-            Long value = classifiedAnswers.getValue();
-            if (value != null) {
-              if (correctAnswer.equals(classifiedAnswers.getKey())) {
-                cc += value;
-              } else {
-                wc += value;
-              }
+        double tp = 0d;
+        double tn = 0d;
+        double fp = 0d;
+        double fn = 0d;
+        for (Map.Entry<String, Map<String, Long>> classification : linearizedMatrix.entrySet()) {
+          String klass = classification.getKey();
+          for (Map.Entry<String, Long> entry : classification.getValue().entrySet()) {
+            if (klass.equals(entry.getKey())) {
+              tp += entry.getValue();
+            } else {
+              fn += entry.getValue();
+            }
+          }
+          for (Map<String, Long> values : linearizedMatrix.values()) {
+            if (values.containsKey(klass)) {
+              fp += values.get(klass);
+            } else {
+              tn++;
             }
           }
 
         }
-        this.accuracy = cc / (cc + wc);
+        this.accuracy = (tp + tn) / (fp + fn + tp + tn);
       }
       return this.accuracy;
     }
@@ -253,7 +259,7 @@ public class ConfusionMatrixGenerator {
      */
     public double getPrecision() {
       double tp = 0;
-      double fp = -linearizedMatrix.size();
+      double fp = 0;
       for (Map.Entry<String, Map<String, Long>> classification : linearizedMatrix.entrySet()) {
         String klass = classification.getKey();
         for (Map.Entry<String, Long> entry : classification.getValue().entrySet()) {
@@ -268,8 +274,7 @@ public class ConfusionMatrixGenerator {
         }
       }
 
-      return tp + fp > 0 ? tp / (tp + fp) : 0;
-
+      return tp > 0 ? tp / (tp + fp) : 0;
     }
 
     /**
