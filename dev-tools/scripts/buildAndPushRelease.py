@@ -73,8 +73,8 @@ def prepare(root, version, gpgKeyID, gpgPassword):
     os.remove(LOG)
 
   os.chdir(root)
-  print('  svn up...')
-  run('svn up')
+  print('  git pull...')
+  run('git pull')
 
   rev = getGitRev()
   print('  git rev: %s' % rev)
@@ -236,7 +236,7 @@ def parse_config():
   if config.rc_num <= 0:
     parser.error('Release Candidate number must be a positive integer')
   if not os.path.isdir(config.root):
-    # TODO: add additional svn check to ensure dir is a real lucene-solr checkout
+    # TODO: add additional git check to ensure dir is a real lucene-solr checkout
     parser.error('Root path is not a valid lucene-solr checkout')
 
   config.version = read_version(config.root)
