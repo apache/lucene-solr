@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.io.Tuple;
 public class Bucket implements Serializable {
 
   private static final long serialVersionUID = 1;
+  private static final String NULL_VALUE = "NULL";
 
   private String bucketKey;
 
@@ -33,8 +34,14 @@ public class Bucket implements Serializable {
     this.bucketKey = bucketKey;
   }
 
-  public Object getBucketValue(Tuple tuple) {
-    return tuple.get(bucketKey);
+  public Object getBucketValue(Tuple tuple)
+  {
+    Object o = tuple.get(bucketKey);
+    if(o == null) {
+      return NULL_VALUE;
+    } else {
+      return o;
+    }
   }
 
   public String toString() {
