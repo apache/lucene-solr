@@ -27,11 +27,11 @@ import org.slf4j.LoggerFactory;
  * Ensures that provided identifiers align with Solr's recommendations/requirements for choosing
  * collection, core, etc identifiers.
  *  
- * Identifiers are allowed to contain underscores, periods, and alphanumeric characters. 
+ * Identifiers are allowed to contain underscores, periods, hyphens, and alphanumeric characters.
  */
 public class SolrIdentifierValidator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  final static Pattern identifierPattern = Pattern.compile("^[\\._A-Za-z0-9]*$");
+  final static Pattern identifierPattern = Pattern.compile("^(?!\\-)[\\._A-Za-z0-9\\-]*$");
   
   public static void validateCollectionName(String collectionName) throws SolrException {
     validateCoreName(collectionName);
@@ -41,7 +41,7 @@ public class SolrIdentifierValidator {
     if (name == null || !identifierPattern.matcher(name).matches()) {
       log.info("Validation failed on the invalid identifier [{}].  Throwing SolrException to indicate a BAD REQUEST.", name);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Invalid name: '" + name + "' Identifiers must consist entirely of periods, underscores and alphanumerics");
+          "Invalid name: '" + name + "' Identifiers must consist entirely of periods, hyphens, underscores and alphanumerics");
     }
   }
 }

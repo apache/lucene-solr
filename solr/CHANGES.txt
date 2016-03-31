@@ -37,6 +37,9 @@ Bug Fixes
 * SOLR-8870: AngularJS Query tab no longer URL-encodes the /select part of the request, fixing possible 404 issue
   when Solr is behind a proxy. Also, now supports old-style &qt param when handler not prefixed with "/" (janhoy)
 
+* SOLR-8725: Allow hyphen in collection, core, shard, and alias name as the non-first character
+  (Anshum Gupta) (from 6.0)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
