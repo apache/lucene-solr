@@ -42,20 +42,40 @@ public class TestSolrFieldCacheMBean extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ(req("q", "*:*", "sort", "id asc"), "//*[@numFound='1']");
 
-    SolrFieldCacheMBean mbean = new SolrFieldCacheMBean();
-    NamedList stats = mbean.getStatistics();
-    assert(new Integer(stats.get("entries_count").toString()) > 0);
-    assertNotNull(stats.get("entry#0"));
+    // Test with entry list enabled
+    assertEntryListIncluded(false);
 
     // Test again with entry list disabled
     System.setProperty("disableSolrFieldCacheMBeanEntryList", "true");
     try {
-      mbean = new SolrFieldCacheMBean();
-      stats = mbean.getStatistics();
-      assert(new Integer(stats.get("entries_count").toString()) > 0);
-      assertNull(stats.get("entry#0"));
+      assertEntryListNotIncluded(false);
     } finally {
       System.clearProperty("disableSolrFieldCacheMBeanEntryList");
     }
+
+    // Test with entry list enabled for jmx
+    assertEntryListIncluded(true);
+
+    // Test with entry list disabled for jmx
+    System.setProperty("disableSolrFieldCacheMBeanEntryListJmx", "true");
+    try {
+      assertEntryListNotIncluded(true);
+    } finally {
+      System.clearProperty("disableSolrFieldCacheMBeanEntryListJmx");
+    }
+  }
+
+  private void assertEntryListIncluded(boolean checkJmx) {
+    SolrFieldCacheMBean mbean = new SolrFieldCacheMBean();
+    NamedList stats = checkJmx ? mbean.getStatisticsForJmx() : mbean.getStatistics();
+    assert(new Integer(stats.get("entries_count").toString()) > 0);
+    assertNotNull(stats.get("entry#0"));
+  }
+
+  private void assertEntryListNotIncluded(boolean checkJmx) {
+    SolrFieldCacheMBean mbean = new SolrFieldCacheMBean();
+    NamedList stats = checkJmx ? mbean.getStatisticsForJmx() : mbean.getStatistics();
+    assert(new Integer(stats.get("entries_count").toString()) > 0);
+    assertNull(stats.get("entry#0"));
   }
 }
