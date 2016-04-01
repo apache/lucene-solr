@@ -77,7 +77,7 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
      * {@link org.apache.lucene.spatial.geopoint.search.GeoPointTermsEnum#accept} method is called to match
      * encoded terms that fall within the bounding box of the polygon. Those documents that pass the initial
      * bounding box filter are then compared to the provided polygon using the
-     * {@link org.apache.lucene.spatial.util.GeoRelationUtils#pointInPolygon} method.
+     * {@link Polygon#contains(Polygon[], double, double)} method.
      */
     @Override
     protected boolean postFilter(final double lat, final double lon) {
