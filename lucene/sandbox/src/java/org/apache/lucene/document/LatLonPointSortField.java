@@ -20,7 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.geo.GeoUtils;
 
 /**
  * Sorts by distance from an origin location.

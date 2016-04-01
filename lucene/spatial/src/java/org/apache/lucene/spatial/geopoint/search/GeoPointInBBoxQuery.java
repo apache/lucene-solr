@@ -23,7 +23,7 @@ import org.apache.lucene.search.FieldValueQuery;
 import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
-import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.geo.GeoUtils;
 
 /** Implements a simple bounding box query on a GeoPoint field. This is inspired by
  * {@link LegacyNumericRangeQuery} and is implemented using a

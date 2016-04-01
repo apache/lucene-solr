@@ -19,7 +19,6 @@ package org.apache.lucene.spatial.geopoint.search;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
 
 /** Package private implementation for the public facing GeoPointDistanceQuery delegate class.
@@ -50,7 +49,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
     } else {
       maxPartialDistance = Double.POSITIVE_INFINITY;
     }
-    axisLat = GeoUtils.axisLat(distanceQuery.centerLat, distanceQuery.radiusMeters);
+    axisLat = GeoRect.axisLat(distanceQuery.centerLat, distanceQuery.radiusMeters);
   }
 
   @Override
@@ -76,7 +75,7 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
           minLat > GeoPointDistanceQueryImpl.this.maxLat ||
           minLon > GeoPointDistanceQueryImpl.this.maxLon) {
         return false;
-      } else if ((centerLon < minLon || centerLon > maxLon) && (axisLat+GeoUtils.AXISLAT_ERROR < minLat || axisLat-GeoUtils.AXISLAT_ERROR > maxLat)) {
+      } else if ((centerLon < minLon || centerLon > maxLon) && (axisLat+GeoRect.AXISLAT_ERROR < minLat || axisLat-GeoRect.AXISLAT_ERROR > maxLat)) {
         if (SloppyMath.haversinMeters(distanceQuery.centerLat, centerLon, minLat, minLon) > distanceQuery.radiusMeters &&
             SloppyMath.haversinMeters(distanceQuery.centerLat, centerLon, minLat, maxLon) > distanceQuery.radiusMeters &&
             SloppyMath.haversinMeters(distanceQuery.centerLat, centerLon, maxLat, minLon) > distanceQuery.radiusMeters &&

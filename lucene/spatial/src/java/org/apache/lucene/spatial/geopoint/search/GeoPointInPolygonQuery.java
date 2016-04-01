@@ -82,7 +82,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
    * that fall within or on the boundary of the polygon defined by the input parameters. 
    */
   public GeoPointInPolygonQuery(String field, TermEncoding termEncoding, Polygon... polygons) {
-    this(field, termEncoding, Polygon.getBoundingBox(polygons), polygons);
+    this(field, termEncoding, GeoRect.fromPolygon(polygons), polygons);
   }
   
   // internal constructor

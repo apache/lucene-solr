@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.document;
 
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.index.DocValuesType;
@@ -28,7 +29,6 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.spatial.util.GeoUtils;
 import org.apache.lucene.spatial.util.Polygon;
 
 /** 

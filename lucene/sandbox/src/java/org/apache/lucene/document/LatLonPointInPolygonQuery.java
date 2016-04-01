@@ -84,7 +84,7 @@ final class LatLonPointInPolygonQuery extends Query {
     
     // bounding box over all polygons, this can speed up tree intersection/cheaply improve approximation for complex multi-polygons
     // these are pre-encoded with LatLonPoint's encoding
-    final GeoRect box = Polygon.getBoundingBox(polygons);
+    final GeoRect box = GeoRect.fromPolygon(polygons);
     final byte minLat[] = new byte[Integer.BYTES];
     final byte maxLat[] = new byte[Integer.BYTES];
     final byte minLon[] = new byte[Integer.BYTES];

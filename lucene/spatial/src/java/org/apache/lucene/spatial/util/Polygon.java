@@ -18,6 +18,8 @@ package org.apache.lucene.spatial.util;
 
 import java.util.Arrays;
 
+import org.apache.lucene.geo.GeoUtils;
+
 /** 
  * Represents a closed polygon on the earth's surface.
  * @lucene.experimental 
@@ -239,24 +241,6 @@ public final class Polygon {
   /** Returns a copy of the internal holes array */
   public Polygon[] getHoles() {
     return holes.clone();
-  }
-  
-  /** Returns the bounding box over an array of polygons */
-  public static GeoRect getBoundingBox(Polygon[] polygons) {
-    // compute bounding box
-    double minLat = Double.POSITIVE_INFINITY;
-    double maxLat = Double.NEGATIVE_INFINITY;
-    double minLon = Double.POSITIVE_INFINITY;
-    double maxLon = Double.NEGATIVE_INFINITY;
-
-    for (int i = 0;i < polygons.length; i++) {
-      minLat = Math.min(polygons[i].minLat, minLat);
-      maxLat = Math.max(polygons[i].maxLat, maxLat);
-      minLon = Math.min(polygons[i].minLon, minLon);
-      maxLon = Math.max(polygons[i].maxLon, maxLon);
-    }
-    
-    return new GeoRect(minLat, maxLat, minLon, maxLon);
   }
   
   /** Helper for multipolygon logic: returns true if any of the supplied polygons contain the point */
