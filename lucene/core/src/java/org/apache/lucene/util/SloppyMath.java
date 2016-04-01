@@ -176,8 +176,10 @@ public class SloppyMath {
   // TODO: remove these for java 9, they fixed Math.toDegrees()/toRadians() to work just like this.
   public static final double TO_RADIANS = Math.PI / 180D;
   public static final double TO_DEGREES = 180D / Math.PI;
-  private static final double TO_METERS = 6_378_137D; // equatorial radius
-  private static final double TO_KILOMETERS = 6_378.137D; // equatorial radius
+
+  // Earth's mean radius, in meters and kilometers; see http://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
+  private static final double TO_METERS = 6_371_008.7714D; // equatorial radius
+  private static final double TO_KILOMETERS = 6_371.0087714D; // equatorial radius
   
   // cos/asin
   private static final double ONE_DIV_F2 = 1/2.0;

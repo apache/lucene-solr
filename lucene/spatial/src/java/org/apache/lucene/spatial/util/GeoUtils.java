@@ -53,8 +53,9 @@ public final class GeoUtils {
   public static final double MAX_LAT_RADIANS = TO_RADIANS * MAX_LAT_INCL;
   
   // WGS84 earth-ellipsoid parameters
-  /** major (a) axis in meters */
-  public static final double SEMIMAJOR_AXIS = 6_378_137; // [m]
+  /** mean earth axis in meters */
+  // see http://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
+  public static final double EARTH_MEAN_RADIUS_METERS = 6_371_008.7714;
 
   // No instance:
   private GeoUtils() {
@@ -79,7 +80,7 @@ public final class GeoUtils {
     final double radLat = TO_RADIANS * centerLat;
     final double radLon = TO_RADIANS * centerLon;
     // LUCENE-7143
-    double radDistance = (radiusMeters + 7E-2) / SEMIMAJOR_AXIS;
+    double radDistance = (radiusMeters + 7E-2) / EARTH_MEAN_RADIUS_METERS;
     double minLat = radLat - radDistance;
     double maxLat = radLat + radDistance;
     double minLon;
@@ -129,7 +130,7 @@ public final class GeoUtils {
   }
 
   /** maximum error from {@link #axisLat(double, double)}. logic must be prepared to handle this */
-  public static final double AXISLAT_ERROR = 0.1D / SEMIMAJOR_AXIS * TO_DEGREES;
+  public static final double AXISLAT_ERROR = 0.1D / EARTH_MEAN_RADIUS_METERS * TO_DEGREES;
 
   /**
    * Calculate the latitude of a circle's intersections with its bbox meridians.
@@ -156,7 +157,7 @@ public final class GeoUtils {
     // the argument to arc cosine, resulting in a range (0, PI/2].
 
     double l1 = TO_RADIANS * centerLat;
-    double r = (radiusMeters + 7E-2) / SEMIMAJOR_AXIS;
+    double r = (radiusMeters + 7E-2) / EARTH_MEAN_RADIUS_METERS;
 
     // if we are within radius range of a pole, the lat is the pole itself
     if (Math.abs(l1) + r >= MAX_LAT_RADIANS) {

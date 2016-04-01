@@ -46,11 +46,8 @@ import org.apache.lucene.util.NumericUtils;
  *  @lucene.experimental */
 public final class Geo3DPoint extends Field {
 
-  /** Mean radius of the earth, in meters */
-  protected final static double MEAN_EARTH_RADIUS_METERS = 6371008.7714;
-  
   /** How many radians are in one earth surface meter */
-  protected final static double RADIANS_PER_METER = 1.0 / MEAN_EARTH_RADIUS_METERS;
+  protected final static double RADIANS_PER_METER = 1.0 / PlanetModel.WGS84_MEAN;
   
   /** Indexing {@link FieldType}. */
   public static final FieldType TYPE = new FieldType();

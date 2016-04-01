@@ -265,7 +265,7 @@ public class TestGeoUtils extends LuceneTestCase {
   }
   
   public void testAxisLat() {
-    double earthCircumference = 2D * Math.PI * GeoUtils.SEMIMAJOR_AXIS;
+    double earthCircumference = 2D * Math.PI * GeoUtils.EARTH_MEAN_RADIUS_METERS;
     assertEquals(90, GeoUtils.axisLat(0, earthCircumference / 4), 0.0D);
 
     for (int i = 0; i < 100; ++i) {

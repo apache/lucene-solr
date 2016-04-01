@@ -211,21 +211,6 @@ public class GeoCircleTest extends LuceneTestCase {
       xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
     assertTrue(GeoArea.WITHIN == area.getRelationship(c) || GeoArea.OVERLAPS == area.getRelationship(c));
     
-    // Yet another test case from BKD
-    c = GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, 0.006229478708446979, 0.005570196723795424, 3.840276763694387E-5);
-    xyzb = new XYZBounds();
-    c.getBounds(xyzb);
-    area = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84,
-      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
-    p1 = new GeoPoint(PlanetModel.WGS84, 0.006224927111830945, 0.005597367237251763);
-    p2 = new GeoPoint(1.0010836083810235, 0.005603490759433942, 0.006231850560862502);
-    assertTrue(PlanetModel.WGS84.pointOnSurface(p1));
-    //assertTrue(PlanetModel.WGS84.pointOnSurface(p2));
-    assertTrue(c.isWithin(p1));
-    assertTrue(c.isWithin(p2));
-    assertTrue(area.isWithin(p1));
-    assertTrue(area.isWithin(p2));
-    
     // Another test case from BKD
     c = GeoCircleFactory.makeGeoCircle(PlanetModel.SPHERE, -0.005955031040627789, -0.0029274772647399153, 1.601488279374338E-5);
     xyzb = new XYZBounds();
