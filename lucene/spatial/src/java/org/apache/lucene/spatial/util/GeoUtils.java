@@ -74,37 +74,6 @@ public final class GeoUtils {
     }
   }
   
-  /** validates polygon values are within standard +/-180 coordinate bounds, same
-   *  number of latitude and longitude, and is closed
-   */
-  public static void checkPolygon(double[] polyLats, double[] polyLons) {
-    if (polyLats == null) {
-      throw new IllegalArgumentException("polyLats must not be null");
-    }
-    if (polyLons == null) {
-      throw new IllegalArgumentException("polyLons must not be null");
-    }
-    if (polyLats.length != polyLons.length) {
-      throw new IllegalArgumentException("polyLats and polyLons must be equal length");
-    }
-    if (polyLats.length != polyLons.length) {
-      throw new IllegalArgumentException("polyLats and polyLons must be equal length");
-    }
-    if (polyLats.length < 4) {
-      throw new IllegalArgumentException("at least 4 polygon points required");
-    }
-    if (polyLats[0] != polyLats[polyLats.length-1]) {
-      throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLats[0]=" + polyLats[0] + " polyLats[" + (polyLats.length-1) + "]=" + polyLats[polyLats.length-1]);
-    }
-    if (polyLons[0] != polyLons[polyLons.length-1]) {
-      throw new IllegalArgumentException("first and last points of the polygon must be the same (it must close itself): polyLons[0]=" + polyLons[0] + " polyLons[" + (polyLons.length-1) + "]=" + polyLons[polyLons.length-1]);
-    }
-    for (int i = 0; i < polyLats.length; i++) {
-      checkLatitude(polyLats[i]);
-      checkLongitude(polyLons[i]);
-    }
-  }
-
   /** Compute Bounding Box for a circle using WGS-84 parameters */
   public static GeoRect circleToBBox(final double centerLat, final double centerLon, final double radiusMeters) {
     final double radLat = TO_RADIANS * centerLat;
@@ -135,24 +104,6 @@ public final class GeoUtils {
     }
 
     return new GeoRect(TO_DEGREES * minLat, TO_DEGREES * maxLat, TO_DEGREES * minLon, TO_DEGREES * maxLon);
-  }
-
-  /** Compute Bounding Box for a polygon using WGS-84 parameters */
-  public static GeoRect polyToBBox(double[] polyLats, double[] polyLons) {
-    checkPolygon(polyLats, polyLons);
-
-    double minLon = Double.POSITIVE_INFINITY;
-    double maxLon = Double.NEGATIVE_INFINITY;
-    double minLat = Double.POSITIVE_INFINITY;
-    double maxLat = Double.NEGATIVE_INFINITY;
-
-    for (int i=0;i<polyLats.length;i++) {
-      minLat = min(polyLats[i], minLat);
-      maxLat = max(polyLats[i], maxLat);
-      minLon = min(polyLons[i], minLon);
-      maxLon = max(polyLons[i], maxLon);
-    }
-    return new GeoRect(minLat, maxLat, minLon, maxLon);
   }
   
   // some sloppyish stuff, do we really need this to be done in a sloppy way?

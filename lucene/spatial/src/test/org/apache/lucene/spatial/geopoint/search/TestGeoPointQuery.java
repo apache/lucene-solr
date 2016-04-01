@@ -19,6 +19,7 @@ package org.apache.lucene.spatial.geopoint.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.util.GeoEncodingUtils;
+import org.apache.lucene.spatial.util.Polygon;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
@@ -56,8 +57,8 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Query newPolygonQuery(String field, double[] lats, double[] lons) {
-    return new GeoPointInPolygonQuery(field, TermEncoding.PREFIX, lats, lons);
+  protected Query newPolygonQuery(String field, Polygon... polygons) {
+    return new GeoPointInPolygonQuery(field, TermEncoding.PREFIX, polygons);
   }
 
 }

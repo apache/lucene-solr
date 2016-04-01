@@ -264,65 +264,6 @@ public class TestGeoUtils extends LuceneTestCase {
     }
   }
   
-  public void testPacManPolyQuery() throws Exception {
-    // pacman
-    double[] px = {0, 10, 10, 0, -8, -10, -8, 0, 10, 10, 0};
-    double[] py = {0, 5, 9, 10, 9, 0, -9, -10, -9, -5, 0};
-
-    // shape bbox
-    double xMinA = -10;
-    double xMaxA = 10;
-    double yMinA = -10;
-    double yMaxA = 10;
-
-    // candidate crosses cell
-    double xMin = 2;//-5;
-    double xMax = 11;//0.000001;
-    double yMin = -1;//0;
-    double yMax = 1;//5;
-
-    // test cell crossing poly
-    assertTrue(GeoRelationUtils.rectCrossesPolyApprox(yMin, yMax, xMin, yMax, py, px, yMinA, yMaxA, xMinA, xMaxA));
-    assertFalse(GeoRelationUtils.rectCrossesPolyApprox(0, 5, -5, 0.000001, py, px, yMin, yMax, xMin, xMax));
-    assertTrue(GeoRelationUtils.rectWithinPolyApprox(0, 5, -5, -2, py, px, yMin, yMax, xMin, xMax));
-  }
-  
-  public void testPolyToBBox() throws Exception {
-    for (int i = 0; i < 1000; i++) {
-      double[][] polygon = GeoTestUtil.nextPolygon();
-      GeoRect box = GeoUtils.polyToBBox(polygon[0], polygon[1]);
-      assertFalse(box.crossesDateline());
-      
-      for (int j = 0; j < 1000; j++) {
-        double latitude = GeoTestUtil.nextLatitude();
-        double longitude = GeoTestUtil.nextLongitude();
-        // if the point is within poly, then it should be in our bounding box
-        if (GeoRelationUtils.pointInPolygon(polygon[0], polygon[1], latitude, longitude)) {
-          assertTrue(latitude >= box.minLat && latitude <= box.maxLat);
-          assertTrue(longitude >= box.minLon && longitude <= box.maxLon);
-        }
-      }
-    }
-  }
-  
-  public void testPolyToBBoxEdgeCases() throws Exception {
-    for (int i = 0; i < 1000; i++) {
-      double[][] polygon = GeoTestUtil.nextPolygon();
-      GeoRect box = GeoUtils.polyToBBox(polygon[0], polygon[1]);
-      assertFalse(box.crossesDateline());
-      
-      for (int j = 0; j < 1000; j++) {
-        double latitude = GeoTestUtil.nextLatitudeAround(box.minLat, box.maxLat);
-        double longitude = GeoTestUtil.nextLongitudeAround(box.minLon, box.maxLon);
-        // if the point is within poly, then it should be in our bounding box
-        if (GeoRelationUtils.pointInPolygon(polygon[0], polygon[1], latitude, longitude)) {
-          assertTrue(latitude >= box.minLat && latitude <= box.maxLat);
-          assertTrue(longitude >= box.minLon && longitude <= box.maxLon);
-        }
-      }
-    }
-  }
-
   public void testAxisLat() {
     double earthCircumference = 2D * Math.PI * GeoUtils.SEMIMAJOR_AXIS;
     assertEquals(90, GeoUtils.axisLat(0, earthCircumference / 4), 0.0D);

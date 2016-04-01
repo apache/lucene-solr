@@ -46,6 +46,10 @@ Optimizations
 * LUCENE-7147: Improve disjoint check for geo distance query traversal
   (Ryan Ernst, Robert Muir, Mike McCandless)
 
+* LUCENE-7153: GeoPointField and LatLonPoint polygon queries now support
+  multiple polygons and holes, with memory usage independent of
+  polygon complexity. (Karl Wright, Mike McCandless, Robert Muir)
+
 Bug Fixes
 
 * LUCENE-7127: Fix corner case bugs in GeoPointDistanceQuery. (Robert Muir)

@@ -285,9 +285,81 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     // search and verify we found our doc
     IndexReader reader = writer.getReader();
     IndexSearcher searcher = newSearcher(reader);
-    assertEquals(1, searcher.count(newPolygonQuery("field",
+    assertEquals(1, searcher.count(newPolygonQuery("field", new Polygon(
                                                    new double[] { 18, 18, 19, 19, 18 },
-                                                   new double[] { -66, -65, -65, -66, -66 })));
+                                                   new double[] { -66, -65, -65, -66, -66 }))));
+
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+  
+  /** test we can search for a polygon with a hole (but still includes the doc) */
+  public void testPolygonHole() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    // add a doc with a point
+    Document document = new Document();
+    addPointToDoc("field", document, 18.313694, -65.227444);
+    writer.addDocument(document);
+    
+    // search and verify we found our doc
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    Polygon inner = new Polygon(new double[] { 18.5, 18.5, 18.7, 18.7, 18.5 },
+                                new double[] { -65.7, -65.4, -65.4, -65.7, -65.7 });
+    Polygon outer = new Polygon(new double[] { 18, 18, 19, 19, 18 },
+                                new double[] { -66, -65, -65, -66, -66 }, inner);
+    assertEquals(1, searcher.count(newPolygonQuery("field", outer)));
+
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+  
+  /** test we can search for a polygon with a hole (that excludes the doc) */
+  public void testPolygonHoleExcludes() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    // add a doc with a point
+    Document document = new Document();
+    addPointToDoc("field", document, 18.313694, -65.227444);
+    writer.addDocument(document);
+    
+    // search and verify we found our doc
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    Polygon inner = new Polygon(new double[] { 18.2, 18.2, 18.4, 18.4, 18.2 },
+                                new double[] { -65.3, -65.2, -65.2, -65.3, -65.3 });
+    Polygon outer = new Polygon(new double[] { 18, 18, 19, 19, 18 },
+                                new double[] { -66, -65, -65, -66, -66 }, inner);
+    assertEquals(0, searcher.count(newPolygonQuery("field", outer)));
+
+    reader.close();
+    writer.close();
+    dir.close();
+  }
+  
+  /** test we can search for a multi-polygon */
+  public void testMultiPolygonBasics() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    // add a doc with a point
+    Document document = new Document();
+    addPointToDoc("field", document, 18.313694, -65.227444);
+    writer.addDocument(document);
+    
+    // search and verify we found our doc
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    Polygon a = new Polygon(new double[] { 28, 28, 29, 29, 28 },
+                           new double[] { -56, -55, -55, -56, -56 });
+    Polygon b = new Polygon(new double[] { 18, 18, 19, 19, 18 },
+                            new double[] { -66, -65, -65, -66, -66 });
+    assertEquals(1, searcher.count(newPolygonQuery("field", a, b)));
 
     reader.close();
     writer.close();
@@ -297,61 +369,11 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   /** null field name not allowed */
   public void testPolygonNullField() {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      newPolygonQuery(null, 
+      newPolygonQuery(null, new Polygon(
           new double[] { 18, 18, 19, 19, 18 },
-          new double[] { -66, -65, -65, -66, -66 });
+          new double[] { -66, -65, -65, -66, -66 }));
     });
     assertTrue(expected.getMessage().contains("field must not be null"));
-  }
-  
-  /** null polyLats not allowed */
-  public void testPolygonNullPolyLats() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      newPolygonQuery("test", 
-          null,
-          new double[] { -66, -65, -65, -66, -66 });
-    });
-    assertTrue(expected.getMessage().contains("polyLats must not be null"));
-  }
-  
-  /** null polyLons not allowed */
-  public void testPolygonNullPolyLons() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      newPolygonQuery("test", 
-          new double[] { 18, 18, 19, 19, 18 },
-          null);
-    });
-    assertTrue(expected.getMessage().contains("polyLons must not be null"));
-  }
-  
-  /** polygon needs at least 3 vertices */
-  public void testPolygonLine() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      newPolygonQuery("test", 
-          new double[] { 18, 18, 18  },
-          new double[] { -66, -65, -66 });
-    });
-    assertTrue(expected.getMessage().contains("at least 4 polygon points required"));
-  }
-  
-  /** polygon needs same number of latitudes as longitudes */
-  public void testPolygonBogus() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      newPolygonQuery("test", 
-          new double[] { 18, 18, 19, 19 },
-          new double[] { -66, -65, -65, -66, -66 });
-    });
-    assertTrue(expected.getMessage().contains("must be equal length"));
-  }
-  
-  /** polygon must be closed */
-  public void testPolygonNotClosed() {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      newPolygonQuery("test", 
-          new double[] { 18, 18, 19, 19, 19 },
-          new double[] { -66, -65, -65, -66, -67 });
-    });
-    assertTrue(expected.getMessage(), expected.getMessage().contains("it must close itself"));
   }
 
   // A particularly tricky adversary for BKD tree:
@@ -710,7 +732,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected abstract Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters);
 
-  protected abstract Query newPolygonQuery(String field, double[] lats, double[] lons);
+  protected abstract Query newPolygonQuery(String field, Polygon... polygon);
 
   static final boolean rectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
     assert Double.isNaN(pointLat) == false;
@@ -1072,16 +1094,14 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       }
 
       // Polygon
-      final double[][] polygon;
+      final Polygon polygon;
       if (small) {
         polygon = GeoTestUtil.nextPolygonNear(originLat, originLon);
       } else {
         polygon = GeoTestUtil.nextPolygon();
       }
       
-      final double[] polyLats = polygon[0];
-      final double[] polyLons = polygon[1];
-      Query query = newPolygonQuery(FIELD_NAME, polyLats, polyLons);
+      Query query = newPolygonQuery(FIELD_NAME, polygon);
 
       if (VERBOSE) {
         System.out.println("  query=" + query);
@@ -1118,7 +1138,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         } else if (Double.isNaN(lats[id])) {
           expected = false;
         } else {
-          expected = GeoRelationUtils.pointInPolygon(polyLats, polyLons, lats[id], lons[id]);
+          expected = polygon.contains(lats[id], lons[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -1132,8 +1152,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           b.append("  query=" + query + " docID=" + docID + "\n");
           b.append("  lat=" + lats[id] + " lon=" + lons[id] + "\n");
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  polyLats=" + Arrays.toString(polyLats));
-          b.append("  polyLons=" + Arrays.toString(polyLons));
+          b.append("  polygon=" + polygon);
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {
@@ -1317,10 +1336,10 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     lons[3] = rect.maxLon;
     lats[4] = rect.minLat;
     lons[4] = rect.minLon;
-    q1 = newPolygonQuery("field", lats, lons);
-    q2 = newPolygonQuery("field", lats, lons);
+    q1 = newPolygonQuery("field", new Polygon(lats, lons));
+    q2 = newPolygonQuery("field", new Polygon(lats, lons));
     assertEquals(q1, q2);
-    assertFalse(q1.equals(newPolygonQuery("field2", lats, lons)));
+    assertFalse(q1.equals(newPolygonQuery("field2", new Polygon(lats, lons))));
   }
   
   /** return topdocs over a small set of points in field "point" */
@@ -1406,18 +1425,20 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   
   public void testSmallSetPoly() throws Exception {
     TopDocs td = searchSmallSet(newPolygonQuery("point",
+        new Polygon(
         new double[]{33.073130, 32.9942669, 32.938386, 33.0374494,
             33.1369762, 33.1162747, 33.073130, 33.073130},
         new double[]{-96.7682647, -96.8280029, -96.6288757, -96.4929199,
-                     -96.6041564, -96.7449188, -96.76826477, -96.7682647}),
+                     -96.6041564, -96.7449188, -96.76826477, -96.7682647})),
         5);
     assertEquals(2, td.totalHits);
   }
 
   public void testSmallSetPolyWholeMap() throws Exception {
     TopDocs td = searchSmallSet(newPolygonQuery("point",
+                      new Polygon(
                       new double[] {GeoUtils.MIN_LAT_INCL, GeoUtils.MAX_LAT_INCL, GeoUtils.MAX_LAT_INCL, GeoUtils.MIN_LAT_INCL, GeoUtils.MIN_LAT_INCL},
-                      new double[] {GeoUtils.MIN_LON_INCL, GeoUtils.MIN_LON_INCL, GeoUtils.MAX_LON_INCL, GeoUtils.MAX_LON_INCL, GeoUtils.MIN_LON_INCL}),
+                      new double[] {GeoUtils.MIN_LON_INCL, GeoUtils.MIN_LON_INCL, GeoUtils.MAX_LON_INCL, GeoUtils.MAX_LON_INCL, GeoUtils.MIN_LON_INCL})),
                       20);    
     assertEquals("testWholeMap failed", 24, td.totalHits);
   }
