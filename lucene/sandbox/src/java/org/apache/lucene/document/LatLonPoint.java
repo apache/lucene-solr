@@ -29,7 +29,7 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.spatial.util.Polygon;
+import org.apache.lucene.geo.Polygon;
 
 /** 
  * An indexed location field.

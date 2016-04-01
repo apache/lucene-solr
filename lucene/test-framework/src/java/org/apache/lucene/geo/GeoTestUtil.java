@@ -14,13 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.util;
+package org.apache.lucene.geo;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -32,25 +31,25 @@ public class GeoTestUtil {
   public static double nextLatitude() {
     return -90 + 180.0 * random().nextDouble();
   }
-  
+
   /** returns next pseudorandom longitude (anywhere) */
   public static double nextLongitude() {
     return -180 + 360.0 * random().nextDouble();
   }
-  
+
   /** returns next pseudorandom latitude, kinda close to {@code otherLatitude} */
   public static double nextLatitudeNear(double otherLatitude) {
     GeoUtils.checkLatitude(otherLatitude);
     return normalizeLatitude(otherLatitude + random().nextDouble() - 0.5);
   }
-  
+
   /** returns next pseudorandom longitude, kinda close to {@code otherLongitude} */
   public static double nextLongitudeNear(double otherLongitude) {
     GeoUtils.checkLongitude(otherLongitude);
     return normalizeLongitude(otherLongitude + random().nextDouble() - 0.5);
   }
-  
-  /** 
+
+  /**
    * returns next pseudorandom latitude, kinda close to {@code minLatitude/maxLatitude}
    * <b>NOTE:</b>minLatitude/maxLatitude are merely guidelines. the returned value is sometimes
    * outside of that range! this is to facilitate edge testing.
@@ -60,8 +59,8 @@ public class GeoTestUtil {
     GeoUtils.checkLatitude(maxLatitude);
     return normalizeLatitude(randomRangeMaybeSlightlyOutside(minLatitude, maxLatitude));
   }
-  
-  /** 
+
+  /**
    * returns next pseudorandom longitude, kinda close to {@code minLongitude/maxLongitude}
    * <b>NOTE:</b>minLongitude/maxLongitude are merely guidelines. the returned value is sometimes
    * outside of that range! this is to facilitate edge testing.
@@ -71,27 +70,27 @@ public class GeoTestUtil {
     GeoUtils.checkLongitude(maxLongitude);
     return normalizeLongitude(randomRangeMaybeSlightlyOutside(minLongitude, maxLongitude));
   }
-  
+
   /** returns next pseudorandom box: can cross the 180th meridian */
-  public static GeoRect nextBox() {
+  public static Rectangle nextBox() {
     return nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), true);
   }
-  
+
   /** returns next pseudorandom box, can cross the 180th meridian, kinda close to {@code otherLatitude} and {@code otherLongitude} */
-  public static GeoRect nextBoxNear(double otherLatitude, double otherLongitude) {
+  public static Rectangle nextBoxNear(double otherLatitude, double otherLongitude) {
     GeoUtils.checkLongitude(otherLongitude);
     GeoUtils.checkLongitude(otherLongitude);
-    return nextBoxInternal(nextLatitudeNear(otherLatitude), nextLatitudeNear(otherLatitude), 
+    return nextBoxInternal(nextLatitudeNear(otherLatitude), nextLatitudeNear(otherLatitude),
                            nextLongitudeNear(otherLongitude), nextLongitudeNear(otherLongitude), true);
   }
-  
+
   /** returns next pseudorandom polygon */
   public static Polygon nextPolygon() {
     if (random().nextBoolean()) {
       return surpriseMePolygon(null, null);
     }
 
-    GeoRect box = nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), false);
+    Rectangle box = nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), false);
     if (random().nextBoolean()) {
       // box
       return boxPolygon(box);
@@ -100,14 +99,14 @@ public class GeoTestUtil {
       return trianglePolygon(box);
     }
   }
-  
+
   /** returns next pseudorandom polygon, kinda close to {@code otherLatitude} and {@code otherLongitude} */
   public static Polygon nextPolygonNear(double otherLatitude, double otherLongitude) {
     if (random().nextBoolean()) {
       return surpriseMePolygon(otherLatitude, otherLongitude);
     }
 
-    GeoRect box = nextBoxInternal(nextLatitudeNear(otherLatitude), nextLatitudeNear(otherLatitude), 
+    Rectangle box = nextBoxInternal(nextLatitudeNear(otherLatitude), nextLatitudeNear(otherLatitude),
                                   nextLongitudeNear(otherLongitude), nextLongitudeNear(otherLongitude), false);
     if (random().nextBoolean()) {
       // box
@@ -118,7 +117,7 @@ public class GeoTestUtil {
     }
   }
 
-  private static GeoRect nextBoxInternal(double lat0, double lat1, double lon0, double lon1, boolean canCrossDateLine) {
+  private static Rectangle nextBoxInternal(double lat0, double lat1, double lon0, double lon1, boolean canCrossDateLine) {
     if (lat1 < lat0) {
       double x = lat0;
       lat0 = lat1;
@@ -131,10 +130,10 @@ public class GeoTestUtil {
       lon1 = x;
     }
 
-    return new GeoRect(lat0, lat1, lon0, lon1);
+    return new Rectangle(lat0, lat1, lon0, lon1);
   }
-  
-  private static Polygon boxPolygon(GeoRect box) {
+
+  private static Polygon boxPolygon(Rectangle box) {
     assert box.crossesDateline() == false;
     final double[] polyLats = new double[5];
     final double[] polyLons = new double[5];
@@ -150,8 +149,8 @@ public class GeoTestUtil {
     polyLons[4] = box.minLon;
     return new Polygon(polyLats, polyLons);
   }
-  
-  private static Polygon trianglePolygon(GeoRect box) {
+
+  private static Polygon trianglePolygon(Rectangle box) {
     assert box.crossesDateline() == false;
     final double[] polyLats = new double[4];
     final double[] polyLons = new double[4];
@@ -165,7 +164,7 @@ public class GeoTestUtil {
     polyLons[3] = box.minLon;
     return new Polygon(polyLats, polyLons);
   }
-  
+
   private static Polygon surpriseMePolygon(Double otherLatitude, Double otherLongitude) {
     // repeat until we get a poly that doesn't cross dateline:
     newPoly:
@@ -235,7 +234,7 @@ public class GeoTestUtil {
       return new Polygon(latsArray, lonsArray);
     }
   }
-  
+
   /** Returns random double min to max or up to 1% outside of that range */
   private static double randomRangeMaybeSlightlyOutside(double min, double max) {
     return min + (random().nextDouble() + (0.5 - random().nextDouble()) * .02) * (max - min);
@@ -249,7 +248,7 @@ public class GeoTestUtil {
     double off = Math.abs((latitude + 90) % 360);
     return (off <= 180 ? off : 360-off) - 90;
   }
-  
+
   /** Puts longitude in range of -180 to +180. */
   private static double normalizeLongitude(double longitude) {
     if (longitude >= -180 && longitude <= 180) {
@@ -264,14 +263,14 @@ public class GeoTestUtil {
       return -180 + off;
     }
   }
-  
+
   /** Keep it simple, we don't need to take arbitrary Random for geo tests */
   private static Random random() {
    return RandomizedContext.current().getRandom();
   }
-  
+
   // craziness for plotting stuff :)
-  
+
   private static double wrapLat(double lat) {
     //System.out.println("wrapLat " + lat);
     if (lat > 90) {
@@ -299,7 +298,7 @@ public class GeoTestUtil {
       return lon;
     }
   }
-  
+
   private static void drawRectApproximatelyOnEarthSurface(String name, String color, double minLat, double maxLat, double minLon, double maxLon) {
     int steps = 20;
     System.out.println("        var " + name + " = WE.polygon([");
@@ -324,7 +323,7 @@ public class GeoTestUtil {
     System.out.println("        ], {color: \"" + color + "\", fillColor: \"" + color + "\"});");
     System.out.println("        " + name + ".addTo(earth);");
   }
-  
+
   private static void plotLatApproximatelyOnEarthSurface(String name, String color, double lat, double minLon, double maxLon) {
     System.out.println("        var " + name + " = WE.polygon([");
     double lon;
@@ -373,7 +372,7 @@ public class GeoTestUtil {
         double lon = poly[1][i];
         System.out.println("          [" + lat + ", " + lon + "],");
       }
-      System.out.println("        ], {color: '#00ff00'});");    
+      System.out.println("        ], {color: '#00ff00'});");
       System.out.println("        poly" + count + ".addTo(earth);");
     }
 
@@ -399,7 +398,7 @@ public class GeoTestUtil {
                                    double rectMinLongitude, double rectMaxLongitude,
                                    double centerLatitude, double centerLongitude,
                                    double radiusMeters) {
-    GeoRect box = GeoRect.fromPointDistance(centerLatitude, centerLongitude, radiusMeters);
+    Rectangle box = Rectangle.fromPointDistance(centerLatitude, centerLongitude, radiusMeters);
     System.out.println("<!DOCTYPE HTML>");
     System.out.println("<html>");
     System.out.println("  <head>");
@@ -413,7 +412,7 @@ public class GeoTestUtil {
     StringBuilder b = new StringBuilder();
     inverseHaversin(b, centerLatitude, centerLongitude, radiusMeters);
     System.out.println(b);
-    System.out.println("        ], {color: '#00ff00'});");    
+    System.out.println("        ], {color: '#00ff00'});");
     System.out.println("        polygonB.addTo(earth);");
     drawRectApproximatelyOnEarthSurface("bbox", "#00ff00", box.minLat, box.maxLat, box.minLon, box.maxLon);
     System.out.println("        WE.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{");
@@ -421,7 +420,7 @@ public class GeoTestUtil {
     System.out.println("        }).addTo(earth);");
     plotLatApproximatelyOnEarthSurface("lat0", "#ffffff", 4.68, 0.0, 360.0);
     plotLatApproximatelyOnEarthSurface("lat1", "#ffffff", 180-93.09, 0.0, 360.0);
-    plotLatApproximatelyOnEarthSurface("axisLat", "#00ff00", GeoRect.axisLat(centerLatitude, radiusMeters), box.minLon, box.maxLon);
+    plotLatApproximatelyOnEarthSurface("axisLat", "#00ff00", Rectangle.axisLat(centerLatitude, radiusMeters), box.minLon, box.maxLon);
     plotLonApproximatelyOnEarthSurface("axisLon", "#00ff00", centerLongitude, box.minLat, box.maxLat);
     System.out.println("      }");
     System.out.println("    </script>");

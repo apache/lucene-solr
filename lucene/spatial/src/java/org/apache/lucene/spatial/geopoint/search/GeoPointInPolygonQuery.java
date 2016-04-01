@@ -23,8 +23,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoEncodingUtils;
-import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.Polygon;
+import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.geo.Polygon;
 
 /** Implements a simple point in polygon query on a GeoPoint field. This is based on
  * {@code GeoPointInBBoxQueryImpl} and is implemented using a
@@ -82,11 +82,11 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
    * that fall within or on the boundary of the polygon defined by the input parameters. 
    */
   public GeoPointInPolygonQuery(String field, TermEncoding termEncoding, Polygon... polygons) {
-    this(field, termEncoding, GeoRect.fromPolygon(polygons), polygons);
+    this(field, termEncoding, Rectangle.fromPolygon(polygons), polygons);
   }
   
   // internal constructor
-  private GeoPointInPolygonQuery(String field, TermEncoding termEncoding, GeoRect boundingBox, Polygon... polygons) {
+  private GeoPointInPolygonQuery(String field, TermEncoding termEncoding, Rectangle boundingBox, Polygon... polygons) {
     super(field, termEncoding, boundingBox.minLat, boundingBox.maxLat, boundingBox.minLon, boundingBox.maxLon);
     this.polygons = polygons.clone();
   }

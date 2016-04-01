@@ -20,7 +20,7 @@ import java.util.Objects;
 
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
-import org.apache.lucene.spatial.util.Polygon;
+import org.apache.lucene.geo.Polygon;
 
 /** Package private implementation for the public facing GeoPointInPolygonQuery delegate class.
  *

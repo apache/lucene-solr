@@ -14,21 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.util;
+package org.apache.lucene.geo;
 
 import java.util.Arrays;
 
-import org.apache.lucene.geo.GeoUtils;
-
-/** 
+/**
  * Represents a closed polygon on the earth's surface.
- * @lucene.experimental 
+ * @lucene.experimental
  */
 public final class Polygon {
   private final double[] polyLats;
   private final double[] polyLons;
   private final Polygon[] holes;
-  
+
   /** minimum latitude of this polygon's bounding box area */
   public final double minLat;
   /** maximum latitude of this polygon's bounding box area */
@@ -37,10 +35,13 @@ public final class Polygon {
   public final double minLon;
   /** maximum longitude of this polygon's bounding box area */
   public final double maxLon;
-  
+
+  // TODO: refactor to GeoUtils once LUCENE-7165 is complete
+  private static final double ENCODING_TOLERANCE = 1e-6;
+
   // TODO: we could also compute the maximal inner bounding box, to make relations faster to compute?
-  
-  /** 
+
+  /**
    * Creates a new Polygon from the supplied latitude/longitude array, and optionally any holes.
    */
   public Polygon(double[] polyLats, double[] polyLons, Polygon... holes) {
@@ -99,14 +100,14 @@ public final class Polygon {
     this.minLon = minLon;
     this.maxLon = maxLon;
   }
-  
+
   /** Returns true if the point is contained within this polygon */
   public boolean contains(double latitude, double longitude) {
     // check bounding box
     if (latitude < minLat || latitude > maxLat || longitude < minLon || longitude > maxLon) {
       return false;
     }
-    /* 
+    /*
      * simple even-odd point in polygon computation
      *    1.  Determine if point is contained in the longitudinal range
      *    2.  Determine whether point crosses the edge by computing the latitudinal delta
@@ -139,7 +140,7 @@ public final class Polygon {
       return false;
     }
   }
-  
+
   /**
    * Computes whether a rectangle is within a polygon (shared boundaries not allowed)
    */
@@ -149,9 +150,9 @@ public final class Polygon {
     boolean contains = crosses(minLat, maxLat, minLon, maxLon) == false &&
                        contains(minLat, minLon) &&
                        contains(minLat, maxLon) &&
-                       contains(maxLat, maxLon) && 
+                       contains(maxLat, maxLon) &&
                        contains(maxLat, minLon);
-    
+
     if (contains) {
       // if we intersect with any hole, game over
       for (Polygon hole : holes) {
@@ -164,7 +165,7 @@ public final class Polygon {
       return false;
     }
   }
-  
+
   /**
    * Convenience method for accurately computing whether a rectangle crosses a poly.
    */
@@ -207,14 +208,15 @@ public final class Polygon {
           c2 = a2*polyLons[p+1] + b2*polyLats[p+1];
           s = (1/d)*(b2*c1 - b1*c2);
           t = (1/d)*(a1*c2 - a2*c1);
-          x00 = Math.min(bbox[b][0], bbox[b+1][0]) - GeoEncodingUtils.TOLERANCE;
-          x01 = Math.max(bbox[b][0], bbox[b+1][0]) + GeoEncodingUtils.TOLERANCE;
-          y00 = Math.min(bbox[b][1], bbox[b+1][1]) - GeoEncodingUtils.TOLERANCE;
-          y01 = Math.max(bbox[b][1], bbox[b+1][1]) + GeoEncodingUtils.TOLERANCE;
-          x10 = Math.min(polyLons[p], polyLons[p+1]) - GeoEncodingUtils.TOLERANCE;
-          x11 = Math.max(polyLons[p], polyLons[p+1]) + GeoEncodingUtils.TOLERANCE;
-          y10 = Math.min(polyLats[p], polyLats[p+1]) - GeoEncodingUtils.TOLERANCE;
-          y11 = Math.max(polyLats[p], polyLats[p+1]) + GeoEncodingUtils.TOLERANCE;
+          // todo TOLERANCE SHOULD MATCH EVERYWHERE this is currently blocked by LUCENE-7165
+          x00 = Math.min(bbox[b][0], bbox[b+1][0]) - ENCODING_TOLERANCE;
+          x01 = Math.max(bbox[b][0], bbox[b+1][0]) + ENCODING_TOLERANCE;
+          y00 = Math.min(bbox[b][1], bbox[b+1][1]) - ENCODING_TOLERANCE;
+          y01 = Math.max(bbox[b][1], bbox[b+1][1]) + ENCODING_TOLERANCE;
+          x10 = Math.min(polyLons[p], polyLons[p+1]) - ENCODING_TOLERANCE;
+          x11 = Math.max(polyLons[p], polyLons[p+1]) + ENCODING_TOLERANCE;
+          y10 = Math.min(polyLats[p], polyLats[p+1]) - ENCODING_TOLERANCE;
+          y11 = Math.max(polyLats[p], polyLats[p+1]) + ENCODING_TOLERANCE;
           // check whether the intersection point is touching one of the line segments
           boolean touching = ((x00 == s && y00 == t) || (x01 == s && y01 == t))
               || ((x10 == s && y10 == t) || (x11 == s && y11 == t));
@@ -227,22 +229,22 @@ public final class Polygon {
     } // for each bbox edge
     return false;
   }
-  
+
   /** Returns a copy of the internal latitude array */
   public double[] getPolyLats() {
     return polyLats.clone();
   }
-  
+
   /** Returns a copy of the internal longitude array */
   public double[] getPolyLons() {
     return polyLons.clone();
   }
-  
+
   /** Returns a copy of the internal holes array */
   public Polygon[] getHoles() {
     return holes.clone();
   }
-  
+
   /** Helper for multipolygon logic: returns true if any of the supplied polygons contain the point */
   public static boolean contains(Polygon[] polygons, double latitude, double longitude) {
     for (Polygon polygon : polygons) {
@@ -252,7 +254,7 @@ public final class Polygon {
     }
     return false;
   }
-  
+
   /** Helper for multipolygon logic: returns true if any of the supplied polygons contain the rectangle */
   public static boolean contains(Polygon[] polygons, double minLat, double maxLat, double minLon, double maxLon) {
     for (Polygon polygon : polygons) {
@@ -262,7 +264,7 @@ public final class Polygon {
     }
     return false;
   }
-  
+
   /** Helper for multipolygon logic: returns true if any of the supplied polygons crosses the rectangle */
   public static boolean crosses(Polygon[] polygons, double minLat, double maxLat, double minLon, double maxLon) {
     for (Polygon polygon : polygons) {
@@ -272,7 +274,7 @@ public final class Polygon {
     }
     return false;
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;

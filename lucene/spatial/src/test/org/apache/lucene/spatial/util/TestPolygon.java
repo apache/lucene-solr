@@ -16,7 +16,14 @@
  */
 package org.apache.lucene.spatial.util;
 
+import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.util.LuceneTestCase;
+
+import static org.apache.lucene.geo.GeoTestUtil.nextLatitude;
+import static org.apache.lucene.geo.GeoTestUtil.nextLatitudeAround;
+import static org.apache.lucene.geo.GeoTestUtil.nextLongitude;
+import static org.apache.lucene.geo.GeoTestUtil.nextLongitudeAround;
+import static org.apache.lucene.geo.GeoTestUtil.nextPolygon;
 
 public class TestPolygon extends LuceneTestCase {
   
@@ -109,11 +116,11 @@ public class TestPolygon extends LuceneTestCase {
   
   public void testBoundingBox() throws Exception {
     for (int i = 0; i < 100; i++) {
-      Polygon polygon = GeoTestUtil.nextPolygon();
+      Polygon polygon = nextPolygon();
       
       for (int j = 0; j < 100; j++) {
-        double latitude = GeoTestUtil.nextLatitude();
-        double longitude = GeoTestUtil.nextLongitude();
+        double latitude = nextLatitude();
+        double longitude = nextLongitude();
         // if the point is within poly, then it should be in our bounding box
         if (polygon.contains(latitude, longitude)) {
           assertTrue(latitude >= polygon.minLat && latitude <= polygon.maxLat);
@@ -125,11 +132,11 @@ public class TestPolygon extends LuceneTestCase {
   
   public void testBoundingBoxEdgeCases() throws Exception {
     for (int i = 0; i < 100; i++) {
-      Polygon polygon = GeoTestUtil.nextPolygon();
+      Polygon polygon = nextPolygon();
       
       for (int j = 0; j < 100; j++) {
-        double latitude = GeoTestUtil.nextLatitudeAround(polygon.minLat, polygon.maxLat);
-        double longitude = GeoTestUtil.nextLongitudeAround(polygon.minLon, polygon.maxLon);
+        double latitude = nextLatitudeAround(polygon.minLat, polygon.maxLat);
+        double longitude = nextLongitudeAround(polygon.minLon, polygon.maxLon);
         // if the point is within poly, then it should be in our bounding box
         if (polygon.contains(latitude, longitude)) {
           assertTrue(latitude >= polygon.minLat && latitude <= polygon.maxLat);

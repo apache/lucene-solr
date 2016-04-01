@@ -19,7 +19,7 @@ package org.apache.lucene.spatial.geopoint.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.util.GeoEncodingUtils;
-import org.apache.lucene.spatial.util.Polygon;
+import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.BaseGeoPointTestCase;

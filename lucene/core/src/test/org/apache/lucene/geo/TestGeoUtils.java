@@ -14,12 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.util;
+package org.apache.lucene.geo;
 
 import java.util.Locale;
 
-import org.apache.lucene.geo.GeoUtils;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
 import org.junit.BeforeClass;
@@ -61,65 +59,6 @@ public class TestGeoUtils extends LuceneTestCase {
     return result;
   }
 
-  /**
-   * Tests stability of {@link GeoEncodingUtils#geoCodedToPrefixCoded}
-   */
-  public void testGeoPrefixCoding() throws Exception {
-    int numIters = atLeast(1000);
-    long hash;
-    long decodedHash;
-    BytesRefBuilder brb = new BytesRefBuilder();
-    while (numIters-- >= 0) {
-      hash = GeoEncodingUtils.mortonHash(randomLat(false), randomLon(false));
-      for (int i=32; i<64; ++i) {
-        GeoEncodingUtils.geoCodedToPrefixCoded(hash, i, brb);
-        decodedHash = GeoEncodingUtils.prefixCodedToGeoCoded(brb.get());
-        assertEquals((hash >>> i) << i, decodedHash);
-      }
-    }
-  }
-
-  public void testMortonEncoding() throws Exception {
-    long hash = GeoEncodingUtils.mortonHash(90, 180);
-    assertEquals(180.0, GeoEncodingUtils.mortonUnhashLon(hash), 0);
-    assertEquals(90.0, GeoEncodingUtils.mortonUnhashLat(hash), 0);
-  }
-
-  public void testEncodeDecode() throws Exception {
-    int iters = atLeast(10000);
-    boolean small = random().nextBoolean();
-    for(int iter=0;iter<iters;iter++) {
-      double lat = randomLat(small);
-      double lon = randomLon(small);
-
-      long enc = GeoEncodingUtils.mortonHash(lat, lon);
-      double latEnc = GeoEncodingUtils.mortonUnhashLat(enc);
-      double lonEnc = GeoEncodingUtils.mortonUnhashLon(enc);
-
-      assertEquals("lat=" + lat + " latEnc=" + latEnc + " diff=" + (lat - latEnc), lat, latEnc, GeoEncodingUtils.TOLERANCE);
-      assertEquals("lon=" + lon + " lonEnc=" + lonEnc + " diff=" + (lon - lonEnc), lon, lonEnc, GeoEncodingUtils.TOLERANCE);
-    }
-  }
-  
-  public void testScaleUnscaleIsStable() throws Exception {
-    int iters = atLeast(1000);
-    boolean small = random().nextBoolean();
-    for(int iter=0;iter<iters;iter++) {
-      double lat = randomLat(small);
-      double lon = randomLon(small);
-
-      long enc = GeoEncodingUtils.mortonHash(lat, lon);
-      double latEnc = GeoEncodingUtils.mortonUnhashLat(enc);
-      double lonEnc = GeoEncodingUtils.mortonUnhashLon(enc);
-
-      long enc2 = GeoEncodingUtils.mortonHash(lat, lon);
-      double latEnc2 = GeoEncodingUtils.mortonUnhashLat(enc2);
-      double lonEnc2 = GeoEncodingUtils.mortonUnhashLon(enc2);
-      assertEquals(latEnc, latEnc2, 0.0);
-      assertEquals(lonEnc, lonEnc2, 0.0);
-    }
-  }
-
   // We rely heavily on GeoUtils.circleToBBox so we test it here:
   public void testRandomCircleToBBox() throws Exception {
     int iters = atLeast(1000);
@@ -141,7 +80,7 @@ public class TestGeoUtils extends LuceneTestCase {
 
       // TODO: randomly quantize radius too, to provoke exact math errors?
 
-      GeoRect bbox = GeoRect.fromPointDistance(centerLat, centerLon, radiusMeters);
+      Rectangle bbox = Rectangle.fromPointDistance(centerLat, centerLon, radiusMeters);
 
       int numPointsToTry = 1000;
       for(int i=0;i<numPointsToTry;i++) {
@@ -197,24 +136,24 @@ public class TestGeoUtils extends LuceneTestCase {
       }
     }
   }
-  
+
   // similar to testRandomCircleToBBox, but different, less evil, maybe simpler
   public void testBoundingBoxOpto() {
     for (int i = 0; i < 1000; i++) {
       double lat = GeoTestUtil.nextLatitude();
       double lon = GeoTestUtil.nextLongitude();
       double radius = 50000000 * random().nextDouble();
-      GeoRect box = GeoRect.fromPointDistance(lat, lon, radius);
-      final GeoRect box1;
-      final GeoRect box2;
+      Rectangle box = Rectangle.fromPointDistance(lat, lon, radius);
+      final Rectangle box1;
+      final Rectangle box2;
       if (box.crossesDateline()) {
-        box1 = new GeoRect(box.minLat, box.maxLat, -180, box.maxLon);
-        box2 = new GeoRect(box.minLat, box.maxLat, box.minLon, 180);
+        box1 = new Rectangle(box.minLat, box.maxLat, -180, box.maxLon);
+        box2 = new Rectangle(box.minLat, box.maxLat, box.minLon, 180);
       } else {
         box1 = box;
         box2 = null;
       }
-      
+
       for (int j = 0; j < 10000; j++) {
         double lat2 = GeoTestUtil.nextLatitude();
         double lon2 = GeoTestUtil.nextLongitude();
@@ -233,12 +172,12 @@ public class TestGeoUtils extends LuceneTestCase {
       double lat = GeoTestUtil.nextLatitude();
       double lon = GeoTestUtil.nextLongitude();
       double radius = 50000000 * random().nextDouble();
-      GeoRect box = GeoRect.fromPointDistance(lat, lon, radius);
+      Rectangle box = Rectangle.fromPointDistance(lat, lon, radius);
 
       if (box.maxLon - lon < 90 && lon - box.minLon < 90) {
         double minPartialDistance = Math.max(SloppyMath.haversinSortKey(lat, lon, lat, box.maxLon),
                                              SloppyMath.haversinSortKey(lat, lon, box.maxLat, lon));
-      
+
         for (int j = 0; j < 10000; j++) {
           double lat2 = GeoTestUtil.nextLatitude();
           double lon2 = GeoTestUtil.nextLongitude();
@@ -256,7 +195,7 @@ public class TestGeoUtils extends LuceneTestCase {
     for (int i = 0; i < 1000; i++) {
       double centerLat = GeoTestUtil.nextLatitude();
       double centerLon = GeoTestUtil.nextLongitude();
-      GeoRect rect = GeoRect.fromPointDistance(centerLat, centerLon, Double.POSITIVE_INFINITY);
+      Rectangle rect = Rectangle.fromPointDistance(centerLat, centerLon, Double.POSITIVE_INFINITY);
       assertEquals(-180.0, rect.minLon, 0.0D);
       assertEquals(180.0, rect.maxLon, 0.0D);
       assertEquals(-90.0, rect.minLat, 0.0D);
@@ -264,19 +203,19 @@ public class TestGeoUtils extends LuceneTestCase {
       assertFalse(rect.crossesDateline());
     }
   }
-  
+
   public void testAxisLat() {
     double earthCircumference = 2D * Math.PI * GeoUtils.EARTH_MEAN_RADIUS_METERS;
-    assertEquals(90, GeoRect.axisLat(0, earthCircumference / 4), 0.0D);
+    assertEquals(90, Rectangle.axisLat(0, earthCircumference / 4), 0.0D);
 
     for (int i = 0; i < 100; ++i) {
       boolean reallyBig = random().nextInt(10) == 0;
       final double maxRadius = reallyBig ? 1.1 * earthCircumference : earthCircumference / 8;
       final double radius = maxRadius * random().nextDouble();
-      double prevAxisLat = GeoRect.axisLat(0.0D, radius);
+      double prevAxisLat = Rectangle.axisLat(0.0D, radius);
       for (double lat = 0.1D; lat < 90D; lat += 0.1D) {
-        double nextAxisLat = GeoRect.axisLat(lat, radius);
-        GeoRect bbox = GeoRect.fromPointDistance(lat, 180D, radius);
+        double nextAxisLat = Rectangle.axisLat(lat, radius);
+        Rectangle bbox = Rectangle.fromPointDistance(lat, 180D, radius);
         double dist = SloppyMath.haversinMeters(lat, 180D, nextAxisLat, bbox.maxLon);
         if (nextAxisLat < GeoUtils.MAX_LAT_INCL) {
           assertEquals("lat = " + lat, dist, radius, 0.1D);
@@ -285,10 +224,10 @@ public class TestGeoUtils extends LuceneTestCase {
         prevAxisLat = nextAxisLat;
       }
 
-      prevAxisLat = GeoRect.axisLat(-0.0D, radius);
+      prevAxisLat = Rectangle.axisLat(-0.0D, radius);
       for (double lat = -0.1D; lat > -90D; lat -= 0.1D) {
-        double nextAxisLat = GeoRect.axisLat(lat, radius);
-        GeoRect bbox = GeoRect.fromPointDistance(lat, 180D, radius);
+        double nextAxisLat = Rectangle.axisLat(lat, radius);
+        Rectangle bbox = Rectangle.fromPointDistance(lat, 180D, radius);
         double dist = SloppyMath.haversinMeters(lat, 180D, nextAxisLat, bbox.maxLon);
         if (nextAxisLat > GeoUtils.MIN_LAT_INCL) {
           assertEquals("lat = " + lat, dist, radius, 0.1D);
@@ -298,7 +237,7 @@ public class TestGeoUtils extends LuceneTestCase {
       }
     }
   }
-  
+
   // TODO: does not really belong here, but we test it like this for now
   // we can make a fake IndexReader to send boxes directly to Point visitors instead?
   public void testCircleOpto() throws Exception {
@@ -307,13 +246,13 @@ public class TestGeoUtils extends LuceneTestCase {
       final double centerLat = -90 + 180.0 * random().nextDouble();
       final double centerLon = -180 + 360.0 * random().nextDouble();
       final double radius = 50_000_000D * random().nextDouble();
-      final GeoRect box = GeoRect.fromPointDistance(centerLat, centerLon, radius);
+      final Rectangle box = Rectangle.fromPointDistance(centerLat, centerLon, radius);
       // TODO: remove this leniency!
       if (box.crossesDateline()) {
         --i; // try again...
         continue;
       }
-      final double axisLat = GeoRect.axisLat(centerLat, radius);
+      final double axisLat = Rectangle.axisLat(centerLat, radius);
 
       for (int k = 0; k < 1000; ++k) {
 
@@ -366,7 +305,7 @@ public class TestGeoUtils extends LuceneTestCase {
                     "lonMax=%s) == false BUT\n" +
                     "haversin(%s, %s, %s, %s) = %s\nbbox=%s",
                 centerLat, centerLon, radius, latMin, latMax, lonMin, lonMax,
-                centerLat, centerLon, lat, lon, distance, GeoRect.fromPointDistance(centerLat, centerLon, radius)),
+                centerLat, centerLon, lat, lon, distance, Rectangle.fromPointDistance(centerLat, centerLon, radius)),
                 distance > radius);
             } catch (AssertionError e) {
               GeoTestUtil.toWebGLEarth(latMin, latMax, lonMin, lonMax, centerLat, centerLon, radius);
@@ -381,9 +320,9 @@ public class TestGeoUtils extends LuceneTestCase {
   static double randomInRange(double min, double max) {
     return min + (max - min) * random().nextDouble();
   }
-  
+
   static boolean isDisjoint(double centerLat, double centerLon, double radius, double axisLat, double latMin, double latMax, double lonMin, double lonMax) {
-    if ((centerLon < lonMin || centerLon > lonMax) && (axisLat+GeoRect.AXISLAT_ERROR < latMin || axisLat-GeoRect.AXISLAT_ERROR > latMax)) {
+    if ((centerLon < lonMin || centerLon > lonMax) && (axisLat+ Rectangle.AXISLAT_ERROR < latMin || axisLat- Rectangle.AXISLAT_ERROR > latMax)) {
       // circle not fully inside / crossing axis
       if (SloppyMath.haversinMeters(centerLat, centerLon, latMin, lonMin) > radius &&
           SloppyMath.haversinMeters(centerLat, centerLon, latMin, lonMax) > radius &&
@@ -393,7 +332,7 @@ public class TestGeoUtils extends LuceneTestCase {
         return true;
       }
     }
-    
+
     return false;
   }
 }
