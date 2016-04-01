@@ -26,7 +26,8 @@ public class PlanetModel {
   public static final PlanetModel SPHERE = new PlanetModel(1.0,1.0);
 
   /** Mean radius */
-  public static final double WGS84_MEAN = 6371009.0;
+  // see http://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
+  public static final double WGS84_MEAN = 6371008.7714;
   /** Polar radius */
   public static final double WGS84_POLAR = 6356752.314245;
   /** Equatorial radius */

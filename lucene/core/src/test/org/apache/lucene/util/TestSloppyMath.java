@@ -99,8 +99,8 @@ public class TestSloppyMath extends LuceneTestCase {
     assertEquals(0, haversinMeters(90, -180, 90, 180), 0D);
     assertEquals(0, haversinMeters(90, 180, 90, 180), 0D);
     
-    // Test half a circle on the equator, using WGS84 equatorial earth radius
-    double earthRadiusMs = 6_378_137D;
+    // Test half a circle on the equator, using WGS84 mean earth radius in meters
+    double earthRadiusMs = 6_371_008.7714;
     double halfCircle = earthRadiusMs * Math.PI;
     assertEquals(halfCircle, haversinMeters(0, 0, 0, 180), 0D);
 
@@ -111,17 +111,17 @@ public class TestSloppyMath extends LuceneTestCase {
     double randomLat2 = 40.65 + (r.nextInt(10) - 5) * 360;
     double randomLon2 = -73.95 + (r.nextInt(10) - 5) * 360;
     
-    assertEquals(8_581.7047, haversinMeters(randomLat1, randomLon1, randomLat2, randomLon2), 0.01D);
+    assertEquals(8_572.1137, haversinMeters(randomLat1, randomLon1, randomLat2, randomLon2), 0.01D);
     
     
     // from solr and ES tests (with their respective epsilons)
     assertEquals(0, haversinMeters(40.7143528, -74.0059731, 40.7143528, -74.0059731), 0D);
-    assertEquals(5_291.80, haversinMeters(40.7143528, -74.0059731, 40.759011, -73.9844722), 0.01D);
-    assertEquals(462.62, haversinMeters(40.7143528, -74.0059731, 40.718266, -74.007819), 0.01D);
-    assertEquals(1_056.16, haversinMeters(40.7143528, -74.0059731, 40.7051157, -74.0088305), 0.01D);
-    assertEquals(1_259.53, haversinMeters(40.7143528, -74.0059731, 40.7247222, -74), 0.01D);
-    assertEquals(2_030.79, haversinMeters(40.7143528, -74.0059731, 40.731033, -73.9962255), 0.01D);
-    assertEquals(8_581.70, haversinMeters(40.7143528, -74.0059731, 40.65, -73.95), 0.01D);
+    assertEquals(5_285.89, haversinMeters(40.7143528, -74.0059731, 40.759011, -73.9844722), 0.01D);
+    assertEquals(462.10, haversinMeters(40.7143528, -74.0059731, 40.718266, -74.007819), 0.01D);
+    assertEquals(1_054.98, haversinMeters(40.7143528, -74.0059731, 40.7051157, -74.0088305), 0.01D);
+    assertEquals(1_258.12, haversinMeters(40.7143528, -74.0059731, 40.7247222, -74), 0.01D);
+    assertEquals(2_028.52, haversinMeters(40.7143528, -74.0059731, 40.731033, -73.9962255), 0.01D);
+    assertEquals(8_572.11, haversinMeters(40.7143528, -74.0059731, 40.65, -73.95), 0.01D);
   }
   
   /** Test this method sorts the same way as real haversin */
@@ -164,6 +164,6 @@ public class TestSloppyMath extends LuceneTestCase {
     double h1 = (1 - StrictMath.cos(StrictMath.toRadians(lat2) - StrictMath.toRadians(lat1))) / 2;
     double h2 = (1 - StrictMath.cos(StrictMath.toRadians(lon2) - StrictMath.toRadians(lon1))) / 2;
     double h = h1 + StrictMath.cos(StrictMath.toRadians(lat1)) * StrictMath.cos(StrictMath.toRadians(lat2)) * h2;
-    return 2 * 6378137 * StrictMath.asin(Math.min(1, Math.sqrt(h))); 
+    return 2 * 6371008.7714 * StrictMath.asin(Math.min(1, Math.sqrt(h))); 
   }
 }

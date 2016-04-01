@@ -53,6 +53,11 @@ public final class GeoUtils {
   /** Maximum latitude value. */
   public static final double MAX_LAT_INCL = 90.0D;
 
+  // WGS84 earth-ellipsoid parameters
+  /** mean earth axis in meters */
+  // see http://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
+  public static final double EARTH_MEAN_RADIUS_METERS = 6_371_008.7714;
+
   // No instance:
   private GeoUtils() {
   }
@@ -75,7 +80,7 @@ public final class GeoUtils {
   public static GeoRect circleToBBox(final double centerLat, final double centerLon, final double radiusMeters) {
     final double radLat = TO_RADIANS * centerLat;
     final double radLon = TO_RADIANS * centerLon;
-    double radDistance = radiusMeters / SEMIMAJOR_AXIS;
+    double radDistance = radiusMeters / EARTH_MEAN_RADIUS_METERS;
     double minLat = radLat - radDistance;
     double maxLat = radLat + radDistance;
     double minLon;
