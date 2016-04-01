@@ -125,6 +125,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  *
  */
 public final class SolrCore implements SolrInfoMBean, Closeable {
+
   public static final String version="1.0";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -480,10 +481,13 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     if (info != null) {
       log.info(info.className);
       dirFactory = getResourceLoader().newInstance(info.className, DirectoryFactory.class);
+      // allow DirectoryFactory instances to access the CoreContainer
+      dirFactory.initCoreContainer(getCoreDescriptor().getCoreContainer());
       dirFactory.init(info.initArgs);
     } else {
       log.info("solr.NRTCachingDirectoryFactory");
       dirFactory = new NRTCachingDirectoryFactory();
+      dirFactory.initCoreContainer(getCoreDescriptor().getCoreContainer());
     }
     return dirFactory;
   }
