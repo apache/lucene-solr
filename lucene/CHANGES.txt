@@ -251,6 +251,10 @@ Bug Fixes
 * LUCENE-7126: Remove GeoPointDistanceRangeQuery. This query was implemented
   with boolean NOT, and incorrect for multi-valued documents. (Robert Muir)
 
+* LUCENE-7158: Consistently use earth's WGS84 mean radius wherever our
+  geo search implementations approximate the earth as a sphere (Karl
+  Wright via Mike McCandless)
+
 Other
 
 * LUCENE-7035: Upgrade icu4j to 56.1/unicode 8. (Robert Muir)

@@ -62,13 +62,13 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
     
     FieldDoc d = (FieldDoc) td.scoreDocs[0];
-    assertEquals(462.6174876948475D, (Double)d.fields[0], 0.0D);
+    assertEquals(462.1004647449412, (Double)d.fields[0], 0.0D);
     
     d = (FieldDoc) td.scoreDocs[1];
-    assertEquals(1056.163041670945D, (Double)d.fields[0], 0.0D);
+    assertEquals(1054.9826700985088, (Double)d.fields[0], 0.0D);
     
     d = (FieldDoc) td.scoreDocs[2];
-    assertEquals(5291.798081190281D, (Double)d.fields[0], 0.0D);
+    assertEquals(5285.883948830351, (Double)d.fields[0], 0.0D);
     
     reader.close();
     dir.close();
@@ -99,10 +99,10 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
     
     FieldDoc d = (FieldDoc) td.scoreDocs[0];
-    assertEquals(462.6174876948475D, (Double)d.fields[0], 0.0D);
+    assertEquals(462.1004647449412D, (Double)d.fields[0], 0.0D);
     
     d = (FieldDoc) td.scoreDocs[1];
-    assertEquals(1056.163041670945D, (Double)d.fields[0], 0.0D);
+    assertEquals(1054.9826700985088, (Double)d.fields[0], 0.0D);
     
     d = (FieldDoc) td.scoreDocs[2];
     assertEquals(Double.POSITIVE_INFINITY, (Double)d.fields[0], 0.0D);

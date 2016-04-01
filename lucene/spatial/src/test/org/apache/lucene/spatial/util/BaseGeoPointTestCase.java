@@ -957,7 +957,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         radiusMeters = random().nextDouble() * 333000 + 1.0;
       } else {
         // So the query can cover at most 50% of the earth's surface:
-        radiusMeters = random().nextDouble() * GeoUtils.SEMIMAJOR_AXIS * Math.PI / 2.0 + 1.0;
+        radiusMeters = random().nextDouble() * GeoUtils.EARTH_MEAN_RADIUS_METERS * Math.PI / 2.0 + 1.0;
       }
 
       if (VERBOSE) {

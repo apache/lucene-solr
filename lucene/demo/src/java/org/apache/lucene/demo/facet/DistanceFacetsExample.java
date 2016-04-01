@@ -70,12 +70,13 @@ public class DistanceFacetsExample implements Closeable {
   /** The "home" longitude. */
   public final static double ORIGIN_LONGITUDE = -74.0059731;
 
-  /** Radius of the Earth in KM
+  /** Mean radius of the Earth in KM
    *
    * NOTE: this is approximate, because the earth is a bit
    * wider at the equator than the poles.  See
    * http://en.wikipedia.org/wiki/Earth_radius */
-  public final static double EARTH_RADIUS_KM = 6371.01;
+  // see http://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
+  public final static double EARTH_RADIUS_KM = 6_371.0087714;
 
   /** Empty constructor */
   public DistanceFacetsExample() {}
