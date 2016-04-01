@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.spatial3d.geom.Vector;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
@@ -149,11 +150,8 @@ public final class Geo3DPoint extends Field {
       checkLongitude(longitude);
       polyPoints.add(new GeoPoint(PlanetModel.WGS84, fromDegrees(latitude), fromDegrees(longitude)));
     }
-    // We don't know what the sense of the polygon is without providing the index of one vertex we know to be convex.
-    // Since that doesn't fit with the "super-simple API" requirements, we just use the index of the first one, and people have to just
-    // know to do it that way.
-    final int convexPointIndex = 0;
-    final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, polyPoints, convexPointIndex);
+    // We use the polygon constructor that looks at point order.
+    final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, polyPoints, null);
     return newShapeQuery(field, shape);
   }
   
