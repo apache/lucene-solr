@@ -46,6 +46,16 @@
     <path refid="test.classpath"/>
     <pathelement path="${java.class.path}"/>
   </path>
+
+  <target name="javadocs" depends="javadocs-spatial,compile-core,check-javadocs-uptodate"
+          unless="javadocs-uptodate-${name}">
+    <invoke-module-javadoc>
+      <links>
+        <link href="../spatial"/>
+      </links>
+    </invoke-module-javadoc>
+  </target>
+
   <target name="compile-test" depends="jar-spatial,compile-test-spatial,common.compile-test" />
 
 </project>
