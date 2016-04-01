@@ -23,10 +23,10 @@ public class TestLatLonPoint extends LuceneTestCase {
 
   public void testToString() throws Exception {
     // looks crazy due to lossiness
-    assertEquals("LatLonPoint <field:18.313693958334625,-65.22744392976165>",(new LatLonPoint("field", 18.313694, -65.227444)).toString());
+    assertEquals("LatLonPoint <field:18.313693958334625,-65.22744401358068>",(new LatLonPoint("field", 18.313694, -65.227444)).toString());
     
     // looks crazy due to lossiness
-    assertEquals("field:[17.99999997485429 TO 18.999999999068677],[-65.9999999217689 TO -64.99999998137355]", LatLonPoint.newBoxQuery("field", 18, 19, -66, -65).toString());
+    assertEquals("field:[17.99999997485429 TO 18.999999999068677],[-66.00000000558794 TO -65.00000006519258]", LatLonPoint.newBoxQuery("field", 18, 19, -66, -65).toString());
     
     // distance query does not quantize inputs
     assertEquals("field:18.0,19.0 +/- 25.0 meters", LatLonPoint.newDistanceQuery("field", 18, 19, 25).toString());
@@ -84,5 +84,18 @@ public class TestLatLonPoint extends LuceneTestCase {
       assertEquals(latEnc, latEnc2, 0.0);
       assertEquals(lonEnc, lonEnc2, 0.0);
     }
-  }   
+  }
+  
+  /** make sure values always go down: this is important for edge case consistency */
+  public void testEncodeDecodeRoundsDown() throws Exception {
+    int iters = atLeast(1000);
+    for(int iter=0;iter<iters;iter++) {
+      double lat = -90 + 180.0 * random().nextDouble();
+      double lon = -180 + 360.0 * random().nextDouble();
+      double latEnc = LatLonPoint.decodeLatitude(LatLonPoint.encodeLatitude(lat));
+      double lonEnc = LatLonPoint.decodeLongitude(LatLonPoint.encodeLongitude(lon));
+      assertTrue(latEnc <= lat);
+      assertTrue(lonEnc <= lon);
+    }
+  }
 }
