@@ -143,7 +143,7 @@ public class LatLonPoint extends Field {
     if (latitude == 90.0D) {
       latitude = Math.nextDown(latitude);
     }
-    return Math.toIntExact((long) (latitude * LATITUDE_ENCODE));
+    return (int) Math.floor(latitude * LATITUDE_ENCODE);
   }
 
   /** 
@@ -158,7 +158,7 @@ public class LatLonPoint extends Field {
     if (longitude == 180.0D) {
       longitude = Math.nextDown(longitude);
     }
-    return Math.toIntExact((long) (longitude * LONGITUDE_ENCODE));
+    return (int) Math.floor(longitude * LONGITUDE_ENCODE);
   }
 
   /** 
