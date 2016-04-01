@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -398,7 +399,7 @@ public class GeoTestUtil {
                                    double rectMinLongitude, double rectMaxLongitude,
                                    double centerLatitude, double centerLongitude,
                                    double radiusMeters) {
-    GeoRect box = GeoUtils.circleToBBox(centerLatitude, centerLongitude, radiusMeters);
+    GeoRect box = GeoRect.fromPointDistance(centerLatitude, centerLongitude, radiusMeters);
     System.out.println("<!DOCTYPE HTML>");
     System.out.println("<html>");
     System.out.println("  <head>");
@@ -420,7 +421,7 @@ public class GeoTestUtil {
     System.out.println("        }).addTo(earth);");
     plotLatApproximatelyOnEarthSurface("lat0", "#ffffff", 4.68, 0.0, 360.0);
     plotLatApproximatelyOnEarthSurface("lat1", "#ffffff", 180-93.09, 0.0, 360.0);
-    plotLatApproximatelyOnEarthSurface("axisLat", "#00ff00", GeoUtils.axisLat(centerLatitude, radiusMeters), box.minLon, box.maxLon);
+    plotLatApproximatelyOnEarthSurface("axisLat", "#00ff00", GeoRect.axisLat(centerLatitude, radiusMeters), box.minLon, box.maxLon);
     plotLonApproximatelyOnEarthSurface("axisLon", "#00ff00", centerLongitude, box.minLat, box.maxLat);
     System.out.println("      }");
     System.out.println("    </script>");

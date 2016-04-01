@@ -36,7 +36,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
@@ -71,7 +71,7 @@ final class LatLonPointDistanceQuery extends Query {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
-    GeoRect box = GeoUtils.circleToBBox(latitude, longitude, radiusMeters);
+    GeoRect box = GeoRect.fromPointDistance(latitude, longitude, radiusMeters);
     // create bounding box(es) for the distance range
     // these are pre-encoded with LatLonPoint's encoding
     final byte minLat[] = new byte[Integer.BYTES];
@@ -108,7 +108,7 @@ final class LatLonPointDistanceQuery extends Query {
       maxPartialDistance = Double.POSITIVE_INFINITY;
     }
 
-    final double axisLat = GeoUtils.axisLat(latitude, radiusMeters);
+    final double axisLat = GeoRect.axisLat(latitude, radiusMeters);
 
     return new ConstantScoreWeight(this) {
 
@@ -196,7 +196,7 @@ final class LatLonPointDistanceQuery extends Query {
                              double latMax = LatLonPoint.decodeLatitude(maxPackedValue, 0);
                              double lonMax = LatLonPoint.decodeLongitude(maxPackedValue, Integer.BYTES);
 
-                             if ((longitude < lonMin || longitude > lonMax) && (axisLat+GeoUtils.AXISLAT_ERROR < latMin || axisLat-GeoUtils.AXISLAT_ERROR > latMax)) {
+                             if ((longitude < lonMin || longitude > lonMax) && (axisLat+GeoRect.AXISLAT_ERROR < latMin || axisLat-GeoRect.AXISLAT_ERROR > latMax)) {
                                // circle not fully inside / crossing axis
                                if (SloppyMath.haversinMeters(latitude, longitude, latMin, lonMin) > radiusMeters &&
                                    SloppyMath.haversinMeters(latitude, longitude, latMin, lonMax) > radiusMeters &&

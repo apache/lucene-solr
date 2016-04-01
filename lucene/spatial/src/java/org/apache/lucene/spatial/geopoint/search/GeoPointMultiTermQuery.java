@@ -29,7 +29,7 @@ import org.apache.lucene.spatial.geopoint.document.GeoPointField;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoEncodingUtils;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
-import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
 
 /**

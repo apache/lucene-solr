@@ -27,7 +27,7 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
 
 /**
@@ -83,7 +83,7 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     // sampling if we get called way too much: don't make gobs of bounding
     // boxes if comparator hits a worst case order (e.g. backwards distance order)
     if (setBottomCounter < 1024 || (setBottomCounter & 0x3F) == 0x3F) {
-      GeoRect box = GeoUtils.circleToBBox(latitude, longitude, haversin2(bottom));
+      GeoRect box = GeoRect.fromPointDistance(latitude, longitude, haversin2(bottom));
       // pre-encode our box to our integer encoding, so we don't have to decode 
       // to double values for uncompetitive hits. This has some cost!
       minLat = LatLonPoint.encodeLatitude(box.minLat);

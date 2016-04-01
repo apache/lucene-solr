@@ -22,7 +22,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.geo.GeoUtils;
 
 /** Implements a simple point distance query on a GeoPoint field. This is based on
  * {@link GeoPointInBBoxQuery} and is implemented using a two phase approach. First,
@@ -80,7 +80,7 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
    * {@link org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding} parameter
    **/
   public GeoPointDistanceQuery(final String field, final TermEncoding termEncoding, final double centerLat, final double centerLon, final double radiusMeters) {
-    this(field, termEncoding, GeoUtils.circleToBBox(checkLatitude(centerLat), checkLongitude(centerLon), checkRadius(radiusMeters)), centerLat, centerLon, radiusMeters);
+    this(field, termEncoding, GeoRect.fromPointDistance(centerLat, centerLon, checkRadius(radiusMeters)), centerLat, centerLon, radiusMeters);
   }
 
   private GeoPointDistanceQuery(final String field, final TermEncoding termEncoding, final GeoRect bbox,

@@ -18,6 +18,9 @@ New Features
 
 API Changes
 
+* LUCENE-7152: Refactor GeoUtils from lucene-spatial package to
+  core (Nick Knize)
+
 * LUCENE-7141: Switch OfflineSorter's ByteSequencesReader to
   BytesRefIterator (Mike McCandless)
 

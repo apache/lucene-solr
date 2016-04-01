@@ -21,8 +21,8 @@ import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 
-import static org.apache.lucene.spatial.util.GeoUtils.MIN_LON_INCL;
-import static org.apache.lucene.spatial.util.GeoUtils.MIN_LAT_INCL;
+import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
+import static org.apache.lucene.geo.GeoUtils.MIN_LAT_INCL;
 
 /**
  * Basic reusable geopoint encoding methods
