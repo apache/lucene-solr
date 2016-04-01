@@ -79,8 +79,6 @@ Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
   (Scott Blum via shalin)
-  
-* SOLR-8856: Do not cache merge or 'read once' contexts in the hdfs block cache. (Mark Miller)
 
 * SOLR-8745: Deprecate costly ZkStateReader.updateClusterState(), replace with a narrow
   forceUpdateCollection(collection) (Scott Blum via shalin)
