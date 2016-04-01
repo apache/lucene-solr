@@ -49,6 +49,7 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -498,10 +499,11 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     double[] lons = new double[2*numPoints];
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
-    initIndexWriterConfig(FIELD_NAME, iwc);
 
     // We rely on docID order:
     iwc.setMergePolicy(newLogMergePolicy());
+    // and on seeds being able to reproduce:
+    iwc.setMergeScheduler(new SerialMergeScheduler());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
     boolean small = random().nextBoolean();
@@ -724,9 +726,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     }
   }
 
-  protected void initIndexWriterConfig(String field, IndexWriterConfig iwc) {
-  }
-
   protected abstract void addPointToDoc(String field, Document doc, double lat, double lon);
 
   protected abstract Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon);
@@ -767,6 +766,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected void verifyRandomRectangles(boolean small, double[] lats, double[] lons) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
+    // Else seeds may not reproduce:
+    iwc.setMergeScheduler(new SerialMergeScheduler());
     // Else we can get O(N^2) merging:
     int mbd = iwc.getMaxBufferedDocs();
     if (mbd != -1 && mbd < lats.length/100) {
@@ -873,6 +874,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           } else {
             b.append("FAIL: id=" + id + " should not match but did\n");
           }
+          b.append("  box=" + rect + "\n");
           b.append("  query=" + query + " docID=" + docID + "\n");
           b.append("  lat=" + lats[id] + " lon=" + lons[id] + "\n");
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
@@ -894,6 +896,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected void verifyRandomDistances(boolean small, double[] lats, double[] lons) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
+    // Else seeds may not reproduce:
+    iwc.setMergeScheduler(new SerialMergeScheduler());
     // Else we can get O(N^2) merging:
     int mbd = iwc.getMaxBufferedDocs();
     if (mbd != -1 && mbd < lats.length/100) {
@@ -1039,6 +1043,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected void verifyRandomPolygons(boolean small, double[] lats, double[] lons) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
+    // Else seeds may not reproduce:
+    iwc.setMergeScheduler(new SerialMergeScheduler());
     // Else we can get O(N^2) merging:
     int mbd = iwc.getMaxBufferedDocs();
     if (mbd != -1 && mbd < lats.length/100) {
@@ -1181,6 +1187,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     }
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
+    // Else seeds may not reproduce:
+    iwc.setMergeScheduler(new SerialMergeScheduler());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
     for(int x=0;x<3;x++) {
       double lat;
@@ -1235,6 +1243,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   private void doRandomDistanceTest(int numDocs, int numQueries) throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
+    // Else seeds may not reproduce:
+    iwc.setMergeScheduler(new SerialMergeScheduler());
     int pointsInLeaf = 2 + random().nextInt(4);
     iwc.setCodec(new FilterCodec("Lucene60", TestUtil.getDefaultCodec()) {
       @Override
@@ -1367,10 +1377,13 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     
     Directory directory = newDirectory();
 
-    RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
-            newIndexWriterConfig(new MockAnalyzer(random()))
-                    .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
-                    .setMergePolicy(newLogMergePolicy()));
+    // TODO: must these simple tests really rely on docid order?
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000));
+    iwc.setMergePolicy(newLogMergePolicy());
+    // Else seeds may not reproduce:
+    iwc.setMergeScheduler(new SerialMergeScheduler());
+    RandomIndexWriter writer = new RandomIndexWriter(random(), directory, iwc);
 
     for (double p[] : pts) {
         Document doc = new Document();
