@@ -20,7 +20,9 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
@@ -176,7 +178,10 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
   
   private void doRandomTest(int numDocs, int numQueries) throws IOException {
     Directory dir = newDirectory();    
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    // else seeds may not to reproduce:
+    iwc.setMergeScheduler(new SerialMergeScheduler());
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
 
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
