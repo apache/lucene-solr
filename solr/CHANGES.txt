@@ -17,7 +17,33 @@ servlet container in the directory named "example".
 See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 
 ==================  7.0.0 ==================
-(No Changes)
+
+Upgrading from Solr 5.x
+----------------------
+
+* HttpClientInterceptorPlugin is now HttpClientBuilderPlugin and must work with a 
+  SolrHttpClientBuilder rather than an HttpClientConfigurer.
+  
+* HttpClientUtil now allows configuring HttpClient instances via SolrHttpClientBuilder
+  rather than an HttpClientConfigurer.
+
+* SolrClient implementations now use their own internal configuration for socket timeouts,
+  connect timeouts, and allowing redirects rather than what is set as the default when
+  building the HttpClient instance. Use the appropriate setters on the SolrClient instance.
+  
+* HttpSolrClient#setAllowCompression has been removed and compression must be enabled as
+  a constructor param. 
+  
+* HttpSolrClient#setDefaultMaxConnectionsPerHost and
+  HttpSolrClient#setMaxTotalConnections have been removed. These now default very
+  high and can only be changed via param when creating an HttpClient instance.
+  
+Optimizations
+----------------------
+
+* SOLR-4509: Move to non deprecated HttpClient impl classes to remove stale connection 
+  check on every request and move connection lifecycle management towards the client.
+  (Ryan Zezeski, Mark Miller, Shawn Heisey, Steve Davids)
 
 ==================  6.1.0 ==================
 

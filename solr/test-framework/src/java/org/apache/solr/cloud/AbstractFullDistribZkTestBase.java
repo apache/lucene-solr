@@ -1629,8 +1629,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       HttpSolrClient client = new HttpSolrClient(url);
       client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       client.setSoTimeout(60000);
-      client.setDefaultMaxConnectionsPerHost(100);
-      client.setMaxTotalConnections(100);
       return client;
     } catch (Exception ex) {
       throw new RuntimeException(ex);
@@ -1642,8 +1640,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       // setup the server...
       HttpSolrClient client = new HttpSolrClient(baseUrl + "/" + collection);
       client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      client.setDefaultMaxConnectionsPerHost(100);
-      client.setMaxTotalConnections(100);
       return client;
     }
     catch (Exception ex) {

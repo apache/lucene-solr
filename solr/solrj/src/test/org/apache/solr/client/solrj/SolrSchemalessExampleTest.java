@@ -23,9 +23,11 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -79,7 +81,8 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     HttpPost post = new HttpPost(client.getBaseURL() + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
     post.setEntity(new InputStreamEntity(new ByteArrayInputStream(json.getBytes("UTF-8")), -1));
-    HttpResponse response = httpClient.execute(post);
+    HttpResponse response = httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
+    Utils.consumeFully(response.getEntity());
     assertEquals(200, response.getStatusLine().getStatusCode());
     client.commit();
     assertNumFound("*:*", 2);
@@ -133,8 +136,6 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
       String url = jetty.getBaseUrl().toString() + "/collection1";
       HttpSolrClient client = new HttpSolrClient(url);
       client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      client.setDefaultMaxConnectionsPerHost(100);
-      client.setMaxTotalConnections(100);
       client.setUseMultiPartPost(random().nextBoolean());
       
       if (random().nextBoolean()) {

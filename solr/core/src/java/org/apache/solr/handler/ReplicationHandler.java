@@ -387,8 +387,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       return currentIndexFetcher.fetchLatestIndex(forceReplication);
     } catch (Exception e) {
       SolrException.log(LOG, "Index fetch failed ", e);
+      if (currentIndexFetcher != pollingIndexFetcher) {
+        currentIndexFetcher.destroy();
+      }
     } finally {
       if (pollingIndexFetcher != null) {
+       if( currentIndexFetcher != pollingIndexFetcher) {
+         currentIndexFetcher.destroy();
+       }
+        
         currentIndexFetcher = pollingIndexFetcher;
       }
       indexFetchLock.unlock();
@@ -1243,20 +1250,18 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     core.addCloseHook(new CloseHook() {
       @Override
       public void preClose(SolrCore core) {
-        try {
-          if (executorService != null) executorService.shutdown(); // we don't wait for shutdown - this can deadlock core reload
-        } finally {
-            if (pollingIndexFetcher != null) {
-              pollingIndexFetcher.destroy();
-            }
+        if (executorService != null) executorService.shutdown(); // we don't wait for shutdown - this can deadlock core reload
+      }
+
+      @Override
+      public void postClose(SolrCore core) {
+        if (pollingIndexFetcher != null) {
+          pollingIndexFetcher.destroy();
         }
         if (currentIndexFetcher != null && currentIndexFetcher != pollingIndexFetcher) {
           currentIndexFetcher.destroy();
         }
       }
-
-      @Override
-      public void postClose(SolrCore core) {}
     });
 
     core.addCloseHook(new CloseHook() {

@@ -70,6 +70,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
   
   protected static final String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
   protected static final RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
+
+  private int clientSoTimeout;
   
   public String[] getFieldNames() {
     return fieldNames;
@@ -109,6 +111,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
 
   @Test
   public void test() throws Exception {
+    cloudClient.setSoTimeout(clientSoTimeout);
     boolean testSuccessful = false;
     try {
       handle.clear();
@@ -293,8 +296,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       setName("FullThrottleStopableIndexingThread");
       setDaemon(true);
       this.clients = clients;
-      HttpClientUtil.setConnectionTimeout(httpClient, clientConnectionTimeout);
-      HttpClientUtil.setSoTimeout(httpClient, clientSoTimeout);
+
       cusc = new ConcurrentUpdateSolrClient(
           ((HttpSolrClient) clients.get(0)).getBaseURL(), httpClient, 8,
           2) {
@@ -303,6 +305,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
           log.warn("cusc error", ex);
         }
       };
+      cusc.setConnectionTimeout(10000);
+      cusc.setSoTimeout(clientSoTimeout);
     }
     
     @Override

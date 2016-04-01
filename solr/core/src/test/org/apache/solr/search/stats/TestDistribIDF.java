@@ -117,27 +117,30 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
 
     //Test against all nodes
     for (JettySolrRunner jettySolrRunner : solrCluster.getJettySolrRunners()) {
-      SolrClient solrClient = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString());
-      SolrClient solrClient_local = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString());
+      try (SolrClient solrClient = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
+        try (SolrClient solrClient_local = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
 
-      SolrQuery query = new SolrQuery("cat:football");
-      query.setFields("*,score");
-      QueryResponse queryResponse = solrClient.query("onecollection", query);
-      assertEquals(2, queryResponse.getResults().getNumFound());
-      float score1 = (float) queryResponse.getResults().get(0).get("score");
-      float score2 = (float) queryResponse.getResults().get(1).get("score");
-      assertEquals("Doc1 score=" + score1 + " Doc2 score=" + score2, 0, Float.compare(score1, score2));
+          SolrQuery query = new SolrQuery("cat:football");
+          query.setFields("*,score");
+          QueryResponse queryResponse = solrClient.query("onecollection", query);
+          assertEquals(2, queryResponse.getResults().getNumFound());
+          float score1 = (float) queryResponse.getResults().get(0).get("score");
+          float score2 = (float) queryResponse.getResults().get(1).get("score");
+          assertEquals("Doc1 score=" + score1 + " Doc2 score=" + score2, 0, Float.compare(score1, score2));
 
-      query = new SolrQuery("cat:football");
-      query.setShowDebugInfo(true);
-      query.setFields("*,score");
-      queryResponse = solrClient_local.query("onecollection_local", query);
-      assertEquals(2, queryResponse.getResults().getNumFound());
-      assertEquals(2, queryResponse.getResults().get(0).get("id"));
-      assertEquals(1, queryResponse.getResults().get(1).get("id"));
-      float score1_local = (float) queryResponse.getResults().get(0).get("score");
-      float score2_local = (float) queryResponse.getResults().get(1).get("score");
-      assertEquals("Doc1 score=" + score1_local + " Doc2 score=" + score2_local, 1, Float.compare(score1_local, score2_local));
+          query = new SolrQuery("cat:football");
+          query.setShowDebugInfo(true);
+          query.setFields("*,score");
+          queryResponse = solrClient_local.query("onecollection_local", query);
+          assertEquals(2, queryResponse.getResults().getNumFound());
+          assertEquals(2, queryResponse.getResults().get(0).get("id"));
+          assertEquals(1, queryResponse.getResults().get(1).get("id"));
+          float score1_local = (float) queryResponse.getResults().get(0).get("score");
+          float score2_local = (float) queryResponse.getResults().get(1).get("score");
+          assertEquals("Doc1 score=" + score1_local + " Doc2 score=" + score2_local, 1,
+              Float.compare(score1_local, score2_local));
+        }
+      }
     }
   }
 
@@ -161,28 +164,33 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
 
     //Test against all nodes
     for (JettySolrRunner jettySolrRunner : solrCluster.getJettySolrRunners()) {
-      SolrClient solrClient = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString());
-      SolrClient solrClient_local = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString());
 
-      SolrQuery query = new SolrQuery("cat:football");
-      query.setFields("*,score").add("collection", "collection1,collection2");
-      QueryResponse queryResponse = solrClient.query("collection1", query);
-      assertEquals(2, queryResponse.getResults().getNumFound());
-      float score1 = (float) queryResponse.getResults().get(0).get("score");
-      float score2 = (float) queryResponse.getResults().get(1).get("score");
-      assertEquals("Doc1 score=" + score1 + " Doc2 score=" + score2, 0, Float.compare(score1, score2));
+      try (SolrClient solrClient = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
 
+        try (SolrClient solrClient_local = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
+          SolrQuery query = new SolrQuery("cat:football");
+          query.setFields("*,score").add("collection", "collection1,collection2");
+          QueryResponse queryResponse = solrClient.query("collection1", query);
+          assertEquals(2, queryResponse.getResults().getNumFound());
+          float score1 = (float) queryResponse.getResults().get(0).get("score");
+          float score2 = (float) queryResponse.getResults().get(1).get("score");
+          assertEquals("Doc1 score=" + score1 + " Doc2 score=" + score2, 0, Float.compare(score1, score2));
 
-      query = new SolrQuery("cat:football");
-      query.setFields("*,score").add("collection", "collection1_local,collection2_local");
-      queryResponse = solrClient_local.query("collection1_local", query);
-      assertEquals(2, queryResponse.getResults().getNumFound());
-      assertEquals(2, queryResponse.getResults().get(0).get("id"));
-      assertEquals(1, queryResponse.getResults().get(1).get("id"));
-      float score1_local = (float) queryResponse.getResults().get(0).get("score");
-      float score2_local = (float) queryResponse.getResults().get(1).get("score");
-      assertEquals("Doc1 score=" + score1_local + " Doc2 score=" + score2_local, 1, Float.compare(score1_local, score2_local));
+          query = new SolrQuery("cat:football");
+          query.setFields("*,score").add("collection", "collection1_local,collection2_local");
+          queryResponse = solrClient_local.query("collection1_local", query);
+          assertEquals(2, queryResponse.getResults().getNumFound());
+          assertEquals(2, queryResponse.getResults().get(0).get("id"));
+          assertEquals(1, queryResponse.getResults().get(1).get("id"));
+          float score1_local = (float) queryResponse.getResults().get(0).get("score");
+          float score2_local = (float) queryResponse.getResults().get(1).get("score");
+          assertEquals("Doc1 score=" + score1_local + " Doc2 score=" + score2_local, 1,
+              Float.compare(score1_local, score2_local));
+        }
+
+      }
     }
+    
   }
 
   private void createCollection(String name, String config) throws Exception {

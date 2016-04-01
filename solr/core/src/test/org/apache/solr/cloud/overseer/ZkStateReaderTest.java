@@ -32,7 +32,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
 
 public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
@@ -96,7 +95,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         if (explicitRefresh) {
           reader.forceUpdateCollection("c1");
         } else {
-          for (int i = 0; i < 100; ++i) {
+          for (int i = 0; i < 500; ++i) {
             if (reader.getClusterState().hasCollection("c1")) {
               break;
             }
@@ -124,7 +123,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         if (explicitRefresh) {
           reader.forceUpdateCollection("c1");
         } else {
-          for (int i = 0; i < 100; ++i) {
+          for (int i = 0; i < 500; ++i) {
             if (reader.getClusterState().getCollection("c1").getStateFormat() == 2) {
               break;
             }

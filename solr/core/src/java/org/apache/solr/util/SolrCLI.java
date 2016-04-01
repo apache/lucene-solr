@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -35,7 +37,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -79,9 +80,9 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -100,8 +101,6 @@ import org.noggit.JSONWriter;
 import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * Command-line utility for working with Solr.
@@ -275,15 +274,15 @@ public class SolrCLI {
       exit(0);
     }
 
-    String configurerClassName = System.getProperty("solr.authentication.httpclient.configurer");
-    if (configurerClassName!=null) {
+    String builderClassName = System.getProperty("solr.authentication.httpclient.builder");
+    if (builderClassName!=null) {
       try {
-        Class c = Class.forName(configurerClassName);
-        HttpClientConfigurer configurer = (HttpClientConfigurer)c.newInstance();
-        HttpClientUtil.setConfigurer(configurer);
-        log.info("Set HttpClientConfigurer from: "+configurerClassName);
+        Class c = Class.forName(builderClassName);
+        SolrHttpClientBuilder builder = (SolrHttpClientBuilder)c.newInstance();
+        HttpClientUtil.setHttpClientBuilder(builder);
+        log.info("Set HttpClientConfigurer from: "+builderClassName);
       } catch (Exception ex) {
-        throw new RuntimeException("Error during loading of configurer '"+configurerClassName+"'.", ex);
+        throw new RuntimeException("Error during loading of configurer '"+builderClassName+"'.", ex);
       }
     }
 
@@ -651,7 +650,7 @@ public class SolrCLI {
     // ensure we're requesting JSON back from Solr
     HttpGet httpGet = new HttpGet(new URIBuilder(getUrl).setParameter(CommonParams.WT, CommonParams.JSON).build());
     // make the request and get back a parsed JSON object
-    Map<String,Object> json = httpClient.execute(httpGet, new SolrResponseHandler());
+    Map<String,Object> json = httpClient.execute(httpGet, new SolrResponseHandler(), HttpClientUtil.createNewHttpClientRequestContext());
     // check the response JSON from Solr to see if it is an error
     Long statusCode = asLong("/responseHeader/status", json);
     if (statusCode == -1) {

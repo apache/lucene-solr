@@ -70,7 +70,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
       runner.stop();
     }
     
-    HttpClientUtil.setConfigurer(sslConfig.getHttpClientConfigurer());
+    HttpClientUtil.setHttpClientBuilder(sslConfig.getHttpClientBuilder());
     for(int i = 0; i < this.jettys.size(); i++) {
       JettySolrRunner runner = jettys.get(i);
       JettyConfig config = JettyConfig.builder()

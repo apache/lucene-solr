@@ -21,12 +21,14 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -170,9 +172,10 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
             printClusterStateInfo(testCollectionName),
         participatingReplicas.size() >= 2);
 
-    
-    sendDoc(6);
-
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField(id, String.valueOf(6));
+    doc.addField("a_t", "hello" + 6);
+    sendDocsWithRetry(Collections.singletonList(doc), 1, 3, 1);
 
     Set<String> replicasToCheck = new HashSet<>();
     for (Replica stillUp : participatingReplicas)

@@ -204,7 +204,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
   private String getResponse(HttpUriRequest request) throws IOException {
     HttpEntity entity = null;
     try {
-      entity = httpClient.execute(request).getEntity();
+      entity = httpClient.execute(request, HttpClientUtil.createNewHttpClientRequestContext()).getEntity();
       return EntityUtils.toString(entity, StandardCharsets.UTF_8);
     } finally {
       EntityUtils.consumeQuietly(entity);
@@ -213,6 +213,6 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
 
   @Override
   public void close() throws IOException {
-    httpClient.close();
+    HttpClientUtil.close(httpClient);
   }
 }

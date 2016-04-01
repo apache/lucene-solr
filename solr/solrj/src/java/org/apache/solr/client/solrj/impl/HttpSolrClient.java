@@ -16,6 +16,24 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
@@ -23,6 +41,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
@@ -30,15 +49,15 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.HttpClientConnectionManager;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.mime.FormBodyPart;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.entity.mime.content.StringBody;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
@@ -60,24 +79,6 @@ import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
-import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
-import java.net.SocketTimeoutException;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 /**
  * A SolrClient implementation that talks directly to a Solr server via HTTP
@@ -145,13 +146,15 @@ public class HttpSolrClient extends SolrClient {
   
   private final HttpClient httpClient;
   
-  private volatile boolean followRedirects = false;
+  private volatile Boolean followRedirects = false;
   
   private volatile boolean useMultiPartPost;
   private final boolean internalClient;
 
   private volatile Set<String> queryParams = Collections.emptySet();
-
+  private volatile Integer connectionTimeout;
+  private volatile Integer soTimeout;
+  
   /**
    * @param baseURL
    *          The URL of the Solr server. For example, "
@@ -166,7 +169,12 @@ public class HttpSolrClient extends SolrClient {
     this(baseURL, client, new BinaryResponseParser());
   }
   
+  
   public HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser) {
+    this(baseURL, client, parser, false);
+  }
+  
+  public HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser, boolean allowCompression) {
     this.baseUrl = baseURL;
     if (baseUrl.endsWith("/")) {
       baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
@@ -183,9 +191,8 @@ public class HttpSolrClient extends SolrClient {
     } else {
       internalClient = true;
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(HttpClientUtil.PROP_MAX_CONNECTIONS, 128);
-      params.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 32);
       params.set(HttpClientUtil.PROP_FOLLOW_REDIRECTS, followRedirects);
+      params.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, allowCompression);
       httpClient = HttpClientUtil.createClient(params);
     }
     
@@ -344,6 +351,7 @@ public class HttpSolrClient extends SolrClient {
       if (streams != null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "GET can't send streams!");
       }
+
       return new HttpGet(basePath + path + wparams.toQueryString());
     }
 
@@ -370,6 +378,7 @@ public class HttpSolrClient extends SolrClient {
         String fullQueryUrl = url + queryParams.toQueryString();
         HttpEntityEnclosingRequestBase postOrPut = SolrRequest.METHOD.POST == request.getMethod() ?
             new HttpPost(fullQueryUrl) : new HttpPut(fullQueryUrl);
+
         if (!isMultipart) {
           postOrPut.addHeader("Content-Type",
               "application/x-www-form-urlencoded; charset=UTF-8");
@@ -391,6 +400,7 @@ public class HttpSolrClient extends SolrClient {
           }
         }
 
+        // TODO: remove deprecated - first simple attempt failed, see {@link MultipartEntityBuilder}
         if (isMultipart && streams != null) {
           for (ContentStream content : streams) {
             String contentType = content.getContentType();
@@ -473,13 +483,26 @@ public class HttpSolrClient extends SolrClient {
   
   protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor) throws SolrServerException {
     method.addHeader("User-Agent", AGENT);
+ 
+    Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
+    if (soTimeout != null) {
+      requestConfigBuilder.setSocketTimeout(soTimeout);
+    }
+    if (connectionTimeout != null) {
+      requestConfigBuilder.setConnectTimeout(connectionTimeout);
+    }
+    if (followRedirects != null) {
+      requestConfigBuilder.setRedirectsEnabled(followRedirects);
+    }
+
+    method.setConfig(requestConfigBuilder.build());
     
     HttpEntity entity = null;
     InputStream respBody = null;
     boolean shouldClose = true;
     try {
       // Execute the method.
-      final HttpResponse response = httpClient.execute(method);
+      final HttpResponse response = httpClient.execute(method, HttpClientUtil.createNewHttpClientRequestContext());
       int httpStatus = response.getStatusLine().getStatusCode();
       
       // Read the contents
@@ -647,7 +670,7 @@ public class HttpSolrClient extends SolrClient {
    *          Timeout in milliseconds
    **/
   public void setConnectionTimeout(int timeout) {
-    HttpClientUtil.setConnectionTimeout(httpClient, timeout);
+    this.connectionTimeout = timeout;
   }
   
   /**
@@ -658,7 +681,7 @@ public class HttpSolrClient extends SolrClient {
    *          Timeout in milliseconds
    **/
   public void setSoTimeout(int timeout) {
-    HttpClientUtil.setSoTimeout(httpClient, timeout);
+    this.soTimeout = timeout;
   }
   
   /**
@@ -671,22 +694,6 @@ public class HttpSolrClient extends SolrClient {
    */
   public void setFollowRedirects(boolean followRedirects) {
     this.followRedirects = followRedirects;
-    HttpClientUtil.setFollowRedirects(httpClient,  followRedirects);
-  }
-  
-  /**
-   * Allow server-&gt;client communication to be compressed. Currently gzip and
-   * deflate are supported. If the server supports compression the response will
-   * be compressed. This method is only allowed if the http client is of type
-   * DefatulHttpClient.
-   */
-  public void setAllowCompression(boolean allowCompression) {
-    if (httpClient instanceof DefaultHttpClient) {
-      HttpClientUtil.setAllowCompression((DefaultHttpClient) httpClient, allowCompression);
-    } else {
-      throw new UnsupportedOperationException(
-          "HttpClient instance was not of type DefaultHttpClient");
-    }
   }
   
   public void setRequestWriter(RequestWriter requestWriter) {
@@ -694,39 +701,12 @@ public class HttpSolrClient extends SolrClient {
   }
   
   /**
-   * Close the {@link ClientConnectionManager} from the internal client.
+   * Close the {@link HttpClientConnectionManager} from the internal client.
    */
   @Override
   public void close() throws IOException {
     if (httpClient != null && internalClient) {
       HttpClientUtil.close(httpClient);
-    }
-  }
-
-  /**
-   * Set the maximum number of connections that can be open to a single host at
-   * any given time. If http client was created outside the operation is not
-   * allowed.
-   */
-  public void setDefaultMaxConnectionsPerHost(int max) {
-    if (internalClient) {
-      HttpClientUtil.setMaxConnectionsPerHost(httpClient, max);
-    } else {
-      throw new UnsupportedOperationException(
-          "Client was created outside of HttpSolrServer");
-    }
-  }
-  
-  /**
-   * Set the maximum number of connections that can be open at any given time.
-   * If http client was created outside the operation is not allowed.
-   */
-  public void setMaxTotalConnections(int max) {
-    if (internalClient) {
-      HttpClientUtil.setMaxConnections(httpClient, max);
-    } else {
-      throw new UnsupportedOperationException(
-          "Client was created outside of HttpSolrServer");
     }
   }
   

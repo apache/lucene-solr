@@ -168,6 +168,11 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
 
   @After
   public void baseAfter() throws Exception {
+    for (List<CloudJettyRunner> runners : cloudJettys.values()) {
+      for (CloudJettyRunner runner : runners) {
+        runner.client.close();
+      }
+    }
     destroyServers();
   }
 
@@ -175,8 +180,6 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     CloudSolrClient server = new CloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
     server.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) server.setDefaultCollection(defaultCollection);
-    server.getLbClient().getHttpClient().getParams()
-        .setParameter(CoreConnectionPNames.CONNECTION_TIMEOUT, 30000);
     return server;
   }
 
@@ -747,8 +750,6 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       // setup the server...
       HttpSolrClient s = new HttpSolrClient(baseUrl);
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
       return s;
     } catch (Exception ex) {
       throw new RuntimeException(ex);

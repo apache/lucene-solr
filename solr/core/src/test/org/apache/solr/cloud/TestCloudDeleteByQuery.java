@@ -48,7 +48,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
-
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -88,6 +88,16 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   
   /** id field doc routing prefix for shard2 */
   private static final String S_TWO_PRE = "XYZ!";
+  
+  @AfterClass
+  private static void afterClass() throws Exception {
+    CLOUD_CLIENT.close();
+    S_ONE_LEADER_CLIENT.close();
+    S_TWO_LEADER_CLIENT.close();
+    S_ONE_NON_LEADER_CLIENT.close();
+    S_TWO_NON_LEADER_CLIENT.close();
+    NO_COLLECTION_CLIENT.close();
+  }
   
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {

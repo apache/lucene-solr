@@ -20,6 +20,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentProducer;
 import org.apache.http.entity.EntityTemplate;
@@ -86,6 +87,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   int pollQueueTime = 250;
   private final boolean streamDeletes;
   private boolean internalHttpClient;
+  private volatile Integer connectionTimeout;
+  private volatile Integer soTimeout;
 
   /**
    * Uses an internally managed HttpClient instance.
@@ -274,11 +277,22 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
           method = new HttpPost(client.getBaseURL() + "/update"
               + requestParams.toQueryString());
+          
+          Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
+          if (soTimeout != null) {
+            requestConfigBuilder.setSocketTimeout(soTimeout);
+          }
+          if (connectionTimeout != null) {
+            requestConfigBuilder.setConnectTimeout(connectionTimeout);
+          }
+  
+          method.setConfig(requestConfigBuilder.build());
+          
           method.setEntity(template);
           method.addHeader("User-Agent", HttpSolrClient.AGENT);
           method.addHeader("Content-Type", contentType);
 
-          response = client.getHttpClient().execute(method);
+          response = client.getHttpClient().execute(method, HttpClientUtil.createNewHttpClientRequestContext());
           rspBody = response.getEntity().getContent();
           int statusCode = response.getStatusLine().getStatusCode();
           if (statusCode != HttpStatus.SC_OK) {
@@ -489,7 +503,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   }
   
   public void setConnectionTimeout(int timeout) {
-    HttpClientUtil.setConnectionTimeout(client.getHttpClient(), timeout);
+    this.connectionTimeout = timeout;
   }
 
   /**
@@ -497,7 +511,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
    * not for indexing.
    */
   public void setSoTimeout(int timeout) {
-    HttpClientUtil.setSoTimeout(client.getHttpClient(), timeout);
+    this.soTimeout = timeout;
   }
 
   public void shutdownNow() {

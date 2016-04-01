@@ -172,15 +172,17 @@ public class IndexFetcher {
 
   private final HttpClient myHttpClient;
 
-  private static HttpClient createHttpClient(SolrCore core, String connTimeout, String readTimeout, String httpBasicAuthUser, String httpBasicAuthPassword, boolean useCompression) {
+  private Integer connTimeout;
+
+  private Integer soTimeout;
+
+  private static HttpClient createHttpClient(SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, boolean useCompression) {
     final ModifiableSolrParams httpClientParams = new ModifiableSolrParams();
-    httpClientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, connTimeout != null ? connTimeout : "5000");
-    httpClientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, readTimeout != null ? readTimeout : "20000");
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_USER, httpBasicAuthUser);
     httpClientParams.set(HttpClientUtil.PROP_BASIC_AUTH_PASS, httpBasicAuthPassword);
     httpClientParams.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, useCompression);
 
-    return HttpClientUtil.createClient(httpClientParams, core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getConnectionManager());
+    return HttpClientUtil.createClient(httpClientParams, core.getCoreDescriptor().getCoreContainer().getUpdateShardHandler().getConnectionManager(), true);
   }
 
   public IndexFetcher(final NamedList initArgs, final ReplicationHandler handler, final SolrCore sc) {
@@ -199,11 +201,22 @@ public class IndexFetcher {
     String compress = (String) initArgs.get(COMPRESSION);
     useInternalCompression = INTERNAL.equals(compress);
     useExternalCompression = EXTERNAL.equals(compress);
-    String connTimeout = (String) initArgs.get(HttpClientUtil.PROP_CONNECTION_TIMEOUT);
-    String readTimeout = (String) initArgs.get(HttpClientUtil.PROP_SO_TIMEOUT);
+    connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000, null);
+    soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
+
     String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
     String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
-    myHttpClient = createHttpClient(solrCore, connTimeout, readTimeout, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
+    myHttpClient = createHttpClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, useExternalCompression);
+  }
+  
+  protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
+    T toReturn = defaultValue;
+    if (initArgs != null) {
+      T temp = (T) initArgs.get(configKey);
+      toReturn = (temp != null) ? temp : defaultValue;
+    }
+    if(sb!=null && toReturn != null) sb.append(configKey).append(" : ").append(toReturn).append(",");
+    return toReturn;
   }
 
   /**
@@ -219,8 +232,8 @@ public class IndexFetcher {
 
     // TODO modify to use shardhandler
     try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
-      client.setSoTimeout(60000);
-      client.setConnectionTimeout(15000);
+      client.setSoTimeout(soTimeout);
+      client.setConnectionTimeout(connTimeout);
 
       return client.request(req);
     } catch (SolrServerException e) {
@@ -241,8 +254,8 @@ public class IndexFetcher {
 
     // TODO modify to use shardhandler
     try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
-      client.setSoTimeout(60000);
-      client.setConnectionTimeout(15000);
+      client.setSoTimeout(soTimeout);
+      client.setConnectionTimeout(connTimeout);
       NamedList response = client.request(req);
 
       List<Map<String, Object>> files = (List<Map<String,Object>>) response.get(CMD_GET_FILE_LIST);
@@ -1607,8 +1620,8 @@ public class IndexFetcher {
 
       // TODO use shardhandler
       try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient, null)) {
-        client.setSoTimeout(60000);
-        client.setConnectionTimeout(15000);
+        client.setSoTimeout(soTimeout);
+        client.setConnectionTimeout(connTimeout);
         QueryRequest req = new QueryRequest(params);
         response = client.request(req);
         is = (InputStream) response.get("stream");
@@ -1716,8 +1729,8 @@ public class IndexFetcher {
 
     // TODO use shardhandler
     try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
-      client.setSoTimeout(60000);
-      client.setConnectionTimeout(15000);
+      client.setSoTimeout(soTimeout);
+      client.setConnectionTimeout(connTimeout);
       QueryRequest request = new QueryRequest(params);
       return client.request(request);
     }
@@ -1725,6 +1738,7 @@ public class IndexFetcher {
 
   public void destroy() {
     abortFetch();
+    HttpClientUtil.close(myHttpClient);
   }
 
   String getMasterUrl() {

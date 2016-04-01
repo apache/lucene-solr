@@ -631,15 +631,13 @@ public class CloudSolrClientTest extends AbstractFullDistribZkTestBase {
   }
 
   public void customHttpClientTest() throws IOException {
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 1000);
-
-    try (CloseableHttpClient client = HttpClientUtil.createClient(params);
-         CloudSolrClient solrClient = new CloudSolrClient(zkServer.getZkAddress(), client)) {
+    CloseableHttpClient client = HttpClientUtil.createClient(null);
+    try (CloudSolrClient solrClient = new CloudSolrClient(zkServer.getZkAddress(), client)) {
 
       assertTrue(solrClient.getLbClient().getHttpClient() == client);
 
+    } finally {
+      HttpClientUtil.close(client);
     }
   }
 }

@@ -25,15 +25,21 @@ import java.security.UnrecoverableKeyException;
 
 import javax.net.ssl.SSLContext;
 
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.LayeredConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLContexts;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
+import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 
@@ -44,7 +50,6 @@ public class SSLTestConfig extends SSLConfig {
   private static String TEST_KEYSTORE_PATH = TEST_KEYSTORE != null
       && TEST_KEYSTORE.exists() ? TEST_KEYSTORE.getAbsolutePath() : null;
   private static String TEST_KEYSTORE_PASSWORD = "secret";
-  private static HttpClientConfigurer DEFAULT_CONFIGURER = new HttpClientConfigurer();
   
   public SSLTestConfig() {
     this(false, false);
@@ -59,12 +64,13 @@ public class SSLTestConfig extends SSLConfig {
   }
   
   /**
-   * Will provide an HttpClientConfigurer for SSL support (adds https and
+   * Will provide an SolrHttpClientBuilder for SSL support (adds https and
    * removes http schemes) is SSL is enabled, otherwise return the default
-   * configurer
+   * SolrHttpClientBuilder
    */
-  public HttpClientConfigurer getHttpClientConfigurer() {
-    return isSSLMode() ? new SSLHttpClientConfigurer() : DEFAULT_CONFIGURER;
+  public SolrHttpClientBuilder getHttpClientBuilder() {
+    SolrHttpClientBuilder builder = HttpClientUtil.getHttpClientBuilder();
+    return isSSLMode() ? new SSLHttpClientBuilderProvider().getBuilder(builder) : builder;
   }
 
   /**
@@ -88,20 +94,53 @@ public class SSLTestConfig extends SSLConfig {
     }
   }
   
-  private class SSLHttpClientConfigurer extends HttpClientConfigurer {
-    @SuppressWarnings("deprecation")
-    public void configure(DefaultHttpClient httpClient, SolrParams config) {
-      super.configure(httpClient, config);
-      SchemeRegistry registry = httpClient.getConnectionManager().getSchemeRegistry();
-      // Make sure no tests cheat by using HTTP
-      registry.unregister("http");
-      try {
-        registry.register(new Scheme("https", 443, new SSLSocketFactory(buildSSLContext())));
-      } catch (KeyManagementException | UnrecoverableKeyException
-          | NoSuchAlgorithmException | KeyStoreException ex) {
-        throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", ex);
-      }
+  private class SSLHttpClientBuilderProvider  {
+    
+
+    public SolrHttpClientBuilder getBuilder(SolrHttpClientBuilder builder) {
+
+      HttpClientUtil.setSchemeRegistryProvider(new SchemaRegistryProvider() {
+        
+        @Override
+        public Registry<ConnectionSocketFactory> getSchemaRegistry() {
+          SSLConnectionSocketFactory sslConnectionFactory;
+          try {
+            boolean sslCheckPeerName = toBooleanDefaultIfNull(
+                toBooleanObject(System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME)), true);
+            if (sslCheckPeerName == false) {
+              sslConnectionFactory = new SSLConnectionSocketFactory(buildSSLContext(),
+                  SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+            } else {
+              sslConnectionFactory = new SSLConnectionSocketFactory(buildSSLContext());
+            }
+          } catch (KeyManagementException | UnrecoverableKeyException | NoSuchAlgorithmException | KeyStoreException e) {
+            throw new IllegalStateException("Unable to setup https scheme for HTTPClient to test SSL.", e);
+          }
+          return  RegistryBuilder.<ConnectionSocketFactory>create()
+              .register("https", sslConnectionFactory).build();
+        }
+      });
+      HttpClientUtil.setHttpClientBuilder(builder);
+      return builder;
     }
+
+  }
+  
+  public static boolean toBooleanDefaultIfNull(Boolean bool, boolean valueIfNull) {
+    if (bool == null) {
+      return valueIfNull;
+    }
+    return bool.booleanValue() ? true : false;
+  }
+  
+  public static Boolean toBooleanObject(String str) {
+    if ("true".equalsIgnoreCase(str)) {
+      return Boolean.TRUE;
+    } else if ("false".equalsIgnoreCase(str)) {
+      return Boolean.FALSE;
+    }
+    // no match
+    return null;
   }
   
   public static void setSSLSystemProperties() {

@@ -604,7 +604,6 @@ public class ShardSplitTest extends BasicDistributedZkTest {
   @Override
   protected CloudSolrClient createCloudClient(String defaultCollection) {
     CloudSolrClient client = super.createCloudClient(defaultCollection);
-    client.getLbClient().getHttpClient().getParams().setParameter(CoreConnectionPNames.SO_TIMEOUT, 5 * 60 * 1000);
     return client;
   }
 }

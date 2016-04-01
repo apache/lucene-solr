@@ -75,8 +75,6 @@ public class TestRestoreCore extends SolrJettyTestBase {
       HttpSolrClient client = new HttpSolrClient(buildUrl(port, context) + "/" + DEFAULT_TEST_CORENAME);
       client.setConnectionTimeout(15000);
       client.setSoTimeout(60000);
-      client.setDefaultMaxConnectionsPerHost(100);
-      client.setMaxTotalConnections(100);
       return client;
     }
     catch (Exception ex) {

@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -92,7 +91,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     httpClient = HttpClientUtil.createClient(null);
-    HttpClientUtil.setConnectionTimeout(httpClient,  1000);
+
     for (int i = 0; i < solr.length; i++) {
       solr[i] = new SolrInstance("solr/collection1" + i, createTempDir("instance-" + i).toFile(), 0);
       solr[i].setUp();
@@ -125,7 +124,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
         aSolr.tearDown();
       }
     }
-    httpClient.close();
+    HttpClientUtil.close(httpClient);
     super.tearDown();
   }
 
@@ -204,12 +203,12 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     for (int i = 0; i < solr.length; i++) {
       s[i] = solr[i].getUrl();
     }
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, 250);
-    params.set(HttpClientUtil.PROP_SO_TIMEOUT, 250);
-    CloseableHttpClient myHttpClient = HttpClientUtil.createClient(params);
+
+    CloseableHttpClient myHttpClient = HttpClientUtil.createClient(null);
     try {
       LBHttpSolrClient client = new LBHttpSolrClient(myHttpClient, s);
+      client.setConnectionTimeout(250);
+      client.setSoTimeout(250);
       client.setAliveCheckInterval(500);
   
       // Kill a server and test again
@@ -225,7 +224,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       // Wait for the alive check to complete
       waitForServer(30, client, 3, "solr1");
     } finally {
-      myHttpClient.close();
+      HttpClientUtil.close(myHttpClient);
     }
   }
   

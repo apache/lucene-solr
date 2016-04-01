@@ -1345,4 +1345,12 @@ public class CloudSolrClient extends SolrClient {
     }    
     return results;
   }
+  
+  public void setConnectionTimeout(int timeout) {
+    this.lbClient.setConnectionTimeout(timeout); 
+  }
+
+  public void setSoTimeout(int timeout) {
+    this.lbClient.setSoTimeout(timeout);
+  }
 }

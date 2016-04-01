@@ -16,15 +16,11 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -35,6 +31,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
@@ -43,15 +44,14 @@ import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.HttpResponse;
 import org.apache.http.ParseException;
 import org.apache.http.client.CookieStore;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.params.HttpClientParams;
-import org.apache.http.client.protocol.ClientContext;
+import org.apache.http.client.methods.HttpRequestWrapper;
+import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.cookie.CookieSpec;
-import org.apache.http.cookie.CookieSpecRegistry;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.RequestWrapper;
 import org.apache.http.impl.cookie.BasicClientCookie;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.SolrJettyTestBase;
@@ -68,6 +68,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.SSLTestConfig;
@@ -524,49 +525,60 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   
   @Test
   public void testCompression() throws Exception {
+    SolrQuery q = new SolrQuery("*:*");
+    
     try (HttpSolrClient client = new HttpSolrClient(jetty.getBaseUrl().toString() + "/debug/foo")) {
-      SolrQuery q = new SolrQuery("*:*");
-      
       // verify request header gets set
       DebugServlet.clear();
       try {
         client.query(q);
       } catch (ParseException ignored) {}
-      assertNull(DebugServlet.headers.get("Accept-Encoding"));
-      client.setAllowCompression(true);
+      assertNull(DebugServlet.headers.toString(), DebugServlet.headers.get("Accept-Encoding")); 
+    }
+    
+    try (HttpSolrClient client = new HttpSolrClient(jetty.getBaseUrl().toString() + "/debug/foo", null, null, true)) {
       try {
         client.query(q);
       } catch (ParseException ignored) {}
       assertNotNull(DebugServlet.headers.get("Accept-Encoding"));
-      client.setAllowCompression(false);
+    }
+    
+    try (HttpSolrClient client = new HttpSolrClient(jetty.getBaseUrl().toString() + "/debug/foo", null, null, false)) {
       try {
         client.query(q);
       } catch (ParseException ignored) {}
-      assertNull(DebugServlet.headers.get("Accept-Encoding"));
     }
+
+    assertNull(DebugServlet.headers.get("Accept-Encoding"));
     
     // verify server compresses output
     HttpGet get = new HttpGet(jetty.getBaseUrl().toString() + "/collection1" +
                               "/select?q=foo&wt=xml");
     get.setHeader("Accept-Encoding", "gzip");
-    CloseableHttpClient httpclient = HttpClientUtil.createClient(null);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set(HttpClientUtil.PROP_ALLOW_COMPRESSION, true);
+    
+    RequestConfig config = RequestConfig.custom().setDecompressionEnabled(false).build();   
+    get.setConfig(config);
+    
+    CloseableHttpClient httpclient = HttpClientUtil.createClient(params);
     HttpEntity entity = null;
     try {
-      HttpResponse response = httpclient.execute(get);
+      HttpResponse response = httpclient.execute(get, HttpClientUtil.createNewHttpClientRequestContext());
       entity = response.getEntity();
       Header ceheader = entity.getContentEncoding();
+      assertNotNull(Arrays.asList(response.getAllHeaders()).toString(), ceheader);
       assertEquals("gzip", ceheader.getValue());
     } finally {
       if (entity != null) {
         entity.getContent().close();
       }
-      httpclient.close();
+      HttpClientUtil.close(httpclient);
     }
     
     // verify compressed response can be handled
     try (HttpSolrClient client = new HttpSolrClient(jetty.getBaseUrl().toString() + "/collection1")) {
-      client.setAllowCompression(true);
-      SolrQuery q = new SolrQuery("foo");
+      q = new SolrQuery("foo");
       QueryResponse response = client.query(q);
       assertEquals(0, response.getStatus());
     }
@@ -589,28 +601,11 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     }
 
   }
-  
-  @Test
-  public void testSetParametersExternalClient() throws IOException{
-
-    try (CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
-         HttpSolrClient solrClient = new HttpSolrClient(jetty.getBaseUrl().toString(), httpClient)) {
-
-      try {
-        solrClient.setMaxTotalConnections(1);
-        fail("Operation should not succeed.");
-      } catch (UnsupportedOperationException ignored) {}
-      try {
-        solrClient.setDefaultMaxConnectionsPerHost(1);
-        fail("Operation should not succeed.");
-      } catch (UnsupportedOperationException ignored) {}
-
-    }
-  }
 
   @Test
   public void testGetRawStream() throws SolrServerException, IOException{
-    try (CloseableHttpClient client = HttpClientUtil.createClient(null)) {
+    CloseableHttpClient client = HttpClientUtil.createClient(null);
+    try {
       HttpSolrClient solrClient = new HttpSolrClient(jetty.getBaseUrl().toString() + "/collection1",
           client, null);
       QueryRequest req = new QueryRequest();
@@ -618,6 +613,8 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       InputStream stream = (InputStream) response.get("stream");
       assertNotNull(stream);
       stream.close();
+    } finally {
+      HttpClientUtil.close(client);;
     }
   }
 
@@ -646,7 +643,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     IOException {
       log.info("Intercepted params: "+context);
 
-      RequestWrapper wrapper = (RequestWrapper) request;
+      HttpRequestWrapper wrapper = (HttpRequestWrapper) request;
       URIBuilder uribuilder = new URIBuilder(wrapper.getURI());
       uribuilder.addParameter("b", "\u4321");
       try {
@@ -672,17 +669,15 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       cookie.setPath("/");
       cookie.setDomain(jetty.getBaseUrl().getHost());
 
-      CookieStore cookieStore = new BasicCookieStore();        
-      CookieSpecRegistry registry = (CookieSpecRegistry) context.getAttribute(ClientContext.COOKIESPEC_REGISTRY);
-      String policy = HttpClientParams.getCookiePolicy(request.getParams());
-      CookieSpec cookieSpec = registry.getCookieSpec(policy, request.getParams());
+      CookieStore cookieStore = new BasicCookieStore();
+      CookieSpec cookieSpec = new SolrPortAwareCookieSpecFactory().create(context);
+     // CookieSpec cookieSpec = registry.lookup(policy).create(context);
       // Add the cookies to the request
       List<Header> headers = cookieSpec.formatCookies(Collections.singletonList(cookie));
       for (Header header : headers) {
         request.addHeader(header);
       }
-      context.setAttribute(ClientContext.COOKIE_STORE, cookieStore);
-      context.setAttribute(ClientContext.COOKIE_SPEC, cookieSpec);
+      context.setAttribute(HttpClientContext.COOKIE_STORE, cookieStore);
     }
   };
 

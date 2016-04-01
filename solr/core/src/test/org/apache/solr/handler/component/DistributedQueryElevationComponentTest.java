@@ -116,6 +116,7 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
         .setSort("id", SolrQuery.ORDER.desc);
     setDistributedParams(solrQuery);
     response = client.query(solrQuery);
+    client.close();
 
     assertTrue(response.getResults().getNumFound() > 0);
     document = response.getResults().get(0);

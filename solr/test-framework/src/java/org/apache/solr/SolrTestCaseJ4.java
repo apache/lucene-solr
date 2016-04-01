@@ -66,7 +66,6 @@ import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
@@ -226,7 +225,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     
     sslConfig = buildSSLConfig();
     //will use ssl specific or default depending on sslConfig
-    HttpClientUtil.setConfigurer(sslConfig.getHttpClientConfigurer());
+    HttpClientUtil.setHttpClientBuilder(sslConfig.getHttpClientBuilder());
     if(isSSLMode()) {
       // SolrCloud tests should usually clear this
       System.setProperty("urlScheme", "https");
@@ -269,9 +268,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       System.clearProperty("useCompoundFile");
       System.clearProperty("urlScheme");
       
-      if (isSSLMode()) {
-        HttpClientUtil.setConfigurer(new HttpClientConfigurer());
-      }
+      HttpClientUtil.resetHttpClientBuilder();
 
       // clean up static
       sslConfig = null;

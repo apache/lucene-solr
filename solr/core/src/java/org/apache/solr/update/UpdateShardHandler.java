@@ -16,26 +16,20 @@
  */
 package org.apache.solr.update;
 
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.ExecutorService;
+
 import org.apache.http.client.HttpClient;
-import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
-import org.apache.http.impl.conn.SchemeRegistryFactory;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.solr.core.NodeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.ExecutorService;
 
 public class UpdateShardHandler {
   
@@ -54,52 +48,24 @@ public class UpdateShardHandler {
   private ExecutorService recoveryExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
       new SolrjNamedThreadFactory("recoveryExecutor"));
   
-  private PoolingClientConnectionManager clientConnectionManager;
-  
   private final CloseableHttpClient client;
 
-  private final UpdateShardHandlerConfig cfg;
+  private final PoolingHttpClientConnectionManager clientConnectionManager;
 
   public UpdateShardHandler(UpdateShardHandlerConfig cfg) {
-    this.cfg = cfg;
-    clientConnectionManager = new PoolingClientConnectionManager(SchemeRegistryFactory.createSystemDefault());
+    clientConnectionManager = new PoolingHttpClientConnectionManager(HttpClientUtil.getSchemaRegisteryProvider().getSchemaRegistry());
     if (cfg != null ) {
       clientConnectionManager.setMaxTotal(cfg.getMaxUpdateConnections());
       clientConnectionManager.setDefaultMaxPerRoute(cfg.getMaxUpdateConnectionsPerHost());
     }
 
-    ModifiableSolrParams clientParams = getClientParams();
+    ModifiableSolrParams clientParams = new ModifiableSolrParams();
     log.info("Creating UpdateShardHandler HTTP client with params: {}", clientParams);
     client = HttpClientUtil.createClient(clientParams, clientConnectionManager);
   }
-
-  protected ModifiableSolrParams getClientParams() {
-    ModifiableSolrParams clientParams = new ModifiableSolrParams();
-    if (cfg != null) {
-      clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT,
-          cfg.getDistributedSocketTimeout());
-      clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT,
-          cfg.getDistributedConnectionTimeout());
-    }
-    // in the update case, we want to do retries, and to use
-    // the default Solr retry handler that createClient will 
-    // give us
-    clientParams.set(HttpClientUtil.PROP_USE_RETRY, true);
-    return clientParams;
-  }
-  
   
   public HttpClient getHttpClient() {
     return client;
-  }
-
-  public void reconfigureHttpClient(HttpClientConfigurer configurer) {
-    log.info("Reconfiguring the default client with: " + configurer);
-    configurer.configure((DefaultHttpClient)client, getClientParams());
-  }
-
-  public ClientConnectionManager getConnectionManager() {
-    return clientConnectionManager;
   }
   
   /**
@@ -112,6 +78,11 @@ public class UpdateShardHandler {
     return updateExecutor;
   }
   
+
+  public PoolingHttpClientConnectionManager getConnectionManager() {
+    return clientConnectionManager;
+  }
+
   /**
    * In general, RecoveryStrategy threads do not do disk IO, but they open and close SolrCores
    * in async threads, amoung other things, and can trigger disk IO, so we use this alternate 
@@ -131,8 +102,8 @@ public class UpdateShardHandler {
     } catch (Exception e) {
       SolrException.log(log, e);
     } finally {
-      IOUtils.closeQuietly(client);
-      clientConnectionManager.shutdown();
+      HttpClientUtil.close(client);
+      clientConnectionManager.close();
     }
   }
 

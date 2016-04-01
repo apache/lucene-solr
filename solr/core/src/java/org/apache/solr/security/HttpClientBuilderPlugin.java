@@ -16,15 +16,22 @@
  */
 package org.apache.solr.security;
 
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
+import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 
-public interface HttpClientInterceptorPlugin {
+/**
+ * Plugin interface for configuring internal HttpClients. This
+ * relies on the internal HttpClient implementation and is subject to
+ * change.
+ * 
+ * @lucene.experimental
+ */
+public interface HttpClientBuilderPlugin {
   /**
    *
-   * @return Returns an instance of a HttpClientConfigurer to be used for configuring the
-   * httpclients for use with SolrJ clients.
+   * @return Returns an instance of a SolrHttpClientBuilder to be used for configuring the
+   * HttpClients for use with SolrJ clients.
    *
    * @lucene.experimental
    */
-  public HttpClientConfigurer getClientConfigurer();
+  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder);
 }

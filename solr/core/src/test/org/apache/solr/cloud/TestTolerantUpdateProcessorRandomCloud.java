@@ -16,59 +16,43 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
-import java.lang.invoke.MethodHandles;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.cloud.SolrCloudTestCase;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.assertUpdateTolerantErrors;
 import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.addErr;
+import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.assertUpdateTolerantErrors;
 import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delIErr;
 import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.delQErr;
 import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.f;
 import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.update;
-import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.ExpectedErr;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
+import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
+
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
-import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
+import org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.ExpectedErr;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.ToleratedUpdateError;
-import org.apache.solr.common.ToleratedUpdateError.CmdType;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.util.RevertDefaultThreadHandlerRule;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,7 +76,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
   /** one HttpSolrClient for each server */
-  private static List<SolrClient> NODE_CLIENTS;
+  private static List<HttpSolrClient> NODE_CLIENTS;
 
   @BeforeClass
   private static void createMiniSolrCloudCluster() throws Exception {
@@ -123,7 +107,12 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     CLOUD_CLIENT = cluster.getSolrClient();
     CLOUD_CLIENT.setDefaultCollection(COLLECTION_NAME);
 
-    NODE_CLIENTS = new ArrayList<SolrClient>(numServers);
+    if (NODE_CLIENTS != null) {
+      for (HttpSolrClient client : NODE_CLIENTS) {
+        client.close();
+      }
+    }
+    NODE_CLIENTS = new ArrayList<HttpSolrClient>(numServers);
     
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       URL jettyURL = jetty.getBaseUrl();
@@ -140,6 +129,15 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
   private void deleteAllDocs() throws Exception {
     assertEquals(0, update(params("commit","true")).deleteByQuery("*:*").process(CLOUD_CLIENT).getStatus());
     assertEquals("index should be empty", 0L, countDocs(CLOUD_CLIENT));
+  }
+  
+  @AfterClass
+  public static void afterClass() throws IOException {
+    if (NODE_CLIENTS != null) {
+      for (HttpSolrClient client : NODE_CLIENTS) {
+        client.close();
+      }
+    }
   }
   
   public void testRandomUpdates() throws Exception {

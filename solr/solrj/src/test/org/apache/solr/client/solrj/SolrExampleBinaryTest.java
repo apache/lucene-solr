@@ -42,8 +42,6 @@ public class SolrExampleBinaryTest extends SolrExampleTests {
       String url = jetty.getBaseUrl().toString() + "/collection1";
       HttpSolrClient client = new HttpSolrClient( url );
       client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      client.setDefaultMaxConnectionsPerHost(100);
-      client.setMaxTotalConnections(100);
       client.setUseMultiPartPost(random().nextBoolean());
 
       // where the magic happens

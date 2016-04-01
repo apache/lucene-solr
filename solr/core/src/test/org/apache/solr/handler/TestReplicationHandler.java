@@ -159,8 +159,6 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/" + DEFAULT_TEST_CORENAME);
       client.setConnectionTimeout(15000);
       client.setSoTimeout(60000);
-      client.setDefaultMaxConnectionsPerHost(100);
-      client.setMaxTotalConnections(100);
       return client;
     }
     catch (Exception ex) {

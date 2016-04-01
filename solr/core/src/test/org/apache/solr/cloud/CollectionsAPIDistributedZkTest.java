@@ -97,6 +97,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
   @BeforeClass
   public static void beforeCollectionsAPIDistributedZkTest() {
     TestInjection.randomDelayInCoreCreation = "true:20";
+    System.setProperty("validateAfterInactivity", "200");
   }
   
   @Override
@@ -1196,11 +1197,12 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
           null, client, props);
       assertNotNull(newReplica);
 
-      HttpSolrClient coreclient = new HttpSolrClient(newReplica.getStr(ZkStateReader.BASE_URL_PROP));
-      CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
-      NamedList<Object> coreStatus = status.getCoreStatus(newReplica.getStr("core"));
-      String instanceDirStr = (String) coreStatus.get("instanceDir");
-      assertEquals(Paths.get(instanceDirStr).toString(), instancePathStr);
+      try (HttpSolrClient coreclient = new HttpSolrClient(newReplica.getStr(ZkStateReader.BASE_URL_PROP))) {
+        CoreAdminResponse status = CoreAdminRequest.getStatus(newReplica.getStr("core"), coreclient);
+        NamedList<Object> coreStatus = status.getCoreStatus(newReplica.getStr("core"));
+        String instanceDirStr = (String) coreStatus.get("instanceDir");
+        assertEquals(Paths.get(instanceDirStr).toString(), instancePathStr);
+      }
 
       //Test to make sure we can't create another replica with an existing core_name of that collection
       String coreName = newReplica.getStr(CORE_NAME_PROP);

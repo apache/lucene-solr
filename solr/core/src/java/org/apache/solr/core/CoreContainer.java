@@ -16,6 +16,17 @@
  */
 package org.apache.solr.core;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Collections.EMPTY_MAP;
+import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
+import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
+import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
+import static org.apache.solr.common.params.CommonParams.ZK_PATH;
+import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -32,10 +43,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
+import org.apache.http.auth.AuthSchemeProvider;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.config.Lookup;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
+import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder;
+import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.AuthSchemeRegistryProvider;
+import org.apache.solr.client.solrj.impl.SolrHttpClientContextBuilder.CredentialsProviderProvider;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
@@ -52,14 +67,13 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.SecurityConfHandler;
 import org.apache.solr.handler.admin.ZookeeperInfoHandler;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
-import org.apache.solr.security.HttpClientInterceptorPlugin;
+import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.update.SolrCoreState;
@@ -69,16 +83,8 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.Collections.EMPTY_MAP;
-import static org.apache.solr.common.params.CommonParams.AUTHC_PATH;
-import static org.apache.solr.common.params.CommonParams.AUTHZ_PATH;
-import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.INFO_HANDLER_PATH;
-import static org.apache.solr.common.params.CommonParams.ZK_PATH;
-import static org.apache.solr.security.AuthenticationPlugin.AUTHENTICATION_PLUGIN_PROP;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 
 /**
@@ -291,7 +297,7 @@ public class CoreContainer {
     }
     if (authenticationPlugin != null) {
       authenticationPlugin.plugin.init(authenticationConfig);
-      addHttpConfigurer(authenticationPlugin.plugin);
+      setupHttpClientForAuthPlugin(authenticationPlugin.plugin);
     }
     this.authenticationPlugin = authenticationPlugin;
     try {
@@ -300,26 +306,44 @@ public class CoreContainer {
 
   }
 
-  private void addHttpConfigurer(Object authcPlugin) {
-    if (authcPlugin instanceof HttpClientInterceptorPlugin) {
-      // Setup HttpClient to use the plugin's configurer for internode communication
-      HttpClientConfigurer configurer = ((HttpClientInterceptorPlugin) authcPlugin).getClientConfigurer();
-      HttpClientUtil.setConfigurer(configurer);
-
+  private void setupHttpClientForAuthPlugin(Object authcPlugin) {
+    if (authcPlugin instanceof HttpClientBuilderPlugin) {
+      // Setup HttpClient for internode communication
+      SolrHttpClientBuilder builder = ((HttpClientBuilderPlugin) authcPlugin).getHttpClientBuilder(HttpClientUtil.getHttpClientBuilder());
+      
       // The default http client of the core container's shardHandlerFactory has already been created and
       // configured using the default httpclient configurer. We need to reconfigure it using the plugin's
       // http client configurer to set it up for internode communication.
-      log.info("Reconfiguring the shard handler factory and update shard handler.");
-      if (getShardHandlerFactory() instanceof HttpShardHandlerFactory) {
-        ((HttpShardHandlerFactory) getShardHandlerFactory()).reconfigureHttpClient(configurer);
+      log.info("Reconfiguring HttpClient settings.");
+
+      SolrHttpClientContextBuilder httpClientBuilder = new SolrHttpClientContextBuilder();
+      if (builder.getCredentialsProviderProvider() != null) {
+        httpClientBuilder.setDefaultCredentialsProvider(new CredentialsProviderProvider() {
+          
+          @Override
+          public CredentialsProvider getCredentialsProvider() {
+            return builder.getCredentialsProviderProvider().getCredentialsProvider();
+          }
+        });
       }
-      getUpdateShardHandler().reconfigureHttpClient(configurer);
+      if (builder.getAuthSchemeRegistryProvider() != null) {
+        httpClientBuilder.setAuthSchemeRegistryProvider(new AuthSchemeRegistryProvider() {
+          
+          @Override
+          public Lookup<AuthSchemeProvider> getAuthSchemeRegistry() {
+            return builder.getAuthSchemeRegistryProvider().getAuthSchemeRegistry();
+          }
+        });
+      }
+
+      HttpClientUtil.setHttpClientRequestContextBuilder(httpClientBuilder);
+
     } else {
       if (pkiAuthenticationPlugin != null) {
         //this happened due to an authc plugin reload. no need to register the pkiAuthc plugin again
         if(pkiAuthenticationPlugin.isInterceptorRegistered()) return;
         log.info("PKIAuthenticationPlugin is managing internode requests");
-        addHttpConfigurer(pkiAuthenticationPlugin);
+        setupHttpClientForAuthPlugin(pkiAuthenticationPlugin);
         pkiAuthenticationPlugin.setInterceptorRegistered();
       }
     }

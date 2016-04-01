@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.ArrayList;
@@ -49,7 +50,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -201,6 +201,21 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                  "couldn't find " + expected + " as substring of [shard] == '" + docShard +
                  "' ... for docId == " + doc.getFirstValue("id"),
                  docShard.contains(expected));
+    }
+  }
+  
+  @AfterClass
+  public static void afterClass() throws IOException {
+   close(S_ONE_LEADER_CLIENT);
+   close(S_TWO_LEADER_CLIENT);
+   close(S_ONE_NON_LEADER_CLIENT);
+   close(S_TWO_NON_LEADER_CLIENT);
+   close(NO_COLLECTION_CLIENT);
+  }
+  
+  private static void close(SolrClient client) throws IOException {
+    if (client != null) {
+      client.close();
     }
   }
   

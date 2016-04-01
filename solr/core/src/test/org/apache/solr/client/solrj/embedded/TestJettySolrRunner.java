@@ -53,13 +53,13 @@ public class TestJettySolrRunner extends SolrTestCaseJ4 {
     try {
       runner.start();
 
-      SolrClient client = new HttpSolrClient(runner.getBaseUrl().toString());
+      try (SolrClient client = new HttpSolrClient(runner.getBaseUrl().toString())) {
+        CoreAdminRequest.Create createReq = new CoreAdminRequest.Create();
+        createReq.setCoreName("newcore");
+        createReq.setConfigSet("minimal");
 
-      CoreAdminRequest.Create createReq = new CoreAdminRequest.Create();
-      createReq.setCoreName("newcore");
-      createReq.setConfigSet("minimal");
-
-      client.request(createReq);
+        client.request(createReq);
+      }
 
       assertTrue(Files.exists(coresDir.resolve("newcore").resolve("core.properties")));
 

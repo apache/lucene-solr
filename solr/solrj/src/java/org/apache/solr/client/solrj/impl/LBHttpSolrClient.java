@@ -109,6 +109,9 @@ public class LBHttpSolrClient extends SolrClient {
   private volatile RequestWriter requestWriter;
 
   private Set<String> queryParams = new HashSet<>();
+  private Integer connectionTimeout;
+
+  private Integer soTimeout;
 
   static {
     solrQuery.setRows(0);
@@ -261,6 +264,12 @@ public class LBHttpSolrClient extends SolrClient {
 
   protected HttpSolrClient makeSolrClient(String server) {
     HttpSolrClient client = new HttpSolrClient(server, httpClient, parser);
+    if (connectionTimeout != null) {
+      client.setConnectionTimeout(connectionTimeout);
+    }
+    if (soTimeout != null) {
+      client.setSoTimeout(soTimeout);
+    }
     if (requestWriter != null) {
       client.setRequestWriter(requestWriter);
     }
@@ -459,7 +468,17 @@ public class LBHttpSolrClient extends SolrClient {
   }
 
   public void setConnectionTimeout(int timeout) {
-    HttpClientUtil.setConnectionTimeout(httpClient, timeout);
+    this.connectionTimeout = timeout;
+    synchronized (aliveServers) {
+      Iterator<ServerWrapper> wrappersIt = aliveServers.values().iterator();
+      while (wrappersIt.hasNext()) {
+        wrappersIt.next().client.setConnectionTimeout(timeout);
+      }
+    }
+    Iterator<ServerWrapper> wrappersIt = zombieServers.values().iterator();
+    while (wrappersIt.hasNext()) {
+      wrappersIt.next().client.setConnectionTimeout(timeout);
+    }
   }
 
   /**
@@ -467,7 +486,17 @@ public class LBHttpSolrClient extends SolrClient {
    * not for indexing.
    */
   public void setSoTimeout(int timeout) {
-    HttpClientUtil.setSoTimeout(httpClient, timeout);
+    this.soTimeout = timeout;
+    synchronized (aliveServers) {
+      Iterator<ServerWrapper> wrappersIt = aliveServers.values().iterator();
+      while (wrappersIt.hasNext()) {
+        wrappersIt.next().client.setSoTimeout(timeout);
+      }
+    }
+    Iterator<ServerWrapper> wrappersIt = zombieServers.values().iterator();
+    while (wrappersIt.hasNext()) {
+      wrappersIt.next().client.setSoTimeout(timeout);
+    }
   }
 
   @Override

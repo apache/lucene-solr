@@ -38,6 +38,7 @@ import java.util.zip.ZipInputStream;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -116,7 +117,7 @@ public class BlobRepository {
         HttpGet httpGet = new HttpGet(url);
         ByteBuffer b;
         try {
-          HttpResponse entity = httpClient.execute(httpGet);
+          HttpResponse entity = httpClient.execute(httpGet, HttpClientUtil.createNewHttpClientRequestContext());
           int statusCode = entity.getStatusLine().getStatusCode();
           if (statusCode != 200) {
             throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no such blob or version available: " + key);

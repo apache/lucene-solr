@@ -31,6 +31,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -108,7 +109,7 @@ public class JettyWebappTest extends SolrTestCaseJ4
 
     HttpClient client = HttpClients.createDefault();
     HttpRequestBase m = new HttpGet(adminPath);
-    HttpResponse response = client.execute(m);
+    HttpResponse response = client.execute(m, HttpClientUtil.createNewHttpClientRequestContext());
     assertEquals(200, response.getStatusLine().getStatusCode());
     Header header = response.getFirstHeader("X-Frame-Options");
     assertEquals("DENY", header.getValue().toUpperCase(Locale.ROOT));

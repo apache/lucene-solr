@@ -40,8 +40,6 @@ public class SolrExampleXMLTest extends SolrExampleTests {
       HttpSolrClient client = new HttpSolrClient(url);
       client.setUseMultiPartPost(random().nextBoolean());
       client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      client.setDefaultMaxConnectionsPerHost(100);
-      client.setMaxTotalConnections(100);
       client.setParser(new XMLResponseParser());
       client.setRequestWriter(new RequestWriter());
       return client;
