@@ -36,33 +36,6 @@ public class GeoRelationUtils {
     return lat >= minLat && lat <= maxLat && lon >= minLon && lon <= maxLon;
   }
 
-  /**
-   * simple even-odd point in polygon computation
-   *    1.  Determine if point is contained in the longitudinal range
-   *    2.  Determine whether point crosses the edge by computing the latitudinal delta
-   *        between the end-point of a parallel vector (originating at the point) and the
-   *        y-component of the edge sink
-   *
-   * NOTE: Requires polygon point (x,y) order either clockwise or counter-clockwise
-   */
-  public static boolean pointInPolygon(double[] polyLats, double[] polyLons, double lat, double lon) {
-    assert polyLats.length == polyLons.length;
-    boolean inPoly = false;
-    /**
-     * Note: This is using a euclidean coordinate system which could result in
-     * upwards of 110KM error at the equator.
-     * TODO convert coordinates to cylindrical projection (e.g. mercator)
-     */
-    for (int i = 1; i < polyLats.length; i++) {
-      if (polyLons[i] <= lon && polyLons[i-1] >= lon || polyLons[i-1] <= lon && polyLons[i] >= lon) {
-        if (polyLats[i] + (lon - polyLons[i]) / (polyLons[i-1] - polyLons[i]) * (polyLats[i-1] - polyLats[i]) <= lat) {
-          inPoly = !inPoly;
-        }
-      }
-    }
-    return inPoly;
-  }
-
   /////////////////////////
   // Rectangle relations
   /////////////////////////
