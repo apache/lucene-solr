@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -42,8 +43,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.Polygon;
+import org.apache.lucene.geo.Polygon;
 
 /** Finds all previously indexed points that fall within the specified polygons.
  *
@@ -84,7 +84,7 @@ final class LatLonPointInPolygonQuery extends Query {
     
     // bounding box over all polygons, this can speed up tree intersection/cheaply improve approximation for complex multi-polygons
     // these are pre-encoded with LatLonPoint's encoding
-    final GeoRect box = GeoRect.fromPolygon(polygons);
+    final Rectangle box = Rectangle.fromPolygon(polygons);
     final byte minLat[] = new byte[Integer.BYTES];
     final byte maxLat[] = new byte[Integer.BYTES];
     final byte minLon[] = new byte[Integer.BYTES];

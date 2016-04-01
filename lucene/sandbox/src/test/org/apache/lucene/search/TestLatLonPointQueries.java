@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
-import org.apache.lucene.spatial.util.Polygon;
+import org.apache.lucene.geo.Polygon;
 
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 

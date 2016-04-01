@@ -37,7 +37,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.geo.Rectangle;
+import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.GeoUtils;
+import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -537,7 +540,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
     int iters = atLeast(25);
     for (int iter=0;iter<iters;iter++) {
-      GeoRect rect = randomRect(small);
+      Rectangle rect = randomRect(small);
 
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter + " rect=" + rect);
@@ -716,7 +719,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     return lon;
   }
 
-  protected GeoRect randomRect(boolean small) {
+  protected Rectangle randomRect(boolean small) {
     if (small) {
       return GeoTestUtil.nextBoxNear(originLat, originLon);
     } else {
@@ -732,7 +735,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected abstract Query newPolygonQuery(String field, Polygon... polygon);
 
-  static final boolean rectContainsPoint(GeoRect rect, double pointLat, double pointLon) {
+  static final boolean rectContainsPoint(Rectangle rect, double pointLat, double pointLon) {
     assert Double.isNaN(pointLat) == false;
 
     if (rect.minLon < rect.maxLon) {
@@ -820,7 +823,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         System.out.println("\nTEST: iter=" + iter + " s=" + s);
       }
       
-      GeoRect rect = randomRect(small);
+      Rectangle rect = randomRect(small);
 
       Query query = newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
 
@@ -1173,7 +1176,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   }
 
   public void testRectBoundariesAreInclusive() throws Exception {
-    GeoRect rect;
+    Rectangle rect;
     // TODO: why this dateline leniency???
     while (true) {
       rect = randomRect(random().nextBoolean());
@@ -1182,7 +1185,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       }
     }
     // this test works in quantized space: for testing inclusiveness of exact edges it must be aware of index-time quantization!
-    rect = new GeoRect(quantizeLat(rect.minLat), quantizeLat(rect.maxLat), quantizeLon(rect.minLon), quantizeLon(rect.maxLon));
+    rect = new Rectangle(quantizeLat(rect.minLat), quantizeLat(rect.maxLat), quantizeLon(rect.minLon), quantizeLon(rect.maxLon));
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     // Else seeds may not reproduce:
@@ -1341,7 +1344,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   public void testEquals() throws Exception {   
     Query q1, q2;
 
-    GeoRect rect = randomRect(false);
+    Rectangle rect = randomRect(false);
 
     q1 = newRectQuery("field", rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
     q2 = newRectQuery("field", rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);

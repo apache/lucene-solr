@@ -14,9 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.util;
-
-import org.apache.lucene.geo.GeoUtils;
+package org.apache.lucene.geo;
 
 import static java.lang.Math.PI;
 import static java.lang.Math.max;
@@ -38,7 +36,7 @@ import static org.apache.lucene.util.SloppyMath.asin;
 import static org.apache.lucene.util.SloppyMath.cos;
 
 /** Represents a lat/lon rectangle. */
-public class GeoRect {
+public class Rectangle {
   /** maximum longitude value (in degrees) */
   public final double minLat;
   /** minimum longitude value (in degrees) */
@@ -51,7 +49,7 @@ public class GeoRect {
   /**
    * Constructs a bounding box by first validating the provided latitude and longitude coordinates
    */
-  public GeoRect(double minLat, double maxLat, double minLon, double maxLon) {
+  public Rectangle(double minLat, double maxLat, double minLon, double maxLon) {
     GeoUtils.checkLatitude(minLat);
     GeoUtils.checkLatitude(maxLat);
     GeoUtils.checkLongitude(minLon);
@@ -90,7 +88,7 @@ public class GeoRect {
   }
 
   /** Compute Bounding Box for a circle using WGS-84 parameters */
-  public static GeoRect fromPointDistance(final double centerLat, final double centerLon, final double radiusMeters) {
+  public static Rectangle fromPointDistance(final double centerLat, final double centerLon, final double radiusMeters) {
     checkLatitude(centerLat);
     checkLongitude(centerLon);
     final double radLat = toRadians(centerLat);
@@ -120,7 +118,7 @@ public class GeoRect {
       maxLon = MAX_LON_RADIANS;
     }
 
-    return new GeoRect(toDegrees(minLat), toDegrees(maxLat), toDegrees(minLon), toDegrees(maxLon));
+    return new Rectangle(toDegrees(minLat), toDegrees(maxLat), toDegrees(minLon), toDegrees(maxLon));
   }
 
   /** maximum error from {@link #axisLat(double, double)}. logic must be prepared to handle this */
@@ -172,7 +170,7 @@ public class GeoRect {
   }
 
   /** Returns the bounding box over an array of polygons */
-  public static GeoRect fromPolygon(Polygon[] polygons) {
+  public static Rectangle fromPolygon(Polygon[] polygons) {
     // compute bounding box
     double minLat = Double.POSITIVE_INFINITY;
     double maxLat = Double.NEGATIVE_INFINITY;
@@ -186,6 +184,6 @@ public class GeoRect {
       maxLon = Math.max(polygons[i].maxLon, maxLon);
     }
 
-    return new GeoRect(minLat, maxLat, minLon, maxLon);
+    return new Rectangle(minLat, maxLat, minLon, maxLon);
   }
 }
