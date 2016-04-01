@@ -85,7 +85,7 @@ public class GeoTestUtil {
   }
   
   /** returns next pseudorandom polygon */
-  public static double[][] nextPolygon() {
+  public static Polygon nextPolygon() {
     if (random().nextBoolean()) {
       return surpriseMePolygon(null, null);
     }
@@ -101,7 +101,7 @@ public class GeoTestUtil {
   }
   
   /** returns next pseudorandom polygon, kinda close to {@code otherLatitude} and {@code otherLongitude} */
-  public static double[][] nextPolygonNear(double otherLatitude, double otherLongitude) {
+  public static Polygon nextPolygonNear(double otherLatitude, double otherLongitude) {
     if (random().nextBoolean()) {
       return surpriseMePolygon(otherLatitude, otherLongitude);
     }
@@ -133,7 +133,7 @@ public class GeoTestUtil {
     return new GeoRect(lat0, lat1, lon0, lon1);
   }
   
-  private static double[][] boxPolygon(GeoRect box) {
+  private static Polygon boxPolygon(GeoRect box) {
     assert box.crossesDateline() == false;
     final double[] polyLats = new double[5];
     final double[] polyLons = new double[5];
@@ -147,10 +147,10 @@ public class GeoTestUtil {
     polyLons[3] = box.maxLon;
     polyLats[4] = box.minLat;
     polyLons[4] = box.minLon;
-    return new double[][] { polyLats, polyLons };
+    return new Polygon(polyLats, polyLons);
   }
   
-  private static double[][] trianglePolygon(GeoRect box) {
+  private static Polygon trianglePolygon(GeoRect box) {
     assert box.crossesDateline() == false;
     final double[] polyLats = new double[4];
     final double[] polyLons = new double[4];
@@ -162,11 +162,10 @@ public class GeoTestUtil {
     polyLons[2] = box.maxLon;
     polyLats[3] = box.minLat;
     polyLons[3] = box.minLon;
-    return new double[][] { polyLats, polyLons };
+    return new Polygon(polyLats, polyLons);
   }
   
-  /** Returns {polyLats, polyLons} double[] array */
-  private static double[][] surpriseMePolygon(Double otherLatitude, Double otherLongitude) {
+  private static Polygon surpriseMePolygon(Double otherLatitude, Double otherLongitude) {
     // repeat until we get a poly that doesn't cross dateline:
     newPoly:
     while (true) {
@@ -232,7 +231,7 @@ public class GeoTestUtil {
         latsArray[i] = lats.get(i);
         lonsArray[i] = lons.get(i);
       }
-      return new double[][] {latsArray, lonsArray};
+      return new Polygon(latsArray, lonsArray);
     }
   }
   

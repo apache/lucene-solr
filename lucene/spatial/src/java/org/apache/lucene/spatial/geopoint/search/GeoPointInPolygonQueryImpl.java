@@ -16,9 +16,11 @@
  */
 package org.apache.lucene.spatial.geopoint.search;
 
+import java.util.Objects;
+
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
-import org.apache.lucene.spatial.util.GeoRelationUtils;
+import org.apache.lucene.spatial.util.Polygon;
 
 /** Package private implementation for the public facing GeoPointInPolygonQuery delegate class.
  *
@@ -26,11 +28,13 @@ import org.apache.lucene.spatial.util.GeoRelationUtils;
  */
 final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
   private final GeoPointInPolygonQuery polygonQuery;
+  private final Polygon[] polygons;
 
   GeoPointInPolygonQueryImpl(final String field, final TermEncoding termEncoding, final GeoPointInPolygonQuery q,
                              final double minLat, final double maxLat, final double minLon, final double maxLon) {
     super(field, termEncoding, minLat, maxLat, minLon, maxLon);
-    polygonQuery = q;
+    this.polygonQuery = Objects.requireNonNull(q);
+    this.polygons = Objects.requireNonNull(q.polygons);
   }
 
   @Override
@@ -54,14 +58,12 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
 
     @Override
     protected boolean cellCrosses(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return GeoRelationUtils.rectCrossesPolyApprox(minLat, maxLat, minLon, maxLon, polygonQuery.polyLats, polygonQuery.polyLons,
-                                                    polygonQuery.minLat, polygonQuery.maxLat, polygonQuery.minLon, polygonQuery.maxLon);
+      return Polygon.crosses(polygons, minLat, maxLat, minLon, maxLon);
     }
 
     @Override
     protected boolean cellWithin(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return GeoRelationUtils.rectWithinPolyApprox(minLat, maxLat, minLon, maxLon, polygonQuery.polyLats, polygonQuery.polyLons,
-                                                   polygonQuery.minLat, polygonQuery.maxLat, polygonQuery.minLon, polygonQuery.maxLon);
+      return Polygon.contains(polygons, minLat, maxLat, minLon, maxLon);
     }
 
     @Override
@@ -79,25 +81,25 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
      */
     @Override
     protected boolean postFilter(final double lat, final double lon) {
-      return GeoRelationUtils.pointInPolygon(polygonQuery.polyLats, polygonQuery.polyLons, lat, lon);
+      return Polygon.contains(polygons, lat, lon);
     }
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    if (!super.equals(o)) return false;
-
-    GeoPointInPolygonQueryImpl that = (GeoPointInPolygonQueryImpl) o;
-
-    return !(polygonQuery != null ? !polygonQuery.equals(that.polygonQuery) : that.polygonQuery != null);
+  public int hashCode() {
+    final int prime = 31;
+    int result = super.hashCode();
+    result = prime * result + polygonQuery.hashCode();
+    return result;
   }
 
   @Override
-  public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (polygonQuery != null ? polygonQuery.hashCode() : 0);
-    return result;
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (!super.equals(obj)) return false;
+    if (getClass() != obj.getClass()) return false;
+    GeoPointInPolygonQueryImpl other = (GeoPointInPolygonQueryImpl) obj;
+    if (!polygonQuery.equals(other.polygonQuery)) return false;
+    return true;
   }
 }

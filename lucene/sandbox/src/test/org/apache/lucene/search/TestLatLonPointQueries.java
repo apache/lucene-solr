@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
+import org.apache.lucene.spatial.util.Polygon;
 
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
 
@@ -38,8 +39,8 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Query newPolygonQuery(String field, double[] lats, double[] lons) {
-    return LatLonPoint.newPolygonQuery(field, lats, lons);
+  protected Query newPolygonQuery(String field, Polygon... polygons) {
+    return LatLonPoint.newPolygonQuery(field, polygons);
   }
 
   @Override

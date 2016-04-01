@@ -29,6 +29,7 @@ import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.spatial.util.Polygon;
 
 /** 
  * An indexed location field.
@@ -302,18 +303,14 @@ public class LatLonPoint extends Field {
   /** 
    * Create a query for matching a polygon.
    * <p>
-   * The supplied {@code polyLats}/{@code polyLons} must be clockwise or counter-clockwise.
+   * The supplied {@code polygon} must be clockwise or counter-clockwise.
    * @param field field name. must not be null.
-   * @param polyLats latitude values for points of the polygon: must be within standard +/-90 coordinate bounds.
-   * @param polyLons longitude values for points of the polygon: must be within standard +/-180 coordinate bounds.
+   * @param polygons array of polygons. must not be null or empty
    * @return query matching points within this polygon
-   * @throws IllegalArgumentException if {@code field} is null, {@code polyLats} is null or has invalid coordinates, 
-   *                                  {@code polyLons} is null or has invalid coordinates, if {@code polyLats} has a different
-   *                                  length than {@code polyLons}, if the polygon has less than 4 points, or if polygon is 
-   *                                  not closed (first and last points should be the same)
+   * @throws IllegalArgumentException if {@code field} is null, {@code polygons} is null or empty
    */
-  public static Query newPolygonQuery(String field, double[] polyLats, double[] polyLons) {
-    return new LatLonPointInPolygonQuery(field, polyLats, polyLons);
+  public static Query newPolygonQuery(String field, Polygon... polygons) {
+    return new LatLonPointInPolygonQuery(field, polygons);
   }
 
   /**
