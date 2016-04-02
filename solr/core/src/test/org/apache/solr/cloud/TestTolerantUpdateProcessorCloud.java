@@ -206,11 +206,12 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
   
   @AfterClass
   public static void afterClass() throws IOException {
-   close(S_ONE_LEADER_CLIENT);
-   close(S_TWO_LEADER_CLIENT);
-   close(S_ONE_NON_LEADER_CLIENT);
-   close(S_TWO_NON_LEADER_CLIENT);
-   close(NO_COLLECTION_CLIENT);
+   close(S_ONE_LEADER_CLIENT); S_ONE_LEADER_CLIENT = null;
+   close(S_TWO_LEADER_CLIENT); S_TWO_LEADER_CLIENT = null;
+   close(S_ONE_NON_LEADER_CLIENT); S_ONE_NON_LEADER_CLIENT = null;
+   close(S_TWO_NON_LEADER_CLIENT); S_TWO_NON_LEADER_CLIENT = null;
+   close(NO_COLLECTION_CLIENT); NO_COLLECTION_CLIENT = null;
+   close(CLOUD_CLIENT); CLOUD_CLIENT = null;
   }
   
   private static void close(SolrClient client) throws IOException {

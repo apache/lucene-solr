@@ -91,12 +91,12 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   
   @AfterClass
   private static void afterClass() throws Exception {
-    CLOUD_CLIENT.close();
-    S_ONE_LEADER_CLIENT.close();
-    S_TWO_LEADER_CLIENT.close();
-    S_ONE_NON_LEADER_CLIENT.close();
-    S_TWO_NON_LEADER_CLIENT.close();
-    NO_COLLECTION_CLIENT.close();
+    CLOUD_CLIENT.close(); CLOUD_CLIENT = null;
+    S_ONE_LEADER_CLIENT.close(); S_ONE_LEADER_CLIENT = null;
+    S_TWO_LEADER_CLIENT.close(); S_TWO_LEADER_CLIENT = null;
+    S_ONE_NON_LEADER_CLIENT.close(); S_ONE_NON_LEADER_CLIENT = null;
+    S_TWO_NON_LEADER_CLIENT.close(); S_TWO_NON_LEADER_CLIENT = null;
+    NO_COLLECTION_CLIENT.close(); NO_COLLECTION_CLIENT = null;
   }
   
   @BeforeClass

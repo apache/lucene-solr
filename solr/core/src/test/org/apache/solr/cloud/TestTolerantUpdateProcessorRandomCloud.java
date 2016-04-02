@@ -138,6 +138,11 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
         client.close();
       }
     }
+    NODE_CLIENTS = null;
+    if (CLOUD_CLIENT != null) {
+      CLOUD_CLIENT.close();
+    }
+    CLOUD_CLIENT = null;
   }
   
   public void testRandomUpdates() throws Exception {
