@@ -97,10 +97,10 @@ public class LatLonPoint extends Field {
   }
 
   private static final int BITS = 32;
-  private static final double LONGITUDE_ENCODE = (0x1L<<BITS)/360.0D;
-  private static final double LONGITUDE_DECODE = 1/LONGITUDE_ENCODE;
-  private static final double LATITUDE_ENCODE  = (0x1L<<BITS)/180.0D;
-  private static final double LATITUDE_DECODE  =  1/LATITUDE_ENCODE;
+  private static final double LONGITUDE_MUL = (0x1L<<BITS)/360.0D;
+  private static final double LONGITUDE_DECODE = 1/LONGITUDE_MUL;
+  private static final double LATITUDE_MUL  = (0x1L<<BITS)/180.0D;
+  private static final double LATITUDE_DECODE  = 1/LATITUDE_MUL;
   
   @Override
   public String toString() {
@@ -132,7 +132,7 @@ public class LatLonPoint extends Field {
   // public helper methods (e.g. for queries)
 
   /** 
-   * Quantizes double (64 bit) latitude into 32 bits 
+   * Quantizes double (64 bit) latitude into 32 bits (rounding down: in the direction of -90)
    * @param latitude latitude value: must be within standard +/-90 coordinate bounds.
    * @return encoded value as a 32-bit {@code int}
    * @throws IllegalArgumentException if latitude is out of bounds
@@ -143,11 +143,26 @@ public class LatLonPoint extends Field {
     if (latitude == 90.0D) {
       latitude = Math.nextDown(latitude);
     }
-    return (int) Math.floor(latitude * LATITUDE_ENCODE);
+    return (int) Math.floor(latitude / LATITUDE_DECODE);
+  }
+  
+  /** 
+   * Quantizes double (64 bit) latitude into 32 bits (rounding up: in the direction of +90)
+   * @param latitude latitude value: must be within standard +/-90 coordinate bounds.
+   * @return encoded value as a 32-bit {@code int}
+   * @throws IllegalArgumentException if latitude is out of bounds
+   */
+  public static int encodeLatitudeCeil(double latitude) {
+    GeoUtils.checkLatitude(latitude);
+    // the maximum possible value cannot be encoded without overflow
+    if (latitude == 90.0D) {
+      latitude = Math.nextDown(latitude);
+    }
+    return (int) Math.ceil(latitude / LATITUDE_DECODE);
   }
 
   /** 
-   * Quantizes double (64 bit) longitude into 32 bits 
+   * Quantizes double (64 bit) longitude into 32 bits (rounding down: in the direction of -180)
    * @param longitude longitude value: must be within standard +/-180 coordinate bounds.
    * @return encoded value as a 32-bit {@code int}
    * @throws IllegalArgumentException if longitude is out of bounds
@@ -158,7 +173,22 @@ public class LatLonPoint extends Field {
     if (longitude == 180.0D) {
       longitude = Math.nextDown(longitude);
     }
-    return (int) Math.floor(longitude * LONGITUDE_ENCODE);
+    return (int) Math.floor(longitude / LONGITUDE_DECODE);
+  }
+  
+  /** 
+   * Quantizes double (64 bit) longitude into 32 bits (rounding up: in the direction of +180)
+   * @param longitude longitude value: must be within standard +/-180 coordinate bounds.
+   * @return encoded value as a 32-bit {@code int}
+   * @throws IllegalArgumentException if longitude is out of bounds
+   */
+  public static int encodeLongitudeCeil(double longitude) {
+    GeoUtils.checkLongitude(longitude);
+    // the maximum possible value cannot be encoded without overflow
+    if (longitude == 180.0D) {
+      longitude = Math.nextDown(longitude);
+    }
+    return (int) Math.ceil(longitude / LONGITUDE_DECODE);
   }
 
   /** 
@@ -210,6 +240,14 @@ public class LatLonPoint extends Field {
     NumericUtils.intToSortableBytes(encodeLongitude(longitude), bytes, Integer.BYTES);
     return bytes;
   }
+  
+  /** sugar encodes a single point as a byte array, rounding values up */
+  private static byte[] encodeCeil(double latitude, double longitude) {
+    byte[] bytes = new byte[2 * Integer.BYTES];
+    NumericUtils.intToSortableBytes(encodeLatitudeCeil(latitude), bytes, 0);
+    NumericUtils.intToSortableBytes(encodeLongitudeCeil(longitude), bytes, Integer.BYTES);
+    return bytes;
+  }
 
   /** helper: checks a fieldinfo and throws exception if its definitely not a LatLonPoint */
   static void checkCompatible(FieldInfo fieldInfo) {
@@ -246,7 +284,7 @@ public class LatLonPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null, or the box has invalid coordinates.
    */
   public static Query newBoxQuery(String field, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
-    byte[] lower = encode(minLatitude, minLongitude);
+    byte[] lower = encodeCeil(minLatitude, minLongitude);
     byte[] upper = encode(maxLatitude, maxLongitude);
     // Crosses date line: we just rewrite into OR of two bboxes, with longitude as an open range:
     if (maxLongitude < minLongitude) {

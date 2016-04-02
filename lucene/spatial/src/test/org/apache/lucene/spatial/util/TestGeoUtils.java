@@ -101,21 +101,6 @@ public class TestGeoUtils extends LuceneTestCase {
     }
   }
   
-  /** make sure values always go down: this is important for edge case consistency */
-  public void testEncodeDecodeRoundsDown() throws Exception {
-    int iters = atLeast(1000);
-    for(int iter=0;iter<iters;iter++) {
-      double lat = -90 + 180.0 * random().nextDouble();
-      double lon = -180 + 360.0 * random().nextDouble();
-      
-      long enc = GeoEncodingUtils.mortonHash(lat, lon);
-      double latEnc = GeoEncodingUtils.mortonUnhashLat(enc);
-      double lonEnc = GeoEncodingUtils.mortonUnhashLon(enc);
-      assertTrue(latEnc <= lat);
-      assertTrue(lonEnc <= lon);
-    }
-  }
-
   public void testScaleUnscaleIsStable() throws Exception {
     int iters = atLeast(1000);
     boolean small = random().nextBoolean();

@@ -27,7 +27,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
-import org.apache.lucene.spatial.util.GeoEncodingUtils;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
@@ -44,6 +43,7 @@ abstract class GeoPointMultiTermQuery extends MultiTermQuery {
   protected final double minLat;
   protected final double maxLon;
   protected final double maxLat;
+
   protected final short maxShift;
   protected final TermEncoding termEncoding;
   protected final CellComparator cellComparator;
@@ -60,12 +60,10 @@ abstract class GeoPointMultiTermQuery extends MultiTermQuery {
     GeoUtils.checkLongitude(minLon);
     GeoUtils.checkLongitude(maxLon);
 
-    final long minHash = GeoEncodingUtils.mortonHash(minLat, minLon);
-    final long maxHash = GeoEncodingUtils.mortonHash(maxLat, maxLon);
-    this.minLat = GeoEncodingUtils.mortonUnhashLat(minHash);
-    this.maxLat = GeoEncodingUtils.mortonUnhashLat(maxHash);
-    this.minLon = GeoEncodingUtils.mortonUnhashLon(minHash);
-    this.maxLon = GeoEncodingUtils.mortonUnhashLon(maxHash);
+    this.minLat = minLat;
+    this.maxLat = maxLat;
+    this.minLon = minLon;
+    this.maxLon = maxLon;
 
     this.maxShift = computeMaxShift();
     this.termEncoding = termEncoding;
