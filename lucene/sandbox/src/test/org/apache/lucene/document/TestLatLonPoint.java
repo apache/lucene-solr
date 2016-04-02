@@ -16,7 +16,7 @@
  */
 package org.apache.lucene.document;
 
-import org.apache.lucene.spatial.util.GeoTestUtil;
+import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** Simple tests for {@link LatLonPoint} */
