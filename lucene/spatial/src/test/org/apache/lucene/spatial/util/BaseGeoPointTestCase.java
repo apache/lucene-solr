@@ -538,8 +538,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     int iters = atLeast(25);
     for (int iter=0;iter<iters;iter++) {
       GeoRect rect = randomRect(small);
-      // TODO: why does this test need this quantization leniency? something is not right
-      rect = new GeoRect(quantizeLat(rect.minLat), quantizeLat(rect.maxLat), quantizeLon(rect.minLon), quantizeLon(rect.maxLon));
 
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter + " rect=" + rect);
@@ -823,8 +821,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       }
       
       GeoRect rect = randomRect(small);
-      // TODO: why does this test need this quantization leniency? something is not right
-      rect = new GeoRect(quantizeLat(rect.minLat), quantizeLat(rect.maxLat), quantizeLon(rect.minLon), quantizeLon(rect.maxLon));
 
       Query query = newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
 
@@ -1185,6 +1181,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         break;
       }
     }
+    // this test works in quantized space: for testing inclusiveness of exact edges it must be aware of index-time quantization!
+    rect = new GeoRect(quantizeLat(rect.minLat), quantizeLat(rect.maxLat), quantizeLon(rect.minLon), quantizeLon(rect.maxLon));
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig();
     // Else seeds may not reproduce:
@@ -1219,7 +1217,29 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     }
     IndexReader r = w.getReader();
     IndexSearcher s = newSearcher(r, false);
+    // exact edge cases
     assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon)));
+    
+    // expand 1 ulp in each direction
+    assumeFalse("can't expand box, its too big already", rect.minLat ==  -90);
+    assumeFalse("can't expand box, its too big already", rect.maxLat ==   90);
+    assumeFalse("can't expand box, its too big already", rect.minLon == -180);
+    assumeFalse("can't expand box, its too big already", rect.maxLon ==  180);
+    assertEquals(8, s.count(newRectQuery(FIELD_NAME, Math.nextDown(rect.minLat), rect.maxLat, rect.minLon, rect.maxLon)));
+    assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, Math.nextUp(rect.maxLat), rect.minLon, rect.maxLon)));
+    assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, Math.nextDown(rect.minLon), rect.maxLon)));
+    assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, Math.nextUp(rect.maxLon))));
+    
+    // now shrink 1 ulp in each direction: it should not include bogus stuff
+    assumeFalse("can't shrink box, its too small already", rect.minLat ==   90);
+    assumeFalse("can't shrink box, its too small already", rect.maxLat ==  -90);
+    assumeFalse("can't shrink box, its too small already", rect.minLon ==  180);
+    assumeFalse("can't shrink box, its too small already", rect.maxLon == -180);
+    // note we put points on "sides" not just "corners" so we just shrink all 4 at once for now: it should exclude all points!
+    assertEquals(0, s.count(newRectQuery(FIELD_NAME, Math.nextUp(rect.minLat), 
+                                                     Math.nextDown(rect.maxLat), 
+                                                     Math.nextUp(rect.minLon), 
+                                                     Math.nextDown(rect.maxLon))));
     r.close();
     w.close();
     dir.close();
@@ -1356,6 +1376,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   /** return topdocs over a small set of points in field "point" */
   private TopDocs searchSmallSet(Query query, int size) throws Exception {
     // this is a simple systematic test, indexing these points
+    // TODO: fragile: does not understand quantization in any way yet uses extremely high precision!
     double[][] pts = new double[][] {
         { 32.763420,          -96.774             },
         { 32.7559529921407,   -96.7759895324707   },
@@ -1417,7 +1438,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   }
   
   public void testSmallSetRect() throws Exception {
-    TopDocs td = searchSmallSet(newRectQuery("point", 32.778650, 32.778950, -96.7772, -96.77690000), 5);
+    TopDocs td = searchSmallSet(newRectQuery("point", 32.778, 32.779, -96.778, -96.777), 5);
     assertEquals(4, td.totalHits);
   }
 
@@ -1427,7 +1448,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   }
 
   public void testSmallSetMultiValued() throws Exception {
-    TopDocs td = searchSmallSet(newRectQuery("point", 32.7559529921407, 32.7756745755423, -96.4538113027811, -96.7706036567688), 20);
+    TopDocs td = searchSmallSet(newRectQuery("point", 32.755, 32.776, -96.454, -96.770), 20);
     // 3 single valued docs + 2 multi-valued docs
     assertEquals(5, td.totalHits);
   }

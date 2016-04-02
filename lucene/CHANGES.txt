@@ -57,6 +57,9 @@ Bug Fixes
 
 * LUCENE-7127: Fix corner case bugs in GeoPointDistanceQuery. (Robert Muir)
 
+* LUCENE-7166: Fix corner case bugs in LatLonPoint/GeoPointField bounding box
+  queries. (Robert Muir)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
