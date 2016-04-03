@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.experimental
  */
-public class GeoStandardCircle extends GeoBaseCircle {
+class GeoStandardCircle extends GeoBaseCircle {
   /** Center of circle */
   protected final GeoPoint center;
   /** Cutoff angle of circle (not quite the same thing as radius) */

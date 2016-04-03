@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class GeoLatitudeZone extends GeoBaseBBox {
+class GeoLatitudeZone extends GeoBaseBBox {
   /** The top latitude of the zone */
   protected final double topLat;
   /** The bottom latitude of the zone */

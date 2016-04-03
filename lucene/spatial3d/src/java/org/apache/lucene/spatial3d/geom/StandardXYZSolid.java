@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class StandardXYZSolid extends BaseXYZSolid {
+class StandardXYZSolid extends BaseXYZSolid {
 
   /** Whole world? */
   protected final boolean isWholeWorld;

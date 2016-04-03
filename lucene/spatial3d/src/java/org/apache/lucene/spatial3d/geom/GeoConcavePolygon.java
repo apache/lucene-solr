@@ -28,9 +28,9 @@ import java.util.Map;
  * a maximum extent larger than PI.  Violating either one of these limits will
  * cause the logic to fail.
  *
- * @lucene.experimental
+ * @lucene.internal
  */
-public class GeoConcavePolygon extends GeoBasePolygon {
+class GeoConcavePolygon extends GeoBasePolygon {
   /** The list of polygon points */
   protected final List<GeoPoint> points;
   /** A bitset describing, for each edge, whether it is internal or not */

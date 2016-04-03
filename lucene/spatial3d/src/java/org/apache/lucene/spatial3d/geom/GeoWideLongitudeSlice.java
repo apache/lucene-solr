@@ -22,7 +22,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class GeoWideLongitudeSlice extends GeoBaseBBox {
+class GeoWideLongitudeSlice extends GeoBaseBBox {
   /** The left longitude */
   protected final double leftLon;
   /** The right longitude */

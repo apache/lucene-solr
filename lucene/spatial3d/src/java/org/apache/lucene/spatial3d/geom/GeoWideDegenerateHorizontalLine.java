@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
+class GeoWideDegenerateHorizontalLine extends GeoBaseBBox {
   /** The latitude of the line */
   protected final double latitude;
   /** The left longitude cutoff of the line */

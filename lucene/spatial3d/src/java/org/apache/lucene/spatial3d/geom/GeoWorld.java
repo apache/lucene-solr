@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class GeoWorld extends GeoBaseBBox {
+class GeoWorld extends GeoBaseBBox {
   /** No points on the edge of the shape */
   protected final static GeoPoint[] edgePoints = new GeoPoint[0];
   /** Point in the middle of the world */

@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class dXdYdZSolid extends BaseXYZSolid {
+class dXdYdZSolid extends BaseXYZSolid {
 
   /** On surface? */
   protected final boolean isOnSurface;
