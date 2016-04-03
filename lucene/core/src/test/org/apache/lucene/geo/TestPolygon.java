@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.util;
+package org.apache.lucene.geo;
 
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.util.LuceneTestCase;
