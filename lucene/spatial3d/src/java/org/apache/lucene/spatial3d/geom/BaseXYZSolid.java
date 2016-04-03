@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public abstract class BaseXYZSolid extends BasePlanetObject implements XYZSolid {
+abstract class BaseXYZSolid extends BasePlanetObject implements XYZSolid {
 
   /** Unit vector in x */
   protected static final Vector xUnitVector = new Vector(1.0, 0.0, 0.0);

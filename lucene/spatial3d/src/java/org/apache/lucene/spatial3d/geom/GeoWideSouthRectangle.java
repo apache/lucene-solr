@@ -22,7 +22,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class GeoWideSouthRectangle extends GeoBaseBBox {
+class GeoWideSouthRectangle extends GeoBaseBBox {
   /** Top latitude of rect */
   protected final double topLat;
   /** Left longitude of rect */

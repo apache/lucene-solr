@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.experimental
  */
-public abstract class GeoBaseCircle extends GeoBaseDistanceShape implements GeoCircle {
+abstract class GeoBaseCircle extends GeoBaseDistanceShape implements GeoCircle {
 
   /** Constructor.
    *@param planetModel is the planet model to use.

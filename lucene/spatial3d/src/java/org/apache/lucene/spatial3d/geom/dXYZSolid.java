@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class dXYZSolid extends BaseXYZSolid {
+class dXYZSolid extends BaseXYZSolid {
 
   /** X plane */
   protected final Plane xPlane;

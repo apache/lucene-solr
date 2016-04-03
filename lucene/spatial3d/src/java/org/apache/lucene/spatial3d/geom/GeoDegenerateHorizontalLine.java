@@ -23,7 +23,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class GeoDegenerateHorizontalLine extends GeoBaseBBox {
+class GeoDegenerateHorizontalLine extends GeoBaseBBox {
   /** Latitude of horizontal line */
   protected final double latitude;
   /** Left bounding longitude of line */
