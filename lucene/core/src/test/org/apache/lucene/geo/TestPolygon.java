@@ -145,4 +145,112 @@ public class TestPolygon extends LuceneTestCase {
       }
     }
   }
+  
+  /** If polygon.contains(box) returns true, then any point in that box should return true as well */
+  public void testContainsRandom() throws Exception {
+    for (int i = 0; i < 1000; i++) {
+      Polygon polygon = nextPolygon();
+      
+      for (int j = 0; j < 100; j++) {
+        Rectangle rectangle = GeoTestUtil.nextSimpleBox();
+        // allowed to conservatively return false
+        if (polygon.contains(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon)) {
+          for (int k = 0; k < 1000; k++) {
+            // this tests in our range but sometimes outside! so we have to double-check its really in other box
+            double latitude = nextLatitudeAround(rectangle.minLat, rectangle.maxLat);
+            double longitude = nextLongitudeAround(rectangle.minLon, rectangle.maxLon);
+            // check for sure its in our box
+            if (latitude >= rectangle.minLat && latitude <= rectangle.maxLat && longitude >= rectangle.minLon && longitude <= rectangle.maxLon) {
+              assertTrue(polygon.contains(latitude, longitude));
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  /** If polygon.contains(box) returns true, then any point in that box should return true as well */
+  // different from testContainsRandom in that its not a purely random test. we iterate the vertices of the polygon
+  // and generate boxes near each one of those to try to be more efficient.
+  public void testContainsEdgeCases() throws Exception {
+    for (int i = 0; i < 1000; i++) {
+      Polygon polygon = nextPolygon();
+      
+      double polyLats[] = polygon.getPolyLats();
+      double polyLons[] = polygon.getPolyLons();
+      
+      for (int vertex = 0; vertex < polyLats.length; vertex++) {
+        for (int j = 0; j < 10; j++) {
+          Rectangle rectangle = GeoTestUtil.nextSimpleBoxNear(polyLats[vertex], polyLons[vertex]);
+          // allowed to conservatively return false
+          if (polygon.contains(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon)) {
+            for (int k = 0; k < 100; k++) {
+              // this tests in our range but sometimes outside! so we have to double-check its really in other box
+              double latitude = nextLatitudeAround(rectangle.minLat, rectangle.maxLat);
+              double longitude = nextLongitudeAround(rectangle.minLon, rectangle.maxLon);
+              // check for sure its in our box
+              if (latitude >= rectangle.minLat && latitude <= rectangle.maxLat && longitude >= rectangle.minLon && longitude <= rectangle.maxLon) {
+                assertTrue(polygon.contains(latitude, longitude));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  /** If polygon.intersects(box) returns false, then any point in that box should return false as well */
+  public void testIntersectRandom() {
+    for (int i = 0; i < 100; i++) {
+      Polygon polygon = nextPolygon();
+      
+      for (int j = 0; j < 100; j++) {
+        Rectangle rectangle = GeoTestUtil.nextSimpleBox();
+        // allowed to conservatively return true.
+        if (polygon.contains(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == false &&
+            polygon.crosses(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == false) {
+          for (int k = 0; k < 1000; k++) {
+            // this tests in our range but sometimes outside! so we have to double-check its really in other box
+            double latitude = nextLatitudeAround(rectangle.minLat, rectangle.maxLat);
+            double longitude = nextLongitudeAround(rectangle.minLon, rectangle.maxLon);
+            // check for sure its in our box
+            if (latitude >= rectangle.minLat && latitude <= rectangle.maxLat && longitude >= rectangle.minLon && longitude <= rectangle.maxLon) {
+              assertFalse(polygon.contains(latitude, longitude));
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  /** If polygon.intersects(box) returns false, then any point in that box should return false as well */
+  // different from testIntersectsRandom in that its not a purely random test. we iterate the vertices of the polygon
+  // and generate boxes near each one of those to try to be more efficient.
+  public void testIntersectEdgeCases() {
+    for (int i = 0; i < 100; i++) {
+      Polygon polygon = nextPolygon();
+
+      double polyLats[] = polygon.getPolyLats();
+      double polyLons[] = polygon.getPolyLons();
+
+      for (int vertex = 0; vertex < polyLats.length; vertex++) {
+        for (int j = 0; j < 10; j++) {
+          Rectangle rectangle = GeoTestUtil.nextSimpleBoxNear(polyLats[vertex], polyLons[vertex]);
+          // allowed to conservatively return true.
+          if (polygon.contains(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == false &&
+              polygon.crosses(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == false) {
+            for (int k = 0; k < 100; k++) {
+              // this tests in our range but sometimes outside! so we have to double-check its really in other box
+              double latitude = nextLatitudeAround(rectangle.minLat, rectangle.maxLat);
+              double longitude = nextLongitudeAround(rectangle.minLon, rectangle.maxLon);
+              // check for sure its in our box
+              if (latitude >= rectangle.minLat && latitude <= rectangle.maxLat && longitude >= rectangle.minLon && longitude <= rectangle.maxLon) {
+                assertFalse(polygon.contains(latitude, longitude));
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }
