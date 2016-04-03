@@ -75,6 +75,11 @@ public class GeoTestUtil {
   public static Rectangle nextBox() {
     return nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), true);
   }
+  
+  /** returns next pseudorandom box: will not cross the 180th meridian */
+  public static Rectangle nextSimpleBox() {
+    return nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), false);
+  }
 
   /** returns next pseudorandom box, can cross the 180th meridian, kinda close to {@code otherLatitude} and {@code otherLongitude} */
   public static Rectangle nextBoxNear(double otherLatitude, double otherLongitude) {
@@ -82,6 +87,14 @@ public class GeoTestUtil {
     GeoUtils.checkLongitude(otherLongitude);
     return nextBoxInternal(nextLatitudeNear(otherLatitude), nextLatitudeNear(otherLatitude),
                            nextLongitudeNear(otherLongitude), nextLongitudeNear(otherLongitude), true);
+  }
+  
+  /** returns next pseudorandom box, will not cross the 180th meridian, kinda close to {@code otherLatitude} and {@code otherLongitude} */
+  public static Rectangle nextSimpleBoxNear(double otherLatitude, double otherLongitude) {
+    GeoUtils.checkLongitude(otherLongitude);
+    GeoUtils.checkLongitude(otherLongitude);
+    return nextBoxInternal(nextLatitudeNear(otherLatitude), nextLatitudeNear(otherLatitude),
+                           nextLongitudeNear(otherLongitude), nextLongitudeNear(otherLongitude), false);
   }
 
   /** returns next pseudorandom polygon */
