@@ -55,8 +55,7 @@ final class LatLonPointInPolygonQuery extends Query {
   final String field;
   final Polygon[] polygons;
 
-  /** The lats/lons must be clockwise or counter-clockwise. */
-  public LatLonPointInPolygonQuery(String field, Polygon[] polygons) {
+  LatLonPointInPolygonQuery(String field, Polygon[] polygons) {
     if (field == null) {
       throw new IllegalArgumentException("field must not be null");
     }
