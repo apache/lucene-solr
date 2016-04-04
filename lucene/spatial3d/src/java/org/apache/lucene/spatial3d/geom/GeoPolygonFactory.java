@@ -675,11 +675,21 @@ public class GeoPolygonFactory {
   /** Class representing a single (unused) edge.
    */
   protected static class Edge {
+    /** Plane */
     public final SidedPlane plane;
+    /** Start point */
     public final GeoPoint startPoint;
+    /** End point */
     public final GeoPoint endPoint;
+    /** Internal edge flag */
     public final boolean isInternal;
-    
+
+    /** Constructor.
+      * @param startPoint the edge start point
+      * @param endPoint the edge end point
+      * @param plane the edge plane
+      * @param isInternal true if internal edge
+      */
     public Edge(final GeoPoint startPoint, final GeoPoint endPoint, final SidedPlane plane, final boolean isInternal) {
       this.startPoint = startPoint;
       this.endPoint = endPoint;
@@ -701,10 +711,16 @@ public class GeoPolygonFactory {
   /** Class representing an iterator over an EdgeBuffer.
    */
   protected static class EdgeBufferIterator implements Iterator<Edge> {
+    /** Edge buffer */
     protected final EdgeBuffer edgeBuffer;
+    /** First edge */
     protected final Edge firstEdge;
+    /** Current edge */
     protected Edge currentEdge;
     
+    /** Constructor.
+      * @param edgeBuffer the edge buffer
+      */
     public EdgeBufferIterator(final EdgeBuffer edgeBuffer) {
       this.edgeBuffer = edgeBuffer;
       this.currentEdge = edgeBuffer.pickOne();
@@ -737,9 +753,13 @@ public class GeoPolygonFactory {
   /** Class representing a pool of unused edges, all linked together by vertices.
    */
   protected static class EdgeBuffer {
+    /** Starting edge */
     protected Edge oneEdge;
+    /** Full set of edges */
     protected final Set<Edge> edges = new HashSet<>();
+    /** Map to previous edge */
     protected final Map<Edge, Edge> previousEdges = new HashMap<>();
+    /** Map to next edge */
     protected final Map<Edge, Edge> nextEdges = new HashMap<>();
 
     /** Constructor.
