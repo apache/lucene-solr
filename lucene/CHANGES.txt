@@ -56,6 +56,9 @@ Optimizations
   multiple polygons and holes, with memory usage independent of
   polygon complexity. (Karl Wright, Mike McCandless, Robert Muir)
 
+* LUCENE-7159: Speed up LatLonPoint polygon performance for complex
+  polygons. (Robert Muir)
+
 Bug Fixes
 
 * LUCENE-7127: Fix corner case bugs in GeoPointDistanceQuery. (Robert Muir)

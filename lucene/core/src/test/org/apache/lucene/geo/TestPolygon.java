@@ -17,6 +17,7 @@
 package org.apache.lucene.geo;
 
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.LuceneTestCase;
 
 import static org.apache.lucene.geo.GeoTestUtil.nextLatitude;
@@ -80,21 +81,15 @@ public class TestPolygon extends LuceneTestCase {
     assertTrue(Polygon.contains(polygons, -25, 25)); // on the mainland
     assertFalse(Polygon.contains(polygons, -51, 51)); // in the ocean
     
-    // contains(box): this can conservatively return false
-    assertTrue(Polygon.contains(polygons, -2, 2, -2, 2)); // on the island
-    assertFalse(Polygon.contains(polygons, 6, 7, 6, 7)); // in the hole
-    assertTrue(Polygon.contains(polygons, 24, 25, 24, 25)); // on the mainland
-    assertFalse(Polygon.contains(polygons, 51, 52, 51, 52)); // in the ocean
-    assertFalse(Polygon.contains(polygons, -60, 60, -60, 60)); // enclosing us completely
-    assertFalse(Polygon.contains(polygons, 49, 51, 49, 51)); // overlapping the mainland
-    assertFalse(Polygon.contains(polygons, 9, 11, 9, 11)); // overlapping the hole
-    assertFalse(Polygon.contains(polygons, 5, 6, 5, 6)); // overlapping the island
-
-    // crosses(box): this can conservatively return true
-    assertTrue(Polygon.crosses(polygons, -60, 60, -60, 60)); // enclosing us completely
-    assertTrue(Polygon.crosses(polygons, 49, 51, 49, 51)); // overlapping the mainland and ocean
-    assertTrue(Polygon.crosses(polygons, 9, 11, 9, 11)); // overlapping the hole and mainland
-    assertTrue(Polygon.crosses(polygons, 5, 6, 5, 6)); // overlapping the island
+    // relate(box): this can conservatively return CELL_CROSSES_QUERY
+    assertEquals(Relation.CELL_INSIDE_QUERY, Polygon.relate(polygons, -2, 2, -2, 2)); // on the island
+    assertEquals(Relation.CELL_OUTSIDE_QUERY, Polygon.relate(polygons, 6, 7, 6, 7)); // in the hole
+    assertEquals(Relation.CELL_INSIDE_QUERY, Polygon.relate(polygons, 24, 25, 24, 25)); // on the mainland
+    assertEquals(Relation.CELL_OUTSIDE_QUERY, Polygon.relate(polygons, 51, 52, 51, 52)); // in the ocean
+    assertEquals(Relation.CELL_CROSSES_QUERY, Polygon.relate(polygons, -60, 60, -60, 60)); // enclosing us completely
+    assertEquals(Relation.CELL_CROSSES_QUERY, Polygon.relate(polygons, 49, 51, 49, 51)); // overlapping the mainland
+    assertEquals(Relation.CELL_CROSSES_QUERY, Polygon.relate(polygons, 9, 11, 9, 11)); // overlapping the hole
+    assertEquals(Relation.CELL_CROSSES_QUERY, Polygon.relate(polygons, 5, 6, 5, 6)); // overlapping the island
   }
   
   public void testPacMan() throws Exception {
@@ -110,8 +105,7 @@ public class TestPolygon extends LuceneTestCase {
 
     // test cell crossing poly
     Polygon polygon = new Polygon(py, px);
-    assertTrue(polygon.crosses(yMin, yMax, xMin, xMax));
-    assertFalse(polygon.contains(yMin, yMax, xMin, xMax));
+    assertEquals(Relation.CELL_CROSSES_QUERY, polygon.relate(yMin, yMax, xMin, xMax));
   }
   
   public void testBoundingBox() throws Exception {
@@ -154,7 +148,7 @@ public class TestPolygon extends LuceneTestCase {
       for (int j = 0; j < 100; j++) {
         Rectangle rectangle = GeoTestUtil.nextSimpleBox();
         // allowed to conservatively return false
-        if (polygon.contains(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon)) {
+        if (polygon.relate(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == Relation.CELL_INSIDE_QUERY) {
           for (int k = 0; k < 1000; k++) {
             // this tests in our range but sometimes outside! so we have to double-check its really in other box
             double latitude = nextLatitudeAround(rectangle.minLat, rectangle.maxLat);
@@ -183,7 +177,7 @@ public class TestPolygon extends LuceneTestCase {
         for (int j = 0; j < 10; j++) {
           Rectangle rectangle = GeoTestUtil.nextSimpleBoxNear(polyLats[vertex], polyLons[vertex]);
           // allowed to conservatively return false
-          if (polygon.contains(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon)) {
+          if (polygon.relate(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == Relation.CELL_INSIDE_QUERY) {
             for (int k = 0; k < 100; k++) {
               // this tests in our range but sometimes outside! so we have to double-check its really in other box
               double latitude = nextLatitudeAround(rectangle.minLat, rectangle.maxLat);
@@ -207,8 +201,7 @@ public class TestPolygon extends LuceneTestCase {
       for (int j = 0; j < 100; j++) {
         Rectangle rectangle = GeoTestUtil.nextSimpleBox();
         // allowed to conservatively return true.
-        if (polygon.contains(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == false &&
-            polygon.crosses(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == false) {
+        if (polygon.relate(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == Relation.CELL_OUTSIDE_QUERY) {
           for (int k = 0; k < 1000; k++) {
             // this tests in our range but sometimes outside! so we have to double-check its really in other box
             double latitude = nextLatitudeAround(rectangle.minLat, rectangle.maxLat);
@@ -237,8 +230,7 @@ public class TestPolygon extends LuceneTestCase {
         for (int j = 0; j < 10; j++) {
           Rectangle rectangle = GeoTestUtil.nextSimpleBoxNear(polyLats[vertex], polyLons[vertex]);
           // allowed to conservatively return true.
-          if (polygon.contains(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == false &&
-              polygon.crosses(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == false) {
+          if (polygon.relate(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon) == Relation.CELL_OUTSIDE_QUERY) {
             for (int k = 0; k < 100; k++) {
               // this tests in our range but sometimes outside! so we have to double-check its really in other box
               double latitude = nextLatitudeAround(rectangle.minLat, rectangle.maxLat);

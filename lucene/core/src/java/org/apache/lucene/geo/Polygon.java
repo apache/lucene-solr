@@ -18,6 +18,8 @@ package org.apache.lucene.geo;
 
 import java.util.Arrays;
 
+import org.apache.lucene.index.PointValues.Relation;
+
 /**
  * Represents a closed polygon on the earth's surface.
  * <p>
@@ -150,90 +152,127 @@ public final class Polygon {
       return false;
     }
   }
-
-  /**
-   * Computes whether a rectangle is within a polygon (shared boundaries not allowed)
-   */
-  public boolean contains(double minLat, double maxLat, double minLon, double maxLon) {
-    // check if rectangle crosses poly (to handle concave/pacman polys), then check that all 4 corners
-    // are contained
-    boolean contains = crosses(minLat, maxLat, minLon, maxLon) == false &&
-                       contains(minLat, minLon) &&
-                       contains(minLat, maxLon) &&
-                       contains(maxLat, maxLon) &&
-                       contains(maxLat, minLon);
-
-    if (contains) {
-      // if we intersect with any hole, game over
-      for (Polygon hole : holes) {
-        if (hole.crosses(minLat, maxLat, minLon, maxLon) || hole.contains(minLat, maxLat, minLon, maxLon)) {
-          return false;
-        }
-      }
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  /**
-   * Convenience method for accurately computing whether a rectangle crosses a poly.
-   */
-  public boolean crosses(double minLat, double maxLat, final double minLon, final double maxLon) {
+  
+  /** Returns relation to the provided rectangle */
+  public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
     // if the bounding boxes are disjoint then the shape does not cross
     if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
-      return false;
+      return Relation.CELL_OUTSIDE_QUERY;
     }
     // if the rectangle fully encloses us, we cross.
     if (minLat <= this.minLat && maxLat >= this.maxLat && minLon <= this.minLon && maxLon >= this.maxLon) {
-      return true;
+      return Relation.CELL_CROSSES_QUERY;
     }
-    // if we cross any hole, we cross
+    // check any holes
     for (Polygon hole : holes) {
-      if (hole.crosses(minLat, maxLat, minLon, maxLon)) {
-        return true;
+      Relation holeRelation = hole.relate(minLat, maxLat, minLon, maxLon);
+      if (holeRelation == Relation.CELL_CROSSES_QUERY) {
+        return Relation.CELL_CROSSES_QUERY;
+      } else if (holeRelation == Relation.CELL_INSIDE_QUERY) {
+        return Relation.CELL_OUTSIDE_QUERY;
       }
     }
+    // check each corner: if < 4 are present, its cheaper than crossesSlowly
+    int numCorners = numberOfCorners(minLat, maxLat, minLon, maxLon);
+    if (numCorners == 4) {
+      if (crossesSlowly(minLat, maxLat, minLon, maxLon)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_INSIDE_QUERY;
+    } else if (numCorners > 0) {
+      return Relation.CELL_CROSSES_QUERY;
+    }
+    
+    // we cross
+    if (crossesSlowly(minLat, maxLat, minLon, maxLon)) {
+      return Relation.CELL_CROSSES_QUERY;
+    }
+    
+    return Relation.CELL_OUTSIDE_QUERY;
+  }
+  
+  // returns 0, 4, or something in between
+  private int numberOfCorners(double minLat, double maxLat, double minLon, double maxLon) {
+    int containsCount = 0;
+    if (contains(minLat, minLon)) {
+      containsCount++;
+    }
+    if (contains(minLat, maxLon)) {
+      containsCount++;
+    }
+    if (containsCount == 1) {
+      return containsCount;
+    }
+    if (contains(maxLat, maxLon)) {
+      containsCount++;
+    }
+    if (containsCount == 2) {
+      return containsCount;
+    }
+    if (contains(maxLat, minLon)) {
+      containsCount++;
+    }
+    return containsCount;
+  }
 
+  private boolean crossesSlowly(double minLat, double maxLat, final double minLon, final double maxLon) {
     /*
      * Accurately compute (within restrictions of cartesian decimal degrees) whether a rectangle crosses a polygon
      */
-    final double[][] bbox = new double[][] { {minLon, minLat}, {maxLon, minLat}, {maxLon, maxLat}, {minLon, maxLat}, {minLon, minLat} };
-    final int polyLength = polyLons.length-1;
-    double d, s, t, a1, b1, c1, a2, b2, c2;
-    double x00, y00, x01, y01, x10, y10, x11, y11;
+    final double[] boxLats = new double[] { minLat, minLat, maxLat, maxLat, minLat };
+    final double[] boxLons = new double[] { minLon, maxLon, maxLon, minLon, minLon };
 
     // computes the intersection point between each bbox edge and the polygon edge
-    for (short b=0; b<4; ++b) {
-      a1 = bbox[b+1][1]-bbox[b][1];
-      b1 = bbox[b][0]-bbox[b+1][0];
-      c1 = a1*bbox[b+1][0] + b1*bbox[b+1][1];
-      for (int p=0; p<polyLength; ++p) {
-        a2 = polyLats[p+1]-polyLats[p];
-        b2 = polyLons[p]-polyLons[p+1];
+    for (int b=0; b<4; ++b) {
+      double a1 = boxLats[b+1]-boxLats[b];
+      double b1 = boxLons[b]-boxLons[b+1];
+      double c1 = a1*boxLons[b+1] + b1*boxLats[b+1];
+      for (int p=0; p<polyLons.length-1; ++p) {
+        double a2 = polyLats[p+1]-polyLats[p];
+        double b2 = polyLons[p]-polyLons[p+1];
         // compute determinant
-        d = a1*b2 - a2*b1;
+        double d = a1*b2 - a2*b1;
         if (d != 0) {
           // lines are not parallel, check intersecting points
-          c2 = a2*polyLons[p+1] + b2*polyLats[p+1];
-          s = (1/d)*(b2*c1 - b1*c2);
-          t = (1/d)*(a1*c2 - a2*c1);
+          double c2 = a2*polyLons[p+1] + b2*polyLats[p+1];
+          double s = (1/d)*(b2*c1 - b1*c2);
           // todo TOLERANCE SHOULD MATCH EVERYWHERE this is currently blocked by LUCENE-7165
-          x00 = Math.min(bbox[b][0], bbox[b+1][0]) - ENCODING_TOLERANCE;
-          x01 = Math.max(bbox[b][0], bbox[b+1][0]) + ENCODING_TOLERANCE;
-          y00 = Math.min(bbox[b][1], bbox[b+1][1]) - ENCODING_TOLERANCE;
-          y01 = Math.max(bbox[b][1], bbox[b+1][1]) + ENCODING_TOLERANCE;
-          x10 = Math.min(polyLons[p], polyLons[p+1]) - ENCODING_TOLERANCE;
-          x11 = Math.max(polyLons[p], polyLons[p+1]) + ENCODING_TOLERANCE;
-          y10 = Math.min(polyLats[p], polyLats[p+1]) - ENCODING_TOLERANCE;
-          y11 = Math.max(polyLats[p], polyLats[p+1]) + ENCODING_TOLERANCE;
-          // check whether the intersection point is touching one of the line segments
-          boolean touching = ((x00 == s && y00 == t) || (x01 == s && y01 == t))
-              || ((x10 == s && y10 == t) || (x11 == s && y11 == t));
-          // if line segments are not touching and the intersection point is within the range of either segment
-          if (!(touching || x00 > s || x01 < s || y00 > t || y01 < t || x10 > s || x11 < s || y10 > t || y11 < t)) {
-            return true;
+          double x00 = Math.min(boxLons[b], boxLons[b+1]) - ENCODING_TOLERANCE;
+          if (x00 > s) {
+            continue; // out of range
           }
+          double x01 = Math.max(boxLons[b], boxLons[b+1]) + ENCODING_TOLERANCE;
+          if (x01 < s) {
+            continue; // out of range
+          }
+          double x10 = Math.min(polyLons[p], polyLons[p+1]) - ENCODING_TOLERANCE;
+          if (x10 > s) {
+            continue; // out of range
+          }
+          double x11 = Math.max(polyLons[p], polyLons[p+1]) + ENCODING_TOLERANCE;
+          if (x11 < s) {
+            continue; // out of range
+          }
+
+          double t = (1/d)*(a1*c2 - a2*c1);
+          double y00 = Math.min(boxLats[b], boxLats[b+1]) - ENCODING_TOLERANCE;
+          if (y00 > t || (x00 == s && y00 == t)) {
+            continue; // out of range or touching
+          }
+          double y01 = Math.max(boxLats[b], boxLats[b+1]) + ENCODING_TOLERANCE;
+          if (y01 < t || (x01 == s && y01 == t)) {
+            continue; // out of range or touching
+          }
+          double y10 = Math.min(polyLats[p], polyLats[p+1]) - ENCODING_TOLERANCE;
+          if (y10 > t || (x10 == s && y10 == t)) {
+            continue; // out of range or touching
+          }
+          double y11 = Math.max(polyLats[p], polyLats[p+1]) + ENCODING_TOLERANCE;
+          if (y11 < t || (x11 == s && y11 == t)) {
+            continue; // out of range or touching
+          }
+          // if line segments are not touching and the intersection point is within the range of either segment
+          return true;
         }
       } // for each poly edge
     } // for each bbox edge
@@ -265,24 +304,17 @@ public final class Polygon {
     return false;
   }
 
-  /** Helper for multipolygon logic: returns true if any of the supplied polygons contain the rectangle */
-  public static boolean contains(Polygon[] polygons, double minLat, double maxLat, double minLon, double maxLon) {
+  /** Returns the multipolygon relation for the rectangle */
+  public static Relation relate(Polygon[] polygons, double minLat, double maxLat, double minLon, double maxLon) {
     for (Polygon polygon : polygons) {
-      if (polygon.contains(minLat, maxLat, minLon, maxLon)) {
-        return true;
+      Relation relation = polygon.relate(minLat, maxLat, minLon, maxLon);
+      if (relation != Relation.CELL_OUTSIDE_QUERY) {
+        // note: we optimize for non-overlapping multipolygons. so if we cross one,
+        // we won't keep iterating to try to find a contains.
+        return relation;
       }
     }
-    return false;
-  }
-
-  /** Helper for multipolygon logic: returns true if any of the supplied polygons crosses the rectangle */
-  public static boolean crosses(Polygon[] polygons, double minLat, double maxLat, double minLon, double maxLon) {
-    for (Polygon polygon : polygons) {
-      if (polygon.crosses(minLat, maxLat, minLon, maxLon)) {
-        return true;
-      }
-    }
-    return false;
+    return Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override
