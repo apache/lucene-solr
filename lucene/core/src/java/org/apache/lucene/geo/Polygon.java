@@ -20,6 +20,16 @@ import java.util.Arrays;
 
 /**
  * Represents a closed polygon on the earth's surface.
+ * <p>
+ * NOTES:
+ * <ol>
+ *   <li>Coordinates must be in clockwise order, except for holes. Holes must be in counter-clockwise order.
+ *   <li>The polygon must be closed: the first and last coordinates need to have the same values.
+ *   <li>The polygon must not be self-crossing, otherwise may result in unexpected behavior.
+ *   <li>All latitude/longitude values must be in decimal degrees.
+ *   <li>Polygons cannot cross the 180th meridian. Instead, use two polygons: one on each side.
+ *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
+ * </ol>
  * @lucene.experimental
  */
 public final class Polygon {

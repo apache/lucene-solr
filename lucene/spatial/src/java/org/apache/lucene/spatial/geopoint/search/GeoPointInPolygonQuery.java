@@ -36,13 +36,7 @@ import org.apache.lucene.geo.Polygon;
  * term is passed to the final point in polygon check. All value comparisons are subject
  * to the same precision tolerance defined in {@value GeoEncodingUtils#TOLERANCE}
  *
- * <p>NOTES:
- *    1.  The polygon coordinates need to be in either clockwise or counter-clockwise order.
- *    2.  The polygon must not be self-crossing, otherwise the query may result in unexpected behavior
- *    3.  All latitude/longitude values must be in decimal degrees.
- *    4.  Complex computational geometry (e.g., dateline wrapping) is not supported
- *    5.  For more advanced GeoSpatial indexing and query operations see spatial module
- *
+ * @see Polygon
  * @lucene.experimental
  */
 public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
@@ -79,7 +73,7 @@ public final class GeoPointInPolygonQuery extends GeoPointInBBoxQuery {
 
   /** 
    * Constructs a new GeoPolygonQuery that will match encoded {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} terms
-   * that fall within or on the boundary of the polygon defined by the input parameters. 
+   * that fall within or on the boundary of the polygons defined by the input parameters. 
    */
   public GeoPointInPolygonQuery(String field, TermEncoding termEncoding, Polygon... polygons) {
     this(field, termEncoding, Rectangle.fromPolygon(polygons), polygons);
