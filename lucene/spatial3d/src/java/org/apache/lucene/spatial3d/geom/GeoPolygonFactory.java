@@ -741,7 +741,14 @@ public class GeoPolygonFactory {
     protected final Set<Edge> edges = new HashSet<>();
     protected final Map<Edge, Edge> previousEdges = new HashMap<>();
     protected final Map<Edge, Edge> nextEdges = new HashMap<>();
-    
+
+    /** Constructor.
+      * @param pointList is the list of points.
+      * @param startPlaneStartIndex is the index of the startPlane's starting point
+      * @param startPlaneEndIndex is the index of the startPlane's ending point
+      * @param startPlane is the starting plane
+      * @param startPlaneIsInternal signals whether the startPlane is an internal edge
+      */
     public EdgeBuffer(final List<GeoPoint> pointList, final int startPlaneStartIndex, final int startPlaneEndIndex, final SidedPlane startPlane, final boolean startPlaneIsInternal) {
       /*
       System.out.println("Initial points:");
@@ -832,14 +839,26 @@ public class GeoPolygonFactory {
     }
     */
     
+    /** Get the previous edge.
+      * @param currentEdge is the current edge.
+      * @return the previous edge, if found.
+      */
     public Edge getPrevious(final Edge currentEdge) {
       return previousEdges.get(currentEdge);
     }
     
+    /** Get the next edge.
+      * @param currentEdge is the current edge.
+      * @return the next edge, if found.
+      */
     public Edge getNext(final Edge currentEdge) {
       return nextEdges.get(currentEdge);
     }
     
+    /** Replace a list of edges with a new edge.
+      * @param removeList is the list of edges to remove.
+      * @param newEdge is the edge to add.
+      */
     public void replace(final List<Edge> removeList, final Edge newEdge) {
       /*
       System.out.println("Replacing: ");
@@ -865,7 +884,9 @@ public class GeoPolygonFactory {
       }
       //verify();
     }
-    
+
+    /** Clear all edges.
+      */
     public void clear() {
       edges.clear();
       previousEdges.clear();
@@ -873,14 +894,23 @@ public class GeoPolygonFactory {
       oneEdge = null;
     }
     
+    /** Get the size of the edge buffer.
+      * @return the size.
+      */
     public int size() {
       return edges.size();
     }
     
+    /** Get an iterator to iterate over edges.
+      * @return the iterator.
+      */
     public Iterator<Edge> iterator() {
       return new EdgeBufferIterator(this);
     }
     
+    /** Return a first edge.
+      * @return the edge.
+      */
     public Edge pickOne() {
       return oneEdge;
     }

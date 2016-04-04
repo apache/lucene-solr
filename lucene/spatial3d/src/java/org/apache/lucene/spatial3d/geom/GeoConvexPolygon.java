@@ -281,6 +281,7 @@ class GeoConvexPolygon extends GeoBasePolygon {
     protected final SidedPlane exception;
     
     /** Constructor.
+      * @param exception is the one plane to exclude from the check.
       */
     public EitherBound(final SidedPlane exception) {
       this.exception = exception;
