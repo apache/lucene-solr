@@ -314,12 +314,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     destroyServers();
   }
 
-  protected JettySolrRunner createControlJetty() throws Exception {
+  protected JettySolrRunner createControlJetty(String schemaOverride) throws Exception {
     Path jettyHome = testDir.toPath().resolve("control");
     File jettyHomeFile = jettyHome.toFile();
     seedSolrHome(jettyHomeFile);
     seedCoreRootDirWithDefaultTestCore(jettyHome.resolve("cores"));
-    JettySolrRunner jetty = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
+    JettySolrRunner jetty = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), schemaOverride);
     return jetty;
   }
 
@@ -327,7 +327,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     System.setProperty("configSetBaseDir", getSolrHome());
 
-    controlJetty = createControlJetty();
+    String schemaFile = getSchemaFileOverride() == null ? getSchemaFile() : getSchemaFileOverride();
+    controlJetty = createControlJetty(schemaFile);
     controlClient = createNewSolrClient(controlJetty.getLocalPort());
 
     shardsArr = new String[numShards];
@@ -339,7 +340,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
       File jettyHomeFile = jettyHome.toFile();
       seedSolrHome(jettyHomeFile);
       seedCoreRootDirWithDefaultTestCore(jettyHome.resolve("cores"));
-      JettySolrRunner j = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), getSchemaFile());
+      JettySolrRunner j = createJetty(jettyHomeFile, null, null, getSolrConfigFile(), schemaFile);
       jettys.add(j);
       clients.add(createNewSolrClient(j.getLocalPort()));
       String shardStr = buildUrl(j.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
@@ -349,7 +350,10 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     shards = sb.toString();
   }
-
+  
+  protected String getSchemaFileOverride() {
+    return null; 
+  }
 
   protected void setDistributedParams(ModifiableSolrParams params) {
     params.set("shards", getShardsString());

@@ -67,6 +67,8 @@ New Features
 Bug Fixes
 ----------------------
 
+* SOLR-8939 Date millisecond resolution lost on distributed queries
+
 * SOLR-8857: HdfsUpdateLog does not use configured or new default number of version buckets and is
   hard coded to 256. (Mark Miller, yonik, Gregory Chanan)
 
