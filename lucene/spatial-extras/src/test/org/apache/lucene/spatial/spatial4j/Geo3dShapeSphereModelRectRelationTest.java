@@ -23,7 +23,7 @@ import org.locationtech.spatial4j.shape.Rectangle;
 import org.apache.lucene.spatial3d.geom.GeoArea;
 import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
-import org.apache.lucene.spatial3d.geom.GeoStandardCircle;
+import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
 import org.apache.lucene.spatial3d.geom.GeoShape;
@@ -60,7 +60,7 @@ public class Geo3dShapeSphereModelRectRelationTest extends Geo3dShapeRectRelatio
 
   @Test
   public void testFailure2_LUCENE6475() {
-    GeoShape geo3dCircle = new GeoStandardCircle(planetModel, 1.6282053147165243E-4 * RADIANS_PER_DEGREE,
+    GeoShape geo3dCircle = GeoCircleFactory.makeGeoCircle(planetModel, 1.6282053147165243E-4 * RADIANS_PER_DEGREE,
         -70.1600629789353 * RADIANS_PER_DEGREE, 86 * RADIANS_PER_DEGREE);
     Geo3dShape geo3dShape = new Geo3dShape(planetModel, geo3dCircle, ctx);
     Rectangle rect = ctx.makeRectangle(-118, -114, -2.0, 32.0);
