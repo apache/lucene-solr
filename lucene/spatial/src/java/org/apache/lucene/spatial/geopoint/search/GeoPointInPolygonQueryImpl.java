@@ -21,6 +21,7 @@ import java.util.Objects;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.index.PointValues.Relation;
 
 /** Package private implementation for the public facing GeoPointInPolygonQuery delegate class.
  *
@@ -58,18 +59,17 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
 
     @Override
     protected boolean cellCrosses(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return Polygon.crosses(polygons, minLat, maxLat, minLon, maxLon);
+      return Polygon.relate(polygons, minLat, maxLat, minLon, maxLon) == Relation.CELL_CROSSES_QUERY;
     }
 
     @Override
     protected boolean cellWithin(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return Polygon.contains(polygons, minLat, maxLat, minLon, maxLon);
+      return Polygon.relate(polygons, minLat, maxLat, minLon, maxLon) == Relation.CELL_INSIDE_QUERY;
     }
 
     @Override
     protected boolean cellIntersectsShape(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return cellContains(minLat, maxLat, minLon, maxLon) || cellWithin(minLat, maxLat, minLon, maxLon)
-        || cellCrosses(minLat, maxLat, minLon, maxLon);
+      return Polygon.relate(polygons, minLat, maxLat, minLon, maxLon) != Relation.CELL_OUTSIDE_QUERY;
     }
 
     /**
