@@ -236,6 +236,14 @@ public class GeoPolygonFactory {
     return arcDistance > 0.0;
   }
   
+  /** Compute the angle for a point given rotation information.
+    * @param point is the point to assess
+    * @param sinLatitude the sine of the latitude
+    * @param cosLatitude the cosine of the latitude
+    * @param sinLongitude the sine of the longitude
+    * @param cosLongitude the cosine of the longitude
+    * @return the angle of rotation, or null if not computable
+    */
   protected static Double computeAngle(final GeoPoint point,
     final double sinLatitude,
     final double cosLatitude,
@@ -638,6 +646,13 @@ public class GeoPolygonFactory {
     return true;
   }
   
+  /** Check if a point is within a set of edges.
+    * @param point is the point
+    * @param edgeSet is the set of edges
+    * @param extension is the new edge
+    * @param returnBoundary is the return edge
+    * @return true if within
+    */
   protected static boolean isWithin(final GeoPoint point, final Set<Edge> edgeSet, final Edge extension, final SidedPlane returnBoundary) {
     if (!extension.plane.isWithin(point)) {
       return false;
@@ -648,6 +663,11 @@ public class GeoPolygonFactory {
     return isWithin(point, edgeSet);
   }
   
+  /** Check if a point is within a set of edges.
+    * @param point is the point
+    * @param edgeSet is the set of edges
+    * @return true if within
+    */
   protected static boolean isWithin(final GeoPoint point, final Set<Edge> edgeSet) {
     for (final Edge edge : edgeSet) {
       if (!edge.plane.isWithin(point)) {
