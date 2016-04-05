@@ -22,7 +22,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class GeoDegenerateLatitudeZone extends GeoBaseBBox {
+class GeoDegenerateLatitudeZone extends GeoBaseBBox {
   /** The latitude */
   protected final double latitude;
   /** Sine of the latitude */

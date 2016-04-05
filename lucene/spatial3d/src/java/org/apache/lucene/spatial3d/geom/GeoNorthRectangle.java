@@ -24,7 +24,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class GeoNorthRectangle extends GeoBaseBBox {
+class GeoNorthRectangle extends GeoBaseBBox {
   /** The bottom latitude of the rectangle */
   protected final double bottomLat;
   /** The left longitude */

@@ -339,13 +339,12 @@ public class LatLonPoint extends Field {
   }
   
   /** 
-   * Create a query for matching a polygon.
-   * <p>
-   * The supplied {@code polygon} must be clockwise or counter-clockwise.
+   * Create a query for matching one or more polygons.
    * @param field field name. must not be null.
    * @param polygons array of polygons. must not be null or empty
    * @return query matching points within this polygon
    * @throws IllegalArgumentException if {@code field} is null, {@code polygons} is null or empty
+   * @see Polygon
    */
   public static Query newPolygonQuery(String field, Polygon... polygons) {
     return new LatLonPointInPolygonQuery(field, polygons);

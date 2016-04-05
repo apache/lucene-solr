@@ -40,7 +40,7 @@ import org.apache.lucene.spatial3d.geom.GeoArea;
 import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
 import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
-import org.apache.lucene.spatial3d.geom.GeoPath;
+import org.apache.lucene.spatial3d.geom.GeoPathFactory;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
 import org.apache.lucene.spatial3d.geom.GeoShape;
@@ -625,13 +625,12 @@ public class TestGeo3DPoint extends LuceneTestCase {
         // Paths
         final int pointCount = random().nextInt(5) + 1;
         final double width = toRadians(random().nextInt(89)+1);
+        final GeoPoint[] points = new GeoPoint[pointCount];
+        for (int i = 0; i < pointCount; i++) {
+          points[i] = new GeoPoint(planetModel, toRadians(randomLat()), toRadians(randomLon()));
+        }
         try {
-          final GeoPath path = new GeoPath(planetModel, width);
-          for (int i = 0; i < pointCount; i++) {
-            path.addPoint(toRadians(randomLat()), toRadians(randomLon()));
-          }
-          path.done();
-          return path;
+          return GeoPathFactory.makeGeoPath(planetModel, width, points);
         } catch (IllegalArgumentException e) {
           // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
           // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.

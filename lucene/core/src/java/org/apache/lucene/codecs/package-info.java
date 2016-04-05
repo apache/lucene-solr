@@ -25,6 +25,7 @@
  *   <li>DocValues - see {@link org.apache.lucene.codecs.DocValuesFormat}</li>
  *   <li>Stored fields - see {@link org.apache.lucene.codecs.StoredFieldsFormat}</li>
  *   <li>Term vectors - see {@link org.apache.lucene.codecs.TermVectorsFormat}</li>
+ *   <li>Points - see {@link org.apache.lucene.codecs.PointsFormat}</li>
  *   <li>FieldInfos - see {@link org.apache.lucene.codecs.FieldInfosFormat}</li>
  *   <li>SegmentInfo - see {@link org.apache.lucene.codecs.SegmentInfoFormat}</li>
  *   <li>Norms - see {@link org.apache.lucene.codecs.NormsFormat}</li>

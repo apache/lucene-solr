@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
+class GeoDegenerateLongitudeSlice extends GeoBaseBBox {
   /** The longitude of the slice */
   protected final double longitude;
 

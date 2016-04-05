@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class XdYZSolid extends BaseXYZSolid {
+class XdYZSolid extends BaseXYZSolid {
 
   /** Min-X plane */
   protected final SidedPlane minXPlane;

@@ -17,16 +17,16 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * GeoCircles have all the characteristics of GeoBaseDistanceShapes, plus GeoSizeable.
+ * GeoPaths have all the characteristics of GeoBaseDistanceShapes.
  *
  * @lucene.internal
  */
-abstract class GeoBaseCircle extends GeoBaseDistanceShape implements GeoCircle {
+abstract class GeoBasePath extends GeoBaseDistanceShape implements GeoPath {
 
   /** Constructor.
    *@param planetModel is the planet model to use.
    */
-  public GeoBaseCircle(final PlanetModel planetModel) {
+  public GeoBasePath(final PlanetModel planetModel) {
     super(planetModel);
   }
 

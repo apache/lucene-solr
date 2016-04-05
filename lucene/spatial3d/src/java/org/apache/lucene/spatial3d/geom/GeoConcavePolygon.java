@@ -23,14 +23,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * GeoConvexPolygon objects are generic building blocks of more complex structures.
- * The only restrictions on these objects are: (1) they must be convex; (2) they must have
- * a maximum extent no larger than PI.  Violating either one of these limits will
+ * GeoConcavePolygon objects are generic building blocks of more complex structures.
+ * The only restrictions on these objects are: (1) they must be concave; (2) they must have
+ * a maximum extent larger than PI.  Violating either one of these limits will
  * cause the logic to fail.
  *
  * @lucene.internal
  */
-class GeoConvexPolygon extends GeoBasePolygon {
+class GeoConcavePolygon extends GeoBasePolygon {
   /** The list of polygon points */
   protected final List<GeoPoint> points;
   /** A bitset describing, for each edge, whether it is internal or not */
@@ -40,6 +40,8 @@ class GeoConvexPolygon extends GeoBasePolygon {
 
   /** A list of edges */
   protected SidedPlane[] edges = null;
+  /** A list of inverted edges */
+  protected SidedPlane[] invertedEdges = null;
   /** The set of notable points for each edge */
   protected GeoPoint[][] notableEdgePoints = null;
   /** A point which is on the boundary of the polygon */
@@ -52,23 +54,23 @@ class GeoConvexPolygon extends GeoBasePolygon {
   protected Map<SidedPlane, Membership> eitherBounds = null;
   
   /**
-   * Create a convex polygon from a list of points.  The first point must be on the
+   * Create a concave polygon from a list of points.  The first point must be on the
    * external edge.
    *@param planetModel is the planet model.
    *@param pointList is the list of points to create the polygon from.
    */
-  public GeoConvexPolygon(final PlanetModel planetModel, final List<GeoPoint> pointList) {
+  public GeoConcavePolygon(final PlanetModel planetModel, final List<GeoPoint> pointList) {
     this(planetModel, pointList, null);
   }
   
   /**
-   * Create a convex polygon from a list of points.  The first point must be on the
+   * Create a concave polygon from a list of points.  The first point must be on the
    * external edge.
    *@param planetModel is the planet model.
    *@param pointList is the list of points to create the polygon from.
-   *@param holes is the list of GeoPolygon objects that describe holes in the complex polygon.  Null == no holes.
+   *@param holes is the list of GeoPolygon objects that describe holes in the concave polygon.  Null == no holes.
    */
-  public GeoConvexPolygon(final PlanetModel planetModel, final List<GeoPoint> pointList, final List<GeoPolygon> holes) {
+  public GeoConcavePolygon(final PlanetModel planetModel, final List<GeoPoint> pointList, final List<GeoPolygon> holes) {
     super(planetModel);
     this.points = pointList;
     this.holes = holes;
@@ -77,14 +79,14 @@ class GeoConvexPolygon extends GeoBasePolygon {
   }
 
   /**
-   * Create a convex polygon from a list of points, keeping track of which boundaries
+   * Create a concave polygon from a list of points, keeping track of which boundaries
    * are internal.  This is used when creating a polygon as a building block for another shape.
    *@param planetModel is the planet model.
    *@param pointList is the set of points to create the polygon from.
    *@param internalEdgeFlags is a bitset describing whether each edge is internal or not.
    *@param returnEdgeInternal is true when the final return edge is an internal one.
    */
-  public GeoConvexPolygon(final PlanetModel planetModel,
+  public GeoConcavePolygon(final PlanetModel planetModel,
     final List<GeoPoint> pointList,
     final BitSet internalEdgeFlags,
     final boolean returnEdgeInternal) {
@@ -92,15 +94,15 @@ class GeoConvexPolygon extends GeoBasePolygon {
   }
 
   /**
-   * Create a convex polygon from a list of points, keeping track of which boundaries
+   * Create a concave polygon from a list of points, keeping track of which boundaries
    * are internal.  This is used when creating a polygon as a building block for another shape.
    *@param planetModel is the planet model.
    *@param pointList is the set of points to create the polygon from.
-   *@param holes is the list of GeoPolygon objects that describe holes in the complex polygon.  Null == no holes.
+   *@param holes is the list of GeoPolygon objects that describe holes in the concave polygon.  Null == no holes.
    *@param internalEdgeFlags is a bitset describing whether each edge is internal or not.
    *@param returnEdgeInternal is true when the final return edge is an internal one.
    */
-  public GeoConvexPolygon(final PlanetModel planetModel,
+  public GeoConcavePolygon(final PlanetModel planetModel,
     final List<GeoPoint> pointList,
     final List<GeoPolygon> holes,
     final BitSet internalEdgeFlags,
@@ -113,27 +115,27 @@ class GeoConvexPolygon extends GeoBasePolygon {
   }
 
   /**
-   * Create a convex polygon, with a starting latitude and longitude.
+   * Create a concave polygon, with a starting latitude and longitude.
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}
    *@param planetModel is the planet model.
    *@param startLatitude is the latitude of the first point.
    *@param startLongitude is the longitude of the first point.
    */
-  public GeoConvexPolygon(final PlanetModel planetModel,
+  public GeoConcavePolygon(final PlanetModel planetModel,
     final double startLatitude,
     final double startLongitude) {
     this(planetModel, startLatitude, startLongitude, null);
   }
   
   /**
-   * Create a convex polygon, with a starting latitude and longitude.
+   * Create a concave polygon, with a starting latitude and longitude.
    * Accepts only values in the following ranges: lat: {@code -PI/2 -> PI/2}, lon: {@code -PI -> PI}
    *@param planetModel is the planet model.
    *@param startLatitude is the latitude of the first point.
    *@param startLongitude is the longitude of the first point.
-   *@param holes is the list of GeoPolygon objects that describe holes in the complex polygon.  Null == no holes.
+   *@param holes is the list of GeoPolygon objects that describe holes in the concave polygon.  Null == no holes.
    */
-  public GeoConvexPolygon(final PlanetModel planetModel,
+  public GeoConcavePolygon(final PlanetModel planetModel,
     final double startLatitude,
     final double startLongitude,
     final List<GeoPolygon> holes) {
@@ -177,9 +179,11 @@ class GeoConvexPolygon extends GeoBasePolygon {
 
     isDone = true;
     
-    // Time to construct the planes.  If the polygon is truly convex, then any adjacent point
-    // to a segment can provide an interior measurement.
+    // Time to construct the planes.  If the polygon is truly concave then any adjacent point
+    // to a segment can provide an exterior measurement.  Note: We build the true planes
+    // here and use the logic to return what *isn't* inside all of them.
     edges = new SidedPlane[points.size()];
+    invertedEdges = new SidedPlane[points.size()];
     notableEdgePoints = new GeoPoint[points.size()][];
 
     for (int i = 0; i < points.size(); i++) {
@@ -189,12 +193,14 @@ class GeoConvexPolygon extends GeoBasePolygon {
       if (distance > fullDistance)
         fullDistance = distance;
       final GeoPoint check = points.get(legalIndex(i + 2));
-      final SidedPlane sp = new SidedPlane(check, start, end);
+      // Here note the flip of the sense of the sided plane!!
+      final SidedPlane sp = new SidedPlane(check, false, start, end);
       //System.out.println("Created edge "+sp+" using start="+start+" end="+end+" check="+check);
       edges[i] = sp;
+      invertedEdges[i] = new SidedPlane(sp);
       notableEdgePoints[i] = new GeoPoint[]{start, end};
     }
-    // In order to naively confirm that the polygon is convex, I would need to
+    // In order to naively confirm that the polygon is concave, I would need to
     // check every edge, and verify that every point (other than the edge endpoints)
     // is within the edge's sided plane.  This is an order n^2 operation.  That's still
     // not wrong, though, because everything else about polygons has a similar cost.
@@ -202,18 +208,18 @@ class GeoConvexPolygon extends GeoBasePolygon {
       final SidedPlane edge = edges[edgeIndex];
       for (int pointIndex = 0; pointIndex < points.size(); pointIndex++) {
         if (pointIndex != edgeIndex && pointIndex != legalIndex(edgeIndex + 1)) {
-          if (!edge.isWithin(points.get(pointIndex)))
-            throw new IllegalArgumentException("Polygon is not convex: Point " + points.get(pointIndex) + " Edge " + edge);
+          if (edge.isWithin(points.get(pointIndex)))
+            throw new IllegalArgumentException("Polygon is not concave: Point " + points.get(pointIndex) + " Edge " + edge);
         }
       }
     }
     
     // For each edge, create a bounds object.
     eitherBounds = new HashMap<>(edges.length);
-    for (final SidedPlane edge : edges) {
-      eitherBounds.put(edge, new EitherBound(edge));
+    for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
+      eitherBounds.put(edges[edgeIndex], new EitherBound(invertedEdges[edgeIndex]));
     }
-    
+
     // Pick an edge point arbitrarily
     edgePoints = new GeoPoint[]{points.get(0)};
   }
@@ -230,9 +236,16 @@ class GeoConvexPolygon extends GeoBasePolygon {
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
+    // If present within *any* plane, then it is a member, except where there are holes.
+    boolean isMember = false;
     for (final SidedPlane edge : edges) {
-      if (!edge.isWithin(x, y, z))
-        return false;
+      if (edge.isWithin(x, y, z)) {
+        isMember = true;
+        break;
+      }
+    }
+    if (isMember == false) {
+      return false;
     }
     if (holes != null) {
       for (final GeoPolygon polygon : holes) {
@@ -251,7 +264,8 @@ class GeoConvexPolygon extends GeoBasePolygon {
 
   @Override
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    //System.err.println("Checking for polygon intersection with plane "+p+"...");
+    // The bounding planes are inverted and complementary.  For intersection computation, we
+    // cannot use them as bounds.  They are independent hemispheres.
     for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
       final SidedPlane edge = edges[edgeIndex];
       final GeoPoint[] points = this.notableEdgePoints[edgeIndex];
@@ -289,7 +303,7 @@ class GeoConvexPolygon extends GeoBasePolygon {
 
     @Override
     public boolean isWithin(final Vector v) {
-      for (final SidedPlane edge : edges) {
+      for (final SidedPlane edge : invertedEdges) {
         if (edge != exception && !edge.isWithin(v)) {
           return false;
         }
@@ -299,7 +313,7 @@ class GeoConvexPolygon extends GeoBasePolygon {
 
     @Override
     public boolean isWithin(final double x, final double y, final double z) {
-      for (final SidedPlane edge : edges) {
+      for (final SidedPlane edge : invertedEdges) {
         if (edge != exception && !edge.isWithin(x, y, z)) {
           return false;
         }
@@ -308,10 +322,10 @@ class GeoConvexPolygon extends GeoBasePolygon {
     }
   }
 
-
   @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
+    bounds.isWide();
 
     // Add all the points
     for (final GeoPoint point : points) {
@@ -344,9 +358,9 @@ class GeoConvexPolygon extends GeoBasePolygon {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeoConvexPolygon))
+    if (!(o instanceof GeoConcavePolygon))
       return false;
-    GeoConvexPolygon other = (GeoConvexPolygon) o;
+    GeoConcavePolygon other = (GeoConcavePolygon) o;
     if (!super.equals(other))
       return false;
     if (!other.isInternalEdges.equals(isInternalEdges))
@@ -374,7 +388,7 @@ class GeoConvexPolygon extends GeoBasePolygon {
 
   @Override
   public String toString() {
-    return "GeoConvexPolygon: {planetmodel=" + planetModel + ", points=" + points + ", internalEdges="+isInternalEdges+((holes== null)?"":", holes=" + holes) + "}";
+    return "GeoConcavePolygon: {planetmodel=" + planetModel + ", points=" + points + ", internalEdges=" + isInternalEdges + ((holes== null)?"":", holes=" + holes) + "}";
   }
 }
   

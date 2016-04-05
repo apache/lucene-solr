@@ -17,18 +17,23 @@
 package org.apache.lucene.spatial3d.geom;
 
 /**
- * GeoCircles have all the characteristics of GeoBaseDistanceShapes, plus GeoSizeable.
+ * Class which constructs a GeoPath representing an arbitrary path.
  *
- * @lucene.internal
+ * @lucene.experimental
  */
-abstract class GeoBaseCircle extends GeoBaseDistanceShape implements GeoCircle {
+public class GeoPathFactory {
+  private GeoPathFactory() {
+  }
 
-  /** Constructor.
-   *@param planetModel is the planet model to use.
+  /**
+   * Create a GeoPath of the right kind given the specified information.
+   * @param planetModel is the planet model.
+   * @param maxCutoffAngle is the width of the path, measured as an angle.
+   * @param pathPoints are the points in the path.
+   * @return a GeoPath corresponding to what was specified.
    */
-  public GeoBaseCircle(final PlanetModel planetModel) {
-    super(planetModel);
+  public static GeoPath makeGeoPath(final PlanetModel planetModel, final double maxCutoffAngle, final GeoPoint[] pathPoints) {
+    return new GeoStandardPath(planetModel, maxCutoffAngle, pathPoints);
   }
 
 }
-

@@ -22,13 +22,18 @@ import java.util.ArrayList;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.GeoUtils;
+import org.apache.lucene.spatial3d.geom.Vector;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
 import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
-import org.apache.lucene.spatial3d.geom.GeoPath;
+import org.apache.lucene.spatial3d.geom.GeoPathFactory;
+import org.apache.lucene.spatial3d.geom.GeoCompositePolygon;
+import org.apache.lucene.spatial3d.geom.GeoPolygon;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
@@ -63,8 +68,8 @@ public final class Geo3DPoint extends Field {
    */
   public Geo3DPoint(String name, double latitude, double longitude) {
     super(name, TYPE);
-    checkLatitude(latitude);
-    checkLongitude(longitude);
+    GeoUtils.checkLatitude(latitude);
+    GeoUtils.checkLongitude(longitude);
     // Translate latitude/longitude to x,y,z:
     final GeoPoint point = new GeoPoint(PlanetModel.WGS84, fromDegrees(latitude), fromDegrees(longitude));
     fillFieldsData(point.x, point.y, point.z);
@@ -93,8 +98,8 @@ public final class Geo3DPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null, location has invalid coordinates, or radius is invalid.
    */
   public static Query newDistanceQuery(final String field, final double latitude, final double longitude, final double radiusMeters) {
-    checkLatitude(latitude);
-    checkLongitude(longitude);
+    GeoUtils.checkLatitude(latitude);
+    GeoUtils.checkLongitude(longitude);
     final GeoShape shape = GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, fromDegrees(latitude), fromDegrees(longitude), fromMeters(radiusMeters));
     return newShapeQuery(field, shape);
   }
@@ -112,10 +117,10 @@ public final class Geo3DPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null, or the box has invalid coordinates.
    */
   public static Query newBoxQuery(final String field, final double minLatitude, final double maxLatitude, final double minLongitude, final double maxLongitude) {
-    checkLatitude(minLatitude);
-    checkLongitude(minLongitude);
-    checkLatitude(maxLatitude);
-    checkLongitude(maxLongitude);
+    GeoUtils.checkLatitude(minLatitude);
+    GeoUtils.checkLongitude(minLongitude);
+    GeoUtils.checkLatitude(maxLatitude);
+    GeoUtils.checkLongitude(maxLongitude);
     final GeoShape shape = GeoBBoxFactory.makeGeoBBox(PlanetModel.WGS84, 
       fromDegrees(maxLatitude), fromDegrees(minLatitude), fromDegrees(minLongitude), fromDegrees(maxLongitude));
     return newShapeQuery(field, shape);
@@ -124,39 +129,28 @@ public final class Geo3DPoint extends Field {
   /** 
    * Create a query for matching a polygon.
    * <p>
-   * The supplied {@code polyLatitudes}/{@code polyLongitudes} must be clockwise or counter-clockwise.
+   * The supplied {@code polygons} must be clockwise on the outside level, counterclockwise on the next level in, etc.
    * @param field field name. must not be null.
-   * @param polyLatitudes latitude values for points of the polygon: must be within standard +/-90 coordinate bounds.
-   * @param polyLongitudes longitude values for points of the polygon: must be within standard +/-180 coordinate bounds.
+   * @param polygons is the list of polygons to use to construct the query; must be at least one.
    * @return query matching points within this polygon
    */
-  public static Query newPolygonQuery(final String field, final double[] polyLatitudes, final double[] polyLongitudes) {
-    if (polyLatitudes.length != polyLongitudes.length) {
-      throw new IllegalArgumentException("same number of latitudes and longitudes required");
+  public static Query newPolygonQuery(final String field, final Polygon... polygons) {
+    if (polygons.length < 1) {
+      throw new IllegalArgumentException("need at least one polygon");
     }
-    if (polyLatitudes.length < 4) {
-      throw new IllegalArgumentException("need three or more points");
+    final GeoShape shape;
+    if (polygons.length == 1) {
+      shape = fromPolygon(polygons[0], false);
+    } else {
+      final GeoCompositePolygon poly = new GeoCompositePolygon();
+      for (final Polygon p : polygons) {
+        poly.addShape(fromPolygon(p, false));
+      }
+      shape = poly;
     }
-    if (polyLatitudes[0] != polyLatitudes[polyLatitudes.length-1] || polyLongitudes[0] != polyLongitudes[polyLongitudes.length-1]) {
-      throw new IllegalArgumentException("last point must equal first point");
-    }
-    
-    final List<GeoPoint> polyPoints = new ArrayList<>(polyLatitudes.length-1);
-    for (int i = 0; i < polyLatitudes.length-1; i++) {
-      final double latitude = polyLatitudes[i];
-      final double longitude = polyLongitudes[i];
-      checkLatitude(latitude);
-      checkLongitude(longitude);
-      polyPoints.add(new GeoPoint(PlanetModel.WGS84, fromDegrees(latitude), fromDegrees(longitude)));
-    }
-    // We don't know what the sense of the polygon is without providing the index of one vertex we know to be convex.
-    // Since that doesn't fit with the "super-simple API" requirements, we just use the index of the first one, and people have to just
-    // know to do it that way.
-    final int convexPointIndex = 0;
-    final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, polyPoints, convexPointIndex);
     return newShapeQuery(field, shape);
   }
-  
+
   /** 
    * Create a query for matching a path.
    * <p>
@@ -174,12 +168,45 @@ public final class Geo3DPoint extends Field {
     for (int i = 0; i < pathLatitudes.length; i++) {
       final double latitude = pathLatitudes[i];
       final double longitude = pathLongitudes[i];
-      checkLatitude(latitude);
-      checkLongitude(longitude);
+      GeoUtils.checkLatitude(latitude);
+      GeoUtils.checkLongitude(longitude);
       points[i] = new GeoPoint(PlanetModel.WGS84, fromDegrees(latitude), fromDegrees(longitude));
     }
-    final GeoShape shape = new GeoPath(PlanetModel.WGS84, fromMeters(pathWidthMeters), points);
+    final GeoShape shape = GeoPathFactory.makeGeoPath(PlanetModel.WGS84, fromMeters(pathWidthMeters), points);
     return newShapeQuery(field, shape);
+  }
+  
+  /**
+    * Convert a Polygon object into a GeoPolygon.
+    * This method uses
+    * @param polygon is the Polygon object.
+    * @param reverseMe is true if the order of the points should be reversed.
+    * @return the GeoPolygon.
+    */
+  protected static GeoPolygon fromPolygon(final Polygon polygon, final boolean reverseMe) {
+    // First, assemble the "holes".  The geo3d convention is to use the same polygon sense on the inner ring as the
+    // outer ring, so we process these recursively with reverseMe flipped.
+    final Polygon[] theHoles = polygon.getHoles();
+    final List<GeoPolygon> holeList = new ArrayList<>(theHoles.length);
+    for (final Polygon hole : theHoles) {
+      holeList.add(fromPolygon(hole, !reverseMe));
+    }
+    // Now do the polygon itself
+    final double[] polyLats = polygon.getPolyLats();
+    final double[] polyLons = polygon.getPolyLons();
+    
+    // I presume the arguments have already been checked
+    final List<GeoPoint> points = new ArrayList<>(polyLats.length-1);
+    // We skip the last point anyway because the API requires it to be repeated, and geo3d doesn't repeat it.
+    for (int i = 0; i < polyLats.length - 1; i++) {
+      if (reverseMe) {
+        points.add(new GeoPoint(PlanetModel.WGS84, fromDegrees(polyLats[i]), fromDegrees(polyLons[i])));
+      } else {
+        final int index = polyLats.length - 2 - i;
+        points.add(new GeoPoint(PlanetModel.WGS84, fromDegrees(polyLats[index]), fromDegrees(polyLons[index])));
+      }
+    }
+    return GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points, holeList);
   }
   
   /** 
@@ -237,31 +264,4 @@ public final class Geo3DPoint extends Field {
     return result.toString();
   }
 
-  // TODO LUCENE-7152: share this with GeoUtils.java from spatial module
-
-  /** Minimum longitude value. */
-  private static final double MIN_LON_INCL = -180.0D;
-
-  /** Maximum longitude value. */
-  private static final double MAX_LON_INCL = 180.0D;
-
-  /** Minimum latitude value. */
-  private static final double MIN_LAT_INCL = -90.0D;
-
-  /** Maximum latitude value. */
-  private static final double MAX_LAT_INCL = 90.0D;
-
-  /** validates latitude value is within standard +/-90 coordinate bounds */
-  private static void checkLatitude(double latitude) {
-    if (Double.isNaN(latitude) || latitude < MIN_LAT_INCL || latitude > MAX_LAT_INCL) {
-      throw new IllegalArgumentException("invalid latitude " +  latitude + "; must be between " + MIN_LAT_INCL + " and " + MAX_LAT_INCL);
-    }
-  }
-
-  /** validates longitude value is within standard +/-180 coordinate bounds */
-  private static void checkLongitude(double longitude) {
-    if (Double.isNaN(longitude) || longitude < MIN_LON_INCL || longitude > MAX_LON_INCL) {
-      throw new IllegalArgumentException("invalid longitude " +  longitude + "; must be between " + MIN_LON_INCL + " and " + MAX_LON_INCL);
-    }
-  }
 }
