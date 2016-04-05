@@ -43,6 +43,9 @@ Bug Fixes
 * SOLR-8902: Make sure ReturnFields only returns the requested fields from (fl=) evn when
   DocumentTransformers ask for getExtraRequestFields()  (ryan)
 
+* SOLR-8875: SolrCloud Overseer clusterState could unexpectedly be null resulting in NPE.
+  (Scott Blum via David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
