@@ -21,6 +21,7 @@ import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
 import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
 import org.apache.lucene.spatial3d.geom.GeoCircle;
+import org.apache.lucene.spatial3d.geom.GeoPathFactory;
 import org.apache.lucene.spatial3d.geom.GeoPath;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
@@ -36,9 +37,9 @@ public class Geo3dShapeWGS84ModelRectRelationTest extends Geo3dShapeRectRelation
   public void testFailure1() {
     final GeoBBox rect = GeoBBoxFactory.makeGeoBBox(planetModel, 90 * RADIANS_PER_DEGREE, 74 * RADIANS_PER_DEGREE,
         40 * RADIANS_PER_DEGREE, 60 * RADIANS_PER_DEGREE);
-    final GeoPath path = new GeoPath(planetModel, 4 * RADIANS_PER_DEGREE);
-    path.addPoint(84.4987594274 * RADIANS_PER_DEGREE, -22.8345484402 * RADIANS_PER_DEGREE);
-    path.done();
+    final GeoPoint[] pathPoints = new GeoPoint[] {
+      new GeoPoint(planetModel, 84.4987594274 * RADIANS_PER_DEGREE, -22.8345484402 * RADIANS_PER_DEGREE)};
+    final GeoPath path = GeoPathFactory.makeGeoPath(planetModel, 4 * RADIANS_PER_DEGREE, pathPoints);
     assertTrue(GeoArea.DISJOINT == rect.getRelationship(path));
     // This is what the test failure claimed...
     //assertTrue(GeoArea.CONTAINS == rect.getRelationship(path));
@@ -75,10 +76,10 @@ public class Geo3dShapeWGS84ModelRectRelationTest extends Geo3dShapeRectRelation
   */
     final GeoBBox rect = GeoBBoxFactory.makeGeoBBox(planetModel, 16 * RADIANS_PER_DEGREE, 16 * RADIANS_PER_DEGREE, 4 * RADIANS_PER_DEGREE, 36 * RADIANS_PER_DEGREE);
     final GeoPoint pt = new GeoPoint(planetModel, 16 * RADIANS_PER_DEGREE, 23.81626064835212 * RADIANS_PER_DEGREE);
-    final GeoPath path = new GeoPath(planetModel, 88 * RADIANS_PER_DEGREE);
-    path.addPoint(46.6369060853 * RADIANS_PER_DEGREE, -79.8452213228 * RADIANS_PER_DEGREE);
-    path.addPoint(54.9779334519 * RADIANS_PER_DEGREE, 132.029177424 * RADIANS_PER_DEGREE);
-    path.done();
+    final GeoPoint[] pathPoints = new GeoPoint[]{
+      new GeoPoint(planetModel, 46.6369060853 * RADIANS_PER_DEGREE, -79.8452213228 * RADIANS_PER_DEGREE),
+      new GeoPoint(planetModel, 54.9779334519 * RADIANS_PER_DEGREE, 132.029177424 * RADIANS_PER_DEGREE)};
+    final GeoPath path = GeoPathFactory.makeGeoPath(planetModel, 88 * RADIANS_PER_DEGREE, pathPoints);
     System.out.println("rect=" + rect);
     // Rectangle is within path (this is wrong; it's on the other side.  Should be OVERLAPS)
     assertTrue(GeoArea.OVERLAPS == rect.getRelationship(path));

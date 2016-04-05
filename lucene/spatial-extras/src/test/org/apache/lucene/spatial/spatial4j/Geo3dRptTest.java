@@ -29,7 +29,7 @@ import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.query.SpatialOperation;
 import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
-import org.apache.lucene.spatial3d.geom.GeoPath;
+import org.apache.lucene.spatial3d.geom.GeoPathFactory;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
 import org.apache.lucene.spatial3d.geom.GeoShape;
@@ -95,12 +95,12 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     points.add(new GeoPoint(PlanetModel.SPHERE, -57 * DEGREES_TO_RADIANS, 146 * DEGREES_TO_RADIANS));
     points.add(new GeoPoint(PlanetModel.SPHERE, 14 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS));
     points.add(new GeoPoint(PlanetModel.SPHERE, -15 * DEGREES_TO_RADIANS, 153 * DEGREES_TO_RADIANS));
-    final GeoPath path = new GeoPath(PlanetModel.SPHERE, 29 * DEGREES_TO_RADIANS);
-    path.addPoint(55.0 * DEGREES_TO_RADIANS, -26.0 * DEGREES_TO_RADIANS);
-    path.addPoint(-90.0 * DEGREES_TO_RADIANS, 0.0);
-    path.addPoint(54.0 * DEGREES_TO_RADIANS, 165.0 * DEGREES_TO_RADIANS);
-    path.addPoint(-90.0 * DEGREES_TO_RADIANS, 0.0);
-    path.done();
+    final GeoPoint[] pathPoints = new GeoPoint[] {
+      new GeoPoint(PlanetModel.SPHERE, 55.0 * DEGREES_TO_RADIANS, -26.0 * DEGREES_TO_RADIANS),
+      new GeoPoint(PlanetModel.SPHERE, -90.0 * DEGREES_TO_RADIANS, 0.0),
+      new GeoPoint(PlanetModel.SPHERE, 54.0 * DEGREES_TO_RADIANS, 165.0 * DEGREES_TO_RADIANS),
+      new GeoPoint(PlanetModel.SPHERE, -90.0 * DEGREES_TO_RADIANS, 0.0)};
+    final GeoShape path = GeoPathFactory.makeGeoPath(PlanetModel.SPHERE, 29 * DEGREES_TO_RADIANS, pathPoints);
     final Shape shape = new Geo3dShape(path,ctx);
     final Rectangle rect = ctx.makeRectangle(131, 143, 39, 54);
     testOperation(rect,SpatialOperation.Intersects,shape,true);
@@ -199,14 +199,14 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
         // Paths
         final int pointCount = random().nextInt(5) + 1;
         final double width = (random().nextInt(89)+1) * DEGREES_TO_RADIANS;
+        final GeoPoint[] points = new GeoPoint[pointCount];
         while (true) {
+          for (int i = 0; i < pointCount; i++) {
+            final Point nextPoint = randomPoint();
+            points[i] = new GeoPoint(PlanetModel.SPHERE, nextPoint.getY() * DEGREES_TO_RADIANS, nextPoint.getX() * DEGREES_TO_RADIANS);
+          }
           try {
-            final GeoPath path = new GeoPath(PlanetModel.SPHERE, width);
-            for (int i = 0; i < pointCount; i++) {
-              final Point nextPoint = randomPoint();
-              path.addPoint(nextPoint.getY() * DEGREES_TO_RADIANS, nextPoint.getX() * DEGREES_TO_RADIANS);
-            }
-            path.done();
+            final GeoShape path = GeoPathFactory.makeGeoPath(PlanetModel.SPHERE, width, points);
             return new Geo3dShape(path, ctx);
           } catch (IllegalArgumentException e) {
             // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where

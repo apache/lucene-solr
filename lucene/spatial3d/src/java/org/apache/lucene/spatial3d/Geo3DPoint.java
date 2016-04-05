@@ -31,7 +31,7 @@ import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
 import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
-import org.apache.lucene.spatial3d.geom.GeoPath;
+import org.apache.lucene.spatial3d.geom.GeoPathFactory;
 import org.apache.lucene.spatial3d.geom.GeoCompositePolygon;
 import org.apache.lucene.spatial3d.geom.GeoPolygon;
 import org.apache.lucene.search.Query;
@@ -172,7 +172,7 @@ public final class Geo3DPoint extends Field {
       GeoUtils.checkLongitude(longitude);
       points[i] = new GeoPoint(PlanetModel.WGS84, fromDegrees(latitude), fromDegrees(longitude));
     }
-    final GeoShape shape = new GeoPath(PlanetModel.WGS84, fromMeters(pathWidthMeters), points);
+    final GeoShape shape = GeoPathFactory.makeGeoPath(PlanetModel.WGS84, fromMeters(pathWidthMeters), points);
     return newShapeQuery(field, shape);
   }
   
