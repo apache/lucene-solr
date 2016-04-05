@@ -134,7 +134,7 @@ Other Changes
 * SOLR-8869: Optionally disable printing field cache entries in SolrFieldCacheMBean (Gregory Chanan)
 
 * SOLR-8892: Allow SolrInfoMBeans to return different statistics for /jmx vs web ui calls.
-  (Gregory Chana, Mark Miller)
+  (Gregory Chanan, Mark Miller)
 
 ==================  6.0.0 ==================
 
