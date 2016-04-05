@@ -43,6 +43,9 @@ Bug Fixes
 * SOLR-8857: HdfsUpdateLog does not use configured or new default number of version buckets and is
   hard coded to 256. (Mark Miller, yonik, Gregory Chanan)
 
+* SOLR-8875: SolrCloud Overseer clusterState could unexpectedly be null resulting in NPE.
+  (Scott Blum via David Smiley)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes
