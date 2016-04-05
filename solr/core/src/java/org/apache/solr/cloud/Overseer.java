@@ -140,7 +140,6 @@ public class Overseer implements Closeable {
       try {
         ZkStateWriter zkStateWriter = null;
         ClusterState clusterState = null;
-        //nocommit: can't this simply be the same as clusterState being null?
         boolean refreshClusterState = true; // let's refresh in the first iteration
         while (!this.isClosed) {
           isLeader = amILeader();
@@ -156,7 +155,6 @@ public class Overseer implements Closeable {
             try {
               reader.updateClusterState();
               clusterState = reader.getClusterState();
-              assert clusterState != null : "should clusterState be null?";//nocommit
               zkStateWriter = new ZkStateWriter(reader, stats);
               refreshClusterState = false;
 
@@ -171,14 +169,12 @@ public class Overseer implements Closeable {
                 // force flush to ZK after each message because there is no fallback if workQueue items
                 // are removed from workQueue but fail to be written to ZK
                 clusterState = processQueueItem(message, clusterState, zkStateWriter, false, null);
-                assert clusterState != null : "should clusterState be null?";//nocommit
                 workQueue.poll(); // poll-ing removes the element we got by peek-ing
                 data = workQueue.peek();
               }
               // force flush at the end of the loop
               if (hadWorkItems) {
                 clusterState = zkStateWriter.writePendingUpdates();
-                assert clusterState != null : "should clusterState be null?";//nocommit
               }
             } catch (KeeperException e) {
               if (e.code() == KeeperException.Code.SESSIONEXPIRED) {
@@ -192,8 +188,6 @@ public class Overseer implements Closeable {
             } catch (Exception e) {
               log.error("Exception in Overseer work queue loop", e);
             }
-          } else {
-            assert clusterState != null : "should clusterState be null?";//nocommit
           }
 
           byte[] head = null;
@@ -231,7 +225,6 @@ public class Overseer implements Closeable {
                   while (workQueue.poll() != null);
                 }
               });
-              assert clusterState != null : "should clusterState be null?";//nocommit
 
               // it is safer to keep this poll here because an invalid message might never be queued
               // and therefore we can't rely on the ZkWriteCallback to remove the item
@@ -243,13 +236,7 @@ public class Overseer implements Closeable {
             }
             // we should force write all pending updates because the next iteration might sleep until there
             // are more items in the main queue
-
-            ClusterState clusterState2 = zkStateWriter.writePendingUpdates();//note: may return null?
-            if (clusterState2 == null) {
-              log.error("zkStateWriter.writePendingUpdates returned null clusterState");
-            } else {
-              clusterState = clusterState2;
-            }
+            clusterState = zkStateWriter.writePendingUpdates();
             // clean work queue
             while (workQueue.poll() != null);
 
