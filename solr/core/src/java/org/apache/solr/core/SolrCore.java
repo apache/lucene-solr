@@ -735,12 +735,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
-      searcherExecutor.submit(new Callable<Void>() {
-        @Override
-        public Void call() throws Exception {
-          latch.await();
-          return null;
-        }
+      searcherExecutor.submit(() -> {
+        latch.await();
+        return null;
       });
 
       this.updateHandler = initUpdateHandler(updateHandler);
@@ -854,14 +851,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       if (iwRef != null) {
         final IndexWriter iw = iwRef.get();
         final SolrCore core = this;
-        newReaderCreator = new Callable<DirectoryReader>() {
-          // this is used during a core reload
-
-          @Override
-          public DirectoryReader call() throws Exception {
-            return indexReaderFactory.newReader(iw, core);
-          }
-        };
+        newReaderCreator = () -> indexReaderFactory.newReader(iw, core);
       }
     }
 
@@ -1779,57 +1769,48 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         // warm the new searcher based on the current searcher.
         // should this go before the other event handlers or after?
         if (currSearcher != null) {
-          future = searcherExecutor.submit(new Callable() {
-            @Override
-            public Object call() throws Exception {
-              try {
-                newSearcher.warm(currSearcher);
-              } catch (Throwable e) {
-                SolrException.log(log, e);
-                if (e instanceof Error) {
-                  throw (Error) e;
-                }
+          future = searcherExecutor.submit(() -> {
+            try {
+              newSearcher.warm(currSearcher);
+            } catch (Throwable e) {
+              SolrException.log(log, e);
+              if (e instanceof Error) {
+                throw (Error) e;
               }
-              return null;
             }
+            return null;
           });
         }
 
         if (currSearcher == null) {
-          future = searcherExecutor.submit(new Callable() {
-            @Override
-            public Object call() throws Exception {
-              try {
-                for (SolrEventListener listener : firstSearcherListeners) {
-                  listener.newSearcher(newSearcher, null);
-                }
-              } catch (Throwable e) {
-                SolrException.log(log, null, e);
-                if (e instanceof Error) {
-                  throw (Error) e;
-                }
+          future = searcherExecutor.submit(() -> {
+            try {
+              for (SolrEventListener listener : firstSearcherListeners) {
+                listener.newSearcher(newSearcher, null);
               }
-              return null;
+            } catch (Throwable e) {
+              SolrException.log(log, null, e);
+              if (e instanceof Error) {
+                throw (Error) e;
+              }
             }
+            return null;
           });
         }
 
         if (currSearcher != null) {
-          future = searcherExecutor.submit(new Callable() {
-            @Override
-            public Object call() throws Exception {
-              try {
-                for (SolrEventListener listener : newSearcherListeners) {
-                  listener.newSearcher(newSearcher, currSearcher);
-                }
-              } catch (Throwable e) {
-                SolrException.log(log, null, e);
-                if (e instanceof Error) {
-                  throw (Error) e;
-                }
+          future = searcherExecutor.submit(() -> {
+            try {
+              for (SolrEventListener listener : newSearcherListeners) {
+                listener.newSearcher(newSearcher, currSearcher);
               }
-              return null;
+            } catch (Throwable e) {
+              SolrException.log(log, null, e);
+              if (e instanceof Error) {
+                throw (Error) e;
+              }
             }
+            return null;
           });
         }
 

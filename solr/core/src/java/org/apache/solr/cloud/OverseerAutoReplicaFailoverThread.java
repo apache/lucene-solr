@@ -248,13 +248,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       log.debug("submit call to {}", createUrl);
       MDC.put("OverseerAutoReplicaFailoverThread.createUrl", createUrl);
       try {
-        updateExecutor.submit(new Callable<Boolean>() {
-
-          @Override
-          public Boolean call() {
-            return createSolrCore(collection, createUrl, dataDir, ulogDir, coreNodeName, coreName);
-          }
-        });
+        updateExecutor.submit(() -> createSolrCore(collection, createUrl, dataDir, ulogDir, coreNodeName, coreName));
       } finally {
         MDC.remove("OverseerAutoReplicaFailoverThread.createUrl");
       }

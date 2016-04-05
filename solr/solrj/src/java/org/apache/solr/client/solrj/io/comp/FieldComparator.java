@@ -97,34 +97,28 @@ public class FieldComparator implements StreamComparator {
    */
   private void assignComparator(){
     if(ComparatorOrder.DESCENDING == order){
-      comparator = new ComparatorLambda() {
-        @Override
-        public int compare(Tuple leftTuple, Tuple rightTuple) {
-          Comparable leftComp = (Comparable)leftTuple.get(leftFieldName);
-          Comparable rightComp = (Comparable)rightTuple.get(rightFieldName);
-          
-          if(leftComp == rightComp){ return 0; } // if both null then they are equal. if both are same ref then are equal
-          if(null == leftComp){ return 1; }
-          if(null == rightComp){ return -1; }
-          
-          return rightComp.compareTo(leftComp);
-        }
+      comparator = (leftTuple, rightTuple) -> {
+        Comparable leftComp = (Comparable)leftTuple.get(leftFieldName);
+        Comparable rightComp = (Comparable)rightTuple.get(rightFieldName);
+
+        if(leftComp == rightComp){ return 0; } // if both null then they are equal. if both are same ref then are equal
+        if(null == leftComp){ return 1; }
+        if(null == rightComp){ return -1; }
+
+        return rightComp.compareTo(leftComp);
       };
     }
     else{
       // See above for black magic reasoning.
-      comparator = new ComparatorLambda() {
-        @Override
-        public int compare(Tuple leftTuple, Tuple rightTuple) {
-          Comparable leftComp = (Comparable)leftTuple.get(leftFieldName);
-          Comparable rightComp = (Comparable)rightTuple.get(rightFieldName);
-          
-          if(leftComp == rightComp){ return 0; } // if both null then they are equal. if both are same ref then are equal
-          if(null == leftComp){ return -1; }
-          if(null == rightComp){ return 1; }
-          
-          return leftComp.compareTo(rightComp);
-        }
+      comparator = (leftTuple, rightTuple) -> {
+        Comparable leftComp = (Comparable)leftTuple.get(leftFieldName);
+        Comparable rightComp = (Comparable)rightTuple.get(rightFieldName);
+
+        if(leftComp == rightComp){ return 0; } // if both null then they are equal. if both are same ref then are equal
+        if(null == leftComp){ return -1; }
+        if(null == rightComp){ return 1; }
+
+        return leftComp.compareTo(rightComp);
       };
     }
   }

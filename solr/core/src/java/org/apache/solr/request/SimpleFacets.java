@@ -662,26 +662,23 @@ public class SimpleFacets {
         final String termList = localParams == null ? null : localParams.get(CommonParams.TERMS);
         final String key = parsed.key;
         final String facetValue = parsed.facetValue;
-        Callable<NamedList> callable = new Callable<NamedList>() {
-          @Override
-          public NamedList call() throws Exception {
-            try {
-              NamedList<Object> result = new SimpleOrderedMap<>();
-              if(termList != null) {
-                List<String> terms = StrUtils.splitSmart(termList, ",", true);
-                result.add(key, getListedTermCounts(facetValue, parsed, terms));
-              } else {
-                result.add(key, getTermCounts(facetValue, parsed));
-              }
-              return result;
-            } catch (SolrException se) {
-              throw se;
-            } catch (Exception e) {
-              throw new SolrException(ErrorCode.SERVER_ERROR,
-                                      "Exception during facet.field: " + facetValue, e);
-            } finally {
-              semaphore.release();
+        Callable<NamedList> callable = () -> {
+          try {
+            NamedList<Object> result = new SimpleOrderedMap<>();
+            if(termList != null) {
+              List<String> terms = StrUtils.splitSmart(termList, ",", true);
+              result.add(key, getListedTermCounts(facetValue, parsed, terms));
+            } else {
+              result.add(key, getTermCounts(facetValue, parsed));
             }
+            return result;
+          } catch (SolrException se) {
+            throw se;
+          } catch (Exception e) {
+            throw new SolrException(ErrorCode.SERVER_ERROR,
+                                    "Exception during facet.field: " + facetValue, e);
+          } finally {
+            semaphore.release();
           }
         };
 

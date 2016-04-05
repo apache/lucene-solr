@@ -37,20 +37,12 @@ public class TestUpdate extends SolrTestCaseJ4 {
     // Test both by running the same test with and without commits
 
     // do without commits
-    doUpdateTest(new Callable() {
-      @Override
-      public Object call() throws Exception {
-        return null;
-      }
-    });
+    doUpdateTest(() -> null);
 
     // do with commits
-    doUpdateTest(new Callable() {
-      @Override
-      public Object call() throws Exception {
-        assertU(commit("softCommit","false"));
-        return null;
-      }
+    doUpdateTest(() -> {
+      assertU(commit("softCommit","false"));
+      return null;
     });
 
 
