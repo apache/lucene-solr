@@ -28,6 +28,7 @@ import org.locationtech.spatial4j.shape.RectIntersectionTestHelper;
 import org.apache.lucene.spatial3d.geom.LatLonBounds;
 import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
+import org.apache.lucene.spatial3d.geom.GeoCircle;
 import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
 import org.apache.lucene.spatial3d.geom.GeoPath;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
@@ -110,7 +111,6 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
     }
   }
 
-  /*
   @Test
   public void testGeoCircleRect() {
     new Geo3dRectIntersectionTestHelper(ctx) {
@@ -126,13 +126,12 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
 
       @Override
       protected Point randomPointInEmptyShape(Geo3dShape shape) {
-        GeoPoint geoPoint = ((GeoStandardCircle)shape.shape).getCenter();
+        GeoPoint geoPoint = ((GeoCircle)shape.shape).getCenter();
         return geoPointToSpatial4jPoint(geoPoint);
       }
 
     }.testRelateWithRectangle();
   }
-  */
 
   @Test
   public void testGeoBBoxRect() {
