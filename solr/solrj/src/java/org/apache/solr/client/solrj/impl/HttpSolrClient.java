@@ -285,12 +285,7 @@ public class HttpSolrClient extends SolrClient {
     ExecutorService pool = ExecutorUtil.newMDCAwareFixedThreadPool(1, new SolrjNamedThreadFactory("httpUriRequest"));
     try {
       MDC.put("HttpSolrClient.url", baseUrl);
-      mrr.future = pool.submit(new Callable<NamedList<Object>>(){
-
-        @Override
-        public NamedList<Object> call() throws Exception {
-          return executeMethod(method, processor);
-        }});
+      mrr.future = pool.submit(() -> executeMethod(method, processor));
  
     } finally {
       pool.shutdown();

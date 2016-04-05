@@ -161,7 +161,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
         }
       };
 
-      UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
 
       clearIndex();
@@ -257,7 +257,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       }
     };
 
-    UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+    UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
 
     SolrQueryRequest req = req();
@@ -412,7 +412,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       }
     };
 
-    UpdateLog.testing_logReplayFinishHook = () -> logReplayFinish.release();
+    UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
 
     SolrQueryRequest req = req();
@@ -722,12 +722,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
         }
       };
 
-      UpdateLog.testing_logReplayFinishHook = new Runnable() {
-        @Override
-        public void run() {
-          logReplayFinish.release();
-        }
-      };
+      UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
 
       clearIndex();

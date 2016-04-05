@@ -197,12 +197,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
       }
     };
 
-    UpdateLog.testing_logReplayFinishHook = new Runnable() {
-      @Override
-      public void run() {
-        logReplayFinish.release();
-      }
-    };
+    UpdateLog.testing_logReplayFinishHook = logReplayFinish::release;
 
 
     SolrQueryRequest req = req();

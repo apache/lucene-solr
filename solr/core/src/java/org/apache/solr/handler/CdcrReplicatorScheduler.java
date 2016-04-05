@@ -73,19 +73,14 @@ class CdcrReplicatorScheduler {
         for (int i = 0; i < nCandidates; i++) {
           // a thread that poll one state from the queue, execute the replication task, and push back
           // the state in the queue when the task is completed
-          replicatorsPool.execute(new Runnable() {
-
-            @Override
-            public void run() {
-              CdcrReplicatorState state = statesQueue.poll();
-              assert state != null; // Should never happen
-              try {
-                new CdcrReplicator(state, batchSize).run();
-              } finally {
-                statesQueue.offer(state);
-              }
+          replicatorsPool.execute(() -> {
+            CdcrReplicatorState state = statesQueue.poll();
+            assert state != null; // Should never happen
+            try {
+              new CdcrReplicator(state, batchSize).run();
+            } finally {
+              statesQueue.offer(state);
             }
-
           });
 
         }

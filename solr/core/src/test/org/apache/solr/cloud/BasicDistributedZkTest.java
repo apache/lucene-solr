@@ -960,35 +960,32 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private void createSolrCore(final String collection,
       List<SolrClient> collectionClients, final String baseUrl, final int num,
       final String shardId) {
-    Callable call = new Callable() {
-      @Override
-      public Object call() {
-        try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
-          // client.setConnectionTimeout(15000);
-          Create createCmd = new Create();
-          createCmd.setRoles("none");
-          createCmd.setCoreName(collection + num);
-          createCmd.setCollection(collection);
-          
-          if (random().nextBoolean()) {
-            // sometimes we use an explicit core node name
-            createCmd.setCoreNodeName("anode" + nodeCounter.incrementAndGet());
-          }
-          
-          if (shardId == null) {
-            createCmd.setNumShards(2);
-          }
-          createCmd.setDataDir(getDataDir(createTempDir(collection).toFile().getAbsolutePath()));
-          if (shardId != null) {
-            createCmd.setShardId(shardId);
-          }
-          client.request(createCmd);
-        } catch (Exception e) {
-          e.printStackTrace();
-          //fail
+    Callable call = () -> {
+      try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
+        // client.setConnectionTimeout(15000);
+        Create createCmd = new Create();
+        createCmd.setRoles("none");
+        createCmd.setCoreName(collection + num);
+        createCmd.setCollection(collection);
+
+        if (random().nextBoolean()) {
+          // sometimes we use an explicit core node name
+          createCmd.setCoreNodeName("anode" + nodeCounter.incrementAndGet());
         }
-        return null;
+
+        if (shardId == null) {
+          createCmd.setNumShards(2);
+        }
+        createCmd.setDataDir(getDataDir(createTempDir(collection).toFile().getAbsolutePath()));
+        if (shardId != null) {
+          createCmd.setShardId(shardId);
+        }
+        client.request(createCmd);
+      } catch (Exception e) {
+        e.printStackTrace();
+        //fail
       }
+      return null;
     };
     
     pending.add(completionService.submit(call));
@@ -1091,23 +1088,20 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
               ((HttpSolrClient) client).getBaseURL().length()
                   - DEFAULT_COLLECTION.length() -1);
       final int frozeUnique = unique;
-      Callable call = new Callable() {
-        @Override
-        public Object call() {
+      Callable call = () -> {
 
-          try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
-            client.setConnectionTimeout(15000);
-            client.setSoTimeout(60000);
-            Create createCmd = new Create();
-            createCmd.setCoreName(collection);
-            createCmd.setDataDir(getDataDir(createTempDir(collection).toFile().getAbsolutePath()));
-            client.request(createCmd);
-          } catch (Exception e) {
-            e.printStackTrace();
-            //fails
-          }
-          return null;
+        try (HttpSolrClient client1 = new HttpSolrClient(baseUrl)) {
+          client1.setConnectionTimeout(15000);
+          client1.setSoTimeout(60000);
+          Create createCmd = new Create();
+          createCmd.setCoreName(collection);
+          createCmd.setDataDir(getDataDir(createTempDir(collection).toFile().getAbsolutePath()));
+          client1.request(createCmd);
+        } catch (Exception e) {
+          e.printStackTrace();
+          //fails
         }
+        return null;
       };
      
       collectionClients.add(createNewSolrClient(collection, baseUrl));

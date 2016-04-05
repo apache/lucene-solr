@@ -87,22 +87,19 @@ class GoLive {
           baseUrl = baseUrl.substring(0, lastPathIndex);
           final String mergeUrl = baseUrl;
           
-          Callable<Request> task = new Callable<Request>() {
-            @Override
-            public Request call() {
-              Request req = new Request();
-              LOG.info("Live merge " + dir.getPath() + " into " + mergeUrl);
-              try (final HttpSolrClient client = new HttpSolrClient(mergeUrl)) {
-                CoreAdminRequest.MergeIndexes mergeRequest = new CoreAdminRequest.MergeIndexes();
-                mergeRequest.setCoreName(name);
-                mergeRequest.setIndexDirs(Arrays.asList(dir.getPath().toString() + "/data/index"));
-                mergeRequest.process(client);
-                req.success = true;
-              } catch (SolrServerException | IOException e) {
-                req.e = e;
-              }
-              return req;
+          Callable<Request> task = () -> {
+            Request req = new Request();
+            LOG.info("Live merge " + dir.getPath() + " into " + mergeUrl);
+            try (final HttpSolrClient client = new HttpSolrClient(mergeUrl)) {
+              CoreAdminRequest.MergeIndexes mergeRequest = new CoreAdminRequest.MergeIndexes();
+              mergeRequest.setCoreName(name);
+              mergeRequest.setIndexDirs(Arrays.asList(dir.getPath().toString() + "/data/index"));
+              mergeRequest.process(client);
+              req.success = true;
+            } catch (SolrServerException | IOException e) {
+              req.e = e;
             }
+            return req;
           };
           pending.add(completionService.submit(task));
         }

@@ -318,12 +318,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     FileSystem fileSystem = null;
     try {
       // no need to close the fs, the cache will do it
-      fileSystem = tmpFsCache.get(path, new Callable<FileSystem>() {
-        @Override
-        public FileSystem call() throws IOException {
-          return FileSystem.get(hdfsDirPath.toUri(), conf);
-        }
-      });
+      fileSystem = tmpFsCache.get(path, () -> FileSystem.get(hdfsDirPath.toUri(), conf));
     } catch (ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -351,12 +346,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     
     try {
       // no need to close the fs, the cache will do it
-      fileSystem = tmpFsCache.get(cacheValue.path, new Callable<FileSystem>() {
-        @Override
-        public FileSystem call() throws IOException {
-          return FileSystem.get(new Path(cacheValue.path).toUri(), conf);
-        }
-      });
+      fileSystem = tmpFsCache.get(cacheValue.path, () -> FileSystem.get(new Path(cacheValue.path).toUri(), conf));
     } catch (ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -487,12 +477,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     final Configuration conf = getConf();
     FileSystem fileSystem = null;
     try {
-      fileSystem = tmpFsCache.get(dataDir, new Callable<FileSystem>() {
-        @Override
-        public FileSystem call() throws IOException {
-          return FileSystem.get(dataDirPath.toUri(), conf);
-        }
-      });
+      fileSystem = tmpFsCache.get(dataDir, () -> FileSystem.get(dataDirPath.toUri(), conf));
     } catch (ExecutionException e) {
       throw new RuntimeException(e);
     }

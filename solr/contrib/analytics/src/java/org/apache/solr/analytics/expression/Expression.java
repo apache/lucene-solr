@@ -28,15 +28,11 @@ public abstract class Expression {
   public abstract Comparable getValue();
 
   public Comparator<Expression> comparator(final FacetSortDirection direction) {
-    return new Comparator<Expression>(){
-      @SuppressWarnings("unchecked")
-      @Override
-      public int compare(Expression a, Expression b) {
-        if( direction == FacetSortDirection.ASCENDING ){
-          return a.getValue().compareTo(b.getValue());
-        } else {
-          return b.getValue().compareTo(a.getValue());
-        }
+    return (a, b) -> {
+      if( direction == FacetSortDirection.ASCENDING ){
+        return a.getValue().compareTo(b.getValue());
+      } else {
+        return b.getValue().compareTo(a.getValue());
       }
     };
   }

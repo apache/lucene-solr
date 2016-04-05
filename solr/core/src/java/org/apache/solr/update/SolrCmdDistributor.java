@@ -279,14 +279,9 @@ public class SolrCmdDistributor {
       // a commit using ConncurrentUpdateSolrServer is not async,
       // so we make it async to prevent commits from happening
       // serially across multiple nodes
-      pending.add(completionService.submit(new Callable<Object>() {
-        
-        @Override
-        public Object call() throws Exception {
-          doRequest(req);
-          return null;
-        }
-
+      pending.add(completionService.submit(() -> {
+        doRequest(req);
+        return null;
       }));
     } else {
       doRequest(req);
