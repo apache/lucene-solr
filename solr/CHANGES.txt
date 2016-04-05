@@ -70,7 +70,8 @@ Bug Fixes
 * SOLR-8902: Make sure ReturnFields only returns the requested fields from (fl=) evn when 
   DocumentTransformers ask for getExtraRequestFields()  (ryan)
 
-* SOLR-8855: The HDFS BlockDirectory should not clean up it's cache on shutdown. (Mark Miller)
+* SOLR-8875: SolrCloud Overseer clusterState could unexpectedly be null resulting in NPE.
+  (Scott Blum via David Smiley)
 
 Optimizations
 ----------------------
@@ -499,7 +500,7 @@ Other Changes
 
 * SOLR-8758: Add a new SolrCloudTestCase class, using MiniSolrCloudCluster (Alan
   Woodward)
-  
+
 * SOLR-8764: Remove all deprecated methods and classes from master prior to the 6.0 release. (Steve Rowe)
 
 * SOLR-8780: Remove unused OverseerCollectionMessageHandler#getClusterStatus method. (Varun Thacker)
