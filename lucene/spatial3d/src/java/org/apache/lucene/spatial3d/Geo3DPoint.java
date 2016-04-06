@@ -24,7 +24,6 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.GeoUtils;
-import org.apache.lucene.spatial3d.geom.Vector;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
@@ -231,12 +230,12 @@ public final class Geo3DPoint extends Field {
   
   /** Encode single dimension */
   public static void encodeDimension(double value, byte bytes[], int offset) {
-    NumericUtils.intToSortableBytes(Geo3DUtil.encodeValue(PlanetModel.WGS84.getMaximumMagnitude(), value), bytes, offset);
+    NumericUtils.intToSortableBytes(Geo3DUtil.encodeValue(value), bytes, offset);
   }
   
   /** Decode single dimension */
   public static double decodeDimension(byte value[], int offset) {
-    return Geo3DUtil.decodeValueCenter(PlanetModel.WGS84.getMaximumMagnitude(), NumericUtils.sortableBytesToInt(value, offset));
+    return Geo3DUtil.decodeValue(NumericUtils.sortableBytesToInt(value, offset));
   }
 
   /** Returns a query matching all points inside the provided shape.

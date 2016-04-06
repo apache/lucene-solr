@@ -199,7 +199,7 @@ public class LatLonPoint extends Field {
    */
   public static double decodeLatitude(int encoded) {
     double result = encoded * LATITUDE_DECODE;
-    assert result >= GeoUtils.MIN_LAT_INCL && result <= GeoUtils.MAX_LAT_INCL;
+    assert result >= GeoUtils.MIN_LAT_INCL && result < GeoUtils.MAX_LAT_INCL;
     return result;
   }
   
@@ -220,7 +220,7 @@ public class LatLonPoint extends Field {
    */  
   public static double decodeLongitude(int encoded) {
     double result = encoded * LONGITUDE_DECODE;
-    assert result >= GeoUtils.MIN_LON_INCL && result <= GeoUtils.MAX_LON_INCL;
+    assert result >= GeoUtils.MIN_LON_INCL && result < GeoUtils.MAX_LON_INCL;
     return result;
   }
 

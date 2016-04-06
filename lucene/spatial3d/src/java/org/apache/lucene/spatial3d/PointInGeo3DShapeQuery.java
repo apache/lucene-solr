@@ -19,13 +19,9 @@ package org.apache.lucene.spatial3d;
 import java.io.IOException;
 
 import org.apache.lucene.spatial3d.geom.BasePlanetObject;
-import org.apache.lucene.spatial3d.geom.GeoArea;
-import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
 import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
-import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -35,7 +31,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.NumericUtils;
 
 /** Finds all previously indexed points that fall within the specified polygon.
  *
@@ -98,73 +93,9 @@ final class PointInGeo3DShapeQuery extends Query {
         assert xyzSolid.getRelationship(shape) == GeoArea.WITHIN || xyzSolid.getRelationship(shape) == GeoArea.OVERLAPS: "expected WITHIN (1) or OVERLAPS (2) but got " + xyzSolid.getRelationship(shape) + "; shape="+shape+"; XYZSolid="+xyzSolid;
         */
 
-        double planetMax = PlanetModel.WGS84.getMaximumMagnitude();
-
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
 
-        values.intersect(field,
-                         new IntersectVisitor() {
-
-                           @Override
-                           public void visit(int docID) {
-                             result.add(docID);
-                           }
-
-                           @Override
-                           public void visit(int docID, byte[] packedValue) {
-                             assert packedValue.length == 12;
-                             double x = Geo3DPoint.decodeDimension(packedValue, 0);
-                             double y = Geo3DPoint.decodeDimension(packedValue, Integer.BYTES);
-                             double z = Geo3DPoint.decodeDimension(packedValue, 2 * Integer.BYTES);
-                             if (shape.isWithin(x, y, z)) {
-                               result.add(docID);
-                             }
-                           }
-
-                           @Override
-                           public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                             // Because the dimensional format operates in quantized (64 bit -> 32 bit) space, and the cell bounds
-                             // here are inclusive, we need to extend the bounds to the largest un-quantized values that
-                             // could quantize into these bounds.  The encoding (Geo3DUtil.encodeValue) does
-                             // a Math.round from double to long, so e.g. 1.4 -> 1, and -1.4 -> -1:
-                             double xMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.sortableBytesToInt(minPackedValue, 0));
-                             double xMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.sortableBytesToInt(maxPackedValue, 0));
-                             double yMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.sortableBytesToInt(minPackedValue, 1 * Integer.BYTES));
-                             double yMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.sortableBytesToInt(maxPackedValue, 1 * Integer.BYTES));
-                             double zMin = Geo3DUtil.decodeValueMin(planetMax, NumericUtils.sortableBytesToInt(minPackedValue, 2 * Integer.BYTES));
-                             double zMax = Geo3DUtil.decodeValueMax(planetMax, NumericUtils.sortableBytesToInt(maxPackedValue, 2 * Integer.BYTES));
-
-                             //System.out.println("  compare: x=" + cellXMin + "-" + cellXMax + " y=" + cellYMin + "-" + cellYMax + " z=" + cellZMin + "-" + cellZMax);
-                             assert xMin <= xMax;
-                             assert yMin <= yMax;
-                             assert zMin <= zMax;
-
-                             GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84, xMin, xMax, yMin, yMax, zMin, zMax);
-
-                             switch(xyzSolid.getRelationship(shape)) {
-                             case GeoArea.CONTAINS:
-                               // Shape fully contains the cell
-                               //System.out.println("    inside");
-                               return Relation.CELL_INSIDE_QUERY;
-                             case GeoArea.OVERLAPS:
-                               // They do overlap but neither contains the other:
-                               //System.out.println("    crosses1");
-                               return Relation.CELL_CROSSES_QUERY;
-                             case GeoArea.WITHIN:
-                               // Cell fully contains the shape:
-                               //System.out.println("    crosses2");
-                               // return Relation.SHAPE_INSIDE_CELL;
-                               return Relation.CELL_CROSSES_QUERY;
-                             case GeoArea.DISJOINT:
-                               // They do not overlap at all
-                               //System.out.println("    outside");
-                               return Relation.CELL_OUTSIDE_QUERY;
-                             default:
-                               assert false;
-                               return Relation.CELL_CROSSES_QUERY;
-                             }
-                           }
-                         });
+        values.intersect(field, new PointInShapeIntersectVisitor(result, shape));
 
         return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
