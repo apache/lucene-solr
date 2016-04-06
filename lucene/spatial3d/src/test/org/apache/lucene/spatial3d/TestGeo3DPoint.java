@@ -69,6 +69,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
@@ -826,6 +827,18 @@ public class TestGeo3DPoint extends LuceneTestCase {
     assertFalse(q.equals(Geo3DPoint.newShapeQuery("point", shape2)));
   }
   
+  @Ignore
+  public void testComplexPolygons() {
+    final PlanetModel pm = PlanetModel.WGS84;
+    // Pick a random pole
+    final GeoPoint randomPole = new GeoPoint(pm, Math.toRadians(randomLat()), Math.toRadians(randomLon()));
+    // Create a polygon that's less than 180 degrees
+    final Polygon clockWise = makePoly(pm, randomPole, true);
+    // Create a polygon that's greater than 180 degrees
+    final Polygon counterClockWise = makePoly(pm, randomPole, false);
+    
+  }
+  
   protected static double MINIMUM_EDGE_ANGLE = Math.toRadians(5.0);
   protected static double MINIMUM_ARC_ANGLE = Math.toRadians(1.0);
   
@@ -865,7 +878,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
         accumulatedAngle += angle;
       }
       // Pick the arc distance randomly
-      arcDistance[i] = random().nextDouble() * (Math.PI * 0.5 - MINIMUM_ARC_ANGLE) + MINIMUM_ARC_ANGLE;
+      arcDistance[i] = random().nextDouble() * (Math.PI - MINIMUM_ARC_ANGLE) + MINIMUM_ARC_ANGLE;
     }
     if (clockwiseDesired) {
       // Reverse the signs

@@ -64,10 +64,11 @@ public class GeoPolygonFactory {
     final List<GeoPolygon> holes) {
     // The basic operation uses a set of points, two points determining one particular edge, and a sided plane
     // describing membership.
-    return buildPolygonShape(planetModel, pointList, convexPointIndex, getLegalIndex(convexPointIndex + 1, pointList.size()),
+    return buildPolygonShape(new GeoCompositePolygon(),
+        planetModel, pointList, new BitSet(),
+        convexPointIndex, getLegalIndex(convexPointIndex + 1, pointList.size()),
         new SidedPlane(pointList.get(getLegalIndex(convexPointIndex - 1, pointList.size())),
             pointList.get(convexPointIndex), pointList.get(getLegalIndex(convexPointIndex + 1, pointList.size()))),
-        false,
         holes,
         null);
   }
@@ -137,15 +138,15 @@ public class GeoPolygonFactory {
     final SidedPlane initialPlane = new SidedPlane(testPoint, pointList.get(0), pointList.get(1));
     // We don't know if this is the correct siding choice.  We will only know as we build the complex polygon.
     // So we need to be prepared to try both possibilities.
-    final GeoPolygon trial = buildPolygonShape(planetModel, pointList, 0, 1, initialPlane, false, holes, testPoint);
+    final GeoPolygon trial = buildPolygonShape(new GeoCompositePolygon(), planetModel, pointList, new BitSet(), 0, 1, initialPlane, holes, testPoint);
     if (trial == null) {
       // The testPoint was within the shape.  Was that intended?
       if (testPointInside) {
         // Yes: build it for real
-        return buildPolygonShape(planetModel, pointList, 0, 1, initialPlane, false, holes, null);
+        return buildPolygonShape(new GeoCompositePolygon(), planetModel, pointList, new BitSet(), 0, 1, initialPlane, holes, null);
       }
       // No: do the complement and return that.
-      return buildPolygonShape(planetModel, pointList, 0, 1, new SidedPlane(initialPlane), false, holes, null);
+      return buildPolygonShape(new GeoCompositePolygon(), planetModel, pointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
     } else {
       // The testPoint was outside the shape.  Was that intended?
       if (!testPointInside) {
@@ -153,7 +154,7 @@ public class GeoPolygonFactory {
         return trial;
       }
       // No: return the complement
-      return buildPolygonShape(planetModel, pointList, 0, 1, new SidedPlane(initialPlane), false, holes, null);
+      return buildPolygonShape(new GeoCompositePolygon(), planetModel, pointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
     }
   }
 
@@ -280,10 +281,12 @@ public class GeoPolygonFactory {
   }
 
   /** Build a GeoPolygon out of one concave part and multiple convex parts given points, starting edge, and whether starting edge is internal or not.
-   * @param pointsList        is a list of the GeoPoints to build an arbitrary polygon out of.
+   * @param rval is the composite polygon to add to.
+   * @param planetModel is the planet model.
+   * @param pointsList is a list of the GeoPoints to build an arbitrary polygon out of.
+   * @param internalEdges specifies which edges are internal.
    * @param startPointIndex is the first of the points, constituting the starting edge.
    * @param startingEdge is the plane describing the starting edge.
-   * @param isInternalEdge is true if the specified edge is an internal one.
    * @param holes is the list of holes in the polygon, or null if none.
    * @param testPoint is an (optional) test point, which will be used to determine if we are generating
    *  a shape with the proper sidedness.  It is passed in only when the test point is supposed to be outside
@@ -293,18 +296,19 @@ public class GeoPolygonFactory {
    *  which result to use.  If the test point is supposed to be within the shape, then it must be outside of the
    *  complement shape.  If the test point is supposed to be outside the shape, then it must be outside of the
    *  original shape.  Either way, we can figure out the right thing to use.
-   * @return a GeoMembershipShape corresponding to what was specified, or null if what was specified
+   * @return the GeoPolygon passed in in the rval parameter, or null if what was specified
    *  was inconsistent with what we generated.  Specifically, if we specify an exterior point that is
    *  found in the interior of the shape we create here we return null, which is a signal that we chose
    *  our initial plane sidedness backwards.
    */
   public static GeoPolygon buildPolygonShape(
+    final GeoCompositePolygon rval,
     final PlanetModel planetModel,
     final List<GeoPoint> pointsList,
+    final BitSet internalEdges,
     final int startPointIndex,
     final int endPointIndex,
     final SidedPlane startingEdge,
-    final boolean isInternalEdge,
     final List<GeoPolygon> holes,
     final GeoPoint testPoint) {
 
@@ -320,11 +324,7 @@ public class GeoPolygonFactory {
     // convex polygon.  That internal edge is used to extend the list of edges in the concave polygon edge list.
 
     // The edge buffer.
-    final EdgeBuffer edgeBuffer = new EdgeBuffer(pointsList, startPointIndex, endPointIndex, startingEdge, isInternalEdge);
-
-    // Current composite.  This is what we'll actually be returning.  This will have a number of convex polygons, and
-    // maybe a single concave one too.
-    final GeoCompositePolygon rval = new GeoCompositePolygon();
+    final EdgeBuffer edgeBuffer = new EdgeBuffer(pointsList, internalEdges, startPointIndex, endPointIndex, startingEdge);
 
     // Starting state:
     // The stopping point
@@ -363,6 +363,130 @@ public class GeoPolygonFactory {
       }
     }
     
+    // Look for any reason that the concave polygon cannot be created.
+    // This test is really the converse of the one for a convex polygon.
+    // Points on the edge of a convex polygon MUST be inside all the other
+    // edges.  For a concave polygon, this check is still the same, except we have
+    // to look at the reverse sided planes, not the forward ones.
+    
+    // If we find a point that is outside of the complementary edges, it means that
+    // the point is in fact able to form a convex polygon with the edge it is
+    // offending. 
+    
+    // If what is left has any plane/point pair that is on the wrong side, we have to split using one of the plane endpoints and the 
+    // point in question.  This is best structured as a recursion, if detected.
+    final Iterator<Edge> checkIterator = edgeBuffer.iterator();
+    while (checkIterator.hasNext()) {
+      final Edge checkEdge = checkIterator.next();
+      final SidedPlane flippedPlane = new SidedPlane(checkEdge.plane);
+      // Now walk around again looking for points that fail
+      final Iterator<Edge> confirmIterator = edgeBuffer.iterator();
+      while (confirmIterator.hasNext()) {
+        final Edge confirmEdge = confirmIterator.next();
+        if (confirmEdge == checkEdge) {
+          continue;
+        }
+        final GeoPoint thePoint;
+        if (checkEdge.startPoint != confirmEdge.startPoint && checkEdge.endPoint != confirmEdge.startPoint && !flippedPlane.isWithin(confirmEdge.startPoint)) {
+          thePoint = confirmEdge.startPoint;
+        } else if (checkEdge.startPoint != confirmEdge.endPoint && checkEdge.endPoint != confirmEdge.endPoint && !flippedPlane.isWithin(confirmEdge.endPoint)) {
+          thePoint = confirmEdge.endPoint;
+        } else {
+          thePoint = null;
+        }
+        if (thePoint != null) {
+          // Found a split!!
+          
+          // This should be the only problematic part of the polygon.
+          // We know that thePoint is on the "wrong" side of the edge -- that is, it's on the side that the
+          // edge is pointing at.
+          final List<GeoPoint> thirdPartPoints = new ArrayList<>();
+          final BitSet thirdPartInternal = new BitSet();
+          thirdPartPoints.add(checkEdge.startPoint);
+          thirdPartInternal.set(0, checkEdge.isInternal);
+          thirdPartPoints.add(checkEdge.endPoint);
+          thirdPartInternal.set(1, true);
+          thirdPartPoints.add(thePoint);
+          thirdPartInternal.set(2, true);
+          //System.out.println("Doing convex part...");
+          final GeoPolygon thirdPoly = buildPolygonShape(rval,
+            planetModel,
+            thirdPartPoints,
+            thirdPartInternal, 
+            0,
+            1,
+            checkEdge.plane,
+            holes,
+            testPoint);
+          //System.out.println("...done convex part.");
+          if (thirdPoly == null) {
+            return null;
+          }
+
+          // The part preceding the bad edge, back to thePoint, needs to be recursively
+          // processed.  So, assemble what we need, which is basically a list of edges.
+          Edge loopEdge = edgeBuffer.getPrevious(checkEdge);
+          final List<GeoPoint> firstPartPoints = new ArrayList<>();
+          final BitSet firstPartInternal = new BitSet();
+          int i = 0;
+          while (true) {
+            firstPartPoints.add(loopEdge.endPoint);
+            if (loopEdge.endPoint == thePoint) {
+              break;
+            }
+            firstPartInternal.set(i++, loopEdge.isInternal);
+            loopEdge = edgeBuffer.getPrevious(loopEdge);
+          }
+          firstPartInternal.set(i, true);
+          //System.out.println("Doing first part...");
+          final GeoPolygon firstPoly = buildPolygonShape(rval,
+            planetModel,
+            firstPartPoints,
+            firstPartInternal, 
+            firstPartPoints.size()-1,
+            0,
+            new SidedPlane(checkEdge.endPoint, false, checkEdge.startPoint, thePoint),
+            holes,
+            testPoint);
+          //System.out.println("...done first part.");
+          if (firstPoly == null) {
+            return null;
+          }
+          final List<GeoPoint> secondPartPoints = new ArrayList<>();
+          final BitSet secondPartInternal = new BitSet();
+          loopEdge = edgeBuffer.getNext(checkEdge);
+          i = 0;
+          while (true) {
+            secondPartPoints.add(loopEdge.startPoint);
+            if (loopEdge.startPoint == thePoint) {
+              break;
+            }
+            secondPartInternal.set(i++, loopEdge.isInternal);
+            loopEdge = edgeBuffer.getNext(loopEdge);
+          }
+          secondPartInternal.set(i, true);
+          //System.out.println("Doing second part...");
+          final GeoPolygon secondPoly = buildPolygonShape(rval,
+            planetModel,
+            secondPartPoints,
+            secondPartInternal, 
+            secondPartPoints.size()-1,
+            0,
+            new SidedPlane(checkEdge.endPoint, true, checkEdge.startPoint, thePoint),
+            holes,
+            testPoint);
+          //System.out.println("... done second part");
+          if (secondPoly == null) {
+            return null;
+          }
+          
+          return rval;
+        }
+      }
+    }
+    
+    // No violations found: we know it's a legal concave polygon.
+    
     // If there's anything left in the edge buffer, convert to concave polygon.
     if (makeConcavePolygon(planetModel, rval, edgeBuffer, holes, testPoint) == false) {
       return null;
@@ -399,9 +523,11 @@ public class GeoPolygonFactory {
     final List<GeoPoint> points = new ArrayList<GeoPoint>(edgeBuffer.size());
     final BitSet internalEdges = new BitSet(edgeBuffer.size()-1);
 
+    //System.out.println("Concave polygon points:");
     Edge edge = edgeBuffer.pickOne();
     boolean isInternal = false;
     for (int i = 0; i < edgeBuffer.size(); i++) {
+      //System.out.println(" "+edge.plane+": "+edge.startPoint+"->"+edge.endPoint+"; previous? "+(edge.plane.isWithin(edgeBuffer.getPrevious(edge).startPoint)?"in":"out")+" next? "+(edge.plane.isWithin(edgeBuffer.getNext(edge).endPoint)?"in":"out"));
       points.add(edge.startPoint);
       if (i < edgeBuffer.size() - 1) {
         internalEdges.set(i, edge.isInternal);
@@ -784,29 +910,24 @@ public class GeoPolygonFactory {
 
     /** Constructor.
       * @param pointList is the list of points.
+      * @param internalEdges is the list of edges that are internal (includes return edge)
       * @param startPlaneStartIndex is the index of the startPlane's starting point
       * @param startPlaneEndIndex is the index of the startPlane's ending point
       * @param startPlane is the starting plane
-      * @param startPlaneIsInternal signals whether the startPlane is an internal edge
       */
-    public EdgeBuffer(final List<GeoPoint> pointList, final int startPlaneStartIndex, final int startPlaneEndIndex, final SidedPlane startPlane, final boolean startPlaneIsInternal) {
+    public EdgeBuffer(final List<GeoPoint> pointList, final BitSet internalEdges, final int startPlaneStartIndex, final int startPlaneEndIndex, final SidedPlane startPlane) {
       /*
       System.out.println("Initial points:");
       for (final GeoPoint p : pointList) {
         System.out.println(" "+p);
       }
-      System.out.println("For start plane, the following points are in/out:");
-      for (final GeoPoint p: pointList) {
-        System.out.println(" "+p+" is: "+(startPlane.isWithin(p)?"in":"out"));
-      }
       */
       
-      final Edge startEdge = new Edge(pointList.get(startPlaneStartIndex), pointList.get(startPlaneEndIndex), startPlane, startPlaneIsInternal);
+      final Edge startEdge = new Edge(pointList.get(startPlaneStartIndex), pointList.get(startPlaneEndIndex), startPlane, internalEdges.get(startPlaneStartIndex));
       // Fill in the EdgeBuffer by walking around creating more stuff
       Edge currentEdge = startEdge;
       int startIndex = startPlaneStartIndex;
       int endIndex = startPlaneEndIndex;
-      boolean isInternal = startPlaneIsInternal;
       while (true) {
         // Compute the next edge
         startIndex = endIndex;
@@ -825,7 +946,7 @@ public class GeoPolygonFactory {
           System.out.println(" "+p+" is: "+(newPlane.isWithin(p)?"in":"out"));
         }
         */
-        final Edge newEdge = new Edge(pointList.get(startIndex), pointList.get(endIndex), newPlane, false);
+        final Edge newEdge = new Edge(pointList.get(startIndex), pointList.get(endIndex), newPlane, internalEdges.get(startIndex));
         
         // Link it in
         previousEdges.put(newEdge, currentEdge);
