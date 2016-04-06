@@ -95,12 +95,12 @@ public class TestCoreParser extends LuceneTestCase {
     analyzer = null;
   }
 
-  public void testSimpleXML() throws ParserException, IOException {
+  public void testTermQueryXML() throws ParserException, IOException {
     Query q = parse("TermQuery.xml");
     dumpResults("TermQuery", q, 5);
   }
 
-  public void testSimpleTermsQueryXML() throws ParserException, IOException {
+  public void testTermsQueryXML() throws ParserException, IOException {
     Query q = parse("TermsQuery.xml");
     dumpResults("TermsQuery", q, 5);
   }
@@ -187,10 +187,11 @@ public class TestCoreParser extends LuceneTestCase {
   }
 
   protected Query parse(String xmlFileName) throws ParserException, IOException {
-    InputStream xmlStream = TestCoreParser.class.getResourceAsStream(xmlFileName);
-    Query result = coreParser().parse(xmlStream);
-    xmlStream.close();
-    return result;
+    try (InputStream xmlStream = TestCoreParser.class.getResourceAsStream(xmlFileName)) {
+      assertNotNull("Test XML file " + xmlFileName + " cannot be found", xmlStream);
+      Query result = coreParser().parse(xmlStream);
+      return result;
+    }
   }
 
   protected Query rewrite(Query q) throws IOException {
@@ -199,7 +200,7 @@ public class TestCoreParser extends LuceneTestCase {
 
   protected void dumpResults(String qType, Query q, int numDocs) throws IOException {
     if (VERBOSE) {
-      System.out.println("TEST: query=" + q);
+      System.out.println("TEST: qType=" + qType + " query=" + q + " numDocs=" + numDocs);
     }
     TopDocs hits = searcher.search(q, numDocs);
     assertTrue(qType + " should produce results ", hits.totalHits > 0);
