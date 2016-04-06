@@ -46,6 +46,9 @@ import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
 import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.XYZBounds;
+import org.apache.lucene.spatial3d.geom.SidedPlane;
+import org.apache.lucene.spatial3d.geom.Plane;
+import org.apache.lucene.spatial3d.geom.GeoPolygon;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -60,6 +63,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -820,5 +824,210 @@ public class TestGeo3DPoint extends LuceneTestCase {
     } while (shape.equals(shape2));
 
     assertFalse(q.equals(Geo3DPoint.newShapeQuery("point", shape2)));
+  }
+  
+  protected static double MINIMUM_EDGE_ANGLE = Math.toRadians(5.0);
+  protected static double MINIMUM_ARC_ANGLE = Math.toRadians(1.0);
+  
+  /** Cook up a random Polygon that makes sense, with possible nested polygon within.
+    * This is part of testing more complex polygons with nested holes.  Picking random points
+    * doesn't do it because it's almost impossible to come up with nested ones of the proper 
+    * clockwise/counterclockwise rotation that way.
+    */
+  protected Polygon makePoly(final PlanetModel pm, final GeoPoint pole, final boolean clockwiseDesired) {
+    // Polygon edges will be arranged around the provided pole, and holes will each have a pole selected within the parent
+    // polygon.
+    final int pointCount = TestUtil.nextInt(random(), 3, 10);
+    // The point angles we pick next.  The only requirement is that they are not all on one side of the pole.
+    // We arrange that by picking the next point within what's left of the remaining angle, but never more than 180 degrees,
+    // and never less than what is needed to insure that the remaining point choices are less than 180 degrees always.
+    // These are all picked in the context of the pole,
+    final double[] angles = new double[pointCount];
+    final double[] arcDistance = new double[pointCount];
+    double accumulatedAngle = 0.0;
+    for (int i = 0; i < pointCount; i++) {
+      final int remainingEdgeCount = pointCount - i;
+      final double remainingAngle = 2.0 * Math.PI - accumulatedAngle;
+      if (remainingEdgeCount == 1) {
+        angles[i] = remainingAngle;
+      } else {
+        // The maximum angle is 180 degrees, or what's left when you give a minimal amount to each edge.
+        double maximumAngle = remainingAngle - (remainingEdgeCount-1) * MINIMUM_EDGE_ANGLE;
+        if (maximumAngle > Math.PI) {
+          maximumAngle = Math.PI;
+        }
+        // The minimum angle is MINIMUM_EDGE_ANGLE, or enough to be sure nobody afterwards needs more than
+        // 180 degrees.  And since we have three points to start with, we already know that.
+        final double minimumAngle = MINIMUM_EDGE_ANGLE;
+        // Pick the angle
+        final double angle = random().nextDouble() * (maximumAngle - minimumAngle) + minimumAngle;
+        angles[i] = angle;
+        accumulatedAngle += angle;
+      }
+      // Pick the arc distance randomly
+      arcDistance[i] = random().nextDouble() * (Math.PI * 0.5 - MINIMUM_ARC_ANGLE) + MINIMUM_ARC_ANGLE;
+    }
+    if (clockwiseDesired) {
+      // Reverse the signs
+      for (int i = 0; i < pointCount; i++) {
+        angles[i] = -angles[i];
+      }
+    }
+    
+    // Now, use the pole's information plus angles and arcs to create GeoPoints in the right order.
+    final List<GeoPoint> polyPoints = convertToPoints(pm, pole, angles, arcDistance);
+    
+    // Create the geo3d polygon, so we can test out our poles.
+    GeoPolygon poly = GeoPolygonFactory.makeGeoPolygon(pm, polyPoints, null);
+    
+    // Next, do some holes.  No more than 2 of these.  The poles for holes must always be within the polygon, so we're
+    // going to use Geo3D to help us select those given the points we just made.
+    
+    final int holeCount = TestUtil.nextInt(random(), 0, 2);
+    
+    final Polygon[] holes = new Polygon[holeCount];
+    
+    for (int i = 0; i < holeCount; i++) {
+      // Choose a pole.  The poly has to be within the polygon, but it also cannot be on the polygon edge.
+      // We try indefinitely to find a good pole...
+      while (true) {
+        final GeoPoint poleChoice = new GeoPoint(pm, toRadians(randomLat()), toRadians(randomLon()));
+        if (!poly.isWithin(poleChoice)) {
+          continue;
+        }
+        // We have a pole within the polygon.  Now try 100 times to build a polygon that does not intersect the outside ring.
+        // After that we give up and pick a new pole.
+        boolean foundOne = false;
+        for (int j = 0; j < 100; j++) {
+          final Polygon insidePoly = makePoly(pm, poleChoice, !clockwiseDesired);
+          // Verify that the inside polygon is OK.  If not, discard and repeat.
+          if (!verifyPolygon(pm, insidePoly, poly)) {
+            continue;
+          }
+          holes[i] = insidePoly;
+          foundOne = true;
+        }
+        if (foundOne) {
+          break;
+        }
+      }
+    }
+    
+    // Finally, build the polygon and return it
+    final double[] lats = new double[polyPoints.size() + 1];
+    final double[] lons = new double[polyPoints.size() + 1];
+      
+    for (int i = 0; i < polyPoints.size(); i++) {
+      lats[i] = polyPoints.get(i).getLatitude() * 180.0 / Math.PI;
+      lons[i] = polyPoints.get(i).getLongitude() * 180.0 / Math.PI;
+    }
+    lats[polyPoints.size()] = lats[0];
+    lons[polyPoints.size()] = lons[0];
+    return new Polygon(lats, lons, holes);
+  }
+  
+  protected static List<GeoPoint> convertToPoints(final PlanetModel pm, final GeoPoint pole, final double[] angles, final double[] arcDistances) {
+    // To do the point rotations, we need the sine and cosine of the pole latitude and longitude.  Get it here for performance.
+    final double sinLatitude = Math.sin(pole.getLatitude());
+    final double cosLatitude = Math.cos(pole.getLatitude());
+    final double sinLongitude = Math.sin(pole.getLongitude());
+    final double cosLongitude = Math.cos(pole.getLongitude());
+    final List<GeoPoint> rval = new ArrayList<>();
+    for (int i = 0; i < angles.length; i++) {
+      rval.add(createPoint(pm, angles[i], arcDistances[i], sinLatitude, cosLatitude, sinLongitude, cosLongitude));
+    }
+    return rval;
+  }
+  
+  protected static GeoPoint createPoint(final PlanetModel pm,
+    final double angle,
+    final double arcDistance,
+    final double sinLatitude,
+    final double cosLatitude,
+    final double sinLongitude,
+    final double cosLongitude) {
+    // From the angle and arc distance, convert to (x,y,z) in unit space.
+    // We want the perspective to be looking down the x axis.  The "angle" measurement is thus in the Y-Z plane.
+    // The arcdistance is in X.
+    final double x = Math.cos(arcDistance);
+    final double yzScale = Math.sin(arcDistance);
+    final double y = Math.cos(angle) * yzScale;
+    final double z = Math.sin(angle) * yzScale;
+    // Now, rotate coordinates so that we shift everything from pole = x-axis to actual coordinates.
+    // This transformation should take the point (1,0,0) and transform it to the pole's actual (x,y,z) coordinates.
+    // Coordinate rotation formula:
+    // x1 = x0 cos T - y0 sin T
+    // y1 = x0 sin T + y0 cos T
+    // We're in essence undoing the following transformation (from GeoPolygonFactory):
+    // x1 = x0 cos az - y0 sin az
+    // y1 = x0 sin az + y0 cos az
+    // z1 = z0
+    // x2 = x1 cos al - z1 sin al
+    // y2 = y1
+    // z2 = x1 sin al + z1 cos al
+    // So, we reverse the order of the transformations, AND we transform backwards.
+    // Transforming backwards means using these identities: sin(-angle) = -sin(angle), cos(-angle) = cos(angle)
+    // So:
+    // x1 = x0 cos al + z0 sin al
+    // y1 = y0
+    // z1 = - x0 sin al + z0 cos al
+    // x2 = x1 cos az + y1 sin az
+    // y2 = - x1 sin az + y1 cos az
+    // z2 = z1
+    final double x1 = x * cosLatitude + z * sinLatitude;
+    final double y1 = y;
+    final double z1 = - x * sinLatitude + z * cosLatitude;
+    final double x2 = x1 * cosLongitude + y1 * sinLongitude;
+    final double y2 = - x1 * sinLongitude + y1 * cosLongitude;
+    final double z2 = z1;
+
+    // Scale final (x,y,z) to land on planet surface
+    // Equation of ellipsoid:  x^2 / a^2 + y^2 / b^2 + z^2 / c^2 - 1 = 0
+    // Use a parameterization, e.g. x = t * x2, y = t * y2, z = t * z2, and find t.
+    // t^2 ( x2^2 / a^2 + y2^2 / b^2 + z2^2 / c^2 ) = 1
+    // t = +/- sqrt( 1 / ( x2^2 / a^2 + y2^2 / b^2 + z2^2 / c^2 ) )
+    // We want the + variant because we're scaling in the same direction as the original vector.
+    final double t = Math.sqrt( 1.0 / (x2 * x2 * pm.inverseAbSquared + y2 * y2 * pm.inverseAbSquared + z2 * z2 * pm.inverseCSquared));
+    return new GeoPoint(x2 * t, y2 * t, z2 * t);
+  }
+  
+  protected static boolean verifyPolygon(final PlanetModel pm, final Polygon polygon, final GeoPolygon outsidePolygon) {
+    // Each point in the new poly should be inside the outside poly, and each edge should not intersect the outside poly edge
+    final double[] lats = polygon.getPolyLats();
+    final double[] lons = polygon.getPolyLons();
+    final List<GeoPoint> polyPoints = new ArrayList<>(lats.length-1);
+    for (int i = 0; i < lats.length - 1; i++) {
+      final GeoPoint newPoint = new GeoPoint(pm, Math.toRadians(lats[i]), Math.toRadians(lons[i]));
+      if (!outsidePolygon.isWithin(newPoint)) {
+        return false;
+      }
+      polyPoints.add(newPoint);
+    }
+    // We don't need to construct the world to find intersections -- just the bordering planes. 
+    for (int planeIndex = 0; planeIndex < polyPoints.size(); planeIndex++) {
+      final GeoPoint startPoint = polyPoints.get(planeIndex);
+      final GeoPoint endPoint = polyPoints.get(legalIndex(planeIndex + 1, polyPoints.size()));
+      final GeoPoint beforeStartPoint = polyPoints.get(legalIndex(planeIndex - 1, polyPoints.size()));
+      final GeoPoint afterEndPoint = polyPoints.get(legalIndex(planeIndex + 2, polyPoints.size()));
+      final SidedPlane beforePlane = new SidedPlane(endPoint, beforeStartPoint, startPoint);
+      final SidedPlane afterPlane = new SidedPlane(startPoint, endPoint, afterEndPoint);
+      final Plane plane = new Plane(startPoint, endPoint);
+      
+      // Check for intersections!!
+      if (outsidePolygon.intersects(plane, null, beforePlane, afterPlane)) {
+        return false;
+      }
+    }
+    return true;
+  }
+  
+  protected static int legalIndex(int index, int size) {
+    if (index > size) {
+      index -= size;
+    }
+    if (index < 0) {
+      index += size;
+    }
+    return index;
   }
 }
