@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.document;
 
-import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.index.DocValuesType;
@@ -31,6 +30,13 @@ import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.geo.Polygon;
+
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 
 /** 
  * An indexed location field.
@@ -123,116 +129,12 @@ public class LatLonPoint extends Field {
   /**
    * Returns a 64-bit long, where the upper 32 bits are the encoded latitude,
    * and the lower 32 bits are the encoded longitude.
-   * @see #decodeLatitude(int)
-   * @see #decodeLongitude(int)
+   * @see org.apache.lucene.geo.GeoEncodingUtils#decodeLatitude(int)
+   * @see org.apache.lucene.geo.GeoEncodingUtils#decodeLongitude(int)
    */
   @Override
   public Number numericValue() {
     return currentValue;
-  }
-
-  // public helper methods (e.g. for queries)
-
-  /** 
-   * Quantizes double (64 bit) latitude into 32 bits (rounding down: in the direction of -90)
-   * @param latitude latitude value: must be within standard +/-90 coordinate bounds.
-   * @return encoded value as a 32-bit {@code int}
-   * @throws IllegalArgumentException if latitude is out of bounds
-   */
-  public static int encodeLatitude(double latitude) {
-    GeoUtils.checkLatitude(latitude);
-    // the maximum possible value cannot be encoded without overflow
-    if (latitude == 90.0D) {
-      latitude = Math.nextDown(latitude);
-    }
-    return (int) Math.floor(latitude / LATITUDE_DECODE);
-  }
-  
-  /** 
-   * Quantizes double (64 bit) latitude into 32 bits (rounding up: in the direction of +90)
-   * @param latitude latitude value: must be within standard +/-90 coordinate bounds.
-   * @return encoded value as a 32-bit {@code int}
-   * @throws IllegalArgumentException if latitude is out of bounds
-   */
-  public static int encodeLatitudeCeil(double latitude) {
-    GeoUtils.checkLatitude(latitude);
-    // the maximum possible value cannot be encoded without overflow
-    if (latitude == 90.0D) {
-      latitude = Math.nextDown(latitude);
-    }
-    return (int) Math.ceil(latitude / LATITUDE_DECODE);
-  }
-
-  /** 
-   * Quantizes double (64 bit) longitude into 32 bits (rounding down: in the direction of -180)
-   * @param longitude longitude value: must be within standard +/-180 coordinate bounds.
-   * @return encoded value as a 32-bit {@code int}
-   * @throws IllegalArgumentException if longitude is out of bounds
-   */
-  public static int encodeLongitude(double longitude) {
-    GeoUtils.checkLongitude(longitude);
-    // the maximum possible value cannot be encoded without overflow
-    if (longitude == 180.0D) {
-      longitude = Math.nextDown(longitude);
-    }
-    return (int) Math.floor(longitude / LONGITUDE_DECODE);
-  }
-  
-  /** 
-   * Quantizes double (64 bit) longitude into 32 bits (rounding up: in the direction of +180)
-   * @param longitude longitude value: must be within standard +/-180 coordinate bounds.
-   * @return encoded value as a 32-bit {@code int}
-   * @throws IllegalArgumentException if longitude is out of bounds
-   */
-  public static int encodeLongitudeCeil(double longitude) {
-    GeoUtils.checkLongitude(longitude);
-    // the maximum possible value cannot be encoded without overflow
-    if (longitude == 180.0D) {
-      longitude = Math.nextDown(longitude);
-    }
-    return (int) Math.ceil(longitude / LONGITUDE_DECODE);
-  }
-
-  /** 
-   * Turns quantized value from {@link #encodeLatitude} back into a double. 
-   * @param encoded encoded value: 32-bit quantized value.
-   * @return decoded latitude value.
-   */
-  public static double decodeLatitude(int encoded) {
-    double result = encoded * LATITUDE_DECODE;
-    assert result >= GeoUtils.MIN_LAT_INCL && result < GeoUtils.MAX_LAT_INCL;
-    return result;
-  }
-  
-  /** 
-   * Turns quantized value from byte array back into a double. 
-   * @param src byte array containing 4 bytes to decode at {@code offset}
-   * @param offset offset into {@code src} to decode from.
-   * @return decoded latitude value.
-   */
-  public static double decodeLatitude(byte[] src, int offset) {
-    return decodeLatitude(NumericUtils.sortableBytesToInt(src, offset));
-  }
-
-  /** 
-   * Turns quantized value from {@link #encodeLongitude} back into a double. 
-   * @param encoded encoded value: 32-bit quantized value.
-   * @return decoded longitude value.
-   */  
-  public static double decodeLongitude(int encoded) {
-    double result = encoded * LONGITUDE_DECODE;
-    assert result >= GeoUtils.MIN_LON_INCL && result < GeoUtils.MAX_LON_INCL;
-    return result;
-  }
-
-  /** 
-   * Turns quantized value from byte array back into a double. 
-   * @param src byte array containing 4 bytes to decode at {@code offset}
-   * @param offset offset into {@code src} to decode from.
-   * @return decoded longitude value.
-   */
-  public static double decodeLongitude(byte[] src, int offset) {
-    return decodeLongitude(NumericUtils.sortableBytesToInt(src, offset));
   }
   
   /** sugar encodes a single point as a byte array */

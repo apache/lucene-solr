@@ -20,6 +20,11 @@ import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.FixedBitSet;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
+
 /**
  * This is a temporary hack, until some polygon methods have better performance!
  * <p>
@@ -99,10 +104,10 @@ final class LatLonGrid {
     assert cellMaxLat >= cellMinLat;
     assert cellMaxLon >= cellMinLon;
 
-    Relation relation = Polygon.relate(polygons, LatLonPoint.decodeLatitude((int) cellMinLat), 
-                                                 LatLonPoint.decodeLatitude((int) cellMaxLat), 
-                                                 LatLonPoint.decodeLongitude((int) cellMinLon), 
-                                                 LatLonPoint.decodeLongitude((int) cellMaxLon));
+    Relation relation = Polygon.relate(polygons, decodeLatitude((int) cellMinLat),
+                                                 decodeLatitude((int) cellMaxLat),
+                                                 decodeLongitude((int) cellMinLon),
+                                                 decodeLongitude((int) cellMaxLon));
     if (relation != Relation.CELL_CROSSES_QUERY) {
       // we know the answer for this region, fill the cell range
       for (int i = minLatIndex; i < maxLatIndex; i++) {
@@ -140,8 +145,8 @@ final class LatLonGrid {
     }
 
     // the grid is unsure (boundary): do a real test.
-    double docLatitude = LatLonPoint.decodeLatitude(latitude);
-    double docLongitude = LatLonPoint.decodeLongitude(longitude);
+    double docLatitude = decodeLatitude(latitude);
+    double docLongitude = decodeLongitude(longitude);
     return Polygon.contains(polygons, docLatitude, docLongitude);
   }
   

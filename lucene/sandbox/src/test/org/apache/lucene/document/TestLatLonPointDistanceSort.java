@@ -35,6 +35,11 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
+
 /** Simple tests for {@link LatLonPoint#newDistanceSort} */
 public class TestLatLonPointDistanceSort extends LuceneTestCase {
 
@@ -191,8 +196,8 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
         double latRaw = GeoTestUtil.nextLatitude();
         double lonRaw = GeoTestUtil.nextLongitude();
         // pre-normalize up front, so we can just use quantized value for testing and do simple exact comparisons
-        double lat = LatLonPoint.decodeLatitude(LatLonPoint.encodeLatitude(latRaw));
-        double lon = LatLonPoint.decodeLongitude(LatLonPoint.encodeLongitude(lonRaw));
+        double lat = decodeLatitude(encodeLatitude(latRaw));
+        double lon = decodeLongitude(encodeLongitude(lonRaw));
 
         doc.add(new LatLonPoint("field", lat, lon));
         doc.add(new StoredField("lat", lat));
