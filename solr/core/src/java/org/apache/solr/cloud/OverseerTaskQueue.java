@@ -61,7 +61,7 @@ public class OverseerTaskQueue extends DistributedQueue {
     List<String> childNames = zookeeper.getChildren(dir, null, true);
     stats.setQueueLength(childNames.size());
     for (String childName : childNames) {
-      if (childName != null) {
+      if (childName != null && childName.startsWith(PREFIX)) {
         try {
           byte[] data = zookeeper.getData(dir + "/" + childName, null, null, true);
           if (data != null) {
@@ -185,17 +185,14 @@ public class OverseerTaskQueue extends DistributedQueue {
     try {
       // Create and watch the response node before creating the request node;
       // otherwise we may miss the response.
-      String watchID = createData(
-          dir + "/" + response_prefix,
-          null, CreateMode.EPHEMERAL_SEQUENTIAL);
+      String watchID = createResponseNode();
 
       Object lock = new Object();
       LatchWatcher watcher = new LatchWatcher(lock);
       Stat stat = zookeeper.exists(watchID, watcher, true);
 
       // create the request node
-      createData(dir + "/" + PREFIX + watchID.substring(watchID.lastIndexOf("-") + 1),
-          data, CreateMode.PERSISTENT);
+      createRequestNode(data, watchID);
 
       synchronized (lock) {
         if (stat != null && watcher.getWatchedEvent() == null) {
@@ -212,6 +209,18 @@ public class OverseerTaskQueue extends DistributedQueue {
       time.stop();
     }
   }
+
+  void createRequestNode(byte[] data, String watchID) throws KeeperException, InterruptedException {
+    createData(dir + "/" + PREFIX + watchID.substring(watchID.lastIndexOf("-") + 1),
+        data, CreateMode.PERSISTENT);
+  }
+
+  String createResponseNode() throws KeeperException, InterruptedException {
+    return createData(
+            dir + "/" + response_prefix,
+            null, CreateMode.EPHEMERAL_SEQUENTIAL);
+  }
+
 
   public List<QueueEvent> peekTopN(int n, Set<String> excludeSet, long waitMillis)
       throws KeeperException, InterruptedException {

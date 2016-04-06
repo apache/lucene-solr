@@ -104,6 +104,9 @@ Bug Fixes
 * SOLR-8875: SolrCloud Overseer clusterState could unexpectedly be null resulting in NPE.
   (Scott Blum via David Smiley)
 
+* SOLR-8948: OverseerTaskQueue.containsTaskWithRequestId encounters json parse error if a
+  SolrResponse node is in the overseer queue. (Jessica Cheng Mallet via shalin)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
