@@ -29,6 +29,11 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.util.SloppyMath;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
+
 /**
  * Compares documents by distance from an origin point
  * <p>
@@ -85,17 +90,17 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
       Rectangle box = Rectangle.fromPointDistance(latitude, longitude, haversin2(bottom));
       // pre-encode our box to our integer encoding, so we don't have to decode 
       // to double values for uncompetitive hits. This has some cost!
-      minLat = LatLonPoint.encodeLatitude(box.minLat);
-      maxLat = LatLonPoint.encodeLatitude(box.maxLat);
+      minLat = encodeLatitude(box.minLat);
+      maxLat = encodeLatitude(box.maxLat);
       if (box.crossesDateline()) {
         // box1
         minLon = Integer.MIN_VALUE;
-        maxLon = LatLonPoint.encodeLongitude(box.maxLon);
+        maxLon = encodeLongitude(box.maxLon);
         // box2
-        minLon2 = LatLonPoint.encodeLongitude(box.minLon);
+        minLon2 = encodeLongitude(box.minLon);
       } else {
-        minLon = LatLonPoint.encodeLongitude(box.minLon);
-        maxLon = LatLonPoint.encodeLongitude(box.maxLon);
+        minLon = encodeLongitude(box.minLon);
+        maxLon = encodeLongitude(box.maxLon);
         // disable box2
         minLon2 = Integer.MAX_VALUE;
       }
@@ -132,8 +137,8 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
       }
 
       // only compute actual distance if its inside "competitive bounding box"
-      double docLatitude = LatLonPoint.decodeLatitude(latitudeBits);
-      double docLongitude = LatLonPoint.decodeLongitude(longitudeBits);
+      double docLatitude = decodeLatitude(latitudeBits);
+      double docLongitude = decodeLongitude(longitudeBits);
       cmp = Math.max(cmp, Double.compare(bottom, SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude)));
       // once we compete in the PQ, no need to continue.
       if (cmp > 0) {
@@ -178,8 +183,8 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     int numValues = currentDocs.count();
     for (int i = 0; i < numValues; i++) {
       long encoded = currentDocs.valueAt(i);
-      double docLatitude = LatLonPoint.decodeLatitude((int)(encoded >> 32));
-      double docLongitude = LatLonPoint.decodeLongitude((int)(encoded & 0xFFFFFFFF));
+      double docLatitude = decodeLatitude((int)(encoded >> 32));
+      double docLongitude = decodeLongitude((int)(encoded & 0xFFFFFFFF));
       minValue = Math.min(minValue, SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude));
     }
     return minValue;

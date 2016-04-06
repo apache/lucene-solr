@@ -45,6 +45,11 @@ import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.geo.Polygon;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
+
 /** Finds all previously indexed points that fall within the specified polygons.
  *
  *  <p>The field must be indexed with using {@link org.apache.lucene.document.LatLonPoint} added per document.
@@ -88,10 +93,10 @@ final class LatLonPointInPolygonQuery extends Query {
     final byte maxLat[] = new byte[Integer.BYTES];
     final byte minLon[] = new byte[Integer.BYTES];
     final byte maxLon[] = new byte[Integer.BYTES];
-    NumericUtils.intToSortableBytes(LatLonPoint.encodeLatitude(box.minLat), minLat, 0);
-    NumericUtils.intToSortableBytes(LatLonPoint.encodeLatitude(box.maxLat), maxLat, 0);
-    NumericUtils.intToSortableBytes(LatLonPoint.encodeLongitude(box.minLon), minLon, 0);
-    NumericUtils.intToSortableBytes(LatLonPoint.encodeLongitude(box.maxLon), maxLon, 0);
+    NumericUtils.intToSortableBytes(encodeLatitude(box.minLat), minLat, 0);
+    NumericUtils.intToSortableBytes(encodeLatitude(box.maxLat), maxLat, 0);
+    NumericUtils.intToSortableBytes(encodeLongitude(box.minLon), minLon, 0);
+    NumericUtils.intToSortableBytes(encodeLongitude(box.maxLon), maxLon, 0);
 
     // TODO: make this fancier, but currently linear with number of vertices
     float cumulativeCost = 0;
@@ -100,10 +105,10 @@ final class LatLonPointInPolygonQuery extends Query {
     }
     final float matchCost = cumulativeCost;
 
-    final LatLonGrid grid = new LatLonGrid(LatLonPoint.encodeLatitude(box.minLat), 
-                                           LatLonPoint.encodeLatitude(box.maxLat),
-                                           LatLonPoint.encodeLongitude(box.minLon),
-                                           LatLonPoint.encodeLongitude(box.maxLon), polygons);
+    final LatLonGrid grid = new LatLonGrid(encodeLatitude(box.minLat),
+                                           encodeLatitude(box.maxLat),
+                                           encodeLongitude(box.minLon),
+                                           encodeLongitude(box.maxLon), polygons);
 
     return new ConstantScoreWeight(this) {
 
@@ -164,10 +169,10 @@ final class LatLonPointInPolygonQuery extends Query {
                                return Relation.CELL_OUTSIDE_QUERY;
                              }
                              
-                             double cellMinLat = LatLonPoint.decodeLatitude(minPackedValue, 0);
-                             double cellMinLon = LatLonPoint.decodeLongitude(minPackedValue, Integer.BYTES);
-                             double cellMaxLat = LatLonPoint.decodeLatitude(maxPackedValue, 0);
-                             double cellMaxLon = LatLonPoint.decodeLongitude(maxPackedValue, Integer.BYTES);
+                             double cellMinLat = decodeLatitude(minPackedValue, 0);
+                             double cellMinLon = decodeLongitude(minPackedValue, Integer.BYTES);
+                             double cellMaxLat = decodeLatitude(maxPackedValue, 0);
+                             double cellMaxLon = decodeLongitude(maxPackedValue, Integer.BYTES);
 
                              return Polygon.relate(polygons, cellMinLat, cellMaxLat, cellMinLon, cellMaxLon);
                            }

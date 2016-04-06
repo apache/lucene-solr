@@ -45,6 +45,11 @@ import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.lucene.util.StringHelper;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
+
 /**
  * Distance query for {@link LatLonPoint}.
  */
@@ -81,19 +86,19 @@ final class LatLonPointDistanceQuery extends Query {
     // second set of longitude ranges to check (for cross-dateline case)
     final byte minLon2[] = new byte[Integer.BYTES];
 
-    NumericUtils.intToSortableBytes(LatLonPoint.encodeLatitude(box.minLat), minLat, 0);
-    NumericUtils.intToSortableBytes(LatLonPoint.encodeLatitude(box.maxLat), maxLat, 0);
+    NumericUtils.intToSortableBytes(encodeLatitude(box.minLat), minLat, 0);
+    NumericUtils.intToSortableBytes(encodeLatitude(box.maxLat), maxLat, 0);
 
     // crosses dateline: split
     if (box.crossesDateline()) {
       // box1
       NumericUtils.intToSortableBytes(Integer.MIN_VALUE, minLon, 0);
-      NumericUtils.intToSortableBytes(LatLonPoint.encodeLongitude(box.maxLon), maxLon, 0);
+      NumericUtils.intToSortableBytes(encodeLongitude(box.maxLon), maxLon, 0);
       // box2
-      NumericUtils.intToSortableBytes(LatLonPoint.encodeLongitude(box.minLon), minLon2, 0);
+      NumericUtils.intToSortableBytes(encodeLongitude(box.minLon), minLon2, 0);
     } else {
-      NumericUtils.intToSortableBytes(LatLonPoint.encodeLongitude(box.minLon), minLon, 0);
-      NumericUtils.intToSortableBytes(LatLonPoint.encodeLongitude(box.maxLon), maxLon, 0);
+      NumericUtils.intToSortableBytes(encodeLongitude(box.minLon), minLon, 0);
+      NumericUtils.intToSortableBytes(encodeLongitude(box.maxLon), maxLon, 0);
       // disable box2
       NumericUtils.intToSortableBytes(Integer.MAX_VALUE, minLon2, 0);
     }
@@ -191,10 +196,10 @@ final class LatLonPointDistanceQuery extends Query {
                                return Relation.CELL_OUTSIDE_QUERY;
                              }
 
-                             double latMin = LatLonPoint.decodeLatitude(minPackedValue, 0);
-                             double lonMin = LatLonPoint.decodeLongitude(minPackedValue, Integer.BYTES);
-                             double latMax = LatLonPoint.decodeLatitude(maxPackedValue, 0);
-                             double lonMax = LatLonPoint.decodeLongitude(maxPackedValue, Integer.BYTES);
+                             double latMin = decodeLatitude(minPackedValue, 0);
+                             double lonMin = decodeLongitude(minPackedValue, Integer.BYTES);
+                             double latMax = decodeLatitude(maxPackedValue, 0);
+                             double lonMax = decodeLongitude(maxPackedValue, Integer.BYTES);
 
                              if ((longitude < lonMin || longitude > lonMax) && (axisLat+ Rectangle.AXISLAT_ERROR < latMin || axisLat- Rectangle.AXISLAT_ERROR > latMax)) {
                                // circle not fully inside / crossing axis
@@ -240,8 +245,8 @@ final class LatLonPointDistanceQuery extends Query {
               int count = docValues.count();
               for (int i = 0; i < count; i++) {
                 long encoded = docValues.valueAt(i);
-                double docLatitude = LatLonPoint.decodeLatitude((int)(encoded >> 32));
-                double docLongitude = LatLonPoint.decodeLongitude((int)(encoded & 0xFFFFFFFF));
+                double docLatitude = decodeLatitude((int)(encoded >> 32));
+                double docLongitude = decodeLongitude((int)(encoded & 0xFFFFFFFF));
 
                 // first check the partial distance, if its more than that, it can't be <= radiusMeters
                 double h1 = SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude);
