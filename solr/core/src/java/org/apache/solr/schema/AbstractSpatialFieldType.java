@@ -407,12 +407,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
    */
   public T getStrategy(final String fieldName) {
     try {
-      return fieldStrategyCache.get(fieldName, new Callable<T>() {
-        @Override
-        public T call() throws Exception {
-          return newSpatialStrategy(fieldName);
-        }
-      });
+      return fieldStrategyCache.get(fieldName, () -> newSpatialStrategy(fieldName));
     } catch (ExecutionException e) {
       throw Throwables.propagate(e.getCause());
     }

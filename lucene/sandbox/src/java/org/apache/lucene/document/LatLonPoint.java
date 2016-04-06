@@ -46,8 +46,9 @@ import org.apache.lucene.geo.Polygon;
  *   <li>{@link #newPolygonQuery newPolygonQuery()} for matching points within an arbitrary polygon.
  * </ul>
  * <p>
- * <b>WARNING</b>: Values are indexed with some loss of precision, incurring up to 1E-7 error from the
- * original {@code double} values. 
+ * <b>WARNING</b>: Values are indexed with some loss of precision from the
+ * original {@code double} values (4.190951585769653E-8 for the latitude component
+ * and 8.381903171539307E-8 for longitude).
  * @see PointValues
  */
 // TODO ^^^ that is very sandy and hurts the API, usage, and tests tremendously, because what the user passes
@@ -98,9 +99,9 @@ public class LatLonPoint extends Field {
 
   private static final int BITS = 32;
   private static final double LONGITUDE_MUL = (0x1L<<BITS)/360.0D;
-  private static final double LONGITUDE_DECODE = 1/LONGITUDE_MUL;
+  static final double LONGITUDE_DECODE = 1/LONGITUDE_MUL;
   private static final double LATITUDE_MUL  = (0x1L<<BITS)/180.0D;
-  private static final double LATITUDE_DECODE  = 1/LATITUDE_MUL;
+  static final double LATITUDE_DECODE  = 1/LATITUDE_MUL;
   
   @Override
   public String toString() {

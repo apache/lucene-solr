@@ -480,28 +480,25 @@ public class CoreContainer {
           solrCores.markCoreAsLoading(cd);
         }
         if (cd.isLoadOnStartup()) {
-          futures.add(coreLoadExecutor.submit(new Callable<SolrCore>() {
-            @Override
-            public SolrCore call() throws Exception {
-              SolrCore core;
-              try {
-                if (zkSys.getZkController() != null) {
-                  zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
-                }
+          futures.add(coreLoadExecutor.submit(() -> {
+            SolrCore core;
+            try {
+              if (zkSys.getZkController() != null) {
+                zkSys.getZkController().throwErrorIfReplicaReplaced(cd);
+              }
 
-                core = create(cd, false);
-              } finally {
-                if (asyncSolrCoreLoad) {
-                  solrCores.markCoreAsNotLoading(cd);
-                }
+              core = create(cd, false);
+            } finally {
+              if (asyncSolrCoreLoad) {
+                solrCores.markCoreAsNotLoading(cd);
               }
-              try {
-                zkSys.registerInZk(core, true);
-              } catch (RuntimeException e) {
-                SolrException.log(log, "Error registering SolrCore", e);
-              }
-              return core;
             }
+            try {
+              zkSys.registerInZk(core, true);
+            } catch (RuntimeException e) {
+              SolrException.log(log, "Error registering SolrCore", e);
+            }
+            return core;
           }));
         }
       }

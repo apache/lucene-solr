@@ -35,19 +35,19 @@ public class SolrHttpClientBuilder {
   }
   
   public interface HttpRequestInterceptorProvider {
-    public HttpRequestInterceptor getHttpRequestInterceptor();
+    HttpRequestInterceptor getHttpRequestInterceptor();
   }
   
   public interface CredentialsProviderProvider {
-    public CredentialsProvider getCredentialsProvider();
+    CredentialsProvider getCredentialsProvider();
   }
   
   public interface AuthSchemeRegistryProvider {
-    public Lookup<AuthSchemeProvider> getAuthSchemeRegistry();
+    Lookup<AuthSchemeProvider> getAuthSchemeRegistry();
   }
   
   public interface CookieSpecRegistryProvider {
-    public Lookup<CookieSpecProvider> getCookieSpecRegistry();
+    Lookup<CookieSpecProvider> getCookieSpecRegistry();
   }
   
   private CookieSpecRegistryProvider cookieSpecRegistryProvider;

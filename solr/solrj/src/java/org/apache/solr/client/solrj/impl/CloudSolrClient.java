@@ -603,12 +603,7 @@ public class CloudSolrClient extends SolrClient {
         final LBHttpSolrClient.Req lbRequest = entry.getValue();
         try {
           MDC.put("CloudSolrClient.url", url);
-          responseFutures.put(url, threadPool.submit(new Callable<NamedList<?>>() {
-            @Override
-            public NamedList<?> call() throws Exception {
-              return lbClient.request(lbRequest).getResponse();
-            }
-          }));
+          responseFutures.put(url, threadPool.submit(() -> lbClient.request(lbRequest).getResponse()));
         } finally {
           MDC.remove("CloudSolrClient.url");
         }

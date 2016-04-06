@@ -206,12 +206,7 @@ public class MiniSolrCloudCluster {
 
     List<Callable<JettySolrRunner>> startups = new ArrayList<>(numServers);
     for (int i = 0; i < numServers; ++i) {
-      startups.add(new Callable<JettySolrRunner>() {
-        @Override
-        public JettySolrRunner call() throws Exception {
-          return startJettySolrRunner(newNodeName(), jettyConfig.context, jettyConfig);
-        }
-      });
+      startups.add(() -> startJettySolrRunner(newNodeName(), jettyConfig.context, jettyConfig));
     }
 
     Collection<Future<JettySolrRunner>> futures = executor.invokeAll(startups);
@@ -424,12 +419,7 @@ public class MiniSolrCloudCluster {
         solrClient.close();
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
       for (final JettySolrRunner jetty : jettys) {
-        shutdowns.add(new Callable<JettySolrRunner>() {
-          @Override
-          public JettySolrRunner call() throws Exception {
-            return stopJettySolrRunner(jetty);
-          }
-        });
+        shutdowns.add(() -> stopJettySolrRunner(jetty));
       }
       jettys.clear();
       Collection<Future<JettySolrRunner>> futures = executor.invokeAll(shutdowns);

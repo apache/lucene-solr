@@ -101,6 +101,12 @@ Bug Fixes
 * SOLR-8902: Make sure ReturnFields only returns the requested fields from (fl=) evn when 
   DocumentTransformers ask for getExtraRequestFields()  (ryan)
 
+* SOLR-8875: SolrCloud Overseer clusterState could unexpectedly be null resulting in NPE.
+  (Scott Blum via David Smiley)
+
+* SOLR-8948: OverseerTaskQueue.containsTaskWithRequestId encounters json parse error if a
+  SolrResponse node is in the overseer queue. (Jessica Cheng Mallet via shalin)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
@@ -129,6 +135,9 @@ Other Changes
   generate a doc list for grouped results. (Steven Bower, Keith Laban, Dennis Gove)
 
 * SOLR-8869: Optionally disable printing field cache entries in SolrFieldCacheMBean (Gregory Chanan)
+
+* SOLR-8892: Allow SolrInfoMBeans to return different statistics for /jmx vs web ui calls.
+  (Gregory Chanan, Mark Miller)
 
 ==================  6.0.0 ==================
 
