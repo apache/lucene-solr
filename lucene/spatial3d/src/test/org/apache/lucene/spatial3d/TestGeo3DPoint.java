@@ -827,15 +827,14 @@ public class TestGeo3DPoint extends LuceneTestCase {
     assertFalse(q.equals(Geo3DPoint.newShapeQuery("point", shape2)));
   }
   
-  @Ignore
   public void testComplexPolygons() {
     final PlanetModel pm = PlanetModel.WGS84;
     // Pick a random pole
     final GeoPoint randomPole = new GeoPoint(pm, Math.toRadians(randomLat()), Math.toRadians(randomLon()));
     // Create a polygon that's less than 180 degrees
-    final Polygon clockWise = makePoly(pm, randomPole, true);
+    final Polygon clockWise = makePoly(pm, randomPole, true, true);
     // Create a polygon that's greater than 180 degrees
-    final Polygon counterClockWise = makePoly(pm, randomPole, false);
+    final Polygon counterClockWise = makePoly(pm, randomPole, false, true);
     
   }
   
@@ -847,7 +846,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     * doesn't do it because it's almost impossible to come up with nested ones of the proper 
     * clockwise/counterclockwise rotation that way.
     */
-  protected Polygon makePoly(final PlanetModel pm, final GeoPoint pole, final boolean clockwiseDesired) {
+  protected Polygon makePoly(final PlanetModel pm, final GeoPoint pole, final boolean clockwiseDesired, final boolean createHoles) {
     // Polygon edges will be arranged around the provided pole, and holes will each have a pole selected within the parent
     // polygon.
     final int pointCount = TestUtil.nextInt(random(), 3, 10);
@@ -857,86 +856,97 @@ public class TestGeo3DPoint extends LuceneTestCase {
     // These are all picked in the context of the pole,
     final double[] angles = new double[pointCount];
     final double[] arcDistance = new double[pointCount];
-    double accumulatedAngle = 0.0;
-    for (int i = 0; i < pointCount; i++) {
-      final int remainingEdgeCount = pointCount - i;
-      final double remainingAngle = 2.0 * Math.PI - accumulatedAngle;
-      if (remainingEdgeCount == 1) {
-        angles[i] = remainingAngle;
-      } else {
-        // The maximum angle is 180 degrees, or what's left when you give a minimal amount to each edge.
-        double maximumAngle = remainingAngle - (remainingEdgeCount-1) * MINIMUM_EDGE_ANGLE;
-        if (maximumAngle > Math.PI) {
-          maximumAngle = Math.PI;
-        }
-        // The minimum angle is MINIMUM_EDGE_ANGLE, or enough to be sure nobody afterwards needs more than
-        // 180 degrees.  And since we have three points to start with, we already know that.
-        final double minimumAngle = MINIMUM_EDGE_ANGLE;
-        // Pick the angle
-        final double angle = random().nextDouble() * (maximumAngle - minimumAngle) + minimumAngle;
-        angles[i] = angle;
-        accumulatedAngle += angle;
-      }
-      // Pick the arc distance randomly
-      arcDistance[i] = random().nextDouble() * (Math.PI - MINIMUM_ARC_ANGLE) + MINIMUM_ARC_ANGLE;
-    }
-    if (clockwiseDesired) {
-      // Reverse the signs
+    // Pick a set of points
+    while (true) {
+      double accumulatedAngle = 0.0;
       for (int i = 0; i < pointCount; i++) {
-        angles[i] = -angles[i];
-      }
-    }
-    
-    // Now, use the pole's information plus angles and arcs to create GeoPoints in the right order.
-    final List<GeoPoint> polyPoints = convertToPoints(pm, pole, angles, arcDistance);
-    
-    // Create the geo3d polygon, so we can test out our poles.
-    GeoPolygon poly = GeoPolygonFactory.makeGeoPolygon(pm, polyPoints, null);
-    
-    // Next, do some holes.  No more than 2 of these.  The poles for holes must always be within the polygon, so we're
-    // going to use Geo3D to help us select those given the points we just made.
-    
-    final int holeCount = TestUtil.nextInt(random(), 0, 2);
-    
-    final Polygon[] holes = new Polygon[holeCount];
-    
-    for (int i = 0; i < holeCount; i++) {
-      // Choose a pole.  The poly has to be within the polygon, but it also cannot be on the polygon edge.
-      // We try indefinitely to find a good pole...
-      while (true) {
-        final GeoPoint poleChoice = new GeoPoint(pm, toRadians(randomLat()), toRadians(randomLon()));
-        if (!poly.isWithin(poleChoice)) {
-          continue;
+        final int remainingEdgeCount = pointCount - i;
+        final double remainingAngle = 2.0 * Math.PI - accumulatedAngle;
+        if (remainingEdgeCount == 1) {
+          angles[i] = remainingAngle;
+        } else {
+          // The maximum angle is 180 degrees, or what's left when you give a minimal amount to each edge.
+          double maximumAngle = remainingAngle - (remainingEdgeCount-1) * MINIMUM_EDGE_ANGLE;
+          if (maximumAngle > Math.PI) {
+            maximumAngle = Math.PI;
+          }
+          // The minimum angle is MINIMUM_EDGE_ANGLE, or enough to be sure nobody afterwards needs more than
+          // 180 degrees.  And since we have three points to start with, we already know that.
+          final double minimumAngle = MINIMUM_EDGE_ANGLE;
+          // Pick the angle
+          final double angle = random().nextDouble() * (maximumAngle - minimumAngle) + minimumAngle;
+          angles[i] = angle;
+          accumulatedAngle += angle;
         }
-        // We have a pole within the polygon.  Now try 100 times to build a polygon that does not intersect the outside ring.
-        // After that we give up and pick a new pole.
-        boolean foundOne = false;
-        for (int j = 0; j < 100; j++) {
-          final Polygon insidePoly = makePoly(pm, poleChoice, !clockwiseDesired);
-          // Verify that the inside polygon is OK.  If not, discard and repeat.
-          if (!verifyPolygon(pm, insidePoly, poly)) {
+        // Pick the arc distance randomly
+        arcDistance[i] = random().nextDouble() * (Math.PI - MINIMUM_ARC_ANGLE) + MINIMUM_ARC_ANGLE;
+      }
+      if (clockwiseDesired) {
+        // Reverse the signs
+        for (int i = 0; i < pointCount; i++) {
+          angles[i] = -angles[i];
+        }
+      }
+      
+      // Now, use the pole's information plus angles and arcs to create GeoPoints in the right order.
+      final List<GeoPoint> polyPoints = convertToPoints(pm, pole, angles, arcDistance);
+      
+      // Create the geo3d polygon, so we can test out our poles.
+      final GeoPolygon poly;
+      try {
+        poly = GeoPolygonFactory.makeGeoPolygon(pm, polyPoints, null);
+      } catch (IllegalArgumentException e) {
+        // This is what happens when three adjacent points are colinear, so try again.
+        continue;
+      }
+      
+      // Next, do some holes.  No more than 2 of these.  The poles for holes must always be within the polygon, so we're
+      // going to use Geo3D to help us select those given the points we just made.
+      
+      final int holeCount = createHoles?TestUtil.nextInt(random(), 0, 2):0;
+      
+      final List<Polygon> holeList = new ArrayList<>();
+      
+      for (int i = 0; i < holeCount; i++) {
+        // Choose a pole.  The poly has to be within the polygon, but it also cannot be on the polygon edge.
+        // If we can't find a good pole we have to give it up and not do the hole.
+        for (int k = 0; k < 500; k++) {
+          final GeoPoint poleChoice = new GeoPoint(pm, toRadians(randomLat()), toRadians(randomLon()));
+          if (!poly.isWithin(poleChoice)) {
             continue;
           }
-          holes[i] = insidePoly;
-          foundOne = true;
-        }
-        if (foundOne) {
-          break;
+          // We have a pole within the polygon.  Now try 100 times to build a polygon that does not intersect the outside ring.
+          // After that we give up and pick a new pole.
+          boolean foundOne = false;
+          for (int j = 0; j < 100; j++) {
+            final Polygon insidePoly = makePoly(pm, poleChoice, !clockwiseDesired, false);
+            // Verify that the inside polygon is OK.  If not, discard and repeat.
+            if (!verifyPolygon(pm, insidePoly, poly)) {
+              continue;
+            }
+            holeList.add(insidePoly);
+            foundOne = true;
+          }
+          if (foundOne) {
+            break;
+          }
         }
       }
-    }
-    
-    // Finally, build the polygon and return it
-    final double[] lats = new double[polyPoints.size() + 1];
-    final double[] lons = new double[polyPoints.size() + 1];
+
+      final Polygon[] holes = holeList.toArray(new Polygon[0]);
       
-    for (int i = 0; i < polyPoints.size(); i++) {
-      lats[i] = polyPoints.get(i).getLatitude() * 180.0 / Math.PI;
-      lons[i] = polyPoints.get(i).getLongitude() * 180.0 / Math.PI;
+      // Finally, build the polygon and return it
+      final double[] lats = new double[polyPoints.size() + 1];
+      final double[] lons = new double[polyPoints.size() + 1];
+        
+      for (int i = 0; i < polyPoints.size(); i++) {
+        lats[i] = polyPoints.get(i).getLatitude() * 180.0 / Math.PI;
+        lons[i] = polyPoints.get(i).getLongitude() * 180.0 / Math.PI;
+      }
+      lats[polyPoints.size()] = lats[0];
+      lons[polyPoints.size()] = lons[0];
+      return new Polygon(lats, lons, holes);
     }
-    lats[polyPoints.size()] = lats[0];
-    lons[polyPoints.size()] = lons[0];
-    return new Polygon(lats, lons, holes);
   }
   
   protected static List<GeoPoint> convertToPoints(final PlanetModel pm, final GeoPoint pole, final double[] angles, final double[] arcDistances) {
@@ -1035,7 +1045,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
   }
   
   protected static int legalIndex(int index, int size) {
-    if (index > size) {
+    if (index >= size) {
       index -= size;
     }
     if (index < 0) {
