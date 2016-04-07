@@ -64,13 +64,17 @@ public class GeoPolygonFactory {
     final List<GeoPolygon> holes) {
     // The basic operation uses a set of points, two points determining one particular edge, and a sided plane
     // describing membership.
-    return buildPolygonShape(new GeoCompositePolygon(),
+    final GeoCompositePolygon rval = new GeoCompositePolygon();
+    if (buildPolygonShape(rval,
         planetModel, pointList, new BitSet(),
         convexPointIndex, getLegalIndex(convexPointIndex + 1, pointList.size()),
         new SidedPlane(pointList.get(getLegalIndex(convexPointIndex - 1, pointList.size())),
             pointList.get(convexPointIndex), pointList.get(getLegalIndex(convexPointIndex + 1, pointList.size()))),
         holes,
-        null);
+        null) == false) {
+      return null;
+    }
+    return rval;
   }
 
   /** Create a GeoPolygon using the specified points and holes, using order to determine 
@@ -138,23 +142,29 @@ public class GeoPolygonFactory {
     final SidedPlane initialPlane = new SidedPlane(testPoint, pointList.get(0), pointList.get(1));
     // We don't know if this is the correct siding choice.  We will only know as we build the complex polygon.
     // So we need to be prepared to try both possibilities.
-    final GeoPolygon trial = buildPolygonShape(new GeoCompositePolygon(), planetModel, pointList, new BitSet(), 0, 1, initialPlane, holes, testPoint);
-    if (trial == null) {
+    GeoCompositePolygon rval = new GeoCompositePolygon();
+    if (buildPolygonShape(rval, planetModel, pointList, new BitSet(), 0, 1, initialPlane, holes, testPoint) == false) {
       // The testPoint was within the shape.  Was that intended?
       if (testPointInside) {
         // Yes: build it for real
-        return buildPolygonShape(new GeoCompositePolygon(), planetModel, pointList, new BitSet(), 0, 1, initialPlane, holes, null);
+        rval = new GeoCompositePolygon();
+        buildPolygonShape(rval, planetModel, pointList, new BitSet(), 0, 1, initialPlane, holes, null);
+        return rval;
       }
       // No: do the complement and return that.
-      return buildPolygonShape(new GeoCompositePolygon(), planetModel, pointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
+      rval = new GeoCompositePolygon();
+      buildPolygonShape(rval, planetModel, pointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
+      return rval;
     } else {
       // The testPoint was outside the shape.  Was that intended?
       if (!testPointInside) {
         // Yes: return what we just built
-        return trial;
+        return rval;
       }
       // No: return the complement
-      return buildPolygonShape(new GeoCompositePolygon(), planetModel, pointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
+      rval = new GeoCompositePolygon();
+      buildPolygonShape(rval, planetModel, pointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
+      return rval;
     }
   }
 
@@ -296,12 +306,12 @@ public class GeoPolygonFactory {
    *  which result to use.  If the test point is supposed to be within the shape, then it must be outside of the
    *  complement shape.  If the test point is supposed to be outside the shape, then it must be outside of the
    *  original shape.  Either way, we can figure out the right thing to use.
-   * @return the GeoPolygon passed in in the rval parameter, or null if what was specified
+   * @return false if what was specified
    *  was inconsistent with what we generated.  Specifically, if we specify an exterior point that is
-   *  found in the interior of the shape we create here we return null, which is a signal that we chose
+   *  found in the interior of the shape we create here we return false, which is a signal that we chose
    *  our initial plane sidedness backwards.
    */
-  public static GeoPolygon buildPolygonShape(
+  public static boolean buildPolygonShape(
     final GeoCompositePolygon rval,
     final PlanetModel planetModel,
     final List<GeoPoint> pointsList,
@@ -345,7 +355,7 @@ public class GeoPolygonFactory {
       // Find convexity around the current edge, if any
       final Boolean foundIt = findConvexPolygon(planetModel, currentEdge, rval, edgeBuffer, holes, testPoint);
       if (foundIt == null) {
-        return null;
+        return false;
       }
       
       if (foundIt) {
@@ -409,7 +419,7 @@ public class GeoPolygonFactory {
           thirdPartPoints.add(thePoint);
           thirdPartInternal.set(2, true);
           //System.out.println("Doing convex part...");
-          final GeoPolygon thirdPoly = buildPolygonShape(rval,
+          if (buildPolygonShape(rval,
             planetModel,
             thirdPartPoints,
             thirdPartInternal, 
@@ -417,11 +427,10 @@ public class GeoPolygonFactory {
             1,
             checkEdge.plane,
             holes,
-            testPoint);
-          //System.out.println("...done convex part.");
-          if (thirdPoly == null) {
-            return null;
+            testPoint) == false) {
+            return false;
           }
+          //System.out.println("...done convex part.");
 
           // The part preceding the bad edge, back to thePoint, needs to be recursively
           // processed.  So, assemble what we need, which is basically a list of edges.
@@ -439,7 +448,7 @@ public class GeoPolygonFactory {
           }
           firstPartInternal.set(i, true);
           //System.out.println("Doing first part...");
-          final GeoPolygon firstPoly = buildPolygonShape(rval,
+          if (buildPolygonShape(rval,
             planetModel,
             firstPartPoints,
             firstPartInternal, 
@@ -447,11 +456,10 @@ public class GeoPolygonFactory {
             0,
             new SidedPlane(checkEdge.endPoint, false, checkEdge.startPoint, thePoint),
             holes,
-            testPoint);
-          //System.out.println("...done first part.");
-          if (firstPoly == null) {
-            return null;
+            testPoint) == false) {
+            return false;
           }
+          //System.out.println("...done first part.");
           final List<GeoPoint> secondPartPoints = new ArrayList<>();
           final BitSet secondPartInternal = new BitSet();
           loopEdge = edgeBuffer.getNext(checkEdge);
@@ -466,7 +474,7 @@ public class GeoPolygonFactory {
           }
           secondPartInternal.set(i, true);
           //System.out.println("Doing second part...");
-          final GeoPolygon secondPoly = buildPolygonShape(rval,
+          if (buildPolygonShape(rval,
             planetModel,
             secondPartPoints,
             secondPartInternal, 
@@ -474,13 +482,12 @@ public class GeoPolygonFactory {
             0,
             new SidedPlane(checkEdge.endPoint, true, checkEdge.startPoint, thePoint),
             holes,
-            testPoint);
-          //System.out.println("... done second part");
-          if (secondPoly == null) {
-            return null;
+            testPoint) == false) {
+            return false;
           }
+          //System.out.println("... done second part");
           
-          return rval;
+          return true;
         }
       }
     }
@@ -489,10 +496,10 @@ public class GeoPolygonFactory {
     
     // If there's anything left in the edge buffer, convert to concave polygon.
     if (makeConcavePolygon(planetModel, rval, edgeBuffer, holes, testPoint) == false) {
-      return null;
+      return false;
     }
     
-    return rval;
+    return true;
   }
   
   /** Look for a concave polygon in the remainder of the edgebuffer.
