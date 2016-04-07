@@ -57,12 +57,12 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
     // here are inclusive, we need to extend the bounds to the largest un-quantized values that
     // could quantize into these bounds.  The encoding (Geo3DUtil.encodeValue) does
     // a Math.round from double to long, so e.g. 1.4 -> 1, and -1.4 -> -1:
-    double xMin = decodeValueMin(NumericUtils.sortableBytesToInt(minPackedValue, 0));
-    double xMax = decodeValueMax(NumericUtils.sortableBytesToInt(maxPackedValue, 0));
-    double yMin = decodeValueMin(NumericUtils.sortableBytesToInt(minPackedValue, 1 * Integer.BYTES));
-    double yMax = decodeValueMax(NumericUtils.sortableBytesToInt(maxPackedValue, 1 * Integer.BYTES));
-    double zMin = decodeValueMin(NumericUtils.sortableBytesToInt(minPackedValue, 2 * Integer.BYTES));
-    double zMax = decodeValueMax(NumericUtils.sortableBytesToInt(maxPackedValue, 2 * Integer.BYTES));
+    double xMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 0));
+    double xMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 0));
+    double yMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 1 * Integer.BYTES));
+    double yMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 1 * Integer.BYTES));
+    double zMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 2 * Integer.BYTES));
+    double zMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 2 * Integer.BYTES));
 
     //System.out.println("  compare: x=" + cellXMin + "-" + cellXMax + " y=" + cellYMin + "-" + cellYMax + " z=" + cellZMin + "-" + cellZMax);
     assert xMin <= xMax;
@@ -93,15 +93,5 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
       assert false;
       return Relation.CELL_CROSSES_QUERY;
     }
-  }
-
-  /** More negative decode, at bottom of cell */
-  static double decodeValueMin(int x) {
-    return (((double)x) - 0.5) * Geo3DUtil.DECODE;
-  }
-  
-  /** More positive decode, at top of cell  */
-  static double decodeValueMax(int x) {
-    return (((double)x) + 0.5) * Geo3DUtil.DECODE;
   }
 }

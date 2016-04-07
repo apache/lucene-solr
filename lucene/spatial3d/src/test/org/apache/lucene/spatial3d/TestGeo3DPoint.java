@@ -75,7 +75,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
-import org.junit.Ignore;
 
 import com.carrotsearch.randomizedtesting.generators.RandomInts;
 
@@ -266,14 +265,14 @@ public class TestGeo3DPoint extends LuceneTestCase {
         } else {
           
           GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84,
-                                                        PointInShapeIntersectVisitor.decodeValueMin(cell.xMinEnc), PointInShapeIntersectVisitor.decodeValueMax(cell.xMaxEnc),
-                                                        PointInShapeIntersectVisitor.decodeValueMin(cell.yMinEnc), PointInShapeIntersectVisitor.decodeValueMax(cell.yMaxEnc),
-                                                        PointInShapeIntersectVisitor.decodeValueMin(cell.zMinEnc), PointInShapeIntersectVisitor.decodeValueMax(cell.zMaxEnc));
+                                                        Geo3DUtil.decodeValueFloor(cell.xMinEnc), Geo3DUtil.decodeValueCeil(cell.xMaxEnc),
+                                                        Geo3DUtil.decodeValueFloor(cell.yMinEnc), Geo3DUtil.decodeValueCeil(cell.yMaxEnc),
+                                                        Geo3DUtil.decodeValueFloor(cell.zMinEnc), Geo3DUtil.decodeValueCeil(cell.zMaxEnc));
 
           if (VERBOSE) {
-            log.println("    minx="+PointInShapeIntersectVisitor.decodeValueMin(cell.xMinEnc)+" maxx="+PointInShapeIntersectVisitor.decodeValueMax(cell.xMaxEnc)+
-              " miny="+PointInShapeIntersectVisitor.decodeValueMin(cell.yMinEnc)+" maxy="+PointInShapeIntersectVisitor.decodeValueMax(cell.yMaxEnc)+
-              " minz="+PointInShapeIntersectVisitor.decodeValueMin(cell.zMinEnc)+" maxz="+PointInShapeIntersectVisitor.decodeValueMax(cell.zMaxEnc));
+            log.println("    minx="+Geo3DUtil.decodeValueFloor(cell.xMinEnc)+" maxx="+Geo3DUtil.decodeValueCeil(cell.xMaxEnc)+
+              " miny="+Geo3DUtil.decodeValueFloor(cell.yMinEnc)+" maxy="+Geo3DUtil.decodeValueCeil(cell.yMaxEnc)+
+              " minz="+Geo3DUtil.decodeValueFloor(cell.zMinEnc)+" maxz="+Geo3DUtil.decodeValueCeil(cell.zMaxEnc));
           }
 
           switch (xyzSolid.getRelationship(shape)) {          
@@ -312,9 +311,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
               log.println("    GeoArea.DISJOINT: drop this cell");
               for(int docID=0;docID<numDocs;docID++) {
                 if (cell.contains(docs[docID])) {
-                  if (VERBOSE) {
-                    log.println("    skip doc=" + docID);
-                  }
+                  log.println("    skip doc=" + docID);
                 }
               }
             }
@@ -1024,9 +1021,9 @@ public class TestGeo3DPoint extends LuceneTestCase {
         lat = Math.min(90, Math.nextUp(lat));
         lon = Math.min(180, Math.nextUp(lon));
         GeoPoint point = new GeoPoint(PlanetModel.WGS84, toRadians(lat), toRadians(lon));
-        GeoPoint pointEnc = new GeoPoint(PointInShapeIntersectVisitor.decodeValueMin(Geo3DUtil.encodeValue(point.x)),
-                                         PointInShapeIntersectVisitor.decodeValueMin(Geo3DUtil.encodeValue(point.y)),
-                                         PointInShapeIntersectVisitor.decodeValueMin(Geo3DUtil.encodeValue(point.z)));
+        GeoPoint pointEnc = new GeoPoint(Geo3DUtil.decodeValueFloor(Geo3DUtil.encodeValue(point.x)),
+                                         Geo3DUtil.decodeValueFloor(Geo3DUtil.encodeValue(point.y)),
+                                         Geo3DUtil.decodeValueFloor(Geo3DUtil.encodeValue(point.z)));
         assertTrue(pointEnc.x <= point.x);
         assertTrue(pointEnc.y <= point.y);
         assertTrue(pointEnc.z <= point.z);
@@ -1039,9 +1036,9 @@ public class TestGeo3DPoint extends LuceneTestCase {
         lat = Math.max(-90, Math.nextDown(lat));
         lon = Math.max(-180, Math.nextDown(lon));
         GeoPoint point = new GeoPoint(PlanetModel.WGS84, toRadians(lat), toRadians(lon));
-        GeoPoint pointEnc = new GeoPoint(PointInShapeIntersectVisitor.decodeValueMin(Geo3DUtil.encodeValue(point.x)),
-                                         PointInShapeIntersectVisitor.decodeValueMin(Geo3DUtil.encodeValue(point.y)),
-                                         PointInShapeIntersectVisitor.decodeValueMin(Geo3DUtil.encodeValue(point.z)));
+        GeoPoint pointEnc = new GeoPoint(Geo3DUtil.decodeValueFloor(Geo3DUtil.encodeValue(point.x)),
+                                         Geo3DUtil.decodeValueFloor(Geo3DUtil.encodeValue(point.y)),
+                                         Geo3DUtil.decodeValueFloor(Geo3DUtil.encodeValue(point.z)));
         assertTrue(pointEnc.x <= point.x);
         assertTrue(pointEnc.y <= point.y);
         assertTrue(pointEnc.z <= point.z);
@@ -1226,12 +1223,12 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
       @Override
       public String toString() {
-        double xMin = PointInShapeIntersectVisitor.decodeValueMin(NumericUtils.sortableBytesToInt(minPackedValue, 0));
-        double xMax = PointInShapeIntersectVisitor.decodeValueMax(NumericUtils.sortableBytesToInt(maxPackedValue, 0));
-        double yMin = PointInShapeIntersectVisitor.decodeValueMin(NumericUtils.sortableBytesToInt(minPackedValue, 1 * Integer.BYTES));
-        double yMax = PointInShapeIntersectVisitor.decodeValueMax(NumericUtils.sortableBytesToInt(maxPackedValue, 1 * Integer.BYTES));
-        double zMin = PointInShapeIntersectVisitor.decodeValueMin(NumericUtils.sortableBytesToInt(minPackedValue, 2 * Integer.BYTES));
-        double zMax = PointInShapeIntersectVisitor.decodeValueMax(NumericUtils.sortableBytesToInt(maxPackedValue, 2 * Integer.BYTES));
+        double xMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 0));
+        double xMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 0));
+        double yMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 1 * Integer.BYTES));
+        double yMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 1 * Integer.BYTES));
+        double zMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 2 * Integer.BYTES));
+        double zMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 2 * Integer.BYTES));
         return "Cell(x=" + xMin + " TO " + xMax + " y=" + yMin + " TO " + yMax + " z=" + zMin + " TO " + zMax + ")";
       }
 
@@ -1272,27 +1269,5 @@ public class TestGeo3DPoint extends LuceneTestCase {
     leafReader.getPointValues().intersect(fieldName, visitor);
 
     return b.toString();
-  }
-
-  @Ignore("https://issues.apache.org/jira/browse/LUCENE-7168")
-  public void testCuriousFailure() throws Exception {
-    GeoShape shape = GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, -0.8971654677124566, -0.3398482030102755, 1.4775317506492547);
-    GeoPoint point = new GeoPoint(0.8653002868649471, 0.50134342478497, 0.046203414829601996);
-
-    // point is inside our circle shape:
-    assertTrue(shape.isWithin(point));
-
-    double xMin = 0.8653002866318559;
-    double xMax = 0.8653002870980383;
-    double yMin = 0.5013434245518787;
-    double yMax = 0.5013434250180612;
-    double zMin = 0.04620341459651078;
-    double zMax = 0.04620341506269321;
-    GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84, xMin, xMax, yMin, yMax, zMin, zMax);
-
-    // point is also inside our wee tiny box:
-    assertTrue(xyzSolid.isWithin(point));
-
-    assertTrue(xyzSolid.getRelationship(shape) != GeoArea.DISJOINT);
   }
 }
