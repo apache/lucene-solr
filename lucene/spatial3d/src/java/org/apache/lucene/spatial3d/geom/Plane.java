@@ -24,15 +24,15 @@ package org.apache.lucene.spatial3d.geom;
  */
 public class Plane extends Vector {
   /** An array with no points in it */
-  protected final static GeoPoint[] NO_POINTS = new GeoPoint[0];
+  public final static GeoPoint[] NO_POINTS = new GeoPoint[0];
   /** An array with no bounds in it */
-  protected final static Membership[] NO_BOUNDS = new Membership[0];
+  public final static Membership[] NO_BOUNDS = new Membership[0];
   /** A vertical plane normal to the Y axis */
-  protected final static Plane normalYPlane = new Plane(0.0,1.0,0.0,0.0);
+  public final static Plane normalYPlane = new Plane(0.0,1.0,0.0,0.0);
   /** A vertical plane normal to the X axis */
-  protected final static Plane normalXPlane = new Plane(1.0,0.0,0.0,0.0);
+  public final static Plane normalXPlane = new Plane(1.0,0.0,0.0,0.0);
   /** A vertical plane normal to the Z axis */
-  protected final static Plane normalZPlane = new Plane(0.0,0.0,1.0,0.0);
+  public final static Plane normalZPlane = new Plane(0.0,0.0,1.0,0.0);
 
   /** Ax + By + Cz + D = 0 */
   public final double D;
@@ -1463,7 +1463,7 @@ public class Plane extends Vector {
    * @param bounds is the area that the point must be within.
    * @param point is the point.
    */
-  protected static void addPoint(final Bounds boundsInfo, final Membership[] bounds, final GeoPoint point) {
+  private static void addPoint(final Bounds boundsInfo, final Membership[] bounds, final GeoPoint point) {
     // Make sure the discovered point is within the bounds
     for (Membership bound : bounds) {
       if (!bound.isWithin(point))
@@ -1472,28 +1472,6 @@ public class Plane extends Vector {
     // Add the point
     boundsInfo.addPoint(point);
   }
-
-  /** Add a point to boundsInfo if within a specifically bounded area.
-   * @param boundsInfo is the object to be modified.
-   * @param bounds is the area that the point must be within.
-   * @param x is the x value.
-   * @param y is the y value.
-   * @param z is the z value.
-   */
-  /*
-  protected static void addPoint(final Bounds boundsInfo, final Membership[] bounds, final double x, final double y, final double z) {
-    //System.err.println(" Want to add point x="+x+" y="+y+" z="+z);
-    // Make sure the discovered point is within the bounds
-    for (Membership bound : bounds) {
-      if (!bound.isWithin(x, y, z))
-        return;
-    }
-    // Add the point
-    //System.err.println("  point added");
-    //System.out.println("Adding point x="+x+" y="+y+" z="+z);
-    boundsInfo.addPoint(x, y, z);
-  }
-  */
 
   /**
    * Determine whether the plane intersects another plane within the
@@ -1540,7 +1518,7 @@ public class Plane extends Vector {
    * @param p is the plane to compare against.
    * @return true if the planes are numerically identical.
    */
-  protected boolean isNumericallyIdentical(final Plane p) {
+  public boolean isNumericallyIdentical(final Plane p) {
     // We can get the correlation by just doing a parallel plane check.  If that passes, then compute a point on the plane
     // (using D) and see if it also on the other plane.
     if (Math.abs(this.y * p.z - this.z * p.y) >= MINIMUM_RESOLUTION)
@@ -1573,7 +1551,7 @@ public class Plane extends Vector {
    * @param bounds are the bounds.
    * @return true if the vector describes a point within the bounds.
    */
-  protected static boolean meetsAllBounds(final Vector p, final Membership[] bounds) {
+  private static boolean meetsAllBounds(final Vector p, final Membership[] bounds) {
     return meetsAllBounds(p.x, p.y, p.z, bounds);
   }
 
@@ -1585,7 +1563,7 @@ public class Plane extends Vector {
    * @param bounds are the bounds.
    * @return true if the vector describes a point within the bounds.
    */
-  protected static boolean meetsAllBounds(final double x, final double y, final double z, final Membership[] bounds) {
+  private static boolean meetsAllBounds(final double x, final double y, final double z, final Membership[] bounds) {
     for (final Membership bound : bounds) {
       if (!bound.isWithin(x,y,z))
         return false;
@@ -1600,7 +1578,7 @@ public class Plane extends Vector {
    * @param moreBounds are an additional set of bounds.
    * @return true if the vector describes a point within the bounds.
    */
-  protected static boolean meetsAllBounds(final Vector p, final Membership[] bounds, final Membership[] moreBounds) {
+  private static boolean meetsAllBounds(final Vector p, final Membership[] bounds, final Membership[] moreBounds) {
     return meetsAllBounds(p.x, p.y, p.z, bounds, moreBounds);
   }
 
@@ -1613,7 +1591,7 @@ public class Plane extends Vector {
    * @param moreBounds are an additional set of bounds.
    * @return true if the vector describes a point within the bounds.
    */
-  protected static boolean meetsAllBounds(final double x, final double y, final double z, final Membership[] bounds,
+  private static boolean meetsAllBounds(final double x, final double y, final double z, final Membership[] bounds,
                                           final Membership[] moreBounds) {
     return meetsAllBounds(x,y,z, bounds) && meetsAllBounds(x,y,z, moreBounds);
   }

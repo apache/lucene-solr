@@ -24,16 +24,16 @@ package org.apache.lucene.spatial3d.geom;
 public class LatLonBounds implements Bounds {
 
   /** Set to true if no longitude bounds can be stated */
-  protected boolean noLongitudeBound = false;
+  private boolean noLongitudeBound = false;
   /** Set to true if no top latitude bound can be stated */
-  protected boolean noTopLatitudeBound = false;
+  private boolean noTopLatitudeBound = false;
   /** Set to true if no bottom latitude bound can be stated */
-  protected boolean noBottomLatitudeBound = false;
+  private boolean noBottomLatitudeBound = false;
 
   /** If non-null, the minimum latitude bound */
-  protected Double minLatitude = null;
+  private Double minLatitude = null;
   /** If non-null, the maximum latitude bound */
-  protected Double maxLatitude = null;
+  private Double maxLatitude = null;
 
   // For longitude bounds, this class needs to worry about keeping track of the distinction
   // between left-side bounds and right-side bounds.  Points are always submitted in pairs
@@ -88,9 +88,9 @@ public class LatLonBounds implements Bounds {
   // and can recognize that, we can set "unconstrained in longitude".)
 
   /** If non-null, the left longitude bound */
-  protected Double leftLongitude = null;
+  private Double leftLongitude = null;
   /** If non-null, the right longitude bound */
-  protected Double rightLongitude = null;
+  private Double rightLongitude = null;
 
   /** Construct an empty bounds object */
   public LatLonBounds() {
@@ -252,7 +252,7 @@ public class LatLonBounds implements Bounds {
   /** Update latitude bound.
    *@param latitude is the latitude.
    */
-  protected void addLatitudeBound(double latitude) {
+  private void addLatitudeBound(double latitude) {
     if (!noTopLatitudeBound && (maxLatitude == null || latitude > maxLatitude))
       maxLatitude = latitude;
     if (!noBottomLatitudeBound && (minLatitude == null || latitude < minLatitude))
@@ -262,7 +262,7 @@ public class LatLonBounds implements Bounds {
   /** Update longitude bound.
    *@param longitude is the new longitude value.
    */
-  protected void addLongitudeBound(double longitude) {
+  private void addLongitudeBound(double longitude) {
     // If this point is within the current bounds, we're done; otherwise
     // expand one side or the other.
     if (leftLongitude == null && rightLongitude == null) {
