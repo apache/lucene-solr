@@ -56,7 +56,7 @@ public class TestGeoEncodingUtils extends LuceneTestCase {
       assertEquals(encoded, encodeLatitude(decoded));
       assertEquals(encoded, encodeLatitudeCeil(decoded));
       // test within the range
-      if (i != Integer.MAX_VALUE) {
+      if (encoded != Integer.MAX_VALUE) {
         // this is the next representable value
         // all double values between [min .. max) should encode to the current integer
         // all double values between (min .. max] should encodeCeil to the next integer.
@@ -105,7 +105,7 @@ public class TestGeoEncodingUtils extends LuceneTestCase {
       assertEquals(encoded, encodeLongitude(decoded));
       assertEquals(encoded, encodeLongitudeCeil(decoded));
       // test within the range
-      if (i != Integer.MAX_VALUE) {
+      if (encoded != Integer.MAX_VALUE) {
         // this is the next representable value
         // all double values between [min .. max) should encode to the current integer
         // all double values between (min .. max] should encodeCeil to the next integer.
