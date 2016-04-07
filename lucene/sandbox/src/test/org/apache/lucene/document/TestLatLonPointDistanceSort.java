@@ -64,7 +64,7 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
     
     FieldDoc d = (FieldDoc) td.scoreDocs[0];
-    assertEquals(462.1028401330432, (Double)d.fields[0], 0.0D);
+    assertEquals(462.1028401330431, (Double)d.fields[0], 0.0D);
     
     d = (FieldDoc) td.scoreDocs[1];
     assertEquals(1054.9842850974826, (Double)d.fields[0], 0.0D);
@@ -101,7 +101,7 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
     
     FieldDoc d = (FieldDoc) td.scoreDocs[0];
-    assertEquals(462.1028401330432D, (Double)d.fields[0], 0.0D);
+    assertEquals(462.1028401330431D, (Double)d.fields[0], 0.0D);
     
     d = (FieldDoc) td.scoreDocs[1];
     assertEquals(1054.9842850974826, (Double)d.fields[0], 0.0D);
