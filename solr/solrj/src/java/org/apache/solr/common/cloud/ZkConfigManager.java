@@ -30,6 +30,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Class that manages named configs in Zookeeper
@@ -41,6 +43,9 @@ public class ZkConfigManager {
   /** ZkNode where named configs are stored */
   public static final String CONFIGS_ZKNODE = "/configs";
 
+  public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
+  public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN = Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
+
   private final SolrZkClient zkClient;
 
   /**
@@ -51,7 +56,8 @@ public class ZkConfigManager {
     this.zkClient = zkClient;
   }
 
-  private void uploadToZK(final Path rootPath, final String zkPath) throws IOException {
+  private void uploadToZK(final Path rootPath, final String zkPath,
+      final Pattern filenameExclusions) throws IOException {
 
     if (!Files.exists(rootPath))
       throw new IOException("Path " + rootPath + " does not exist");
@@ -60,8 +66,10 @@ public class ZkConfigManager {
       @Override
       public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
         String filename = file.getFileName().toString();
-        if (filename.startsWith("."))
+        if (filenameExclusions != null && filenameExclusions.matcher(filename).matches()) {
+          logger.info("uploadToZK skipping '{}' due to filenameExclusions '{}'", filename, filenameExclusions);
           return FileVisitResult.CONTINUE;
+        }
         String zkNode = createZkNodeName(zkPath, rootPath, file);
         try {
           zkClient.makePath(zkNode, file.toFile(), false, true);
@@ -118,7 +126,20 @@ public class ZkConfigManager {
    *                    if an I/O error occurs or the path does not exist
    */
   public void uploadConfigDir(Path dir, String configName) throws IOException {
-    uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName);
+    uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, UPLOAD_FILENAME_EXCLUDE_PATTERN);
+  }
+
+  /**
+   * Upload matching files from a given path to a config in Zookeeper
+   * @param dir         {@link java.nio.file.Path} to the files
+   * @param configName  the name to give the config
+   * @param filenameExclusions  files matching this pattern will not be uploaded
+   * @throws IOException
+   *                    if an I/O error occurs or the path does not exist
+   */
+  public void uploadConfigDir(Path dir, String configName,
+      Pattern filenameExclusions) throws IOException {
+    uploadToZK(dir, CONFIGS_ZKNODE + "/" + configName, filenameExclusions);
   }
 
   /**

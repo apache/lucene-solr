@@ -101,6 +101,13 @@ public class ZkCLITest extends SolrTestCaseJ4 {
   }
   
   @Test
+  public void testCmdConstants() throws Exception {
+    assertEquals("upconfig", ZkCLI.UPCONFIG);
+    assertEquals("excluderegex", ZkCLI.EXCLUDE_REGEX);
+    assertEquals(ZkConfigManager.UPLOAD_FILENAME_EXCLUDE_REGEX, ZkCLI.EXCLUDE_REGEX_DEFAULT);
+  }
+
+  @Test
   public void testBootstrapWithChroot() throws Exception {
     String chroot = "/foo/bar";
     assertFalse(zkClient.exists(chroot, true));
@@ -193,14 +200,22 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     
     // test upconfig
     String confsetname = "confsetone";
-    String[] args = new String[] {
-        "-zkhost",
-        zkServer.getZkAddress(),
-        "-cmd",
-        "upconfig",
-        "-confdir",
-        ExternalPaths.TECHPRODUCTS_CONFIGSET, "-confname", confsetname};
-    ZkCLI.main(args);
+    final String[] upconfigArgs;
+    if (random().nextBoolean()) {
+      upconfigArgs = new String[] {
+          "-zkhost", zkServer.getZkAddress(),
+          "-cmd", ZkCLI.UPCONFIG,
+          "-confdir", ExternalPaths.TECHPRODUCTS_CONFIGSET,
+          "-confname", confsetname};
+    } else {
+      upconfigArgs = new String[] {
+          "-zkhost", zkServer.getZkAddress(),
+          "-cmd", ZkCLI.UPCONFIG,
+          "-"+ZkCLI.EXCLUDE_REGEX, ZkCLI.EXCLUDE_REGEX_DEFAULT,
+          "-confdir", ExternalPaths.TECHPRODUCTS_CONFIGSET,
+          "-confname", confsetname};
+    }
+    ZkCLI.main(upconfigArgs);
     
     assertTrue(zkClient.exists(ZkConfigManager.CONFIGS_ZKNODE + "/" + confsetname, true));
 
@@ -208,7 +223,7 @@ public class ZkCLITest extends SolrTestCaseJ4 {
     // ZkCLI.main(new String[0]);
     
     // test linkconfig
-    args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "linkconfig", "-collection", "collection1", "-confname", confsetname};
     ZkCLI.main(args);
     
@@ -236,8 +251,12 @@ public class ZkCLITest extends SolrTestCaseJ4 {
         int indexOfRelativePath = sourceFile.getAbsolutePath().lastIndexOf("sample_techproducts_configs" + File.separator + "conf");
         String relativePathofFile = sourceFile.getAbsolutePath().substring(indexOfRelativePath + 33, sourceFile.getAbsolutePath().length());
         File downloadedFile = new File(confDir,relativePathofFile);
-        assertTrue(downloadedFile.getAbsolutePath() + " does not exist source:" + sourceFile.getAbsolutePath(), downloadedFile.exists());
-        assertTrue("Content didn't change",FileUtils.contentEquals(sourceFile,downloadedFile));
+        if (ZkConfigManager.UPLOAD_FILENAME_EXCLUDE_PATTERN.matcher(relativePathofFile).matches()) {
+          assertFalse(sourceFile.getAbsolutePath() + " exists in ZK, downloaded:" + downloadedFile.getAbsolutePath(), downloadedFile.exists());
+        } else {
+          assertTrue(downloadedFile.getAbsolutePath() + " does not exist source:" + sourceFile.getAbsolutePath(), downloadedFile.exists());
+          assertTrue(relativePathofFile+" content changed",FileUtils.contentEquals(sourceFile,downloadedFile));
+        }
     }
     
    

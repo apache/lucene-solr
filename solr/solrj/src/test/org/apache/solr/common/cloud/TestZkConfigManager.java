@@ -19,6 +19,7 @@ package org.apache.solr.common.cloud;
 import com.google.common.base.Charsets;
 import com.google.common.base.Throwables;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.ZkCLI;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
@@ -51,6 +52,12 @@ public class TestZkConfigManager extends SolrTestCaseJ4 {
   public static void shutdownZkServer() throws IOException, InterruptedException {
     zkServer.shutdown();
     zkServer = null;
+  }
+
+  @Test
+  public void testConstants() throws Exception {
+    assertEquals("/configs", ZkConfigManager.CONFIGS_ZKNODE);
+    assertEquals("^\\..*$", ZkConfigManager.UPLOAD_FILENAME_EXCLUDE_REGEX);
   }
 
   @Test

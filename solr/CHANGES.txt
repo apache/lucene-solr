@@ -17,6 +17,8 @@ New Features
 * SOLR-5730: Make Lucene's SortingMergePolicy and EarlyTerminatingSortingCollector configurable in Solr.
   (Christine Poerschke, hossmann, Tomás Fernández Löbbe, Shai Erera)
 
+* SOLR-8938: Add optional -excluderegex argument to ZkCLI. (Christine Poerschke)
+
 Other Changes
 ----------------------
 * SOLR-8677: Prevent shards containing invalid characters from being created.  Checks added server-side
