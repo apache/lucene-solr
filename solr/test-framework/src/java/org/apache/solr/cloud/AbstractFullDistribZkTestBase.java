@@ -16,11 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
-import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
-import static org.apache.solr.common.util.Utils.makeMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -89,6 +84,11 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.CREATE_NODE_SET;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
+import static org.apache.solr.cloud.OverseerCollectionMessageHandler.SHARDS_PROP;
+import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * TODO: we should still test this works as a custom update chain as well as
@@ -272,7 +272,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
   
   protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudSolrClient client = new CloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
+    CloudSolrClient client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
     client.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) client.setDefaultCollection(defaultCollection);
     client.getLbClient().setConnectionTimeout(30000);
@@ -1626,7 +1626,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       // setup the server...
       String baseUrl = buildUrl(port);
       String url = baseUrl + (baseUrl.endsWith("/") ? "" : "/") + DEFAULT_COLLECTION;
-      HttpSolrClient client = new HttpSolrClient(url);
+      HttpSolrClient client = getHttpSolrClient(url);
       client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       client.setSoTimeout(60000);
       client.setDefaultMaxConnectionsPerHost(100);
@@ -1640,7 +1640,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
     try {
       // setup the server...
-      HttpSolrClient client = new HttpSolrClient(baseUrl + "/" + collection);
+      HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
       client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       client.setDefaultMaxConnectionsPerHost(100);
       client.setMaxTotalConnections(100);
@@ -1726,7 +1726,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       if (commonCloudSolrClient == null) {
         boolean updatesToLeaders = random().nextBoolean();
         boolean parallelUpdates = random().nextBoolean();
-        commonCloudSolrClient = new CloudSolrClient(zkServer.getZkAddress(),
+        commonCloudSolrClient = getCloudSolrClient(zkServer.getZkAddress(),
                 updatesToLeaders);
         commonCloudSolrClient.getLbClient().setConnectionTimeout(5000);
         commonCloudSolrClient.getLbClient().setSoTimeout(120000);

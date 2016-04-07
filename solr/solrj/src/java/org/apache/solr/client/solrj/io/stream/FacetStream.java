@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -27,6 +26,7 @@ import java.util.Collections;
 import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -281,7 +281,9 @@ public class FacetStream extends TupleStream implements Expressible  {
     if(cache != null) {
       cloudSolrClient = cache.getCloudSolrClient(zkHost);
     } else {
-      cloudSolrClient = new CloudSolrClient(zkHost);
+      cloudSolrClient = new Builder()
+          .withZkHost(zkHost)
+          .build();
     }
 
     FieldComparator[] adjustedSorts = adjustSorts(buckets, bucketSorts);

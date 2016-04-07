@@ -49,7 +49,6 @@ import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
@@ -172,7 +171,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudSolrClient server = new CloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
+    CloudSolrClient server = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
     server.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) server.setDefaultCollection(defaultCollection);
     server.getLbClient().getHttpClient().getParams()
@@ -745,7 +744,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   protected static SolrClient createNewSolrServer(String baseUrl) {
     try {
       // setup the server...
-      HttpSolrClient s = new HttpSolrClient(baseUrl);
+      HttpSolrClient s = getHttpSolrClient(baseUrl);
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       s.setDefaultMaxConnectionsPerHost(100);
       s.setMaxTotalConnections(100);

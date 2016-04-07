@@ -442,7 +442,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
-      HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/" + DEFAULT_TEST_CORENAME);
+      HttpSolrClient client = getHttpSolrClient(buildUrl(port) + "/" + DEFAULT_TEST_CORENAME);
       client.setConnectionTimeout(clientConnectionTimeout);
       client.setSoTimeout(clientSoTimeout);
       client.setDefaultMaxConnectionsPerHost(100);

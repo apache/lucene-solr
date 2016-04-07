@@ -96,7 +96,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     assertEquals(1, replicas.size());
     String baseUrl = replicas.iterator().next().getStr(ZkStateReader.BASE_URL_PROP);
     if (!baseUrl.endsWith("/")) baseUrl += "/";
-    HttpSolrClient client = new HttpSolrClient(baseUrl + "a1x2");
+    HttpSolrClient client = getHttpSolrClient(baseUrl + "a1x2");
     client.setSoTimeout(5000);
     client.setConnectionTimeout(2000);
 
@@ -173,7 +173,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     if (!baseUrl.endsWith("/")) baseUrl += "/";
     String path = baseUrl + "football";
     log.info("Firing queries against path=" + path);
-    HttpSolrClient client = new HttpSolrClient(path);
+    HttpSolrClient client = getHttpSolrClient(path);
     client.setSoTimeout(5000);
     client.setConnectionTimeout(2000);
 

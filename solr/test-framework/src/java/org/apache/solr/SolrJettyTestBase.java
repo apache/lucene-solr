@@ -151,7 +151,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       try {
         // setup the client...
         String url = jetty.getBaseUrl().toString() + "/" + "collection1";
-        HttpSolrClient client = new HttpSolrClient( url );
+        HttpSolrClient client = getHttpSolrClient(url);
         client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
         client.setDefaultMaxConnectionsPerHost(100);
         client.setMaxTotalConnections(100);

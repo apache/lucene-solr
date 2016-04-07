@@ -16,6 +16,22 @@
  */
 package org.apache.solr.morphlines.solr;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TimeZone;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.codahale.metrics.MetricRegistry;
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
@@ -45,22 +61,6 @@ import org.kitesdk.morphline.base.Notifications;
 import org.kitesdk.morphline.stdlib.PipeBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.TimeZone;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
   private static Locale savedLocale;
@@ -123,7 +123,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
     if (EXTERNAL_SOLR_SERVER_URL != null) {
       //solrServer = new ConcurrentUpdateSolrServer(EXTERNAL_SOLR_SERVER_URL, 2, 2);
       //solrServer = new SafeConcurrentUpdateSolrServer(EXTERNAL_SOLR_SERVER_URL, 2, 2);
-      solrClient = new HttpSolrClient(EXTERNAL_SOLR_SERVER_URL);
+      solrClient = getHttpSolrClient(EXTERNAL_SOLR_SERVER_URL);
       ((HttpSolrClient) solrClient).setParser(new XMLResponseParser());
     } else {
       if (TEST_WITH_EMBEDDED_SOLR_SERVER) {

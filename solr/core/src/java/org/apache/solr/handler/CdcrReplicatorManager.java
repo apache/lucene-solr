@@ -16,9 +16,16 @@
  */
 package org.apache.solr.handler;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -29,12 +36,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
 
@@ -64,7 +65,10 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
         String zkHost = params.get(CdcrParams.ZK_HOST_PARAM);
         String targetCollection = params.get(CdcrParams.TARGET_COLLECTION_PARAM);
 
-        CloudSolrClient client = new CloudSolrClient(zkHost, true);
+        CloudSolrClient client = new Builder()
+            .withZkHost(zkHost)
+            .sendUpdatesOnlyToShardLeaders()
+            .build();
         client.setDefaultCollection(targetCollection);
         replicatorStates.add(new CdcrReplicatorState(targetCollection, zkHost, client));
       }

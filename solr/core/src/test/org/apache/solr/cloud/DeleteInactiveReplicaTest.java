@@ -128,7 +128,7 @@ public class DeleteInactiveReplicaTest extends AbstractFullDistribZkTestBase{
 
       Map m = Utils.makeMap("qt", "/admin/cores", "action", "status");
 
-      try (SolrClient queryClient = new HttpSolrClient(replica1.getStr(ZkStateReader.BASE_URL_PROP))) {
+      try (SolrClient queryClient = getHttpSolrClient(replica1.getStr(ZkStateReader.BASE_URL_PROP))) {
         NamedList<Object> resp = queryClient.request(new QueryRequest(new MapSolrParams(m)));
         assertNull("The core is up and running again",
             ((NamedList) resp.get("status")).get(replica1.getStr("core")));
