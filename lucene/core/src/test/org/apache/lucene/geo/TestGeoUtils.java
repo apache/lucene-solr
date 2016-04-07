@@ -308,7 +308,10 @@ public class TestGeoUtils extends LuceneTestCase {
                 centerLat, centerLon, lat, lon, distance, Rectangle.fromPointDistance(centerLat, centerLon, radius)),
                 distance > radius);
             } catch (AssertionError e) {
-              GeoTestUtil.toWebGLEarth(latMin, latMax, lonMin, lonMax, centerLat, centerLon, radius);
+              EarthDebugger ed = new EarthDebugger();
+              ed.addRect(latMin, latMax, lonMin, lonMax);
+              ed.addCircle(centerLat, centerLon, radius, true);
+              System.out.println(ed.finish());
               throw e;
             }
           }

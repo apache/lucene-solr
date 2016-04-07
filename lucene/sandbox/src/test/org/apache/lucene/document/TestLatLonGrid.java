@@ -22,6 +22,11 @@ import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
+
 /** tests against LatLonGrid (avoiding indexing/queries) */
 public class TestLatLonGrid extends LuceneTestCase {
 
@@ -30,18 +35,18 @@ public class TestLatLonGrid extends LuceneTestCase {
     for (int i = 0; i < 100; i++) {
       Polygon polygon = GeoTestUtil.nextPolygon();
       Rectangle box = Rectangle.fromPolygon(new Polygon[] { polygon });
-      int minLat = LatLonPoint.encodeLatitude(box.minLat);
-      int maxLat = LatLonPoint.encodeLatitude(box.maxLat);
-      int minLon = LatLonPoint.encodeLongitude(box.minLon);
-      int maxLon = LatLonPoint.encodeLongitude(box.maxLon);
+      int minLat = encodeLatitude(box.minLat);
+      int maxLat = encodeLatitude(box.maxLat);
+      int minLon = encodeLongitude(box.minLon);
+      int maxLon = encodeLongitude(box.maxLon);
       LatLonGrid grid = new LatLonGrid(minLat, maxLat, minLon, maxLon, polygon);
       // we are in integer space... but exhaustive testing is slow!
       for (int j = 0; j < 10000; j++) {
         int lat = TestUtil.nextInt(random(), minLat, maxLat);
         int lon = TestUtil.nextInt(random(), minLon, maxLon);
 
-        boolean expected = polygon.contains(LatLonPoint.decodeLatitude(lat), 
-                                            LatLonPoint.decodeLongitude(lon));
+        boolean expected = polygon.contains(decodeLatitude(lat),
+                                            decodeLongitude(lon));
         boolean actual = grid.contains(lat, lon);
         assertEquals(expected, actual);
       }

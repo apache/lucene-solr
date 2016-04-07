@@ -35,6 +35,11 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
 
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
+
 /** Simple tests for {@link LatLonPoint#newDistanceSort} */
 public class TestLatLonPointDistanceSort extends LuceneTestCase {
 
@@ -64,7 +69,7 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
     
     FieldDoc d = (FieldDoc) td.scoreDocs[0];
-    assertEquals(462.1028401330432, (Double)d.fields[0], 0.0D);
+    assertEquals(462.1028401330431, (Double)d.fields[0], 0.0D);
     
     d = (FieldDoc) td.scoreDocs[1];
     assertEquals(1054.9842850974826, (Double)d.fields[0], 0.0D);
@@ -101,7 +106,7 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
     TopDocs td = searcher.search(new MatchAllDocsQuery(), 3, sort);
     
     FieldDoc d = (FieldDoc) td.scoreDocs[0];
-    assertEquals(462.1028401330432D, (Double)d.fields[0], 0.0D);
+    assertEquals(462.1028401330431D, (Double)d.fields[0], 0.0D);
     
     d = (FieldDoc) td.scoreDocs[1];
     assertEquals(1054.9842850974826, (Double)d.fields[0], 0.0D);
@@ -191,8 +196,8 @@ public class TestLatLonPointDistanceSort extends LuceneTestCase {
         double latRaw = GeoTestUtil.nextLatitude();
         double lonRaw = GeoTestUtil.nextLongitude();
         // pre-normalize up front, so we can just use quantized value for testing and do simple exact comparisons
-        double lat = LatLonPoint.decodeLatitude(LatLonPoint.encodeLatitude(latRaw));
-        double lon = LatLonPoint.decodeLongitude(LatLonPoint.encodeLongitude(lonRaw));
+        double lat = decodeLatitude(encodeLatitude(latRaw));
+        double lon = decodeLongitude(encodeLongitude(lonRaw));
 
         doc.add(new LatLonPoint("field", lat, lon));
         doc.add(new StoredField("lat", lat));

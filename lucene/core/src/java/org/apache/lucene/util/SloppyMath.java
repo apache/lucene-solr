@@ -37,7 +37,9 @@ public class SloppyMath {
    * specified in decimal degrees (latitude/longitude).  This works correctly
    * even if the dateline is between the two points.
    * <p>
-   * Error is around 1E-5 (0.01mm) from the actual haversine distance.
+   * Error is at most 2E-1 (20cm) from the actual haversine distance, but is typically
+   * much smaller for reasonable distances: around 1E-5 (0.01mm) for distances less than
+   * 1000km.
    *
    * @param lat1 Latitude of the first point.
    * @param lon1 Longitude of the first point.
@@ -87,7 +89,9 @@ public class SloppyMath {
     double x2 = lat2 * TO_RADIANS;
     double h1 = 1 - cos(x1 - x2);
     double h2 = 1 - cos((lon1 - lon2) * TO_RADIANS);
-    return h1 + cos(x1) * cos(x2) * h2;
+    double h = h1 + cos(x1) * cos(x2) * h2;
+    // clobber crazy precision so subsequent rounding does not create ties.
+    return Double.longBitsToDouble(Double.doubleToRawLongBits(h) & 0xFFFFFFFFFFFFFFF8L);
   }
 
   /**
