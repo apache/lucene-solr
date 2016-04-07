@@ -80,14 +80,8 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
   public void testWaitOptions() throws Exception {
     // SOLR-3903
     final List<Throwable> failures = new ArrayList<>();
-    try (ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient
-      (jetty.getBaseUrl().toString() + "/collection1", 2, 2) {
-        @Override
-        public void handleError(Throwable ex) {
-          failures.add(ex);
-        }
-      }) {
-
+    final String serverUrl = jetty.getBaseUrl().toString() + "/collection1";
+    try (ConcurrentUpdateSolrClient concurrentClient = new FailureRecordingConcurrentUpdateSolrClient(serverUrl, 2, 2)) {
       int docId = 42;
       for (UpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
         for (boolean waitSearch : Arrays.asList(true, false)) {
@@ -108,6 +102,19 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     if (0 != failures.size()) {
       assertEquals(failures.size() + " Unexpected Exception, starting with...", 
                    null, failures.get(0));
+    }
+  }
+  
+  class FailureRecordingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+    private final List<Throwable> failures = new ArrayList<>();
+    
+    public FailureRecordingConcurrentUpdateSolrClient(String serverUrl, int queueSize, int numThreads) {
+      super(serverUrl, null, queueSize, numThreads, null, false);
+    }
+    
+    @Override
+    public void handleError(Throwable ex) {
+      failures.add(ex);
     }
   }
 

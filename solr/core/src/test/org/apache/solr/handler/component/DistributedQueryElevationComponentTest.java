@@ -109,7 +109,8 @@ public class DistributedQueryElevationComponentTest extends BaseDistributedSearc
     assertEquals(true, document.getFieldValue("[elevated]"));
 
     // Force javabin format
-    HttpSolrClient client = new HttpSolrClient(((HttpSolrClient)clients.get(0)).getBaseURL());
+    final String clientUrl = ((HttpSolrClient)clients.get(0)).getBaseURL();
+    HttpSolrClient client = getHttpSolrClient(clientUrl);
     client.setParser(new BinaryResponseParser());
     SolrQuery solrQuery = new SolrQuery("XXXX").setParam("qt", "/elevate").setParam("shards.qt", "/elevate").setRows(500).setFields("id,[elevated]")
         .setParam("enableElevation", "true").setParam("forceElevation", "true").setParam("elevateIds", "6", "wt", "javabin")

@@ -30,7 +30,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -41,7 +40,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
@@ -55,7 +53,6 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.mime.FormBodyPart;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicHeader;
@@ -160,20 +157,34 @@ public class HttpSolrClient extends SolrClient {
    *          The URL of the Solr server. For example, "
    *          <code>http://localhost:8983/solr/</code>" if you are using the
    *          standard distribution Solr webapp on your local machine.
+   * @deprecated use {@link Builder} instead.
    */
+  @Deprecated
   public HttpSolrClient(String baseURL) {
     this(baseURL, null, new BinaryResponseParser());
   }
   
+  /**
+   * @deprecated use {@link Builder} instead.
+   */
+  @Deprecated
   public HttpSolrClient(String baseURL, HttpClient client) {
     this(baseURL, client, new BinaryResponseParser());
   }
   
-  
+  /**
+   * @deprecated use {@link Builder} instead.
+   */
+  @Deprecated
   public HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser) {
     this(baseURL, client, parser, false);
   }
   
+  /**
+   * @deprecated use {@link Builder} instead.  This will soon be a 'protected'
+   * method, and will only be available for use in implementing subclasses.
+   */
+  @Deprecated
   public HttpSolrClient(String baseURL, HttpClient client, ResponseParser parser, boolean allowCompression) {
     this.baseUrl = baseURL;
     if (baseUrl.endsWith("/")) {
@@ -479,7 +490,7 @@ public class HttpSolrClient extends SolrClient {
   protected NamedList<Object> executeMethod(HttpRequestBase method, final ResponseParser processor) throws SolrServerException {
     method.addHeader("User-Agent", AGENT);
  
-    Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
+    org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
     if (soTimeout != null) {
       requestConfigBuilder.setSocketTimeout(soTimeout);
     }
@@ -730,6 +741,62 @@ public class HttpSolrClient extends SolrClient {
      */
     public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
       super(code, "Error from server at " + remoteHost + ": " + msg, th);
+    }
+  }
+  
+  /**
+   * Constructs {@link HttpSolrClient} instances from provided configuration.
+   */
+  public static class Builder {
+    private String baseSolrUrl;
+    private HttpClient httpClient;
+    private ResponseParser responseParser;
+    private boolean compression;
+    
+    /**
+     * Create a Builder object, based on the provided Solr URL.
+     * 
+     * By default, compression is not enabled in created HttpSolrClient objects.
+     * 
+     * @param baseSolrUrl the base URL of the Solr server that will be targeted by any created clients.
+     */
+    public Builder(String baseSolrUrl) {
+      this.baseSolrUrl = baseSolrUrl;
+      this.responseParser = new BinaryResponseParser();
+    }
+    
+    /**
+     * Provides a {@link HttpClient} for the builder to use when creating clients.
+     */
+    public Builder withHttpClient(HttpClient httpClient) {
+      this.httpClient = httpClient;
+      return this;
+    }
+    
+    /**
+     * Provides a {@link ResponseParser} for created clients to use when handling requests.
+     */
+    public Builder withResponseParser(ResponseParser responseParser) {
+      this.responseParser = responseParser;
+      return this;
+    }
+    
+    /**
+     * Chooses whether created {@link HttpSolrClient}s use compression by default.
+     */
+    public Builder allowCompression(boolean compression) {
+      this.compression = compression;
+      return this;
+    }
+    
+    /**
+     * Create a {@link HttpSolrClient} based on provided configuration.
+     */
+    public HttpSolrClient build() {
+      if (baseSolrUrl == null) {
+        throw new IllegalArgumentException("Cannot create HttpSolrClient without a valid baseSolrUrl!");
+      }
+      return new HttpSolrClient(baseSolrUrl, httpClient, responseParser, compression);
     }
   }
 }

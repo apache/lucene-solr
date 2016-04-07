@@ -140,6 +140,9 @@ Other Changes
 * SOLR-8892: Allow SolrInfoMBeans to return different statistics for /jmx vs web ui calls.
   (Gregory Chanan, Mark Miller)
 
+* SOLR-8097: Implement builder pattern design for constructing SolrJ clients and also deprecate direct construction
+  of client objects. (Jason Gerlowski, Shawn Heisey, Anshum Gupta)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

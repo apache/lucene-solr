@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -445,7 +446,9 @@ public class MiniSolrCloudCluster {
   }
   
   protected CloudSolrClient buildSolrClient() {
-    return new CloudSolrClient(getZkServer().getZkAddress());
+    return new Builder()
+        .withZkHost(getZkServer().getZkAddress())
+        .build();
   }
 
   private static String getHostContextSuitableForServletContext(String ctx) {

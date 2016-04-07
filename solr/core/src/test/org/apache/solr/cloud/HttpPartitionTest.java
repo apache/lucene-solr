@@ -590,7 +590,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected HttpSolrClient getHttpSolrClient(Replica replica, String coll) throws Exception {
     ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
     String url = zkProps.getBaseUrl() + "/" + coll;
-    return new HttpSolrClient(url);
+    return getHttpSolrClient(url);
   }
 
   protected int sendDoc(int docId) throws Exception {

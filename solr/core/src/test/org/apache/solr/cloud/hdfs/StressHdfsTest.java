@@ -165,7 +165,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     
     int i = 0;
     for (SolrClient client : clients) {
-      try (HttpSolrClient c = new HttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION)) {
+      try (HttpSolrClient c = getHttpSolrClient(getBaseUrl(client) + "/" + DELETE_DATA_DIR_COLLECTION)) {
         int docCnt = random().nextInt(1000) + 1;
         for (int j = 0; j < docCnt; j++) {
           c.add(getDoc("id", i++, "txt_t", "just some random text for a doc"));

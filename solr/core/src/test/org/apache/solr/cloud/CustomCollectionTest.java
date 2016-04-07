@@ -167,7 +167,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
       String url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collection);
 
-      try (HttpSolrClient collectionClient = new HttpSolrClient(url)) {
+      try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
         // poll for a second - it can take a moment before we are ready to serve
         waitForNon403or404or503(collectionClient);
       }
@@ -195,7 +195,7 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
     String url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
 
     String shard_fld = "shard_s";
-    try (HttpSolrClient collectionClient = new HttpSolrClient(url)) {
+    try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
 
       // lets try and use the solrj client to index a couple documents
   
@@ -292,12 +292,12 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
       url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
     }
 
-    try (HttpSolrClient collectionClient = new HttpSolrClient(url)) {
+    try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
          // poll for a second - it can take a moment before we are ready to serve
       waitForNon403or404or503(collectionClient);
     }
 
-    try (HttpSolrClient collectionClient = new HttpSolrClient(url)) {
+    try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
       // lets try and use the solrj client to index a couple documents
   
       collectionClient.add(getDoc(id, 6, i1, -600, tlong, 600, t1,
@@ -343,13 +343,13 @@ public class CustomCollectionTest extends AbstractFullDistribZkTestBase {
 
     String url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), collectionName);
 
-    try (HttpSolrClient collectionClient = new HttpSolrClient(url)) {
+    try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
       // poll for a second - it can take a moment before we are ready to serve
       waitForNon403or404or503(collectionClient);
     }
 
 
-    try (HttpSolrClient collectionClient = new HttpSolrClient(url)) {
+    try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
       // lets try and use the solrj client to index a couple documents
   
       collectionClient.add(getDoc(id, 6, i1, -600, tlong, 600, t1,

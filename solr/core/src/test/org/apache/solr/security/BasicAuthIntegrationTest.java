@@ -60,6 +60,7 @@ import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;
+import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
@@ -166,7 +167,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     CollectionAdminRequest.Reload reload = new CollectionAdminRequest.Reload();
     reload.setCollectionName(defaultCollName);
 
-    try (HttpSolrClient solrClient = new HttpSolrClient(baseUrl)) {
+    try (HttpSolrClient solrClient = getHttpSolrClient(baseUrl)) {
       try {
         rsp = solrClient.request(reload);
         fail("must have failed");

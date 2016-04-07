@@ -147,17 +147,8 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     final StringBuilder errors = new StringBuilder();     
     
     @SuppressWarnings("serial")
-    ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(serverUrl, cussQueueSize, cussThreadCount) {
-      @Override
-      public void handleError(Throwable ex) {
-        errorCounter.incrementAndGet();
-        errors.append(" "+ex);
-      }
-      @Override
-      public void onSuccess(HttpResponse resp) {
-        successCounter.incrementAndGet();
-      }
-    };
+    ConcurrentUpdateSolrClient concurrentClient = new OutcomeCountingConcurrentUpdateSolrClient(serverUrl, cussQueueSize,
+        cussThreadCount, successCounter, errorCounter, errors);
     
     concurrentClient.setPollQueueTime(0);
     
@@ -223,5 +214,29 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
         }
       }      
     }    
+  }
+  
+  class OutcomeCountingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+    private final AtomicInteger successCounter;
+    private final AtomicInteger failureCounter;
+    private final StringBuilder errors;
+    public OutcomeCountingConcurrentUpdateSolrClient(String serverUrl, int queueSize, int threadCount,
+        AtomicInteger successCounter, AtomicInteger failureCounter, StringBuilder errors) {
+      super(serverUrl, null, queueSize, threadCount, null, false);
+      
+      this.successCounter = successCounter;
+      this.failureCounter = failureCounter;
+      this.errors = errors;
+    }
+    
+    @Override
+    public void handleError(Throwable ex) {
+      failureCounter.incrementAndGet();
+      errors.append(" "+ex);
+    }
+    @Override
+    public void onSuccess(HttpResponse resp) {
+      successCounter.incrementAndGet();
+    }
   }
 }

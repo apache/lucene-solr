@@ -69,7 +69,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.security.PermissionNameProvider.Name;
 import org.apache.solr.util.CommandOperation;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RTimer;
@@ -785,7 +784,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     public Boolean call() throws Exception {
       final RTimer timer = new RTimer();
       int attempts = 0;
-      try (HttpSolrClient solr = new HttpSolrClient(coreUrl)) {
+      try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
         // eventually, this loop will get killed by the ExecutorService's timeout
         while (true) {
           try {

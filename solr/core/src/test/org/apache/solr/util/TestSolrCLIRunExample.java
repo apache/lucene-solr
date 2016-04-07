@@ -351,7 +351,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         exampleSolrHomeDir.isDirectory());
 
     if ("techproducts".equals(exampleName)) {
-      HttpSolrClient solrClient = new HttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
+      HttpSolrClient solrClient = getHttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
       SolrQuery query = new SolrQuery("*:*");
       QueryResponse qr = solrClient.query(query);
       long numFound = qr.getResults().getNumFound();
@@ -439,7 +439,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     CloudSolrClient cloudClient = null;
 
     try {
-      cloudClient = new CloudSolrClient(executor.solrCloudCluster.getZkServer().getZkAddress());
+      cloudClient = getCloudSolrClient(executor.solrCloudCluster.getZkServer().getZkAddress());
       cloudClient.connect();
       cloudClient.setDefaultCollection(collectionName);
 

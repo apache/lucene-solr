@@ -35,6 +35,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -427,7 +428,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ZkNodeProps leaderProps = clusterState.getLeader(collection, shard);
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
 
-        try (HttpSolrClient client = new HttpSolrClient(nodeProps.getBaseUrl())) {
+        try (HttpSolrClient client = new Builder(nodeProps.getBaseUrl()).build()) {
           client.setConnectionTimeout(15000);
           client.setSoTimeout(60000);
           RequestSyncShard reqSyncShard = new CoreAdminRequest.RequestSyncShard();

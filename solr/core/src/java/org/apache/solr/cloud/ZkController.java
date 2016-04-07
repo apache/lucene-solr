@@ -35,6 +35,7 @@ import java.util.concurrent.TimeoutException;
 import com.google.common.base.Strings;
 import org.apache.commons.lang.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -1574,7 +1575,7 @@ public final class ZkController {
         log.info("Replica " + myCoreNodeName +
             " NOT in leader-initiated recovery, need to wait for leader to see down state.");
 
-        try (HttpSolrClient client = new HttpSolrClient(leaderBaseUrl)) {
+        try (HttpSolrClient client = new Builder(leaderBaseUrl).build()) {
           client.setConnectionTimeout(15000);
           client.setSoTimeout(120000);
           WaitForState prepCmd = new WaitForState();
