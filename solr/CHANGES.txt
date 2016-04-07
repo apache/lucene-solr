@@ -89,6 +89,7 @@ New Features
   graph traversal to find the shortest path(s) in an unweighted, directed graph stored in a 
   SolrCloud collection. (Joel Bernstein)
 
+* SOLR-8938: Add optional -excluderegex argument to ZkCLI. (Christine Poerschke)
 
 Bug Fixes
 ----------------------
