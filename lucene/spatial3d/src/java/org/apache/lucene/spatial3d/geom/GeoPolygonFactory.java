@@ -175,7 +175,7 @@ public class GeoPolygonFactory {
    * @return null if the point is illegal, otherwise false if the point is inside and true if the point is outside
    * of the polygon.
    */
-  protected static Boolean isInsidePolygon(final GeoPoint point, final List<GeoPoint> polyPoints) {
+  private static Boolean isInsidePolygon(final GeoPoint point, final List<GeoPoint> polyPoints) {
     // First, compute sine and cosine of pole point latitude and longitude
     final double norm = 1.0 / point.magnitude();
     final double xyDenom = Math.sqrt(point.x * point.x + point.y * point.y);
@@ -255,7 +255,7 @@ public class GeoPolygonFactory {
     * @param cosLongitude the cosine of the longitude
     * @return the angle of rotation, or null if not computable
     */
-  protected static Double computeAngle(final GeoPoint point,
+  private static Double computeAngle(final GeoPoint point,
     final double sinLatitude,
     final double cosLatitude,
     final double sinLongitude,
@@ -511,7 +511,7 @@ public class GeoPolygonFactory {
    * @param testPoint is the optional test point.
    * @return true unless the testPoint caused failure.
    */
-  protected static boolean makeConcavePolygon(final PlanetModel planetModel,
+  private static boolean makeConcavePolygon(final PlanetModel planetModel,
     final GeoCompositePolygon rval,
     final EdgeBuffer edgeBuffer,
     final List<GeoPolygon> holes,
@@ -572,7 +572,7 @@ public class GeoPolygonFactory {
    * @param testPoint is the optional test point.
    * @return null if the testPoint is within any polygon detected, otherwise true if a convex polygon was created.
    */
-  protected static Boolean findConvexPolygon(final PlanetModel planetModel,
+  private static Boolean findConvexPolygon(final PlanetModel planetModel,
     final Edge currentEdge,
     final GeoCompositePolygon rval,
     final EdgeBuffer edgeBuffer,
@@ -786,7 +786,7 @@ public class GeoPolygonFactory {
     * @param returnBoundary is the return edge
     * @return true if within
     */
-  protected static boolean isWithin(final GeoPoint point, final Set<Edge> edgeSet, final Edge extension, final SidedPlane returnBoundary) {
+  private static boolean isWithin(final GeoPoint point, final Set<Edge> edgeSet, final Edge extension, final SidedPlane returnBoundary) {
     if (!extension.plane.isWithin(point)) {
       return false;
     }
@@ -801,7 +801,7 @@ public class GeoPolygonFactory {
     * @param edgeSet is the set of edges
     * @return true if within
     */
-  protected static boolean isWithin(final GeoPoint point, final Set<Edge> edgeSet) {
+  private static boolean isWithin(final GeoPoint point, final Set<Edge> edgeSet) {
     for (final Edge edge : edgeSet) {
       if (!edge.plane.isWithin(point)) {
         return false;
@@ -815,7 +815,7 @@ public class GeoPolygonFactory {
    *@param size is the array size.
    *@return an updated index.
    */
-  protected static int getLegalIndex(int index, int size) {
+  private static int getLegalIndex(int index, int size) {
     while (index < 0) {
       index += size;
     }
@@ -827,7 +827,7 @@ public class GeoPolygonFactory {
 
   /** Class representing a single (unused) edge.
    */
-  protected static class Edge {
+  private static class Edge {
     /** Plane */
     public final SidedPlane plane;
     /** Start point */
@@ -863,7 +863,7 @@ public class GeoPolygonFactory {
   
   /** Class representing an iterator over an EdgeBuffer.
    */
-  protected static class EdgeBufferIterator implements Iterator<Edge> {
+  private static class EdgeBufferIterator implements Iterator<Edge> {
     /** Edge buffer */
     protected final EdgeBuffer edgeBuffer;
     /** First edge */
@@ -905,7 +905,7 @@ public class GeoPolygonFactory {
   
   /** Class representing a pool of unused edges, all linked together by vertices.
    */
-  protected static class EdgeBuffer {
+  private static class EdgeBuffer {
     /** Starting edge */
     protected Edge oneEdge;
     /** Full set of edges */

@@ -29,27 +29,27 @@ public class XYZBounds implements Bounds {
    * of the shape, and we cannot guarantee that without making MINIMUM_RESOLUTION
    * unacceptably large.
    */
-  protected static final double FUDGE_FACTOR = Vector.MINIMUM_RESOLUTION * 2.0;
+  private static final double FUDGE_FACTOR = Vector.MINIMUM_RESOLUTION * 2.0;
   
   /** Minimum x */
-  protected Double minX = null;
+  private Double minX = null;
   /** Maximum x */
-  protected Double maxX = null;
+  private Double maxX = null;
   /** Minimum y */
-  protected Double minY = null;
+  private Double minY = null;
   /** Maximum y */
-  protected Double maxY = null;
+  private Double maxY = null;
   /** Minimum z */
-  protected Double minZ = null;
+  private Double minZ = null;
   /** Maximum z */
-  protected Double maxZ = null;
+  private Double maxZ = null;
   
   /** Set to true if no longitude bounds can be stated */
-  protected boolean noLongitudeBound = false;
+  private boolean noLongitudeBound = false;
   /** Set to true if no top latitude bound can be stated */
-  protected boolean noTopLatitudeBound = false;
+  private boolean noTopLatitudeBound = false;
   /** Set to true if no bottom latitude bound can be stated */
-  protected boolean noBottomLatitudeBound = false;
+  private boolean noBottomLatitudeBound = false;
 
   /** Construct an empty bounds object */
   public XYZBounds() {
