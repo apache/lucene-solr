@@ -74,11 +74,17 @@ final class LatLonGrid {
     }
     long latitudeRange = maxLat - (long) minLat;
     long longitudeRange = maxLon - (long) minLon;
-    // we spill over the edge of the bounding box in each direction a bit,
-    // but it prevents edge case bugs.
-    latPerCell = latitudeRange / (GRID_SIZE - 1);
-    lonPerCell = longitudeRange / (GRID_SIZE - 1);
-    fill(polygons, 0, GRID_SIZE, 0, GRID_SIZE);
+
+    if (latitudeRange < GRID_SIZE || longitudeRange < GRID_SIZE) {
+      // don't complicate fill right now if you pass e.g. emptyish stuff: make an "empty grid"
+      latPerCell = lonPerCell = Long.MAX_VALUE;
+    } else {
+      // we spill over the edge of the bounding box in each direction a bit,
+      // but it prevents edge case bugs.
+      latPerCell = latitudeRange / (GRID_SIZE - 1);
+      lonPerCell = longitudeRange / (GRID_SIZE - 1);
+      fill(polygons, 0, GRID_SIZE, 0, GRID_SIZE);
+    }
   }
   
   /** fills a 2D range of grid cells [minLatIndex .. maxLatIndex) X [minLonIndex .. maxLonIndex) */
