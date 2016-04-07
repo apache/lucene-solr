@@ -24,6 +24,8 @@ import static org.apache.lucene.util.SloppyMath.haversinSortKey;
 
 import java.util.Random;
 
+import org.apache.lucene.geo.GeoTestUtil;
+
 
 public class TestSloppyMath extends LuceneTestCase {
   // accuracy for cos()
@@ -31,7 +33,9 @@ public class TestSloppyMath extends LuceneTestCase {
   // accuracy for asin()
   static double ASIN_DELTA = 1E-7;
   // accuracy for haversinMeters()
-  static double HAVERSIN_DELTA = 1E-5;
+  static double HAVERSIN_DELTA = 2E-1;
+  // accuracy for haversinMeters() for "reasonable" distances (< 1000km)
+  static double REASONABLE_HAVERSIN_DELTA = 1E-5;
   
   public void testCos() {
     assertTrue(Double.isNaN(cos(Double.NaN)));
@@ -127,14 +131,14 @@ public class TestSloppyMath extends LuceneTestCase {
   /** Test this method sorts the same way as real haversin */
   public void testHaversinSortKey() {
     for (int i = 0; i < 100000; i++) {
-      double centerLat = -90 + 180.0 * random().nextDouble();
-      double centerLon = -180 + 360.0 * random().nextDouble();
+      double centerLat = GeoTestUtil.nextLatitude();
+      double centerLon = GeoTestUtil.nextLongitude();
 
-      double lat1 = -90 + 180.0 * random().nextDouble();
-      double lon1 = -180 + 360.0 * random().nextDouble();
+      double lat1 = GeoTestUtil.nextLatitude();
+      double lon1 = GeoTestUtil.nextLongitude();
 
-      double lat2 = -90 + 180.0 * random().nextDouble();
-      double lon2 = -180 + 360.0 * random().nextDouble();
+      double lat2 = GeoTestUtil.nextLatitude();
+      double lon2 = GeoTestUtil.nextLongitude();
 
       int expected = Integer.signum(Double.compare(haversinMeters(centerLat, centerLon, lat1, lon1),
                                                    haversinMeters(centerLat, centerLon, lat2, lon2)));
@@ -148,14 +152,29 @@ public class TestSloppyMath extends LuceneTestCase {
   
   public void testAgainstSlowVersion() {
     for (int i = 0; i < 100_000; i++) {
-      double lat1 = -90 + 180.0 * random().nextDouble();
-      double lon1 = -180 + 360.0 * random().nextDouble();
-      double lat2 = -90 + 180.0 * random().nextDouble();
-      double lon2 = -180 + 360.0 * random().nextDouble();
+      double lat1 = GeoTestUtil.nextLatitude();
+      double lon1 = GeoTestUtil.nextLongitude();
+      double lat2 = GeoTestUtil.nextLatitude();
+      double lon2 = GeoTestUtil.nextLongitude();
 
       double expected = haversinMeters(lat1, lon1, lat2, lon2);
       double actual = slowHaversin(lat1, lon1, lat2, lon2);
       assertEquals(expected, actual, HAVERSIN_DELTA);
+    }
+  }
+  
+  public void testAgainstSlowVersionReasonable() {
+    for (int i = 0; i < 100_000; i++) {
+      double lat1 = GeoTestUtil.nextLatitude();
+      double lon1 = GeoTestUtil.nextLongitude();
+      double lat2 = GeoTestUtil.nextLatitude();
+      double lon2 = GeoTestUtil.nextLongitude();
+
+      double expected = haversinMeters(lat1, lon1, lat2, lon2);
+      if (expected < 1_000_000) {
+        double actual = slowHaversin(lat1, lon1, lat2, lon2);
+        assertEquals(expected, actual, REASONABLE_HAVERSIN_DELTA);
+      }
     }
   }
   
