@@ -29,7 +29,6 @@ import org.apache.commons.cli.PosixParser;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -48,6 +47,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 
 public class ZkCLI {
   
@@ -66,7 +66,9 @@ public class ZkCLI {
   private static final String RUNZK = "runzk";
   private static final String SOLRHOME = "solrhome";
   private static final String BOOTSTRAP = "bootstrap";
-  private static final String UPCONFIG = "upconfig";
+  static final String UPCONFIG = "upconfig";
+  static final String EXCLUDE_REGEX = "excluderegex";
+  static final String EXCLUDE_REGEX_DEFAULT = ZkConfigManager.UPLOAD_FILENAME_EXCLUDE_REGEX;
   private static final String COLLECTION = "collection";
   private static final String CLEAR = "clear";
   private static final String LIST = "list";
@@ -120,6 +122,9 @@ public class ZkCLI {
     options.addOption("c", COLLECTION, true,
         "for " + LINKCONFIG + ": name of the collection");
     
+    options.addOption(EXCLUDE_REGEX, true,
+        "for " + UPCONFIG + ": files matching this regular expression won't be uploaded");
+
     options
         .addOption(
             "r",
@@ -211,13 +216,15 @@ public class ZkCLI {
           }
           String confDir = line.getOptionValue(CONFDIR);
           String confName = line.getOptionValue(CONFNAME);
+          final String excludeExpr = line.getOptionValue(EXCLUDE_REGEX, EXCLUDE_REGEX_DEFAULT);
           
           if(!ZkController.checkChrootPath(zkServerAddress, true)) {
             System.out.println("A chroot was specified in zkHost but the znode doesn't exist. ");
             System.exit(1);
           }
           ZkConfigManager configManager = new ZkConfigManager(zkClient);
-          configManager.uploadConfigDir(Paths.get(confDir), confName);
+          final Pattern excludePattern = Pattern.compile(excludeExpr);
+          configManager.uploadConfigDir(Paths.get(confDir), confName, excludePattern);
         } else if (line.getOptionValue(CMD).equalsIgnoreCase(DOWNCONFIG)) {
           if (!line.hasOption(CONFDIR) || !line.hasOption(CONFNAME)) {
             System.out.println("-" + CONFDIR + " and -" + CONFNAME
