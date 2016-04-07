@@ -66,7 +66,7 @@ public class Rectangle {
   @Override
   public String toString() {
     StringBuilder b = new StringBuilder();
-    b.append("GeoRect(lat=");
+    b.append("Rectangle(lat=");
     b.append(minLat);
     b.append(" TO ");
     b.append(maxLat);

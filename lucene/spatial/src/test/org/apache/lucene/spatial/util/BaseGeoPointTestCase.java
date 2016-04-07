@@ -738,7 +738,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   static final boolean rectContainsPoint(Rectangle rect, double pointLat, double pointLon) {
     assert Double.isNaN(pointLat) == false;
 
-    if (rect.minLon < rect.maxLon) {
+    if (rect.minLon <= rect.maxLon) {
       return GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
     } else {
       // Rect crosses dateline:
@@ -1223,26 +1223,29 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     // exact edge cases
     assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon)));
     
-    // expand 1 ulp in each direction
-    assumeFalse("can't expand box, its too big already", rect.minLat ==  -90);
-    assumeFalse("can't expand box, its too big already", rect.maxLat ==   90);
-    assumeFalse("can't expand box, its too big already", rect.minLon == -180);
-    assumeFalse("can't expand box, its too big already", rect.maxLon ==  180);
-    assertEquals(8, s.count(newRectQuery(FIELD_NAME, Math.nextDown(rect.minLat), rect.maxLat, rect.minLon, rect.maxLon)));
-    assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, Math.nextUp(rect.maxLat), rect.minLon, rect.maxLon)));
-    assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, Math.nextDown(rect.minLon), rect.maxLon)));
-    assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, Math.nextUp(rect.maxLon))));
+    // expand 1 ulp in each direction if possible and test a slightly larger box!
+    if (rect.minLat != -90) {
+      assertEquals(8, s.count(newRectQuery(FIELD_NAME, Math.nextDown(rect.minLat), rect.maxLat, rect.minLon, rect.maxLon)));
+    }
+    if (rect.maxLat != 90) {
+      assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, Math.nextUp(rect.maxLat), rect.minLon, rect.maxLon)));
+    }
+    if (rect.minLon != -180) {
+      assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, Math.nextDown(rect.minLon), rect.maxLon)));
+    }
+    if (rect.maxLon != 180) {
+      assertEquals(8, s.count(newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, Math.nextUp(rect.maxLon))));
+    }
     
-    // now shrink 1 ulp in each direction: it should not include bogus stuff
-    assumeFalse("can't shrink box, its too small already", rect.minLat ==   90);
-    assumeFalse("can't shrink box, its too small already", rect.maxLat ==  -90);
-    assumeFalse("can't shrink box, its too small already", rect.minLon ==  180);
-    assumeFalse("can't shrink box, its too small already", rect.maxLon == -180);
-    // note we put points on "sides" not just "corners" so we just shrink all 4 at once for now: it should exclude all points!
-    assertEquals(0, s.count(newRectQuery(FIELD_NAME, Math.nextUp(rect.minLat), 
+    // now shrink 1 ulp in each direction if possible: it should not include bogus stuff
+    if (rect.minLat != 90 && rect.maxLat != -90 && rect.minLon != 80 && rect.maxLon != -180) {
+      // note we put points on "sides" not just "corners" so we just shrink all 4 at once for now: it should exclude all points!
+      assertEquals(0, s.count(newRectQuery(FIELD_NAME, Math.nextUp(rect.minLat), 
                                                      Math.nextDown(rect.maxLat), 
                                                      Math.nextUp(rect.minLon), 
                                                      Math.nextDown(rect.maxLon))));
+    }
+
     r.close();
     w.close();
     dir.close();
