@@ -728,7 +728,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
   public void testToString() {
     Geo3DPoint point = new Geo3DPoint("point", 44.244272, 7.769736);
-    assertEquals("Geo3DPoint <point: x=0.7094263127744131 y=0.09679758888428691 z=0.6973564619016113>", point.toString());
+    assertEquals("Geo3DPoint <point: x=0.7094263130517758 y=0.09679758927665334 z=0.6973564618592686>", point.toString());
   }
 
   public void testShapeQueryToString() {
@@ -1075,25 +1075,6 @@ public class TestGeo3DPoint extends LuceneTestCase {
       assertEquals(pointEnc.x, pointEnc2.x, 0.0);
       assertEquals(pointEnc.y, pointEnc2.y, 0.0);
       assertEquals(pointEnc.z, pointEnc2.z, 0.0);
-    }
-  }
-
-  // Takes ~35 seconds on modern-ish 2015 dev box:
-  @Nightly
-  public void testEncodeIsStableFromIntSide() throws Exception {
-    double max = PlanetModel.WGS84.getMaximumMagnitude();
-
-    // We can't test the full space of ints (Integer.MIN_VALUE to Integer.MAX_VALUE) because not all ints are allowed:
-    int start = Geo3DUtil.encodeValue(-max);
-    int end = Geo3DUtil.encodeValue(max);
-    // This prints: 99.99997175764292
-    //System.out.println("PCTG INT SPACE USED: " + 100.*(((long) end)-(long) start)/(1L<<32));
-    for (int i=start;i<=end;i++) {
-      double x = Geo3DUtil.decodeValue(i);
-      assertEquals(i, Geo3DUtil.encodeValue(x));
-      if (i > start+1) {
-        assertEquals(Geo3DUtil.DECODE, x - Geo3DUtil.decodeValue(i-1), 0.0d);
-      }
     }
   }
 
