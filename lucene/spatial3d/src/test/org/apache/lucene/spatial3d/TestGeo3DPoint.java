@@ -759,10 +759,16 @@ public class TestGeo3DPoint extends LuceneTestCase {
     final PlanetModel pm = PlanetModel.WGS84;
     // Pick a random pole
     final GeoPoint randomPole = new GeoPoint(pm, Math.toRadians(GeoTestUtil.nextLatitude()), Math.toRadians(GeoTestUtil.nextLongitude()));
-    // Create a polygon that's less than 180 degrees
-    final Polygon clockWise = makePoly(pm, randomPole, true, true);
-    // Create a polygon that's greater than 180 degrees
-    final Polygon counterClockWise = makePoly(pm, randomPole, false, true);
+    int iters = atLeast(100);
+    for (int i = 0; i < iters; i++) {
+      // Create a polygon that's less than 180 degrees
+      final Polygon clockWise = makePoly(pm, randomPole, true, true);
+    }
+    iters = atLeast(100);
+    for (int i = 0; i < iters; i++) {
+      // Create a polygon that's greater than 180 degrees
+      final Polygon counterClockWise = makePoly(pm, randomPole, false, true);
+    }
   }
   
   protected static double MINIMUM_EDGE_ANGLE = Math.toRadians(5.0);
