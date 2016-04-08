@@ -1,10 +1,10 @@
 <component name="libraryTable">
   <library name="JUnit">
     <CLASSES>
-      <root url="file://$PROJECT_DIR$/lucene/test-framework/lib/" />
+      <root url="file://$PROJECT_DIR$/lucene/test-framework/lib" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
-    <jarDirectory url="file://$PROJECT_DIR$/lucene/test-framework/lib/" recursive="false" />
+    <jarDirectory url="file://$PROJECT_DIR$/lucene/test-framework/lib" recursive="false" />
   </library>
 </component>
