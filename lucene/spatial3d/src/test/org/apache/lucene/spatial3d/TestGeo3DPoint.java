@@ -517,6 +517,16 @@ public class TestGeo3DPoint extends LuceneTestCase {
     verify(lats, lons);
   }
 
+  public void testPolygonOrdering() {
+    final double[] lats = new double[] {
+      51.204382859999996, 50.89947531437482, 50.8093624806861,50.8093624806861, 50.89947531437482, 51.204382859999996, 51.51015366140113, 51.59953838204167, 51.59953838204167, 51.51015366140113, 51.204382859999996};
+    final double[] lons = new double[] {
+      0.8747711978759765, 0.6509219832137298, 0.35960265165247807, 0.10290284834752167, -0.18841648321373008, -0.41226569787597667, -0.18960465285650027, 0.10285893781346236, 0.35964656218653757, 0.6521101528565002, 0.8747711978759765};
+    final Query q = Geo3DPoint.newPolygonQuery("point", new Polygon(lats, lons));
+    //System.out.println(q);
+    assertTrue(!q.toString().contains("GeoConcavePolygon"));
+  }
+  
   private static final double MEAN_EARTH_RADIUS_METERS = PlanetModel.WGS84_MEAN;
   
   private static Query random3DQuery(final String field) {
@@ -982,26 +992,26 @@ public class TestGeo3DPoint extends LuceneTestCase {
     // x1 = x0 cos T - y0 sin T
     // y1 = x0 sin T + y0 cos T
     // We're in essence undoing the following transformation (from GeoPolygonFactory):
-    // x1 = x0 cos az - y0 sin az
-    // y1 = x0 sin az + y0 cos az
+    // x1 = x0 cos az + y0 sin az
+    // y1 = - x0 sin az + y0 cos az
     // z1 = z0
-    // x2 = x1 cos al - z1 sin al
+    // x2 = x1 cos al + z1 sin al
     // y2 = y1
-    // z2 = x1 sin al + z1 cos al
+    // z2 = - x1 sin al + z1 cos al
     // So, we reverse the order of the transformations, AND we transform backwards.
     // Transforming backwards means using these identities: sin(-angle) = -sin(angle), cos(-angle) = cos(angle)
     // So:
-    // x1 = x0 cos al + z0 sin al
+    // x1 = x0 cos al - z0 sin al
     // y1 = y0
-    // z1 = - x0 sin al + z0 cos al
-    // x2 = x1 cos az + y1 sin az
-    // y2 = - x1 sin az + y1 cos az
+    // z1 = x0 sin al + z0 cos al
+    // x2 = x1 cos az - y1 sin az
+    // y2 = x1 sin az + y1 cos az
     // z2 = z1
-    final double x1 = x * cosLatitude + z * sinLatitude;
+    final double x1 = x * cosLatitude - z * sinLatitude;
     final double y1 = y;
-    final double z1 = - x * sinLatitude + z * cosLatitude;
-    final double x2 = x1 * cosLongitude + y1 * sinLongitude;
-    final double y2 = - x1 * sinLongitude + y1 * cosLongitude;
+    final double z1 = x * sinLatitude + z * cosLatitude;
+    final double x2 = x1 * cosLongitude - y1 * sinLongitude;
+    final double y2 = x1 * sinLongitude + y1 * cosLongitude;
     final double z2 = z1;
 
     // Scale final (x,y,z) to land on planet surface
