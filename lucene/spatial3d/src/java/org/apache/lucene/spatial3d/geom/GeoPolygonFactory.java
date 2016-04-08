@@ -714,12 +714,17 @@ public class GeoPolygonFactory {
     // the start point of the first edge and the end point of the last edge.  If the first edge start point is the same as the last edge end point,
     // it's a degenerate case and we want to just clean out the edge buffer entirely.
     
-    final List<GeoPoint> points = new ArrayList<GeoPoint>(includedEdges.size());
-    final BitSet internalEdges = new BitSet(includedEdges.size()-1);
+    final List<GeoPoint> points = new ArrayList<GeoPoint>(includedEdges.size()+1);
+    final BitSet internalEdges = new BitSet(includedEdges.size());
     final boolean returnIsInternal;
     
     if (firstEdge.startPoint == lastEdge.endPoint) {
       // Degenerate case!!  There is no return edge -- or rather, we already have it.
+      if (includedEdges.size() < 3) {
+        // This means we found a degenerate cycle of edges.  If we emit a polygon at this point it
+        // has no contents, so we've clearly done something wrong, but not sure what.
+        throw new IllegalArgumentException("polygon was illegal (degenerate illegal two-edge cyclical polygon encountered in processing)");
+      }
       Edge edge = firstEdge;
       points.add(edge.startPoint);
       int i = 0;
@@ -945,8 +950,39 @@ public class GeoPolygonFactory {
         // Get the next point
         final GeoPoint newPoint = pointList.get(endIndex);
         // Build the new edge
-        final boolean isNewPointWithin = currentEdge.plane.isWithin(newPoint);
-        final SidedPlane newPlane = new SidedPlane(currentEdge.startPoint, isNewPointWithin, pointList.get(startIndex), newPoint);
+        // We have to be sure that the point we use as a check does not lie on the plane.
+        // In order to meet that goal, we need to go hunting for a point that meets the criteria.  If we don't
+        // find one, we've got a linear "polygon" that we cannot use.
+        
+        // We need to know the sidedness of the new plane.  The point we're going to be presenting to it has
+        // a certain relationship with the sided plane we already have for the current edge.  If the current edge
+        // is colinear with the new edge, then we want to maintain the same relationship.  If the new edge
+        // is not colinear, then we can use the new point's relationship with the current edge as our guide.
+        
+        final boolean isNewPointWithin;
+        final GeoPoint pointToPresent;
+        if (currentEdge.plane.evaluateIsZero(newPoint)) {
+          // The new point is colinear with the current edge.  We'll have to look for the first point that isn't.
+          int checkPointIndex = -1;
+          final Plane checkPlane = new Plane(pointList.get(startIndex), newPoint);
+          for (int i = 0; i < pointList.size(); i++) {
+            final int index = getLegalIndex(startIndex - 1 - i, pointList.size());
+            if (!checkPlane.evaluateIsZero(pointList.get(index))) {
+              checkPointIndex = index;
+              break;
+            }
+          }
+          if (checkPointIndex == -1) {
+            throw new IllegalArgumentException("polygon is illegal (linear)");
+          }
+          pointToPresent = pointList.get(checkPointIndex);
+          isNewPointWithin = currentEdge.plane.isWithin(pointToPresent);
+        } else {
+          isNewPointWithin = currentEdge.plane.isWithin(newPoint);
+          pointToPresent = currentEdge.startPoint;
+        }
+
+        final SidedPlane newPlane = new SidedPlane(pointToPresent, isNewPointWithin, pointList.get(startIndex), newPoint);
         /*
         System.out.println("For next plane, the following points are in/out:");
         for (final GeoPoint p: pointList) {
