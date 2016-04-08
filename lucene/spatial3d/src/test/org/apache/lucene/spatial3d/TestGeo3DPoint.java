@@ -37,6 +37,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -54,8 +55,10 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.spatial3d.geom.XYZSolid;
 import org.apache.lucene.spatial3d.geom.GeoArea;
 import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
+import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
 import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
 import org.apache.lucene.spatial3d.geom.GeoPathFactory;
@@ -514,6 +517,68 @@ public class TestGeo3DPoint extends LuceneTestCase {
     verify(lats, lons);
   }
 
+  private static final double MEAN_EARTH_RADIUS_METERS = PlanetModel.WGS84_MEAN;
+  
+  private static Query random3DQuery(final String field) {
+    while (true) {
+      final int shapeType = random().nextInt(4);
+      switch (shapeType) {
+      case 0: {
+        // Polygons
+        final boolean isClockwise = random().nextDouble() < 0.5;
+        try {
+          return Geo3DPoint.newPolygonQuery(field, makePoly(PlanetModel.WGS84,
+            new GeoPoint(PlanetModel.WGS84, toRadians(GeoTestUtil.nextLatitude()), toRadians(GeoTestUtil.nextLongitude())),
+            isClockwise,
+            true));
+        } catch (IllegalArgumentException e) {
+          continue;
+        }
+      }
+
+      case 1: {
+        // Circles
+        final double widthMeters = random().nextDouble() * Math.PI * MEAN_EARTH_RADIUS_METERS;
+        try {
+          return Geo3DPoint.newDistanceQuery(field, GeoTestUtil.nextLatitude(), GeoTestUtil.nextLongitude(), widthMeters);
+        } catch (IllegalArgumentException e) {
+          continue;
+        }
+      }
+
+      case 2: {
+        // Rectangles
+        final Rectangle r = GeoTestUtil.nextBox();
+        return Geo3DPoint.newBoxQuery(field, r.minLat, r.maxLat, r.minLon, r.maxLon);
+      }
+
+      case 3: {
+        // Paths
+        // TBD: Need to rework generation to be realistic
+        final int pointCount = random().nextInt(5) + 1;
+        final double width = random().nextDouble() * Math.PI * 0.5 * MEAN_EARTH_RADIUS_METERS;
+        final double[] latitudes = new double[pointCount];
+        final double[] longitudes = new double[pointCount];
+        for (int i = 0; i < pointCount; i++) {
+          latitudes[i] = GeoTestUtil.nextLatitude();
+          longitudes[i] = GeoTestUtil.nextLongitude();
+        }
+        try {
+          return Geo3DPoint.newPathQuery(field, latitudes, longitudes, width);
+        } catch (IllegalArgumentException e) {
+          // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
+          // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
+          continue;
+        }
+      }
+
+      default:
+        throw new IllegalStateException("Unexpected shape type");
+      }
+    }
+
+  }
+  
   // Poached from Geo3dRptTest.randomShape:
   private static GeoShape randomShape() {
     while (true) {
@@ -660,13 +725,15 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
     for (int iter=0;iter<iters;iter++) {
 
+      /*
       GeoShape shape = randomShape();
 
       if (VERBOSE) {
         System.err.println("\nTEST: iter=" + iter + " shape="+shape);
       }
-              
-      Query query = Geo3DPoint.newShapeQuery("point", shape);
+      */
+      
+      Query query = random3DQuery("point"); // Geo3DPoint.newShapeQuery("point", shape);
 
       if (VERBOSE) {
         System.err.println("  using query: " + query);
@@ -702,7 +769,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
         int id = (int) docIDToID.get(docID);
         GeoPoint point = points[id];
         if (point != null) {
-          boolean expected = ((deleted.contains(id) == false) && shape.isWithin(point));
+          boolean expected = ((deleted.contains(id) == false) && ((PointInGeo3DShapeQuery)query).getShape().isWithin(point));
           if (hits.get(docID) != expected) {
             StringBuilder b = new StringBuilder();
             if (expected) {
@@ -710,11 +777,11 @@ public class TestGeo3DPoint extends LuceneTestCase {
             } else {
               b.append("FAIL: id=" + id + " should not have matched but did\n");
             }
-            b.append("  shape=" + shape + "\n");
+            b.append("  shape=" + ((PointInGeo3DShapeQuery)query).getShape() + "\n");
             b.append("  point=" + point + "\n");
             b.append("  docID=" + docID + " deleted?=" + deleted.contains(id) + "\n");
             b.append("  query=" + query + "\n");
-            b.append("  explanation:\n    " + explain("point", shape, r, docID).replace("\n", "\n  "));
+            b.append("  explanation:\n    " + explain("point", ((PointInGeo3DShapeQuery)query).getShape(), r, docID).replace("\n", "\n  "));
             fail(b.toString());
           }
         } else {
@@ -770,7 +837,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
       final Polygon counterClockWise = makePoly(pm, randomPole, false, true);
     }
   }
-  
+
   protected static double MINIMUM_EDGE_ANGLE = Math.toRadians(5.0);
   protected static double MINIMUM_ARC_ANGLE = Math.toRadians(1.0);
   
@@ -779,7 +846,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     * doesn't do it because it's almost impossible to come up with nested ones of the proper 
     * clockwise/counterclockwise rotation that way.
     */
-  protected Polygon makePoly(final PlanetModel pm, final GeoPoint pole, final boolean clockwiseDesired, final boolean createHoles) {
+  protected static Polygon makePoly(final PlanetModel pm, final GeoPoint pole, final boolean clockwiseDesired, final boolean createHoles) {
     // Polygon edges will be arranged around the provided pole, and holes will each have a pole selected within the parent
     // polygon.
     final int pointCount = TestUtil.nextInt(random(), 3, 10);
