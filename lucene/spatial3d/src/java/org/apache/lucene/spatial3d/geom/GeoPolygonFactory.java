@@ -116,6 +116,7 @@ public class GeoPolygonFactory {
       final Boolean isPoleInside = isInsidePolygon(pole, pointList);
       if (isPoleInside != null) {
         // Legal pole
+        //System.out.println("Pole = "+pole+"; isInside="+isPoleInside+"; pointList = "+pointList);
         return makeGeoPolygon(planetModel, pointList, holes, pole, isPoleInside);
       }
       // If pole choice was illegal, try another one
@@ -177,24 +178,17 @@ public class GeoPolygonFactory {
    */
   private static Boolean isInsidePolygon(final GeoPoint point, final List<GeoPoint> polyPoints) {
     // First, compute sine and cosine of pole point latitude and longitude
-    final double norm = 1.0 / point.magnitude();
-    final double xyDenom = Math.sqrt(point.x * point.x + point.y * point.y);
-    final double sinLatitude = point.z * norm;
-    final double cosLatitude = xyDenom * norm;
-    final double sinLongitude;
-    final double cosLongitude;
-    if (Math.abs(xyDenom) < Vector.MINIMUM_RESOLUTION) {
-      sinLongitude = 0.0;
-      cosLongitude = 1.0;
-    } else {
-      final double xyNorm = 1.0 / xyDenom;
-      sinLongitude = point.y * xyNorm;
-      cosLongitude = point.x * xyNorm;
-    }
+    final double latitude = point.getLatitude();
+    final double longitude = point.getLongitude();
+    final double sinLatitude = Math.sin(latitude);
+    final double cosLatitude = Math.cos(latitude);
+    final double sinLongitude = Math.sin(longitude);
+    final double cosLongitude = Math.cos(longitude);
     
     // Now, compute the incremental arc distance around the points of the polygon
     double arcDistance = 0.0;
     Double prevAngle = null;
+    //System.out.println("Computing angles:");
     for (final GeoPoint polyPoint : polyPoints) {
       final Double angle = computeAngle(polyPoint, sinLatitude, cosLatitude, sinLongitude, cosLongitude);
       if (angle == null) {
@@ -215,6 +209,7 @@ public class GeoPolygonFactory {
         }
         //System.out.println(" angle delta = "+angleDelta);
         arcDistance += angleDelta;
+        //System.out.println(" For point "+polyPoint+" angle is "+angle+"; delta is "+angleDelta+"; arcDistance is "+arcDistance);
       }
       prevAngle = angle;
     }
@@ -237,7 +232,9 @@ public class GeoPolygonFactory {
       }
       //System.out.println(" angle delta = "+angleDelta);
       arcDistance += angleDelta;
+      //System.out.println(" For point "+polyPoints.get(0)+" angle is "+lastAngle+"; delta is "+angleDelta+"; arcDistance is "+arcDistance);
     }
+
     // Clockwise == inside == negative
     //System.out.println("Arcdistance = "+arcDistance);
     if (Math.abs(arcDistance) < Vector.MINIMUM_RESOLUTION) {
@@ -266,21 +263,23 @@ public class GeoPolygonFactory {
     // We need to rotate the point in question into the coordinate frame specified by
     // the lat and lon trig functions.
     // To do this we need to do two rotations on it.  First rotation is in x/y.  Second rotation is in x/z.
+    // And we rotate in the negative direction.
     // So:
-    // x1 = x0 cos az - y0 sin az
-    // y1 = x0 sin az + y0 cos az
+    // x1 = x0 cos az + y0 sin az
+    // y1 = - x0 sin az + y0 cos az
     // z1 = z0
-    // x2 = x1 cos al - z1 sin al
+    // x2 = x1 cos al + z1 sin al
     // y2 = y1
-    // z2 = x1 sin al + z1 cos al
+    // z2 = - x1 sin al + z1 cos al
       
-    final double x1 = point.x * cosLongitude - point.y * sinLongitude;
-    final double y1 = point.x * sinLongitude + point.y * cosLongitude;
+    final double x1 = point.x * cosLongitude + point.y * sinLongitude;
+    final double y1 = - point.x * sinLongitude + point.y * cosLongitude;
     final double z1 = point.z;
-    //final double x2 = x1 * cosLatitude - z1 * sinLatitude;
-    final double y2 = y1;
-    final double z2 = x1 * sinLatitude + z1 * cosLatitude;
       
+    // final double x2 = x1 * cosLatitude + z1 * sinLatitude;
+    final double y2 = y1;
+    final double z2 = - x1 * sinLatitude + z1 * cosLatitude;
+    
     // Now we should be looking down the X axis; the original point has rotated coordinates (N, 0, 0).
     // So we can just compute the angle using y2 and z2.  (If Math.sqrt(y2*y2 + z2 * z2) is 0.0, then the point is on the pole and we need another one).
     if (Math.sqrt(y2*y2 + z2*z2) < Vector.MINIMUM_RESOLUTION) {
