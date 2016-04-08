@@ -41,10 +41,7 @@ public final class GeoEncodingUtils {
    * for encoding <code>geoEncoded</code> values.
    * @see #geoCodedToPrefixCodedBytes(long, int, BytesRefBuilder)
    */
-  public static final int BUF_SIZE_LONG = 28/8 + 1;
-
-  /** rounding error for quantized latitude and longitude values */
-  public static final double TOLERANCE = 1E-6;
+  private static final int BUF_SIZE_LONG = 28/8 + 1;
 
   // No instance:
   private GeoEncodingUtils() {
@@ -91,8 +88,12 @@ public final class GeoEncodingUtils {
 
   /** Convert a prefix coded geo term back into the geocoded morton long */
   public static long prefixCodedToGeoCoded(final BytesRef val) {
-    final long result = fromBytes((byte)0, (byte)0, (byte)0, (byte)0,
-        val.bytes[val.offset+0], val.bytes[val.offset+1], val.bytes[val.offset+2], val.bytes[val.offset+3]);
+    final long result = 0L
+        | (val.bytes[val.offset+0] & 255L) << 24
+        | (val.bytes[val.offset+1] & 255L) << 16
+        | (val.bytes[val.offset+2] & 255L) << 8
+        | val.bytes[val.offset+3] & 255L;
+
     return result << 32;
   }
 
@@ -128,13 +129,6 @@ public final class GeoEncodingUtils {
     if (shift > 63 || shift < 0)
       throw new NumberFormatException("Invalid shift value (" + shift + ") in prefixCoded bytes (is encoded value really a geo point?)");
     return shift;
-  }
-
-  /** Converts 8 bytes to a long value */
-  protected static long fromBytes(byte b1, byte b2, byte b3, byte b4, byte b5, byte b6, byte b7, byte b8) {
-    return ((long)b1 & 255L) << 56 | ((long)b2 & 255L) << 48 | ((long)b3 & 255L) << 40
-        | ((long)b4 & 255L) << 32 | ((long)b5 & 255L) << 24 | ((long)b6 & 255L) << 16
-        | ((long)b7 & 255L) << 8 | (long)b8 & 255L;
   }
 
   /** Converts a long value into a bit string (useful for debugging) */

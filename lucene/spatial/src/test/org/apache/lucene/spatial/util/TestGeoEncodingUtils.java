@@ -61,8 +61,9 @@ public class TestGeoEncodingUtils extends LuceneTestCase {
       double latEnc = GeoEncodingUtils.mortonUnhashLat(enc);
       double lonEnc = GeoEncodingUtils.mortonUnhashLon(enc);
 
-      assertEquals("lat=" + lat + " latEnc=" + latEnc + " diff=" + (lat - latEnc), lat, latEnc, GeoEncodingUtils.TOLERANCE);
-      assertEquals("lon=" + lon + " lonEnc=" + lonEnc + " diff=" + (lon - lonEnc), lon, lonEnc, GeoEncodingUtils.TOLERANCE);
+      // todo remove tolerance
+      assertEquals("lat=" + lat + " latEnc=" + latEnc + " diff=" + (lat - latEnc), lat, latEnc, 1e-6);
+      assertEquals("lon=" + lon + " lonEnc=" + lonEnc + " diff=" + (lon - lonEnc), lon, lonEnc, 1e-6);
     }
   }
 

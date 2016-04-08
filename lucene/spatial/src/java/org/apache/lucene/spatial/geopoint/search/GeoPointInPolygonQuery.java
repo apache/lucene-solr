@@ -33,8 +33,7 @@ import org.apache.lucene.geo.Polygon;
  * of the min and max lat/lon pairs. Terms passing this initial filter are passed
  * to a secondary filter that verifies whether the decoded lat/lon point falls within
  * (or on the boundary) of the bounding box query. Finally, the remaining candidate
- * term is passed to the final point in polygon check. All value comparisons are subject
- * to the same precision tolerance defined in {@value GeoEncodingUtils#TOLERANCE}
+ * term is passed to the final point in polygon check.
  *
  * @see Polygon
  * @lucene.experimental
