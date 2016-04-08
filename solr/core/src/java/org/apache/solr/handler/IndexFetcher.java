@@ -68,6 +68,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -231,7 +232,7 @@ public class IndexFetcher {
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
+    try (HttpSolrClient client = new Builder(masterUrl).withHttpClient(myHttpClient).build()) {
       client.setSoTimeout(soTimeout);
       client.setConnectionTimeout(connTimeout);
 
@@ -253,7 +254,7 @@ public class IndexFetcher {
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl).withHttpClient(myHttpClient).build()) {
       client.setSoTimeout(soTimeout);
       client.setConnectionTimeout(connTimeout);
       NamedList response = client.request(req);
@@ -1619,7 +1620,10 @@ public class IndexFetcher {
       InputStream is = null;
 
       // TODO use shardhandler
-      try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient, null)) {
+      try (HttpSolrClient client = new Builder(masterUrl)
+          .withHttpClient(myHttpClient)
+          .withResponseParser(null)
+          .build()) {
         client.setSoTimeout(soTimeout);
         client.setConnectionTimeout(connTimeout);
         QueryRequest req = new QueryRequest(params);
@@ -1728,7 +1732,7 @@ public class IndexFetcher {
     params.set(CommonParams.QT, "/replication");
 
     // TODO use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl).withHttpClient(myHttpClient).build()) {
       client.setSoTimeout(soTimeout);
       client.setConnectionTimeout(connTimeout);
       QueryRequest request = new QueryRequest(params);

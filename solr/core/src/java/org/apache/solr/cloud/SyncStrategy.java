@@ -292,7 +292,7 @@ public class SyncStrategy {
         recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
         recoverRequestCmd.setCoreName(coreName);
         
-        try (HttpSolrClient client = new HttpSolrClient(baseUrl, SyncStrategy.this.client)) {
+        try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl).withHttpClient(SyncStrategy.this.client).build()) {
           client.setConnectionTimeout(30000);
           client.setSoTimeout(120000);
           client.request(recoverRequestCmd);

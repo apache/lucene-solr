@@ -86,7 +86,7 @@ public class SolrStream extends TupleStream {
 
 
     if(cache == null) {
-      client = new HttpSolrClient(baseUrl);
+      client = new HttpSolrClient.Builder(baseUrl).build();
     } else {
       client = cache.getHttpSolrClient(baseUrl);
     }

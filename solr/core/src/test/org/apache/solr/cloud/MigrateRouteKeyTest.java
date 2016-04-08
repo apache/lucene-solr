@@ -106,7 +106,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
         .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    try (HttpSolrClient baseClient = new HttpSolrClient(baseUrl)) {
+    try (HttpSolrClient baseClient = getHttpSolrClient(baseUrl)) {
       baseClient.setConnectionTimeout(15000);
       baseClient.setSoTimeout(60000 * 5);
       baseClient.request(request);
@@ -161,7 +161,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
 
     String url = getUrlFromZk(getCommonCloudSolrClient().getZkStateReader().getClusterState(), targetCollection);
 
-    try (HttpSolrClient collectionClient = new HttpSolrClient(url)) {
+    try (HttpSolrClient collectionClient = getHttpSolrClient(url)) {
 
       SolrQuery solrQuery = new SolrQuery("*:*");
       assertEquals("DocCount on target collection does not match", 0, collectionClient.query(solrQuery).getResults().getNumFound());

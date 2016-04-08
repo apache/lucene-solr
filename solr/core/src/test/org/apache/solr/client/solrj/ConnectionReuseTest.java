@@ -83,12 +83,12 @@ public class ConnectionReuseTest extends AbstractFullDistribZkTestBase {
     try {
       int rndClient = random().nextInt(3);
       if (rndClient == 0) {
-        client = new ConcurrentUpdateSolrClient(url.toString(), httpClient, 6, 1); // currently only testing with 1
+        client = getConcurrentUpdateSolrClient(url.toString(), httpClient, 6, 1); // currently only testing with 1
                                                                                    // thread
       } else if (rndClient == 1) {
-        client = new HttpSolrClient(url.toString(), httpClient);
+        client = getHttpSolrClient(url.toString(), httpClient);
       } else if (rndClient == 2) {
-        client = new CloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), httpClient);
+        client = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean(), httpClient);
         ((CloudSolrClient) client).setParallelUpdates(random().nextBoolean());
         ((CloudSolrClient) client).setDefaultCollection(DEFAULT_COLLECTION);
         ((CloudSolrClient) client).getLbClient().setConnectionTimeout(30000);

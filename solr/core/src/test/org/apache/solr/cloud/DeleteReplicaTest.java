@@ -97,7 +97,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
       if (replica1 == null) fail("no active replicas found");
 
       String dataDir = null;
-      try (HttpSolrClient replica1Client = new HttpSolrClient(replica1.getStr("base_url"))) {
+      try (HttpSolrClient replica1Client = getHttpSolrClient(replica1.getStr("base_url"))) {
         CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), replica1Client);
         NamedList<Object> coreStatus = status.getCoreStatus(replica1.getStr("core"));
         dataDir = (String) coreStatus.get("dataDir");
@@ -186,7 +186,7 @@ public class DeleteReplicaTest extends AbstractFullDistribZkTestBase {
     String instanceDir;
     String dataDir;
 
-    try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
+    try (HttpSolrClient client = getHttpSolrClient(baseUrl)) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(core, client);
       NamedList r = statusResp.getCoreStatus().get(core);
       instanceDir = (String) r.findRecursive("instanceDir");

@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -191,12 +190,17 @@ public class CloudSolrClient extends SolrClient {
    *          "host1:2181,host2:2181,host3:2181/mysolrchroot"
    *          <p>
    *          "zoo1.example.com:2181,zoo2.example.com:2181,zoo3.example.com:2181"
+   *          
+   * @deprecated use {@link Builder} instead.
    */
+  @Deprecated
   public CloudSolrClient(String zkHost) {
       this.zkHost = zkHost;
       this.clientIsInternal = true;
       this.myClient = HttpClientUtil.createClient(null);
-      this.lbClient = new LBHttpSolrClient(myClient);
+      this.lbClient = new LBHttpSolrClient.Builder()
+          .withHttpClient(myClient)
+          .build();
       this.lbClient.setRequestWriter(new BinaryRequestWriter());
       this.lbClient.setParser(new BinaryResponseParser());
       this.updatesToLeaders = true;
@@ -226,14 +230,15 @@ public class CloudSolrClient extends SolrClient {
    * @param httpClient
    *          the {@link HttpClient} instance to be used for all requests. The
    *          provided httpClient should use a multi-threaded connection manager.
+   *          
+   * @deprecated use {@link Builder} instead.
    */
+  @Deprecated
   public CloudSolrClient(String zkHost, HttpClient httpClient)  {
     this.zkHost = zkHost;
     this.clientIsInternal = httpClient == null;
     this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
-    this.lbClient = new LBHttpSolrClient(myClient);
-    this.lbClient.setRequestWriter(new BinaryRequestWriter());
-    this.lbClient.setParser(new BinaryResponseParser());
+    this.lbClient = createLBHttpSolrClient(myClient);
     this.updatesToLeaders = true;
     shutdownLBHttpSolrServer = true;
     lbClient.addQueryParams(STATE_VERSION);
@@ -256,7 +261,9 @@ public class CloudSolrClient extends SolrClient {
    * @throws IllegalArgumentException
    *           if the chroot value does not start with a forward slash.
    * @see #CloudSolrClient(String)
+   * @deprecated use {@link Builder} instead.
    */
+  @Deprecated
   public CloudSolrClient(Collection<String> zkHosts, String chroot) {
     this(zkHosts, chroot, null);
   }
@@ -281,38 +288,53 @@ public class CloudSolrClient extends SolrClient {
    * @throws IllegalArgumentException
    *           if the chroot value does not start with a forward slash.
    * @see #CloudSolrClient(String)
+   * @deprecated use {@link Builder} instead.
    */
+  @Deprecated
   public CloudSolrClient(Collection<String> zkHosts, String chroot, HttpClient httpClient) {
-    StringBuilder zkBuilder = new StringBuilder();
-    int lastIndexValue = zkHosts.size() - 1;
-    int i = 0;
-    for (String zkHost : zkHosts) {
-      zkBuilder.append(zkHost);
-      if (i < lastIndexValue) {
-        zkBuilder.append(",");
-      }
-      i++;
-    }
-    if (chroot != null) {
-      if (chroot.startsWith("/")) {
-        zkBuilder.append(chroot);
-      } else {
-        throw new IllegalArgumentException(
-            "The chroot must start with a forward slash.");
-      }
-    }
-
-    /* Log the constructed connection string and then initialize. */
-    log.info("Final constructed zkHost string: " + zkBuilder.toString());
-
-    this.zkHost = zkBuilder.toString();
+    this.zkHost = buildZkHostString(zkHosts, chroot);
     this.clientIsInternal = httpClient == null;
     this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
-    this.lbClient = new LBHttpSolrClient(myClient);
-    this.lbClient.setRequestWriter(new BinaryRequestWriter());
-    this.lbClient.setParser(new BinaryResponseParser());
+    this.lbClient = createLBHttpSolrClient(myClient);
     this.updatesToLeaders = true;
     shutdownLBHttpSolrServer = true;
+  }
+  
+  /**
+   * Create a new client object that connects to Zookeeper and is always aware
+   * of the SolrCloud state. If there is a fully redundant Zookeeper quorum and
+   * SolrCloud has enough replicas for every shard in a collection, there is no
+   * single point of failure. Updates will be sent to shard leaders by default.
+   * 
+   * @param zkHosts
+   *          A Java Collection (List, Set, etc) of HOST:PORT strings, one for
+   *          each host in the zookeeper ensemble. Note that with certain
+   *          Collection types like HashSet, the order of hosts in the final
+   *          connect string may not be in the same order you added them.
+   * @param chroot
+   *          A chroot value for zookeeper, starting with a forward slash. If no
+   *          chroot is required, use null.
+   * @param httpClient
+   *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
+   *          multi-threaded connection manager.  If null, a default HttpClient will be used.
+   * @param lbSolrClient
+   *          LBHttpSolrServer instance for requests.  If null, a default HttpClient will be used.
+   * @param updatesToLeaders
+   *          If true, sends updates to shard leaders.
+   *
+   * @deprecated use {@link Builder} instead.  This will soon be a protected method, and will only
+   * be available for use in implementing subclasses.
+   */
+  @Deprecated
+  public CloudSolrClient(Collection<String> zkHosts, String chroot, HttpClient httpClient, LBHttpSolrClient lbSolrClient, boolean updatesToLeaders) {
+    this.zkHost = buildZkHostString(zkHosts, chroot);
+    this.updatesToLeaders = updatesToLeaders;
+    
+    this.clientIsInternal = httpClient == null;
+    this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
+    
+    this.shutdownLBHttpSolrServer = lbSolrClient == null;
+    this.lbClient = lbSolrClient == null ? createLBHttpSolrClient(myClient) : lbSolrClient;
   }
   
   /**
@@ -321,7 +343,9 @@ public class CloudSolrClient extends SolrClient {
    * @param updatesToLeaders
    *          If true, sends updates only to shard leaders.
    * @see #CloudSolrClient(String) for full description and details on zkHost
+   * @deprecated use {@link CloudSolrClient.Builder} instead.
    */
+  @Deprecated
   public CloudSolrClient(String zkHost, boolean updatesToLeaders) {
     this(zkHost, updatesToLeaders, null);
   }
@@ -335,12 +359,16 @@ public class CloudSolrClient extends SolrClient {
    *          the {@link HttpClient} instance to be used for all requests. The provided httpClient should use a
    *          multi-threaded connection manager.
    * @see #CloudSolrClient(String) for full description and details on zkHost
+   * @deprecated use {@link CloudSolrClient.Builder} instead.
    */
+  @Deprecated
   public CloudSolrClient(String zkHost, boolean updatesToLeaders, HttpClient httpClient) {
     this.zkHost = zkHost;
     this.clientIsInternal = httpClient == null;
     this.myClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
-    this.lbClient = new LBHttpSolrClient(myClient);
+    this.lbClient = new LBHttpSolrClient.Builder()
+        .withHttpClient(myClient)
+        .build();
     this.lbClient.setRequestWriter(new BinaryRequestWriter());
     this.lbClient.setParser(new BinaryResponseParser());
     this.updatesToLeaders = updatesToLeaders;
@@ -362,7 +390,9 @@ public class CloudSolrClient extends SolrClient {
    * @param lbClient
    *          LBHttpSolrServer instance for requests.
    * @see #CloudSolrClient(String) for full description and details on zkHost
+   * @deprecated use {@link CloudSolrClient.Builder} instead.
    */
+  @Deprecated
   public CloudSolrClient(String zkHost, LBHttpSolrClient lbClient) {
     this(zkHost, lbClient, true);
   }
@@ -375,7 +405,9 @@ public class CloudSolrClient extends SolrClient {
    * @param updatesToLeaders
    *          If true, sends updates only to shard leaders.
    * @see #CloudSolrClient(String) for full description and details on zkHost
+   * @deprecated use {@link Builder} instead.
    */
+  @Deprecated
   public CloudSolrClient(String zkHost, LBHttpSolrClient lbClient, boolean updatesToLeaders) {
     this.zkHost = zkHost;
     this.lbClient = lbClient;
@@ -1347,5 +1379,138 @@ public class CloudSolrClient extends SolrClient {
 
   public void setSoTimeout(int timeout) {
     this.lbClient.setSoTimeout(timeout);
+  }
+
+  private static LBHttpSolrClient createLBHttpSolrClient(HttpClient httpClient) {
+    final LBHttpSolrClient lbClient = new LBHttpSolrClient.Builder()
+        .withHttpClient(httpClient)
+        .build();
+    lbClient.setRequestWriter(new BinaryRequestWriter());
+    lbClient.setParser(new BinaryResponseParser());
+    
+    return lbClient;
+  }
+  
+  private static String buildZkHostString(Collection<String> zkHosts, String chroot) {
+    if (zkHosts == null || zkHosts.isEmpty()) {
+      throw new IllegalArgumentException("Cannot create CloudSearchClient without valid ZooKeeper host; none specified!");
+    }
+    
+    StringBuilder zkBuilder = new StringBuilder();
+    int lastIndexValue = zkHosts.size() - 1;
+    int i = 0;
+    for (String zkHost : zkHosts) {
+      zkBuilder.append(zkHost);
+      if (i < lastIndexValue) {
+        zkBuilder.append(",");
+      }
+      i++;
+    }
+    if (chroot != null) {
+      if (chroot.startsWith("/")) {
+        zkBuilder.append(chroot);
+      } else {
+        throw new IllegalArgumentException(
+            "The chroot must start with a forward slash.");
+      }
+    }
+
+    /* Log the constructed connection string and then initialize. */
+    final String zkHostString = zkBuilder.toString();
+    log.info("Final constructed zkHost string: " + zkHostString);
+    return zkHostString;
+  }
+  
+  /**
+   * Constructs {@link CloudSolrClient} instances from provided configuration.
+   */
+  public static class Builder {
+    private Collection<String> zkHosts;
+    private HttpClient httpClient;
+    private String zkChroot;
+    private LBHttpSolrClient loadBalancedSolrClient;
+    private boolean shardLeadersOnly;
+    
+    public Builder() {
+      this.zkHosts = new ArrayList();
+      this.shardLeadersOnly = true;
+    }
+    
+    /**
+     * Provide a ZooKeeper client endpoint to be used when configuring {@link CloudSolrClient} instances.
+     * 
+     * Method may be called multiple times.  All provided values will be used.
+     * 
+     * @param zkHost
+     *          The client endpoint of the ZooKeeper quorum containing the cloud
+     *          state.
+     */
+    public Builder withZkHost(String zkHost) {
+      this.zkHosts.add(zkHost);
+      return this;
+    }
+    
+    /**
+     * Provides a {@link HttpClient} for the builder to use when creating clients.
+     */
+    public Builder withHttpClient(HttpClient httpClient) {
+      this.httpClient = httpClient;
+      return this;
+    }
+    
+    /**
+     * Provide a series of ZooKeeper client endpoints for the builder to use when creating clients.
+     * 
+     * Method may be called multiple times.  All provided values will be used.
+     * 
+     * @param zkHosts
+     *          A Java Collection (List, Set, etc) of HOST:PORT strings, one for
+     *          each host in the ZooKeeper ensemble. Note that with certain
+     *          Collection types like HashSet, the order of hosts in the final
+     *          connect string may not be in the same order you added them.
+     */
+    public Builder withZkHost(Collection<String> zkHosts) {
+      this.zkHosts.addAll(zkHosts);
+      return this;
+    }
+
+    /**
+     * Provides a ZooKeeper chroot for the builder to use when creating clients.
+     */
+    public Builder withZkChroot(String zkChroot) {
+      this.zkChroot = zkChroot;
+      return this;
+    }
+    
+    /**
+     * Provides a {@link LBHttpSolrClient} for the builder to use when creating clients.
+     */
+    public Builder withLBHttpSolrClient(LBHttpSolrClient loadBalancedSolrClient) {
+      this.loadBalancedSolrClient = loadBalancedSolrClient;
+      return this;
+    }
+
+    /**
+     * Tells {@link Builder} that created clients should send updats only to shard leaders.
+     */
+    public Builder sendUpdatesOnlyToShardLeaders() {
+      shardLeadersOnly = true;
+      return this;
+    }
+    
+    /**
+     * Tells {@link Builder} that created clients should send updates to all replicas for a shard.
+     */
+    public Builder sendUpdatesToAllReplicasInShard() {
+      shardLeadersOnly = false;
+      return this;
+    }
+
+    /**
+     * Create a {@link CloudSolrClient} based on the provided configuration.
+     */
+    public CloudSolrClient build() {
+      return new CloudSolrClient(zkHosts, zkChroot, httpClient, loadBalancedSolrClient, shardLeadersOnly);
+    }
   }
 }

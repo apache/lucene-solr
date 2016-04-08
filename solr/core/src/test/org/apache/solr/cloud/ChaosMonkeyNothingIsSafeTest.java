@@ -16,7 +16,15 @@
  */
 package org.apache.solr.cloud;
 
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import java.lang.invoke.MethodHandles;
+import java.net.ConnectException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
@@ -36,13 +44,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 
 @Slow
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
@@ -297,14 +299,7 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
       setDaemon(true);
       this.clients = clients;
 
-      cusc = new ConcurrentUpdateSolrClient(
-          ((HttpSolrClient) clients.get(0)).getBaseURL(), httpClient, 8,
-          2) {
-        @Override
-        public void handleError(Throwable ex) {
-          log.warn("cusc error", ex);
-        }
-      };
+      cusc = new ErrorLoggingConcurrentUpdateSolrClient(((HttpSolrClient) clients.get(0)).getBaseURL(), httpClient, 8, 2);
       cusc.setConnectionTimeout(10000);
       cusc.setSoTimeout(clientSoTimeout);
     }
@@ -363,14 +358,8 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
           clientIndex = 0;
         }
         cusc.shutdownNow();
-        cusc = new ConcurrentUpdateSolrClient(
-            ((HttpSolrClient) clients.get(clientIndex)).getBaseURL(),
-            httpClient, 30, 3) {
-          @Override
-          public void handleError(Throwable ex) {
-            log.warn("cusc error", ex);
-          }
-        };
+        cusc = new ErrorLoggingConcurrentUpdateSolrClient(((HttpSolrClient) clients.get(clientIndex)).getBaseURL(),
+            httpClient, 30, 3);
       }
     }
     
@@ -407,4 +396,13 @@ public class ChaosMonkeyNothingIsSafeTest extends AbstractFullDistribZkTestBase 
     indexDoc(doc);
   }
   
+  class ErrorLoggingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+    public ErrorLoggingConcurrentUpdateSolrClient(String serverUrl, HttpClient httpClient, int queueSize, int threadCount) {
+      super(serverUrl, httpClient, queueSize, threadCount, null, false);
+    }
+    @Override
+    public void handleError(Throwable ex) {
+      log.warn("cusc error", ex);
+    }
+  }
 }

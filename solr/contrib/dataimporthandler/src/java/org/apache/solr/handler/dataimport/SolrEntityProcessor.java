@@ -22,6 +22,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -111,11 +112,16 @@ public class SolrEntityProcessor extends EntityProcessorBase {
       // (wt="javabin|xml") default is javabin
       if ("xml".equals(context.getResolvedEntityAttribute(CommonParams.WT))) {
         // TODO: it doesn't matter for this impl when passing a client currently, but we should close this!
-        solrClient = new HttpSolrClient(url.toExternalForm(), client, new XMLResponseParser());
+        solrClient = new Builder(url.toExternalForm())
+            .withHttpClient(client)
+            .withResponseParser(new XMLResponseParser())
+            .build();
         LOG.info("using XMLResponseParser");
       } else {
         // TODO: it doesn't matter for this impl when passing a client currently, but we should close this!
-        solrClient = new HttpSolrClient(url.toExternalForm(), client);
+        solrClient = new Builder(url.toExternalForm())
+            .withHttpClient(client)
+            .build();
         LOG.info("using BinaryResponseParser");
       }
     } catch (MalformedURLException e) {

@@ -59,7 +59,8 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
           return null;
         }
       };
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader, classifier, categoryFieldName, textFieldName);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader,
+          classifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
@@ -74,6 +75,9 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       double recall = confusionMatrix.getRecall();
       assertTrue(recall >= 0d);
       assertTrue(recall <= 1d);
+      double f1Measure = confusionMatrix.getF1Measure();
+      assertTrue(f1Measure >= 0d);
+      assertTrue(f1Measure <= 1d);
     } finally {
       if (reader != null) {
         reader.close();
@@ -88,7 +92,8 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       MockAnalyzer analyzer = new MockAnalyzer(random());
       reader = getSampleIndex(analyzer);
       Classifier<BytesRef> classifier = new SimpleNaiveBayesClassifier(reader, analyzer, null, categoryFieldName, textFieldName);
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader, classifier, categoryFieldName, textFieldName);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader,
+          classifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
@@ -102,6 +107,9 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       double recall = confusionMatrix.getRecall();
       assertTrue(recall >= 0d);
       assertTrue(recall <= 1d);
+      double f1Measure = confusionMatrix.getF1Measure();
+      assertTrue(f1Measure >= 0d);
+      assertTrue(f1Measure <= 1d);
     } finally {
       if (reader != null) {
         reader.close();
@@ -116,7 +124,8 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       MockAnalyzer analyzer = new MockAnalyzer(random());
       reader = getSampleIndex(analyzer);
       Classifier<BytesRef> classifier = new CachingNaiveBayesClassifier(reader, analyzer, null, categoryFieldName, textFieldName);
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader, classifier, categoryFieldName, textFieldName);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader,
+          classifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
@@ -130,6 +139,9 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       double recall = confusionMatrix.getRecall();
       assertTrue(recall >= 0d);
       assertTrue(recall <= 1d);
+      double f1Measure = confusionMatrix.getF1Measure();
+      assertTrue(f1Measure >= 0d);
+      assertTrue(f1Measure <= 1d);
     } finally {
       if (reader != null) {
         reader.close();
@@ -144,7 +156,8 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       MockAnalyzer analyzer = new MockAnalyzer(random());
       reader = getSampleIndex(analyzer);
       Classifier<BytesRef> classifier = new KNearestNeighborClassifier(reader, null, analyzer, null, 1, 0, 0, categoryFieldName, textFieldName);
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader, classifier, categoryFieldName, textFieldName);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader,
+          classifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
@@ -158,6 +171,9 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       double recall = confusionMatrix.getRecall();
       assertTrue(recall >= 0d);
       assertTrue(recall <= 1d);
+      double f1Measure = confusionMatrix.getF1Measure();
+      assertTrue(f1Measure >= 0d);
+      assertTrue(f1Measure <= 1d);
     } finally {
       if (reader != null) {
         reader.close();
@@ -172,7 +188,8 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       MockAnalyzer analyzer = new MockAnalyzer(random());
       reader = getSampleIndex(analyzer);
       Classifier<Boolean> classifier = new BooleanPerceptronClassifier(reader, analyzer, null, 1, null, booleanFieldName, textFieldName);
-      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader, classifier, booleanFieldName, textFieldName);
+      ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(reader,
+          classifier, booleanFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
       assertNotNull(confusionMatrix.getLinearizedMatrix());
       assertEquals(7, confusionMatrix.getNumberOfEvaluatedDocs());
@@ -186,6 +203,9 @@ public class ConfusionMatrixGeneratorTest extends ClassificationTestBase<Object>
       double recall = confusionMatrix.getRecall();
       assertTrue(recall >= 0d);
       assertTrue(recall <= 1d);
+      double f1Measure = confusionMatrix.getF1Measure();
+      assertTrue(f1Measure >= 0d);
+      assertTrue(f1Measure <= 1d);
       assertTrue(confusionMatrix.getPrecision("true") >= 0d);
       assertTrue(confusionMatrix.getPrecision("true") <= 1d);
       assertTrue(confusionMatrix.getPrecision("false") >= 0d);

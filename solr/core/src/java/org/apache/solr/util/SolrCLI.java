@@ -82,6 +82,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -209,7 +210,7 @@ public class SolrCLI {
       String zkHost = cli.getOptionValue("zkHost", ZK_HOST);
       
       log.debug("Connecting to Solr cluster: " + zkHost);
-      try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost)) {
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zkHost).build()) {
 
         String collection = cli.getOptionValue("collection");
         if (collection != null)
@@ -1162,7 +1163,7 @@ public class SolrCLI {
             q = new SolrQuery("*:*");
             q.setRows(0);
             q.set("distrib", "false");
-            try (HttpSolrClient solr = new HttpSolrClient(coreUrl)) {
+            try (HttpSolrClient solr = new HttpSolrClient.Builder(coreUrl).build()) {
 
               String solrUrl = solr.getBaseURL();
 
@@ -1285,7 +1286,7 @@ public class SolrCLI {
       if (zkHost == null)
         throw new IllegalStateException("Must provide either the '-solrUrl' or '-zkHost' parameters!");
 
-      try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost)) {
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zkHost).build()) {
         cloudSolrClient.connect();
         Set<String> liveNodes = cloudSolrClient.getZkStateReader().getClusterState().getLiveNodes();
         if (liveNodes.isEmpty())
@@ -1398,7 +1399,7 @@ public class SolrCLI {
             "create_collection can only be used when running in SolrCloud mode.\n");
       }
 
-      try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost)) {
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zkHost).build()) {
         echo("\nConnecting to ZooKeeper at " + zkHost+" ...");
         cloudSolrClient.connect();
         runCloudTool(cloudSolrClient, cli);
@@ -1707,7 +1708,7 @@ public class SolrCLI {
             " is running in standalone server mode, upconfig can only be used when running in SolrCloud mode.\n");
       }
 
-      try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost)) {
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zkHost).build()) {
         echo("\nConnecting to ZooKeeper at " + zkHost + " ...");
         cloudSolrClient.connect();
         upconfig(cloudSolrClient, cli, cli.getOptionValue("confname"), cli.getOptionValue("confdir"));
@@ -1762,7 +1763,7 @@ public class SolrCLI {
       }
 
 
-      try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost)) {
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zkHost).build()) {
         echo("\nConnecting to ZooKeeper at " + zkHost + " ...");
         cloudSolrClient.connect();
         downconfig(cloudSolrClient, cli.getOptionValue("confname"), cli.getOptionValue("confdir"));
@@ -1853,7 +1854,7 @@ public class SolrCLI {
 
     protected void deleteCollection(CommandLine cli) throws Exception {
       String zkHost = getZkHost(cli);
-      try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost)) {
+      try (CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zkHost).build()) {
         echo("Connecting to ZooKeeper at " + zkHost);
         cloudSolrClient.connect();
         deleteCollection(cloudSolrClient, cli);
@@ -2030,7 +2031,7 @@ public class SolrCLI {
       echo("\nPOSTing request to Config API: " + solrUrl + updatePath);
       echo(jsonBody);
 
-      try (SolrClient solrClient = new HttpSolrClient(solrUrl)) {
+      try (SolrClient solrClient = new Builder(solrUrl).build()) {
         NamedList<Object> result = postJsonToSolr(solrClient, updatePath, jsonBody);
         Integer statusCode = (Integer)((NamedList)result.get("responseHeader")).get("status");
         if (statusCode == 0) {
@@ -2425,7 +2426,9 @@ public class SolrCLI {
     protected void waitToSeeLiveNodes(int maxWaitSecs, String zkHost, int numNodes) {
       CloudSolrClient cloudClient = null;
       try {
-        cloudClient = new CloudSolrClient(zkHost);
+        cloudClient = new CloudSolrClient.Builder()
+            .withZkHost(zkHost)
+            .build();
         cloudClient.connect();
         Set<String> liveNodes = cloudClient.getZkStateReader().getClusterState().getLiveNodes();
         int numLiveNodes = (liveNodes != null) ? liveNodes.size() : 0;

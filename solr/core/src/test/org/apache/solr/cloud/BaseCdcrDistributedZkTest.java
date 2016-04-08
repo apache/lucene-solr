@@ -177,7 +177,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   }
 
   protected CloudSolrClient createCloudClient(String defaultCollection) {
-    CloudSolrClient server = new CloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
+    CloudSolrClient server = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean());
     server.setParallelUpdates(random().nextBoolean());
     if (defaultCollection != null) server.setDefaultCollection(defaultCollection);
     return server;
@@ -748,7 +748,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   protected static SolrClient createNewSolrServer(String baseUrl) {
     try {
       // setup the server...
-      HttpSolrClient s = new HttpSolrClient(baseUrl);
+      HttpSolrClient s = getHttpSolrClient(baseUrl);
       s.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
       return s;
     } catch (Exception ex) {

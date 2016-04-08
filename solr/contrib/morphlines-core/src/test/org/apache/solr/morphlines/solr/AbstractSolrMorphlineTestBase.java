@@ -123,7 +123,7 @@ public class AbstractSolrMorphlineTestBase extends SolrTestCaseJ4 {
     if (EXTERNAL_SOLR_SERVER_URL != null) {
       //solrServer = new ConcurrentUpdateSolrServer(EXTERNAL_SOLR_SERVER_URL, 2, 2);
       //solrServer = new SafeConcurrentUpdateSolrServer(EXTERNAL_SOLR_SERVER_URL, 2, 2);
-      solrClient = new HttpSolrClient(EXTERNAL_SOLR_SERVER_URL);
+      solrClient = getHttpSolrClient(EXTERNAL_SOLR_SERVER_URL);
       ((HttpSolrClient) solrClient).setParser(new XMLResponseParser());
     } else {
       if (TEST_WITH_EMBEDDED_SOLR_SERVER) {

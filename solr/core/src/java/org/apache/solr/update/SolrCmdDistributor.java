@@ -44,7 +44,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -260,7 +259,7 @@ public class SolrCmdDistributor {
     if (req.synchronous) {
       blockAndDoRetries();
 
-      try (HttpSolrClient client = new HttpSolrClient(req.node.getUrl(), clients.getHttpClient())) {
+      try (HttpSolrClient client = new HttpSolrClient.Builder(req.node.getUrl()).withHttpClient(clients.getHttpClient()).build()) {
         client.request(req.uReq);
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Failed synchronous update on shard " + req.node + " update: " + req.uReq , e);

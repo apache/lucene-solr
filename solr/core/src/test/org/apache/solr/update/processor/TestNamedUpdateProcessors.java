@@ -78,7 +78,8 @@ public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
     HttpSolrClient randomClient = (HttpSolrClient) clients.get(random().nextInt(clients.size()));
     String baseURL = randomClient.getBaseURL();
 
-    TestBlobHandler.createSystemCollection(new HttpSolrClient(baseURL.substring(0, baseURL.lastIndexOf('/')), randomClient.getHttpClient()));
+    final String solrClientUrl = baseURL.substring(0, baseURL.lastIndexOf('/'));
+    TestBlobHandler.createSystemCollection(getHttpSolrClient(solrClientUrl, randomClient.getHttpClient()));
     waitForRecoveriesToFinish(".system", true);
 
     TestBlobHandler.postAndCheck(cloudClient, baseURL.substring(0, baseURL.lastIndexOf('/')), blobName, TestDynamicLoading.generateZip(RuntimeUrp.class), 1);

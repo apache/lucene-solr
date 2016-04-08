@@ -52,16 +52,17 @@ public class ConfusionMatrixGenerator {
    * get the {@link org.apache.lucene.classification.utils.ConfusionMatrixGenerator.ConfusionMatrix} of a given {@link Classifier},
    * generated on the given {@link LeafReader}, class and text fields.
    *
-   * @param reader         the {@link LeafReader} containing the index used for creating the {@link Classifier}
-   * @param classifier     the {@link Classifier} whose confusion matrix has to be generated
-   * @param classFieldName the name of the Lucene field used as the classifier's output
-   * @param textFieldName  the nome the Lucene field used as the classifier's input
-   * @param <T>            the return type of the {@link ClassificationResult} returned by the given {@link Classifier}
+   * @param reader              the {@link LeafReader} containing the index used for creating the {@link Classifier}
+   * @param classifier          the {@link Classifier} whose confusion matrix has to be generated
+   * @param classFieldName      the name of the Lucene field used as the classifier's output
+   * @param textFieldName       the nome the Lucene field used as the classifier's input
+   * @param timeoutMilliseconds timeout to wait before stopping creating the confusion matrix
+   * @param <T>                 the return type of the {@link ClassificationResult} returned by the given {@link Classifier}
    * @return a {@link org.apache.lucene.classification.utils.ConfusionMatrixGenerator.ConfusionMatrix}
    * @throws IOException if problems occurr while reading the index or using the classifier
    */
   public static <T> ConfusionMatrix getConfusionMatrix(LeafReader reader, Classifier<T> classifier, String classFieldName,
-                                                       String textFieldName) throws IOException {
+                                                       String textFieldName, long timeoutMilliseconds) throws IOException {
 
     ExecutorService executorService = Executors.newFixedThreadPool(1, new NamedThreadFactory("confusion-matrix-gen-"));
 
@@ -72,7 +73,13 @@ public class ConfusionMatrixGenerator {
       TopDocs topDocs = indexSearcher.search(new TermRangeQuery(classFieldName, null, null, true, true), Integer.MAX_VALUE);
       double time = 0d;
 
+      int counter = 0;
       for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+
+        if (timeoutMilliseconds > 0 && time >= timeoutMilliseconds) {
+          break;
+        }
+
         Document doc = reader.document(scoreDoc.doc);
         String[] correctAnswers = doc.getValues(classFieldName);
 
@@ -91,6 +98,7 @@ public class ConfusionMatrixGenerator {
               if (result != null) {
                 T assignedClass = result.getAssignedClass();
                 if (assignedClass != null) {
+                  counter++;
                   String classified = assignedClass instanceof BytesRef ? ((BytesRef) assignedClass).utf8ToString() : assignedClass.toString();
 
                   String correctAnswer;
@@ -117,7 +125,7 @@ public class ConfusionMatrixGenerator {
                 }
               }
             } catch (TimeoutException timeoutException) {
-              // add timeout
+              // add classification timeout
               time += 5000;
             } catch (ExecutionException | InterruptedException executionException) {
               throw new RuntimeException(executionException);
@@ -126,7 +134,7 @@ public class ConfusionMatrixGenerator {
           }
         }
       }
-      return new ConfusionMatrix(counts, time / topDocs.totalHits, topDocs.totalHits);
+      return new ConfusionMatrix(counts, time / counter, counter);
     } finally {
       executorService.shutdown();
     }
@@ -167,7 +175,7 @@ public class ConfusionMatrixGenerator {
     public double getPrecision(String klass) {
       Map<String, Long> classifications = linearizedMatrix.get(klass);
       double tp = 0;
-      double fp = -1;
+      double fp = 0;
       if (classifications != null) {
         for (Map.Entry<String, Long> entry : classifications.entrySet()) {
           if (klass.equals(entry.getKey())) {
@@ -180,7 +188,7 @@ public class ConfusionMatrixGenerator {
           }
         }
       }
-      return tp + fp > 0 ? tp / (tp + fp) : 0;
+      return tp > 0 ? tp / (tp + fp) : 0;
     }
 
     /**
@@ -214,6 +222,17 @@ public class ConfusionMatrixGenerator {
     public double getF1Measure(String klass) {
       double recall = getRecall(klass);
       double precision = getPrecision(klass);
+      return precision > 0 && recall > 0 ? 2 * precision * recall / (precision + recall) : 0;
+    }
+
+    /**
+     * get the F-1 measure on this confusion matrix
+     *
+     * @return the F-1 measure
+     */
+    public double getF1Measure() {
+      double recall = getRecall();
+      double precision = getPrecision();
       return precision > 0 && recall > 0 ? 2 * precision * recall / (precision + recall) : 0;
     }
 

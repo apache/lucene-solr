@@ -22,6 +22,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -177,7 +178,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   protected LBHttpSolrClient createLoadbalancer(HttpClient httpClient){
-    LBHttpSolrClient client = new LBHttpSolrClient(httpClient);
+    LBHttpSolrClient client = new Builder()
+        .withHttpClient(httpClient)
+        .build();
     client.setConnectionTimeout(connectionTimeout);
     client.setSoTimeout(soTimeout);
     return client;

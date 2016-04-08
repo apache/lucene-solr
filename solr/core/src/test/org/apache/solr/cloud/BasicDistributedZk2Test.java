@@ -147,7 +147,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
   
   private void testNodeWithoutCollectionForwarding() throws Exception {
     final String baseUrl = getBaseUrl((HttpSolrClient) clients.get(0));
-    try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
+    try (HttpSolrClient client = getHttpSolrClient(baseUrl)) {
       client.setConnectionTimeout(30000);
       Create createCmd = new Create();
       createCmd.setRoles("none");
@@ -180,7 +180,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
 
     SolrQuery query = new SolrQuery("*:*");
 
-    try (HttpSolrClient qclient = new HttpSolrClient(baseUrl + "/onenodecollection" + "core")) {
+    try (HttpSolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection" + "core")) {
 
       // it might take a moment for the proxy node to see us in their cloud state
       waitForNon403or404or503(qclient);
@@ -196,7 +196,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       assertEquals(docs - 1, results.getResults().getNumFound());
     }
     
-    try (HttpSolrClient qclient = new HttpSolrClient(baseUrl + "/onenodecollection")) {
+    try (HttpSolrClient qclient = getHttpSolrClient(baseUrl + "/onenodecollection")) {
       QueryResponse results = qclient.query(query);
       assertEquals(docs - 1, results.getResults().getNumFound());
 

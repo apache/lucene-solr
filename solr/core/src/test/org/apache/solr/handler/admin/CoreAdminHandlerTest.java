@@ -254,7 +254,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
     JettySolrRunner runner = new JettySolrRunner(solrHomeDirectory.getAbsolutePath(), buildJettyConfig("/solr"));
     runner.start();
 
-    try (HttpSolrClient client = new HttpSolrClient(runner.getBaseUrl() + "/corex")) {
+    try (HttpSolrClient client = getHttpSolrClient(runner.getBaseUrl() + "/corex")) {
       client.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       client.setSoTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       SolrInputDocument doc = new SolrInputDocument();
@@ -263,7 +263,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       client.commit();
     }
 
-    try (HttpSolrClient client = new HttpSolrClient(runner.getBaseUrl().toString())) {
+    try (HttpSolrClient client = getHttpSolrClient(runner.getBaseUrl().toString())) {
       client.setConnectionTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       client.setSoTimeout(SolrTestCaseJ4.DEFAULT_CONNECTION_TIMEOUT);
       CoreAdminRequest.Unload req = new CoreAdminRequest.Unload(false);

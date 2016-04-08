@@ -109,7 +109,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       docs.add(doc);
     }
     SolrResponseBase resp;
-    try (HttpSolrClient client = new HttpSolrClient(solrInstance.getUrl(), httpClient)) {
+    try (HttpSolrClient client = getHttpSolrClient(solrInstance.getUrl(), httpClient)) {
       resp = client.add(docs);
       assertEquals(0, resp.getStatus());
       resp = client.commit();
@@ -133,7 +133,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     for (int i = 0; i < solr.length; i++) {
       s[i] = solr[i].getUrl();
     }
-    LBHttpSolrClient client = new LBHttpSolrClient(httpClient, s);
+    LBHttpSolrClient client = getLBHttpSolrClient(httpClient, s);
     client.setAliveCheckInterval(500);
     SolrQuery solrQuery = new SolrQuery("*:*");
     Set<String> names = new HashSet<>();
@@ -171,7 +171,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
   }
 
   public void testTwoServers() throws Exception {
-    LBHttpSolrClient client = new LBHttpSolrClient(httpClient, solr[0].getUrl(), solr[1].getUrl());
+    LBHttpSolrClient client = getLBHttpSolrClient(httpClient, solr[0].getUrl(), solr[1].getUrl());
     client.setAliveCheckInterval(500);
     SolrQuery solrQuery = new SolrQuery("*:*");
     QueryResponse resp = null;
@@ -206,7 +206,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
 
     CloseableHttpClient myHttpClient = HttpClientUtil.createClient(null);
     try {
-      LBHttpSolrClient client = new LBHttpSolrClient(myHttpClient, s);
+      LBHttpSolrClient client = getLBHttpSolrClient(myHttpClient, s);
       client.setConnectionTimeout(250);
       client.setSoTimeout(250);
       client.setAliveCheckInterval(500);

@@ -74,7 +74,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   private void sendRequestToEachServer() throws Exception {
     List<JettySolrRunner> jettys = miniCluster.getJettySolrRunners();
     for (JettySolrRunner jetty : jettys) {
-      try (HttpSolrClient client = new HttpSolrClient(jetty.getBaseUrl().toString())) {
+      try (HttpSolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
         CoreAdminRequest req = new CoreAdminRequest();
         req.setAction( CoreAdminAction.STATUS );
         client.request(req);

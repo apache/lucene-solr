@@ -30,6 +30,7 @@ import com.typesafe.config.ConfigRenderOptions;
 import com.typesafe.config.ConfigUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -92,7 +93,9 @@ public class SolrLocator {
       if (collectionName == null || collectionName.length() == 0) {
         throw new MorphlineCompilationException("Parameter 'zkHost' requires that you also pass parameter 'collection'", config);
       }
-      CloudSolrClient cloudSolrClient = new CloudSolrClient(zkHost);
+      CloudSolrClient cloudSolrClient = new Builder()
+          .withZkHost(zkHost)
+          .build();
       cloudSolrClient.setDefaultCollection(collectionName);
       cloudSolrClient.connect();
       return new SolrClientDocumentLoader(cloudSolrClient, batchSize);

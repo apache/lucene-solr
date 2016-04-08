@@ -404,7 +404,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     for (Slice slice : dColl.getActiveSlices()) {
       long sliceDocCount = -1;
       for (Replica rep : slice.getReplicas()) {
-        try (HttpSolrClient one = new HttpSolrClient(rep.getCoreUrl())) {
+        try (HttpSolrClient one = getHttpSolrClient(rep.getCoreUrl())) {
           SolrQuery query = new SolrQuery("*:*");
           query.setDistrib(false);
           QueryResponse resp = one.query(query);
@@ -529,7 +529,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private void testStopAndStartCoresInOneInstance() throws Exception {
     SolrClient client = clients.get(0);
     String url3 = getBaseUrl(client);
-    try (final HttpSolrClient httpSolrClient = new HttpSolrClient(url3)) {
+    try (final HttpSolrClient httpSolrClient = getHttpSolrClient(url3)) {
       httpSolrClient.setConnectionTimeout(15000);
       httpSolrClient.setSoTimeout(60000);
       ThreadPoolExecutor executor = null;
@@ -750,7 +750,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private Long getNumCommits(HttpSolrClient sourceClient) throws
       SolrServerException, IOException {
-    try (HttpSolrClient client = new HttpSolrClient(sourceClient.getBaseURL())) {
+    try (HttpSolrClient client = getHttpSolrClient(sourceClient.getBaseURL())) {
       client.setConnectionTimeout(15000);
       client.setSoTimeout(60000);
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -841,7 +841,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     ZkCoreNodeProps props = new ZkCoreNodeProps(getCommonCloudSolrClient().getZkStateReader().getClusterState().getLeader(oneInstanceCollection2, "slice1"));
     
     // now test that unloading a core gets us a new leader
-    try (HttpSolrClient unloadClient = new HttpSolrClient(baseUrl)) {
+    try (HttpSolrClient unloadClient = getHttpSolrClient(baseUrl)) {
       unloadClient.setConnectionTimeout(15000);
       unloadClient.setSoTimeout(60000);
       Unload unloadCmd = new Unload(true);
@@ -961,7 +961,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       List<SolrClient> collectionClients, final String baseUrl, final int num,
       final String shardId) {
     Callable call = () -> {
-      try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
+      try (HttpSolrClient client = getHttpSolrClient(baseUrl)) {
         // client.setConnectionTimeout(15000);
         Create createCmd = new Create();
         createCmd.setRoles("none");
@@ -1090,7 +1090,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       final int frozeUnique = unique;
       Callable call = () -> {
 
-        try (HttpSolrClient client1 = new HttpSolrClient(baseUrl)) {
+        try (HttpSolrClient client1 = getHttpSolrClient(baseUrl)) {
           client1.setConnectionTimeout(15000);
           client1.setSoTimeout(60000);
           Create createCmd = new Create();
@@ -1118,7 +1118,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
     try {
       // setup the server...
-      HttpSolrClient client = new HttpSolrClient(baseUrl + "/" + collection);
+      HttpSolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
 
       return client;
     }
