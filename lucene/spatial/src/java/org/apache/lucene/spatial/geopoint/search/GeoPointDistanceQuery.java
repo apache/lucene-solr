@@ -31,9 +31,8 @@ import org.apache.lucene.geo.GeoUtils;
  * circle. Terms
  * passing this initial filter are then passed to a secondary {@code postFilter} method that verifies whether the
  * decoded lat/lon point fall within the specified query distance (see {@link org.apache.lucene.util.SloppyMath#haversinMeters(double, double, double, double)}.
- * All morton value comparisons are subject to the same precision tolerance defined in
- * {@value org.apache.lucene.spatial.util.GeoEncodingUtils#TOLERANCE} and distance comparisons are subject to the accuracy of the
- * haversine formula (from R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159)
+ * Distance comparisons are subject to the accuracy of the haversine formula
+ * (from R.W. Sinnott, "Virtues of the Haversine", Sky and Telescope, vol. 68, no. 2, 1984, p. 159)
  *
  * <p>Note: This query currently uses haversine which is a sloppy distance calculation (see above reference). For large
  * queries one can expect upwards of 400m error. Vincenty shrinks this to ~40m error but pays a penalty for computing
