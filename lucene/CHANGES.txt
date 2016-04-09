@@ -18,6 +18,10 @@ New Features
 
 API Changes
 
+* LUCENE-7184: Refactor LatLonPoint encoding methods to new GeoEncodingUtils
+  helper class in core geo package. Also refactors LatLonPointTests to
+  TestGeoEncodingUtils (Nick Knize)
+
 * LUCENE-7163: refactor GeoRect, Polygon, and GeoUtils tests to geo
   package in core (Nick Knize)
 
