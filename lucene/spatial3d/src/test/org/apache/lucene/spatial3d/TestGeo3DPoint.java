@@ -56,6 +56,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.spatial3d.geom.XYZSolid;
+import org.apache.lucene.spatial3d.geom.XYZSolidFactory;
 import org.apache.lucene.spatial3d.geom.GeoArea;
 import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
 import org.apache.lucene.spatial3d.geom.GeoBBox;
@@ -791,7 +792,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
             b.append("  point=" + point + "\n");
             b.append("  docID=" + docID + " deleted?=" + deleted.contains(id) + "\n");
             b.append("  query=" + query + "\n");
-            b.append("  explanation:\n    " + explain("point", ((PointInGeo3DShapeQuery)query).getShape(), r, docID).replace("\n", "\n  "));
+            b.append("  explanation:\n    " + explain("point", ((PointInGeo3DShapeQuery)query).getShape(), point, r, docID).replace("\n", "\n  "));
             fail(b.toString());
           }
         } else {
@@ -1168,6 +1169,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
   private static class ExplainingVisitor implements IntersectVisitor {
 
+    final GeoShape shape;
+    final GeoPoint targetDocPoint;
     final IntersectVisitor in;
     final List<Cell> stack = new ArrayList<>();
     private List<Cell> stackToTargetDoc;
@@ -1180,7 +1183,9 @@ public class TestGeo3DPoint extends LuceneTestCase {
     // In the first phase, we always return CROSSES to do a full scan of the BKD tree to see which leaf block the document lives in
     boolean firstPhase = true;
 
-    public ExplainingVisitor(IntersectVisitor in, int targetDocID, int numDims, int bytesPerDim, StringBuilder b) {
+    public ExplainingVisitor(GeoShape shape, GeoPoint targetDocPoint, IntersectVisitor in, int targetDocID, int numDims, int bytesPerDim, StringBuilder b) {
+      this.shape = shape;
+      this.targetDocPoint = targetDocPoint;
       this.in = in;
       this.targetDocID = targetDocID;
       this.numDims = numDims;
@@ -1293,7 +1298,29 @@ public class TestGeo3DPoint extends LuceneTestCase {
         double yMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 1 * Integer.BYTES));
         double zMin = Geo3DUtil.decodeValueFloor(NumericUtils.sortableBytesToInt(minPackedValue, 2 * Integer.BYTES));
         double zMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 2 * Integer.BYTES));
-        return "Cell(x=" + xMin + " TO " + xMax + " y=" + yMin + " TO " + yMax + " z=" + zMin + " TO " + zMax + ")";
+        final XYZSolid xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, xMin, xMax, yMin, yMax, zMin, zMax);
+        final int relationship = xyzSolid.getRelationship(shape);
+        final boolean pointWithinShape = shape.isWithin(targetDocPoint);
+        final boolean pointWithinCell = xyzSolid.isWithin(targetDocPoint);
+        final String relationshipString;
+        switch (relationship) {
+        case GeoArea.CONTAINS:
+          relationshipString = "CONTAINS";
+          break;
+        case GeoArea.WITHIN:
+          relationshipString = "WITHIN";
+          break;
+        case GeoArea.OVERLAPS:
+          relationshipString = "OVERLAPS";
+          break;
+        case GeoArea.DISJOINT:
+          relationshipString = "DISJOINT";
+          break;
+        default:
+          relationshipString = "UNKNOWN";
+          break;
+        }
+        return "Cell(x=" + xMin + " TO " + xMax + " y=" + yMin + " TO " + yMax + " z=" + zMin + " TO " + zMax + "); Shape relationship = "+relationshipString+"; Point within cell = "+pointWithinCell+"; Point within shape = "+pointWithinShape;
       }
 
       @Override
@@ -1313,7 +1340,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     }
   }
 
-  public static String explain(String fieldName, GeoShape shape, IndexReader reader, int docID) throws Exception {
+  public static String explain(String fieldName, GeoShape shape, GeoPoint targetDocPoint, IndexReader reader, int docID) throws Exception {
 
     // First find the leaf reader that owns this doc:
     int subIndex = ReaderUtil.subIndex(docID, reader.leaves());
@@ -1323,7 +1350,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     b.append("target is in leaf " + leafReader + " of full reader " + reader + "\n");
 
     DocIdSetBuilder hits = new DocIdSetBuilder(leafReader.maxDoc());
-    ExplainingVisitor visitor = new ExplainingVisitor(new PointInShapeIntersectVisitor(hits, shape), docID - reader.leaves().get(subIndex).docBase, 3, Integer.BYTES, b);
+    ExplainingVisitor visitor = new ExplainingVisitor(shape, targetDocPoint, new PointInShapeIntersectVisitor(hits, shape), docID - reader.leaves().get(subIndex).docBase, 3, Integer.BYTES, b);
 
     // Do first phase, where we just figure out the "path" that leads to the target docID:
     leafReader.getPointValues().intersect(fieldName, visitor);
