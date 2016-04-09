@@ -805,7 +805,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
   public void testToString() {
     Geo3DPoint point = new Geo3DPoint("point", 44.244272, 7.769736);
-    assertEquals("Geo3DPoint <point: x=0.7094263130517758 y=0.09679758927665334 z=0.6973564618592686>", point.toString());
+    assertEquals("Geo3DPoint <point: x=", point.toString().substring(0,"Geo3DPoint <point: x=".length()));
   }
 
   public void testShapeQueryToString() {
