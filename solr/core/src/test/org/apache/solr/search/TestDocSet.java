@@ -55,7 +55,29 @@ public class TestDocSet extends LuceneTestCase {
     super.setUp();
     rand = random();
   }
-  
+
+  // test the DocSetCollector
+  public void collect(DocSet set, int maxDoc) {
+    int smallSetSize = maxDoc >> 64 + 3;
+    if (set.size() > 1) {
+      if (random().nextBoolean()) {
+        smallSetSize = set.size() + random().nextInt(3) - 1;  // test the bounds around smallSetSize
+      }
+    }
+    DocSetCollector collector = new DocSetCollector(smallSetSize, maxDoc);
+
+    for(DocIterator i1 = set.iterator(); i1.hasNext();) {
+      try {
+        collector.collect( i1.nextDoc() );
+      } catch (IOException e) {
+        throw new RuntimeException(e);  // should be impossible
+      }
+    }
+
+    DocSet result = collector.getDocSet();
+    iter(set, result);  // check that they are equal
+  }
+
   public FixedBitSet getRandomSet(int sz, int bitsToSet) {
     FixedBitSet bs = new FixedBitSet(sz);
     if (sz==0) return bs;
@@ -164,6 +186,9 @@ public class TestDocSet extends LuceneTestCase {
 
     iter(a1,b1);
     iter(a2,b2);
+
+    collect(a1, maxSize);
+    collect(a2, maxSize);
 
     FixedBitSet a_and = bs1.clone(); a_and.and(bs2);
     FixedBitSet a_or = bs1.clone(); a_or.or(bs2);
