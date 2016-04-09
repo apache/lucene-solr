@@ -117,8 +117,8 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
 
     //Test against all nodes
     for (JettySolrRunner jettySolrRunner : solrCluster.getJettySolrRunners()) {
-      SolrClient solrClient = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString());
-      SolrClient solrClient_local = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString());
+      SolrClient solrClient = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString());
+      SolrClient solrClient_local = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString());
 
       SolrQuery query = new SolrQuery("cat:football");
       query.setFields("*,score");
@@ -161,8 +161,8 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
 
     //Test against all nodes
     for (JettySolrRunner jettySolrRunner : solrCluster.getJettySolrRunners()) {
-      SolrClient solrClient = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString());
-      SolrClient solrClient_local = new HttpSolrClient(jettySolrRunner.getBaseUrl().toString());
+      SolrClient solrClient = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString());
+      SolrClient solrClient_local = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString());
 
       SolrQuery query = new SolrQuery("cat:football");
       query.setFields("*,score").add("collection", "collection1,collection2");

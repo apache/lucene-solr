@@ -218,7 +218,7 @@ public class IndexFetcher {
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl).withHttpClient(myHttpClient).build()) {
       client.setSoTimeout(60000);
       client.setConnectionTimeout(15000);
 
@@ -240,7 +240,7 @@ public class IndexFetcher {
     QueryRequest req = new QueryRequest(params);
 
     // TODO modify to use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl).withHttpClient(myHttpClient).build()) {
       client.setSoTimeout(60000);
       client.setConnectionTimeout(15000);
       NamedList response = client.request(req);
@@ -1606,7 +1606,11 @@ public class IndexFetcher {
       InputStream is = null;
 
       // TODO use shardhandler
-      try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient, null)) {
+      try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl)
+          .withHttpClient(myHttpClient)
+          .withResponseParser(null)
+          .build()
+      ) {
         client.setSoTimeout(60000);
         client.setConnectionTimeout(15000);
         QueryRequest req = new QueryRequest(params);
@@ -1715,7 +1719,7 @@ public class IndexFetcher {
     params.set(CommonParams.QT, "/replication");
 
     // TODO use shardhandler
-    try (HttpSolrClient client = new HttpSolrClient(masterUrl, myHttpClient)) {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(masterUrl).withHttpClient(myHttpClient).build()) {
       client.setSoTimeout(60000);
       client.setConnectionTimeout(15000);
       QueryRequest request = new QueryRequest(params);

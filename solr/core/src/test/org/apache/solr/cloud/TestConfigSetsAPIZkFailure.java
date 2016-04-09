@@ -99,8 +99,8 @@ public class TestConfigSetsAPIZkFailure extends SolrTestCaseJ4 {
 
   @Test
   public void testCreateZkFailure() throws Exception {
-    final SolrClient solrClient =
-        new HttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+    final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+    final SolrClient solrClient = getHttpSolrClient(baseUrl);
 
     final Map<String, String> oldProps = ImmutableMap.of("immutable", "true");
     setupBaseConfigSet(BASE_CONFIGSET_NAME, oldProps);

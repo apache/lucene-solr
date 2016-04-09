@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -202,7 +203,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   protected LBHttpSolrClient createLoadbalancer(HttpClient httpClient){
-    return new LBHttpSolrClient(httpClient);
+    LBHttpSolrClient client = new Builder()
+        .withHttpClient(httpClient)
+        .build();
+    return client;
   }
 
   protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {

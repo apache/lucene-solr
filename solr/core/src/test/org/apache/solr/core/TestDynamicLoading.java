@@ -112,7 +112,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     assertEquals(TestBlobHandler.getAsString(map), ".system collection not available", map.get("msg"));
 
 
-    TestBlobHandler.createSystemCollection(new HttpSolrClient(baseURL, randomClient.getHttpClient()));
+    TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient.getHttpClient()));
     waitForRecoveriesToFinish(".system", true);
 
     map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);

@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -236,7 +237,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     if(this.cache != null) {
       this.cloudSolrClient = this.cache.getCloudSolrClient(zkHost);
     } else {
-      this.cloudSolrClient = new CloudSolrClient(zkHost);
+      this.cloudSolrClient = new Builder()
+          .withZkHost(zkHost)
+          .build();
       this.cloudSolrClient.connect();
     }
     constructStreams();

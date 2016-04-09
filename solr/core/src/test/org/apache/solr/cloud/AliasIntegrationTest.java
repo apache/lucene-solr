@@ -16,6 +16,11 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -32,16 +37,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.junit.Test;
-
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Test sync phase that occurs when Leader goes down and a new Leader is
@@ -119,7 +117,7 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     query.set("collection", "testalias");
     JettySolrRunner jetty = jettys.get(random().nextInt(jettys.size()));
     int port = jetty.getLocalPort();
-    try (HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/testalias")) {
+    try (HttpSolrClient client = getHttpSolrClient(buildUrl(port) + "/testalias")) {
       res = client.query(query);
       assertEquals(3, res.getResults().getNumFound());
     }
@@ -128,7 +126,7 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     query = new SolrQuery("*:*");
     jetty = jettys.get(random().nextInt(jettys.size()));
     port = jetty.getLocalPort();
-    try (HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/testalias")) {
+    try (HttpSolrClient client = getHttpSolrClient(buildUrl(port) + "/testalias")) {
       res = client.query(query);
       assertEquals(3, res.getResults().getNumFound());
     }
@@ -136,7 +134,7 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     createAlias("testalias", "collection2,collection1");
     
     // search with new cloud client
-    try (CloudSolrClient cloudSolrClient = new CloudSolrClient(zkServer.getZkAddress(), random().nextBoolean())) {
+    try (CloudSolrClient cloudSolrClient = getCloudSolrClient(zkServer.getZkAddress(), random().nextBoolean())) {
       cloudSolrClient.setParallelUpdates(random().nextBoolean());
       query = new SolrQuery("*:*");
       query.set("collection", "testalias");
@@ -155,7 +153,7 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     query.set("collection", "testalias");
     jetty = jettys.get(random().nextInt(jettys.size()));
     port = jetty.getLocalPort();
-    try (HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/testalias")) {
+    try (HttpSolrClient client = getHttpSolrClient(buildUrl(port) + "/testalias")) {
       res = client.query(query);
       assertEquals(5, res.getResults().getNumFound());
     }
@@ -163,7 +161,7 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     query = new SolrQuery("*:*");
     jetty = jettys.get(random().nextInt(jettys.size()));
     port = jetty.getLocalPort();
-    try (HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/testalias")) {
+    try (HttpSolrClient client = getHttpSolrClient(buildUrl(port) + "/testalias")) {
       res = client.query(query);
       assertEquals(5, res.getResults().getNumFound());
     }
@@ -190,7 +188,7 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     // try a std client
     // search 1 and 2, but have no collections param
     query = new SolrQuery("*:*");
-    try (HttpSolrClient client = new HttpSolrClient(getBaseUrl((HttpSolrClient) clients.get(0)) + "/testalias")) {
+    try (HttpSolrClient client = getHttpSolrClient(getBaseUrl((HttpSolrClient) clients.get(0)) + "/testalias")) {
       res = client.query(query);
       assertEquals(5, res.getResults().getNumFound());
     }
@@ -200,7 +198,7 @@ public class AliasIntegrationTest extends AbstractFullDistribZkTestBase {
     // a second alias
     createAlias("testalias2", "collection2");
 
-    try (HttpSolrClient client = new HttpSolrClient(getBaseUrl((HttpSolrClient) clients.get(0)) + "/testalias")) {
+    try (HttpSolrClient client = getHttpSolrClient(getBaseUrl((HttpSolrClient) clients.get(0)) + "/testalias")) {
       SolrInputDocument doc8 = getDoc(id, 11, i1, -600, tlong, 600, t1,
           "humpty dumpy4 sat on a walls");
       client.add(doc8);

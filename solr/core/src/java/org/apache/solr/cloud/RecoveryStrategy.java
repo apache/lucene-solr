@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.io.Closeable;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -195,7 +194,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
 
   private void commitOnLeader(String leaderUrl) throws SolrServerException,
       IOException {
-    try (HttpSolrClient client = new HttpSolrClient(leaderUrl)) {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(leaderUrl).build()) {
       client.setConnectionTimeout(30000);
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
@@ -575,7 +574,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
   private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
       throws SolrServerException, IOException, InterruptedException, ExecutionException {
 
-    try (HttpSolrClient client = new HttpSolrClient(leaderBaseUrl)) {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(leaderBaseUrl).build()) {
       client.setConnectionTimeout(30000);
       WaitForState prepCmd = new WaitForState();
       prepCmd.setCoreName(leaderCoreName);

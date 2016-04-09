@@ -16,6 +16,16 @@
  */
 package org.apache.solr.update;
 
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
@@ -28,16 +38,6 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
 
 public class StreamingSolrClients {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -72,24 +72,7 @@ public class StreamingSolrClients {
       // NOTE: increasing to more than 1 threadCount for the client could cause updates to be reordered
       // on a greater scale since the current behavior is to only increase the number of connections/Runners when
       // the queue is more than half full.
-      client = new ConcurrentUpdateSolrClient(url, httpClient, 100, runnerCount, updateExecutor, true) {
-        @Override
-        public void handleError(Throwable ex) {
-          req.trackRequestResult(null, false);
-          log.error("error", ex);
-          Error error = new Error();
-          error.e = (Exception) ex;
-          if (ex instanceof SolrException) {
-            error.statusCode = ((SolrException) ex).code();
-          }
-          error.req = req;
-          errors.add(error);
-        }
-        @Override
-        public void onSuccess(HttpResponse resp) {
-          req.trackRequestResult(resp, true);
-        }
-      };
+      client = new ErrorReportingConcurrentUpdateSolrClient(url, httpClient, 100, runnerCount, updateExecutor, true, req);
       client.setParser(new BinaryResponseParser());
       client.setRequestWriter(new BinaryRequestWriter());
       client.setPollQueueTime(req.pollQueueTime);
@@ -131,5 +114,32 @@ public class StreamingSolrClients {
   
   public ExecutorService getUpdateExecutor() {
     return updateExecutor;
+  }
+  
+  class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateSolrClient {
+    private final SolrCmdDistributor.Req req;
+    
+    public ErrorReportingConcurrentUpdateSolrClient(String solrServerUrl, HttpClient client, int queueSize,
+        int threadCount, ExecutorService es, boolean streamDeletes, SolrCmdDistributor.Req req) {
+      super(solrServerUrl, client, queueSize, threadCount, es, streamDeletes);
+      this.req = req;
+    }
+    
+    @Override
+    public void handleError(Throwable ex) {
+      req.trackRequestResult(null, false);
+      log.error("error", ex);
+      Error error = new Error();
+      error.e = (Exception) ex;
+      if (ex instanceof SolrException) {
+        error.statusCode = ((SolrException) ex).code();
+      }
+      error.req = req;
+      errors.add(error);
+    }
+    @Override
+    public void onSuccess(HttpResponse resp) {
+      req.trackRequestResult(resp, true);
+    }
   }
 }

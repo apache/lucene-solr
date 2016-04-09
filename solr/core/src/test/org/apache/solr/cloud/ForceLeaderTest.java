@@ -301,7 +301,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
 
     SolrRequest<SimpleSolrResponse> req = new GenericSolrRequest(METHOD.GET, "/admin/cores", params);
     NamedList resp = null;
-    try (HttpSolrClient hsc = new HttpSolrClient(baseUrl)) {
+    try (HttpSolrClient hsc = getHttpSolrClient(baseUrl)) {
        resp = hsc.request(req);
     }
 

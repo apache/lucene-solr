@@ -201,7 +201,7 @@ public class LeaderInitiatedRecoveryThread extends Thread {
         log.info("Asking core={} coreNodeName={} on " + recoveryUrl + " to recover", coreNeedingRecovery, replicaCoreNodeName);
       }
 
-      try (HttpSolrClient client = new HttpSolrClient(recoveryUrl)) {
+      try (HttpSolrClient client = new HttpSolrClient.Builder(recoveryUrl).build()) {
         client.setSoTimeout(60000);
         client.setConnectionTimeout(15000);
         try {

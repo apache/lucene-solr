@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj;
 
+import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
+
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
@@ -39,7 +41,7 @@ public class SolrExceptionTest extends LuceneTestCase {
       // set a 1ms timeout to let the connection fail faster.
       httpClient = HttpClientUtil.createClient(null);
       HttpClientUtil.setConnectionTimeout(httpClient,  1);
-      SolrClient client = new HttpSolrClient("http://[ff01::114]:11235/solr/", httpClient);
+      SolrClient client = getHttpSolrClient("http://[ff01::114]:11235/solr/", httpClient);
       SolrQuery query = new SolrQuery("test123");
       client.query(query);
       httpClient.close();
