@@ -118,6 +118,11 @@ Optimizations
   
 * SOLR-8856: Do not cache merge or 'read once' contexts in the hdfs block cache. (Mark Miller, Mike Drob)
 
+* SOLR-8922: Optimize filter creation (DocSetCollector) to minimize the amount of garbage
+  produced. This resulted in up to 3x throughput when small filter creation was the bottleneck,
+  as well as orders of magnitude less garbage. (Jeff Wartes, yonik)
+
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
