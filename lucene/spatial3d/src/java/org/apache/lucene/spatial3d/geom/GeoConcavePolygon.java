@@ -202,11 +202,9 @@ class GeoConcavePolygon extends GeoBasePolygon {
         throw new IllegalArgumentException("Polygon points are all coplanar");
       }
       final GeoPoint check = points.get(endPointIndex);
-      // Here note the flip of the sense of the sided plane!!
-      final SidedPlane sp = new SidedPlane(check, false, start, end);
       //System.out.println("Created edge "+sp+" using start="+start+" end="+end+" check="+check);
-      edges[i] = sp;
-      invertedEdges[i] = new SidedPlane(sp);
+      edges[i] = new SidedPlane(check, false, start, end);
+      invertedEdges[i] = new SidedPlane(edges[i]);
       notableEdgePoints[i] = new GeoPoint[]{start, end};
     }
     // In order to naively confirm that the polygon is concave, I would need to
@@ -277,9 +275,11 @@ class GeoConcavePolygon extends GeoBasePolygon {
     // cannot use them as bounds.  They are independent hemispheres.
     for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
       final SidedPlane edge = edges[edgeIndex];
+      final SidedPlane invertedEdge = invertedEdges[edgeIndex];
       final GeoPoint[] points = this.notableEdgePoints[edgeIndex];
       if (!isInternalEdges.get(edgeIndex)) {
-        if (edge.intersects(planetModel, p, notablePoints, points, bounds, eitherBounds.get(edge))) {
+        //System.err.println("Checking concave edge "+edge+" for intersection against plane "+p);
+        if (invertedEdge.intersects(planetModel, p, notablePoints, points, bounds, eitherBounds.get(edge))) {
           //System.err.println(" intersects!");
           return true;
         }

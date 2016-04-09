@@ -265,6 +265,7 @@ class GeoConvexPolygon extends GeoBasePolygon {
       final SidedPlane edge = edges[edgeIndex];
       final GeoPoint[] points = this.notableEdgePoints[edgeIndex];
       if (!isInternalEdges.get(edgeIndex)) {
+        //System.err.println("Checking convex edge "+edge+" for intersection against plane "+p);
         if (edge.intersects(planetModel, p, notablePoints, points, bounds, eitherBounds.get(edge))) {
           //System.err.println(" intersects!");
           return true;
