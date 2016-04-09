@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.util.Arrays;
+
 /**
  * 3D rectangle, bounded on six sides by X,Y,Z limits
  *
@@ -152,6 +154,11 @@ class StandardXYZSolid extends BaseXYZSolid {
       notableMinZPoints = glueTogether(minXminZ, maxXminZ, minYminZ, maxYminZ);
       notableMaxZPoints = glueTogether(minXmaxZ, maxXmaxZ, minYmaxZ, maxYmaxZ);
 
+      //System.err.println(
+      //  " notableMinXPoints="+Arrays.asList(notableMinXPoints)+" notableMaxXPoints="+Arrays.asList(notableMaxXPoints)+
+      //  " notableMinYPoints="+Arrays.asList(notableMinYPoints)+" notableMaxYPoints="+Arrays.asList(notableMaxYPoints)+
+      //  " notableMinZPoints="+Arrays.asList(notableMinZPoints)+" notableMaxZPoints="+Arrays.asList(notableMaxZPoints));
+
       // Now, compute the edge points.
       // This is the trickiest part of setting up an XYZSolid.  We've computed intersections already, so
       // we'll start there.
@@ -173,7 +180,11 @@ class StandardXYZSolid extends BaseXYZSolid {
       final boolean maxXminYmaxZ = planetModel.pointOutside(maxX, minY, maxZ);
       final boolean maxXmaxYminZ = planetModel.pointOutside(maxX, maxY, minZ);
       final boolean maxXmaxYmaxZ = planetModel.pointOutside(maxX, maxY, maxZ);
-        
+      
+      //System.err.println("Outside world: minXminYminZ="+minXminYminZ+" minXminYmaxZ="+minXminYmaxZ+" minXmaxYminZ="+minXmaxYminZ+
+      //  " minXmaxYmaxZ="+minXmaxYmaxZ+" maxXminYminZ="+maxXminYminZ+" maxXminYmaxZ="+maxXminYmaxZ+" maxXmaxYminZ="+maxXmaxYminZ+
+      //  " maxXmaxYmaxZ="+maxXmaxYmaxZ);
+
       // Look at single-plane/world intersections.
       // We detect these by looking at the world model and noting its x, y, and z bounds.
 
@@ -286,6 +297,11 @@ class StandardXYZSolid extends BaseXYZSolid {
         maxZEdges = EMPTY_POINTS;
       }
       
+      //System.err.println(
+      //  " minXEdges="+Arrays.asList(minXEdges)+" maxXEdges="+Arrays.asList(maxXEdges)+
+      //  " minYEdges="+Arrays.asList(minYEdges)+" maxYEdges="+Arrays.asList(maxYEdges)+
+      //  " minZEdges="+Arrays.asList(minZEdges)+" maxZEdges="+Arrays.asList(maxZEdges));
+
       // Glue everything together.  This is not a minimal set of edgepoints, as of now, but it does completely describe all shapes on the
       // planet.
       this.edgePoints = glueTogether(minXminY, minXmaxY, minXminZ, minXmaxZ,

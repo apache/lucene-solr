@@ -189,6 +189,31 @@ public class PlanetModel {
     return (x * x + y * y) * inverseAb * inverseAb + z * z * inverseC * inverseC - 1.0 > Vector.MINIMUM_RESOLUTION;
   }
   
+  /** Compute a GeoPoint that's scaled to actually be on the planet surface.
+   * @param vector is the vector.
+   * @return the scaled point.
+   */
+  public GeoPoint createSurfacePoint(final Vector vector) {
+    return createSurfacePoint(vector.x, vector.y, vector.z);
+  }
+
+  /** Compute a GeoPoint that's based on (x,y,z) values, but is scaled to actually be on the planet surface.
+   * @param x is the x value.
+   * @param y is the y value.
+   * @param z is the z value.
+   * @return the scaled point.
+   */
+  public GeoPoint createSurfacePoint(final double x, final double y, final double z) {
+    // The equation of the surface is:
+    // (x^2 / a^2 + y^2 / b^2 + z^2 / c^2) = 1
+    // We will need to scale the passed-in x, y, z values:
+    // ((tx)^2 / a^2 + (ty)^2 / b^2 + (tz)^2 / c^2) = 1
+    // t^2 * (x^2 / a^2 + y^2 / b^2 + z^2 / c^2)  = 1
+    // t = sqrt ( 1 / (x^2 / a^2 + y^2 / b^2 + z^2 / c^2))
+    final double t = Math.sqrt(1.0 / (x*x*inverseAbSquared + y*y*inverseAbSquared + z*z*inverseCSquared));
+    return new GeoPoint(t*x, t*y, t*z);
+  }
+  
   /** Compute a GeoPoint that's a bisection between two other GeoPoints.
    * @param pt1 is the first point.
    * @param pt2 is the second point.

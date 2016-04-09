@@ -188,6 +188,6 @@ public class GeoPoint extends Vector {
     if (this.longitude == Double.NEGATIVE_INFINITY) {
       return super.toString();
     }
-    return "[lat="+getLatitude()+", lon="+getLongitude()+"]";
+    return "[lat="+getLatitude()+", lon="+getLongitude()+"("+super.toString()+")]";
   }
 }

@@ -395,6 +395,7 @@ public class GeoPolygonFactory {
         if (confirmEdge == checkEdge) {
           continue;
         }
+        // Look for a point that is on the wrong side of the check edge.  This means that we can't build the polygon.
         final GeoPoint thePoint;
         if (checkEdge.startPoint != confirmEdge.startPoint && checkEdge.endPoint != confirmEdge.startPoint && !flippedPlane.isWithin(confirmEdge.startPoint)) {
           thePoint = confirmEdge.startPoint;
@@ -404,7 +405,11 @@ public class GeoPolygonFactory {
           thePoint = null;
         }
         if (thePoint != null) {
-          // Found a split!!
+          // thePoint is on the wrong side of the complementary plane.  That means we cannot build a concave polygon, because the complement would not
+          // be a legal convex polygon.
+          // But we can take advantage of the fact that the distance between the edge and thePoint is less than 180 degrees, and so we can split the
+          // would-be concave polygon into three segments.  The first segment includes the edge and thePoint, and uses the sense of the edge to determine the sense
+          // of the polygon.
           
           // This should be the only problematic part of the polygon.
           // We know that thePoint is on the "wrong" side of the edge -- that is, it's on the side that the
@@ -431,6 +436,8 @@ public class GeoPolygonFactory {
           }
           //System.out.println("...done convex part.");
 
+          // ??? check if we get the sense right
+          
           // The part preceding the bad edge, back to thePoint, needs to be recursively
           // processed.  So, assemble what we need, which is basically a list of edges.
           Edge loopEdge = edgeBuffer.getPrevious(checkEdge);
@@ -459,6 +466,7 @@ public class GeoPolygonFactory {
             return false;
           }
           //System.out.println("...done first part.");
+          
           final List<GeoPoint> secondPartPoints = new ArrayList<>();
           final BitSet secondPartInternal = new BitSet();
           loopEdge = edgeBuffer.getNext(checkEdge);
@@ -479,7 +487,7 @@ public class GeoPolygonFactory {
             secondPartInternal, 
             secondPartPoints.size()-1,
             0,
-            new SidedPlane(checkEdge.endPoint, true, checkEdge.startPoint, thePoint),
+            new SidedPlane(checkEdge.startPoint, false, checkEdge.endPoint, thePoint),
             holes,
             testPoint) == false) {
             return false;
