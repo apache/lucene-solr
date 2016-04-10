@@ -107,15 +107,16 @@ public class GeoPolygonFactory {
     // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
     // of points to use for poles.
     final Random generator = new Random(1234);
+    //int counter = 0;
     while (true) {
+      //counter++;
       // Pick the next random pole
-      final double poleLat = generator.nextDouble() * Math.PI - Math.PI * 0.5;
-      final double poleLon = generator.nextDouble() * Math.PI * 2.0 - Math.PI;
-      final GeoPoint pole = new GeoPoint(planetModel, poleLat, poleLon);
+      final GeoPoint pole = pickPole(generator, planetModel, pointList);
       // Is it inside or outside?
       final Boolean isPoleInside = isInsidePolygon(pole, pointList);
       if (isPoleInside != null) {
         // Legal pole
+        //System.out.println("Took "+counter+" iterations to find pole");
         //System.out.println("Pole = "+pole+"; isInside="+isPoleInside+"; pointList = "+pointList);
         return makeGeoPolygon(planetModel, pointList, holes, pole, isPoleInside);
       }
@@ -169,6 +170,61 @@ public class GeoPolygonFactory {
     }
   }
 
+  /** The maximum distance from the close point to the trial pole: 2 degrees */
+  private final static double MAX_POLE_DISTANCE = Math.PI * 2.0 / 180.0;
+  
+  /** Pick a random pole that has a good chance of being inside the polygon described by the points.
+   * @param generator is the random number generator to use.
+   * @param planetModel is the planet model to use.
+   * @param points is the list of points available.
+   * @return the randomly-determined pole selection.
+   */
+  private static GeoPoint pickPole(final Random generator, final PlanetModel planetModel, final List<GeoPoint> points) {
+    final int pointIndex = generator.nextInt(points.size());
+    final GeoPoint closePoint = points.get(pointIndex);
+    // We pick a random angle and random arc distance, then generate a point based on closePoint
+    final double angle = generator.nextDouble() * Math.PI * 2.0 - Math.PI;
+    final double arcDistance = MAX_POLE_DISTANCE - generator.nextDouble() * MAX_POLE_DISTANCE;
+    // We come up with a unit circle (x,y,z) coordinate given the random angle and arc distance.  The point is centered around the positive x axis.
+    final double x = Math.cos(arcDistance);
+    final double sinArcDistance = Math.sin(arcDistance);
+    final double y = Math.cos(angle) * sinArcDistance;
+    final double z = Math.sin(angle) * sinArcDistance;
+    // Now, use closePoint for a rotation pole
+    final double sinLatitude = Math.sin(closePoint.getLatitude());
+    final double cosLatitude = Math.cos(closePoint.getLatitude());
+    final double sinLongitude = Math.sin(closePoint.getLongitude());
+    final double cosLongitude = Math.cos(closePoint.getLongitude());
+    // This transformation should take the point (1,0,0) and transform it to the closepoint's actual (x,y,z) coordinates.
+    // Coordinate rotation formula:
+    // x1 = x0 cos T - y0 sin T
+    // y1 = x0 sin T + y0 cos T
+    // We're in essence undoing the following transformation (from GeoPolygonFactory):
+    // x1 = x0 cos az + y0 sin az
+    // y1 = - x0 sin az + y0 cos az
+    // z1 = z0
+    // x2 = x1 cos al + z1 sin al
+    // y2 = y1
+    // z2 = - x1 sin al + z1 cos al
+    // So, we reverse the order of the transformations, AND we transform backwards.
+    // Transforming backwards means using these identities: sin(-angle) = -sin(angle), cos(-angle) = cos(angle)
+    // So:
+    // x1 = x0 cos al - z0 sin al
+    // y1 = y0
+    // z1 = x0 sin al + z0 cos al
+    // x2 = x1 cos az - y1 sin az
+    // y2 = x1 sin az + y1 cos az
+    // z2 = z1
+    final double x1 = x * cosLatitude - z * sinLatitude;
+    final double y1 = y;
+    final double z1 = x * sinLatitude + z * cosLatitude;
+    final double x2 = x1 * cosLongitude - y1 * sinLongitude;
+    final double y2 = x1 * sinLongitude + y1 * cosLongitude;
+    final double z2 = z1;
+    // Finally, scale to put the point on the surface
+    return planetModel.createSurfacePoint(x2, y2, z2);
+  }
+  
   /** For a specified point and a list of poly points, determine based on point order whether the
    * point should be considered in or out of the polygon.
    * @param point is the point to check.
