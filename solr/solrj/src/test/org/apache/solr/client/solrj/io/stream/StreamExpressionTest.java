@@ -134,6 +134,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     testRankStream();
     testReducerStream();
     testUniqueStream();
+    testSortStream();
     testRollupStream();
     testStatsStream();
     testNulls();
@@ -302,6 +303,47 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assert(tuples.size() == 5);
     assertOrder(tuples, 0, 2, 1, 3, 4);
     
+    del("*:*");
+    commit();
+  }
+
+  private void testSortStream() throws Exception {
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
+    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1");
+    indexr(id, "5", "a_s", "hello1", "a_i", "1", "a_f", "2");
+    commit();
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    
+    StreamFactory factory = new StreamFactory()
+      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withFunctionName("search", CloudSolrStream.class)
+      .withFunctionName("sort", SortStream.class);
+    
+    // Basic test
+    stream = factory.constructStream("sort(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc\")");
+    tuples = getTuples(stream);
+    assert(tuples.size() == 6);
+    assertOrder(tuples, 0,1,5,2,3,4);
+
+    // Basic test desc
+    stream = factory.constructStream("sort(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i desc\")");
+    tuples = getTuples(stream);
+    assert(tuples.size() == 6);
+    assertOrder(tuples, 4,3,2,1,5,0);
+    
+    // Basic w/multi comp
+    stream = factory.constructStream("sort(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc, a_f desc\")");
+    tuples = getTuples(stream);
+    assert(tuples.size() == 6);
+    assertOrder(tuples, 0,5,1,2,3,4);
+        
     del("*:*");
     commit();
   }

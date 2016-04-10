@@ -93,6 +93,9 @@ New Features
 
 * SOLR-8976: Add SolrJ support for REBALANCELEADERS Collections API (Anshum Gupta)
 
+* SOLR-8961: Add sort Streaming Expression. The expression takes a single input stream and a 
+  comparator and outputs tuples in stable order of the comparator. (Dennis Gove)
+
 Bug Fixes
 ----------------------
 
