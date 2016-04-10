@@ -1023,15 +1023,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
     final double x2 = x1 * cosLongitude - y1 * sinLongitude;
     final double y2 = x1 * sinLongitude + y1 * cosLongitude;
     final double z2 = z1;
-
-    // Scale final (x,y,z) to land on planet surface
-    // Equation of ellipsoid:  x^2 / a^2 + y^2 / b^2 + z^2 / c^2 - 1 = 0
-    // Use a parameterization, e.g. x = t * x2, y = t * y2, z = t * z2, and find t.
-    // t^2 ( x2^2 / a^2 + y2^2 / b^2 + z2^2 / c^2 ) = 1
-    // t = +/- sqrt( 1 / ( x2^2 / a^2 + y2^2 / b^2 + z2^2 / c^2 ) )
-    // We want the + variant because we're scaling in the same direction as the original vector.
-    final double t = Math.sqrt( 1.0 / (x2 * x2 * pm.inverseAbSquared + y2 * y2 * pm.inverseAbSquared + z2 * z2 * pm.inverseCSquared));
-    return new GeoPoint(x2 * t, y2 * t, z2 * t);
+    // Scale to put the point on the surface
+    return pm.createSurfacePoint(x2, y2, z2);
   }
   
   protected static boolean verifyPolygon(final PlanetModel pm, final Polygon polygon, final GeoPolygon outsidePolygon) {
