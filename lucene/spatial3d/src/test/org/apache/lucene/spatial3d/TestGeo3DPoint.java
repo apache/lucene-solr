@@ -132,7 +132,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
   }
 
   private static double toRadians(double degrees) {
-    return Math.toRadians(degrees);
+    return degrees * Geo3DPoint.RADIANS_PER_DEGREE;
   }
 
   private static class Cell {
@@ -810,13 +810,17 @@ public class TestGeo3DPoint extends LuceneTestCase {
   }
 
   public void testToString() {
+    // Don't compare entire strings because Java 9 and Java 8 have slightly different values
     Geo3DPoint point = new Geo3DPoint("point", 44.244272, 7.769736);
-    assertEquals("Geo3DPoint <point: x=", point.toString().substring(0,"Geo3DPoint <point: x=".length()));
+    final String stringToCompare = "Geo3DPoint <point: x=";
+    assertEquals(stringToCompare, point.toString().substring(0,stringToCompare.length()));
   }
 
   public void testShapeQueryToString() {
-    assertEquals("PointInGeo3DShapeQuery: field=point: Shape: GeoStandardCircle: {planetmodel=PlanetModel.WGS84, center=[lat=0.7722082215479366, lon=0.13560747521073413([X=0.7094263130137863, Y=0.09679758930862137, Z=0.6973564619248455])], radius=0.1(5.729577951308232)}",
-                 Geo3DPoint.newShapeQuery("point", GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, toRadians(44.244272), toRadians(7.769736), 0.1)).toString());
+    // Don't compare entire strings because Java 9 and Java 8 have slightly different values
+    final String stringToCompare = "PointInGeo3DShapeQuery: field=point: Shape: GeoStandardCircle: {planetmodel=PlanetModel.WGS84, center=[lat=0.7";
+    assertEquals(stringToCompare,
+      Geo3DPoint.newShapeQuery("point", GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, toRadians(44.244272), toRadians(7.769736), 0.1)).toString().substring(0,stringToCompare.length()));
   }
 
   private static Directory getDirectory() {     
@@ -841,7 +845,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
   public void testComplexPolygons() {
     final PlanetModel pm = PlanetModel.WGS84;
     // Pick a random pole
-    final GeoPoint randomPole = new GeoPoint(pm, Math.toRadians(GeoTestUtil.nextLatitude()), Math.toRadians(GeoTestUtil.nextLongitude()));
+    final GeoPoint randomPole = new GeoPoint(pm, toRadians(GeoTestUtil.nextLatitude()), toRadians(GeoTestUtil.nextLongitude()));
     int iters = atLeast(100);
     for (int i = 0; i < iters; i++) {
       // Create a polygon that's less than 180 degrees
@@ -854,8 +858,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
     }
   }
 
-  protected static double MINIMUM_EDGE_ANGLE = Math.toRadians(5.0);
-  protected static double MINIMUM_ARC_ANGLE = Math.toRadians(1.0);
+  protected static double MINIMUM_EDGE_ANGLE = toRadians(5.0);
+  protected static double MINIMUM_ARC_ANGLE = toRadians(1.0);
   
   /** Cook up a random Polygon that makes sense, with possible nested polygon within.
     * This is part of testing more complex polygons with nested holes.  Picking random points
@@ -1036,7 +1040,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     final double[] lons = polygon.getPolyLons();
     final List<GeoPoint> polyPoints = new ArrayList<>(lats.length-1);
     for (int i = 0; i < lats.length - 1; i++) {
-      final GeoPoint newPoint = new GeoPoint(pm, Math.toRadians(lats[i]), Math.toRadians(lons[i]));
+      final GeoPoint newPoint = new GeoPoint(pm, toRadians(lats[i]), toRadians(lons[i]));
       if (!outsidePolygon.isWithin(newPoint)) {
         return false;
       }
