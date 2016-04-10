@@ -51,7 +51,9 @@ import org.apache.lucene.util.NumericUtils;
 public final class Geo3DPoint extends Field {
 
   /** How many radians are in one earth surface meter */
-  protected final static double RADIANS_PER_METER = 1.0 / PlanetModel.WGS84_MEAN;
+  public final static double RADIANS_PER_METER = 1.0 / PlanetModel.WGS84_MEAN;
+  /** How many radians are in one degree */
+  public final static double RADIANS_PER_DEGREE = Math.PI / 180.0;
   
   /** Indexing {@link FieldType}. */
   public static final FieldType TYPE = new FieldType();
@@ -75,12 +77,12 @@ public final class Geo3DPoint extends Field {
   }
 
   /** Converts degress to radians */
-  protected static double fromDegrees(final double degrees) {
-    return Math.toRadians(degrees);
+  private static double fromDegrees(final double degrees) {
+    return degrees * RADIANS_PER_DEGREE;
   }
   
   /** Converts earth-surface meters to radians */
-  protected static double fromMeters(final double meters) {
+  private static double fromMeters(final double meters) {
     return meters * RADIANS_PER_METER;
   }
 
