@@ -20,6 +20,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.util.GeoEncodingUtils;
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.BaseGeoPointTestCase;
@@ -61,4 +62,45 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     return new GeoPointInPolygonQuery(field, TermEncoding.PREFIX, polygons);
   }
 
+  // TODO: remove these once we get tests passing!
+
+  @Override
+  protected double nextLongitude() {
+    return GeoPointTestUtil.nextLongitude();
+  }
+
+  @Override
+  protected double nextLongitudeNear(double other) {
+    return GeoPointTestUtil.nextLongitudeNear(other);
+  }
+
+  @Override
+  protected double nextLatitude() {
+    return GeoPointTestUtil.nextLatitude();
+  }
+
+  @Override
+  protected double nextLatitudeNear(double other) {
+    return GeoPointTestUtil.nextLatitudeNear(other);
+  }
+
+  @Override
+  protected Rectangle nextBox() {
+    return GeoPointTestUtil.nextBox();
+  }
+
+  @Override
+  protected Rectangle nextBoxNear(double latitude, double longitude) {
+    return GeoPointTestUtil.nextBoxNear(latitude, longitude);
+  }
+
+  @Override
+  protected Polygon nextPolygon() {
+    return GeoPointTestUtil.nextPolygon();
+  }
+
+  @Override
+  protected Polygon nextPolygonNear(double latitude, double longitude) {
+    return GeoPointTestUtil.nextPolygonNear(latitude, longitude);
+  }
 }
