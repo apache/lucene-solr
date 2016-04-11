@@ -103,7 +103,9 @@ public class ToChildBlockJoinQuery extends Query {
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {}
+    public void extractTerms(Set<Term> terms) {
+      parentWeight.extractTerms(terms);
+    }
 
     @Override
     public float getValueForNormalization() throws IOException {

@@ -20,8 +20,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -108,7 +110,35 @@ public class TestBlockJoin extends LuceneTestCase {
     job.add(new IntField("year", year, Field.Store.NO));
     return job;
   }
-  
+
+  public void testExtractTerms() throws Exception {
+    TermQuery termQuery = new TermQuery(new Term("field", "value"));
+    QueryBitSetProducer bitSetProducer = new QueryBitSetProducer(new MatchNoDocsQuery());
+    ToParentBlockJoinQuery toParentBlockJoinQuery = new ToParentBlockJoinQuery(termQuery, bitSetProducer, ScoreMode.None);
+    ToChildBlockJoinQuery toChildBlockJoinQuery = new ToChildBlockJoinQuery(toParentBlockJoinQuery, bitSetProducer);
+
+    Directory directory = newDirectory();
+    final IndexWriter w = new IndexWriter(directory, new IndexWriterConfig(new MockAnalyzer(random())));
+    w.close();
+    IndexReader indexReader = DirectoryReader.open(directory);
+    IndexSearcher indexSearcher = new IndexSearcher(indexReader);
+
+    Weight weight = toParentBlockJoinQuery.createWeight(indexSearcher, false);
+    Set<Term> terms = new HashSet<>();
+    weight.extractTerms(terms);
+    Term[] termArr =terms.toArray(new Term[0]);
+    assertEquals(1, termArr.length);
+
+    weight = toChildBlockJoinQuery.createWeight(indexSearcher, false);
+    terms = new HashSet<>();
+    weight.extractTerms(terms);
+    termArr =terms.toArray(new Term[0]);
+    assertEquals(1, termArr.length);
+
+    indexReader.close();
+    directory.close();
+  }
+
   public void testEmptyChildFilter() throws Exception {
     final Directory dir = newDirectory();
     final IndexWriterConfig config = new IndexWriterConfig(new MockAnalyzer(random()));
