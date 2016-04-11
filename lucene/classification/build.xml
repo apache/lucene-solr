@@ -28,6 +28,7 @@
     <path refid="base.classpath"/>
     <pathelement path="${queries.jar}"/>
     <pathelement path="${grouping.jar}"/>
+    <pathelement path="${misc.jar}"/>
   </path>
 
   <path id="test.classpath">
@@ -36,16 +37,17 @@
     <path refid="test.base.classpath"/>
   </path>
 
-  <target name="compile-core" depends="jar-grouping,jar-queries,jar-analyzers-common,common.compile-core" />
+  <target name="compile-core" depends="jar-misc,jar-grouping,jar-queries,jar-analyzers-common,common.compile-core" />
 
   <target name="jar-core" depends="common.jar-core" />
 
-  <target name="javadocs" depends="javadocs-grouping,javadocs-misc,compile-core,check-javadocs-uptodate"
+  <target name="javadocs" depends="javadocs-misc,javadocs-grouping,javadocs-misc,compile-core,check-javadocs-uptodate"
           unless="javadocs-uptodate-${name}">
     <invoke-module-javadoc>
       <links>
         <link href="../queries"/>
         <link href="../group"/>
+        <link href="../misc"/>
       </links>
     </invoke-module-javadoc>
   </target>
