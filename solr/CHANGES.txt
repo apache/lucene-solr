@@ -42,6 +42,9 @@ Other Changes
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
   (Jason Gerlowski, Benoit Vanalderweireldt, shalin)
 
+* SOLR-8967: In SolrCloud mode, under the 'Core Selector' dropdown in the UI the Replication tab won't be displayed
+  anymore. The Replication tab is only beneficial to users running Solr in master-slave mode. (Varun Thacker)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
