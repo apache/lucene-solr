@@ -209,7 +209,7 @@ limitations under the License.
               <li class="ping" ng-class="{active:page=='ping'}"><a ng-click="ping()"><span>Ping</span><small class="qtime" ng-show="pingMS"> (<span>{{pingMS}}ms</span>)</small></a></li>
               <li class="plugins" ng-class="{active:page=='plugins'}"><a href="#/{{currentCore.name}}/plugins"><span>Plugins / Stats</span></a></li>
               <li ng-hide="isCloudEnabled" class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCore.name}}/query"><span>Query</span></a></li>
-              <li class="replication" ng-class="{active:page=='replication'}"><a href="#/{{currentCore.name}}/replication"><span>Replication</span></a></li>
+              <li ng-hide="isCloudEnabled" class="replication" ng-class="{active:page=='replication'}"><a href="#/{{currentCore.name}}/replication"><span>Replication</span></a></li>
               <li ng-hide="isCloudEnabled" class="schema" ng-class="{active:page=='schema'}"><a href="#/{{currentCore.name}}/schema"><span>Schema</span></a></li>
               <li class="segments" ng-class="{active:page=='segments'}"><a href="#/{{currentCore.name}}/segments"><span>Segments info</span></a></li>
       </ul>
