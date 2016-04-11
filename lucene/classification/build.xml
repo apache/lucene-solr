@@ -46,7 +46,7 @@
     <invoke-module-javadoc>
       <links>
         <link href="../queries"/>
-        <link href="../group"/>
+        <link href="../grouping"/>
         <link href="../misc"/>
       </links>
     </invoke-module-javadoc>
