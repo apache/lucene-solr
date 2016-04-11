@@ -45,7 +45,8 @@ public class GeoBBoxFactory {
       leftLon = -Math.PI;
     if (rightLon > Math.PI)
       rightLon = Math.PI;
-    if (Math.abs(leftLon + Math.PI) < Vector.MINIMUM_RESOLUTION && Math.abs(rightLon - Math.PI) < Vector.MINIMUM_RESOLUTION) {
+    if ((Math.abs(leftLon + Math.PI) < Vector.MINIMUM_RESOLUTION && Math.abs(rightLon - Math.PI) < Vector.MINIMUM_RESOLUTION) ||
+        (Math.abs(rightLon + Math.PI) < Vector.MINIMUM_RESOLUTION && Math.abs(leftLon - Math.PI) < Vector.MINIMUM_RESOLUTION)) {
       if (Math.abs(topLat - Math.PI * 0.5) < Vector.MINIMUM_RESOLUTION && Math.abs(bottomLat + Math.PI * 0.5) < Vector.MINIMUM_RESOLUTION)
         return new GeoWorld(planetModel);
       if (Math.abs(topLat - bottomLat) < Vector.MINIMUM_RESOLUTION) {
