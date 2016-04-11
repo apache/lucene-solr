@@ -21,14 +21,10 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
-import org.apache.lucene.spatial.util.GeoEncodingUtils;
 
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.mortonHash;
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.mortonUnhashLat;
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.mortonUnhashLon;
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.geoCodedToPrefixCoded;
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.prefixCodedToGeoCoded;
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.getPrefixCodedShift;
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.geoCodedToPrefixCoded;
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.prefixCodedToGeoCoded;
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.getPrefixCodedShift;
 
 /**
  * Decomposes a given {@link GeoPointMultiTermQuery} into a set of terms that represent the query criteria using
@@ -58,7 +54,7 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
 
   public GeoPointPrefixTermsEnum(final TermsEnum tenum, final GeoPointMultiTermQuery query) {
     super(tenum, query);
-    this.start = mortonHash(query.minLat, query.minLon);
+    this.start = GeoPointField.encodeLatLon(query.minLat, query.minLon);
     this.currentRange = new Range(0, shift, true);
     // start shift at maxShift value (from computeMaxShift)
     this.shift = maxShift;
@@ -90,14 +86,14 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
   }
 
   private void nextRelation() {
-    double minLon = mortonUnhashLon(currStart);
-    double minLat = mortonUnhashLat(currStart);
+    double minLon = GeoPointField.decodeLongitude(currStart);
+    double minLat = GeoPointField.decodeLatitude(currStart);
     double maxLon;
     double maxLat;
     boolean isWithin;
     do {
-      maxLon = mortonUnhashLon(currEnd);
-      maxLat = mortonUnhashLat(currEnd);
+      maxLon = GeoPointField.decodeLongitude(currEnd);
+      maxLat = GeoPointField.decodeLatitude(currEnd);
 
       isWithin = false;
       // within or a boundary
@@ -123,8 +119,8 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
         currEnd = currStart | (1L<<--shift) - 1;
       } else {
         advanceVariables();
-        minLon = mortonUnhashLon(currStart);
-        minLat = mortonUnhashLat(currStart);
+        minLon = GeoPointField.decodeLongitude(currStart);
+        minLat = GeoPointField.decodeLatitude(currStart);
       }
     } while(shift < 63);
   }
@@ -194,7 +190,7 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
 
       final int comparison = term.compareTo(currentCell);
       if (comparison > 0) {
-        seek(GeoEncodingUtils.prefixCodedToGeoCoded(term), (short)(64-GeoEncodingUtils.getPrefixCodedShift(term)));
+        seek(prefixCodedToGeoCoded(term), (short)(64 - getPrefixCodedShift(term)));
         continue;
       }
       return currentCell;

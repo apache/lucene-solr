@@ -116,7 +116,9 @@ public final class BitUtil {
    *
    * Adapted from: http://graphics.stanford.edu/~seander/bithacks.html#InterleaveBMN
    */
-  public static long interleave(long v1, long v2) {
+  public static long interleave(int even, int odd) {
+    long v1 = 0x00000000FFFFFFFFL & even;
+    long v2 = 0x00000000FFFFFFFFL & odd;
     v1 = (v1 | (v1 << SHIFT[4])) & MAGIC[4];
     v1 = (v1 | (v1 << SHIFT[3])) & MAGIC[3];
     v1 = (v1 | (v1 << SHIFT[2])) & MAGIC[2];
