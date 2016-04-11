@@ -1248,7 +1248,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
       if (firstPhase) {
 
         // Pop stack:
-        while (stack.size() > 0 && stack.get(stack.size()-1).contains(cell)) {
+        while (stack.size() > 0 && stack.get(stack.size()-1).contains(cell) == false) {
           stack.remove(stack.size()-1);
           //System.out.println("  pop");
         }
