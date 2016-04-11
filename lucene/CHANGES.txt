@@ -73,6 +73,9 @@ Bug Fixes
 * LUCENE-7168: Switch to stable encode for geo3d, remove quantization
   test leniency, remove dead code (Mike McCandless)
 
+* LUCENE-7187: Block join queries' Weight#extractTerms(...) implementations
+  should delegate to the wrapped weight. (Martijn van Groningen)
+
 Other
 
 * LUCENE-7174: Upgrade randomizedtesting to 2.3.4. (Uwe Schindler, Dawid Weiss)
