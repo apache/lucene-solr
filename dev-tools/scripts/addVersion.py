@@ -19,9 +19,7 @@ sys.path.append(os.path.dirname(__file__))
 from scriptutil import *
 
 import argparse
-import io
 import re
-import subprocess
 
 def update_changes(filename, new_version):
   print('  adding new section to %s...' % filename, end='', flush=True)
@@ -168,18 +166,23 @@ def check_solr_version_tests():
 def read_config():
   parser = argparse.ArgumentParser(description='Add a new version')
   parser.add_argument('version', type=Version.parse)
-  parser.add_argument('-c', '--changeid', type=str, help='SVN ChangeId for downstream version change to merge')
+  parser.add_argument('-c', '--changeid', type=str, help='Git ChangeId (commit hash) for downstream version change to merge')
   c = parser.parse_args()
 
   c.branch_type = find_branch_type()
-  c.matching_branch = c.version.is_bugfix_release() and c.branch_type == 'release' or \
-                      c.version.is_minor_release() and c.branch_type == 'stable' or \
-                      c.branch_type == 'major'
+  c.matching_branch = c.version.is_bugfix_release() and c.branch_type == BranchType.release or \
+                      c.version.is_minor_release() and c.branch_type == BranchType.stable or \
+                      c.version.is_major_release() and c.branch_type == BranchType.major
 
-  if c.changeid and c.matching_branch:
-    parser.error('Cannot use --changeid on branch that new version will originate on')
+  print ("branch_type is %s " % c.branch_type)
   if c.changeid and c.version.is_major_release():
     parser.error('Cannot use --changeid for major release')
+  if c.changeid and c.matching_branch:
+    parser.error('Cannot use --changeid on branch that new version will originate on')
+  if c.version.is_bugfix_release() and c.branch_type in [BranchType.major, BranchType.stable] and not c.changeid:
+    parser.error('Adding bugfix release on master or stable branch requires --changeid')
+  if c.version.is_minor_release() and c.branch_type in [BranchType.major] and not c.changeid:
+    parser.error('Adding minor release on master branch requires --changeid')
 
   return c
   
