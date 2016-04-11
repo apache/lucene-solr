@@ -125,21 +125,21 @@ public class ToParentBlockJoinQuery extends Query {
   }
 
   private static class BlockJoinWeight extends Weight {
-    private final Query joinQuery;
     private final Weight childWeight;
     private final BitSetProducer parentsFilter;
     private final ScoreMode scoreMode;
 
     public BlockJoinWeight(Query joinQuery, Weight childWeight, BitSetProducer parentsFilter, ScoreMode scoreMode) {
       super(joinQuery);
-      this.joinQuery = joinQuery;
       this.childWeight = childWeight;
       this.parentsFilter = parentsFilter;
       this.scoreMode = scoreMode;
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {}
+    public void extractTerms(Set<Term> terms) {
+      childWeight.extractTerms(terms);
+    }
 
     @Override
     public float getValueForNormalization() throws IOException {
