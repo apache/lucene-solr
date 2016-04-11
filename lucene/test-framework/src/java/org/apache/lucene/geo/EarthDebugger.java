@@ -62,9 +62,14 @@ public class EarthDebugger {
     }
   }
 
+  private static double MAX_LAT_LON_PER_STEP = 5.0;
+
   // first point is inclusive, last point is exclusive!
   private void drawSegment(double minLat, double maxLat, double minLon, double maxLon) {
-    int steps = 20;
+    int steps = (int) Math.round(Math.max(Math.abs(maxLat-minLat)/MAX_LAT_LON_PER_STEP, Math.abs(maxLon-minLon)/MAX_LAT_LON_PER_STEP));
+    if (steps < 1) {
+      steps = 1;
+    }
     for(int i=0;i<steps;i++) {
       b.append("          [" + (minLat + (maxLat - minLat) * i / steps) + ", " + (minLon + (maxLon - minLon) * i / steps) + "],\n");
     }
@@ -75,6 +80,7 @@ public class EarthDebugger {
     String name = "rect" + nextShape;
     nextShape++;
 
+    b.append("        // lat: " + minLat + " TO " + maxLat + "; lon: " + minLon + " TO " + maxLon + "\n");
     b.append("        var " + name + " = WE.polygon([\n");
 
     b.append("          // min -> max lat, min lon\n");
