@@ -560,7 +560,11 @@ public class TestGeo3DPoint extends LuceneTestCase {
       case 2: {
         // Rectangles
         final Rectangle r = GeoTestUtil.nextBox();
-        return Geo3DPoint.newBoxQuery(field, r.minLat, r.maxLat, r.minLon, r.maxLon);
+        try {
+          return Geo3DPoint.newBoxQuery(field, r.minLat, r.maxLat, r.minLon, r.maxLon);
+        } catch (IllegalArgumentException e) {
+          continue;
+        }
       }
 
       case 3: {
