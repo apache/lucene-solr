@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.search.spell.WordBreakSpellChecker;
 import org.apache.lucene.util.LuceneTestCase.SuppressTempFileChecks;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
@@ -129,12 +130,6 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
         assertTrue(orig.length()==4);
         assertTrue(corr.length==1);
         assertTrue(corr[0].equals("pi ne"));
-      } else if(orig.toString().equals("pine")) {
-        assertTrue(orig.startOffset()==10);
-        assertTrue(orig.endOffset()==14);
-        assertTrue(orig.length()==4);
-        assertTrue(corr.length==1);
-        assertTrue(corr[0].equals("pi ne"));
       } else if(orig.toString().equals("apple")) {
         assertTrue(orig.startOffset()==15);
         assertTrue(orig.endOffset()==20);
@@ -150,6 +145,128 @@ public class WordBreakSolrSpellCheckerTest extends SolrTestCaseJ4 {
         assertTrue(orig.endOffset()==30);
         assertTrue(orig.length()==4);
         assertTrue(corr.length==0);
+      }else {
+        fail("Unexpected original result: " + orig);
+      }        
+    }  
+  }
+  @Test
+  public void testStandAloneBreakWhenNotBothWords() throws Exception {
+    SolrCore core = h.getCore();
+    WordBreakSolrSpellChecker checker = new WordBreakSolrSpellChecker();
+    NamedList<String> params = new NamedList<>();
+    params.add("field", "lowerfilt");
+    params.add(WordBreakSolrSpellChecker.PARAM_BREAK_WORDS, "true");
+    params.add(WordBreakSolrSpellChecker.PARAM_COMBINE_WORDS, "true");
+    params.add(WordBreakSolrSpellChecker.PARAM_MAX_CHANGES, "10");
+    params.add(WordBreakSolrSpellChecker.PARAM_IS_WORD_REQUIRED_ON_BOTH_SIDES_OF_BREAK, "false");
+    checker.init(params, core);
+
+    RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
+    QueryConverter qc = new SpellingQueryConverter();
+    qc.setAnalyzer(new MockAnalyzer(random()));
+    Collection<Token> tokens = qc.convert("paintable pine apple good ness grampa miss grampabill mypaintablefoods");
+    SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.get().getIndexReader(), 10);
+    SpellingResult result = checker.getSuggestions(spellOpts);
+    searcher.decref();
+    
+    assertTrue(result != null && result.getSuggestions() != null);
+    assertTrue(result.getSuggestions().size()==13);
+    
+    for(Map.Entry<Token, LinkedHashMap<String, Integer>> s : result.getSuggestions().entrySet()) {
+      Token orig = s.getKey();
+      String[] corr = s.getValue().keySet().toArray(new String[0]);
+      if(orig.toString().equals("paintable")) {        
+        assertTrue(orig.startOffset()==0);
+        assertTrue(orig.endOffset()==9);
+        assertTrue(orig.length()==9);
+        assertTrue(corr.length==7);
+        assertTrue(corr[0].equals("paint able"));  //everything in "real" words; 1 break ; max doc freq=5
+        assertTrue(corr[1].equals("pain table"));  //everything in "real" words; 1 break ; max doc freq=2      
+        assertTrue(corr[2].equals("pa in table")); //everything in "real" words; 2 breaks
+        assertTrue(corr[3].equals("pain t able")); //8 out of 9 in "real" words; 2 breaks
+        assertTrue(corr[4].equals("pa in t able"));//8 out of 9 in "real" words; 3 breaks
+        assertTrue(corr[5].equals("pa int able")); //6 out of 9 in "real" words; 2 breaks
+        assertTrue(corr[6].equals("pa intable"));  //2 out of 9 in "real" words; 1 break
+      } else if(orig.toString().equals("pine apple")) {
+        assertTrue(orig.startOffset()==10);
+        assertTrue(orig.endOffset()==20);
+        assertTrue(orig.length()==10);
+        assertTrue(corr.length==1);
+        assertTrue(corr[0].equals("pineapple"));
+      } else if(orig.toString().equals("paintable pine")) {
+        assertTrue(orig.startOffset()==0);
+        assertTrue(orig.endOffset()==14);
+        assertTrue(orig.length()==14);
+        assertTrue(corr.length==1);
+        assertTrue(corr[0].equals("paintablepine"));
+      } else if(orig.toString().equals("good ness")) {
+        assertTrue(orig.startOffset()==21);
+        assertTrue(orig.endOffset()==30);
+        assertTrue(orig.length()==9);
+        assertTrue(corr.length==1);
+        assertTrue(corr[0].equals("goodness"));
+      } else if(orig.toString().equals("pine apple good ness")) {
+        assertTrue(orig.startOffset()==10);
+        assertTrue(orig.endOffset()==30);
+        assertTrue(orig.length()==20);
+        assertTrue(corr.length==1);
+        assertTrue(corr[0].equals("pineapplegoodness"));
+      } else if(orig.toString().equals("pine")) {
+        assertTrue(orig.startOffset()==10);
+        assertTrue(orig.endOffset()==14);
+        assertTrue(orig.length()==4);
+        assertTrue(corr.length==2);
+        assertTrue(corr[0].equals("pi ne"));
+        assertTrue(corr[1].equals("p in e"));
+      } else if(orig.toString().equals("ness")) {
+        assertTrue(orig.startOffset()==26);
+        assertTrue(orig.endOffset()==30);
+        assertTrue(orig.length()==4);
+        assertTrue(corr.length==1);
+        assertTrue(corr[0].equals("ne ss"));
+      } else if(orig.toString().equals("grampa")) {
+        assertTrue(orig.startOffset()==31);
+        assertTrue(orig.endOffset()==37);
+        assertTrue(orig.length()==6);
+        assertTrue(corr.length==1);
+        assertTrue(corr[0].equals("gram pa"));
+      } else if(orig.toString().equals("miss")) {
+        assertTrue(orig.startOffset()==38);
+        assertTrue(orig.endOffset()==42);
+        assertTrue(orig.length()==4);
+        assertTrue(corr.length==0);
+      } else if(orig.toString().equals("apple")) {
+        assertTrue(orig.startOffset()==15);
+        assertTrue(orig.endOffset()==20);
+        assertTrue(orig.length()==5);
+        assertTrue(corr.length==0);
+      } else if(orig.toString().equals("good")) {
+        assertTrue(orig.startOffset()==21);
+        assertTrue(orig.endOffset()==25);
+        assertTrue(orig.length()==4);
+        assertTrue(corr.length==0);
+      } else if(orig.toString().equals("grampabill")) {
+        assertTrue(orig.startOffset()==43);
+        assertTrue(orig.endOffset()==53);
+        assertTrue(orig.length()==10);
+        assertTrue(corr.length==1);
+        assertTrue(corr[0].equals("gram pa bill"));
+      } else if(orig.toString().equals("mypaintablefoods")) {
+        assertTrue(orig.startOffset()==54);
+        assertTrue(orig.endOffset()==70);
+        assertTrue(orig.length()==16);
+        assertTrue(corr.length==10);  //it maxes out on suggestions
+        assertTrue(corr[0].equals("my paint able food s")); //13 out of 16 in "real" words; 4 breaks; 5 max frequency
+        assertTrue(corr[1].equals("my pain table food s")); //13 out of 16 in "real" words; 4 breaks; 2 max frequency
+        assertTrue(corr[2].equals("my pa in table food s")); //13 out of 16 in "real" words; 5 breaks; 7 max frequency
+        assertTrue(corr[3].equals("my pain t able food s")); //12 out of 16 in "real" words; 5 breaks; 5 max frequency
+        assertTrue(corr[4].equals("my pa in t able food s")); //12 out of 16 in "real" words; 6 breaks; 7 max frequency
+        assertTrue(corr[5].equals("mypa in table food s")); //11 out of 16 in "real" words; 4 breaks; 7 max frequency
+        assertTrue(corr[6].equals("mypa in t able food s")); //10 out of 16 in "real" words; 5 breaks; 7 max frequency
+        assertTrue(corr[7].equals("my pa int able food s")); //10 out of 16 in "real" words; 5 breaks; 5 max frequency
+        assertTrue(corr[8].equals("my paint able foods")); //9 out of 16 in "real" words; 3 breaks; 5 max frequency
+        assertTrue(corr[9].equals("mypain table food s")); //9 out of 16 in "real" words; 3 breaks; 2 max frequency
       }else {
         fail("Unexpected original result: " + orig);
       }        
