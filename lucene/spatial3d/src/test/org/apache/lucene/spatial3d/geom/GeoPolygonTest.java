@@ -378,4 +378,44 @@ shape:
     final GeoPolygon p = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points, null);
   }
   
+  @Test
+  public void testPolygonIntersectionFailure1() {
+    final PlanetModel pm = PlanetModel.WGS84;
+    //[junit4]    > Throwable #1: java.lang.AssertionError: invalid hits for shape=GeoCompositeMembershipShape:
+    //{[GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=
+    //[[lat=0.2669499069140678, lon=-0.31249902828113546([X=0.9186752334433793, Y=-0.2968103450748192, Z=0.2640238502385029])],
+    //[lat=1.538559019421765, lon=0.0([X=0.03215971057004023, Y=0.0, Z=0.9972473454662941])],
+    //[lat=-0.5516194571595735, lon=0.0([X=0.8518418310766115, Y=0.0, Z=-0.5241686363384119])]], internalEdges={2}},
+    //GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=
+    //[[lat=0.0, lon=-3.141592653589793([X=-1.0011188539924791, Y=-1.226017000107956E-16, Z=0.0])],
+    //[lat=-1.5707963267948966, lon=-2.2780601241431375([X=-3.9697069088211677E-17, Y=-4.644115432258393E-17, Z=-0.997762292022105])],
+    //[lat=0.2669499069140678, lon=-0.31249902828113546([X=0.9186752334433793, Y=-0.2968103450748192, Z=0.2640238502385029])]], internalEdges={2}},
+    //GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=
+    //[[lat=0.2669499069140678, lon=-0.31249902828113546([X=0.9186752334433793, Y=-0.2968103450748192, Z=0.2640238502385029])],
+    //[lat=-0.5516194571595735, lon=0.0([X=0.8518418310766115, Y=0.0, Z=-0.5241686363384119])],
+    //[lat=0.0, lon=-3.141592653589793([X=-1.0011188539924791, Y=-1.226017000107956E-16, Z=0.0])]], internalEdges={0, 2}}]}
+    
+    // Build the polygon
+    //[[lat=-0.5516194571595735, lon=0.0([X=0.8518418310766115, Y=0.0, Z=-0.5241686363384119])],
+    //[lat=0.0, lon=-3.141592653589793([X=-1.0011188539924791, Y=-1.226017000107956E-16, Z=0.0])],
+    //[lat=-1.5707963267948966, lon=-2.2780601241431375([X=-3.9697069088211677E-17, Y=-4.644115432258393E-17, Z=-0.997762292022105])],
+    //[lat=0.2669499069140678, lon=-0.31249902828113546([X=0.9186752334433793, Y=-0.2968103450748192, Z=0.2640238502385029])],
+    //[lat=1.538559019421765, lon=0.0([X=0.03215971057004023, Y=0.0, Z=0.9972473454662941])]]
+    List<GeoPoint> polyPoints = new ArrayList<>();
+    polyPoints.add(new GeoPoint(pm, -0.5516194571595735, 0.0));
+    polyPoints.add(new GeoPoint(pm, 0.0, -3.141592653589793));
+    polyPoints.add(new GeoPoint(pm, -1.5707963267948966, -2.2780601241431375));
+    polyPoints.add(new GeoPoint(pm, 0.2669499069140678, -0.31249902828113546));
+    polyPoints.add(new GeoPoint(pm, 1.538559019421765, 0.0));
+    // Make sure we catch the backtrack
+    boolean backtracks = false;
+    try {
+      GeoPolygonFactory.makeGeoPolygon(pm, polyPoints, 4, null);
+    } catch (IllegalArgumentException e) {
+      backtracks = true;
+    }
+    assertTrue(backtracks);
+    
+  }
+  
 }
