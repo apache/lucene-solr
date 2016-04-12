@@ -76,6 +76,10 @@ Bug Fixes
 * LUCENE-7187: Block join queries' Weight#extractTerms(...) implementations
   should delegate to the wrapped weight. (Martijn van Groningen)
 
+* LUCENE-7188: remove incorrect sanity check in NRTCachingDirectory.listAll()
+  that led to IllegalStateException being thrown when nothing was wrong.
+  (David Smiley, yonik)  
+
 Other
 
 * LUCENE-7174: Upgrade randomizedtesting to 2.3.4. (Uwe Schindler, Dawid Weiss)
