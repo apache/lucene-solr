@@ -1271,7 +1271,9 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     }
     
     // now shrink 1 ulp in each direction if possible: it should not include bogus stuff
-    if (rect.minLat != 90 && rect.maxLat != -90 && rect.minLon != 80 && rect.maxLon != -180) {
+    // we can't shrink if values are already at extremes, and
+    // we can't do this if rectangle is actually a line or we will create a cross-dateline query
+    if (rect.minLat != 90 && rect.maxLat != -90 && rect.minLon != 80 && rect.maxLon != -180 && rect.minLon != rect.maxLon) {
       // note we put points on "sides" not just "corners" so we just shrink all 4 at once for now: it should exclude all points!
       assertEquals(0, s.count(newRectQuery(FIELD_NAME, Math.nextUp(rect.minLat), 
                                                      Math.nextDown(rect.maxLat), 
