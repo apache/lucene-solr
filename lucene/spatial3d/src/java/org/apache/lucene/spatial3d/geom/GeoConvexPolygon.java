@@ -304,7 +304,8 @@ class GeoConvexPolygon extends GeoBasePolygon {
     protected final SidedPlane sideBound2;
     
     /** Constructor.
-      * @param exception is the one plane to exclude from the check.
+      * @param sideBound1 is the first side bound.
+      * @param sideBound2 is the second side bound.
       */
     public EitherBound(final SidedPlane sideBound1, final SidedPlane sideBound2) {
       this.sideBound1 = sideBound1;
