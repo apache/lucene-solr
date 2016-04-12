@@ -219,8 +219,17 @@ class GeoConvexPolygon extends GeoBasePolygon {
     
     // For each edge, create a bounds object.
     eitherBounds = new HashMap<>(edges.length);
-    for (final SidedPlane edge : edges) {
-      eitherBounds.put(edge, new EitherBound(edge));
+    for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
+      final SidedPlane edge = edges[edgeIndex];
+      int bound1Index = legalIndex(edgeIndex+1);
+      while (edges[legalIndex(bound1Index)].isNumericallyIdentical(edge)) {
+        bound1Index++;
+      }
+      int bound2Index = legalIndex(edgeIndex-1);
+      while (edges[legalIndex(bound2Index)].isNumericallyIdentical(edge)) {
+        bound2Index--;
+      }
+      eitherBounds.put(edge, new EitherBound(edges[legalIndex(bound1Index)], edges[legalIndex(bound2Index)]));
     }
     
     // Pick an edge point arbitrarily
@@ -234,6 +243,9 @@ class GeoConvexPolygon extends GeoBasePolygon {
   protected int legalIndex(int index) {
     while (index >= points.size())
       index -= points.size();
+    while (index < 0) {
+      index += points.size();
+    }
     return index;
   }
 
@@ -284,37 +296,29 @@ class GeoConvexPolygon extends GeoBasePolygon {
     return false;
   }
 
-  /** A membership implementation representing polygon edges that all must apply.
+  /** A membership implementation representing polygon edges that must apply.
    */
   protected class EitherBound implements Membership {
     
-    protected final SidedPlane exception;
+    protected final SidedPlane sideBound1;
+    protected final SidedPlane sideBound2;
     
     /** Constructor.
       * @param exception is the one plane to exclude from the check.
       */
-    public EitherBound(final SidedPlane exception) {
-      this.exception = exception;
+    public EitherBound(final SidedPlane sideBound1, final SidedPlane sideBound2) {
+      this.sideBound1 = sideBound1;
+      this.sideBound2 = sideBound2;
     }
 
     @Override
     public boolean isWithin(final Vector v) {
-      for (final SidedPlane edge : edges) {
-        if (edge != exception && !edge.isWithin(v)) {
-          return false;
-        }
-      }
-      return true;
+      return sideBound1.isWithin(v) && sideBound2.isWithin(v);
     }
 
     @Override
     public boolean isWithin(final double x, final double y, final double z) {
-      for (final SidedPlane edge : edges) {
-        if (edge != exception && !edge.isWithin(x, y, z)) {
-          return false;
-        }
-      }
-      return true;
+      return sideBound1.isWithin(x,y,z) && sideBound2.isWithin(x,y,z);
     }
   }
 
