@@ -64,6 +64,7 @@ public class GeoPolygonFactory {
     final List<GeoPolygon> holes) {
     // The basic operation uses a set of points, two points determining one particular edge, and a sided plane
     // describing membership.
+    //System.out.println("Initial point list = "+pointList+"; convexPointIndex = "+convexPointIndex+"; holes = "+holes);
     final GeoCompositePolygon rval = new GeoCompositePolygon();
     if (buildPolygonShape(rval,
         planetModel, pointList, new BitSet(),
@@ -391,6 +392,68 @@ public class GeoPolygonFactory {
     // The edge buffer.
     final EdgeBuffer edgeBuffer = new EdgeBuffer(pointsList, internalEdges, startPointIndex, endPointIndex, startingEdge);
 
+    /*
+    // Verify that the polygon does not self-intersect
+    // Now, look for non-adjacent edges that cross.
+    System.err.println("Looking for intersections...");
+    System.err.println("Starting edge is: "+startingEdge);
+    final Iterator<Edge> edgeIterator = edgeBuffer.iterator();
+    while (edgeIterator.hasNext()) {
+      final Edge edge = edgeIterator.next();
+      final Set<Edge> excludedEdges = new HashSet<>();
+      excludedEdges.add(edge);
+      Edge oneBoundary = edgeBuffer.getPrevious(edge);
+      while (oneBoundary.plane.isNumericallyIdentical(edge.plane)) {
+        excludedEdges.add(oneBoundary);
+        oneBoundary = edgeBuffer.getPrevious(oneBoundary);
+      }
+      excludedEdges.add(oneBoundary);
+      Edge otherBoundary = edgeBuffer.getNext(edge);
+      while (otherBoundary.plane.isNumericallyIdentical(edge.plane)) {
+        excludedEdges.add(otherBoundary);
+        otherBoundary = edgeBuffer.getNext(otherBoundary);
+      }
+      excludedEdges.add(otherBoundary);
+
+      // Now go through all other edges and rule out any intersections
+      final Iterator<Edge> compareIterator = edgeBuffer.iterator();
+      while (compareIterator.hasNext()) {
+        final Edge compareEdge = compareIterator.next();
+        if (!excludedEdges.contains(compareEdge)) {
+          // Found an edge we can compare with!
+          //System.err.println("Found a compare edge...");
+          boolean nonOverlapping = true;
+          // We need the other boundaries though.
+          Edge oneCompareBoundary = edgeBuffer.getPrevious(compareEdge);
+          while (oneCompareBoundary.plane.isNumericallyIdentical(compareEdge.plane)) {
+            if (excludedEdges.contains(oneCompareBoundary)) {
+              //System.err.println(" excluded because oneCompareBoundary found to be in set");
+              nonOverlapping = false;
+              break;
+            }
+            oneCompareBoundary = edgeBuffer.getPrevious(oneCompareBoundary);
+          }
+          Edge otherCompareBoundary = edgeBuffer.getNext(compareEdge);
+          while (otherCompareBoundary.plane.isNumericallyIdentical(compareEdge.plane)) {
+            if (excludedEdges.contains(otherCompareBoundary)) {
+              //System.err.println(" excluded because otherCompareBoundary found to be in set");
+              nonOverlapping = false;
+              break;
+            }
+            otherCompareBoundary = edgeBuffer.getNext(otherCompareBoundary);
+          }
+          if (nonOverlapping) {
+            //System.err.println("Preparing to call findIntersections...");
+            // Finally do an intersection test
+            if (edge.plane.findIntersections(planetModel, compareEdge.plane, oneBoundary.plane, otherBoundary.plane, oneCompareBoundary.plane, otherCompareBoundary.plane).length > 0) {
+              throw new IllegalArgumentException("polygon has intersecting edges");
+            }
+          }
+        }
+      }
+    }
+    */
+    
     // Starting state:
     // The stopping point
     Edge stoppingPoint = edgeBuffer.pickOne();
@@ -997,7 +1060,13 @@ public class GeoPolygonFactory {
         System.out.println(" "+p);
       }
       */
+
+      // We need to detect backtracks, and also situations where someone has tried to stitch together multiple segments into one long arc (> 180 degrees).
+      // To do this, every time we extend by a coplanar segment, we compute the total arc distance to the new endpoint, as
+      // well as a sum of the arc distances we've accumulated as we march forward.  If these two numbers disagree, then
+      // we know there has been a backtrack or other anomaly.
       
+      // extend the edge, we compute the distance along the 
       final Edge startEdge = new Edge(pointList.get(startPlaneStartIndex), pointList.get(startPlaneEndIndex), startPlane, internalEdges.get(startPlaneStartIndex));
       // Fill in the EdgeBuffer by walking around creating more stuff
       Edge currentEdge = startEdge;
@@ -1027,15 +1096,21 @@ public class GeoPolygonFactory {
         if (currentEdge.plane.evaluateIsZero(newPoint)) {
           // The new point is colinear with the current edge.  We'll have to look for the first point that isn't.
           int checkPointIndex = -1;
+          // Compute the arc distance before we try to extend
+          double accumulatedDistance = 0.0;
           final Plane checkPlane = new Plane(pointList.get(startIndex), newPoint);
           for (int i = 0; i < pointList.size(); i++) {
             final int index = getLegalIndex(startIndex - 1 - i, pointList.size());
             if (!checkPlane.evaluateIsZero(pointList.get(index))) {
               checkPointIndex = index;
               break;
+            } else {
+              accumulatedDistance += pointList.get(getLegalIndex(index+1, pointList.size())).arcDistance(pointList.get(index));
+              final double actualDistance = pointList.get(getLegalIndex(startIndex-1, pointList.size())).arcDistance(pointList.get(index));
+              if (Math.abs(actualDistance - accumulatedDistance) >= Vector.MINIMUM_RESOLUTION) {
+                throw new IllegalArgumentException("polygon backtracks over itself");
+              }
             }
-          }
-          if (checkPointIndex == -1) {
             throw new IllegalArgumentException("polygon is illegal (linear)");
           }
           pointToPresent = pointList.get(checkPointIndex);
