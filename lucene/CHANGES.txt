@@ -24,6 +24,10 @@ Bug Fixes
 * LUCENE-7279: JapaneseTokenizer throws ArrayIndexOutOfBoundsException
   on some valid inputs (Mike McCandless)
 
+* LUCENE-7188: remove incorrect sanity check in NRTCachingDirectory.listAll()
+  that led to IllegalStateException being thrown when nothing was wrong.
+  (David Smiley, yonik)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
