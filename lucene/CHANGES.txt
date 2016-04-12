@@ -10,6 +10,11 @@ Bug fixes
 * LUCENE-7112: WeightedSpanTermExtractor.extractUnknownQuery is only called
   on queries that could not be extracted. (Adrien Grand)
 
+* LUCENE-7188: remove incorrect sanity check in NRTCachingDirectory.listAll()
+  that led to IllegalStateException being thrown when nothing was wrong.
+  (David Smiley, yonik)  
+
+
 ======================= Lucene 5.5.0 =======================
 
 New Features
