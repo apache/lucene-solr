@@ -17,8 +17,6 @@ package org.apache.lucene.geo;
  * limitations under the License.
  */
 
-import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.util.SloppyMath;
 
 /** Draws shapes on the earth surface and renders using the very cool http://www.webglearth.org.
@@ -40,6 +38,16 @@ public class EarthDebugger {
     b.append("        var earth = new WE.map('earth_div');\n");
   }
 
+  public EarthDebugger(double centerLat, double centerLon, double altitudeMeters) {
+    b.append("<!DOCTYPE HTML>\n");
+    b.append("<html>\n");
+    b.append("  <head>\n");
+    b.append("    <script src=\"http://www.webglearth.com/v2/api.js\"></script>\n");
+    b.append("    <script>\n");
+    b.append("      function initialize() {\n");
+    b.append("        var earth = new WE.map('earth_div', {center: [" + centerLat + ", " + centerLon + "], altitude: " + altitudeMeters + "});\n");
+  }
+
   public void addPolygon(Polygon poly) {
     addPolygon(poly, "#00ff00");
   }
@@ -54,29 +62,36 @@ public class EarthDebugger {
     for(int i=0;i<polyLats.length;i++) {
       b.append("          [" + polyLats[i] + ", " + polyLons[i] + "],\n");
     }
-    b.append("        ], {color: '" + color + "'});\n");
+    b.append("        ], {color: '" + color + "', fillColor: \"#000000\", fillOpacity: 0.0001});\n");
     b.append("        " + name + ".addTo(earth);\n");
 
     for (Polygon hole : poly.getHoles()) {
-      addPolygon(poly, "#ffffff");
+      addPolygon(hole, "#ffffff");
     }
   }
 
-  private static double MAX_LAT_LON_PER_STEP = 5.0;
+  private static double MAX_KM_PER_STEP = 100.0;
+
+  // Web GL earth connects dots by tunneling under the earth, so we approximate a great circle by sampling it, to minimize how deep in the
+  // earth each segment tunnels:
+  private int getStepCount(double minLat, double maxLat, double minLon, double maxLon) {
+    double distanceMeters = SloppyMath.haversinMeters(minLat, minLon, maxLat, maxLon);
+    return Math.max(1, (int) Math.round((distanceMeters / 1000.0) / MAX_KM_PER_STEP));
+  }
 
   // first point is inclusive, last point is exclusive!
   private void drawSegment(double minLat, double maxLat, double minLon, double maxLon) {
-    int steps = (int) Math.round(Math.max(Math.abs(maxLat-minLat)/MAX_LAT_LON_PER_STEP, Math.abs(maxLon-minLon)/MAX_LAT_LON_PER_STEP));
-    if (steps < 1) {
-      steps = 1;
-    }
+    int steps = getStepCount(minLat, maxLat, minLon, maxLon);
     for(int i=0;i<steps;i++) {
       b.append("          [" + (minLat + (maxLat - minLat) * i / steps) + ", " + (minLon + (maxLon - minLon) * i / steps) + "],\n");
     }
   }
 
   public void addRect(double minLat, double maxLat, double minLon, double maxLon) {
-    int steps = 20;
+    addRect(minLat, maxLat, minLon, maxLon, "#ff0000");
+  }
+
+  public void addRect(double minLat, double maxLat, double minLon, double maxLon, String color) {
     String name = "rect" + nextShape;
     nextShape++;
 
@@ -97,7 +112,7 @@ public class EarthDebugger {
 
     b.append("          // min lat, min lon\n");
     b.append("          [" + minLat + ", " + minLon + "]\n");
-    b.append("        ], {color: \"#ff0000\", fillColor: \"#ff0000\"});\n");
+    b.append("        ], {color: \"" + color + "\", fillColor: \"" + color + "\"});\n");
     b.append("        " + name + ".addTo(earth);\n");
   }
 
@@ -108,7 +123,7 @@ public class EarthDebugger {
 
     b.append("        var " + name + " = WE.polygon([\n");
     double lon;
-    int steps = 36;
+    int steps = getStepCount(lat, minLon, lat, maxLon);
     for(lon = minLon;lon<=maxLon;lon += (maxLon-minLon)/steps) {
       b.append("          [" + lat + ", " + lon + "],\n");
     }
@@ -128,7 +143,7 @@ public class EarthDebugger {
 
     b.append("        var " + name + " = WE.polygon([\n");
     double lat;
-    int steps = 36;
+    int steps = getStepCount(minLat, lon, maxLat, lon);
     for(lat = minLat;lat<=maxLat;lat += (maxLat-minLat)/steps) {
       b.append("          [" + lat + ", " + lon + "],\n");
     }
@@ -151,7 +166,7 @@ public class EarthDebugger {
     nextShape++;
     b.append("        var " + name + " = WE.polygon([\n");
     inverseHaversin(b, centerLat, centerLon, radiusMeters);
-    b.append("        ], {color: '#00ff00'});\n");
+    b.append("        ], {color: '#00ff00', fillColor: \"#000000\", fillOpacity: 0.0001 });\n");
     b.append("        " + name + ".addTo(earth);\n");
 
     if (alsoAddBBox) {
