@@ -63,6 +63,9 @@ Optimizations
 * LUCENE-7159: Speed up LatLonPoint polygon performance for complex
   polygons. (Robert Muir)
 
+* LUCENE-7211: Reduce memory & GC for spatial RPT Intersects when the number of
+  matching docs is small. (Jeff Wartes, David Smiley)
+
 Bug Fixes
 
 * LUCENE-7127: Fix corner case bugs in GeoPointDistanceQuery. (Robert Muir)
