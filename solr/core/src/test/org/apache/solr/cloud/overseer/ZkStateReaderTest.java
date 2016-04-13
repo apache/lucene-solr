@@ -95,7 +95,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         if (explicitRefresh) {
           reader.forceUpdateCollection("c1");
         } else {
-          for (int i = 0; i < 500; ++i) {
+          for (int i = 0; i < 1000; ++i) {
             if (reader.getClusterState().hasCollection("c1")) {
               break;
             }
@@ -123,7 +123,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         if (explicitRefresh) {
           reader.forceUpdateCollection("c1");
         } else {
-          for (int i = 0; i < 500; ++i) {
+          for (int i = 0; i < 1000; ++i) {
             if (reader.getClusterState().getCollection("c1").getStateFormat() == 2) {
               break;
             }
