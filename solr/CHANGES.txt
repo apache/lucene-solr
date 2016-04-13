@@ -18,7 +18,7 @@ See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 
 ==================  7.0.0 ==================
 
-Upgrading from Solr 5.x
+Upgrading from Solr 6.x
 ----------------------
 
 * HttpClientInterceptorPlugin is now HttpClientBuilderPlugin and must work with a 
