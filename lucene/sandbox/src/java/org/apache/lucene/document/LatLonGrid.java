@@ -22,8 +22,6 @@ import org.apache.lucene.util.FixedBitSet;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
 /**
  * This is a temporary hack, until some polygon methods have better performance!
@@ -80,8 +78,10 @@ final class LatLonGrid {
     long latitudeRange = maxLat - (long) minLat;
     long longitudeRange = maxLon - (long) minLon;
 
-    if (latitudeRange < GRID_SIZE || longitudeRange < GRID_SIZE) {
-      // don't complicate fill right now if you pass e.g. emptyish stuff: make an "empty grid"
+    // if the range is too small, we can't divide it up in our grid nicely.
+    // in this case of a tiny polygon, we just make an empty grid instead of complicating/slowing down code.
+    final long minRange = (GRID_SIZE - 1) * (GRID_SIZE - 1);
+    if (latitudeRange < minRange || longitudeRange < minRange) {
       latPerCell = lonPerCell = Long.MAX_VALUE;
     } else {
       // we spill over the edge of the bounding box in each direction a bit,
@@ -160,7 +160,9 @@ final class LatLonGrid {
     long lonRel = longitude - (long) minLon;
     
     int latIndex = (int) (latRel / latPerCell);
+    assert latIndex < GRID_SIZE;
     int lonIndex = (int) (lonRel / lonPerCell);
+    assert lonIndex < GRID_SIZE;
     return latIndex * GRID_SIZE + lonIndex;
   }
 }
