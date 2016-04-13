@@ -416,6 +416,14 @@ shape:
     }
     assertTrue(backtracks);
     
+    // Now make sure a legit poly with coplanar points works.
+    polyPoints.clear();
+    polyPoints.add(new GeoPoint(pm, -0.5516194571595735, 0.0));
+    polyPoints.add(new GeoPoint(pm, -1.5707963267948966, -2.2780601241431375));
+    polyPoints.add(new GeoPoint(pm, 0.2669499069140678, -0.31249902828113546));
+    polyPoints.add(new GeoPoint(pm, 1.538559019421765, 0.0));
+    GeoPolygonFactory.makeGeoPolygon(pm, polyPoints, 3, null);
+    
   }
   
 }
