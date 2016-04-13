@@ -111,6 +111,9 @@ Bug Fixes
 * SOLR-8914: ZkStateReader's refreshLiveNodes(Watcher) is not thread safe. (Scott Blum, hoss,
   sarowe, Erick Erickson, Mark Miller, shalin)
 
+* SOLR-7729: ConcurrentUpdateSolrClient ignores the collection parameter in some methods.
+  (Nicolas Gavalda, Jorge Luis Betancourt Gonzalez via Mark Miller)
+  
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
