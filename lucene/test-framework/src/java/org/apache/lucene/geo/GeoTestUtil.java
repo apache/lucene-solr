@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.TestUtil;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -135,10 +136,94 @@ public class GeoTestUtil {
                            nextLongitudeNear(otherLongitude), nextLongitudeNear(otherLongitude), false);
   }
 
+  /** Makes an n-gon, centered at the provided lat/lon, and each vertex approximately
+   *  distanceMeters away from the center.
+   *
+   * Do not invoke me across the dateline or a pole!! */
+  public static Polygon createRegularPolygon(double centerLat, double centerLon, double radiusMeters, int gons) {
+
+    // System.out.println("MAKE POLY: centerLat=" + centerLat + " centerLon=" + centerLon + " radiusMeters=" + radiusMeters + " gons=" + gons);
+
+    double[][] result = new double[2][];
+    result[0] = new double[gons+1];
+    result[1] = new double[gons+1];
+    //System.out.println("make gon=" + gons);
+    for(int i=0;i<gons;i++) {
+      double angle = 360.0-i*(360.0/gons);
+      //System.out.println("  angle " + angle);
+      double x = Math.cos(Math.toRadians(angle));
+      double y = Math.sin(Math.toRadians(angle));
+      double factor = 2.0;
+      double step = 1.0;
+      int last = 0;
+
+      //System.out.println("angle " + angle + " slope=" + slope);
+      // Iterate out along one spoke until we hone in on the point that's nearly exactly radiusMeters from the center:
+      while (true) {
+
+        // TODO: we could in fact cross a pole?  Just do what surpriseMePolygon does?
+        double lat = centerLat + y * factor;
+        GeoUtils.checkLatitude(lat);
+        double lon = centerLon + x * factor;
+        GeoUtils.checkLongitude(lon);
+        double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, lat, lon);
+
+        //System.out.println("  iter lat=" + lat + " lon=" + lon + " distance=" + distanceMeters + " vs " + radiusMeters);
+        if (Math.abs(distanceMeters - radiusMeters) < 0.1) {
+          // Within 10 cm: close enough!
+          result[0][i] = lat;
+          result[1][i] = lon;
+          break;
+        }
+
+        if (distanceMeters > radiusMeters) {
+          // too big
+          //System.out.println("    smaller");
+          factor -= step;
+          if (last == 1) {
+            //System.out.println("      half-step");
+            step /= 2.0;
+          }
+          last = -1;
+        } else if (distanceMeters < radiusMeters) {
+          // too small
+          //System.out.println("    bigger");
+          factor += step;
+          if (last == -1) {
+            //System.out.println("      half-step");
+            step /= 2.0;
+          }
+          last = 1;
+        }
+      }
+    }
+
+    // close poly
+    result[0][gons] = result[0][0];
+    result[1][gons] = result[1][0];
+
+    //System.out.println("  polyLats=" + Arrays.toString(result[0]));
+    //System.out.println("  polyLons=" + Arrays.toString(result[1]));
+
+    return new Polygon(result[0], result[1]);
+  }
+
   /** returns next pseudorandom polygon */
   public static Polygon nextPolygon() {
     if (random().nextBoolean()) {
       return surpriseMePolygon(null, null);
+    } else if (random().nextInt(10) == 1) {
+      // this poly is slow to create ... only do it 10% of the time:
+      while (true) {
+        int gons = TestUtil.nextInt(random(), 4, 500);
+        // So the poly can cover at most 50% of the earth's surface:
+        double radiusMeters = random().nextDouble() * GeoUtils.EARTH_MEAN_RADIUS_METERS * Math.PI / 2.0 + 1.0;
+        try {
+          return createRegularPolygon(nextLatitude(), nextLongitude(), radiusMeters, gons);
+        } catch (IllegalArgumentException iae) {
+          // we tried to cross dateline or pole ... try again
+        }
+      }
     }
 
     Rectangle box = nextBoxInternal(nextLatitude(), nextLatitude(), nextLongitude(), nextLongitude(), false);
