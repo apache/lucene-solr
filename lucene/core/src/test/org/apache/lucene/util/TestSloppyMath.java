@@ -150,6 +150,10 @@ public class TestSloppyMath extends LuceneTestCase {
     }
   }
   
+  public void testHaversinFromSortKey() {
+    assertEquals(0.0, haversinMeters(0), 0.0D);
+  }
+  
   public void testAgainstSlowVersion() {
     for (int i = 0; i < 100_000; i++) {
       double lat1 = GeoTestUtil.nextLatitude();

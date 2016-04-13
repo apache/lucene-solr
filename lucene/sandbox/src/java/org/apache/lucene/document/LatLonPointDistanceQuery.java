@@ -97,15 +97,8 @@ final class LatLonPointDistanceQuery extends Query {
       NumericUtils.intToSortableBytes(Integer.MAX_VALUE, minLon2, 0);
     }
 
-    // compute a maximum partial haversin: unless our box is crazy, we can use this bound
-    // to reject edge cases faster in visit()
-    final double maxPartialDistance;
-    if (box.maxLon - longitude < 90 && longitude - box.minLon < 90) {
-      maxPartialDistance = Math.max(SloppyMath.haversinSortKey(latitude, longitude, latitude, box.maxLon),
-                                    SloppyMath.haversinSortKey(latitude, longitude, box.maxLat, longitude));
-    } else {
-      maxPartialDistance = Double.POSITIVE_INFINITY;
-    }
+    // compute exact sort key: avoid any asin() computations
+    final double sortKey = sortKey(radiusMeters);
 
     final double axisLat = Rectangle.axisLat(latitude, radiusMeters);
 
@@ -160,13 +153,9 @@ final class LatLonPointDistanceQuery extends Query {
                              double docLatitude = decodeLatitude(packedValue, 0);
                              double docLongitude = decodeLongitude(packedValue, Integer.BYTES);
 
-                             // first check the partial distance, if its more than that, it can't be <= radiusMeters
-                             double h1 = SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude);
-                             if (h1 <= maxPartialDistance) {
-                               // fully confirm with part 2:
-                               if (SloppyMath.haversinMeters(h1) <= radiusMeters) {
-                                 result.add(docID);
-                               }
+                             // its a match only if its sortKey <= our sortKey
+                             if (SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude) <= sortKey) {
+                               result.add(docID);
                              }
                            }
                            
@@ -197,20 +186,20 @@ final class LatLonPointDistanceQuery extends Query {
 
                              if ((longitude < lonMin || longitude > lonMax) && (axisLat+ Rectangle.AXISLAT_ERROR < latMin || axisLat- Rectangle.AXISLAT_ERROR > latMax)) {
                                // circle not fully inside / crossing axis
-                               if (SloppyMath.haversinMeters(latitude, longitude, latMin, lonMin) > radiusMeters &&
-                                   SloppyMath.haversinMeters(latitude, longitude, latMin, lonMax) > radiusMeters &&
-                                   SloppyMath.haversinMeters(latitude, longitude, latMax, lonMin) > radiusMeters &&
-                                   SloppyMath.haversinMeters(latitude, longitude, latMax, lonMax) > radiusMeters) {
+                               if (SloppyMath.haversinSortKey(latitude, longitude, latMin, lonMin) > sortKey &&
+                                   SloppyMath.haversinSortKey(latitude, longitude, latMin, lonMax) > sortKey &&
+                                   SloppyMath.haversinSortKey(latitude, longitude, latMax, lonMin) > sortKey &&
+                                   SloppyMath.haversinSortKey(latitude, longitude, latMax, lonMax) > sortKey) {
                                  // no points inside
                                  return Relation.CELL_OUTSIDE_QUERY;
                                }
                              }
 
                              if (lonMax - longitude < 90 && longitude - lonMin < 90 &&
-                                 SloppyMath.haversinMeters(latitude, longitude, latMin, lonMin) <= radiusMeters &&
-                                 SloppyMath.haversinMeters(latitude, longitude, latMin, lonMax) <= radiusMeters &&
-                                 SloppyMath.haversinMeters(latitude, longitude, latMax, lonMin) <= radiusMeters &&
-                                 SloppyMath.haversinMeters(latitude, longitude, latMax, lonMax) <= radiusMeters) {
+                                 SloppyMath.haversinSortKey(latitude, longitude, latMin, lonMin) <= sortKey &&
+                                 SloppyMath.haversinSortKey(latitude, longitude, latMin, lonMax) <= sortKey &&
+                                 SloppyMath.haversinSortKey(latitude, longitude, latMax, lonMin) <= sortKey &&
+                                 SloppyMath.haversinSortKey(latitude, longitude, latMax, lonMax) <= sortKey) {
                                // we are fully enclosed, collect everything within this subtree
                                return Relation.CELL_INSIDE_QUERY;
                              } else {
@@ -228,6 +217,39 @@ final class LatLonPointDistanceQuery extends Query {
         return new ConstantScoreScorer(this, score(), disi);
       }
     };
+  }
+
+  /**
+   * binary search to find the exact sortKey needed to match the specified radius
+   * any sort key <= this is a query match.
+   */
+  static double sortKey(double radius) {
+    // effectively infinite
+    if (radius >= SloppyMath.haversinMeters(Double.MAX_VALUE)) {
+      return SloppyMath.haversinMeters(Double.MAX_VALUE);
+    }
+
+    // this is a search through non-negative long space only
+    long lo = 0;
+    long hi = Double.doubleToRawLongBits(Double.MAX_VALUE);
+    while (lo <= hi) {
+      long mid = (lo + hi) >>> 1;
+      double sortKey = Double.longBitsToDouble(mid);
+      double midRadius = SloppyMath.haversinMeters(sortKey);
+      if (midRadius == radius) {
+        return sortKey;
+      } else if (midRadius > radius) {
+        hi = mid - 1;
+      } else {
+        lo = mid + 1;
+      }
+    }
+
+    // not found: this is because a user can supply an arbitrary radius, one that we will never
+    // calculate exactly via our haversin method.
+    double ceil = Double.longBitsToDouble(lo);
+    assert SloppyMath.haversinMeters(ceil) > radius;
+    return ceil;
   }
 
   public String getField() {
