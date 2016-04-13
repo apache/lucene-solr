@@ -207,6 +207,7 @@ class GeoConcavePolygon extends GeoBasePolygon {
       invertedEdges[i] = new SidedPlane(edges[i]);
       notableEdgePoints[i] = new GeoPoint[]{start, end};
     }
+    /* Disable since GeoPolygonFactory does this too.
     // In order to naively confirm that the polygon is concave, I would need to
     // check every edge, and verify that every point (other than the edge endpoints)
     // is within the edge's sided plane.  This is an order n^2 operation.  That's still
@@ -220,6 +221,7 @@ class GeoConcavePolygon extends GeoBasePolygon {
         }
       }
     }
+    */
     
     // For each edge, create a bounds object.
     eitherBounds = new HashMap<>(edges.length);
