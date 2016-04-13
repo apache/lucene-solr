@@ -360,7 +360,7 @@ function print_usage() {
     echo ""
     echo "     -downconfig to move a configset from Zookeeper to the local machine."
     echo ""
-    echo "     -n configName    Name of the configset in Zookeeper that will be the destinatino of"
+    echo "     -n configName    Name of the configset in Zookeeper that will be the destination of"
     echo "                       'upconfig' and the source for 'downconfig'."
     echo ""
     echo "     -d confdir       The local directory the configuration will be uploaded from for"
