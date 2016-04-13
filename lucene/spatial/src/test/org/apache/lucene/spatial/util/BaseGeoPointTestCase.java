@@ -54,6 +54,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.SimpleCollector;
@@ -1387,7 +1388,11 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     q1 = newRectQuery("field", rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
     q2 = newRectQuery("field", rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
     assertEquals(q1, q2);
-    assertFalse(q1.equals(newRectQuery("field2", rect.minLat, rect.maxLat, rect.minLon, rect.maxLon)));
+    // for "impossible" ranges LatLonPoint.newBoxQuery will return MatchNoDocsQuery
+    // changing the field is unrelated to that.
+    if (q1 instanceof MatchNoDocsQuery == false) {
+      assertFalse(q1.equals(newRectQuery("field2", rect.minLat, rect.maxLat, rect.minLon, rect.maxLon)));
+    }
 
     double lat = randomLat(false);
     double lon = randomLon(false);
