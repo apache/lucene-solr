@@ -91,6 +91,8 @@ New Features
 
 * SOLR-8938: Add optional -excluderegex argument to ZkCLI. (Christine Poerschke)
 
+* SOLR-8976: Add SolrJ support for REBALANCELEADERS Collections API (Anshum Gupta)
+
 Bug Fixes
 ----------------------
 

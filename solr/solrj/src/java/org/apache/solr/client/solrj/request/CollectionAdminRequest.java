@@ -490,6 +490,67 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     }
   }
 
+  /*
+   * Returns a RebalanceLeaders object to rebalance leaders for a collection
+   */
+  public static RebalanceLeaders rebalanceLeaders(String collection) {
+    return new RebalanceLeaders(collection);
+  }
+
+  public static class RebalanceLeaders extends AsyncCollectionAdminRequest {
+
+    protected Integer maxAtOnce;
+    protected Integer maxWaitSeconds;
+    protected String collection;
+
+    public RebalanceLeaders setMaxAtOnce(Integer maxAtOnce) {
+      this.maxAtOnce = maxAtOnce;
+      return this;
+    }
+
+    public RebalanceLeaders setMaxWaitSeconds(Integer maxWaitSeconds) {
+      this.maxWaitSeconds = maxWaitSeconds;
+      return this;
+    }
+
+    public Integer getMaxAtOnce() {
+      return maxAtOnce;
+    }
+
+    public Integer getMaxWaitSeconds() {
+      return maxWaitSeconds;
+    }
+
+    public RebalanceLeaders(String collection) {
+      super(CollectionAction.REBALANCELEADERS);
+      this.collection = collection;
+    }
+
+    @Override
+    public RebalanceLeaders setAsyncId(String id) {
+      this.asyncId = id;
+      return this;
+    }
+
+    @Override
+    public SolrParams getParams() {
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+
+      params.set(CoreAdminParams.COLLECTION, collection);
+
+      if(this.maxWaitSeconds != null) {
+        params.set("maxWaitSeconds", this.maxWaitSeconds);
+      }
+
+      if(this.maxAtOnce != null) {
+        params.set("maxAtOnce", this.maxAtOnce);
+      }
+
+      return params;
+    }
+
+  }
+
   /**
    * Returns a SolrRequest to delete a collection
    */
