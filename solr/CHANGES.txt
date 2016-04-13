@@ -18,7 +18,7 @@ See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 
 ==================  7.0.0 ==================
 
-Upgrading from Solr 5.x
+Upgrading from Solr 6.x
 ----------------------
 
 * HttpClientInterceptorPlugin is now HttpClientBuilderPlugin and must work with a 
@@ -91,6 +91,8 @@ New Features
 
 * SOLR-8938: Add optional -excluderegex argument to ZkCLI. (Christine Poerschke)
 
+* SOLR-8976: Add SolrJ support for REBALANCELEADERS Collections API (Anshum Gupta)
+
 Bug Fixes
 ----------------------
 
@@ -108,6 +110,12 @@ Bug Fixes
 * SOLR-8948: OverseerTaskQueue.containsTaskWithRequestId encounters json parse error if a
   SolrResponse node is in the overseer queue. (Jessica Cheng Mallet via shalin)
 
+* SOLR-8914: ZkStateReader's refreshLiveNodes(Watcher) is not thread safe. (Scott Blum, hoss,
+  sarowe, Erick Erickson, Mark Miller, shalin)
+
+* SOLR-7729: ConcurrentUpdateSolrClient ignores the collection parameter in some methods.
+  (Nicolas Gavalda, Jorge Luis Betancourt Gonzalez via Mark Miller)
+  
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.

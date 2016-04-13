@@ -39,9 +39,6 @@ Optimizations
 * LUCENE-7071: Reduce bytes copying in OfflineSorter, giving ~10%
   speedup on merging 2D LatLonPoint values (Mike McCandless)
 
-* LUCENE-7099: LatLonPoint's newDistanceQuery supports two-phase
-  iteration. (Robert Muir)
-
 * LUCENE-7105: Optimize LatLonPoint's newDistanceQuery. (Robert Muir)
 
 * LUCENE-7109: LatLonPoint's newPolygonQuery supports two-phase 
@@ -63,6 +60,9 @@ Optimizations
 * LUCENE-7159: Speed up LatLonPoint polygon performance for complex
   polygons. (Robert Muir)
 
+* LUCENE-7211: Reduce memory & GC for spatial RPT Intersects when the number of
+  matching docs is small. (Jeff Wartes, David Smiley)
+
 Bug Fixes
 
 * LUCENE-7127: Fix corner case bugs in GeoPointDistanceQuery. (Robert Muir)
@@ -83,6 +83,9 @@ Bug Fixes
 Other
 
 * LUCENE-7174: Upgrade randomizedtesting to 2.3.4. (Uwe Schindler, Dawid Weiss)
+
+* LUCENE-7205: Remove repeated nl.getLength() calls in
+  (Boolean|DisjunctionMax|FuzzyLikeThis)QueryBuilder. (Christine Poerschke)
 
 ======================= Lucene 6.0.0 =======================
 
