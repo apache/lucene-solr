@@ -203,6 +203,7 @@ class GeoConvexPolygon extends GeoBasePolygon {
       edges[i] = sp;
       notableEdgePoints[i] = new GeoPoint[]{start, end};
     }
+    /* Disabled since GeoPolygonFactory does the checking too.
     // In order to naively confirm that the polygon is convex, I would need to
     // check every edge, and verify that every point (other than the edge endpoints)
     // is within the edge's sided plane.  This is an order n^2 operation.  That's still
@@ -216,6 +217,7 @@ class GeoConvexPolygon extends GeoBasePolygon {
         }
       }
     }
+    */
     
     // For each edge, create a bounds object.
     eitherBounds = new HashMap<>(edges.length);
