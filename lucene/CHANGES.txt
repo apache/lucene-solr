@@ -84,6 +84,9 @@ Other
 
 * LUCENE-7174: Upgrade randomizedtesting to 2.3.4. (Uwe Schindler, Dawid Weiss)
 
+* LUCENE-7205: Remove repeated nl.getLength() calls in
+  (Boolean|DisjunctionMax|FuzzyLikeThis)QueryBuilder. (Christine Poerschke)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
