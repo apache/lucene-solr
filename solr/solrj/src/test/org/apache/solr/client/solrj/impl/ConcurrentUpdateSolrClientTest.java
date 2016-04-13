@@ -18,6 +18,8 @@ package org.apache.solr.client.solrj.impl;
 
 import org.apache.http.HttpResponse;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -39,7 +41,6 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -187,16 +188,86 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
         TestServlet.numDocsRcvd.get() == expectedDocs);
   }
   
+  @Test
+  public void testCollectionParameters() throws IOException, SolrServerException {
+
+    int cussThreadCount = 2;
+    int cussQueueSize = 10;
+
+    try (ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(jetty.getBaseUrl().toString(), cussQueueSize, cussThreadCount)) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "collection");
+      concurrentClient.add("collection1", doc);
+      concurrentClient.commit("collection1");
+
+      assertEquals(1, concurrentClient.query("collection1", new SolrQuery("id:collection")).getResults().getNumFound());
+    }
+
+    try (ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(jetty.getBaseUrl().toString() + "/collection1", cussQueueSize, cussThreadCount)) {
+      assertEquals(1, concurrentClient.query(new SolrQuery("id:collection")).getResults().getNumFound());
+    }
+
+  }
+
+  @Test
+  public void testConcurrentCollectionUpdate() throws Exception {
+
+    int cussThreadCount = 2;
+    int cussQueueSize = 100;
+    int numDocs = 100;
+    int numRunnables = 5;
+    int expected = numDocs * numRunnables;
+
+    try (ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(jetty.getBaseUrl().toString(), cussQueueSize, cussThreadCount)) {
+      concurrentClient.setPollQueueTime(0);
+
+      // ensure it doesn't block where there's nothing to do yet
+      concurrentClient.blockUntilFinished();
+
+      // Delete all existing documents.
+      concurrentClient.deleteByQuery("collection1", "*:*");
+
+      int poolSize = 5;
+      ExecutorService threadPool = ExecutorUtil.newMDCAwareFixedThreadPool(poolSize, new SolrjNamedThreadFactory("testCUSS"));
+
+      for (int r=0; r < numRunnables; r++)
+        threadPool.execute(new SendDocsRunnable(String.valueOf(r), numDocs, concurrentClient, "collection1"));
+
+      // ensure all docs are sent
+      threadPool.awaitTermination(5, TimeUnit.SECONDS);
+      threadPool.shutdown();
+
+      concurrentClient.commit("collection1");
+
+      assertEquals(expected, concurrentClient.query("collection1", new SolrQuery("*:*")).getResults().getNumFound());
+
+      // wait until all requests are processed by CUSS 
+      concurrentClient.blockUntilFinished();
+      concurrentClient.shutdownNow();
+    }
+
+    try (ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(jetty.getBaseUrl().toString() + "/collection1", cussQueueSize, cussThreadCount)) {
+      assertEquals(expected, concurrentClient.query(new SolrQuery("*:*")).getResults().getNumFound());
+    }
+
+  }
+
   class SendDocsRunnable implements Runnable {
     
     private String id;
     private int numDocs;
     private ConcurrentUpdateSolrClient cuss;
+    private String collection;
     
     SendDocsRunnable(String id, int numDocs, ConcurrentUpdateSolrClient cuss) {
+      this(id, numDocs, cuss, null);
+    }
+    
+    SendDocsRunnable(String id, int numDocs, ConcurrentUpdateSolrClient cuss, String collection) {
       this.id = id;
       this.numDocs = numDocs;
       this.cuss = cuss;
+      this.collection = collection;
     }
 
     @Override
@@ -208,7 +279,10 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
         UpdateRequest req = new UpdateRequest();
         req.add(doc);        
         try {
-          cuss.request(req);
+          if (this.collection == null)
+            cuss.request(req);
+          else
+            cuss.request(req, this.collection);
         } catch (Throwable t) {
           t.printStackTrace();
         }

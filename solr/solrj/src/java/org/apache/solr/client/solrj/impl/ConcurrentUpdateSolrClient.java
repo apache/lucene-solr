@@ -77,7 +77,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
   private static final long serialVersionUID = 1L;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private HttpSolrClient client;
-  final BlockingQueue<UpdateRequest> queue;
+  final BlockingQueue<Update> queue;
   final ExecutorService scheduler;
   final Queue<Runner> runners;
   volatile CountDownLatch lock = null; // used to block everything
@@ -222,15 +222,15 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
         InputStream rspBody = null;
         try {
-          final UpdateRequest updateRequest =
+          final Update update = 
               queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
-          if (updateRequest == null)
+          if (update == null)
             break;
 
           String contentType = client.requestWriter.getUpdateContentType();
           final boolean isXml = ClientUtils.TEXT_XML.equals(contentType);
 
-          final ModifiableSolrParams origParams = new ModifiableSolrParams(updateRequest.getParams());
+          final ModifiableSolrParams origParams = new ModifiableSolrParams(update.getRequest().getParams());
 
           EntityTemplate template = new EntityTemplate(new ContentProducer() {
 
@@ -240,11 +240,12 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                 if (isXml) {
                   out.write("<stream>".getBytes(StandardCharsets.UTF_8)); // can be anything
                 }
-                UpdateRequest req = updateRequest;
-                while (req != null) {
+                Update upd = update;
+                while (upd != null) {
+                  UpdateRequest req = upd.getRequest();
                   SolrParams currentParams = new ModifiableSolrParams(req.getParams());
                   if (!origParams.toNamedList().equals(currentParams.toNamedList())) {
-                    queue.add(req); // params are different, push back to queue
+                    queue.add(upd); // params are different, push back to queue
                     break;
                   }
 
@@ -272,9 +273,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
 
                   if (pollQueueTime > 0 && threadCount == 1 && req.isLastDocInBatch()) {
                     // no need to wait to see another doc in the queue if we've hit the last doc in a batch
-                    req = queue.poll(0, TimeUnit.MILLISECONDS);
+                    upd = queue.poll(0, TimeUnit.MILLISECONDS);
                   } else {
-                    req = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
+                    upd = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
                   }
 
                 }
@@ -296,7 +297,11 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           requestParams.set(CommonParams.WT, client.parser.getWriterType());
           requestParams.set(CommonParams.VERSION, client.parser.getVersion());
 
-          method = new HttpPost(client.getBaseURL() + "/update"
+          String basePath = client.getBaseURL();
+          if (update.getCollection() != null)
+            basePath += "/" + update.getCollection();
+
+          method = new HttpPost(basePath + "/update"
               + requestParams.toQueryString());
 
           method.setEntity(template);
@@ -361,6 +366,41 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     }
   }
 
+  /**
+   * Class representing an UpdateRequest and an optional collection.
+   */
+  class Update {
+    UpdateRequest request;
+    String collection;
+    /**
+     * 
+     * @param request the update request.
+     * @param collection The collection, can be null.
+     */
+    public Update(UpdateRequest request, String collection) {
+      this.request = request;
+      this.collection = collection;
+    }
+    /**
+     * @return the update request.
+     */
+    public UpdateRequest getRequest() {
+      return request;
+    }
+    public void setRequest(UpdateRequest request) {
+      this.request = request;
+    }
+    /**
+     * @return the collection, can be null.
+     */
+    public String getCollection() {
+      return collection;
+    }
+    public void setCollection(String collection) {
+      this.collection = collection;
+    }
+  }
+
   @Override
   public NamedList<Object> request(final SolrRequest request, String collection)
       throws SolrServerException, IOException {
@@ -403,7 +443,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
         tmpLock.await();
       }
 
-      boolean success = queue.offer(req);
+      Update update = new Update(req, collection);
+      boolean success = queue.offer(update);
 
       for (;;) {
         synchronized (runners) {
@@ -436,7 +477,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
         // start more runners.
         //
         if (!success) {
-          success = queue.offer(req, 100, TimeUnit.MILLISECONDS);
+          success = queue.offer(update, 100, TimeUnit.MILLISECONDS);
         }
       }
     } catch (InterruptedException e) {
