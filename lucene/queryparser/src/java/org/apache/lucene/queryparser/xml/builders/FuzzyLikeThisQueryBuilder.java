@@ -50,7 +50,8 @@ public class FuzzyLikeThisQueryBuilder implements QueryBuilder {
     FuzzyLikeThisQuery fbq = new FuzzyLikeThisQuery(maxNumTerms, analyzer);
     fbq.setIgnoreTF(DOMUtils.getAttribute(e, "ignoreTF", DEFAULT_IGNORE_TF));
 
-    for (int i = 0; i < nl.getLength(); i++) {
+    final int nlLen = nl.getLength();
+    for (int i = 0; i < nlLen; i++) {
       Element fieldElem = (Element) nl.item(i);
       float minSimilarity = DOMUtils.getAttribute(fieldElem, "minSimilarity", DEFAULT_MIN_SIMILARITY);
       int prefixLength = DOMUtils.getAttribute(fieldElem, "prefixLength", DEFAULT_PREFIX_LENGTH);
