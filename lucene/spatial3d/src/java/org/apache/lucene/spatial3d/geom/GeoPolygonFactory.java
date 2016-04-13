@@ -1094,10 +1094,10 @@ public class GeoPolygonFactory {
         final boolean isNewPointWithin;
         final GeoPoint pointToPresent;
         if (currentEdge.plane.evaluateIsZero(newPoint)) {
-          // The new point is colinear with the current edge.  We'll have to look for the first point that isn't.
+          // The new point is colinear with the current edge.  We'll have to look backwards for the first point that isn't.
           int checkPointIndex = -1;
-          // Compute the arc distance before we try to extend
-          double accumulatedDistance = 0.0;
+          // Compute the arc distance before we try to extend, so that we note backtracking when we see it
+          double accumulatedDistance = newPoint.arcDistance(pointList.get(startIndex));
           final Plane checkPlane = new Plane(pointList.get(startIndex), newPoint);
           for (int i = 0; i < pointList.size(); i++) {
             final int index = getLegalIndex(startIndex - 1 - i, pointList.size());
@@ -1106,11 +1106,13 @@ public class GeoPolygonFactory {
               break;
             } else {
               accumulatedDistance += pointList.get(getLegalIndex(index+1, pointList.size())).arcDistance(pointList.get(index));
-              final double actualDistance = pointList.get(getLegalIndex(startIndex-1, pointList.size())).arcDistance(pointList.get(index));
+              final double actualDistance = newPoint.arcDistance(pointList.get(index));
               if (Math.abs(actualDistance - accumulatedDistance) >= Vector.MINIMUM_RESOLUTION) {
                 throw new IllegalArgumentException("polygon backtracks over itself");
               }
             }
+          }
+          if (checkPointIndex == -1) {
             throw new IllegalArgumentException("polygon is illegal (linear)");
           }
           pointToPresent = pointList.get(checkPointIndex);
