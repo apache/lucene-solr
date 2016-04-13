@@ -18,13 +18,12 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Rectangle;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
-import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -34,15 +33,10 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.geo.GeoUtils;
-import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.DocIdSetBuilder;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.SloppyMath;
-import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.lucene.util.StringHelper;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
@@ -104,7 +98,7 @@ final class LatLonPointDistanceQuery extends Query {
     }
 
     // compute a maximum partial haversin: unless our box is crazy, we can use this bound
-    // to reject edge cases faster in matches()
+    // to reject edge cases faster in visit()
     final double maxPartialDistance;
     if (box.maxLon - longitude < 90 && longitude - box.minLon < 90) {
       maxPartialDistance = Math.max(SloppyMath.haversinSortKey(latitude, longitude, latitude, box.maxLon),
@@ -132,16 +126,9 @@ final class LatLonPointDistanceQuery extends Query {
         }
         LatLonPoint.checkCompatible(fieldInfo);
         
-        // approximation (postfiltering has not yet been applied)
+        // matching docids
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
-        // subset of documents that need no postfiltering, this is purely an optimization
-        final BitSet preApproved;
-        // dumb heuristic: if the field is really sparse, use a sparse impl
-        if (values.getDocCount(field) * 100L < reader.maxDoc()) {
-          preApproved = new SparseFixedBitSet(reader.maxDoc());
-        } else {
-          preApproved = new FixedBitSet(reader.maxDoc());
-        }
+
         values.intersect(field,
                          new IntersectVisitor() {
                            @Override
@@ -152,14 +139,11 @@ final class LatLonPointDistanceQuery extends Query {
                            @Override
                            public void visit(int docID) {
                              result.add(docID);
-                             preApproved.set(docID);
                            }
 
                            @Override
                            public void visit(int docID, byte[] packedValue) {
-                             // we bounds check individual values, as subtrees may cross, but we are being sent the values anyway:
-                             // this reduces the amount of docvalues fetches (improves approximation)
-
+                             // bounding box check
                              if (StringHelper.compare(Integer.BYTES, packedValue, 0, maxLat, 0) > 0 ||
                                  StringHelper.compare(Integer.BYTES, packedValue, 0, minLat, 0) < 0) {
                                // latitude out of bounding box range
@@ -173,13 +157,23 @@ final class LatLonPointDistanceQuery extends Query {
                                return;
                              }
 
-                             result.add(docID);
+                             double docLatitude = decodeLatitude(packedValue, 0);
+                             double docLongitude = decodeLongitude(packedValue, Integer.BYTES);
+
+                             // first check the partial distance, if its more than that, it can't be <= radiusMeters
+                             double h1 = SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude);
+                             if (h1 <= maxPartialDistance) {
+                               // fully confirm with part 2:
+                               if (SloppyMath.haversinMeters(h1) <= radiusMeters) {
+                                 result.add(docID);
+                               }
+                             }
                            }
                            
                            // algorithm: we create a bounding box (two bounding boxes if we cross the dateline).
                            // 1. check our bounding box(es) first. if the subtree is entirely outside of those, bail.
                            // 2. check if the subtree is disjoint. it may cross the bounding box but not intersect with circle
-                           // 3. see if the subtree is fully contained. if the subtree is enormous along the x axis, wrapping half way around the world, etc: then this can't work, just go to step 3.
+                           // 3. see if the subtree is fully contained. if the subtree is enormous along the x axis, wrapping half way around the world, etc: then this can't work, just go to step 4.
                            // 4. recurse naively (subtrees crossing over circle edge)
                            @Override
                            public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
@@ -231,44 +225,7 @@ final class LatLonPointDistanceQuery extends Query {
         if (disi == null) {
           return null;
         }
-
-        // return two-phase iterator using docvalues to postfilter candidates
-        SortedNumericDocValues docValues = DocValues.getSortedNumeric(reader, field);
-        TwoPhaseIterator iterator = new TwoPhaseIterator(disi) {
-          @Override
-          public boolean matches() throws IOException {
-            int docId = disi.docID();
-            if (preApproved.get(docId)) {
-              return true;
-            } else {
-              docValues.setDocument(docId);
-              int count = docValues.count();
-              for (int i = 0; i < count; i++) {
-                long encoded = docValues.valueAt(i);
-                double docLatitude = decodeLatitude((int)(encoded >> 32));
-                double docLongitude = decodeLongitude((int)(encoded & 0xFFFFFFFF));
-
-                // first check the partial distance, if its more than that, it can't be <= radiusMeters
-                double h1 = SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude);
-                if (h1 > maxPartialDistance) {
-                  continue;
-                }
-
-                // fully confirm with part 2:
-                if (SloppyMath.haversinMeters(h1) <= radiusMeters) {
-                  return true;
-                }
-              }
-              return false;
-            }
-          }
-
-          @Override
-          public float matchCost() {
-            return 20; // TODO: make this fancier
-          }
-        };
-        return new ConstantScoreScorer(this, score(), iterator);
+        return new ConstantScoreScorer(this, score(), disi);
       }
     };
   }
