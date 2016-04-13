@@ -77,6 +77,9 @@ Bug Fixes
 * SOLR-8416: The collections create API should return after all replicas are active.
   (Michael Sun, Mark Miller, Alexey Serba)
 
+* SOLR-8914: ZkStateReader's refreshLiveNodes(Watcher) is not thread safe. (Scott Blum, hoss,
+  sarowe, Erick Erickson, Mark Miller, shalin)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
