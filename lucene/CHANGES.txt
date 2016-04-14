@@ -91,6 +91,9 @@ Other
 * LUCENE-7205: Remove repeated nl.getLength() calls in
   (Boolean|DisjunctionMax|FuzzyLikeThis)QueryBuilder. (Christine Poerschke)
 
+* LUCENE-7210: Make TestCore*Parser's analyzer choice override-able
+  (Christine Poerschke, Daniel Collins)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
