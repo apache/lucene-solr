@@ -434,6 +434,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
 
   $scope.ping = function() {
     Ping.ping({core: $scope.currentCore.name}, function(data) {
+      $scope.showPing = true;
       $scope.pingMS = data.responseHeader.QTime;
     });
     // @todo .attr( 'title', '/admin/ping is not configured (' + xhr.status + ': ' + error_thrown + ')' );
