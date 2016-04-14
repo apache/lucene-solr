@@ -56,14 +56,16 @@ public class TestNearest extends LuceneTestCase {
     w.addDocument(doc);
 
     DirectoryReader r = w.getReader();
-    IndexSearcher s = newSearcher(r);
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    IndexSearcher s = newSearcher(r, false);
     FieldDoc hit = (FieldDoc) LatLonPoint.nearest(s, "point", 40.0, 50.0, 1).scoreDocs[0];
     assertEquals("0", r.document(hit.doc).getField("id").stringValue());
     r.close();
 
     w.deleteDocuments(new Term("id", "0"));
     r = w.getReader();
-    s = newSearcher(r);
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    s = newSearcher(r, false);
     hit = (FieldDoc) LatLonPoint.nearest(s, "point", 40.0, 50.0, 1).scoreDocs[0];
     assertEquals("1", r.document(hit.doc).getField("id").stringValue());
     r.close();
@@ -84,7 +86,8 @@ public class TestNearest extends LuceneTestCase {
     w.addDocument(doc);
 
     DirectoryReader r = w.getReader();
-    IndexSearcher s = newSearcher(r);
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    IndexSearcher s = newSearcher(r, false);
     FieldDoc hit = (FieldDoc) LatLonPoint.nearest(s, "point", 40.0, 50.0, 1).scoreDocs[0];
     assertEquals("0", r.document(hit.doc).getField("id").stringValue());
     r.close();
@@ -92,7 +95,8 @@ public class TestNearest extends LuceneTestCase {
     w.deleteDocuments(new Term("id", "0"));
     w.deleteDocuments(new Term("id", "1"));
     r = w.getReader();
-    s = newSearcher(r);
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    s = newSearcher(r, false);
     assertEquals(0, LatLonPoint.nearest(s, "point", 40.0, 50.0, 1).scoreDocs.length);
     r.close();
     w.close();
@@ -112,7 +116,8 @@ public class TestNearest extends LuceneTestCase {
     w.addDocument(doc);
 
     DirectoryReader r = DirectoryReader.open(w);
-    ScoreDoc[] hits = LatLonPoint.nearest(newSearcher(r), "point", 45.0, 50.0, 2).scoreDocs;
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    ScoreDoc[] hits = LatLonPoint.nearest(newSearcher(r, false), "point", 45.0, 50.0, 2).scoreDocs;
     assertEquals("0", r.document(hits[0].doc).getField("id").stringValue());
     assertEquals("1", r.document(hits[1].doc).getField("id").stringValue());
 
@@ -125,7 +130,8 @@ public class TestNearest extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, getIndexWriterConfig());
     DirectoryReader r = w.getReader();
-    assertEquals(0, LatLonPoint.nearest(newSearcher(r), "point", 40.0, 50.0, 1).scoreDocs.length);
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    assertEquals(0, LatLonPoint.nearest(newSearcher(r, false), "point", 40.0, 50.0, 1).scoreDocs.length);
     r.close();
     w.close();
     dir.close();
@@ -172,7 +178,8 @@ public class TestNearest extends LuceneTestCase {
     if (VERBOSE) {      
       System.out.println("TEST: reader=" + r);
     }
-    IndexSearcher s = newSearcher(r);
+    // can't wrap because we require Lucene60PointsFormat directly but e.g. ParallelReader wraps with its own points impl:
+    IndexSearcher s = newSearcher(r, false);
     int iters = atLeast(100);
     for(int iter=0;iter<iters;iter++) {
       if (VERBOSE) {      
