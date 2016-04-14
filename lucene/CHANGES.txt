@@ -16,6 +16,9 @@ New Features
 * LUCENE-7140: Add PlanetModel.bisection to spatial3d (Karl Wright via
   Mike McCandless)
 
+* LUCENE-7069: Add LatLonPoint.nearest, to find nearest N points to a
+  provided query point (Mike McCandless)
+
 API Changes
 
 * LUCENE-7184: Refactor LatLonPoint encoding methods to new GeoEncodingUtils
