@@ -16,20 +16,37 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.noggit.JSONUtil;
-import org.noggit.JSONWriter;
-
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import org.noggit.JSONUtil;
+import org.noggit.JSONWriter;
+
 /**
  * A Slice contains immutable information about a logical shard (all replicas that share the same shard id).
  */
 public class Slice extends ZkNodeProps {
-  
+
+  /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */
+  public static Map<String,Slice> loadAllFromMap(Map<String, Object> genericSlices) {
+    if (genericSlices == null) return Collections.emptyMap();
+    Map<String,Slice> result = new LinkedHashMap<>(genericSlices.size());
+    for (Map.Entry<String,Object> entry : genericSlices.entrySet()) {
+      String name = entry.getKey();
+      Object val = entry.getValue();
+      if (val instanceof Slice) {
+        result.put(name, (Slice)val);
+      } else if (val instanceof Map) {
+        result.put(name, new Slice(name, null, (Map<String,Object>)val));
+      }
+    }
+    return result;
+  }
+
   /** The slice's state. */
   public enum State {
     
