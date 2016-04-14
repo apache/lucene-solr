@@ -1215,23 +1215,10 @@ public final class ZkController {
     if (context != null) {
       context.cancelElection();
     }
-    
-    final Collection<SolrCore> cores = cc.getCores();
-    
-    // if there is no SolrCore which is a member of this collection, remove the watch
+
     CloudDescriptor cloudDescriptor = cd.getCloudDescriptor();
-    boolean removeWatch = true;
-    for (SolrCore solrCore : cores) {
-      final CloudDescriptor cloudDesc = solrCore.getCoreDescriptor().getCloudDescriptor();
-      if (cloudDesc != null && cloudDescriptor.getCollectionName().equals(cloudDesc.getCollectionName())) {
-        removeWatch = false;
-        break;
-      }
-    }
-    
-    if (removeWatch) {
-      zkStateReader.removeZKWatch(collection);
-    }
+    zkStateReader.unregisterCore(cloudDescriptor.getCollectionName());
+
     ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION,
         OverseerAction.DELETECORE.toLower(), ZkStateReader.CORE_NAME_PROP, coreName,
         ZkStateReader.NODE_NAME_PROP, getNodeName(),
@@ -1481,7 +1468,7 @@ public final class ZkController {
               "Collection {} not visible yet, but flagging it so a watch is registered when it becomes visible" :
               "Registering watch for collection {}",
           collectionName);
-      zkStateReader.addCollectionWatch(collectionName);
+      zkStateReader.registerCore(collectionName);
     } catch (KeeperException e) {
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
