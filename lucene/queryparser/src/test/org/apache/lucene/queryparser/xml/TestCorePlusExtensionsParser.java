@@ -16,7 +16,9 @@
  */
 package org.apache.lucene.queryparser.xml;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.junit.Assume;
 
@@ -25,7 +27,9 @@ import java.util.List;
 
 public class TestCorePlusExtensionsParser extends TestCorePlusQueriesParser {
 
-  private CoreParser corePlusExtensionsParser;
+  protected CoreParser newCoreParser(String defaultField, Analyzer analyzer) {
+    return new CorePlusExtensionsParser(defaultField, analyzer);
+  }
 
   public void testFuzzyLikeThisQueryXML() throws Exception {
     Query q = parse("FuzzyLikeThisQuery.xml");
@@ -37,23 +41,12 @@ public class TestCorePlusExtensionsParser extends TestCorePlusQueriesParser {
   }
 
   public void testDuplicateFilterQueryXML() throws ParserException, IOException {
+    final IndexSearcher searcher = searcher();
     List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
     Assume.assumeTrue(leaves.size() == 1);
     Query q = parse("DuplicateFilterQuery.xml");
     int h = searcher.search(q, 1000).totalHits;
     assertEquals("DuplicateFilterQuery should produce 1 result ", 1, h);
-  }
-
-  //================= Helper methods ===================================
-
-  @Override
-  protected CoreParser coreParser() {
-    if (corePlusExtensionsParser == null) {
-      corePlusExtensionsParser = new CorePlusExtensionsParser(
-          super.defaultField(),
-          super.analyzer());
-    }
-    return corePlusExtensionsParser;
   }
 
 }
