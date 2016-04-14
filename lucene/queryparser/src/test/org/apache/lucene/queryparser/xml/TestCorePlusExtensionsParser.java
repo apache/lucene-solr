@@ -27,6 +27,7 @@ import java.util.List;
 
 public class TestCorePlusExtensionsParser extends TestCorePlusQueriesParser {
 
+  @Override
   protected CoreParser newCoreParser(String defaultField, Analyzer analyzer) {
     return new CorePlusExtensionsParser(defaultField, analyzer);
   }
