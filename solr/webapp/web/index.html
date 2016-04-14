@@ -206,7 +206,7 @@ limitations under the License.
               <li ng-hide="isCloudEnabled" class="dataimport" ng-class="{active:page=='dataimport'}"><a href="#/{{currentCore.name}}/dataimport"><span>Dataimport</span></a></li>
               <li ng-hide="isCloudEnabled" class="documents" ng-class="{active:page=='documents'}"><a href="#/{{currentCore.name}}/documents"><span>Documents</span></a></li>
               <li ng-hide="isCloudEnabled" class="files" ng-class="{active:page=='files'}"><a href="#/{{currentCore.name}}/files"><span>Files</span></a></li>
-              <li class="ping" ng-class="{active:page=='ping'}"><a ng-click="ping()"><span>Ping</span><small class="qtime" ng-show="pingMS"> (<span>{{pingMS}}ms</span>)</small></a></li>
+              <li class="ping" ng-class="{active:page=='ping'}"><a ng-click="ping()"><span>Ping</span><small class="qtime" ng-show="showPing"> (<span>{{pingMS}}ms</span>)</small></a></li>
               <li class="plugins" ng-class="{active:page=='plugins'}"><a href="#/{{currentCore.name}}/plugins"><span>Plugins / Stats</span></a></li>
               <li ng-hide="isCloudEnabled" class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCore.name}}/query"><span>Query</span></a></li>
               <li ng-hide="isCloudEnabled" class="replication" ng-class="{active:page=='replication'}"><a href="#/{{currentCore.name}}/replication"><span>Replication</span></a></li>
