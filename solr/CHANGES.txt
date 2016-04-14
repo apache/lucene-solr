@@ -48,6 +48,8 @@ Bug Fixes
 * SOLR-8835: JSON Facet API: fix faceting exception on multi-valued numeric fields that
   have docValues. (yonik)
 
+* SOLR-8908: Fix to OnReconnect listener registration to allow listeners to deregister, such
+  as when a core is reloaded or deleted to avoid a memory leak. (Timothy Potter)
 
 ======================= 5.5.0 =======================
 
