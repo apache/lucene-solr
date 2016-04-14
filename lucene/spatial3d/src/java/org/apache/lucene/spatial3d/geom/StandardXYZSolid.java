@@ -40,6 +40,19 @@ class StandardXYZSolid extends BaseXYZSolid {
   /** Max-Z plane */
   protected final SidedPlane maxZPlane;
   
+  /** true if minXPlane intersects globe */
+  protected final boolean minXPlaneIntersects;
+  /** true if maxXPlane intersects globe */
+  protected final boolean maxXPlaneIntersects;
+  /** true if minYPlane intersects globe */
+  protected final boolean minYPlaneIntersects;
+  /** true if maxYPlane intersects globe */
+  protected final boolean maxYPlaneIntersects;
+  /** true if minZPlane intersects globe */
+  protected final boolean minZPlaneIntersects;
+  /** true if maxZPlane intersects globe */
+  protected final boolean maxZPlaneIntersects;
+
   /** These are the edge points of the shape, which are defined to be at least one point on
    * each surface area boundary.  In the case of a solid, this includes points which represent
    * the intersection of XYZ bounding planes and the planet, as well as points representing
@@ -112,6 +125,12 @@ class StandardXYZSolid extends BaseXYZSolid {
       maxYPlane = null;
       minZPlane = null;
       maxZPlane = null;
+      minXPlaneIntersects = false;
+      maxXPlaneIntersects = false;
+      minYPlaneIntersects = false;
+      maxYPlaneIntersects = false;
+      minZPlaneIntersects = false;
+      maxZPlaneIntersects = false;
       notableMinXPoints = null;
       notableMaxXPoints = null;
       notableMinYPoints = null;
@@ -153,6 +172,7 @@ class StandardXYZSolid extends BaseXYZSolid {
       notableMaxYPoints = glueTogether(minXmaxY, maxXmaxY, maxYminZ, maxYmaxZ);
       notableMinZPoints = glueTogether(minXminZ, maxXminZ, minYminZ, maxYminZ);
       notableMaxZPoints = glueTogether(minXmaxZ, maxXmaxZ, minYmaxZ, maxYmaxZ);
+
 
       //System.err.println(
       //  " notableMinXPoints="+Arrays.asList(notableMinXPoints)+" notableMaxXPoints="+Arrays.asList(notableMaxXPoints)+
@@ -302,6 +322,13 @@ class StandardXYZSolid extends BaseXYZSolid {
       //  " minYEdges="+Arrays.asList(minYEdges)+" maxYEdges="+Arrays.asList(maxYEdges)+
       //  " minZEdges="+Arrays.asList(minZEdges)+" maxZEdges="+Arrays.asList(maxZEdges));
 
+      minXPlaneIntersects = notableMinXPoints.length + minXEdges.length > 0;
+      maxXPlaneIntersects = notableMaxXPoints.length + maxXEdges.length > 0;
+      minYPlaneIntersects = notableMinYPoints.length + minYEdges.length > 0;
+      maxYPlaneIntersects = notableMaxYPoints.length + maxYEdges.length > 0;
+      minZPlaneIntersects = notableMinZPoints.length + minZEdges.length > 0;
+      maxZPlaneIntersects = notableMaxZPoints.length + maxZEdges.length > 0;
+
       // Glue everything together.  This is not a minimal set of edgepoints, as of now, but it does completely describe all shapes on the
       // planet.
       this.edgePoints = glueTogether(minXminY, minXmaxY, minXminZ, minXmaxZ,
@@ -366,12 +393,12 @@ class StandardXYZSolid extends BaseXYZSolid {
       return OVERLAPS;
     }
 
-    if (path.intersects(minXPlane, notableMinXPoints, maxXPlane, minYPlane, maxYPlane, minZPlane, maxZPlane) ||
-        path.intersects(maxXPlane, notableMaxXPoints, minXPlane, minYPlane, maxYPlane, minZPlane, maxZPlane) ||
-        path.intersects(minYPlane, notableMinYPoints, maxYPlane, minXPlane, maxXPlane, minZPlane, maxZPlane) ||
-        path.intersects(maxYPlane, notableMaxYPoints, minYPlane, minXPlane, maxXPlane, minZPlane, maxZPlane) ||
-        path.intersects(minZPlane, notableMinZPoints, maxZPlane, minXPlane, maxXPlane, minYPlane, maxYPlane) ||
-        path.intersects(maxZPlane, notableMaxZPoints, minZPlane, minXPlane, maxXPlane, minYPlane, maxYPlane)) {
+    if ((minXPlaneIntersects && path.intersects(minXPlane, notableMinXPoints, maxXPlane, minYPlane, maxYPlane, minZPlane, maxZPlane)) ||
+        (maxXPlaneIntersects && path.intersects(maxXPlane, notableMaxXPoints, minXPlane, minYPlane, maxYPlane, minZPlane, maxZPlane)) ||
+        (minYPlaneIntersects && path.intersects(minYPlane, notableMinYPoints, maxYPlane, minXPlane, maxXPlane, minZPlane, maxZPlane)) ||
+        (maxYPlaneIntersects && path.intersects(maxYPlane, notableMaxYPoints, minYPlane, minXPlane, maxXPlane, minZPlane, maxZPlane)) ||
+        (minZPlaneIntersects && path.intersects(minZPlane, notableMinZPoints, maxZPlane, minXPlane, maxXPlane, minYPlane, maxYPlane)) ||
+        (maxZPlaneIntersects && path.intersects(maxZPlane, notableMaxZPoints, minZPlane, minXPlane, maxXPlane, minYPlane, maxYPlane))) {
       //System.err.println(" edges intersect");
       return OVERLAPS;
     }
