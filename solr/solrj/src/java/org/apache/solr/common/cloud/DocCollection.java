@@ -22,6 +22,8 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -35,7 +37,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 /**
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
  */
-public class DocCollection extends ZkNodeProps {
+public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
+
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
   public static final String STATE_FORMAT = "stateFormat";
@@ -208,5 +211,37 @@ public class DocCollection extends ZkNodeProps {
       if (replica != null) return replica;
     }
     return null;
+  }
+
+  /**
+   * Check that all replicas in a collection are live
+   *
+   * @see CollectionStatePredicate
+   */
+  public static boolean isFullyActive(Set<String> liveNodes, DocCollection collectionState) {
+    Objects.requireNonNull(liveNodes);
+    if (collectionState == null)
+      return false;
+    for (Slice slice : collectionState) {
+      for (Replica replica : slice) {
+        if (replica.isActive(liveNodes) == false)
+          return false;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Returns true if the passed in DocCollection is null
+   *
+   * @see CollectionStatePredicate
+   */
+  public static boolean isDeleted(Set<String> liveNodes, DocCollection collectionState) {
+    return collectionState == null;
+  }
+
+  @Override
+  public Iterator<Slice> iterator() {
+    return slices.values().iterator();
   }
 }

@@ -16,20 +16,26 @@
  */
 package org.apache.solr.common.cloud;
 
-import org.noggit.JSONUtil;
-import org.noggit.JSONWriter;
-
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import org.noggit.JSONUtil;
+import org.noggit.JSONWriter;
+
 /**
  * A Slice contains immutable information about a logical shard (all replicas that share the same shard id).
  */
-public class Slice extends ZkNodeProps {
-  
+public class Slice extends ZkNodeProps implements Iterable<Replica> {
+
+  @Override
+  public Iterator<Replica> iterator() {
+    return replicas.values().iterator();
+  }
+
   /** The slice's state. */
   public enum State {
     
