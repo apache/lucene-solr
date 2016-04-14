@@ -21,6 +21,7 @@ import org.apache.lucene.search.Query;
 
 public class TestCorePlusQueriesParser extends TestCoreParser {
 
+  @Override
   protected CoreParser newCoreParser(String defaultField, Analyzer analyzer) {
     return new CorePlusQueriesParser(defaultField, analyzer);
   }
