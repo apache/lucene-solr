@@ -130,7 +130,7 @@ public class SimpleFSDirectory extends FSDirectory {
     @Override
     public IndexInput slice(String sliceDescription, long offset, long length) throws IOException {
       if (offset < 0 || length < 0 || offset + length > this.length()) {
-        throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: "  + this);
+        throw new IllegalArgumentException("slice() " + sliceDescription + " out of bounds: offset=" + offset + ",length=" + length + ",fileLength="  + this.length() + ": "  + this);
       }
       return new SimpleFSIndexInput(getFullSliceDescription(sliceDescription), channel, off + offset, length, getBufferSize());
     }
