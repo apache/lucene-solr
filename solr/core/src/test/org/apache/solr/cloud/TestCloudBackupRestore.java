@@ -17,13 +17,24 @@
 
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Random;
+import java.util.TreeMap;
+
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,68 +47,101 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
 
   private static Logger log = LoggerFactory.getLogger(TestCloudBackupRestore.class);
 
-  private static final int NUM_SHARDS = 2;
+  private static final int NUM_SHARDS = 2;//granted we sometimes shard split to get more
+
+  private static long docsSeed; // see indexDocs()
 
   @BeforeClass
   public static void createCluster() throws Exception {
-    configureCluster(2)
+    configureCluster(2)// nodes
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
+
+    docsSeed = random().nextLong();
   }
 
   @Test
   public void test() throws Exception {
     String collectionName = "backuprestore";
-    String restoreCollectionName = collectionName + "_restored";
     boolean isImplicit = random().nextBoolean();
-    int numReplicas = TestUtil.nextInt(random(), 1, 2);
+    int replFactor = TestUtil.nextInt(random(), 1, 2);
     CollectionAdminRequest.Create create =
-        CollectionAdminRequest.createCollection(collectionName, "conf1", NUM_SHARDS, numReplicas);
-    create.setMaxShardsPerNode(NUM_SHARDS);
+        CollectionAdminRequest.createCollection(collectionName, "conf1", NUM_SHARDS, replFactor);
+    if (NUM_SHARDS * replFactor > cluster.getJettySolrRunners().size() || random().nextBoolean()) {
+      create.setMaxShardsPerNode(NUM_SHARDS);//just to assert it survives the restoration
+    }
+    if (random().nextBoolean()) {
+      create.setAutoAddReplicas(true);//just to assert it survives the restoration
+    }
+    Properties coreProps = new Properties();
+    coreProps.put("customKey", "customValue");//just to assert it survives the restoration
+    create.setProperties(coreProps);
     if (isImplicit) { //implicit router
       create.setRouterName(ImplicitDocRouter.NAME);
-      create.setNumShards(null);//erase it
+      create.setNumShards(null);//erase it. TODO suggest a new createCollectionWithImplicitRouter method
       create.setShards("shard1,shard2"); // however still same number as NUM_SHARDS; we assume this later
       create.setRouterField("shard_s");
+    } else {//composite id router
+      if (random().nextBoolean()) {
+        create.setRouterField("shard_s");
+      }
     }
-//TODO nocommit test shard split & custom doc route?
+
     create.process(cluster.getSolrClient());
     waitForCollection(collectionName);
     indexDocs(collectionName);
-    testBackupAndRestore(collectionName, restoreCollectionName, isImplicit);
+
+    if (!isImplicit && random().nextBoolean()) {
+      // shard split the first shard
+      int prevActiveSliceCount = getActiveSliceCount(collectionName);
+      CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName);
+      splitShard.setShardName("shard1");
+      splitShard.process(cluster.getSolrClient());
+      // wait until we see one more active slice...
+      for (int i = 0; getActiveSliceCount(collectionName) != prevActiveSliceCount + 1; i++) {
+        assertTrue(i < 30);
+        Thread.sleep(500);
+      }
+      // issue a hard commit.  Split shard does a soft commit which isn't good enough for the backup/snapshooter to see
+      cluster.getSolrClient().commit();
+    }
+
+    testBackupAndRestore(collectionName);
+  }
+
+  private int getActiveSliceCount(String collectionName) {
+    return cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices().size();
   }
 
   private void indexDocs(String collectionName) throws Exception {
-    int numDocs = TestUtil.nextInt(random(), 10, 100);
+    Random random = new Random(docsSeed);// use a constant seed for the whole test run so that we can easily re-index.
+    int numDocs = random.nextInt(100);
+    if (numDocs == 0) {
+      log.info("Indexing ZERO test docs");
+      return;
+    }
     CloudSolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(collectionName);
+    List<SolrInputDocument> docs = new ArrayList<>(numDocs);
     for (int i=0; i<numDocs; i++) {
-      //We index the shard_s fields for whichever router gets chosen but only use it when implicit router was selected
-      if (random().nextBoolean()) {
-        SolrInputDocument doc = new SolrInputDocument();
-        doc.addField("id", i);
-        doc.addField("shard_s", "shard1");
-        client.add(doc);
-      } else {
-        SolrInputDocument doc = new SolrInputDocument();
-        doc.addField("id", i);
-        doc.addField("shard_s", "shard2");
-        client.add(doc);
-      }
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", i);
+      doc.addField("shard_s", "shard" + (1 + random.nextInt(NUM_SHARDS))); // for implicit router
+      docs.add(doc);
     }
+    client.add(docs);// batch
     client.commit();
   }
 
-  private void testBackupAndRestore(String collectionName, String restoreCollectionName, boolean isImplicit) throws Exception {
+  private void testBackupAndRestore(String collectionName) throws Exception {
     String backupName = "mytestbackup";
+    String restoreCollectionName = collectionName + "_restored";
+
     CloudSolrClient client = cluster.getSolrClient();
-    long totalDocs = client.query(collectionName, new SolrQuery("*:*")).getResults().getNumFound();
-    long shard1Docs = 0, shard2Docs = 0;
-    if (isImplicit) {
-      shard1Docs = client.query(collectionName, new SolrQuery("*:*").setParam(_ROUTE_, "shard1")).getResults().getNumFound();
-      shard2Docs = client.query(collectionName, new SolrQuery("*:*").setParam(_ROUTE_, "shard2")).getResults().getNumFound();
-      assertTrue(totalDocs == shard1Docs + shard2Docs);
-    }
+    DocCollection backupCollection = client.getZkStateReader().getClusterState().getCollection(collectionName);
+
+    Map<String, Integer> origShardToDocCount = getShardToDocCountMap(client, backupCollection);
+    assert origShardToDocCount.isEmpty() == false;
 
     String location = createTempDir().toFile().getAbsolutePath();
 
@@ -110,36 +154,63 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
 
     log.info("Triggering Restore command");
 
+    //nocommit test with async
     CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
         .setLocation(location);
-    rsp = cluster.getSolrClient().request(restore);
+    if (origShardToDocCount.size() > cluster.getJettySolrRunners().size()) {
+      // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
+      restore.getCreateOptions().setMaxShardsPerNode(origShardToDocCount.size());
+    }
+    Properties props = new Properties();
+    props.setProperty("customKey", "customVal");
+    restore.getCreateOptions().setProperties(props);
+    boolean sameConfig = random().nextBoolean();
+    if (sameConfig==false) {
+      restore.getCreateOptions().setConfigName("customConfigName");//nocommit ugh, this is deprecated
+    }
+    rsp = cluster.getSolrClient().request(restore); // DO IT!
     assertEquals(0, ((NamedList)rsp.get("responseHeader")).get("status"));
     waitForCollection(restoreCollectionName);
 
     //Check the number of results are the same
-    long restoredNumDocs = client.query(restoreCollectionName, new SolrQuery("*:*")).getResults().getNumFound();
-    assertEquals(totalDocs, restoredNumDocs);
-
-    if (isImplicit) {
-      long restoredShard1Docs = client.query(restoreCollectionName, new SolrQuery("*:*").setParam(_ROUTE_, "shard1")).getResults().getNumFound();
-      long restoredShard2Docs = client.query(restoreCollectionName, new SolrQuery("*:*").setParam(_ROUTE_, "shard2")).getResults().getNumFound();
-
-      assertEquals(shard2Docs, restoredShard2Docs);
-      assertEquals(shard1Docs, restoredShard1Docs);
+    DocCollection restoreCollection = client.getZkStateReader().getClusterState().getCollection(restoreCollectionName);
+    assertEquals(origShardToDocCount, getShardToDocCountMap(client, restoreCollection));
+    //Re-index same docs (should be identical docs given same random seed) and test we have the same result.  Helps
+    //  test we reconstituted the hash ranges / doc router.
+    if (!(restoreCollection.getRouter() instanceof ImplicitDocRouter) && random().nextBoolean()) {
+      indexDocs(restoreCollectionName);
+      assertEquals(origShardToDocCount, getShardToDocCountMap(client, restoreCollection));
     }
 
-    DocCollection backupCollection = client.getZkStateReader().getClusterState().getCollection(collectionName);
-    DocCollection restoreCollection = client.getZkStateReader().getClusterState().getCollection(restoreCollectionName);
-
     assertEquals(backupCollection.getReplicationFactor(), restoreCollection.getReplicationFactor());
+    assertEquals(backupCollection.getAutoAddReplicas(), restoreCollection.getAutoAddReplicas());
+    assertEquals(backupCollection.getActiveSlices().iterator().next().getReplicas().size(),
+        restoreCollection.getActiveSlices().iterator().next().getReplicas().size());
+    assertEquals(sameConfig ? "conf1" : "customConfigName",
+        cluster.getSolrClient().getZkStateReader().readConfigName(restoreCollectionName));
 
-    assertEquals("restore.conf1", cluster.getSolrClient().getZkStateReader().readConfigName(restoreCollectionName));
+    // assert added core properties:
+    // nocommit how?
+  }
+
+  private Map<String, Integer> getShardToDocCountMap(CloudSolrClient client, DocCollection docCollection) throws SolrServerException, IOException {
+    Map<String,Integer> shardToDocCount = new TreeMap<>();
+    for (Slice slice : docCollection.getActiveSlices()) {
+      String shardName = slice.getName();
+      long docsInShard = client.query(docCollection.getName(), new SolrQuery("*:*").setParam(_ROUTE_, shardName))
+          .getResults().getNumFound();
+      shardToDocCount.put(shardName, (int) docsInShard);
+    }
+    return shardToDocCount;
   }
 
   public void waitForCollection(String collection) throws Exception {
-    AbstractFullDistribZkTestBase.waitForCollection(cluster.getSolrClient().getZkStateReader(), collection, NUM_SHARDS);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);
-    AbstractDistribZkTestBase.assertAllActive(collection, cluster.getSolrClient().getZkStateReader());
+    // note: NUM_SHARDS may be too small because of shard split, but that's okay?
+    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    AbstractFullDistribZkTestBase.waitForCollection(zkStateReader, collection, NUM_SHARDS);
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, zkStateReader, log.isDebugEnabled(), true, 30);
+    AbstractDistribZkTestBase.assertAllActive(collection, zkStateReader);
+    assertFalse(zkStateReader.getClusterState().getCollection(collection).getActiveSlices().isEmpty());
   }
 
 }
