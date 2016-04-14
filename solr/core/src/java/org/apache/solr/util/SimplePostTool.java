@@ -890,7 +890,11 @@ public class SimplePostTool {
           String encoding = DatatypeConverter.printBase64Binary(url.getUserInfo().getBytes(StandardCharsets.US_ASCII));
           urlc.setRequestProperty("Authorization", "Basic " + encoding);
         }
-        if (null != length) urlc.setFixedLengthStreamingMode(length);
+        if (null != length) {
+          urlc.setFixedLengthStreamingMode(length);
+        } else {
+          urlc.setChunkedStreamingMode(-1);//use JDK default chunkLen, 4k in Java 8.
+        }
         urlc.connect();
       } catch (IOException e) {
         fatal("Connection error (is Solr running at " + solrUrl + " ?): " + e);

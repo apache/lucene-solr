@@ -130,6 +130,8 @@ Optimizations
   produced. This resulted in up to 3x throughput when small filter creation was the bottleneck,
   as well as orders of magnitude less garbage. (Jeff Wartes, yonik)
 
+* SOLR-8937: bin/post (SimplePostTool) now streams the standard input instead of buffering fully.
+  (David Smiley)
 
 Other Changes
 ----------------------
