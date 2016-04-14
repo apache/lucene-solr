@@ -171,7 +171,7 @@ public class ReplicationService {
           if (token == null) {
             resOut.write(0); // marker for null token
           } else {
-            resOut.write(1); // marker for null token
+            resOut.write(1);
             token.serialize(new DataOutputStream(resOut));
           }
           break;
