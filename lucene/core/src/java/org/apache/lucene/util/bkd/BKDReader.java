@@ -205,12 +205,7 @@ public class BKDReader implements Accountable {
     byte[] rootMinPacked = new byte[packedBytesLength];
     byte[] rootMaxPacked = new byte[packedBytesLength];
     Arrays.fill(rootMaxPacked, (byte) 0xff);
-
-    IntersectState state = new IntersectState(in.clone(), numDims, packedBytesLength,
-                                              maxPointsInLeafNode,
-                                              new VerifyVisitor(numDims, bytesPerDim, maxDoc));
-
-    verify(state, 1, rootMinPacked, rootMaxPacked);
+    verify(getIntersectState(new VerifyVisitor(numDims, bytesPerDim, maxDoc)), 1, rootMinPacked, rootMaxPacked);
   }
 
   private void verify(IntersectState state, int nodeID, byte[] cellMinPacked, byte[] cellMaxPacked) throws IOException {
@@ -258,7 +253,8 @@ public class BKDReader implements Accountable {
     }
   }
 
-  static final class IntersectState {
+  /** Used to track all state for a single call to {@link #intersect}. */
+  public static final class IntersectState {
     final IndexInput in;
     final int[] scratchDocIDs;
     final byte[] scratchPackedValue;
@@ -279,11 +275,7 @@ public class BKDReader implements Accountable {
   }
 
   public void intersect(IntersectVisitor visitor) throws IOException {
-    IntersectState state = new IntersectState(in.clone(), numDims,
-                                              packedBytesLength,
-                                              maxPointsInLeafNode,
-                                              visitor);
-    intersect(state, 1, minPackedValue, maxPackedValue);
+    intersect(getIntersectState(visitor), 1, minPackedValue, maxPackedValue);
   }
 
   /** Fast path: this is called when the query box fully encompasses all cells under this node. */
@@ -298,6 +290,25 @@ public class BKDReader implements Accountable {
       addAll(state, 2*nodeID);
       addAll(state, 2*nodeID+1);
     }
+  }
+
+  /** Create a new {@link IntersectState} */
+  public IntersectState getIntersectState(IntersectVisitor visitor) {
+    return new IntersectState(in.clone(), numDims,
+                              packedBytesLength,
+                              maxPointsInLeafNode,
+                              visitor);
+  }
+
+  /** Visits all docIDs and packed values in a single leaf block */
+  public void visitLeafBlockValues(int nodeID, IntersectState state) throws IOException {
+    int leafID = nodeID - leafNodeOffset;
+
+    // Leaf node; scan and filter all points in this block:
+    int count = readDocIDs(state.in, leafBlockFPs[leafID], state.scratchDocIDs);
+
+    // Again, this time reading values and checking with the visitor
+    visitDocValues(state.commonPrefixLengths, state.scratchPackedValue, state.in, state.scratchDocIDs, count, state.visitor);
   }
 
   protected void visitDocIDs(IndexInput in, long blockFP, IntersectVisitor visitor) throws IOException {
@@ -414,6 +425,14 @@ public class BKDReader implements Accountable {
     }
   }
 
+  /** Copies the split value for this node into the provided byte array */
+  public void copySplitValue(int nodeID, byte[] splitPackedValue) {
+    int address = nodeID * (bytesPerDim+1);
+    int splitDim = splitPackedValues[address] & 0xff;
+    assert splitDim < numDims;
+    System.arraycopy(splitPackedValues, address+1, splitPackedValue, splitDim*bytesPerDim, bytesPerDim);
+  }
+
   @Override
   public long ramBytesUsed() {
     return splitPackedValues.length +
@@ -442,5 +461,9 @@ public class BKDReader implements Accountable {
 
   public int getDocCount() {
     return docCount;
+  }
+
+  public boolean isLeafNode(int nodeID) {
+    return nodeID >= leafNodeOffset;
   }
 }
