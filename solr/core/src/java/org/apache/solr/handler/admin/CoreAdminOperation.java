@@ -877,7 +877,7 @@ enum CoreAdminOperation {
       }
 
       String location = params.get("location");
-      if (name == null) {
+      if (location == null) {
         throw new IllegalArgumentException("location is required");
       }
 
