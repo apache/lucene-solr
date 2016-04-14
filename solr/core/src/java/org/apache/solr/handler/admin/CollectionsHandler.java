@@ -811,7 +811,7 @@ public class CollectionsHandler extends RequestHandlerBase {
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
         req.getParams().required().check(NAME, COLLECTION_PROP);
 
-        String collectionName = req.getParams().get(COLLECTION_PROP);
+        String collectionName = SolrIdentifierValidator.validateCollectionName(req.getParams().get(COLLECTION_PROP));
         ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
         //We always want to restore into an collection name which doesn't  exist yet.
         if (clusterState.hasCollection(collectionName)) {
@@ -828,6 +828,9 @@ public class CollectionsHandler extends RequestHandlerBase {
 
         Map<String, Object> params = req.getParams().getAll(null, NAME, COLLECTION_PROP);
         params.put("location", location);
+        // from CREATE_OP:
+        req.getParams().getAll(params, COLL_CONF, REPLICATION_FACTOR, MAX_SHARDS_PER_NODE, STATE_FORMAT, AUTO_ADD_REPLICAS);
+        copyPropertiesWithPrefix(req.getParams(), params, COLL_PROP_PREFIX);
         return params;
       }
     };

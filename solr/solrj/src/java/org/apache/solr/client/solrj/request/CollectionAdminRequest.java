@@ -581,12 +581,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
 
   // RESTORE request
   public static class Restore extends AsyncCollectionSpecificAdminRequest {
-    protected final String name;
+    protected final String backupName;
     protected String location;
+    protected Create createOptions;//lazy created
 
-    public Restore(String collection, String name) {
+    public Restore(String collection, String backupName) {
       super(CollectionAction.RESTORE, collection);
-      this.name = name;
+      this.backupName = backupName;
     }
 
     @Override
@@ -610,11 +611,35 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
+    /** The returned create command is used as a POJO to pass additional parameters -- restoring a collection involves
+     * creating a collection.  However, note some options aren't supported like numShards and configuring the router.
+     */
+    // note: it was either this (hack?) or we extend Create which would be weird/hack, or we verbosely duplicate lots of
+    //   POJO methods, or we perhaps modify the base class to have an addParam() but we loose typed/documented options.
+    //   nocommit but unfortunately, setConfigName & setReplicationFactor are deprecated. Now what?
+    public Create getCreateOptions() {
+      if (createOptions == null) {
+        createOptions = new Create(collection, null, -1, -1);
+      }
+      return createOptions;
+    }
+
     @Override
     public SolrParams getParams() {
-      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      ModifiableSolrParams params;
+      if (createOptions != null) {
+        params = (ModifiableSolrParams) createOptions.getParams();
+        // remove these two settings that create() made us set (unless customized)
+        if ("-1".equals(params.get("replicationFactor"))) {
+          params.remove("replicationFactor");
+        }
+        params.remove("numShards"); // not customizable
+        params.add(super.getParams());//override action, and we override some below too...
+      } else {
+        params = (ModifiableSolrParams) super.getParams();
+      }
       params.set(CoreAdminParams.COLLECTION, collection);
-      params.set(CoreAdminParams.NAME, name);
+      params.set(CoreAdminParams.NAME, backupName);
       params.set("location", location); //note: optional
       return params;
     }
