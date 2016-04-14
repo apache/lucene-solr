@@ -16,6 +16,13 @@
  */
 package org.apache.solr.common.cloud;
 
+/**
+ * Implementations are expected to implement a correct hashCode and equals
+ * method needed to uniquely identify the listener as listeners are managed
+ * in a Set. In addition, your listener implementation should call
+ * org.apache.solr.cloud.ZkController#removeOnReconnectListener(OnReconnect)
+ * when it no longer needs to be notified of ZK reconnection events.
+ */
 public interface OnReconnect {
-  public void command();
+  void command();
 }

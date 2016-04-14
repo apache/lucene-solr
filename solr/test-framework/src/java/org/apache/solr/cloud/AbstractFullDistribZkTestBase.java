@@ -51,9 +51,11 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrDocument;
@@ -1788,6 +1790,43 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     createCollection(collectionInfos, collName, props, client);
   }
 
+  protected void createCollectionRetry(String testCollectionName, int numShards, int replicationFactor, int maxShardsPerNode)
+      throws SolrServerException, IOException {
+    CollectionAdminResponse resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
+    if (resp.getResponse().get("failure") != null) {
+      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
+      req.setCollectionName(testCollectionName);
+      req.process(cloudClient);
+
+      resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
+
+      if (resp.getResponse().get("failure") != null) {
+        fail("Could not create " + testCollectionName);
+      }
+    }
+  }
+
+  protected Replica getShardLeader(String testCollectionName, String shardId, int timeoutSecs) throws Exception {
+    Replica leader = null;
+    long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutSecs, TimeUnit.SECONDS);
+    while (System.nanoTime() < timeout) {
+      Replica tmp = null;
+      try {
+        tmp = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
+      } catch (Exception exc) {}
+      if (tmp != null && "active".equals(tmp.getStr(ZkStateReader.STATE_PROP))) {
+        leader = tmp;
+        break;
+      }
+      Thread.sleep(1000);
+    }
+    assertNotNull("Could not find active leader for " + shardId + " of " +
+        testCollectionName + " after "+timeoutSecs+" secs; clusterState: " +
+        printClusterStateInfo(testCollectionName), leader);
+
+    return leader;
+  }
+
   protected List<Replica> ensureAllReplicasAreActive(String testCollectionName, String shardId, int shards, int rf, int maxWaitSecs) throws Exception {
     final RTimer timer = new RTimer();
 
@@ -1873,6 +1912,42 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       cs = out.toString();
     }
     return cs;
+  }
+
+  protected boolean reloadCollection(Replica replica, String testCollectionName) throws Exception {
+    ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
+    String coreName = coreProps.getCoreName();
+    boolean reloadedOk = false;
+    try (HttpSolrClient client = new HttpSolrClient(coreProps.getBaseUrl())) {
+      CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
+      long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
+
+      Thread.sleep(1000);
+
+      // send reload command for the collection
+      log.info("Sending RELOAD command for "+testCollectionName);
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.RELOAD.toString());
+      params.set("name", testCollectionName);
+      QueryRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+      client.request(request);
+      Thread.sleep(2000); // reload can take a short while
+
+      // verify reload is done, waiting up to 30 seconds for slow test environments
+      long timeout = System.nanoTime() + TimeUnit.NANOSECONDS.convert(30, TimeUnit.SECONDS);
+      while (System.nanoTime() < timeout) {
+        statusResp = CoreAdminRequest.getStatus(coreName, client);
+        long startTimeAfterReload = statusResp.getStartTime(coreName).getTime();
+        if (startTimeAfterReload > leaderCoreStartTime) {
+          reloadedOk = true;
+          break;
+        }
+        // else ... still waiting to see the reloaded core report a later start time
+        Thread.sleep(1000);
+      }
+    }
+    return reloadedOk;
   }
 
   static RequestStatusState getRequestStateAfterCompletion(String requestId, int waitForSeconds, SolrClient client)

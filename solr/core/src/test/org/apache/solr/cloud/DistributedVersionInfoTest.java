@@ -291,22 +291,6 @@ public class DistributedVersionInfoTest extends AbstractFullDistribZkTestBase {
     return vers.longValue();
   }
 
-  private void createCollectionRetry(String testCollectionName, int numShards, int replicationFactor, int maxShardsPerNode)
-      throws SolrServerException, IOException {
-    CollectionAdminResponse resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
-    if (resp.getResponse().get("failure") != null) {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
-      req.process(cloudClient);
-
-      resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
-
-      if (resp.getResponse().get("failure") != null) {
-        fail("Could not create " + testCollectionName);
-      }
-    }
-  }
-
   protected void assertDocsExistInAllReplicas(List<Replica> notLeaders,
                                               String testCollectionName,
                                               int firstDocId,
