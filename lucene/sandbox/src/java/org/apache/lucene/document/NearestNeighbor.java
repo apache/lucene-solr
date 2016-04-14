@@ -66,7 +66,7 @@ class NearestNeighbor {
       double minLon = decodeLongitude(minPacked, Integer.BYTES);
       double maxLat = decodeLatitude(maxPacked, 0);
       double maxLon = decodeLongitude(maxPacked, Integer.BYTES);
-      return "Cell(readerIndex=" + readerIndex + " lat=" + minLat + " TO " + maxLat + ", lon=" + minLon + " TO " + maxLon + ")";
+      return "Cell(readerIndex=" + readerIndex + " lat=" + minLat + " TO " + maxLat + ", lon=" + minLon + " TO " + maxLon + "; distanceMeters=" + distanceMeters + ")";
     }
   }
 
@@ -88,8 +88,6 @@ class NearestNeighbor {
     // second set of longitude ranges to check (for cross-dateline case)
     private double minLon2 = Double.POSITIVE_INFINITY;
 
-    int pointCheckCount;
-
     public NearestVisitor(PriorityQueue<NearestHit> hitQueue, int topN, double pointLat, double pointLon) {
       this.hitQueue = hitQueue;
       this.topN = topN;
@@ -106,6 +104,7 @@ class NearestNeighbor {
       if (setBottomCounter < 1024 || (setBottomCounter & 0x3F) == 0x3F) {
         NearestHit hit = hitQueue.peek();
         Rectangle box = Rectangle.fromPointDistance(pointLat, pointLon, hit.distanceMeters);
+        //System.out.println("    update bbox to " + box);
         minLat = box.minLat;
         maxLat = box.maxLat;
         if (box.crossesDateline()) {
@@ -144,8 +143,6 @@ class NearestNeighbor {
       if ((docLongitude < minLon || docLongitude > maxLon) && (docLongitude < minLon2)) {
         return;
       }
-
-      pointCheckCount++;
 
       double distanceMeters = SloppyMath.haversinMeters(pointLat, pointLon, docLatitude, docLongitude);
 
@@ -198,7 +195,7 @@ class NearestNeighbor {
 
   public static NearestHit[] nearest(double pointLat, double pointLon, List<BKDReader> readers, List<Bits> liveDocs, List<Integer> docBases, final int n) throws IOException {
 
-    //System.out.println("NEAREST: r=" + r + " liveDocs=" + liveDocs);
+    //System.out.println("NEAREST: readers=" + readers + " liveDocs=" + liveDocs + " pointLat=" + pointLat + " pointLon=" + pointLon);
     // Holds closest collected points seen so far:
     // TODO: if we used lucene's PQ we could just updateTop instead of poll/offer:
     final PriorityQueue<NearestHit> hitQueue = new PriorityQueue<>(n, new Comparator<NearestHit>() {
@@ -225,16 +222,11 @@ class NearestNeighbor {
     for(int i=0;i<readers.size();i++) {
       BKDReader reader = readers.get(i);
       byte[] minPackedValue = reader.getMinPackedValue();
-      double minLat = decodeLatitude(minPackedValue, 0);
-      double minLon = decodeLongitude(minPackedValue, Integer.BYTES);
-
       byte[] maxPackedValue = reader.getMaxPackedValue();
-      double maxLat = decodeLatitude(maxPackedValue, 0);
-      double maxLon = decodeLongitude(maxPackedValue, Integer.BYTES);
       states.add(reader.getIntersectState(visitor));
 
       cellQueue.offer(new Cell(i, 1, reader.getMinPackedValue(), reader.getMaxPackedValue(),
-                               approxBestDistance(minLat, maxLat, minLon, maxLon, pointLat, pointLon)));
+                               approxBestDistance(minPackedValue, maxPackedValue, pointLat, pointLon)));
     }
 
     while (cellQueue.size() > 0) {
@@ -302,7 +294,7 @@ class NearestNeighbor {
     // TODO: can we make this the trueBestDistance?  I.e., minimum distance between the point and ANY point on the box?  we can speed things
     // up if so, but not enrolling any BKD cell whose true best distance is > bottom of the current hit queue
 
-    if (pointLat >= minLat && pointLat <= maxLat && pointLon >= minLon && pointLon <= minLon) {
+    if (pointLat >= minLat && pointLat <= maxLat && pointLon >= minLon && pointLon <= maxLon) {
       // point is inside the cell!
       return 0.0;
     }
