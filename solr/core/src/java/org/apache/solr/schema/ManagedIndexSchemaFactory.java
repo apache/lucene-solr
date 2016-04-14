@@ -30,6 +30,8 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CloseHook;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -373,7 +375,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   public void inform(SolrCore core) {
     this.core = core;
     if (loader instanceof ZkSolrResourceLoader) {
-      this.zkIndexSchemaReader = new ZkIndexSchemaReader(this);
+      this.zkIndexSchemaReader = new ZkIndexSchemaReader(this, core);
       ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
       zkLoader.setZkIndexSchemaReader(this.zkIndexSchemaReader);
     } else {
