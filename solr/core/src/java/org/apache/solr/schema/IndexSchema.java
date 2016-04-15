@@ -1385,16 +1385,23 @@ public class IndexSchema {
     for (String fieldName : fieldNames) {
       fieldProperties.add(fields.get(fieldName).getNamedPropertyValues(params.getBool("showDefaults", false)));
     }
+    if (params.getBool("includeDynamic", false)) {
+      fieldProperties.addAll(getDynamicFields(params));
+    }
     topLevel.add(FIELDS, fieldProperties);
+    topLevel.add(DYNAMIC_FIELDS, getDynamicFields(params));
+    topLevel.add(COPY_FIELDS, getCopyFieldProperties(false, null, null));
+    return topLevel;
+  }
+
+  private List<SimpleOrderedMap<Object>> getDynamicFields(SolrParams params) {
     List<SimpleOrderedMap<Object>> dynamicFieldProperties = new ArrayList<>();
-    for (IndexSchema.DynamicField dynamicField : dynamicFields) {
+    for (DynamicField dynamicField : dynamicFields) {
       if ( ! dynamicField.getRegex().startsWith(INTERNAL_POLY_FIELD_PREFIX)) { // omit internal polyfields
         dynamicFieldProperties.add(dynamicField.getPrototype().getNamedPropertyValues(params.getBool("showDefaults", false)));
       }
     }
-    topLevel.add(DYNAMIC_FIELDS, dynamicFieldProperties);
-    topLevel.add(COPY_FIELDS, getCopyFieldProperties(false, null, null));
-    return topLevel;
+    return dynamicFieldProperties;
   }
 
   /**
