@@ -16,11 +16,15 @@
  */
 package org.apache.lucene.queryparser.xml;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.Query;
 
 public class TestCorePlusQueriesParser extends TestCoreParser {
 
-  private CoreParser corePlusQueriesParser;
+  @Override
+  protected CoreParser newCoreParser(String defaultField, Analyzer analyzer) {
+    return new CorePlusQueriesParser(defaultField, analyzer);
+  }
 
   public void testLikeThisQueryXML() throws Exception {
     Query q = parse("LikeThisQuery.xml");
@@ -30,18 +34,6 @@ public class TestCorePlusQueriesParser extends TestCoreParser {
   public void testBoostingQueryXML() throws Exception {
     Query q = parse("BoostingQuery.xml");
     dumpResults("boosting ", q, 5);
-  }
-
-  //================= Helper methods ===================================
-
-  @Override
-  protected CoreParser coreParser() {
-    if (corePlusQueriesParser == null) {
-      corePlusQueriesParser = new CorePlusQueriesParser(
-          super.defaultField(),
-          super.analyzer());
-    }
-    return corePlusQueriesParser;
   }
 
 }
