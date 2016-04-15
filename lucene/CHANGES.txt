@@ -42,6 +42,12 @@ Bug Fixes
 * LUCENE-7231: WeightedSpanTermExtractor didn't deal correctly with single-term
   phrase queries. (Eva Popenda, Alan Woodward)
 
+Documentation
+
+* LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
+  should separately add StoredField if you want to retrieve these
+  field values at search time (Greg Huber, Robert Muir, Mike McCandless)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
