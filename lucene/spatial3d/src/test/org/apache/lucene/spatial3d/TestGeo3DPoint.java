@@ -1356,6 +1356,9 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
   public static String explain(String fieldName, GeoShape shape, GeoPoint targetDocPoint, GeoPoint scaledDocPoint, IndexReader reader, int docID) throws Exception {
 
+    final XYZBounds bounds = new XYZBounds();
+    shape.getBounds(bounds);
+    
     // First find the leaf reader that owns this doc:
     int subIndex = ReaderUtil.subIndex(docID, reader.leaves());
     LeafReader leafReader = reader.leaves().get(subIndex).reader();
@@ -1364,7 +1367,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     b.append("target is in leaf " + leafReader + " of full reader " + reader + "\n");
 
     DocIdSetBuilder hits = new DocIdSetBuilder(leafReader.maxDoc());
-    ExplainingVisitor visitor = new ExplainingVisitor(shape, targetDocPoint, scaledDocPoint, new PointInShapeIntersectVisitor(hits, shape), docID - reader.leaves().get(subIndex).docBase, 3, Integer.BYTES, b);
+    ExplainingVisitor visitor = new ExplainingVisitor(shape, targetDocPoint, scaledDocPoint, new PointInShapeIntersectVisitor(hits, shape, bounds), docID - reader.leaves().get(subIndex).docBase, 3, Integer.BYTES, b);
 
     // Do first phase, where we just figure out the "path" that leads to the target docID:
     leafReader.getPointValues().intersect(fieldName, visitor);
