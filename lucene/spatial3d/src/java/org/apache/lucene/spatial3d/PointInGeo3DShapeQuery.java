@@ -21,6 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.spatial3d.geom.BasePlanetObject;
 import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
+import org.apache.lucene.spatial3d.geom.XYZBounds;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -41,12 +42,15 @@ import org.apache.lucene.util.DocIdSetBuilder;
 final class PointInGeo3DShapeQuery extends Query {
   final String field;
   final GeoShape shape;
-
+  final XYZBounds shapeBounds;
+  
   /** The lats/lons must be clockwise or counter-clockwise. */
   public PointInGeo3DShapeQuery(String field, GeoShape shape) {
     this.field = field;
     this.shape = shape;
-
+    this.shapeBounds = new XYZBounds();
+    shape.getBounds(shapeBounds);
+    
     if (shape instanceof BasePlanetObject) {
       BasePlanetObject planetObject = (BasePlanetObject) shape;
       if (planetObject.getPlanetModel().equals(PlanetModel.WGS84) == false) {
@@ -95,7 +99,7 @@ final class PointInGeo3DShapeQuery extends Query {
 
         DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
 
-        values.intersect(field, new PointInShapeIntersectVisitor(result, shape));
+        values.intersect(field, new PointInShapeIntersectVisitor(result, shape, shapeBounds));
 
         return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
