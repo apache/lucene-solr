@@ -55,7 +55,10 @@ public class TestCoreParser extends LuceneTestCase {
   public static void afterClass() throws Exception {
     if (indexData != null) {
       indexData.close();
+      indexData = null;
     }
+    coreParser = null;
+    analyzer = null;
   }
 
   public void testTermQueryXML() throws ParserException, IOException {
