@@ -253,9 +253,8 @@ class GeoConvexPolygon extends GeoBasePolygon {
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
-    for (final SidedPlane edge : edges) {
-      if (!edge.isWithin(x, y, z))
-        return false;
+    if (!localIsWithin(x, y, z)) {
+      return false;
     }
     if (holes != null) {
       for (final GeoPolygon polygon : holes) {
@@ -266,7 +265,19 @@ class GeoConvexPolygon extends GeoBasePolygon {
     }
     return true;
   }
+  
+  protected boolean localIsWithin(final Vector v) {
+    return localIsWithin(v.x, v.y, v.z);
+  }
 
+  protected boolean localIsWithin(final double x, final double y, final double z) {
+    for (final SidedPlane edge : edges) {
+      if (!edge.isWithin(x, y, z))
+        return false;
+    }
+    return true;
+  }
+  
   @Override
   public GeoPoint[] getEdgePoints() {
     return edgePoints;
@@ -328,7 +339,27 @@ class GeoConvexPolygon extends GeoBasePolygon {
 
   @Override
   public void getBounds(Bounds bounds) {
-    super.getBounds(bounds);
+    // Because of holes, we don't want to use superclass method
+    if (localIsWithin(planetModel.NORTH_POLE)) {
+      bounds.noTopLatitudeBound().noLongitudeBound()
+        .addPoint(planetModel.NORTH_POLE);
+    }
+    if (localIsWithin(planetModel.SOUTH_POLE)) {
+      bounds.noBottomLatitudeBound().noLongitudeBound()
+        .addPoint(planetModel.SOUTH_POLE);
+    }
+    if (localIsWithin(planetModel.MIN_X_POLE)) {
+      bounds.addPoint(planetModel.MIN_X_POLE);
+    }
+    if (localIsWithin(planetModel.MAX_X_POLE)) {
+      bounds.addPoint(planetModel.MAX_X_POLE);
+    }
+    if (localIsWithin(planetModel.MIN_Y_POLE)) {
+      bounds.addPoint(planetModel.MIN_Y_POLE);
+    }
+    if (localIsWithin(planetModel.MAX_Y_POLE)) {
+      bounds.addPoint(planetModel.MAX_Y_POLE);
+    }
 
     // Add all the points
     for (final GeoPoint point : points) {
@@ -339,6 +370,7 @@ class GeoConvexPolygon extends GeoBasePolygon {
     for (final SidedPlane edge : edges) {
       bounds.addPlane(planetModel, edge, eitherBounds.get(edge));
     }
+    
   }
 
   @Override
