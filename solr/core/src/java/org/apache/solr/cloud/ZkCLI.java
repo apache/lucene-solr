@@ -67,6 +67,7 @@ public class ZkCLI {
   private static final String SOLRHOME = "solrhome";
   private static final String BOOTSTRAP = "bootstrap";
   static final String UPCONFIG = "upconfig";
+  static final String EXCLUDE_REGEX_SHORT = "x";
   static final String EXCLUDE_REGEX = "excluderegex";
   static final String EXCLUDE_REGEX_DEFAULT = ZkConfigManager.UPLOAD_FILENAME_EXCLUDE_REGEX;
   private static final String COLLECTION = "collection";
@@ -122,7 +123,7 @@ public class ZkCLI {
     options.addOption("c", COLLECTION, true,
         "for " + LINKCONFIG + ": name of the collection");
     
-    options.addOption(EXCLUDE_REGEX, true,
+    options.addOption(EXCLUDE_REGEX_SHORT, EXCLUDE_REGEX, true,
         "for " + UPCONFIG + ": files matching this regular expression won't be uploaded");
 
     options
