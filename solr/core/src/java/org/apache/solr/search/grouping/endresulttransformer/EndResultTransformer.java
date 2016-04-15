@@ -42,7 +42,7 @@ public interface EndResultTransformer {
    * Abstracts the source for {@link SolrDocument} instances.
    * The source of documents is different for a distributed search than local search
    */
-  public interface SolrDocumentSource {
+  interface SolrDocumentSource {
 
     SolrDocument retrieve(ScoreDoc doc);
 

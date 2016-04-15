@@ -49,12 +49,7 @@ public class TestSolrConfigHandlerCloud extends AbstractFullDistribZkTestBase {
 
   private void setupHarnesses() {
     for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(new RESTfulServerProvider() {
-        @Override
-        public String getBaseURL() {
-          return ((HttpSolrClient)client).getBaseURL();
-        }
-      });
+      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient)client).getBaseURL());
       restTestHarnesses.add(harness);
     }
   }

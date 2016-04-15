@@ -16,5 +16,5 @@
  */
 package org.apache.solr.util;
 public interface RESTfulServerProvider {
-  public String getBaseURL();
+  String getBaseURL();
 }
