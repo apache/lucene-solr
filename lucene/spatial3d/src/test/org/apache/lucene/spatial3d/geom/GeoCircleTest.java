@@ -392,4 +392,21 @@ public class GeoCircleTest extends LuceneTestCase {
 
   }
 
+  @Test
+  public void testBoundsFailureCase1() {
+    // lat=2.7399499693409367E-13, lon=-3.141592653589793([X=-1.0011188539924791, Y=-1.226017000107956E-16, Z=2.743015573303327E-13])], radius=2.1814042682464985
+    final GeoCircle gc = GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, 2.7399499693409367E-13, -3.141592653589793, 2.1814042682464985);
+    // With a circle like this, zmin should equal zmax, and xmin should be PlanetModel.minimumX.
+    final GeoPoint gp = new GeoPoint(0.0054866241253590815, -0.004009749293376541, 0.997739304376186);
+    final GeoPoint gpOnSurface = PlanetModel.WGS84.createSurfacePoint(gp);
+    final XYZBounds bounds = new XYZBounds();
+    gc.getBounds(bounds);
+    //System.out.println("Bounds: "+bounds);
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, bounds.getMinimumX(), bounds.getMaximumX(), bounds.getMinimumY(), bounds.getMaximumY(), bounds.getMinimumZ(), bounds.getMaximumZ());
+    assertTrue(gc.isWithin(gpOnSurface));
+    assertTrue(gc.isWithin(gp));
+    assertTrue(solid.isWithin(gpOnSurface)); // This fails
+    assertTrue(solid.isWithin(gp));
+  }
+  
 }
