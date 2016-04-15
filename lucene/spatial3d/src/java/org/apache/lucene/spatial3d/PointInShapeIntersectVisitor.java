@@ -23,16 +23,19 @@ import org.apache.lucene.spatial3d.geom.GeoArea;
 import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
 import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
+import org.apache.lucene.spatial3d.geom.XYZBounds;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
 
 class PointInShapeIntersectVisitor implements IntersectVisitor {
   private final DocIdSetBuilder hits;
   private final GeoShape shape;
-
-  public PointInShapeIntersectVisitor(DocIdSetBuilder hits, GeoShape shape) {
+  private final XYZBounds shapeBounds;
+  
+  public PointInShapeIntersectVisitor(DocIdSetBuilder hits, GeoShape shape, XYZBounds shapeBounds) {
     this.hits = hits;
     this.shape = shape;
+    this.shapeBounds = shapeBounds;
   }
 
   @Override
@@ -46,8 +49,12 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
     double x = Geo3DPoint.decodeDimension(packedValue, 0);
     double y = Geo3DPoint.decodeDimension(packedValue, Integer.BYTES);
     double z = Geo3DPoint.decodeDimension(packedValue, 2 * Integer.BYTES);
-    if (shape.isWithin(x, y, z)) {
-      hits.add(docID);
+    if (x >= shapeBounds.getMinimumX() && x <= shapeBounds.getMaximumX() &&
+      y >= shapeBounds.getMinimumY() && y <= shapeBounds.getMaximumY() &&
+      z >= shapeBounds.getMinimumZ() && z <= shapeBounds.getMaximumZ()) {
+      if (shape.isWithin(x, y, z)) {
+        hits.add(docID);
+      }
     }
   }
   
@@ -69,6 +76,14 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
     assert yMin <= yMax;
     assert zMin <= zMax;
 
+    // First, check bounds.  If the shape is entirely contained, return CELL_CROSSES_QUERY.
+    if (shapeBounds.getMinimumX() >= xMin && shapeBounds.getMaximumX() <= xMax &&
+      shapeBounds.getMinimumY() >= yMin && shapeBounds.getMaximumY() <= yMax &&
+      shapeBounds.getMinimumZ() >= zMin && shapeBounds.getMaximumZ() <= zMax) {
+      return Relation.CELL_CROSSES_QUERY;
+    }
+    
+    // Quick test failed so do slower one...
     GeoArea xyzSolid = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84, xMin, xMax, yMin, yMax, zMin, zMax);
 
     switch(xyzSolid.getRelationship(shape)) {
