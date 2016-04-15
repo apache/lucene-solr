@@ -15,11 +15,9 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
-import com.carrotsearch.randomizedtesting.annotations.Seed;
 import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
-import java.io.IOException;
 
 public class TestFieldCollectionResource extends SolrRestletTestBase {
   @Test
@@ -37,6 +35,22 @@ public class TestFieldCollectionResource extends SolrRestletTestBase {
              "/fields/[0]/name=='HTMLstandardtok'",
              "/fields/[1]/name=='HTMLwhitetok'",
              "/fields/[2]/name=='_version_'");
+  }
+
+
+  @Test
+  public void testJsonGetAllFieldsIncludeDynamic() throws Exception {
+    assertJQ("/schema/fields?indent=on&includeDynamic=true",
+             "/fields/[0]/name=='HTMLstandardtok'",
+             "/fields/[1]/name=='HTMLwhitetok'",
+             "/fields/[2]/name=='_version_'",
+             "/fields/[98]/name=='*_d'",
+             "/fields/[97]/name=='*_f'",
+             "/fields/[96]/name=='*_b'",
+             "/fields/[95]/name=='*_t'",
+             "/fields/[94]/name=='*_l'"
+
+    );
   }
 
 }

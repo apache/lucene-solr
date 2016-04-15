@@ -164,6 +164,8 @@ Other Changes
 * SOLR-8967: In SolrCloud mode, under the 'Core Selector' dropdown in the UI the Replication tab won't be displayed
   anymore. The Replication tab is only beneficial to users running Solr in master-slave mode. (Varun Thacker)
 
+* SOLR-8985: Added back support for 'includeDynamic' flag to /schema/fields endpoint (noble)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
