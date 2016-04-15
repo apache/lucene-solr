@@ -118,12 +118,6 @@ public class LatLonPoint extends Field {
     setLocationValue(latitude, longitude);
   }
 
-  private static final int BITS = 32;
-  private static final double LONGITUDE_MUL = (0x1L<<BITS)/360.0D;
-  static final double LONGITUDE_DECODE = 1/LONGITUDE_MUL;
-  private static final double LATITUDE_MUL  = (0x1L<<BITS)/180.0D;
-  static final double LATITUDE_DECODE  = 1/LATITUDE_MUL;
-  
   @Override
   public String toString() {
     StringBuilder result = new StringBuilder();
