@@ -140,7 +140,7 @@ public abstract class SolrCoreState {
 
 
   public interface IndexWriterCloser {
-    public void closeWriter(IndexWriter writer) throws IOException;
+    void closeWriter(IndexWriter writer) throws IOException;
   }
 
   public abstract void doRecovery(CoreContainer cc, CoreDescriptor cd);
