@@ -27,7 +27,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 /** 
- * An indexed {@code float} field.
+ * An indexed {@code float} field for fast range filters.  If you also
+ * need to store the value, you should add a separate {@link StoredField} instance.
  * <p>
  * Finding all documents within an N-dimensional at search time is
  * efficient.  Multiple values for the same field in one document

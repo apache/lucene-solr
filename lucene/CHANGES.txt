@@ -84,6 +84,12 @@ Bug Fixes
   that led to IllegalStateException being thrown when nothing was wrong.
   (David Smiley, yonik)  
 
+Documentation
+
+* LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
+  should separately add StoredField if you want to retrieve these
+  field values at search time (Greg Huber, Robert Muir, Mike McCandless)
+
 Other
 
 * LUCENE-7174: Upgrade randomizedtesting to 2.3.4. (Uwe Schindler, Dawid Weiss)
