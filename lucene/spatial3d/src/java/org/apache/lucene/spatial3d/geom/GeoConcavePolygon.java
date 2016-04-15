@@ -258,15 +258,7 @@ class GeoConcavePolygon extends GeoBasePolygon {
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
-    // If present within *any* plane, then it is a member, except where there are holes.
-    boolean isMember = false;
-    for (final SidedPlane edge : edges) {
-      if (edge.isWithin(x, y, z)) {
-        isMember = true;
-        break;
-      }
-    }
-    if (isMember == false) {
+    if (!localIsWithin(x, y, z)) {
       return false;
     }
     if (holes != null) {
@@ -277,6 +269,22 @@ class GeoConcavePolygon extends GeoBasePolygon {
       }
     }
     return true;
+  }
+
+  protected boolean localIsWithin(final Vector v) {
+    return localIsWithin(v.x, v.y, v.z);
+  }
+
+  protected boolean localIsWithin(final double x, final double y, final double z) {
+    // If present within *any* plane, then it is a member, except where there are holes.
+    boolean isMember = false;
+    for (final SidedPlane edge : edges) {
+      if (edge.isWithin(x, y, z)) {
+        isMember = true;
+        break;
+      }
+    }
+    return isMember;
   }
 
   @Override
@@ -341,7 +349,28 @@ class GeoConcavePolygon extends GeoBasePolygon {
 
   @Override
   public void getBounds(Bounds bounds) {
-    super.getBounds(bounds);
+    // Because of holes, we don't want to use superclass method
+    if (localIsWithin(planetModel.NORTH_POLE)) {
+      bounds.noTopLatitudeBound().noLongitudeBound()
+        .addPoint(planetModel.NORTH_POLE);
+    }
+    if (localIsWithin(planetModel.SOUTH_POLE)) {
+      bounds.noBottomLatitudeBound().noLongitudeBound()
+        .addPoint(planetModel.SOUTH_POLE);
+    }
+    if (localIsWithin(planetModel.MIN_X_POLE)) {
+      bounds.addPoint(planetModel.MIN_X_POLE);
+    }
+    if (localIsWithin(planetModel.MAX_X_POLE)) {
+      bounds.addPoint(planetModel.MAX_X_POLE);
+    }
+    if (localIsWithin(planetModel.MIN_Y_POLE)) {
+      bounds.addPoint(planetModel.MIN_Y_POLE);
+    }
+    if (localIsWithin(planetModel.MAX_Y_POLE)) {
+      bounds.addPoint(planetModel.MAX_Y_POLE);
+    }
+
     bounds.isWide();
 
     // Add all the points
@@ -353,6 +382,7 @@ class GeoConcavePolygon extends GeoBasePolygon {
     for (final SidedPlane edge : edges) {
       bounds.addPlane(planetModel, edge, eitherBounds.get(edge));
     }
+    
   }
 
   @Override
