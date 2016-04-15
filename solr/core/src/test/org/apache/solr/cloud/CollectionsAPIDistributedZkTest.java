@@ -26,8 +26,19 @@ import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -39,7 +50,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
@@ -375,6 +385,14 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
 
   }
 
+  private NamedList<Object> makeRequest(String baseUrl, SolrRequest request, int socketTimeout)
+      throws SolrServerException, IOException {
+    try (SolrClient client = createNewSolrClient("", baseUrl)) {
+      ((HttpSolrClient) client).setSoTimeout(socketTimeout);
+      return client.request(request);
+    }
+  }
+
   private NamedList<Object> makeRequest(String baseUrl, SolrRequest request)
       throws SolrServerException, IOException {
     try (SolrClient client = createNewSolrClient("", baseUrl)) {
@@ -525,8 +543,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     params.set(OverseerCollectionMessageHandler.CREATE_NODE_SET, nn1 + "," + nn2);
     request = new QueryRequest(params);
     request.setPath("/admin/collections");
-    gotExp = false;
-    NamedList<Object> resp = makeRequest(baseUrl, request);;
+    NamedList<Object> resp = makeRequest(baseUrl, request, 60000);
     
     SimpleOrderedMap success = (SimpleOrderedMap) resp.get("success");
     SimpleOrderedMap failure = (SimpleOrderedMap) resp.get("failure");
