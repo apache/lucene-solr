@@ -64,6 +64,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
  *   <li>{@link #newDistanceQuery newDistanceQuery()} for matching points within a specified distance.
  *   <li>{@link #newDistanceSort newDistanceSort()} for ordering documents by distance from a specified location. 
  *   <li>{@link #newPolygonQuery newPolygonQuery()} for matching points within an arbitrary polygon.
+ *   <li>{@link #nearest nearest()} for finding the k-nearest neighbors by distance.
  * </ul>
  * <p>
  * <b>WARNING</b>: Values are indexed with some loss of precision from the
@@ -304,24 +305,39 @@ public class LatLonPoint extends Field {
   }
 
   /**
-   * Finds the {@code topN} nearest indexed points to the provided point, according to Haversine distance.
+   * Finds the {@code n} nearest indexed points to the provided point, according to Haversine distance.
+   * <p>
    * This is functionally equivalent to running {@link MatchAllDocsQuery} with a {@link #newDistanceSort},
    * but is far more efficient since it takes advantage of properties the indexed BKD tree.  Currently this
    * only works with {@link Lucene60PointsFormat} (used by the default codec).
+   * <p>
+   * Documents are ordered by ascending distance from the location. The value returned in {@link FieldDoc} for
+   * the hits contains a Double instance with the distance in meters.
+   * 
+   * @param searcher IndexSearcher to find nearest points from.
+   * @param field field name. must not be null.
+   * @param latitude latitude at the center: must be within standard +/-90 coordinate bounds.
+   * @param longitude longitude at the center: must be within standard +/-180 coordinate bounds.
+   * @param n the number of nearest neighbors to retrieve.
+   * @return TopFieldDocs containing documents ordered by distance.
+   * @throws IllegalArgumentException if the underlying PointValues is not a {@code Lucene60PointsReader} (this is a current limitation).
+   * @throws IOException if an IOException occurs while finding the points.
    */
-  public static TopFieldDocs nearest(IndexSearcher s, String fieldName, double latitude, double longitude, int n) throws IOException {
+  // TODO: what about multi-valued documents? what happens?
+  // TODO: parameter checking, what if i pass a negative n, bogus latitude, null field,etc?
+  public static TopFieldDocs nearest(IndexSearcher searcher, String field, double latitude, double longitude, int n) throws IOException {
     List<BKDReader> readers = new ArrayList<>();
     List<Integer> docBases = new ArrayList<>();
     List<Bits> liveDocs = new ArrayList<>();
     int totalHits = 0;
-    for(LeafReaderContext leaf : s.getIndexReader().leaves()) {
+    for(LeafReaderContext leaf : searcher.getIndexReader().leaves()) {
       PointValues points = leaf.reader().getPointValues();
       if (points != null) {
         if (points instanceof Lucene60PointsReader == false) {
           throw new IllegalArgumentException("can only run on Lucene60PointsReader points implementation, but got " + points);
         }
-        totalHits += points.getDocCount(fieldName);
-        BKDReader reader = ((Lucene60PointsReader) points).getBKDReader(fieldName);
+        totalHits += points.getDocCount(field);
+        BKDReader reader = ((Lucene60PointsReader) points).getBKDReader(field);
         if (reader != null) {
           readers.add(reader);
           docBases.add(leaf.docBase);
