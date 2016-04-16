@@ -360,5 +360,5 @@ public class GeoBBoxTest {
     //assertEquals(Math.PI,b.getRightLongitude(),0.000001);
 
   }
-
+  
 }

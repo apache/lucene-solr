@@ -686,12 +686,14 @@ public class TestGeo3DPoint extends LuceneTestCase {
     IndexWriterConfig iwc = newIndexWriterConfig();
 
     GeoPoint[] points = new GeoPoint[lats.length];
-
+    GeoPoint[] unquantizedPoints = new GeoPoint[lats.length];
+    
     // Pre-quantize all lat/lons:
     for(int i=0;i<lats.length;i++) {
       if (Double.isNaN(lats[i]) == false) {
         //System.out.println("lats[" + i + "] = " + lats[i]);
-        points[i] = quantize(new GeoPoint(PlanetModel.WGS84, toRadians(lats[i]), toRadians(lons[i])));
+        unquantizedPoints[i] = new GeoPoint(PlanetModel.WGS84, toRadians(lats[i]), toRadians(lons[i]));
+        points[i] = quantize(unquantizedPoints[i]);
       }
     }
 
@@ -789,26 +791,36 @@ public class TestGeo3DPoint extends LuceneTestCase {
       for(int docID=0;docID<r.maxDoc();docID++) {
         int id = (int) docIDToID.get(docID);
         GeoPoint point = points[id];
-        if (point != null) {
-          boolean expected = ((deleted.contains(id) == false) && ((PointInGeo3DShapeQuery)query).getShape().isWithin(point));
+        GeoPoint unquantizedPoint = unquantizedPoints[id];
+        if (point != null && unquantizedPoint != null) {
+          GeoShape shape = ((PointInGeo3DShapeQuery)query).getShape();
+          // If there's a conflict, we don't know what 'truth' actually is; either result is OK
+          boolean conflict = shape.isWithin(point) != shape.isWithin(unquantizedPoint);
+          boolean expected = ((deleted.contains(id) == false) && shape.isWithin(unquantizedPoint));
           if (hits.get(docID) != expected) {
-            GeoPoint scaledPoint = PlanetModel.WGS84.createSurfacePoint(point);
-            StringBuilder b = new StringBuilder();
-            if (expected) {
-              b.append("FAIL: id=" + id + " should have matched but did not\n");
+            if (conflict) {
+              if (VERBOSE) {
+                System.err.println("CONFLICT: id=" + id + " quantized point membership disagrees with non-quantized point: truth unknown");
+              }
             } else {
-              b.append("FAIL: id=" + id + " should not have matched but did\n");
+              StringBuilder b = new StringBuilder();
+              if (expected) {
+                b.append("FAIL: id=" + id + " should have matched but did not\n");
+              } else {
+                b.append("FAIL: id=" + id + " should not have matched but did\n");
+              }
+              b.append("  shape=" + ((PointInGeo3DShapeQuery)query).getShape() + "\n");
+              b.append("  world bounds=(" +
+                " minX=" + PlanetModel.WGS84.getMinimumXValue() + " maxX=" + PlanetModel.WGS84.getMaximumXValue() +
+                " minY=" + PlanetModel.WGS84.getMinimumYValue() + " maxY=" + PlanetModel.WGS84.getMaximumYValue() +
+                " minZ=" + PlanetModel.WGS84.getMinimumZValue() + " maxZ=" + PlanetModel.WGS84.getMaximumZValue() + "\n");
+              b.append("  quantized point=" + point + " within shape? "+shape.isWithin(point)+"\n");
+              b.append("  unquantized point=" + unquantizedPoint + " within shape? "+shape.isWithin(unquantizedPoint)+"\n");
+              b.append("  docID=" + docID + " deleted?=" + deleted.contains(id) + "\n");
+              b.append("  query=" + query + "\n");
+              b.append("  explanation:\n    " + explain("point", shape, point, unquantizedPoint, r, docID).replace("\n", "\n  "));
+              fail(b.toString());
             }
-            b.append("  shape=" + ((PointInGeo3DShapeQuery)query).getShape() + "\n");
-            b.append("  world bounds=(" +
-              " minX=" + PlanetModel.WGS84.getMinimumXValue() + " maxX=" + PlanetModel.WGS84.getMaximumXValue() +
-              " minY=" + PlanetModel.WGS84.getMinimumYValue() + " maxY=" + PlanetModel.WGS84.getMaximumYValue() +
-              " minZ=" + PlanetModel.WGS84.getMinimumZValue() + " maxZ=" + PlanetModel.WGS84.getMaximumZValue() + "\n");
-            b.append("  point=" + point + "\n");
-            b.append("  docID=" + docID + " deleted?=" + deleted.contains(id) + "\n");
-            b.append("  query=" + query + "\n");
-            b.append("  explanation:\n    " + explain("point", ((PointInGeo3DShapeQuery)query).getShape(), point, scaledPoint, r, docID).replace("\n", "\n  "));
-            fail(b.toString());
           }
         } else {
           assertFalse(hits.get(docID));
@@ -1271,7 +1283,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
       } else {
         Relation result = in.compare(minPackedValue, maxPackedValue);
         if (targetStackUpto < stackToTargetDoc.size() && cell.equals(stackToTargetDoc.get(targetStackUpto))) {
-          b.append("  on cell " + stackToTargetDoc.get(targetStackUpto) + ", wrapped visitor returned " + result);
+          b.append("  on cell " + stackToTargetDoc.get(targetStackUpto) + ", wrapped visitor returned " + result + "\n");
           targetStackUpto++;
         }
         return result;
@@ -1314,9 +1326,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
         double zMax = Geo3DUtil.decodeValueCeil(NumericUtils.sortableBytesToInt(maxPackedValue, 2 * Integer.BYTES));
         final XYZSolid xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, xMin, xMax, yMin, yMax, zMin, zMax);
         final int relationship = xyzSolid.getRelationship(shape);
-        final boolean pointWithinShape = shape.isWithin(targetDocPoint);
         final boolean pointWithinCell = xyzSolid.isWithin(targetDocPoint);
-        final boolean scaledWithinShape = shape.isWithin(scaledDocPoint);
         final boolean scaledWithinCell = xyzSolid.isWithin(scaledDocPoint);
 
         final String relationshipString;
@@ -1339,8 +1349,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
         }
         return "Cell(x=" + xMin + " TO " + xMax + " y=" + yMin + " TO " + yMax + " z=" + zMin + " TO " + zMax +
           "); Shape relationship = "+relationshipString+
-          "; Point within cell = "+pointWithinCell+"; Point within shape = "+pointWithinShape+
-          "; Scaled point within cell = "+scaledWithinCell+"; Scaled point within shape = "+scaledWithinShape;
+          "; Quantized point within cell = "+pointWithinCell+
+          "; Unquantized point within cell = "+scaledWithinCell;
       }
 
       @Override
