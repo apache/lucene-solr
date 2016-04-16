@@ -195,10 +195,12 @@ public class TestGeo3DPoint extends LuceneTestCase {
     }
 
     GeoPoint[] docs = new GeoPoint[numDocs];
+    GeoPoint[] unquantizedDocs = new GeoPoint[numDocs];
     for(int docID=0;docID<numDocs;docID++) {
-      docs[docID] = quantize(new GeoPoint(PlanetModel.WGS84, toRadians(GeoTestUtil.nextLatitude()), toRadians(GeoTestUtil.nextLongitude())));
+      unquantizedDocs[docID] = new GeoPoint(PlanetModel.WGS84, toRadians(GeoTestUtil.nextLatitude()), toRadians(GeoTestUtil.nextLongitude()));
+      docs[docID] = quantize(unquantizedDocs[docID]);
       if (VERBOSE) {
-        System.out.println("  doc=" + docID + ": " + docs[docID]);
+        System.out.println("  doc=" + docID + ": " + docs[docID] + "; unquantized: "+unquantizedDocs[docID]);
       }
     }
 
@@ -253,15 +255,18 @@ public class TestGeo3DPoint extends LuceneTestCase {
           // Leaf cell: brute force check all docs that fall within this cell:
           for(int docID=0;docID<numDocs;docID++) {
             GeoPoint point = docs[docID];
+            GeoPoint mappedPoint = unquantizedDocs[docID];
+            boolean pointWithinShape = shape.isWithin(point);
+            boolean mappedPointWithinShape = shape.isWithin(mappedPoint);
             if (cell.contains(point)) {
-              if (shape.isWithin(point)) {
+              if (mappedPointWithinShape) {
                 if (VERBOSE) {
-                  log.println("    check doc=" + docID + ": match!");
+                  log.println("    check doc=" + docID + ": match!  Actual quantized point within: "+pointWithinShape);
                 }
                 hits.add(docID);
               } else {
                 if (VERBOSE) {
-                  log.println("    check doc=" + docID + ": no match");
+                  log.println("    check doc=" + docID + ": no match.  Quantized point within: "+pointWithinShape);
                 }
               }
             }
@@ -416,7 +421,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
       boolean fail = false;
       for(int docID=0;docID<numDocs;docID++) {
         GeoPoint point = docs[docID];
-        boolean expected = shape.isWithin(point);
+        GeoPoint mappedPoint = unquantizedDocs[docID];
+        boolean expected = shape.isWithin(mappedPoint);
         boolean actual = hits.contains(docID);
         if (actual != expected) {
           if (actual) {
