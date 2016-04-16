@@ -27,6 +27,7 @@ import org.apache.lucene.util.SloppyMath;
 public class EarthDebugger {
   final StringBuilder b = new StringBuilder();
   private int nextShape;
+  private boolean finished;
 
   public EarthDebugger() {
     b.append("<!DOCTYPE HTML>\n");
@@ -177,6 +178,10 @@ public class EarthDebugger {
   }
 
   public String finish() {
+    if (finished) {
+      throw new IllegalStateException("already finished");
+    }
+    finished = true;
     b.append("        WE.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{\n");
     b.append("          attribution: '© OpenStreetMap contributors'\n");
     b.append("        }).addTo(earth);\n");
