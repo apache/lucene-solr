@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.lucene.codecs.lucene60.Lucene60PointsFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -64,6 +65,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
  *   <li>{@link #newDistanceQuery newDistanceQuery()} for matching points within a specified distance.
  *   <li>{@link #newDistanceSort newDistanceSort()} for ordering documents by distance from a specified location. 
  *   <li>{@link #newPolygonQuery newPolygonQuery()} for matching points within an arbitrary polygon.
+ *   <li>{@link #nearest nearest()} for finding the k-nearest neighbors by distance.
  * </ul>
  * <p>
  * <b>WARNING</b>: Values are indexed with some loss of precision from the
@@ -117,12 +119,6 @@ public class LatLonPoint extends Field {
     setLocationValue(latitude, longitude);
   }
 
-  private static final int BITS = 32;
-  private static final double LONGITUDE_MUL = (0x1L<<BITS)/360.0D;
-  static final double LONGITUDE_DECODE = 1/LONGITUDE_MUL;
-  private static final double LATITUDE_MUL  = (0x1L<<BITS)/180.0D;
-  static final double LATITUDE_DECODE  = 1/LATITUDE_MUL;
-  
   @Override
   public String toString() {
     StringBuilder result = new StringBuilder();
@@ -304,24 +300,52 @@ public class LatLonPoint extends Field {
   }
 
   /**
-   * Finds the {@code topN} nearest indexed points to the provided point, according to Haversine distance.
+   * Finds the {@code n} nearest indexed points to the provided point, according to Haversine distance.
+   * <p>
    * This is functionally equivalent to running {@link MatchAllDocsQuery} with a {@link #newDistanceSort},
    * but is far more efficient since it takes advantage of properties the indexed BKD tree.  Currently this
-   * only works with {@link Lucene60PointsFormat} (used by the default codec).
+   * only works with {@link Lucene60PointsFormat} (used by the default codec).  Multi-valued fields are
+   * currently not de-duplicated, so if a document had multiple instances of the specified field that
+   * make it into the top n, that document will appear more than once.
+   * <p>
+   * Documents are ordered by ascending distance from the location. The value returned in {@link FieldDoc} for
+   * the hits contains a Double instance with the distance in meters.
+   * 
+   * @param searcher IndexSearcher to find nearest points from.
+   * @param field field name. must not be null.
+   * @param latitude latitude at the center: must be within standard +/-90 coordinate bounds.
+   * @param longitude longitude at the center: must be within standard +/-180 coordinate bounds.
+   * @param n the number of nearest neighbors to retrieve.
+   * @return TopFieldDocs containing documents ordered by distance, where the field value for each {@link FieldDoc} is the distance in meters
+   * @throws IllegalArgumentException if the underlying PointValues is not a {@code Lucene60PointsReader} (this is a current limitation), or
+   *         if {@code field} or {@code searcher} is null, or if {@code latitude}, {@code longitude} or {@code n} are out-of-bounds
+   * @throws IOException if an IOException occurs while finding the points.
    */
-  public static TopFieldDocs nearest(IndexSearcher s, String fieldName, double latitude, double longitude, int n) throws IOException {
+  // TODO: what about multi-valued documents? what happens?
+  public static TopFieldDocs nearest(IndexSearcher searcher, String field, double latitude, double longitude, int n) throws IOException {
+    GeoUtils.checkLatitude(latitude);
+    GeoUtils.checkLongitude(longitude);
+    if (n < 1) {
+      throw new IllegalArgumentException("n must be at least 1; got " + n);
+    }
+    if (field == null) {
+      throw new IllegalArgumentException("field must not be null");
+    }
+    if (searcher == null) {
+      throw new IllegalArgumentException("searcher must not be null");
+    }
     List<BKDReader> readers = new ArrayList<>();
     List<Integer> docBases = new ArrayList<>();
     List<Bits> liveDocs = new ArrayList<>();
     int totalHits = 0;
-    for(LeafReaderContext leaf : s.getIndexReader().leaves()) {
+    for(LeafReaderContext leaf : searcher.getIndexReader().leaves()) {
       PointValues points = leaf.reader().getPointValues();
       if (points != null) {
         if (points instanceof Lucene60PointsReader == false) {
           throw new IllegalArgumentException("can only run on Lucene60PointsReader points implementation, but got " + points);
         }
-        totalHits += points.getDocCount(fieldName);
-        BKDReader reader = ((Lucene60PointsReader) points).getBKDReader(fieldName);
+        totalHits += points.getDocCount(field);
+        BKDReader reader = ((Lucene60PointsReader) points).getBKDReader(field);
         if (reader != null) {
           readers.add(reader);
           docBases.add(leaf.docBase);

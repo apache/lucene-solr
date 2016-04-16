@@ -19,5 +19,5 @@ package org.apache.solr.cloud.rule;
 import java.util.Map;
 
 public interface RemoteCallback {
-  public void remoteCallback(SnitchContext ctx, Map<String, Object> returnedVal) ;
+  void remoteCallback(SnitchContext ctx, Map<String, Object> returnedVal);
 }

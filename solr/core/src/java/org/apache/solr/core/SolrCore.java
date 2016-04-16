@@ -1822,25 +1822,22 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       final RefCounted<SolrIndexSearcher> currSearcherHolderF = currSearcherHolder;
       if (!alreadyRegistered) {
         future = searcherExecutor.submit(
-            new Callable() {
-              @Override
-              public Object call() throws Exception {
-                try {
-                  // registerSearcher will decrement onDeckSearchers and
-                  // do a notify, even if it fails.
-                  registerSearcher(newSearchHolder);
-                } catch (Throwable e) {
-                  SolrException.log(log, e);
-                  if (e instanceof Error) {
-                    throw (Error) e;
-                  }
-                } finally {
-                  // we are all done with the old searcher we used
-                  // for warming...
-                  if (currSearcherHolderF!=null) currSearcherHolderF.decref();
+            () -> {
+              try {
+                // registerSearcher will decrement onDeckSearchers and
+                // do a notify, even if it fails.
+                registerSearcher(newSearchHolder);
+              } catch (Throwable e) {
+                SolrException.log(log, e);
+                if (e instanceof Error) {
+                  throw (Error) e;
                 }
-                return null;
+              } finally {
+                // we are all done with the old searcher we used
+                // for warming...
+                if (currSearcherHolderF!=null) currSearcherHolderF.decref();
               }
+              return null;
             }
         );
       }

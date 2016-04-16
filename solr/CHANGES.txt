@@ -89,7 +89,7 @@ New Features
   graph traversal to find the shortest path(s) in an unweighted, directed graph stored in a 
   SolrCloud collection. (Joel Bernstein)
 
-* SOLR-8938: Add optional -excluderegex argument to ZkCLI. (Christine Poerschke)
+* SOLR-8938: Add optional --excluderegex argument to ZkCLI. (Christine Poerschke)
 
 * SOLR-8976: Add SolrJ support for REBALANCELEADERS Collections API (Anshum Gupta)
 
@@ -118,6 +118,8 @@ Bug Fixes
 
 * SOLR-7729: ConcurrentUpdateSolrClient ignores the collection parameter in some methods.
   (Nicolas Gavalda, Jorge Luis Betancourt Gonzalez via Mark Miller)
+
+* SOLR-8946: bin/post failed to detect stdin usage on Ubuntu; maybe other unixes. (David Smiley)
   
 Optimizations
 ----------------------

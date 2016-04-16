@@ -90,12 +90,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
   
   private void setupHarnesses() {
     for (final SolrClient client : clients) {
-      RestTestHarness harness = new RestTestHarness(new RESTfulServerProvider() {
-        @Override
-        public String getBaseURL() {
-          return ((HttpSolrClient)client).getBaseURL();
-        }
-      });
+      RestTestHarness harness = new RestTestHarness(() -> ((HttpSolrClient)client).getBaseURL());
       restTestHarnesses.add(harness);
     }
   }
@@ -352,11 +347,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
     final String coreUrl = (new ZkCoreNodeProps(shard1Leader)).getCoreUrl();
     assertNotNull(coreUrl);
 
-    RestTestHarness harness = new RestTestHarness(new RESTfulServerProvider() {
-      public String getBaseURL() {
-        return coreUrl.endsWith("/") ? coreUrl.substring(0, coreUrl.length()-1) : coreUrl;
-      }
-    });
+    RestTestHarness harness = new RestTestHarness(() -> coreUrl.endsWith("/") ? coreUrl.substring(0, coreUrl.length()-1) : coreUrl);
     try {
       addFieldTypePut(harness, "fooInt", 15);
     } finally {
@@ -413,11 +404,7 @@ public class TestCloudManagedSchemaConcurrent extends AbstractFullDistribZkTestB
    */
   protected void validateZkVersion(Replica replica, int schemaZkVersion, int waitSecs, boolean retry) throws Exception {
     final String replicaUrl = (new ZkCoreNodeProps(replica)).getCoreUrl();
-    RestTestHarness testHarness = new RestTestHarness(new RESTfulServerProvider() {
-      public String getBaseURL() {
-        return replicaUrl.endsWith("/") ? replicaUrl.substring(0, replicaUrl.length()-1) : replicaUrl;
-      }
-    });
+    RestTestHarness testHarness = new RestTestHarness(() -> replicaUrl.endsWith("/") ? replicaUrl.substring(0, replicaUrl.length()-1) : replicaUrl);
     try {
       long waitMs = waitSecs * 1000L;
       if (waitMs > 0) Thread.sleep(waitMs); // wait a moment for the zk watcher to fire

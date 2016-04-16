@@ -61,7 +61,7 @@ Optimizations
   multiple polygons and holes, with memory usage independent of
   polygon complexity. (Karl Wright, Mike McCandless, Robert Muir)
 
-* LUCENE-7159: Speed up LatLonPoint polygon performance for complex
+* LUCENE-7159, LUCENE-7222: Speed up LatLonPoint polygon performance for complex
   polygons. (Robert Muir)
 
 * LUCENE-7211: Reduce memory & GC for spatial RPT Intersects when the number of
@@ -83,6 +83,12 @@ Bug Fixes
 * LUCENE-7188: remove incorrect sanity check in NRTCachingDirectory.listAll()
   that led to IllegalStateException being thrown when nothing was wrong.
   (David Smiley, yonik)  
+
+Documentation
+
+* LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
+  should separately add StoredField if you want to retrieve these
+  field values at search time (Greg Huber, Robert Muir, Mike McCandless)
 
 Other
 

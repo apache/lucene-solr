@@ -113,32 +113,51 @@ public final class Polygon {
     this.maxLon = maxLon;
   }
 
-  /** Returns true if the point is contained within this polygon */
+  /** 
+   * Returns true if the point is contained within this polygon.
+   * <p>
+   * See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
+   * https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html</a> for more information.
+   */
+  // ported to java from https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html
+  // original code under the BSD license (https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html#License%20to%20Use)
+  //
+  // Copyright (c) 1970-2003, Wm. Randolph Franklin
+  //
+  // Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
+  // documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
+  // the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and 
+  // to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+  //
+  // 1. Redistributions of source code must retain the above copyright 
+  //    notice, this list of conditions and the following disclaimers.
+  // 2. Redistributions in binary form must reproduce the above copyright 
+  //    notice in the documentation and/or other materials provided with 
+  //    the distribution.
+  // 3. The name of W. Randolph Franklin may not be used to endorse or 
+  //    promote products derived from this Software without specific 
+  //    prior written permission. 
+  //
+  // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED 
+  // TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL 
+  // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+  // CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+  // IN THE SOFTWARE. 
   public boolean contains(double latitude, double longitude) {
     // check bounding box
     if (latitude < minLat || latitude > maxLat || longitude < minLon || longitude > maxLon) {
       return false;
     }
-    /*
-     * simple even-odd point in polygon computation
-     *    1.  Determine if point is contained in the longitudinal range
-     *    2.  Determine whether point crosses the edge by computing the latitudinal delta
-     *        between the end-point of a parallel vector (originating at the point) and the
-     *        y-component of the edge sink
-     *
-     * NOTE: Requires polygon point (x,y) order either clockwise or counter-clockwise
-     */
+    
     boolean inPoly = false;
-    /*
-     * Note: This is using a euclidean coordinate system which could result in
-     * upwards of 110KM error at the equator.
-     * TODO convert coordinates to cylindrical projection (e.g. mercator)
-     */
+    boolean previous = polyLats[0] > latitude;
     for (int i = 1; i < polyLats.length; i++) {
-      if (polyLons[i] <= longitude && polyLons[i-1] >= longitude || polyLons[i-1] <= longitude && polyLons[i] >= longitude) {
-        if (polyLats[i] + (longitude - polyLons[i]) / (polyLons[i-1] - polyLons[i]) * (polyLats[i-1] - polyLats[i]) <= latitude) {
+      boolean current = polyLats[i] > latitude;
+      if (current != previous) {
+        if (longitude < (polyLons[i-1] - polyLons[i]) * (latitude - polyLats[i]) / (polyLats[i-1] - polyLats[i]) + polyLons[i]) {
           inPoly = !inPoly;
         }
+        previous = current;
       }
     }
     if (inPoly) {
