@@ -46,31 +46,14 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
   @Override
   public void visit(int docID, byte[] packedValue) {
     assert packedValue.length == 12;
-    final int xInt = NumericUtils.sortableBytesToInt(packedValue, 0);
-    final double xMin = Geo3DUtil.decodeValueFloor(xInt);
-    final double xMax = Geo3DUtil.decodeValueCeil(xInt);
-    if (xMin >= shapeBounds.getMinimumX() && xMin <= shapeBounds.getMaximumX() ||
-      xMax >= shapeBounds.getMinimumX() && xMax <= shapeBounds.getMaximumX()) {
-      // X is OK
-      final int yInt = NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES);
-      final double yMin = Geo3DUtil.decodeValueFloor(yInt);
-      final double yMax = Geo3DUtil.decodeValueCeil(yInt);
-      if (yMin >= shapeBounds.getMinimumY() && yMin <= shapeBounds.getMaximumY() ||
-        yMax >= shapeBounds.getMinimumY() && yMax <= shapeBounds.getMaximumY()) {
-        // Y is OK
-        final int zInt = NumericUtils.sortableBytesToInt(packedValue, 2 * Integer.BYTES);
-        final double zMin = Geo3DUtil.decodeValueFloor(zInt);
-        final double zMax = Geo3DUtil.decodeValueCeil(zInt);
-        if (zMin >= shapeBounds.getMinimumZ() && zMin <= shapeBounds.getMaximumZ() ||
-          zMax >= shapeBounds.getMinimumZ() && zMax <= shapeBounds.getMaximumZ()) {
-          // Z is OK
-          final double x = Geo3DUtil.decodeValue(xInt);
-          final double y = Geo3DUtil.decodeValue(yInt);
-          final double z = Geo3DUtil.decodeValue(zInt);
-          if (shape.isWithin(x, y, z)) {
-            hits.add(docID);
-          }
-        }
+    double x = Geo3DPoint.decodeDimension(packedValue, 0);
+    double y = Geo3DPoint.decodeDimension(packedValue, Integer.BYTES);
+    double z = Geo3DPoint.decodeDimension(packedValue, 2 * Integer.BYTES);
+    if (x >= shapeBounds.getMinimumX() && x <= shapeBounds.getMaximumX() &&
+      y >= shapeBounds.getMinimumY() && y <= shapeBounds.getMaximumY() &&
+      z >= shapeBounds.getMinimumZ() && z <= shapeBounds.getMaximumZ()) {
+      if (shape.isWithin(x, y, z)) {
+        hits.add(docID);
       }
     }
   }
