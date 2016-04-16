@@ -46,6 +46,8 @@ Bug Fixes
 * SOLR-8875: SolrCloud Overseer clusterState could unexpectedly be null resulting in NPE.
   (Scott Blum via David Smiley)
 
+* SOLR-8946: bin/post failed to detect stdin usage on Ubuntu; maybe other unixes. (David Smiley)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
