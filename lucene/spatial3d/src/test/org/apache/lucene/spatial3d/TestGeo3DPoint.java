@@ -794,33 +794,25 @@ public class TestGeo3DPoint extends LuceneTestCase {
         GeoPoint unquantizedPoint = unquantizedPoints[id];
         if (point != null && unquantizedPoint != null) {
           GeoShape shape = ((PointInGeo3DShapeQuery)query).getShape();
-          // If there's a conflict, we don't know what 'truth' actually is; either result is OK
-          boolean conflict = shape.isWithin(point) != shape.isWithin(unquantizedPoint);
-          boolean expected = ((deleted.contains(id) == false) && shape.isWithin(unquantizedPoint));
+          boolean expected = ((deleted.contains(id) == false) && shape.isWithin(point));
           if (hits.get(docID) != expected) {
-            if (conflict) {
-              if (VERBOSE) {
-                System.err.println("CONFLICT: id=" + id + " quantized point membership disagrees with non-quantized point: truth unknown");
-              }
+            StringBuilder b = new StringBuilder();
+            if (expected) {
+              b.append("FAIL: id=" + id + " should have matched but did not\n");
             } else {
-              StringBuilder b = new StringBuilder();
-              if (expected) {
-                b.append("FAIL: id=" + id + " should have matched but did not\n");
-              } else {
-                b.append("FAIL: id=" + id + " should not have matched but did\n");
-              }
-              b.append("  shape=" + ((PointInGeo3DShapeQuery)query).getShape() + "\n");
-              b.append("  world bounds=(" +
-                " minX=" + PlanetModel.WGS84.getMinimumXValue() + " maxX=" + PlanetModel.WGS84.getMaximumXValue() +
-                " minY=" + PlanetModel.WGS84.getMinimumYValue() + " maxY=" + PlanetModel.WGS84.getMaximumYValue() +
-                " minZ=" + PlanetModel.WGS84.getMinimumZValue() + " maxZ=" + PlanetModel.WGS84.getMaximumZValue() + "\n");
-              b.append("  quantized point=" + point + " within shape? "+shape.isWithin(point)+"\n");
-              b.append("  unquantized point=" + unquantizedPoint + " within shape? "+shape.isWithin(unquantizedPoint)+"\n");
-              b.append("  docID=" + docID + " deleted?=" + deleted.contains(id) + "\n");
-              b.append("  query=" + query + "\n");
-              b.append("  explanation:\n    " + explain("point", shape, point, unquantizedPoint, r, docID).replace("\n", "\n  "));
-              fail(b.toString());
+              b.append("FAIL: id=" + id + " should not have matched but did\n");
             }
+            b.append("  shape=" + ((PointInGeo3DShapeQuery)query).getShape() + "\n");
+            b.append("  world bounds=(" +
+              " minX=" + PlanetModel.WGS84.getMinimumXValue() + " maxX=" + PlanetModel.WGS84.getMaximumXValue() +
+              " minY=" + PlanetModel.WGS84.getMinimumYValue() + " maxY=" + PlanetModel.WGS84.getMaximumYValue() +
+              " minZ=" + PlanetModel.WGS84.getMinimumZValue() + " maxZ=" + PlanetModel.WGS84.getMaximumZValue() + "\n");
+            b.append("  quantized point=" + point + " within shape? "+shape.isWithin(point)+"\n");
+            b.append("  unquantized point=" + unquantizedPoint + " within shape? "+shape.isWithin(unquantizedPoint)+"\n");
+            b.append("  docID=" + docID + " deleted?=" + deleted.contains(id) + "\n");
+            b.append("  query=" + query + "\n");
+            b.append("  explanation:\n    " + explain("point", shape, point, unquantizedPoint, r, docID).replace("\n", "\n  "));
+            fail(b.toString());
           }
         } else {
           assertFalse(hits.get(docID));
