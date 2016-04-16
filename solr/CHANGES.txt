@@ -118,6 +118,8 @@ Bug Fixes
 
 * SOLR-7729: ConcurrentUpdateSolrClient ignores the collection parameter in some methods.
   (Nicolas Gavalda, Jorge Luis Betancourt Gonzalez via Mark Miller)
+
+* SOLR-8946: bin/post failed to detect stdin usage on Ubuntu; maybe other unixes. (David Smiley)
   
 Optimizations
 ----------------------
