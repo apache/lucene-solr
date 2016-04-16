@@ -140,7 +140,7 @@ while [ $# -gt 0 ]; do
         shift
         PROPS+=("-Dport=$1")
       elif [[ ("$1" == "-d" || "$1" == "--data" || "$1" == "-") ]]; then
-        if [[ -s /dev/stdin ]]; then
+        if [[ ! -t 0 ]]; then
           MODE="stdin"
         else
           # when no stdin exists and -d specified, the rest of the arguments
@@ -150,6 +150,9 @@ while [ $# -gt 0 ]; do
           if [[ $# -gt 0 ]]; then
             ARGS=("$@")
             shift $#
+          else
+            # SPT needs a valid args string, useful for 'bin/post -c foo -d' to force a commit
+            ARGS+=("<add/>")
           fi
         fi
       else
@@ -209,10 +212,6 @@ if [[ $MODE != "stdin" && $MODE != "args" ]]; then
     PARAMS=("${URLS[@]}")
   fi
 else
-  if [[ ${#ARGS[@]} == 0 ]]; then
-    # SPT needs a valid (to post to Solr) args string, useful for 'bin/post -c foo -d' to force a commit
-    ARGS+=("<add/>")
-  fi
   PARAMS=("${ARGS[@]}")
 fi
 
