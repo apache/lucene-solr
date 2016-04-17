@@ -328,6 +328,18 @@ public class Vector {
     return magnitude(x,y,z);
   }
 
+  /**
+   * Compute whether two vectors are numerically identical.
+   * @param other is the other vector.
+   * @return true if they are numerically identical.
+   */
+  public boolean isNumericallyIdentical(final Vector other) {
+    final double thisX = y * other.z - z * other.y;
+    final double thisY = z * other.x - x * other.z;
+    final double thisZ = x * other.y - y * other.x;
+    return thisX * thisX + thisY * thisY + thisZ * thisZ < MINIMUM_RESOLUTION_SQUARED;
+  }
+  
   /** Compute the desired magnitude of a unit vector projected to a given
    * planet model.
    * @param planetModel is the planet model.
@@ -336,7 +348,7 @@ public class Vector {
    * @param z is the unit vector z value.
    * @return a magnitude value for that (x,y,z) that projects the vector onto the specified ellipsoid.
    */
-  protected static double computeDesiredEllipsoidMagnitude(final PlanetModel planetModel, final double x, final double y, final double z) {
+  static double computeDesiredEllipsoidMagnitude(final PlanetModel planetModel, final double x, final double y, final double z) {
     return 1.0 / Math.sqrt(x*x*planetModel.inverseAbSquared + y*y*planetModel.inverseAbSquared + z*z*planetModel.inverseCSquared);
   }
 
@@ -346,7 +358,7 @@ public class Vector {
    * @param z is the unit vector z value.
    * @return a magnitude value for that z value that projects the vector onto the specified ellipsoid.
    */
-  protected static double computeDesiredEllipsoidMagnitude(final PlanetModel planetModel, final double z) {
+  static double computeDesiredEllipsoidMagnitude(final PlanetModel planetModel, final double z) {
     return 1.0 / Math.sqrt((1.0-z*z)*planetModel.inverseAbSquared + z*z*planetModel.inverseCSquared);
   }
 

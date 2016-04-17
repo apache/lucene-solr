@@ -30,6 +30,70 @@ import static org.junit.Assert.assertTrue;
 public class GeoPolygonTest {
 
   @Test
+  public void testPolygonPointFiltering() {
+    final GeoPoint point1 = new GeoPoint(PlanetModel.WGS84, 1.0, 2.0);
+    final GeoPoint point2 = new GeoPoint(PlanetModel.WGS84, 0.5, 2.5);
+    final GeoPoint point3 = new GeoPoint(PlanetModel.WGS84, 0.0, 0.0);
+    final GeoPoint point4 = new GeoPoint(PlanetModel.WGS84, Math.PI * 0.5, 0.0);
+    final GeoPoint point5 = new GeoPoint(PlanetModel.WGS84, 1.0, 0.0);
+    
+    // First: duplicate points in the middle
+    {
+      final List<GeoPoint> originalPoints = new ArrayList<>();
+      originalPoints.add(point1);
+      originalPoints.add(point2);
+      originalPoints.add(point2);
+      originalPoints.add(point3);
+      final List<GeoPoint> filteredPoints =GeoPolygonFactory.filterPoints(originalPoints);
+      assertEquals(3, filteredPoints.size());
+      assertEquals(point1, filteredPoints.get(0));
+      assertEquals(point2, filteredPoints.get(1));
+      assertEquals(point3, filteredPoints.get(2));
+    }
+    // Next, duplicate points at the beginning
+    {
+      final List<GeoPoint> originalPoints = new ArrayList<>();
+      originalPoints.add(point2);
+      originalPoints.add(point1);
+      originalPoints.add(point3);
+      originalPoints.add(point2);
+      final List<GeoPoint> filteredPoints =GeoPolygonFactory.filterPoints(originalPoints);
+      assertEquals(3, filteredPoints.size());
+      assertEquals(point2, filteredPoints.get(0));
+      assertEquals(point1, filteredPoints.get(1));
+      assertEquals(point3, filteredPoints.get(2));
+    }
+
+    // Coplanar point removal
+    {
+      final List<GeoPoint> originalPoints = new ArrayList<>();
+      originalPoints.add(point1);
+      originalPoints.add(point3);
+      originalPoints.add(point4);
+      originalPoints.add(point5);
+      final List<GeoPoint> filteredPoints =GeoPolygonFactory.filterPoints(originalPoints);
+      assertEquals(3, filteredPoints.size());
+      assertEquals(point1, filteredPoints.get(0));
+      assertEquals(point3, filteredPoints.get(1));
+      assertEquals(point5, filteredPoints.get(2));
+    }
+    // Over the boundary
+    {
+      final List<GeoPoint> originalPoints = new ArrayList<>();
+      originalPoints.add(point5);
+      originalPoints.add(point1);
+      originalPoints.add(point3);
+      originalPoints.add(point4);
+      final List<GeoPoint> filteredPoints =GeoPolygonFactory.filterPoints(originalPoints);
+      assertEquals(3, filteredPoints.size());
+      assertEquals(point5, filteredPoints.get(0));
+      assertEquals(point1, filteredPoints.get(1));
+      assertEquals(point3, filteredPoints.get(2));
+    }
+
+  }
+  
+  @Test
   public void testPolygonClockwise() {
     GeoPolygon c;
     GeoPoint gp;
