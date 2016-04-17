@@ -48,6 +48,8 @@ Bug Fixes
 
 * SOLR-8946: bin/post failed to detect stdin usage on Ubuntu; maybe other unixes. (David Smiley)
 
+* SOLR-9004: Fix "name" field type definition in films example. (Alexandre Rafalovitch via Varun Thacker)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
