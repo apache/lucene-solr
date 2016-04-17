@@ -120,7 +120,12 @@ Bug Fixes
   (Nicolas Gavalda, Jorge Luis Betancourt Gonzalez via Mark Miller)
 
 * SOLR-8946: bin/post failed to detect stdin usage on Ubuntu; maybe other unixes. (David Smiley)
-  
+
+* SOLR-8662: SchemaManager waits correctly for replicas to be notified of a new change.
+  (sarowe, Noble Paul, Varun Thacker)
+
+* SOLR-9004: Fix "name" field type definition in films example. (Alexandre Rafalovitch via Varun Thacker)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
