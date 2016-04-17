@@ -48,13 +48,6 @@
       <artifactId>lucene-test-framework</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.apache.lucene</groupId>
-      <artifactId>lucene-spatial</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
 @lucene-sandbox.internal.dependencies@
 @lucene-sandbox.external.dependencies@
 @lucene-sandbox.internal.test.dependencies@

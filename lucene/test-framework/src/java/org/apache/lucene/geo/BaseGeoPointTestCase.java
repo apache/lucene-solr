@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.util;
+package org.apache.lucene.geo;
 
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -771,13 +771,16 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   static final boolean rectContainsPoint(Rectangle rect, double pointLat, double pointLon) {
     assert Double.isNaN(pointLat) == false;
+    
+    if (pointLat < rect.minLat || pointLat > rect.maxLat) {
+      return false;
+    }
 
     if (rect.minLon <= rect.maxLon) {
-      return GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
+      return pointLon >= rect.minLon && pointLon <= rect.maxLon;
     } else {
       // Rect crosses dateline:
-      return GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, -180.0, rect.maxLon)
-        || GeoRelationUtils.pointInRectPrecise(pointLat, pointLon, rect.minLat, rect.maxLat, rect.minLon, 180.0);
+      return pointLon <= rect.maxLon || pointLon >= rect.minLon;
     }
   }
 
