@@ -40,10 +40,10 @@ public class Geo3dShapeSphereModelRectRelationTest extends Geo3dShapeRectRelatio
   public void testFailure1() {
     final GeoBBox rect = GeoBBoxFactory.makeGeoBBox(planetModel, 88 * RADIANS_PER_DEGREE, 30 * RADIANS_PER_DEGREE, -30 * RADIANS_PER_DEGREE, 62 * RADIANS_PER_DEGREE);
     final List<GeoPoint> points = new ArrayList<>();
-    points.add(new GeoPoint(planetModel, 66.2465299717 * RADIANS_PER_DEGREE, -29.1786158537 * RADIANS_PER_DEGREE));
-    points.add(new GeoPoint(planetModel, 43.684447915 * RADIANS_PER_DEGREE, 46.2210986329 * RADIANS_PER_DEGREE));
     points.add(new GeoPoint(planetModel, 30.4579218227 * RADIANS_PER_DEGREE, 14.5238410082 * RADIANS_PER_DEGREE));
-    final GeoShape path = GeoPolygonFactory.makeGeoPolygon(planetModel, points,0);
+    points.add(new GeoPoint(planetModel, 43.684447915 * RADIANS_PER_DEGREE, 46.2210986329 * RADIANS_PER_DEGREE));
+    points.add(new GeoPoint(planetModel, 66.2465299717 * RADIANS_PER_DEGREE, -29.1786158537 * RADIANS_PER_DEGREE));
+    final GeoShape path = GeoPolygonFactory.makeGeoPolygon(planetModel, points);
 
     final GeoPoint point = new GeoPoint(planetModel, 34.2730264413182 * RADIANS_PER_DEGREE, 82.75500168892472 * RADIANS_PER_DEGREE);
 

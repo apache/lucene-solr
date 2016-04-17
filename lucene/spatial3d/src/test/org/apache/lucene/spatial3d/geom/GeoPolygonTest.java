@@ -136,12 +136,12 @@ public class GeoPolygonTest {
     List<GeoPoint> points;
 
     points = new ArrayList<GeoPoint>();
-    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
-    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
-    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
 
-    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points, 0);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
     // Sample some points within
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertTrue(c.isWithin(gp));
@@ -171,14 +171,14 @@ public class GeoPolygonTest {
     assertFalse(c.isWithin(gp));
 
     points = new ArrayList<GeoPoint>();
-    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
-    points.add(new GeoPoint(PlanetModel.SPHERE, -0.01, -0.6));
-    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.7));
-    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.8));
-    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.7));
-    points.add(new GeoPoint(PlanetModel.SPHERE, 0.01, -0.6));
-    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.01, -0.6));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.7));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.8));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.7));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.01, -0.6));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
         
         /*
         System.out.println("Points: ");
@@ -187,7 +187,7 @@ public class GeoPolygonTest {
         }
         */
 
-    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points, 0);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
     // Sample some points within
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertTrue(c.isWithin(gp));
@@ -234,7 +234,7 @@ public class GeoPolygonTest {
     points.add(new GeoPoint(PlanetModel.WGS84, -0.7376479402362607, -0.5072961758807019));
     points.add(new GeoPoint(PlanetModel.WGS84, -0.3760415907667887, 1.4970455334565513));
     
-    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points, 1);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points);
     
     point = new GeoPoint(PlanetModel.WGS84, -0.01580760332365284, -0.03956004622490505);
     assertTrue(c.isWithin(point));
@@ -245,12 +245,12 @@ public class GeoPolygonTest {
     assertTrue(area.isWithin(point));
     
     points = new ArrayList<GeoPoint>();
-    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
-    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
-    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.1, -0.5));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.6));
+    points.add(new GeoPoint(PlanetModel.SPHERE, -0.1, -0.5));
 
-    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points, 0);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
 
     b = new LatLonBounds();
     c.getBounds(b);
@@ -279,7 +279,7 @@ public class GeoPolygonTest {
     points.add(new GeoPoint(PlanetModel.WGS84, -0.9796549195552824, -0.25078026625235256));
     points.add(new GeoPoint(PlanetModel.WGS84, 0.17644522781457245, 2.4225312555674967));
     points.add(new GeoPoint(PlanetModel.WGS84, -1.4459804612164617, -1.2970934639728127));
-    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points, 3);
+    c = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points);
     // GeoCompositeMembershipShape: {[GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=
     // [[lat=0.17644522781457245, lon=2.4225312555674967], 
     //  [lat=-1.4459804612164617, lon=-1.2970934639728127], 
@@ -440,54 +440,6 @@ shape:
     points.add(new GeoPoint(0.2654788898359613, 0.7380222309164597, 0.6200740473100581));
 
     final GeoPolygon p = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points, null);
-  }
-  
-  @Test
-  public void testPolygonIntersectionFailure1() {
-    final PlanetModel pm = PlanetModel.WGS84;
-    //[junit4]    > Throwable #1: java.lang.AssertionError: invalid hits for shape=GeoCompositeMembershipShape:
-    //{[GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=
-    //[[lat=0.2669499069140678, lon=-0.31249902828113546([X=0.9186752334433793, Y=-0.2968103450748192, Z=0.2640238502385029])],
-    //[lat=1.538559019421765, lon=0.0([X=0.03215971057004023, Y=0.0, Z=0.9972473454662941])],
-    //[lat=-0.5516194571595735, lon=0.0([X=0.8518418310766115, Y=0.0, Z=-0.5241686363384119])]], internalEdges={2}},
-    //GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=
-    //[[lat=0.0, lon=-3.141592653589793([X=-1.0011188539924791, Y=-1.226017000107956E-16, Z=0.0])],
-    //[lat=-1.5707963267948966, lon=-2.2780601241431375([X=-3.9697069088211677E-17, Y=-4.644115432258393E-17, Z=-0.997762292022105])],
-    //[lat=0.2669499069140678, lon=-0.31249902828113546([X=0.9186752334433793, Y=-0.2968103450748192, Z=0.2640238502385029])]], internalEdges={2}},
-    //GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=
-    //[[lat=0.2669499069140678, lon=-0.31249902828113546([X=0.9186752334433793, Y=-0.2968103450748192, Z=0.2640238502385029])],
-    //[lat=-0.5516194571595735, lon=0.0([X=0.8518418310766115, Y=0.0, Z=-0.5241686363384119])],
-    //[lat=0.0, lon=-3.141592653589793([X=-1.0011188539924791, Y=-1.226017000107956E-16, Z=0.0])]], internalEdges={0, 2}}]}
-    
-    // Build the polygon
-    //[[lat=-0.5516194571595735, lon=0.0([X=0.8518418310766115, Y=0.0, Z=-0.5241686363384119])],
-    //[lat=0.0, lon=-3.141592653589793([X=-1.0011188539924791, Y=-1.226017000107956E-16, Z=0.0])],
-    //[lat=-1.5707963267948966, lon=-2.2780601241431375([X=-3.9697069088211677E-17, Y=-4.644115432258393E-17, Z=-0.997762292022105])],
-    //[lat=0.2669499069140678, lon=-0.31249902828113546([X=0.9186752334433793, Y=-0.2968103450748192, Z=0.2640238502385029])],
-    //[lat=1.538559019421765, lon=0.0([X=0.03215971057004023, Y=0.0, Z=0.9972473454662941])]]
-    List<GeoPoint> polyPoints = new ArrayList<>();
-    polyPoints.add(new GeoPoint(pm, -0.5516194571595735, 0.0));
-    polyPoints.add(new GeoPoint(pm, 0.0, -3.141592653589793));
-    polyPoints.add(new GeoPoint(pm, -1.5707963267948966, -2.2780601241431375));
-    polyPoints.add(new GeoPoint(pm, 0.2669499069140678, -0.31249902828113546));
-    polyPoints.add(new GeoPoint(pm, 1.538559019421765, 0.0));
-    // Make sure we catch the backtrack
-    boolean backtracks = false;
-    try {
-      GeoPolygonFactory.makeGeoPolygon(pm, polyPoints, 4, null);
-    } catch (IllegalArgumentException e) {
-      backtracks = true;
-    }
-    assertTrue(backtracks);
-    
-    // Now make sure a legit poly with coplanar points works.
-    polyPoints.clear();
-    polyPoints.add(new GeoPoint(pm, -0.5516194571595735, 0.0));
-    polyPoints.add(new GeoPoint(pm, -1.5707963267948966, -2.2780601241431375));
-    polyPoints.add(new GeoPoint(pm, 0.2669499069140678, -0.31249902828113546));
-    polyPoints.add(new GeoPoint(pm, 1.538559019421765, 0.0));
-    GeoPolygonFactory.makeGeoPolygon(pm, polyPoints, 3, null);
-    
   }
   
 }

@@ -35,10 +35,10 @@ public class GeoBBoxTest {
     GeoConvexPolygon cp;
     int relationship;
     List<GeoPoint> points = new ArrayList<GeoPoint>();
-    points.add(new GeoPoint(PlanetModel.SPHERE, 24 * DEGREES_TO_RADIANS, -30 * DEGREES_TO_RADIANS));
-    points.add(new GeoPoint(PlanetModel.SPHERE, -11 * DEGREES_TO_RADIANS, 101 * DEGREES_TO_RADIANS));
     points.add(new GeoPoint(PlanetModel.SPHERE, -49 * DEGREES_TO_RADIANS, -176 * DEGREES_TO_RADIANS));
-    GeoMembershipShape shape = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points, 0);
+    points.add(new GeoPoint(PlanetModel.SPHERE, -11 * DEGREES_TO_RADIANS, 101 * DEGREES_TO_RADIANS));
+    points.add(new GeoPoint(PlanetModel.SPHERE, 24 * DEGREES_TO_RADIANS, -30 * DEGREES_TO_RADIANS));
+    GeoMembershipShape shape = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, points);
     box = GeoBBoxFactory.makeGeoBBox(PlanetModel.SPHERE, -64 * DEGREES_TO_RADIANS, -64 * DEGREES_TO_RADIANS, -180 * DEGREES_TO_RADIANS, 180 * DEGREES_TO_RADIANS);
     relationship = box.getRelationship(shape);
     assertEquals(GeoArea.CONTAINS, relationship);

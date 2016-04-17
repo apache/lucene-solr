@@ -35,49 +35,6 @@ public class GeoPolygonFactory {
   private GeoPolygonFactory() {
   }
 
-  /**
-   * Create a GeoMembershipShape of the right kind given the specified bounds.
-   *
-   * @param pointList        is a list of the GeoPoints to build an arbitrary polygon out of.
-   * @param convexPointIndex is the index of a single convex point whose conformation with
-   *                         its neighbors determines inside/outside for the entire polygon.
-   * @return a GeoPolygon corresponding to what was specified.
-   */
-  public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel,
-    final List<GeoPoint> pointList,
-    final int convexPointIndex) {
-    return makeGeoPolygon(planetModel, pointList, convexPointIndex, null);
-  }
-  
-  /**
-   * Create a GeoMembershipShape of the right kind given the specified bounds.
-   *
-   * @param pointList        is a list of the GeoPoints to build an arbitrary polygon out of.
-   * @param convexPointIndex is the index of a single convex point whose conformation with
-   *                         its neighbors determines inside/outside for the entire polygon.
-   * @param holes is a list of polygons representing "holes" in the outside polygon.  Null == none.
-   * @return a GeoPolygon corresponding to what was specified.
-   */
-  public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel,
-    final List<GeoPoint> pointList,
-    final int convexPointIndex,
-    final List<GeoPolygon> holes) {
-    // The basic operation uses a set of points, two points determining one particular edge, and a sided plane
-    // describing membership.
-    //System.out.println("Initial point list = "+pointList+"; convexPointIndex = "+convexPointIndex+"; holes = "+holes);
-    final GeoCompositePolygon rval = new GeoCompositePolygon();
-    if (buildPolygonShape(rval,
-        planetModel, pointList, new BitSet(),
-        convexPointIndex, getLegalIndex(convexPointIndex + 1, pointList.size()),
-        new SidedPlane(pointList.get(getLegalIndex(convexPointIndex - 1, pointList.size())),
-            pointList.get(convexPointIndex), pointList.get(getLegalIndex(convexPointIndex + 1, pointList.size()))),
-        holes,
-        null) == false) {
-      return null;
-    }
-    return rval;
-  }
-
   /** Create a GeoPolygon using the specified points and holes, using order to determine 
    * siding of the polygon.  Much like ESRI, this method uses clockwise to indicate the space
    * on the same side of the shape as being inside, and counter-clockwise to indicate the
@@ -108,8 +65,7 @@ public class GeoPolygonFactory {
     // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
     // of points to use for poles.
     final Random generator = new Random(1234);
-    //int counter = 0;
-    while (true) {
+    for (int counter = 0; counter < 10000; counter++) {
       //counter++;
       // Pick the next random pole
       final GeoPoint pole = pickPole(generator, planetModel, pointList);
@@ -123,6 +79,7 @@ public class GeoPolygonFactory {
       }
       // If pole choice was illegal, try another one
     }
+    throw new IllegalArgumentException("cannot find a point that is inside the polygon");
   }
     
   /**
@@ -1192,7 +1149,7 @@ public class GeoPolygonFactory {
           // The new point is colinear with the current edge.  We'll have to look backwards for the first point that isn't.
           int checkPointIndex = -1;
           // Compute the arc distance before we try to extend, so that we note backtracking when we see it
-          double accumulatedDistance = newPoint.arcDistance(pointList.get(startIndex));
+          //double accumulatedDistance = newPoint.arcDistance(pointList.get(startIndex));
           final Plane checkPlane = new Plane(pointList.get(startIndex), newPoint);
           for (int i = 0; i < pointList.size(); i++) {
             final int index = getLegalIndex(startIndex - 1 - i, pointList.size());
@@ -1200,11 +1157,11 @@ public class GeoPolygonFactory {
               checkPointIndex = index;
               break;
             } else {
-              accumulatedDistance += pointList.get(getLegalIndex(index+1, pointList.size())).arcDistance(pointList.get(index));
-              final double actualDistance = newPoint.arcDistance(pointList.get(index));
-              if (Math.abs(actualDistance - accumulatedDistance) >= Vector.MINIMUM_RESOLUTION) {
-                throw new IllegalArgumentException("polygon backtracks over itself");
-              }
+              //accumulatedDistance += pointList.get(getLegalIndex(index+1, pointList.size())).arcDistance(pointList.get(index));
+              //final double actualDistance = newPoint.arcDistance(pointList.get(index));
+              //if (Math.abs(actualDistance - accumulatedDistance) >= Vector.MINIMUM_RESOLUTION) {
+              //  throw new IllegalArgumentException("polygon backtracks over itself");
+              //}
             }
           }
           if (checkPointIndex == -1) {
