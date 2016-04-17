@@ -139,24 +139,26 @@ public class GeoPolygonFactory {
     final List<GeoPolygon> holes,
     final GeoPoint testPoint, 
     final boolean testPointInside) {
+    // First, exercise a sanity filter on the provided pointList, and remove identical points, linear points, and backtracks
+    final List<GeoPoint> filteredPointList = filterPoints(pointList);
     // We will be trying twice to find the right GeoPolygon, using alternate siding choices for the first polygon
     // side.  While this looks like it might be 2x as expensive as it could be, there's really no other choice I can
     // find.
-    final SidedPlane initialPlane = new SidedPlane(testPoint, pointList.get(0), pointList.get(1));
+    final SidedPlane initialPlane = new SidedPlane(testPoint, filteredPointList.get(0), filteredPointList.get(1));
     // We don't know if this is the correct siding choice.  We will only know as we build the complex polygon.
     // So we need to be prepared to try both possibilities.
     GeoCompositePolygon rval = new GeoCompositePolygon();
-    if (buildPolygonShape(rval, planetModel, pointList, new BitSet(), 0, 1, initialPlane, holes, testPoint) == false) {
+    if (buildPolygonShape(rval, planetModel, filteredPointList, new BitSet(), 0, 1, initialPlane, holes, testPoint) == false) {
       // The testPoint was within the shape.  Was that intended?
       if (testPointInside) {
         // Yes: build it for real
         rval = new GeoCompositePolygon();
-        buildPolygonShape(rval, planetModel, pointList, new BitSet(), 0, 1, initialPlane, holes, null);
+        buildPolygonShape(rval, planetModel, filteredPointList, new BitSet(), 0, 1, initialPlane, holes, null);
         return rval;
       }
       // No: do the complement and return that.
       rval = new GeoCompositePolygon();
-      buildPolygonShape(rval, planetModel, pointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
+      buildPolygonShape(rval, planetModel, filteredPointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
       return rval;
     } else {
       // The testPoint was outside the shape.  Was that intended?
@@ -166,11 +168,104 @@ public class GeoPolygonFactory {
       }
       // No: return the complement
       rval = new GeoCompositePolygon();
-      buildPolygonShape(rval, planetModel, pointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
+      buildPolygonShape(rval, planetModel, filteredPointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
       return rval;
     }
   }
 
+  /** Filter duplicate points and coplanar points.
+   */
+  static List<GeoPoint> filterPoints(final List<GeoPoint> input) {
+    
+    final List<GeoPoint> noIdenticalPoints = new ArrayList<>(input.size());
+    
+    // Backtrack to find something different from the first point
+    int startIndex = -1;
+    final GeoPoint comparePoint = input.get(0);
+    for (int i = 0; i < input.size()-1; i++) {
+      final GeoPoint thePoint = input.get(getLegalIndex(- i - 1, input.size()));
+      if (!thePoint.isNumericallyIdentical(comparePoint)) {
+        startIndex = getLegalIndex(-i, input.size());
+        break;
+      }
+    }
+    if (startIndex == -1) {
+      throw new IllegalArgumentException("polygon is degenerate: all points are identical");
+    }
+    
+    // Now we can start the process of walking around, removing duplicate points.
+    int currentIndex = startIndex;
+    while (true) {
+      final GeoPoint currentPoint = input.get(currentIndex);
+      noIdenticalPoints.add(currentPoint);
+      while (true) {
+        currentIndex = getLegalIndex(currentIndex + 1, input.size());
+        if (currentIndex == startIndex) {
+          break;
+        }
+        final GeoPoint nextNonIdenticalPoint = input.get(currentIndex);
+        if (!nextNonIdenticalPoint.isNumericallyIdentical(currentPoint)) {
+          break;
+        }
+      }
+      if (currentIndex == startIndex) {
+        break;
+      }
+    }
+    
+    if (noIdenticalPoints.size() < 3) {
+      throw new IllegalArgumentException("polygon has fewer than three non-identical points");
+    }
+    
+    // Next step: remove coplanar points and backtracks.  For this, we use a strategy that is similar but we assess whether the points
+    // are on the same plane, taking the first and last points on the same plane only.
+    
+    final List<GeoPoint> nonCoplanarPoints = new ArrayList<>(noIdenticalPoints.size());
+    
+    int startPlaneIndex = -1;
+    final Plane comparePlane = new Plane(noIdenticalPoints.get(0), noIdenticalPoints.get(1));
+    for (int i = 0; i < noIdenticalPoints.size()-1; i++) {
+      final GeoPoint thePoint = noIdenticalPoints.get(getLegalIndex(- i - 1, noIdenticalPoints.size()));
+      if (!comparePlane.evaluateIsZero(thePoint)) {
+        startPlaneIndex = getLegalIndex(-i, noIdenticalPoints.size());
+        break;
+      }
+    }
+    if (startPlaneIndex == -1) {
+      throw new IllegalArgumentException("polygon is degenerate: all points are coplanar");
+    }
+
+    // Now we can start the process of walking around, removing duplicate points.
+    int currentPlaneIndex = startPlaneIndex;
+    while (true) {
+      final GeoPoint currentPoint = noIdenticalPoints.get(currentPlaneIndex);
+      nonCoplanarPoints.add(currentPoint);
+      int nextPlaneIndex = getLegalIndex(currentPlaneIndex + 1, noIdenticalPoints.size());
+      if (nextPlaneIndex == startPlaneIndex) {
+        break;
+      }
+      final Plane testPlane = new Plane(currentPoint, noIdenticalPoints.get(nextPlaneIndex));
+      while (true) {
+        currentPlaneIndex = nextPlaneIndex;
+        if (currentPlaneIndex == startPlaneIndex) {
+          break;
+        }
+        // Check if the next point is off plane
+        nextPlaneIndex = getLegalIndex(currentPlaneIndex + 1, noIdenticalPoints.size());
+        final GeoPoint nextNonCoplanarPoint = noIdenticalPoints.get(nextPlaneIndex);
+        if (!testPlane.evaluateIsZero(nextNonCoplanarPoint)) {
+          // We will want to add the point at currentPlaneIndex to the list (last on of the series)
+          break;
+        }
+      }
+      if (currentPlaneIndex == startPlaneIndex) {
+        break;
+      }
+    }
+    
+    return nonCoplanarPoints;
+  }
+  
   /** The maximum distance from the close point to the trial pole: 2 degrees */
   private final static double MAX_POLE_DISTANCE = Math.PI * 2.0 / 180.0;
   
