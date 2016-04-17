@@ -80,17 +80,42 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
    */
   @Override
   public InputStream openResource(String resource) throws IOException {
-    InputStream is = null;
+    InputStream is;
     String file = configSetZkPath + "/" + resource;
-    try {
-      if (zkController.pathExists(file)) {
-        Stat stat = new Stat();
-        byte[] bytes = zkController.getZkClient().getData(file, null, stat, true);
-        return new ZkByteArrayInputStream(bytes, stat);
+    int maxTries = 10;
+    Exception exception = null;
+    while (maxTries -- > 0) {
+      try {
+        if (zkController.pathExists(file)) {
+          Stat stat = new Stat();
+          byte[] bytes = zkController.getZkClient().getData(file, null, stat, true);
+          return new ZkByteArrayInputStream(bytes, stat);
+        } else {
+          //Path does not exists. We only retry for session expired exceptions.
+          break;
+        }
+      } catch (KeeperException.SessionExpiredException e) {
+        exception = e;
+        // Retry in case of session expiry
+        try {
+          Thread.sleep(1000);
+          log.debug("Sleeping for 1s before retrying fetching resource=" + resource);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          throw new IOException("Could not load resource=" + resource, ie);
+        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new IOException("Error opening " + file, e);
+      } catch (KeeperException e) {
+        throw new IOException("Error opening " + file, e);
       }
-    } catch (Exception e) {
-      throw new IOException("Error opening " + file, e);
     }
+
+    if (exception != null) {
+      throw new IOException("We re-tried 10 times but was still unable to fetch resource=" + resource + " from ZK", exception);
+    }
+
     try {
       // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
       is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
