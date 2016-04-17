@@ -17,16 +17,7 @@
  limitations under the License.
 -->
 
-<!-- This is a "kitchen sink" config file that tests can use.
-     When writting a new test, feel free to add *new* items (plugins,
-     config options, etc...) as long as they don't break any existing
-     tests.  if you need to test something esoteric please add a new
-     "solrconfig-your-esoteric-purpose.xml" config file.
-
-     Note in particular that this test is used by MinimalSchemaTest so
-     Anything added to this file needs to work correctly even if there
-     is now uniqueKey or defaultSearch Field.
-  -->
+<!-- Minimal solrconfig.xml with /select, /admin and /update only -->
 
 <config>
 
@@ -34,7 +25,11 @@
 
   <directoryFactory name="DirectoryFactory"
                     class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
-  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
+  <schemaFactory class="ManagedIndexSchemaFactory">
+    <bool name="mutable">${managed.schema.mutable}</bool>
+    <str name="managedSchemaResourceName">managed-schema</str>
+  </schemaFactory>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
@@ -42,8 +37,9 @@
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>
-
+    <updateLog></updateLog>
   </updateHandler>
+
   <requestHandler name="/select" class="solr.SearchHandler">
     <lst name="defaults">
       <str name="echoParams">explicit</str>
@@ -53,4 +49,3 @@
 
   </requestHandler>
 </config>
-
