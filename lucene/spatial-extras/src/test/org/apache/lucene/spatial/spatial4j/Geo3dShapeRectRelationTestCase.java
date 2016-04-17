@@ -184,9 +184,8 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
             final GeoPoint gPt = new GeoPoint(planetModel, point.getY() * DEGREES_TO_RADIANS, point.getX() * DEGREES_TO_RADIANS);
             geoPoints.add(gPt);
           }
-          final int convexPointIndex = random().nextInt(vertexCount); //If we get this wrong, hopefully we get IllegalArgumentException
           try {
-            final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(planetModel, geoPoints, convexPointIndex);
+            final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(planetModel, geoPoints);
             return new Geo3dShape(planetModel, shape, ctx);
           } catch (IllegalArgumentException e) {
             // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where

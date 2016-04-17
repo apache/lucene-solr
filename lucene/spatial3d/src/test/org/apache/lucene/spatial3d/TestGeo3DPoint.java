@@ -613,9 +613,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
           final GeoPoint gPt = new GeoPoint(PlanetModel.WGS84, toRadians(GeoTestUtil.nextLatitude()), toRadians(GeoTestUtil.nextLongitude()));
           geoPoints.add(gPt);
         }
-        final int convexPointIndex = random().nextInt(vertexCount);       //If we get this wrong, hopefully we get IllegalArgumentException
         try {
-          return GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, geoPoints, convexPointIndex);
+          return GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, geoPoints);
         } catch (IllegalArgumentException e) {
           // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
           // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.
