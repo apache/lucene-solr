@@ -54,6 +54,9 @@ Bug Fixes
 * SOLR-8662: SchemaManager waits correctly for replicas to be notified of a new change
   (sarowe, Noble Paul, Varun Thacker)
 
+* SOLR-9007: Remove mention of the managed_schema_configs as valid config directory when creating
+  the collection for the SolrCloud example. (Timothy Potter)
+
 ======================= 5.5.0 =======================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

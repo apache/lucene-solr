@@ -2635,14 +2635,13 @@ public class SolrCLI {
             "How many replicas per shard would you like to create? [2] ", "a replication factor", 2, 1, 4);
 
         echo("Please choose a configuration for the "+collectionName+" collection, available options are:");
-        cloudConfig =
-            prompt(readInput, "basic_configs, data_driven_schema_configs, sample_techproducts_configs, or managed_schema_configs ["+cloudConfig+"] ", cloudConfig);
+        String validConfigs = "basic_configs, data_driven_schema_configs, or sample_techproducts_configs ["+cloudConfig+"] ";
+        cloudConfig = prompt(readInput, validConfigs, cloudConfig);
 
         // validate the cloudConfig name
         while (!isValidConfig(configsetsDir, cloudConfig)) {
           echo(cloudConfig+" is not a valid configuration directory! Please choose a configuration for the "+collectionName+" collection, available options are:");
-          cloudConfig =
-              prompt(readInput, "basic_configs, data_driven_schema_configs, sample_techproducts_configs, or managed_schema_configs ["+cloudConfig+"] ", cloudConfig);
+          cloudConfig = prompt(readInput, validConfigs, cloudConfig);
         }
       } else {
         // must verify if default collection exists
