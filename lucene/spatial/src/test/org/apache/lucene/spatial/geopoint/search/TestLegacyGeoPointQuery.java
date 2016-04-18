@@ -86,18 +86,8 @@ public class TestLegacyGeoPointQuery extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected double nextLongitudeNear(double other) {
-    return GeoPointTestUtil.nextLongitudeNear(other);
-  }
-
-  @Override
   protected double nextLatitude() {
     return GeoPointTestUtil.nextLatitude();
-  }
-
-  @Override
-  protected double nextLatitudeNear(double other) {
-    return GeoPointTestUtil.nextLatitudeNear(other);
   }
 
   @Override
@@ -106,17 +96,7 @@ public class TestLegacyGeoPointQuery extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Rectangle nextBoxNear(double latitude, double longitude) {
-    return GeoPointTestUtil.nextBoxNear(latitude, longitude);
-  }
-
-  @Override
   protected Polygon nextPolygon() {
     return GeoPointTestUtil.nextPolygon();
-  }
-
-  @Override
-  protected Polygon nextPolygonNear(double latitude, double longitude) {
-    return GeoPointTestUtil.nextPolygonNear(latitude, longitude);
   }
 }
