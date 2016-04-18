@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Collections;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
@@ -140,6 +141,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     testNulls();
     testTopicStream();
     testDaemonStream();
+    testRandomStream();
     testParallelUniqueStream();
     testParallelReducerStream();
     testParallelRankStream();
@@ -556,6 +558,76 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     del("*:*");
     commit();
+  }
+
+  private void testRandomStream() throws Exception {
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
+    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0");
+    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1");
+    commit();
+
+    StreamExpression expression;
+    TupleStream stream;
+
+    StreamFactory factory = new StreamFactory()
+        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withFunctionName("random", RandomStream.class);
+
+
+    StreamContext context = new StreamContext();
+    SolrClientCache cache = new SolrClientCache();
+    try {
+      context.setSolrClientCache(cache);
+
+      expression = StreamExpressionParser.parse("random(collection1, q=\"*:*\", rows=\"10\", fl=\"id, a_i\")");
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(context);
+      List<Tuple> tuples1 = getTuples(stream);
+      assert (tuples1.size() == 5);
+
+      expression = StreamExpressionParser.parse("random(collection1, q=\"*:*\", rows=\"10\", fl=\"id, a_i\")");
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(context);
+      List<Tuple> tuples2 = getTuples(stream);
+      assert (tuples2.size() == 5);
+
+      boolean different = false;
+      for (int i = 0; i < tuples1.size(); i++) {
+        Tuple tuple1 = tuples1.get(i);
+        Tuple tuple2 = tuples2.get(i);
+        if (!tuple1.get("id").equals(tuple2.get(id))) {
+          different = true;
+          break;
+        }
+      }
+
+      assertTrue(different);
+
+      Collections.sort(tuples1, new FieldComparator("id", ComparatorOrder.ASCENDING));
+      Collections.sort(tuples2, new FieldComparator("id", ComparatorOrder.ASCENDING));
+
+      for (int i = 0; i < tuples1.size(); i++) {
+        Tuple tuple1 = tuples1.get(i);
+        Tuple tuple2 = tuples2.get(i);
+        if (!tuple1.get("id").equals(tuple2.get(id))) {
+          assert(tuple1.getLong("id").equals(tuple2.get("a_i")));
+        }
+      }
+
+      expression = StreamExpressionParser.parse("random(collection1, q=\"*:*\", rows=\"1\", fl=\"id, a_i\")");
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(context);
+      List<Tuple> tuples3 = getTuples(stream);
+      assert (tuples3.size() == 1);
+
+    } finally {
+      cache.close();
+      del("*:*");
+      commit();
+    }
   }
   
   private void testReducerStream() throws Exception{
