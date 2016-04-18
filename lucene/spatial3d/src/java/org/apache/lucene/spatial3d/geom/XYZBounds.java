@@ -29,7 +29,7 @@ public class XYZBounds implements Bounds {
    * of the shape, and we cannot guarantee that without making MINIMUM_RESOLUTION
    * unacceptably large.
    */
-  private static final double FUDGE_FACTOR = Vector.MINIMUM_RESOLUTION * 2.0;
+  private static final double FUDGE_FACTOR = Vector.MINIMUM_RESOLUTION * 500.0;
   
   /** Minimum x */
   private Double minX = null;
