@@ -62,6 +62,7 @@ public class GeoPolygonFactory {
   public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel,
     final List<GeoPoint> pointList,
     final List<GeoPolygon> holes) {
+    //System.err.println("points="+pointList);
     // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
     // of points to use for poles.
     final Random generator = new Random(1234);
@@ -105,17 +106,20 @@ public class GeoPolygonFactory {
     // We don't know if this is the correct siding choice.  We will only know as we build the complex polygon.
     // So we need to be prepared to try both possibilities.
     GeoCompositePolygon rval = new GeoCompositePolygon();
-    if (buildPolygonShape(rval, planetModel, filteredPointList, new BitSet(), 0, 1, initialPlane, holes, testPoint) == false) {
+    MutableBoolean seenConcave = new MutableBoolean();
+    if (buildPolygonShape(rval, seenConcave, planetModel, filteredPointList, new BitSet(), 0, 1, initialPlane, holes, testPoint) == false) {
       // The testPoint was within the shape.  Was that intended?
       if (testPointInside) {
         // Yes: build it for real
         rval = new GeoCompositePolygon();
-        buildPolygonShape(rval, planetModel, filteredPointList, new BitSet(), 0, 1, initialPlane, holes, null);
+        seenConcave = new MutableBoolean();
+        buildPolygonShape(rval, seenConcave, planetModel, filteredPointList, new BitSet(), 0, 1, initialPlane, holes, null);
         return rval;
       }
       // No: do the complement and return that.
       rval = new GeoCompositePolygon();
-      buildPolygonShape(rval, planetModel, filteredPointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
+      seenConcave = new MutableBoolean();
+      buildPolygonShape(rval, seenConcave, planetModel, filteredPointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
       return rval;
     } else {
       // The testPoint was outside the shape.  Was that intended?
@@ -125,7 +129,8 @@ public class GeoPolygonFactory {
       }
       // No: return the complement
       rval = new GeoCompositePolygon();
-      buildPolygonShape(rval, planetModel, filteredPointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
+      seenConcave = new MutableBoolean();
+      buildPolygonShape(rval, seenConcave, planetModel, filteredPointList, new BitSet(), 0, 1, new SidedPlane(initialPlane), holes, null);
       return rval;
     }
   }
@@ -400,6 +405,7 @@ public class GeoPolygonFactory {
 
   /** Build a GeoPolygon out of one concave part and multiple convex parts given points, starting edge, and whether starting edge is internal or not.
    * @param rval is the composite polygon to add to.
+   * @param seenConcave is true if a concave polygon has been seen in this generation yet.
    * @param planetModel is the planet model.
    * @param pointsList is a list of the GeoPoints to build an arbitrary polygon out of.
    * @param internalEdges specifies which edges are internal.
@@ -419,8 +425,9 @@ public class GeoPolygonFactory {
    *  found in the interior of the shape we create here we return false, which is a signal that we chose
    *  our initial plane sidedness backwards.
    */
-  public static boolean buildPolygonShape(
+  static boolean buildPolygonShape(
     final GeoCompositePolygon rval,
+    final MutableBoolean seenConcave,
     final PlanetModel planetModel,
     final List<GeoPoint> pointsList,
     final BitSet internalEdges,
@@ -433,7 +440,8 @@ public class GeoPolygonFactory {
     // It could be the case that we need a concave polygon.  So we need to try and look for that case
     // as part of the general code for constructing complex polygons.
 
-    // Note that there can be only one concave polygon.
+    // Note that there can be only one concave polygon.  This code will enforce that condition and will return
+    // false if it is violated.
               
     // The code here must keep track of two lists of sided planes.  The first list contains the planes consistent with
     // a concave polygon.  This list will grow and shrink.  The second list is built starting at the current edge that
@@ -585,30 +593,18 @@ public class GeoPolygonFactory {
           // This should be the only problematic part of the polygon.
           // We know that thePoint is on the "wrong" side of the edge -- that is, it's on the side that the
           // edge is pointing at.
-          final List<GeoPoint> thirdPartPoints = new ArrayList<>();
+          final List<GeoPoint> thirdPartPoints = new ArrayList<>(3);
           final BitSet thirdPartInternal = new BitSet();
           thirdPartPoints.add(checkEdge.startPoint);
           thirdPartInternal.set(0, checkEdge.isInternal);
           thirdPartPoints.add(checkEdge.endPoint);
           thirdPartInternal.set(1, true);
           thirdPartPoints.add(thePoint);
-          thirdPartInternal.set(2, true);
-          //System.out.println("Doing convex part...");
-          if (buildPolygonShape(rval,
-            planetModel,
-            thirdPartPoints,
-            thirdPartInternal, 
-            0,
-            1,
-            checkEdge.plane,
-            holes,
-            testPoint) == false) {
-            return false;
-          }
-          //System.out.println("...done convex part.");
+          assert checkEdge.plane.isWithin(thePoint) : "Point was on wrong side of complementary plane, so must be on the right side of the non-complementary plane!";
+          final GeoPolygon convexPart = new GeoConvexPolygon(planetModel, thirdPartPoints, holes, thirdPartInternal, true);
+          //System.out.println("convex part = "+convexPart);
+          rval.addShape(convexPart);
 
-          // ??? check if we get the sense right
-          
           // The part preceding the bad edge, back to thePoint, needs to be recursively
           // processed.  So, assemble what we need, which is basically a list of edges.
           Edge loopEdge = edgeBuffer.getPrevious(checkEdge);
@@ -626,6 +622,7 @@ public class GeoPolygonFactory {
           firstPartInternal.set(i, true);
           //System.out.println("Doing first part...");
           if (buildPolygonShape(rval,
+            seenConcave,
             planetModel,
             firstPartPoints,
             firstPartInternal, 
@@ -653,6 +650,7 @@ public class GeoPolygonFactory {
           secondPartInternal.set(i, true);
           //System.out.println("Doing second part...");
           if (buildPolygonShape(rval,
+            seenConcave,
             planetModel,
             secondPartPoints,
             secondPartInternal, 
@@ -673,7 +671,8 @@ public class GeoPolygonFactory {
     // No violations found: we know it's a legal concave polygon.
     
     // If there's anything left in the edge buffer, convert to concave polygon.
-    if (makeConcavePolygon(planetModel, rval, edgeBuffer, holes, testPoint) == false) {
+    //System.out.println("adding concave part");
+    if (makeConcavePolygon(planetModel, rval, seenConcave, edgeBuffer, holes, testPoint) == false) {
       return false;
     }
     
@@ -684,6 +683,7 @@ public class GeoPolygonFactory {
    * By this point, if there are any edges in the edgebuffer, they represent a concave polygon.
    * @param planetModel is the planet model.
    * @param rval is the composite polygon we're building.
+   * @param seenConcave is true if we've already seen a concave polygon.
    * @param edgeBuffer is the edge buffer.
    * @param holes is the optional list of holes.
    * @param testPoint is the optional test point.
@@ -691,12 +691,20 @@ public class GeoPolygonFactory {
    */
   private static boolean makeConcavePolygon(final PlanetModel planetModel,
     final GeoCompositePolygon rval,
+    final MutableBoolean seenConcave,
     final EdgeBuffer edgeBuffer,
     final List<GeoPolygon> holes,
     final GeoPoint testPoint) {
+      
     if (edgeBuffer.size() == 0) {
       return true;
     }
+    
+    if (seenConcave.value) {
+      throw new IllegalArgumentException("Illegal polygon; polygon edges intersect each other");
+    }
+
+    seenConcave.value = true;
     
     // If there are less than three edges, something got messed up somehow.  Don't know how this
     // can happen but check.
@@ -1107,24 +1115,34 @@ public class GeoPolygonFactory {
       */
     public EdgeBuffer(final List<GeoPoint> pointList, final BitSet internalEdges, final int startPlaneStartIndex, final int startPlaneEndIndex, final SidedPlane startPlane) {
       /*
-      System.out.println("Initial points:");
+      System.out.println("Start plane index: "+startPlaneStartIndex+" End plane index: "+startPlaneEndIndex+" Initial points:");
       for (final GeoPoint p : pointList) {
         System.out.println(" "+p);
       }
       */
-
-      // We need to detect backtracks, and also situations where someone has tried to stitch together multiple segments into one long arc (> 180 degrees).
-      // To do this, every time we extend by a coplanar segment, we compute the total arc distance to the new endpoint, as
-      // well as a sum of the arc distances we've accumulated as we march forward.  If these two numbers disagree, then
-      // we know there has been a backtrack or other anomaly.
       
-      // extend the edge, we compute the distance along the 
       final Edge startEdge = new Edge(pointList.get(startPlaneStartIndex), pointList.get(startPlaneEndIndex), startPlane, internalEdges.get(startPlaneStartIndex));
       // Fill in the EdgeBuffer by walking around creating more stuff
       Edge currentEdge = startEdge;
       int startIndex = startPlaneStartIndex;
       int endIndex = startPlaneEndIndex;
       while (true) {
+        /*
+        System.out.println("For plane "+currentEdge.plane+", the following points are in/out:");
+        for (final GeoPoint p: pointList) {
+          System.out.println(" "+p+" is: "+(currentEdge.plane.isWithin(p)?"in":"out"));
+        }
+        */
+        
+        // Check termination condition
+        if (currentEdge.endPoint == startEdge.startPoint) {
+          // We finish here.  Link the current edge to the start edge, and exit
+          previousEdges.put(startEdge, currentEdge);
+          nextEdges.put(currentEdge, startEdge);
+          edges.add(startEdge);
+          break;
+        }
+
         // Compute the next edge
         startIndex = endIndex;
         endIndex++;
@@ -1134,53 +1152,15 @@ public class GeoPolygonFactory {
         // Get the next point
         final GeoPoint newPoint = pointList.get(endIndex);
         // Build the new edge
-        // We have to be sure that the point we use as a check does not lie on the plane.
-        // In order to meet that goal, we need to go hunting for a point that meets the criteria.  If we don't
-        // find one, we've got a linear "polygon" that we cannot use.
-        
         // We need to know the sidedness of the new plane.  The point we're going to be presenting to it has
         // a certain relationship with the sided plane we already have for the current edge.  If the current edge
         // is colinear with the new edge, then we want to maintain the same relationship.  If the new edge
         // is not colinear, then we can use the new point's relationship with the current edge as our guide.
         
-        final boolean isNewPointWithin;
-        final GeoPoint pointToPresent;
-        if (currentEdge.plane.evaluateIsZero(newPoint)) {
-          // The new point is colinear with the current edge.  We'll have to look backwards for the first point that isn't.
-          int checkPointIndex = -1;
-          // Compute the arc distance before we try to extend, so that we note backtracking when we see it
-          //double accumulatedDistance = newPoint.arcDistance(pointList.get(startIndex));
-          final Plane checkPlane = new Plane(pointList.get(startIndex), newPoint);
-          for (int i = 0; i < pointList.size(); i++) {
-            final int index = getLegalIndex(startIndex - 1 - i, pointList.size());
-            if (!checkPlane.evaluateIsZero(pointList.get(index))) {
-              checkPointIndex = index;
-              break;
-            } else {
-              //accumulatedDistance += pointList.get(getLegalIndex(index+1, pointList.size())).arcDistance(pointList.get(index));
-              //final double actualDistance = newPoint.arcDistance(pointList.get(index));
-              //if (Math.abs(actualDistance - accumulatedDistance) >= Vector.MINIMUM_RESOLUTION) {
-              //  throw new IllegalArgumentException("polygon backtracks over itself");
-              //}
-            }
-          }
-          if (checkPointIndex == -1) {
-            throw new IllegalArgumentException("polygon is illegal (linear)");
-          }
-          pointToPresent = pointList.get(checkPointIndex);
-          isNewPointWithin = currentEdge.plane.isWithin(pointToPresent);
-        } else {
-          isNewPointWithin = currentEdge.plane.isWithin(newPoint);
-          pointToPresent = currentEdge.startPoint;
-        }
+        final boolean isNewPointWithin = currentEdge.plane.isWithin(newPoint);
+        final GeoPoint pointToPresent = currentEdge.startPoint;
 
         final SidedPlane newPlane = new SidedPlane(pointToPresent, isNewPointWithin, pointList.get(startIndex), newPoint);
-        /*
-        System.out.println("For next plane, the following points are in/out:");
-        for (final GeoPoint p: pointList) {
-          System.out.println(" "+p+" is: "+(newPlane.isWithin(p)?"in":"out"));
-        }
-        */
         final Edge newEdge = new Edge(pointList.get(startIndex), pointList.get(endIndex), newPlane, internalEdges.get(startIndex));
         
         // Link it in
@@ -1189,13 +1169,6 @@ public class GeoPolygonFactory {
         edges.add(newEdge);
         currentEdge = newEdge;
 
-        if (currentEdge.endPoint == startEdge.startPoint) {
-          // We finish here.  Link the current edge to the start edge, and exit
-          previousEdges.put(startEdge, currentEdge);
-          nextEdges.put(currentEdge, startEdge);
-          edges.add(startEdge);
-          break;
-        }
       }
       
       oneEdge = startEdge;
@@ -1311,6 +1284,10 @@ public class GeoPolygonFactory {
       return oneEdge;
     }
     
+  }
+  
+  static class MutableBoolean {
+    public boolean value = false;
   }
   
 }

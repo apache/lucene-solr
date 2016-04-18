@@ -192,6 +192,7 @@ public final class Geo3DPoint extends Field {
     for (final Polygon hole : theHoles) {
       holeList.add(fromPolygon(hole, !reverseMe));
     }
+    
     // Now do the polygon itself
     final double[] polyLats = polygon.getPolyLats();
     final double[] polyLons = polygon.getPolyLons();
