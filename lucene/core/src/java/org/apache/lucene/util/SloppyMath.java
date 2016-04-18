@@ -37,7 +37,7 @@ public class SloppyMath {
    * specified in decimal degrees (latitude/longitude).  This works correctly
    * even if the dateline is between the two points.
    * <p>
-   * Error is at most 2E-1 (20cm) from the actual haversine distance, but is typically
+   * Error is at most 4E-1 (40cm) from the actual haversine distance, but is typically
    * much smaller for reasonable distances: around 1E-5 (0.01mm) for distances less than
    * 1000km.
    *
