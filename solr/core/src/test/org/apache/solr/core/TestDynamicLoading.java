@@ -104,7 +104,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     Map map = TestSolrConfigHandler.getRespMap("/test1?wt=json", client);
 
     assertNotNull(TestBlobHandler.getAsString(map), map = (Map) map.get("error"));
-    assertEquals(TestBlobHandler.getAsString(map), ".system collection not available", map.get("msg"));
+    assertTrue(TestBlobHandler.getAsString(map), map.get("msg").toString().contains(".system collection not available"));
 
 
     TestBlobHandler.createSystemCollection(getHttpSolrClient(baseURL, randomClient.getHttpClient()));
@@ -114,7 +114,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
 
     assertNotNull(map = (Map) map.get("error"));
-    assertEquals("full output " + TestBlobHandler.getAsString(map), "no such blob or version available: colltest/1" , map.get("msg"));
+    assertTrue("full output " + TestBlobHandler.getAsString(map), map.get("msg").toString().contains("no such blob or version available: colltest/1" ));
     payload = " {\n" +
         "  'set' : {'watched': {" +
         "                    'x':'X val',\n" +

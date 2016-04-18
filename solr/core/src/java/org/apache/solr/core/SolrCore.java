@@ -2569,6 +2569,38 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     }
     return implicits;
   }
+
+  /**
+   * Convenience method to load a blob. This method minimizes the degree to which component and other code needs 
+   * to depend on the structure of solr's object graph and ensures that a proper close hook is registered. This method 
+   * should normally be called in {@link SolrCoreAware#inform(SolrCore)}, and should never be called during request
+   * processing. The Decoder will only run on the first invocations, subsequent invocations will return the 
+   * cached object. 
+   * 
+   * @param key A key in the format of name/version for a blob stored in the .system blob store via the Blob Store API
+   * @param decoder a decoder with which to convert the blob into a Java Object representation (first time only)
+   * @return a reference to the blob that has already cached the decoded version.
+   */
+  public BlobRepository.BlobContentRef loadDecodeAndCacheBlob(String key, BlobRepository.Decoder<Object> decoder) {
+    // make sure component authors don't give us oddball keys with no version...
+    if (!BlobRepository.BLOB_KEY_PATTERN_CHECKER.matcher(key).matches()) {
+      throw new IllegalArgumentException("invalid key format, must end in /N where N is the version number");
+    }
+    CoreContainer coreContainer = getCoreDescriptor().getCoreContainer();
+    // define the blob
+    BlobRepository.BlobContentRef blobRef = coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
+    addCloseHook(new CloseHook() {
+      @Override
+      public void preClose(SolrCore core) {
+      }
+
+      @Override
+      public void postClose(SolrCore core) {
+        core.getCoreDescriptor().getCoreContainer().getBlobRepository().decrementBlobRefCount(blobRef);
+      }
+    });
+    return blobRef;
+  }
 }
 
 
