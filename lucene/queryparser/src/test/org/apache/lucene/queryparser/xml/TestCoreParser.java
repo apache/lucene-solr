@@ -132,10 +132,40 @@ public class TestCoreParser extends LuceneTestCase {
     Query q = parse("LegacyNumericRangeQuery.xml");
     dumpResults("LegacyNumericRangeQuery", q, 5);
   }
+
+  public void testNumericRangeQueryXMLWithoutLowerTerm() throws ParserException, IOException {
+    Query q = parse("LegacyNumericRangeQueryWithoutLowerTerm.xml");
+    dumpResults("LegacyNumericRangeQueryWithoutLowerTerm", q, 5);
+  }
+
+  public void testNumericRangeQueryXMLWithoutUpperTerm() throws ParserException, IOException {
+    Query q = parse("LegacyNumericRangeQueryWithoutUpperTerm.xml");
+    dumpResults("LegacyNumericRangeQueryWithoutUpperTerm", q, 5);
+  }
+
+  public void testNumericRangeQueryXMLWithoutRange() throws ParserException, IOException {
+    Query q = parse("LegacyNumericRangeQueryWithoutRange.xml");
+    dumpResults("LegacyNumericRangeQueryWithoutRange", q, 5);
+  }
   
   public void testPointRangeQuery() throws ParserException, IOException {
     Query q = parse("PointRangeQuery.xml");
     dumpResults("PointRangeQuery", q, 5);
+  }
+
+  public void testPointRangeQueryWithoutLowerTerm() throws ParserException, IOException {
+    Query q = parse("PointRangeQueryWithoutLowerTerm.xml");
+    dumpResults("PointRangeQueryWithoutLowerTerm", q, 5);
+  }
+
+  public void testPointRangeQueryWithoutUpperTerm() throws ParserException, IOException {
+    Query q = parse("PointRangeQueryWithoutUpperTerm.xml");
+    dumpResults("PointRangeQueryWithoutUpperTerm", q, 5);
+  }
+
+  public void testPointRangeQueryWithoutRange() throws ParserException, IOException {
+    Query q = parse("PointRangeQueryWithoutRange.xml");
+    dumpResults("PointRangeQueryWithoutRange", q, 5);
   }
 
   //================= Helper methods ===================================

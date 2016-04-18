@@ -46,14 +46,14 @@ import org.w3c.dom.Element;
  * <tr>
  * <td>lowerTerm</td>
  * <td>Specified by <tt>type</tt></td>
- * <td>Yes</td>
- * <td>N/A</td>
+ * <td>No</td>
+ * <td>Integer.MIN_VALUE Long.MIN_VALUE Float.NEGATIVE_INFINITY Double.NEGATIVE_INFINITY</td>
  * </tr>
  * <tr>
  * <td>upperTerm</td>
  * <td>Specified by <tt>type</tt></td>
- * <td>Yes</td>
- * <td>N/A</td>
+ * <td>No</td>
+ * <td>Integer.MAX_VALUE Long.MAX_VALUE Float.POSITIVE_INFINITY Double.POSITIVE_INFINITY</td>
  * </tr>
  * <tr>
  * <td>type</td>
@@ -72,19 +72,27 @@ public class PointRangeQueryBuilder implements QueryBuilder {
   @Override
   public Query getQuery(Element e) throws ParserException {
     String field = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
-    String lowerTerm = DOMUtils.getAttributeOrFail(e, "lowerTerm");
-    String upperTerm = DOMUtils.getAttributeOrFail(e, "upperTerm");
+    final String lowerTerm = DOMUtils.getAttribute(e, "lowerTerm", null);
+    final String upperTerm = DOMUtils.getAttribute(e, "upperTerm", null);
 
     String type = DOMUtils.getAttribute(e, "type", "int");
     try {
       if (type.equalsIgnoreCase("int")) {
-        return IntPoint.newRangeQuery(field, Integer.valueOf(lowerTerm), Integer.valueOf(upperTerm));
+        return IntPoint.newRangeQuery(field,
+            (lowerTerm == null ? Integer.MIN_VALUE : Integer.valueOf(lowerTerm)),
+            (upperTerm == null ? Integer.MAX_VALUE : Integer.valueOf(upperTerm)));
       } else if (type.equalsIgnoreCase("long")) {
-        return LongPoint.newRangeQuery(field, Long.valueOf(lowerTerm), Long.valueOf(upperTerm));
+        return LongPoint.newRangeQuery(field,
+            (lowerTerm == null ? Long.MIN_VALUE : Long.valueOf(lowerTerm)),
+            (upperTerm == null ? Long.MAX_VALUE : Long.valueOf(upperTerm)));
       } else if (type.equalsIgnoreCase("double")) {
-        return DoublePoint.newRangeQuery(field, Double.valueOf(lowerTerm), Double.valueOf(upperTerm));
+        return DoublePoint.newRangeQuery(field,
+            (lowerTerm == null ? Double.NEGATIVE_INFINITY : Double.valueOf(lowerTerm)),
+            (upperTerm == null ? Double.POSITIVE_INFINITY : Double.valueOf(upperTerm)));
       } else if (type.equalsIgnoreCase("float")) {
-        return FloatPoint.newRangeQuery(field, Float.valueOf(lowerTerm), Float.valueOf(upperTerm));
+        return FloatPoint.newRangeQuery(field,
+            (lowerTerm == null ? Float.NEGATIVE_INFINITY : Float.valueOf(lowerTerm)),
+            (upperTerm == null ? Float.POSITIVE_INFINITY : Float.valueOf(upperTerm)));
       } else {
         throw new ParserException("type attribute must be one of: [long, int, double, float]");
       }
