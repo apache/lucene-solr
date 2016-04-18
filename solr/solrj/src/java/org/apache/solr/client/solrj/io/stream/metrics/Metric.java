@@ -54,4 +54,6 @@ public abstract class Metric implements Serializable, Expressible {
   public abstract double getValue();
   public abstract void update(Tuple tuple);
   public abstract Metric newInstance();
+  public abstract String[] getColumns();
+
 }

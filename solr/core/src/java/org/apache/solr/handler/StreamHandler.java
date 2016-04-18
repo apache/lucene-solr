@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.graph.GatherNodesStream;
 import org.apache.solr.client.solrj.io.graph.ShortestPathStream;
 import org.apache.solr.client.solrj.io.ops.ConcatOperation;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
@@ -120,9 +121,8 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("daemon", DaemonStream.class)
       .withFunctionName("sort", SortStream.class)
       .withFunctionName("select", SelectStream.class)
-      
-      // graph streams
-      .withFunctionName("shortestPath", ShortestPathStream.class)
+         .withFunctionName("shortestPath", ShortestPathStream.class)
+         .withFunctionName("gatherNodes", GatherNodesStream.class)
 
       // metrics
       .withFunctionName("min", MinMetric.class)
@@ -275,6 +275,14 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
     public Tuple read() {
       String msg = e.getMessage();
+
+      Throwable t = e.getCause();
+      while(t != null) {
+        msg = t.getMessage();
+        t = t.getCause();
+      }
+
+
       Map m = new HashMap();
       m.put("EOF", true);
       m.put("EXCEPTION", msg);

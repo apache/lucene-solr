@@ -58,6 +58,11 @@ public class SumMetric extends Metric implements Serializable {
     setIdentifier(functionName, "(", columnName, ")");
   }
 
+  public String[] getColumns() {
+    String[] cols =  {columnName};
+    return cols;
+  }
+
   public void update(Tuple tuple) {
     Object o = tuple.get(columnName);
     if(o instanceof Double) {

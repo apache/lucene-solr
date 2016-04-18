@@ -80,6 +80,11 @@ public class MeanMetric extends Metric implements Serializable {
     return new MeanMetric(columnName);
   }
 
+  public String[] getColumns() {
+    String[] cols =  {columnName};
+    return cols;
+  }
+
   public double getValue() {
     double dcount = (double)count;
     if(longSum == 0) {
