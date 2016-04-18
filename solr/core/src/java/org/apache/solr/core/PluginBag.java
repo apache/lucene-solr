@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -28,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
@@ -38,6 +41,7 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.util.CryptoKeys;
+import org.apache.solr.util.SimplePostTool;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -386,7 +390,7 @@ public class PluginBag<T> implements AutoCloseable {
    */
   public static class RuntimeLib implements PluginInfoInitialized, AutoCloseable {
     private String name, version, sig;
-    private BlobRepository.BlobContentRef jarContent;
+    private BlobRepository.BlobContentRef<ByteBuffer> jarContent;
     private final CoreContainer coreContainer;
     private boolean verified = false;
 
@@ -430,9 +434,34 @@ public class PluginBag<T> implements AutoCloseable {
     public ByteBuffer getFileContent(String entryName) throws IOException {
       if (jarContent == null)
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "jar not available: " + name + "/" + version);
-      return BlobRepository.getFileContent(jarContent.blob, entryName);
+      return getFileContent(jarContent.blob, entryName);
 
     }
+
+    public ByteBuffer getFileContent(BlobRepository.BlobContent<ByteBuffer> blobContent,  String entryName) throws IOException {
+      ByteBuffer buff = blobContent.get();
+      ByteArrayInputStream zipContents = new ByteArrayInputStream(buff.array(), buff.arrayOffset(), buff.limit());
+      ZipInputStream zis = new ZipInputStream(zipContents);
+      try {
+        ZipEntry entry;
+        while ((entry = zis.getNextEntry()) != null) {
+          if (entryName == null || entryName.equals(entry.getName())) {
+            SimplePostTool.BAOS out = new SimplePostTool.BAOS();
+            byte[] buffer = new byte[2048];
+            int size;
+            while ((size = zis.read(buffer, 0, buffer.length)) != -1) {
+              out.write(buffer, 0, size);
+            }
+            out.close();
+            return out.getByteBuffer();
+          }
+        }
+      } finally {
+        zis.closeEntry();
+      }
+      return null;
+    }
+
 
     @Override
     public void close() throws Exception {
@@ -472,7 +501,7 @@ public class PluginBag<T> implements AutoCloseable {
       }
 
       try {
-        String matchedKey = jarContent.blob.checkSignature(sig, new CryptoKeys(keys));
+        String matchedKey = new CryptoKeys(keys).verify(sig, jarContent.blob.get());
         if (matchedKey == null)
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No key matched signature for jar : " + name + " version: " + version);
         log.info("Jar {} signed with {} successfully verified", name, matchedKey);

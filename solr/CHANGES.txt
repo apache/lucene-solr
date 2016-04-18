@@ -96,6 +96,9 @@ New Features
 * SOLR-8962: Add sort Streaming Expression. The expression takes a single input stream and a 
   comparator and outputs tuples in stable order of the comparator. (Dennis Gove)
 
+* SOLR-8349: Allow sharing of large in memory data structures across cores (Gus Heck, noble)
+
+
 Bug Fixes
 ----------------------
 

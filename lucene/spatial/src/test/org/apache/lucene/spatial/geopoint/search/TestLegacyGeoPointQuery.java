@@ -24,12 +24,14 @@ import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * random testing for GeoPoint query logic (with deprecated numeric encoding)
  * @deprecated remove this when TermEncoding.NUMERIC is removed
  */
 @Deprecated
+@SuppressCodecs("Direct") // can easily create too many postings and blow direct sky high
 public class TestLegacyGeoPointQuery extends BaseGeoPointTestCase {
   
   @Override
@@ -86,18 +88,8 @@ public class TestLegacyGeoPointQuery extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected double nextLongitudeNear(double other) {
-    return GeoPointTestUtil.nextLongitudeNear(other);
-  }
-
-  @Override
   protected double nextLatitude() {
     return GeoPointTestUtil.nextLatitude();
-  }
-
-  @Override
-  protected double nextLatitudeNear(double other) {
-    return GeoPointTestUtil.nextLatitudeNear(other);
   }
 
   @Override
@@ -106,17 +98,7 @@ public class TestLegacyGeoPointQuery extends BaseGeoPointTestCase {
   }
 
   @Override
-  protected Rectangle nextBoxNear(double latitude, double longitude) {
-    return GeoPointTestUtil.nextBoxNear(latitude, longitude);
-  }
-
-  @Override
   protected Polygon nextPolygon() {
     return GeoPointTestUtil.nextPolygon();
-  }
-
-  @Override
-  protected Polygon nextPolygonNear(double latitude, double longitude) {
-    return GeoPointTestUtil.nextPolygonNear(latitude, longitude);
   }
 }

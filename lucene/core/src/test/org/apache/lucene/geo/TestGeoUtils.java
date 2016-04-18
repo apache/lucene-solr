@@ -20,7 +20,6 @@ import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.SloppyMath;
-import org.junit.BeforeClass;
 
 /**
  * Tests class for methods in GeoUtils
@@ -29,49 +28,16 @@ import org.junit.BeforeClass;
  */
 public class TestGeoUtils extends LuceneTestCase {
 
-  // Global bounding box we will "cover" in the random test; we have to make this "smallish" else the queries take very long:
-  private static double originLat;
-  private static double originLon;
-
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    originLon = GeoTestUtil.nextLongitude();
-    originLat = GeoTestUtil.nextLatitude();
-  }
-
-  public double randomLat(boolean small) {
-    double result;
-    if (small) {
-      result = GeoTestUtil.nextLatitudeNear(originLat);
-    } else {
-      result = GeoTestUtil.nextLatitude();
-    }
-    return result;
-  }
-
-  public double randomLon(boolean small) {
-    double result;
-    if (small) {
-      result = GeoTestUtil.nextLongitudeNear(originLon);
-    } else {
-      result = GeoTestUtil.nextLongitude();
-    }
-    return result;
-  }
-
   // We rely heavily on GeoUtils.circleToBBox so we test it here:
   public void testRandomCircleToBBox() throws Exception {
     int iters = atLeast(1000);
     for(int iter=0;iter<iters;iter++) {
 
-      boolean useSmallRanges = random().nextBoolean();
+      double centerLat = GeoTestUtil.nextLatitude();
+      double centerLon = GeoTestUtil.nextLongitude();
 
-      double radiusMeters;
-
-      double centerLat = randomLat(useSmallRanges);
-      double centerLon = randomLon(useSmallRanges);
-
-      if (useSmallRanges) {
+      final double radiusMeters;
+      if (random().nextBoolean()) {
         // Approx 4 degrees lon at the equator:
         radiusMeters = random().nextDouble() * 444000;
       } else {
@@ -85,25 +51,9 @@ public class TestGeoUtils extends LuceneTestCase {
       int numPointsToTry = 1000;
       for(int i=0;i<numPointsToTry;i++) {
 
-        double lat;
-        double lon;
-
-        if (random().nextBoolean()) {
-          lat = randomLat(useSmallRanges);
-          lon = randomLon(useSmallRanges);
-        } else {
-          // pick a lat/lon within the bbox or "slightly" outside it to try to improve test efficiency
-          lat = GeoTestUtil.nextLatitudeAround(bbox.minLat, bbox.maxLat);
-          if (bbox.crossesDateline()) {
-            if (random().nextBoolean()) {
-              lon = GeoTestUtil.nextLongitudeAround(bbox.maxLon, -180);
-            } else {
-              lon = GeoTestUtil.nextLongitudeAround(0, bbox.minLon);
-            }
-          } else {
-            lon = GeoTestUtil.nextLongitudeAround(bbox.minLon, bbox.maxLon);
-          }
-        }
+        double point[] = GeoTestUtil.nextPointNear(bbox);
+        double lat = point[0];
+        double lon = point[1];
 
         double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, lat, lon);
 
@@ -124,7 +74,7 @@ public class TestGeoUtils extends LuceneTestCase {
 
         if (haversinSays) {
           if (bboxSays == false) {
-            System.out.println("small=" + useSmallRanges + " centerLat=" + centerLat + " cetnerLon=" + centerLon + " radiusMeters=" + radiusMeters);
+            System.out.println("centerLat=" + centerLat + " centerLon=" + centerLon + " radiusMeters=" + radiusMeters);
             System.out.println("  bbox: lat=" + bbox.minLat + " to " + bbox.maxLat + " lon=" + bbox.minLon + " to " + bbox.maxLon);
             System.out.println("  point: lat=" + lat + " lon=" + lon);
             System.out.println("  haversin: " + distanceMeters);
@@ -154,9 +104,10 @@ public class TestGeoUtils extends LuceneTestCase {
         box2 = null;
       }
 
-      for (int j = 0; j < 10000; j++) {
-        double lat2 = GeoTestUtil.nextLatitude();
-        double lon2 = GeoTestUtil.nextLongitude();
+      for (int j = 0; j < 1000; j++) {
+        double point[] = GeoTestUtil.nextPointNear(box);
+        double lat2 = point[0];
+        double lon2 = point[1];
         // if the point is within radius, then it should be in our bounding box
         if (SloppyMath.haversinMeters(lat, lon, lat2, lon2) <= radius) {
           assertTrue(lat >= box.minLat && lat <= box.maxLat);
@@ -179,8 +130,9 @@ public class TestGeoUtils extends LuceneTestCase {
                                              SloppyMath.haversinSortKey(lat, lon, box.maxLat, lon));
 
         for (int j = 0; j < 10000; j++) {
-          double lat2 = GeoTestUtil.nextLatitude();
-          double lon2 = GeoTestUtil.nextLongitude();
+          double point[] = GeoTestUtil.nextPointNear(box);
+          double lat2 = point[0];
+          double lon2 = point[1];
           // if the point is within radius, then it should be <= our sort key
           if (SloppyMath.haversinMeters(lat, lon, lat2, lon2) <= radius) {
             assertTrue(SloppyMath.haversinSortKey(lat, lon, lat2, lon2) <= minPartialDistance);

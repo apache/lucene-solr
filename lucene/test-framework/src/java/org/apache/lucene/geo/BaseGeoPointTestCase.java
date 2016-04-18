@@ -83,16 +83,6 @@ import org.apache.lucene.util.bkd.BKDWriter;
 public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
   protected static final String FIELD_NAME = "point";
-
-  private double originLat;
-  private double originLon;
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    originLon = nextLongitude();
-    originLat = nextLatitude();
-  }
   
   // TODO: remove these hooks once all subclasses can pass with new random!
 
@@ -100,32 +90,16 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     return org.apache.lucene.geo.GeoTestUtil.nextLongitude();
   }
   
-  protected double nextLongitudeNear(double other) {
-    return org.apache.lucene.geo.GeoTestUtil.nextLongitudeNear(other);
-  }
-  
   protected double nextLatitude() {
     return org.apache.lucene.geo.GeoTestUtil.nextLatitude();
-  }
-  
-  protected double nextLatitudeNear(double other) {
-    return org.apache.lucene.geo.GeoTestUtil.nextLatitudeNear(other);
   }
   
   protected Rectangle nextBox() {
     return org.apache.lucene.geo.GeoTestUtil.nextBox();
   }
   
-  protected Rectangle nextBoxNear(double latitude, double longitude) {
-    return org.apache.lucene.geo.GeoTestUtil.nextBoxNear(latitude, longitude);
-  }
-  
   protected Polygon nextPolygon() {
     return org.apache.lucene.geo.GeoTestUtil.nextPolygon();
-  }
-  
-  protected Polygon nextPolygonNear(double latitude, double longitude) {
-    return org.apache.lucene.geo.GeoTestUtil.nextPolygonNear(latitude, longitude);
   }
   
   /** Valid values that should not cause exception */
@@ -418,11 +392,10 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   // A particularly tricky adversary for BKD tree:
   public void testSamePointManyTimes() throws Exception {
     int numPoints = atLeast(1000);
-    boolean small = random().nextBoolean();
 
     // Every doc has 2 points:
-    double theLat = randomLat(small);
-    double theLon = randomLon(small);
+    double theLat = nextLatitude();
+    double theLon = nextLongitude();
 
     double[] lats = new double[numPoints];
     Arrays.fill(lats, theLat);
@@ -430,13 +403,12 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     double[] lons = new double[numPoints];
     Arrays.fill(lons, theLon);
 
-    verify(small, lats, lons);
+    verify(lats, lons);
   }
 
   public void testAllLatEqual() throws Exception {
     int numPoints = atLeast(10000);
-    boolean small = random().nextBoolean();
-    double lat = randomLat(small);
+    double lat = nextLatitude();
     double[] lats = new double[numPoints];
     double[] lons = new double[numPoints];
 
@@ -468,7 +440,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           System.out.println("  doc=" + docID + " lat=" + lat + " lon=" + lons[docID] + " (same lat/lon as doc=" + oldDocID + ")");
         }
       } else {
-        lons[docID] = randomLon(small);
+        lons[docID] = nextLongitude();
         haveRealDoc = true;
         if (VERBOSE) {
           System.out.println("  doc=" + docID + " lat=" + lat + " lon=" + lons[docID]);
@@ -477,13 +449,12 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       lats[docID] = lat;
     }
 
-    verify(small, lats, lons);
+    verify(lats, lons);
   }
 
   public void testAllLonEqual() throws Exception {
     int numPoints = atLeast(10000);
-    boolean small = random().nextBoolean();
-    double theLon = randomLon(small);
+    double theLon = nextLongitude();
     double[] lats = new double[numPoints];
     double[] lons = new double[numPoints];
 
@@ -517,7 +488,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + theLon + " (same lat/lon as doc=" + oldDocID + ")");
         }
       } else {
-        lats[docID] = randomLat(small);
+        lats[docID] = nextLatitude();
         haveRealDoc = true;
         if (VERBOSE) {
           System.out.println("  doc=" + docID + " lat=" + lats[docID] + " lon=" + theLon);
@@ -526,7 +497,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       lons[docID] = theLon;
     }
 
-    verify(small, lats, lons);
+    verify(lats, lons);
   }
 
   public void testMultiValued() throws Exception {
@@ -543,16 +514,14 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     iwc.setMergeScheduler(new SerialMergeScheduler());
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
 
-    boolean small = random().nextBoolean();
-
     for (int id=0;id<numPoints;id++) {
       Document doc = new Document();
-      lats[2*id] = quantizeLat(randomLat(small));
-      lons[2*id] = quantizeLon(randomLon(small));
+      lats[2*id] = quantizeLat(nextLatitude());
+      lons[2*id] = quantizeLon(nextLongitude());
       doc.add(newStringField("id", ""+id, Field.Store.YES));
       addPointToDoc(FIELD_NAME, doc, lats[2*id], lons[2*id]);
-      lats[2*id+1] = quantizeLat(randomLat(small));
-      lons[2*id+1] = quantizeLon(randomLon(small));
+      lats[2*id+1] = quantizeLat(nextLatitude());
+      lons[2*id+1] = quantizeLon(nextLongitude());
       addPointToDoc(FIELD_NAME, doc, lats[2*id+1], lons[2*id+1]);
 
       if (VERBOSE) {
@@ -574,7 +543,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
     int iters = atLeast(25);
     for (int iter=0;iter<iters;iter++) {
-      Rectangle rect = randomRect(small);
+      Rectangle rect = nextBox();
 
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter + " rect=" + rect);
@@ -665,8 +634,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     double[] lats = new double[numPoints];
     double[] lons = new double[numPoints];
 
-    boolean small = random().nextBoolean();
-
     boolean haveRealDoc = false;
 
     for (int id=0;id<numPoints;id++) {
@@ -692,13 +659,13 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         if (x == 0) {
           // Identical lat to old point
           lats[id] = lats[oldID];
-          lons[id] = randomLon(small);
+          lons[id] = nextLongitude();
           if (VERBOSE) {
             System.out.println("  id=" + id + " lat=" + lats[id] + " lon=" + lons[id] + " (same lat as doc=" + oldID + ")");
           }
         } else if (x == 1) {
           // Identical lon to old point
-          lats[id] = randomLat(small);
+          lats[id] = nextLatitude();
           lons[id] = lons[oldID];
           if (VERBOSE) {
             System.out.println("  id=" + id + " lat=" + lats[id] + " lon=" + lons[id] + " (same lon as doc=" + oldID + ")");
@@ -713,8 +680,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           }
         }
       } else {
-        lats[id] = randomLat(small);
-        lons[id] = randomLon(small);
+        lats[id] = nextLatitude();
+        lons[id] = nextLongitude();
         haveRealDoc = true;
         if (VERBOSE) {
           System.out.println("  id=" + id + " lat=" + lats[id] + " lon=" + lons[id]);
@@ -722,23 +689,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       }
     }
 
-    verify(small, lats, lons);
-  }
-
-  public final double randomLat(boolean small) {
-    if (small) {
-      return nextLatitudeNear(originLat);
-    } else {
-      return nextLatitude();
-    }
-  }
-
-  public final double randomLon(boolean small) {
-    if (small) {
-      return nextLongitudeNear(originLon);
-    } else {
-      return nextLongitude();
-    }
+    verify(lats, lons);
   }
 
   /** Override this to quantize randomly generated lat, so the test won't fail due to quantization errors, which are 1) annoying to debug,
@@ -751,14 +702,6 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
    *  and 2) should never affect "real" usage terribly. */
   protected double quantizeLon(double lon) {
     return lon;
-  }
-
-  protected final Rectangle randomRect(boolean small) {
-    if (small) {
-      return nextBoxNear(originLat, originLon);
-    } else {
-      return nextBox();
-    }
   }
 
   protected abstract void addPointToDoc(String field, Document doc, double lat, double lon);
@@ -784,7 +727,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     }
   }
 
-  private void verify(boolean small, double[] lats, double[] lons) throws Exception {
+  private void verify(double[] lats, double[] lons) throws Exception {
     // quantize each value the same way the index does
     // NaN means missing for the doc!!!!!
     for (int i = 0; i < lats.length; i++) {
@@ -797,12 +740,12 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         lons[i] = quantizeLon(lons[i]);
       }
     }
-    verifyRandomRectangles(small, lats, lons);
-    verifyRandomDistances(small, lats, lons);
-    verifyRandomPolygons(small, lats, lons);
+    verifyRandomRectangles(lats, lons);
+    verifyRandomDistances(lats, lons);
+    verifyRandomPolygons(lats, lons);
   }
 
-  protected void verifyRandomRectangles(boolean small, double[] lats, double[] lons) throws Exception {
+  protected void verifyRandomRectangles(double[] lats, double[] lons) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
     // Else seeds may not reproduce:
     iwc.setMergeScheduler(new SerialMergeScheduler());
@@ -860,7 +803,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         System.out.println("\nTEST: iter=" + iter + " s=" + s);
       }
       
-      Rectangle rect = randomRect(small);
+      Rectangle rect = nextBox();
 
       Query query = newRectQuery(FIELD_NAME, rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
 
@@ -930,7 +873,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     IOUtils.close(r, dir);
   }
 
-  protected void verifyRandomDistances(boolean small, double[] lats, double[] lons) throws Exception {
+  protected void verifyRandomDistances(double[] lats, double[] lons) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
     // Else seeds may not reproduce:
     iwc.setMergeScheduler(new SerialMergeScheduler());
@@ -989,17 +932,11 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       }
 
       // Distance
-      final double centerLat = randomLat(small);
-      final double centerLon = randomLon(small);
+      final double centerLat = nextLatitude();
+      final double centerLon = nextLongitude();
 
-      final double radiusMeters;
-      if (small) {
-        // Approx 3 degrees lon at the equator:
-        radiusMeters = random().nextDouble() * 333000 + 1.0;
-      } else {
-        // So the query can cover at most 50% of the earth's surface:
-        radiusMeters = random().nextDouble() * GeoUtils.EARTH_MEAN_RADIUS_METERS * Math.PI / 2.0 + 1.0;
-      }
+      // So the query can cover at most 50% of the earth's surface:
+      final double radiusMeters = random().nextDouble() * GeoUtils.EARTH_MEAN_RADIUS_METERS * Math.PI / 2.0 + 1.0;
 
       if (VERBOSE) {
         final DecimalFormat df = new DecimalFormat("#,###.00", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
@@ -1077,7 +1014,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     IOUtils.close(r, dir);
   }
 
-  protected void verifyRandomPolygons(boolean small, double[] lats, double[] lons) throws Exception {
+  protected void verifyRandomPolygons(double[] lats, double[] lons) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
     // Else seeds may not reproduce:
     iwc.setMergeScheduler(new SerialMergeScheduler());
@@ -1137,13 +1074,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       }
 
       // Polygon
-      final Polygon polygon;
-      if (small) {
-        polygon = nextPolygonNear(originLat, originLon);
-      } else {
-        polygon = nextPolygon();
-      }
-      
+      Polygon polygon = nextPolygon();
       Query query = newPolygonQuery(FIELD_NAME, polygon);
 
       if (VERBOSE) {
@@ -1216,7 +1147,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     Rectangle rect;
     // TODO: why this dateline leniency???
     while (true) {
-      rect = randomRect(random().nextBoolean());
+      rect = nextBox();
       if (rect.crossesDateline() == false) {
         break;
       }
@@ -1386,7 +1317,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
   public void testEquals() throws Exception {   
     Query q1, q2;
 
-    Rectangle rect = randomRect(false);
+    Rectangle rect = nextBox();
 
     q1 = newRectQuery("field", rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
     q2 = newRectQuery("field", rect.minLat, rect.maxLat, rect.minLon, rect.maxLon);
@@ -1397,8 +1328,8 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
       assertFalse(q1.equals(newRectQuery("field2", rect.minLat, rect.maxLat, rect.minLon, rect.maxLon)));
     }
 
-    double lat = randomLat(false);
-    double lon = randomLon(false);
+    double lat = nextLatitude();
+    double lon = nextLongitude();
     q1 = newDistanceQuery("field", lat, lon, 10000.0);
     q2 = newDistanceQuery("field", lat, lon, 10000.0);
     assertEquals(q1, q2);

@@ -284,7 +284,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
       for (int i = 0; i < 100; i++) {
         addShopDoc(writer, "it", itShopItemForSale, itShopItemNotForSale);
       }
-      for (int i = 0; i < 10; i++) {
+      for (int i = 0; i < 30; i++) {
         addShopDoc(writer, "clothes", clothesShopItemForSale, clothesShopItemNotForSale);
       }
       // Input Document is a clothes shop
