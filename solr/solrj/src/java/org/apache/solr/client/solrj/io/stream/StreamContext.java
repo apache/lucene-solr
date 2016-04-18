@@ -49,6 +49,10 @@ public class StreamContext implements Serializable{
     this.entries.put(key, value);
   }
 
+  public Map getEntries() {
+    return this.entries;
+  }
+
   public void setSolrClientCache(SolrClientCache clientCache) {
     this.clientCache = clientCache;
   }

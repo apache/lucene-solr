@@ -49,6 +49,10 @@ public class CountMetric extends Metric implements Serializable {
     init(functionName);
     
   }
+
+  public String[] getColumns() {
+    return new String[0];
+  }
   
   private void init(String functionName){
     setFunctionName(functionName);
