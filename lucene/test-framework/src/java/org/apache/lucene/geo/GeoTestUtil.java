@@ -195,6 +195,10 @@ public class GeoTestUtil {
     } else {
       double x = nextLongitudeBetween(minX, maxX);
       double y = (y1 - y2) / (x1 - x2) * (x-x1) + y1;
+      if (Double.isFinite(y) == false) {
+        // this can happen due to underflow when delta between x values is wonderfully tiny!
+        y = Math.copySign(90, x1);
+      }
       double delta = (maxY - minY) * 0.01;
       // our formula may put the targeted Y out of bounds
       y = Math.min(90, y);
