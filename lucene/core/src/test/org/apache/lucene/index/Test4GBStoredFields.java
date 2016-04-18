@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.compressing.CompressingCodec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
@@ -34,7 +35,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomInts;
 /**
  * This test creates an index with one segment that is a little larger than 4GB.
  */
-@SuppressCodecs({ "SimpleText" })
+@SuppressCodecs({ "SimpleText", "Compressing" })
 @TimeoutSuite(millis = 4 * TimeUnits.HOUR)
 public class Test4GBStoredFields extends LuceneTestCase {
 
@@ -43,13 +44,20 @@ public class Test4GBStoredFields extends LuceneTestCase {
     MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new MMapDirectory(createTempDir("4GBStoredFields")));
     dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
 
-    IndexWriter w = new IndexWriter(dir,
-        new IndexWriterConfig(new MockAnalyzer(random()))
-        .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
-        .setRAMBufferSizeMB(256.0)
-        .setMergeScheduler(new ConcurrentMergeScheduler())
-        .setMergePolicy(newLogMergePolicy(false, 10))
-        .setOpenMode(IndexWriterConfig.OpenMode.CREATE));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+    iwc.setRAMBufferSizeMB(256.0);
+    iwc.setMergeScheduler(new ConcurrentMergeScheduler());
+    iwc.setMergePolicy(newLogMergePolicy(false, 10));
+    iwc.setOpenMode(IndexWriterConfig.OpenMode.CREATE);
+
+    // TODO: we disable "Compressing" since it likes to pick very extreme values which will be too slow for this test.
+    // maybe we should factor out crazy cases to ExtremeCompressing? then annotations can handle this stuff...
+    if (random().nextBoolean()) {
+      iwc.setCodec(CompressingCodec.reasonableInstance(random()));
+    }
+
+    IndexWriter w = new IndexWriter(dir, iwc);
 
     MergePolicy mp = w.getConfig().getMergePolicy();
     if (mp instanceof LogByteSizeMergePolicy) {
