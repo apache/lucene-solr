@@ -28,6 +28,10 @@ Bug Fixes
   that led to IllegalStateException being thrown when nothing was wrong.
   (David Smiley, yonik)
 
+* LUCENE-7219: Make queryparser/xml (Point|LegacyNumeric)RangeQuery builders
+  match the underlying queries' (lower|upper)Term optionality logic.
+  (Kaneshanathan Srivisagan, Christine Poerschke)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
