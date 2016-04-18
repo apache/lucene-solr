@@ -544,10 +544,13 @@ public class TestGeo3DPoint extends LuceneTestCase {
         // Polygons
         final boolean isClockwise = random().nextDouble() < 0.5;
         try {
-          return Geo3DPoint.newPolygonQuery(field, makePoly(PlanetModel.WGS84,
+          final Query q = Geo3DPoint.newPolygonQuery(field, makePoly(PlanetModel.WGS84,
             new GeoPoint(PlanetModel.WGS84, toRadians(GeoTestUtil.nextLatitude()), toRadians(GeoTestUtil.nextLongitude())),
             isClockwise,
             true));
+          //System.err.println("Generated: "+q);
+          //assertTrue(false);
+          return q;
         } catch (IllegalArgumentException e) {
           continue;
         }
@@ -880,6 +883,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     * clockwise/counterclockwise rotation that way.
     */
   protected static Polygon makePoly(final PlanetModel pm, final GeoPoint pole, final boolean clockwiseDesired, final boolean createHoles) {
+    
     // Polygon edges will be arranged around the provided pole, and holes will each have a pole selected within the parent
     // polygon.
     final int pointCount = TestUtil.nextInt(random(), 3, 10);
