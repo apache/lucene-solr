@@ -77,7 +77,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * In the ExampleFieldMutatingUpdateProcessorFactory configured below, 
  * fields will be mutated if the name starts with "foo" <i>or</i> "bar"; 
  * <b>unless</b> the field name contains the substring "SKIP" <i>or</i> 
- * the fieldType is (or subclasses) DateField.  Meaning a field named 
+ * the fieldType is (or subclasses) TrieDateField.  Meaning a field named
  * "foo_SKIP" is guaranteed not to be selected, but a field named "bar_smith" 
  * that uses StrField will be selected.
  * </p>
