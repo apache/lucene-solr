@@ -178,9 +178,39 @@ public class TestCoreParser extends LuceneTestCase {
     dumpResults("NumericRangeFilter", q, 5);
   }
 
+  public void testNumericRangeFilterQueryXMLWithoutLowerTerm() throws ParserException, IOException {
+    Query q = parse("NumericRangeFilterQueryWithoutLowerTerm.xml");
+    dumpResults("NumericRangeFilterQueryWithoutLowerTerm", q, 5);
+  }
+
+  public void testNumericRangeFilterQueryXMLWithoutUpperTerm() throws ParserException, IOException {
+    Query q = parse("NumericRangeFilterQueryWithoutUpperTerm.xml");
+    dumpResults("NumericRangeFilterQueryWithoutUpperTerm", q, 5);
+  }
+
+  public void testNumericRangeFilterQueryXMLWithoutRange() throws ParserException, IOException {
+    Query q = parse("NumericRangeFilterQueryWithoutRange.xml");
+    dumpResults("NumericRangeFilterQueryWithoutRange", q, 5);
+  }
+
   public void testNumericRangeQueryXML() throws ParserException, IOException {
     Query q = parse("NumericRangeQuery.xml");
     dumpResults("NumericRangeQuery", q, 5);
+  }
+
+  public void testNumericRangeQueryXMLWithoutLowerTerm() throws ParserException, IOException {
+    Query q = parse("NumericRangeQueryWithoutLowerTerm.xml");
+    dumpResults("NumericRangeQueryWithoutLowerTerm", q, 5);
+  }
+
+  public void testNumericRangeQueryXMLWithoutUpperTerm() throws ParserException, IOException {
+    Query q = parse("NumericRangeQueryWithoutUpperTerm.xml");
+    dumpResults("NumericRangeQueryWithoutUpperTerm", q, 5);
+  }
+
+  public void testNumericRangeQueryXMLWithoutRange() throws ParserException, IOException {
+    Query q = parse("NumericRangeQueryWithoutRange.xml");
+    dumpResults("NumericRangeQueryWithoutRange", q, 5);
   }
 
   //================= Helper methods ===================================
