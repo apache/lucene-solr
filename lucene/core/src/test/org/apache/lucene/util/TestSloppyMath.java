@@ -33,7 +33,7 @@ public class TestSloppyMath extends LuceneTestCase {
   // accuracy for asin()
   static double ASIN_DELTA = 1E-7;
   // accuracy for haversinMeters()
-  static double HAVERSIN_DELTA = 2E-1;
+  static double HAVERSIN_DELTA = 38E-2;
   // accuracy for haversinMeters() for "reasonable" distances (< 1000km)
   static double REASONABLE_HAVERSIN_DELTA = 1E-5;
   
@@ -161,9 +161,26 @@ public class TestSloppyMath extends LuceneTestCase {
       double lat2 = GeoTestUtil.nextLatitude();
       double lon2 = GeoTestUtil.nextLongitude();
 
-      double expected = haversinMeters(lat1, lon1, lat2, lon2);
-      double actual = slowHaversin(lat1, lon1, lat2, lon2);
+      double expected = slowHaversin(lat1, lon1, lat2, lon2);
+      double actual = haversinMeters(lat1, lon1, lat2, lon2);
       assertEquals(expected, actual, HAVERSIN_DELTA);
+    }
+  }
+
+  /**
+   * Step across the whole world to find huge absolute errors.
+   * Don't rely on random number generator to pick these massive distances. */
+  public void testAcrossWholeWorldSteps() {
+    for (int lat1 = -90; lat1 <= 90; lat1 += 10) {
+      for (int lon1 = -180; lon1 <= 180; lon1 += 10) {
+        for (int lat2 = -90; lat2 <= 90; lat2 += 10) {
+          for (int lon2 = -180; lon2 <= 180; lon2 += 10) {
+            double expected = slowHaversin(lat1, lon1, lat2, lon2);
+            double actual = haversinMeters(lat1, lon1, lat2, lon2);
+            assertEquals(expected, actual, HAVERSIN_DELTA);
+          }
+        }
+      }
     }
   }
   
