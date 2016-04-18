@@ -24,12 +24,14 @@ import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
+import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 
 /**
  * random testing for GeoPoint query logic (with deprecated numeric encoding)
  * @deprecated remove this when TermEncoding.NUMERIC is removed
  */
 @Deprecated
+@SuppressCodecs("Direct") // can easily create too many postings and blow direct sky high
 public class TestLegacyGeoPointQuery extends BaseGeoPointTestCase {
   
   @Override
