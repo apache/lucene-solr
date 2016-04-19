@@ -21,6 +21,7 @@ New Features
 
 Other Changes
 ----------------------
+
 * SOLR-8677: Prevent shards containing invalid characters from being created.  Checks added server-side
   and in SolrJ.  (Shai Erera, Jason Gerlowski, Anshum Gupta)
 
@@ -79,6 +80,8 @@ Bug Fixes
 
 * SOLR-8914: ZkStateReader's refreshLiveNodes(Watcher) is not thread safe. (Scott Blum, hoss,
   sarowe, Erick Erickson, Mark Miller, shalin)
+
+* SOLR-8973: Zookeeper frenzy when a core is first created. (Janmejay Singh, Scott Blum, shalin)
 
 ======================= 5.5.0 =======================
 
