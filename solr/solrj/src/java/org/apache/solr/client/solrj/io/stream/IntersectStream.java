@@ -22,12 +22,13 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
-import org.apache.solr.client.solrj.io.ops.DistinctOperation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
@@ -88,23 +89,33 @@ public class IntersectStream extends TupleStream implements Expressible {
   }
   
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException {    
+  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+    return toExpression(factory, true);
+  }
+  
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     
-    // streams
-    if(streamA instanceof Expressible){
-      expression.addParameter(((Expressible)streamA).toExpression(factory));
+    if(includeStreams){
+      // streams
+      if(streamA instanceof Expressible){
+        expression.addParameter(((Expressible)streamA).toExpression(factory));
+      }
+      else{
+        throw new IOException("This IntersectStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      }
+      
+      if(originalStreamB instanceof Expressible){
+        expression.addParameter(((Expressible)originalStreamB).toExpression(factory));
+      }
+      else{
+        throw new IOException("This IntersectStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      }
     }
     else{
-      throw new IOException("This IntersectStream contains a non-expressible TupleStream - it cannot be converted to an expression");
-    }
-    
-    if(originalStreamB instanceof Expressible){
-      expression.addParameter(((Expressible)originalStreamB).toExpression(factory));
-    }
-    else{
-      throw new IOException("This IntersectStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      expression.addParameter("<stream>");
+      expression.addParameter("<stream>");
     }
     
     // on
@@ -113,13 +124,28 @@ public class IntersectStream extends TupleStream implements Expressible {
     return expression;   
   }
 
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    return new StreamExplanation(getStreamNodeId().toString())
+      .withChildren(new Explanation[]{
+        streamA.toExplanation(factory),
+        originalStreamB.toExplanation(factory)
+      })
+      .withFunctionName(factory.getFunctionName(this.getClass()))
+      .withImplementingClass(this.getClass().getName())
+      .withExpressionType(ExpressionType.STREAM_DECORATOR)
+      .withExpression(toExpression(factory, false).toString())
+      .withHelper(eq.toExplanation(factory));    
+  }
+  
   public void setStreamContext(StreamContext context) {
     this.streamA.setStreamContext(context);
     this.streamB.setStreamContext(context);
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<TupleStream>();
     l.add(streamA);
     l.add(streamB);
     return l;

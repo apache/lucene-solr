@@ -16,32 +16,20 @@
  */
 package org.apache.solr.client.solrj.io.ops;
 
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.comp.FieldComparator;
-import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
-import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
-import org.apache.solr.client.solrj.io.stream.expr.Expressible;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-
 import java.io.IOException;
-import java.io.Serializable;
-import java.util.Comparator;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Locale;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.PriorityQueue;
+import java.util.UUID;
+
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 public class DistinctOperation implements ReduceOperation {
 
   private static final long serialVersionUID = 1L;
+  private UUID operationNodeId = UUID.randomUUID();
   private Tuple current;
 
   public DistinctOperation(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -58,6 +46,15 @@ public class DistinctOperation implements ReduceOperation {
   public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     return expression;
+  }
+
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+    return new Explanation(operationNodeId.toString())
+      .withExpressionType(ExpressionType.OPERATION)
+      .withFunctionName(factory.getFunctionName(getClass()))
+      .withImplementingClass(getClass().getName())
+      .withExpression(toExpression(factory).toString());
   }
 
   public Tuple reduce() {

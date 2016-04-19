@@ -98,6 +98,7 @@ New Features
 
 * SOLR-8349: Allow sharing of large in memory data structures across cores (Gus Heck, noble)
 
+* SOLR-9009: Adds ability to get an Explanation of a Streaming Expression (Dennis Gove)
 
 Bug Fixes
 ----------------------

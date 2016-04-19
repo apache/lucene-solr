@@ -17,14 +17,17 @@
 package org.apache.solr.client.solrj.io.eq;
 
 import java.io.IOException;
+import java.util.UUID;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 
 
 /**
@@ -34,6 +37,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class MultipleFieldEqualitor implements StreamEqualitor {
 
   private static final long serialVersionUID = 1;
+  private UUID equalitorNodeId = UUID.randomUUID();
 
   private StreamEqualitor[] eqs;
 
@@ -59,6 +63,14 @@ public class MultipleFieldEqualitor implements StreamEqualitor {
     }
     
     return new StreamExpressionValue(sb.toString());
+  }
+
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+    return new Explanation(equalitorNodeId.toString())
+      .withExpressionType(ExpressionType.EQUALITOR)
+      .withImplementingClass(getClass().getName())
+      .withExpression(toExpression(factory).toString());
   }
   
   @Override

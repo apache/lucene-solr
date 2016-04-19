@@ -17,13 +17,14 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Collections;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
@@ -33,7 +34,10 @@ import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
@@ -58,7 +62,7 @@ public class FacetStream extends TupleStream implements Expressible  {
   private Metric[] metrics;
   private int bucketSizeLimit;
   private FieldComparator[] bucketSorts;
-  private List<Tuple> tuples = new ArrayList();
+  private List<Tuple> tuples = new ArrayList<Tuple>();
   private int index;
   private String zkHost;
   private Map<String, String> props;
@@ -267,7 +271,31 @@ public class FacetStream extends TupleStream implements Expressible  {
     return expression;   
   }
 
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
 
+    StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
+    
+    explanation.setFunctionName(factory.getFunctionName(this.getClass()));
+    explanation.setImplementingClass(this.getClass().getName());
+    explanation.setExpressionType(ExpressionType.STREAM_SOURCE);
+    explanation.setExpression(toExpression(factory).toString());
+    
+    // child is a datastore so add it at this point
+    StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-datastore");
+    child.setFunctionName(String.format(Locale.ROOT, "solr (%s)", collection)); 
+    // TODO: fix this so we know the # of workers - check with Joel about a Topic's ability to be in a
+    // parallel stream.
+    
+    child.setImplementingClass("Solr/Lucene");
+    child.setExpressionType(ExpressionType.DATASTORE);    
+    child.setExpression(props.entrySet().stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(",")));
+    
+    explanation.addChild(child);
+    
+    return explanation;
+  }
+  
   public void setStreamContext(StreamContext context) {
     cache = context.getSolrClientCache();
   }
