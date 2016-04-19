@@ -139,6 +139,8 @@ Bug Fixes
 
 * SOLR-8990: Fix top term links from schema browser page to use {!term} parser (hossman)
 
+* SOLR-8971: Preserve root cause when wrapping exceptions (hossman)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
