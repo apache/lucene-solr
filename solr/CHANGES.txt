@@ -50,6 +50,8 @@ Bug Fixes
 
 * SOLR-9004: Fix "name" field type definition in films example. (Alexandre Rafalovitch via Varun Thacker)
 
+* SOLR-8990: Fix top term links from schema browser page to use {!term} parser (hossman)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes
