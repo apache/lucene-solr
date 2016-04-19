@@ -220,6 +220,12 @@ class GeoStandardPath extends GeoBasePath {
   }
 
   @Override
+  protected void distanceBounds(final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {
+    // TBD: Compute actual bounds based on distance
+    getBounds(bounds);
+  }
+
+  @Override
   protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     double minDistance = Double.MAX_VALUE;
     for (final SegmentEndpoint endpoint : endPoints) {

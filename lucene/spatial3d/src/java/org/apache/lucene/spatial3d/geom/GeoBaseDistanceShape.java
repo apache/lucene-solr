@@ -52,5 +52,17 @@ public abstract class GeoBaseDistanceShape extends GeoBaseMembershipShape implem
   /** Called by a {@code computeDistance} method if X/Y/Z is not within this shape. */
   protected abstract double distance(final DistanceStyle distanceStyle, final double x, final double y, final double z);
 
+  @Override
+  public void getDistanceBounds(final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {
+    if (distanceValue == Double.MAX_VALUE) {
+      getBounds(bounds);
+      return;
+    }
+    distanceBounds(bounds, distanceStyle, distanceValue);
+  }
+  
+  /** Called by a {@code getDistanceBounds} method if distanceValue is not Double.MAX_VALUE. */
+  protected abstract void distanceBounds(final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue);
+
 }
 

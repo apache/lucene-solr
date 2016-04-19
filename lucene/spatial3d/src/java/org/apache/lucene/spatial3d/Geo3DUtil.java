@@ -64,4 +64,5 @@ class Geo3DUtil {
       return Math.nextDown((x+1) * DECODE);
     }
   }
+  
 }
