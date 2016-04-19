@@ -544,10 +544,13 @@ public class TestGeo3DPoint extends LuceneTestCase {
         // Polygons
         final boolean isClockwise = random().nextDouble() < 0.5;
         try {
-          return Geo3DPoint.newPolygonQuery(field, makePoly(PlanetModel.WGS84,
+          final Query q = Geo3DPoint.newPolygonQuery(field, makePoly(PlanetModel.WGS84,
             new GeoPoint(PlanetModel.WGS84, toRadians(GeoTestUtil.nextLatitude()), toRadians(GeoTestUtil.nextLongitude())),
             isClockwise,
             true));
+          //System.err.println("Generated: "+q);
+          //assertTrue(false);
+          return q;
         } catch (IllegalArgumentException e) {
           continue;
         }
@@ -793,6 +796,10 @@ public class TestGeo3DPoint extends LuceneTestCase {
         GeoPoint unquantizedPoint = unquantizedPoints[id];
         if (point != null && unquantizedPoint != null) {
           GeoShape shape = ((PointInGeo3DShapeQuery)query).getShape();
+          XYZBounds bounds = new XYZBounds();
+          shape.getBounds(bounds);
+          XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, bounds.getMinimumX(), bounds.getMaximumX(), bounds.getMinimumY(), bounds.getMaximumY(), bounds.getMinimumZ(), bounds.getMaximumZ());
+
           boolean expected = ((deleted.contains(id) == false) && shape.isWithin(point));
           if (hits.get(docID) != expected) {
             StringBuilder b = new StringBuilder();
@@ -801,13 +808,14 @@ public class TestGeo3DPoint extends LuceneTestCase {
             } else {
               b.append("FAIL: id=" + id + " should not have matched but did\n");
             }
-            b.append("  shape=" + ((PointInGeo3DShapeQuery)query).getShape() + "\n");
+            b.append("  shape=" + shape + "\n");
+            b.append("  bounds=" + bounds + "\n");
             b.append("  world bounds=(" +
               " minX=" + PlanetModel.WGS84.getMinimumXValue() + " maxX=" + PlanetModel.WGS84.getMaximumXValue() +
               " minY=" + PlanetModel.WGS84.getMinimumYValue() + " maxY=" + PlanetModel.WGS84.getMaximumYValue() +
               " minZ=" + PlanetModel.WGS84.getMinimumZValue() + " maxZ=" + PlanetModel.WGS84.getMaximumZValue() + "\n");
-            b.append("  quantized point=" + point + " within shape? "+shape.isWithin(point)+"\n");
-            b.append("  unquantized point=" + unquantizedPoint + " within shape? "+shape.isWithin(unquantizedPoint)+"\n");
+            b.append("  quantized point=" + point + " within shape? "+shape.isWithin(point)+" within bounds? "+solid.isWithin(point)+"\n");
+            b.append("  unquantized point=" + unquantizedPoint + " within shape? "+shape.isWithin(unquantizedPoint)+" within bounds? "+solid.isWithin(unquantizedPoint)+"\n");
             b.append("  docID=" + docID + " deleted?=" + deleted.contains(id) + "\n");
             b.append("  query=" + query + "\n");
             b.append("  explanation:\n    " + explain("point", shape, point, unquantizedPoint, r, docID).replace("\n", "\n  "));
@@ -880,6 +888,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
     * clockwise/counterclockwise rotation that way.
     */
   protected static Polygon makePoly(final PlanetModel pm, final GeoPoint pole, final boolean clockwiseDesired, final boolean createHoles) {
+    
     // Polygon edges will be arranged around the provided pole, and holes will each have a pole selected within the parent
     // polygon.
     final int pointCount = TestUtil.nextInt(random(), 3, 10);

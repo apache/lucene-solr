@@ -439,7 +439,76 @@ shape:
     points.add(new GeoPoint(-0.1699323603224724, 0.8516746480592872, 0.4963385521664198));
     points.add(new GeoPoint(0.2654788898359613, 0.7380222309164597, 0.6200740473100581));
 
-    final GeoPolygon p = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points, null);
+    boolean illegalArgumentException = false;
+    try {
+      final GeoPolygon p = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points, null);
+    } catch (IllegalArgumentException e) {
+      illegalArgumentException = true;
+    }
+    assertTrue(illegalArgumentException);
+  }
+
+  @Test
+  public void testPolygonFactoryCase2() {
+    /*
+   [[lat=-0.48522750470337056, lon=-1.7370471071224087([X=-0.14644023172524287, Y=-0.8727091042681705, Z=-0.4665895520487907])], 
+   [lat=-0.4252164254406539, lon=-1.0929282311747601([X=0.41916238097763436, Y=-0.8093435958043177, Z=-0.4127428785664968])], 
+   [lat=0.2055150822737076, lon=0.8094775925193464([X=0.6760197133035871, Y=0.7093859395658346, Z=0.20427109186920892])], 
+   [lat=-0.504360159046884, lon=-1.27628468850318([X=0.25421329462858633, Y=-0.8380671569889917, Z=-0.4834077932502288])], 
+   [lat=-0.11994023948700858, lon=0.07857194136150605([X=0.9908123546871113, Y=0.07801065055912473, Z=-0.11978097184039621])], 
+   [lat=0.39346633764155237, lon=1.306697331415816([X=0.24124272064589647, Y=0.8921189226448045, Z=0.3836311592666308])], 
+   [lat=-0.07741593942416389, lon=0.5334693210962216([X=0.8594122640512101, Y=0.50755758923985, Z=-0.07742360418968308])], 
+   [lat=0.4654236264787552, lon=1.3013260557429494([X=0.2380080413677112, Y=0.8617612419312584, Z=0.4489988990508502])], 
+   [lat=-1.2964641581620537, lon=-1.487600369139357([X=0.022467282495493006, Y=-0.26942922375508405, Z=-0.960688317984634])]]
+    */
+    final List<GeoPoint> points = new ArrayList<>();
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.48522750470337056, -1.7370471071224087));
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.4252164254406539, -1.0929282311747601));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.2055150822737076, 0.8094775925193464));
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.504360159046884, -1.27628468850318));
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.11994023948700858, 0.07857194136150605));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.39346633764155237, 1.306697331415816));
+    points.add(new GeoPoint(PlanetModel.WGS84, -0.07741593942416389, 0.5334693210962216));
+    points.add(new GeoPoint(PlanetModel.WGS84, 0.4654236264787552, 1.3013260557429494));
+    points.add(new GeoPoint(PlanetModel.WGS84, -1.2964641581620537, -1.487600369139357));
+    
+    boolean illegalArgumentException = false;
+    try {
+      final GeoPolygon p = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points, null);
+    } catch (IllegalArgumentException e) {
+      illegalArgumentException = true;
+    }
+    assertTrue(illegalArgumentException);
+  }
+  
+  @Test
+  public void testPolygonFactoryCase3() {
+    /*
+    This one failed to be detected as convex:
+
+   [junit4]   1> convex part = GeoConvexPolygon: {planetmodel=PlanetModel.WGS84, points=
+   [[lat=0.39346633764155237, lon=1.306697331415816([X=0.24124272064589647, Y=0.8921189226448045, Z=0.3836311592666308])], 
+   [lat=-0.4252164254406539, lon=-1.0929282311747601([X=0.41916238097763436, Y=-0.8093435958043177, Z=-0.4127428785664968])], 
+   [lat=0.4654236264787552, lon=1.3013260557429494([X=0.2380080413677112, Y=0.8617612419312584, Z=0.4489988990508502])]], internalEdges={0, 1, 2}}
+    */
+    final GeoPoint p3 = new GeoPoint(PlanetModel.WGS84, 0.39346633764155237, 1.306697331415816);
+    final GeoPoint p2 = new GeoPoint(PlanetModel.WGS84, -0.4252164254406539, -1.0929282311747601);
+    final GeoPoint p1 = new GeoPoint(PlanetModel.WGS84, 0.4654236264787552, 1.3013260557429494);
+    
+    final List<GeoPoint> points = new ArrayList<>();
+    points.add(p3);
+    points.add(p2);
+    points.add(p1);
+
+    final BitSet internal = new BitSet();
+    final GeoCompositePolygon rval = new GeoCompositePolygon();
+    final GeoPolygonFactory.MutableBoolean mutableBoolean = new GeoPolygonFactory.MutableBoolean();
+    
+    boolean result = GeoPolygonFactory.buildPolygonShape(rval, mutableBoolean, PlanetModel.WGS84, points, internal, 0, 1,
+      new SidedPlane(p1, p3, p2), new ArrayList<GeoPolygon>(), null);
+    
+    assertFalse(mutableBoolean.value);
+    
   }
   
 }
