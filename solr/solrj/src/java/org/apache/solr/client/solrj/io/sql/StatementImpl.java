@@ -51,8 +51,7 @@ class StatementImpl implements Statement {
     this.connection = connection;
   }
 
-  @Override
-  public ResultSet executeQuery(String sql) throws SQLException {
+  private ResultSet executeQueryImpl(String sql) throws SQLException {
     try {
       if(this.currentResultSet != null) {
         this.currentResultSet.close();
@@ -105,6 +104,11 @@ class StatementImpl implements Statement {
     } catch (Exception e) {
       throw new IOException(e);
     }
+  }
+
+  @Override
+  public ResultSet executeQuery(String sql) throws SQLException {
+    return this.executeQueryImpl(sql);
   }
 
   @Override
@@ -203,7 +207,7 @@ class StatementImpl implements Statement {
 
   @Override
   public ResultSet getResultSet() throws SQLException {
-    return this.executeQuery(this.currentSQL);
+    return this.executeQueryImpl(this.currentSQL);
   }
 
   @Override

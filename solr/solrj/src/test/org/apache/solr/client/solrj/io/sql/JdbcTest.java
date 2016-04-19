@@ -20,6 +20,7 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
@@ -519,6 +520,37 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
         }
 
         assertTrue(statement.execute(sql));
+        assertEquals(-1, statement.getUpdateCount());
+
+        try (ResultSet rs = statement.getResultSet()) {
+          assertEquals(statement, rs.getStatement());
+
+          checkResultSetMetadata(rs);
+          checkResultSet(rs);
+        }
+
+        assertFalse(statement.getMoreResults());
+      }
+
+      try (PreparedStatement statement = con.prepareStatement(sql)) {
+        assertEquals(con, statement.getConnection());
+
+        assertNull(statement.getWarnings());
+        statement.clearWarnings();
+        assertNull(statement.getWarnings());
+
+        assertEquals(0, statement.getFetchSize());
+        statement.setFetchSize(0);
+        assertEquals(0, statement.getFetchSize());
+
+        try (ResultSet rs = statement.executeQuery()) {
+          assertEquals(statement, rs.getStatement());
+
+          checkResultSetMetadata(rs);
+          checkResultSet(rs);
+        }
+
+        assertTrue(statement.execute());
         assertEquals(-1, statement.getUpdateCount());
 
         try (ResultSet rs = statement.getResultSet()) {
