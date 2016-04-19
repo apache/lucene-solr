@@ -137,6 +137,8 @@ Bug Fixes
 * SOLR-8983: Cleanup clusterstate and replicas for a failed create collection request
   (Varun Thacker, Anshum Gupta)
 
+* SOLR-8990: Fix top term links from schema browser page to use {!term} parser (hossman)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
