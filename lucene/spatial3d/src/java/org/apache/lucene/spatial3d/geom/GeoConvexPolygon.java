@@ -195,7 +195,7 @@ class GeoConvexPolygon extends GeoBasePolygon {
         }
       }
       if (endPointIndex == -1) {
-        throw new IllegalArgumentException("Polygon points are all coplanar");
+        throw new IllegalArgumentException("Polygon points are all coplanar: "+points);
       }
       final GeoPoint check = points.get(endPointIndex);
       final SidedPlane sp = new SidedPlane(check, start, end);

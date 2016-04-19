@@ -141,11 +141,20 @@ public final class Geo3DPoint extends Field {
     }
     final GeoShape shape;
     if (polygons.length == 1) {
-      shape = fromPolygon(polygons[0], false);
+      final GeoShape component = fromPolygon(polygons[0], false);
+      if (component == null) {
+        // Polygon is degenerate
+        shape = new GeoCompositePolygon();
+      } else {
+        shape = component;
+      }
     } else {
       final GeoCompositePolygon poly = new GeoCompositePolygon();
       for (final Polygon p : polygons) {
-        poly.addShape(fromPolygon(p, false));
+        final GeoPolygon component = fromPolygon(p, false);
+        if (component != null) {
+          poly.addShape(component);
+        }
       }
       shape = poly;
     }
@@ -184,13 +193,17 @@ public final class Geo3DPoint extends Field {
     * @param reverseMe is true if the order of the points should be reversed.
     * @return the GeoPolygon.
     */
-  protected static GeoPolygon fromPolygon(final Polygon polygon, final boolean reverseMe) {
+  private static GeoPolygon fromPolygon(final Polygon polygon, final boolean reverseMe) {
     // First, assemble the "holes".  The geo3d convention is to use the same polygon sense on the inner ring as the
     // outer ring, so we process these recursively with reverseMe flipped.
     final Polygon[] theHoles = polygon.getHoles();
     final List<GeoPolygon> holeList = new ArrayList<>(theHoles.length);
     for (final Polygon hole : theHoles) {
-      holeList.add(fromPolygon(hole, !reverseMe));
+      //System.out.println("Hole: "+hole);
+      final GeoPolygon component = fromPolygon(hole, !reverseMe);
+      if (component != null) {
+        holeList.add(component);
+      }
     }
     
     // Now do the polygon itself
