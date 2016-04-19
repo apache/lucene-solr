@@ -190,6 +190,8 @@ Other Changes
 
 * SOLR-9015: Adds SelectStream as a default function in the StreamHandler (Dennis Gove)
 
+* SOLR-8973: Zookeeper frenzy when a core is first created. (Janmejay Singh, Scott Blum, shalin)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

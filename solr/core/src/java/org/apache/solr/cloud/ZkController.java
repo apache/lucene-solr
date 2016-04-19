@@ -1478,11 +1478,13 @@ public final class ZkController {
       }
 
       publish(cd, Replica.State.DOWN, false, true);
-      DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(cd.getCloudDescriptor().getCollectionName());
-      if (collection != null) {
-        log.info("Registering watch for collection {}", cd.getCloudDescriptor().getCollectionName());
-        zkStateReader.addCollectionWatch(cd.getCloudDescriptor().getCollectionName());
-      }
+      String collectionName = cd.getCloudDescriptor().getCollectionName();
+      DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
+      log.info(collection == null ?
+              "Collection {} not visible yet, but flagging it so a watch is registered when it becomes visible" :
+              "Registering watch for collection {}",
+          collectionName);
+      zkStateReader.addCollectionWatch(collectionName);
     } catch (KeeperException e) {
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
