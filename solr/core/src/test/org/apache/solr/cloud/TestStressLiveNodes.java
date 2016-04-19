@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -28,17 +27,15 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.core.CloudConfig.CloudConfigBuilder;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import org.slf4j.Logger;
@@ -79,6 +76,12 @@ public class TestStressLiveNodes extends SolrCloudTestCase {
     
     ZK_SERVER_ADDR = cluster.getZkServer().getZkAddress();
     
+  }
+  
+  @AfterClass
+  private static void afterClass() throws Exception {
+    CLOUD_CLIENT.close();
+    CLOUD_CLIENT = null;
   }
 
   private static SolrZkClient newSolrZkClient() {

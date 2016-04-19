@@ -1961,15 +1961,30 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       }
 
       processResponses(results, shardHandler, false, null, async, requestMap, Collections.emptySet());
-
-      log.debug("Finished create command on all shards for collection: "
-          + collectionName);
-
+      if(results.get("failure") != null && ((SimpleOrderedMap)results.get("failure")).size() > 0) {
+        // Let's cleanup as we hit an exception
+        // We shouldn't be passing 'results' here for the cleanup as the response would then contain 'success'
+        // element, which may be interpreted by the user as a positive ack
+        cleanupCollection(collectionName, new NamedList());
+        log.info("Cleaned up  artifacts for failed create collection for [" + collectionName + "]");
+      } else {
+        log.debug("Finished create command on all shards for collection: "
+            + collectionName);
+      }
     } catch (SolrException ex) {
       throw ex;
     } catch (Exception ex) {
       throw new SolrException(ErrorCode.SERVER_ERROR, null, ex);
     }
+  }
+
+
+  private void cleanupCollection(String collectionName, NamedList results) throws KeeperException, InterruptedException {
+    log.error("Cleaning up collection [" + collectionName + "]." );
+    Map<String, Object> props = makeMap(
+        Overseer.QUEUE_OPERATION, DELETE.toLower(),
+        NAME, collectionName);
+    deleteCollection(new ZkNodeProps(props), results);
   }
 
   private Map<Position, String> identifyNodes(ClusterState clusterState,

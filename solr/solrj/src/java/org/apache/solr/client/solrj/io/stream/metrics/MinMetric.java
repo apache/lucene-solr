@@ -56,7 +56,12 @@ public class MinMetric extends Metric {
     setFunctionName(functionName);
     setIdentifier(functionName, "(", columnName, ")");
   }
-  
+
+
+  public String[] getColumns() {
+    String[] cols =  {columnName};
+    return cols;
+  }
 
   public double getValue() {
     if(longMin == Long.MAX_VALUE) {

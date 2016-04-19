@@ -67,6 +67,11 @@ public class MaxMetric extends Metric implements Serializable {
     }
   }
 
+  public String[] getColumns() {
+    String[] cols =  {columnName};
+    return cols;
+  }
+
   public void update(Tuple tuple) {
     Object o = tuple.get(columnName);
     if(o instanceof Double) {
