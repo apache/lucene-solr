@@ -61,7 +61,7 @@ Optimizations
   multiple polygons and holes, with memory usage independent of
   polygon complexity. (Karl Wright, Mike McCandless, Robert Muir)
 
-* LUCENE-7159, LUCENE-7222: Speed up LatLonPoint polygon performance for complex
+* LUCENE-7159, LUCENE-7222, LUCENE-7229: Speed up LatLonPoint polygon performance for complex
   polygons. (Robert Muir)
 
 * LUCENE-7211: Reduce memory & GC for spatial RPT Intersects when the number of

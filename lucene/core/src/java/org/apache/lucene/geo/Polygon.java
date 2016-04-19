@@ -48,9 +48,6 @@ public final class Polygon {
   /** maximum longitude of this polygon's bounding box area */
   public final double maxLon;
 
-  // TODO: refactor to GeoUtils once LUCENE-7165 is complete
-  private static final double ENCODING_TOLERANCE = 1e-6;
-
   // TODO: we could also compute the maximal inner bounding box, to make relations faster to compute?
 
   /**
@@ -234,68 +231,77 @@ public final class Polygon {
     return containsCount;
   }
 
-  private boolean crossesSlowly(double minLat, double maxLat, final double minLon, final double maxLon) {
-    /*
-     * Accurately compute (within restrictions of cartesian decimal degrees) whether a rectangle crosses a polygon
-     */
-    final double[] boxLats = new double[] { minLat, minLat, maxLat, maxLat, minLat };
-    final double[] boxLons = new double[] { minLon, maxLon, maxLon, minLon, minLon };
+  /** Returns true if the box crosses our polygon */
+  private boolean crossesSlowly(double minLat, double maxLat, double minLon, double maxLon) {
+    // we compute line intersections of every polygon edge with every box line.
+    // if we find one, return true.
+    // for each box line (AB):
+    //   for each poly line (CD):
+    //     intersects = orient(C,D,A) * orient(C,D,B) <= 0 && orient(A,B,C) * orient(A,B,D) <= 0
+    for (int i = 1; i < polyLons.length; i++) {
+      double cy = polyLats[i - 1];
+      double dy = polyLats[i];
+      double cx = polyLons[i - 1];
+      double dx = polyLons[i];
 
-    // computes the intersection point between each bbox edge and the polygon edge
-    for (int b=0; b<4; ++b) {
-      double a1 = boxLats[b+1]-boxLats[b];
-      double b1 = boxLons[b]-boxLons[b+1];
-      double c1 = a1*boxLons[b+1] + b1*boxLats[b+1];
-      for (int p=0; p<polyLons.length-1; ++p) {
-        double a2 = polyLats[p+1]-polyLats[p];
-        double b2 = polyLons[p]-polyLons[p+1];
-        // compute determinant
-        double d = a1*b2 - a2*b1;
-        if (d != 0) {
-          // lines are not parallel, check intersecting points
-          double c2 = a2*polyLons[p+1] + b2*polyLats[p+1];
-          double s = (1/d)*(b2*c1 - b1*c2);
-          // todo TOLERANCE SHOULD MATCH EVERYWHERE this is currently blocked by LUCENE-7165
-          double x00 = Math.min(boxLons[b], boxLons[b+1]) - ENCODING_TOLERANCE;
-          if (x00 > s) {
-            continue; // out of range
-          }
-          double x01 = Math.max(boxLons[b], boxLons[b+1]) + ENCODING_TOLERANCE;
-          if (x01 < s) {
-            continue; // out of range
-          }
-          double x10 = Math.min(polyLons[p], polyLons[p+1]) - ENCODING_TOLERANCE;
-          if (x10 > s) {
-            continue; // out of range
-          }
-          double x11 = Math.max(polyLons[p], polyLons[p+1]) + ENCODING_TOLERANCE;
-          if (x11 < s) {
-            continue; // out of range
-          }
+      // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
+      // if not, don't waste our time trying more complicated stuff
+      if ((cy < minLat && dy < minLat) ||
+          (cy > maxLat && dy > maxLat) ||
+          (cx < minLon && dx < minLon) ||
+          (cx > maxLon && dx > maxLon)) {
+        continue;
+      }
 
-          double t = (1/d)*(a1*c2 - a2*c1);
-          double y00 = Math.min(boxLats[b], boxLats[b+1]) - ENCODING_TOLERANCE;
-          if (y00 > t || (x00 == s && y00 == t)) {
-            continue; // out of range or touching
-          }
-          double y01 = Math.max(boxLats[b], boxLats[b+1]) + ENCODING_TOLERANCE;
-          if (y01 < t || (x01 == s && y01 == t)) {
-            continue; // out of range or touching
-          }
-          double y10 = Math.min(polyLats[p], polyLats[p+1]) - ENCODING_TOLERANCE;
-          if (y10 > t || (x10 == s && y10 == t)) {
-            continue; // out of range or touching
-          }
-          double y11 = Math.max(polyLats[p], polyLats[p+1]) + ENCODING_TOLERANCE;
-          if (y11 < t || (x11 == s && y11 == t)) {
-            continue; // out of range or touching
-          }
-          // if line segments are not touching and the intersection point is within the range of either segment
-          return true;
-        }
-      } // for each poly edge
-    } // for each bbox edge
+      // does box's top edge intersect polyline?
+      // ax = minLon, bx = maxLon, ay = maxLat, by = maxLat
+      if (orient(cx, cy, dx, dy, minLon, maxLat) * orient(cx, cy, dx, dy, maxLon, maxLat) <= 0 &&
+          orient(minLon, maxLat, maxLon, maxLat, cx, cy) * orient(minLon, maxLat, maxLon, maxLat, dx, dy) <= 0) {
+        return true;
+      }
+
+      // does box's right edge intersect polyline?
+      // ax = maxLon, bx = maxLon, ay = maxLat, by = minLat
+      if (orient(cx, cy, dx, dy, maxLon, maxLat) * orient(cx, cy, dx, dy, maxLon, minLat) <= 0 &&
+          orient(maxLon, maxLat, maxLon, minLat, cx, cy) * orient(maxLon, maxLat, maxLon, minLat, dx, dy) <= 0) {
+        return true;
+      }
+
+      // does box's bottom edge intersect polyline?
+      // ax = maxLon, bx = minLon, ay = minLat, by = minLat
+      if (orient(cx, cy, dx, dy, maxLon, minLat) * orient(cx, cy, dx, dy, minLon, minLat) <= 0 &&
+          orient(maxLon, minLat, minLon, minLat, cx, cy) * orient(maxLon, minLat, minLon, minLat, dx, dy) <= 0) {
+        return true;
+      }
+
+      // does box's left edge intersect polyline?
+      // ax = minLon, bx = minLon, ay = minLat, by = maxLat
+      if (orient(cx, cy, dx, dy, minLon, minLat) * orient(cx, cy, dx, dy, minLon, maxLat) <= 0 &&
+          orient(minLon, minLat, minLon, maxLat, cx, cy) * orient(minLon, minLat, minLon, maxLat, dx, dy) <= 0) {
+        return true;
+      }
+    }
     return false;
+  }
+
+  /**
+   * Returns a positive value if points a, b, and c are arranged in counter-clockwise order,
+   * negative value if clockwise, zero if collinear.
+   */
+  // see the "Orient2D" method described here:
+  // http://www.cs.berkeley.edu/~jrs/meshpapers/robnotes.pdf
+  // https://www.cs.cmu.edu/~quake/robust.html
+  // Note that this one does not yet have the floating point tricks to be exact!
+  private static int orient(double ax, double ay, double bx, double by, double cx, double cy) {
+    double v1 = (bx - ax) * (cy - ay);
+    double v2 = (cx - ax) * (by - ay);
+    if (v1 > v2) {
+      return 1;
+    } else if (v1 < v2) {
+      return -1;
+    } else {
+      return 0;
+    }
   }
 
   /** Returns a copy of the internal latitude array */
