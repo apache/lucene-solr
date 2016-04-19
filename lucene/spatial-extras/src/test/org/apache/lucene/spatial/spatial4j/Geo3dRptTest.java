@@ -145,6 +145,9 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
           final int convexPointIndex = random().nextInt(vertexCount);       //If we get this wrong, hopefully we get IllegalArgumentException
           try {
             final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(PlanetModel.SPHERE, geoPoints);
+            if (shape == null) {
+              continue;
+            }
             return new Geo3dShape(shape, ctx);
           } catch (IllegalArgumentException e) {
             // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where

@@ -186,6 +186,9 @@ public abstract class Geo3dShapeRectRelationTestCase extends RandomizedShapeTest
           }
           try {
             final GeoShape shape = GeoPolygonFactory.makeGeoPolygon(planetModel, geoPoints);
+            if (shape == null) {
+              continue;
+            }
             return new Geo3dShape(planetModel, shape, ctx);
           } catch (IllegalArgumentException e) {
             // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
