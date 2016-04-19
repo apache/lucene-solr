@@ -229,73 +229,78 @@ public class GeoPolygonFactory {
       // Check if the extension of currentPath to considerPointIndex is workable
       final GeoPoint considerStartPoint = currentPath.lastPoint;
       final GeoPoint considerEndPoint = points.get(considerPointIndex);
-      // Create a plane including these two
-      final Plane considerPlane = new Plane(considerStartPoint, considerEndPoint);
-      boolean isChoiceLegal = true;
-      //System.err.println(" considering "+considerStartPoint+" to "+considerEndPoint);
-      if (isChoiceLegal) {
-        // Consider the previous plane/point
-        if (currentPath.lastPlane != null) {
-          if (currentPath.lastPlane.evaluateIsZero(considerEndPoint)) {
-            //System.err.println("  coplanar with last plane");
-            // no good
-            isChoiceLegal = false;
-          } else if (considerPlane.evaluateIsZero(currentPath.previous.lastPoint)) {
-            //System.err.println("  last point coplanar with this plane");
-            isChoiceLegal = false;
-          }
-        }
-      }
-      
-      if (isChoiceLegal && considerPointIndex == startPointIndex) {
-        // Verify that the first plane (already recorded) works together with the last plane
-        final SafePath firstPlaneEndpoint = currentPath.findFirstEndpoint();
-        if (firstPlaneEndpoint == null) {
-          //System.err.println("  path not long enough");
-          isChoiceLegal = false;
-        } else {
-          if (firstPlaneEndpoint.lastPlane.evaluateIsZero(considerStartPoint)) {
-            //System.err.println("  last point is coplanar with start plane");
-            isChoiceLegal = false;
-          } else if (considerPlane.evaluateIsZero(firstPlaneEndpoint.lastPoint)) {
-            //System.err.println("  first point is coplanar with last plane");
-            isChoiceLegal = false;
-          }
-        }
-      }
-      
-      if (isChoiceLegal) {
-        // All points between the start and end, if any, must be on the plane.
-        int checkIndex = getLegalIndex(currentPath.lastPointIndex + 1, points.size());
-        while (checkIndex != considerPointIndex) {
-          if (!considerPlane.evaluateIsZero(points.get(checkIndex))) {
-            // This possibility is no good.  But does it say anything about other possibilities?  I think
-            // it may mean we don't have to consider any further extensions; gotta work that through
-            // mathematically though before coding it.
-            //System.err.println("  interior point not coplanar with trial plane");
-            isChoiceLegal = false;
-            break;
-            //return null;
-          }
-          checkIndex = getLegalIndex(checkIndex + 1, points.size());
-        }
-      }
-      
-      
       final int nextPointIndex = getLegalIndex(considerPointIndex + 1, points.size());
-      if (isChoiceLegal) {
-        // Extend the path and call ourselves recursively.
-        if (considerPointIndex == startPointIndex) {
-          // Current path has been validated; return it
-          return currentPath;
+      if (!considerStartPoint.isNumericallyIdentical(considerEndPoint)) {
+        // Create a plane including these two
+        final Plane considerPlane = new Plane(considerStartPoint, considerEndPoint);
+        
+        boolean isChoiceLegal = true;
+
+        //System.err.println(" considering "+considerStartPoint+" to "+considerEndPoint);
+        if (isChoiceLegal) {
+          // Consider the previous plane/point
+          if (currentPath.lastPlane != null) {
+            if (currentPath.lastPlane.evaluateIsZero(considerEndPoint)) {
+              //System.err.println("  coplanar with last plane");
+              // no good
+              isChoiceLegal = false;
+            } else if (considerPlane.evaluateIsZero(currentPath.previous.lastPoint)) {
+              //System.err.println("  last point coplanar with this plane");
+              isChoiceLegal = false;
+            }
+          }
         }
-        //System.err.println(" adding to path: "+considerEndPoint+"; "+considerPlane);
-        final SafePath newPath = new SafePath(currentPath, considerEndPoint, considerPointIndex, considerPlane);
-        final SafePath result = findSafePath(newPath, points, nextPointIndex, startPointIndex);
-        if (result != null) {
-          return result;
+        
+        if (isChoiceLegal && considerPointIndex == startPointIndex) {
+          // Verify that the first plane (already recorded) works together with the last plane
+          final SafePath firstPlaneEndpoint = currentPath.findFirstEndpoint();
+          if (firstPlaneEndpoint == null) {
+            //System.err.println("  path not long enough");
+            isChoiceLegal = false;
+          } else {
+            if (firstPlaneEndpoint.lastPlane.evaluateIsZero(considerStartPoint)) {
+              //System.err.println("  last point is coplanar with start plane");
+              isChoiceLegal = false;
+            } else if (considerPlane.evaluateIsZero(firstPlaneEndpoint.lastPoint)) {
+              //System.err.println("  first point is coplanar with last plane");
+              isChoiceLegal = false;
+            }
+          }
         }
+        
+        if (isChoiceLegal) {
+          // All points between the start and end, if any, must be on the plane.
+          int checkIndex = getLegalIndex(currentPath.lastPointIndex + 1, points.size());
+          while (checkIndex != considerPointIndex) {
+            if (!considerPlane.evaluateIsZero(points.get(checkIndex))) {
+              // This possibility is no good.  But does it say anything about other possibilities?  I think
+              // it may mean we don't have to consider any further extensions; gotta work that through
+              // mathematically though before coding it.
+              //System.err.println("  interior point not coplanar with trial plane");
+              isChoiceLegal = false;
+              break;
+              //return null;
+            }
+            checkIndex = getLegalIndex(checkIndex + 1, points.size());
+          }
+        }
+        
+        if (isChoiceLegal) {
+          // Extend the path and call ourselves recursively.
+          if (considerPointIndex == startPointIndex) {
+            // Current path has been validated; return it
+            return currentPath;
+          }
+          //System.err.println(" adding to path: "+considerEndPoint+"; "+considerPlane);
+          final SafePath newPath = new SafePath(currentPath, considerEndPoint, considerPointIndex, considerPlane);
+          final SafePath result = findSafePath(newPath, points, nextPointIndex, startPointIndex);
+          if (result != null) {
+            return result;
+          }
+        }
+
       }
+      
       if (considerPointIndex == startPointIndex) {
         break;
       }
