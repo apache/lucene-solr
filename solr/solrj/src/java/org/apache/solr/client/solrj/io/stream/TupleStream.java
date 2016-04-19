@@ -21,14 +21,19 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.io.Writer;
 import java.util.List;
+import java.util.UUID;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 
 public abstract class TupleStream implements Closeable, Serializable {
 
   private static final long serialVersionUID = 1;
+  
+  private UUID streamNodeId = UUID.randomUUID();
 
   public TupleStream() {
 
@@ -54,8 +59,13 @@ public abstract class TupleStream implements Closeable, Serializable {
 
   public abstract StreamComparator getStreamSort();
   
+  public abstract Explanation toExplanation(StreamFactory factory) throws IOException;
+  
   public int getCost() {
     return 0;
   }
   
+  public UUID getStreamNodeId(){
+    return streamNodeId;
+  }
 }

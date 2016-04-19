@@ -30,10 +30,12 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrInputDocument;
@@ -143,19 +145,53 @@ public class UpdateStream extends TupleStream implements Expressible {
   }
   
   @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+    return toExpression(factory, true);
+  }
+  
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     expression.addParameter(collection);
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
     expression.addParameter(new StreamExpressionNamedParameter("batchSize", Integer.toString(updateBatchSize)));
     
-    if(tupleSource instanceof Expressible){
-      expression.addParameter(((Expressible)tupleSource).toExpression(factory));
-    } else {
-      throw new IOException("This ParallelStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+    if(includeStreams){
+      if(tupleSource instanceof Expressible){
+        expression.addParameter(((Expressible)tupleSource).toExpression(factory));
+      } else {
+        throw new IOException("This ParallelStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      }
+    }
+    else{
+      expression.addParameter("<stream>");
     }
     
     return expression;
+  }
+  
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    // An update stream is backward wrt the order in the explanation. This stream is the "child"
+    // while the collection we're updating is the parent.
+    
+    StreamExplanation explanation = new StreamExplanation(getStreamNodeId() + "-datastore");
+    
+    explanation.setFunctionName(String.format(Locale.ROOT, "solr (%s)", collection));
+    explanation.setImplementingClass("Solr/Lucene");
+    explanation.setExpressionType(ExpressionType.DATASTORE);
+    explanation.setExpression("Update into " + collection);
+    
+    // child is a datastore so add it at this point
+    StreamExplanation child = new StreamExplanation(getStreamNodeId().toString());
+    child.setFunctionName(String.format(Locale.ROOT, factory.getFunctionName(getClass())));
+    child.setImplementingClass(getClass().getName());
+    child.setExpressionType(ExpressionType.STREAM_DECORATOR);
+    child.setExpression(toExpression(factory, false).toString());
+    
+    explanation.addChild(child);
+    
+    return explanation;
   }
   
   @Override

@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.io.eq.MultipleFieldEqualitor;
 import org.apache.solr.client.solrj.io.stream.*;
@@ -36,12 +37,15 @@ import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
@@ -50,7 +54,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   private String zkHost;
   private String collection;
   private StreamContext streamContext;
-  private Map queryParams;
+  private Map<String,String> queryParams;
   private String traverseFrom;
   private String traverseTo;
   private String gather;
@@ -250,21 +254,30 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   }
 
   @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+    return toExpression(factory, true);
+  }
+  
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
 
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
 
     // collection
     expression.addParameter(collection);
 
-    if(tupleStream instanceof Expressible){
-      expression.addParameter(((Expressible)tupleStream).toExpression(factory));
+    if(includeStreams){
+      if(tupleStream instanceof Expressible){
+        expression.addParameter(((Expressible)tupleStream).toExpression(factory));
+      }
+      else{
+        throw new IOException("This GatherNodesStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      }
     }
     else{
-      throw new IOException("This GatherNodesStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      expression.addParameter("<stream>");
     }
 
-    Set<Map.Entry> entries =  queryParams.entrySet();
+    Set<Map.Entry<String,String>> entries =  queryParams.entrySet();
     // parameters
     for(Map.Entry param : entries){
       String value = param.getValue().toString();
@@ -300,6 +313,37 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     return expression;
   }
+  
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
+    
+    explanation.setFunctionName(factory.getFunctionName(this.getClass()));
+    explanation.setImplementingClass(this.getClass().getName());
+    explanation.setExpressionType(ExpressionType.GRAPH_SOURCE);
+    explanation.setExpression(toExpression(factory).toString());
+    
+    // one child is a stream
+    explanation.addChild(tupleStream.toExplanation(factory));
+    
+    // one child is a datastore so add it at this point
+    StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-datastore");
+    child.setFunctionName("solr (graph)");
+    child.setImplementingClass("Solr/Lucene");
+    child.setExpressionType(ExpressionType.DATASTORE);    
+    child.setExpression(queryParams.entrySet().stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(",")));    
+    explanation.addChild(child);
+    
+    if(null != metrics){
+      for(Metric metric : metrics){
+          explanation.addHelper(metric.toExplanation(factory));
+      }
+    }
+    
+    return explanation;
+  }
+
 
   public void setStreamContext(StreamContext context) {
     this.traversal = (Traversal) context.get("traversal");
@@ -575,6 +619,16 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         map.put("EOF", true);
         return new Tuple(map);
       }
+    }
+    
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      return new StreamExplanation(getStreamNodeId().toString())
+        .withFunctionName("non-expressible")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_SOURCE)
+        .withExpression("non-expressible");
     }
   }
 }
