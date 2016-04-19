@@ -38,6 +38,7 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/angular/plugins.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/documents.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/query.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/stream.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/replication.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/schema.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/segments.css?_=${version}">
@@ -72,6 +73,7 @@ limitations under the License.
   <script src="js/angular/controllers/documents.js"></script>
   <script src="js/angular/controllers/files.js"></script>
   <script src="js/angular/controllers/query.js"></script>
+  <script src="js/angular/controllers/stream.js"></script>
   <script src="js/angular/controllers/plugins.js"></script>
   <script src="js/angular/controllers/replication.js"></script>
   <script src="js/angular/controllers/schema.js"></script>
@@ -183,6 +185,7 @@ limitations under the License.
               <li class="documents" ng-class="{active:page=='documents'}"><a href="#/{{currentCollection.name}}/documents"><span>Documents</span></a></li>
               <li class="files" ng-class="{active:page=='files'}"><a href="#/{{currentCollection.name}}/files"><span>Files</span></a></li>
               <li class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCollection.name}}/query"><span>Query</span></a></li>
+              <li class="stream" ng-class="{active:page=='stream'}"><a href="#/{{currentCollection.name}}/stream"><span>Stream</span></a></li>
               <li class="schema" ng-class="{active:page=='schema'}"><a href="#/{{currentCollection.name}}/schema"><span>Schema</span></a></li>
         </ul>
           </div>

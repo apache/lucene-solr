@@ -100,6 +100,9 @@ New Features
 
 * SOLR-9009: Adds ability to get an Explanation of a Streaming Expression (Dennis Gove)
 
+* SOLR-8918: Adds Streaming to the admin page under the collections section. Includes
+  ability to see graphically the expression explanation (Dennis Gove)
+
 Bug Fixes
 ----------------------
 
