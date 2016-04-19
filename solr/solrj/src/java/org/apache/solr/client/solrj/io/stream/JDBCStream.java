@@ -34,7 +34,10 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
@@ -346,6 +349,40 @@ public class JDBCStream extends TupleStream implements Expressible {
     }
         
     return expression;   
+  }
+  
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
+    
+    explanation.setFunctionName(factory.getFunctionName(this.getClass()));
+    explanation.setImplementingClass(this.getClass().getName());
+    explanation.setExpressionType(ExpressionType.STREAM_SOURCE);
+    
+    StreamExpression expression = (StreamExpression)toExpression(factory);
+    explanation.setExpression(expression.toString());
+    
+    String driverClassName = this.driverClassName;
+    if(null == driverClassName){
+      try{
+        driverClassName = DriverManager.getDriver(connectionUrl).getClass().getName();
+      }
+      catch(Exception e){
+        driverClassName = String.format(Locale.ROOT, "Failed to find driver for connectionUrl='%s'", connectionUrl);
+      }
+    }
+    
+    // child is a datastore so add it at this point
+    StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-datastore");
+    child.setFunctionName("jdbc-source");
+    child.setImplementingClass(driverClassName);
+    child.setExpressionType(ExpressionType.DATASTORE);    
+    child.setExpression(sqlQuery);
+    
+    explanation.addChild(child);
+    
+    return explanation;
   }
   
   @Override

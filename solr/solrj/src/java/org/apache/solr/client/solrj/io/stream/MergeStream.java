@@ -24,7 +24,10 @@ import java.util.Locale;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
@@ -95,19 +98,45 @@ public class MergeStream extends TupleStream implements Expressible {
   }
   
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException {    
+  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+    return toExpression(factory, true);
+  }
+  
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     
     // streams
     for(PushBackStream stream : streams){
-      expression.addParameter(stream.toExpression(factory));
+      if(includeStreams){
+        expression.addParameter(stream.toExpression(factory));
+      }
+      else{
+        expression.addParameter("<stream>");
+      }
     }
     
     // on
     expression.addParameter(new StreamExpressionNamedParameter("on",comp.toExpression(factory)));
     
     return expression;   
+  }
+  
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
+    explanation.setFunctionName(factory.getFunctionName(this.getClass()));
+    explanation.setImplementingClass(this.getClass().getName());
+    explanation.setExpressionType(ExpressionType.STREAM_DECORATOR);
+    explanation.setExpression(toExpression(factory, false).toString());
+    explanation.addHelper(comp.toExplanation(factory));
+    
+    for(PushBackStream stream : streams){
+      explanation.addChild(stream.toExplanation(factory));
+    }
+    
+    return explanation;    
   }
 
   public void setStreamContext(StreamContext context) {
@@ -117,7 +146,7 @@ public class MergeStream extends TupleStream implements Expressible {
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<TupleStream>();
     for(PushBackStream stream : streams){
       l.add(stream);
     }

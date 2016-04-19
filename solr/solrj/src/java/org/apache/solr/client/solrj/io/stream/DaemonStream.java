@@ -15,23 +15,26 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.io.stream;
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.lang.invoke.MethodHandles;
-import java.util.Locale;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Date;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,15 +103,24 @@ public class DaemonStream extends TupleStream implements Expressible {
   }
 
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException {
+  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+    return toExpression(factory, true);
+  }
+  
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
 
-    // streams
-    if(tupleStream instanceof Expressible){
-      expression.addParameter(((Expressible)tupleStream).toExpression(factory));
-    } else {
-      throw new IOException("This UniqueStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+    if(includeStreams){
+      // streams
+      if(tupleStream instanceof Expressible){
+        expression.addParameter(((Expressible)tupleStream).toExpression(factory));
+      } else {
+        throw new IOException("This UniqueStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      }
+    }
+    else{
+      expression.addParameter("<stream>");
     }
 
     expression.addParameter(new StreamExpressionNamedParameter("id", id));
@@ -116,6 +128,19 @@ public class DaemonStream extends TupleStream implements Expressible {
     expression.addParameter(new StreamExpressionNamedParameter("queueSize", Integer.toString(queueSize)));
 
     return expression;
+  }
+  
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    return new StreamExplanation(getStreamNodeId().toString())
+      .withChildren(new Explanation[] {
+        tupleStream.toExplanation(factory)
+      })
+      .withFunctionName(factory.getFunctionName(this.getClass()))
+      .withImplementingClass(this.getClass().getName())
+      .withExpressionType(ExpressionType.STREAM_DECORATOR)
+      .withExpression(toExpression(factory, false).toString());
   }
 
   public int remainingCapacity() {

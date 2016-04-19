@@ -23,33 +23,36 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Random;
-import java.util.Set;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -61,7 +64,6 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-
   private static final long serialVersionUID = 1;
 
   private long count;
@@ -69,7 +71,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   private String id;
   protected long checkpointEvery;
 
-  private Map<String, Long> checkpoints = new HashMap();
+  private Map<String, Long> checkpoints = new HashMap<String, Long>();
   private String checkpointCollection;
 
   public TopicStream(String zkHost,
@@ -178,7 +180,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   }
 
   @Override
-  public StreamExpressionParameter toExpression(StreamFactory factory) throws IOException {
+  public StreamExpression toExpression(StreamFactory factory) throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
 
@@ -203,6 +205,42 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     expression.addParameter(new StreamExpressionNamedParameter("checkpointEvery", Long.toString(checkpointEvery)));
 
     return expression;
+  }
+  
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
+    
+    explanation.setFunctionName(factory.getFunctionName(this.getClass()));
+    explanation.setImplementingClass(this.getClass().getName());
+    explanation.setExpressionType(ExpressionType.STREAM_SOURCE);
+    explanation.setExpression(toExpression(factory).toString());
+    
+    {
+      // child 1 is a datastore so add it at this point
+      StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-datastore");
+      child.setFunctionName(String.format(Locale.ROOT, "solr (%s)", collection)); 
+        // TODO: fix this so we know the # of workers - check with Joel about a Topic's ability to be in a
+        // parallel stream.
+      
+      child.setImplementingClass("Solr/Lucene");
+      child.setExpressionType(ExpressionType.DATASTORE);    
+      child.setExpression(params.entrySet().stream().map(e -> String.format(Locale.ROOT, "%s=%s", e.getKey(), e.getValue())).collect(Collectors.joining(",")));
+      explanation.addChild(child);
+    }
+    
+    {
+      // child 2 is a place where we store and read checkpoint info from
+      StreamExplanation child = new StreamExplanation(getStreamNodeId() + "-checkpoint");
+      child.setFunctionName(String.format(Locale.ROOT, "solr (checkpoint store)")); 
+      child.setImplementingClass("Solr/Lucene");
+      child.setExpressionType(ExpressionType.DATASTORE);    
+      child.setExpression(String.format(Locale.ROOT, "id=%s, collection=%s, checkpointEvery=%d", id, checkpointCollection, checkpointEvery));
+      explanation.addChild(child);
+    }
+    
+    return explanation;
   }
 
   public List<TupleStream> children() {

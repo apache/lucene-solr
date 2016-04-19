@@ -26,7 +26,10 @@ import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eq.FieldEqualitor;
 import org.apache.solr.client.solrj.io.eq.StreamEqualitor;
 import org.apache.solr.client.solrj.io.ops.DistinctOperation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
@@ -85,16 +88,25 @@ public class UniqueStream extends TupleStream implements Expressible {
   }
 
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException {    
+  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+    return toExpression(factory, true);
+  }
+  
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     
-    // streams
-    if(originalStream instanceof Expressible){
-      expression.addParameter(((Expressible)originalStream).toExpression(factory));
+    if(includeStreams){
+      // streams
+      if(originalStream instanceof Expressible){
+        expression.addParameter(((Expressible)originalStream).toExpression(factory));
+      }
+      else{
+        throw new IOException("This UniqueStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      }
     }
     else{
-      throw new IOException("This UniqueStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      expression.addParameter("<stream>");
     }
     
     // over
@@ -106,6 +118,21 @@ public class UniqueStream extends TupleStream implements Expressible {
     }
     
     return expression;   
+  }
+  
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    return new StreamExplanation(getStreamNodeId().toString())
+      .withChildren(new Explanation[] {
+          originalStream.toExplanation(factory)
+          // we're not including that this is wrapped with a ReducerStream stream because that's just an implementation detail
+      })
+      .withFunctionName(factory.getFunctionName(this.getClass()))
+      .withImplementingClass(this.getClass().getName())
+      .withExpressionType(ExpressionType.STREAM_DECORATOR)
+      .withExpression(toExpression(factory, false).toString())
+      .withHelper(originalEqualitor.toExplanation(factory));
   }
     
   public void setStreamContext(StreamContext context) {

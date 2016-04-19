@@ -18,13 +18,16 @@ package org.apache.solr.client.solrj.io.ops;
 
 import java.io.IOException;
 import java.util.Locale;
+import java.util.UUID;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 
 /**
  * Implementation of replace(...., withValue="some value")
@@ -33,6 +36,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class ReplaceWithValueOperation implements StreamOperation {
 
   private static final long serialVersionUID = 1;
+  private UUID operationNodeId = UUID.randomUUID();
   
   private boolean wasBuiltWithFieldName;
   private String fieldName;
@@ -113,4 +117,12 @@ public class ReplaceWithValueOperation implements StreamOperation {
     return expression;
   }
   
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+    return new Explanation(operationNodeId.toString())
+      .withExpressionType(ExpressionType.OPERATION)
+      .withFunctionName(factory.getFunctionName(getClass()))
+      .withImplementingClass(getClass().getName())
+      .withExpression(toExpression(factory).toString());
+  }
 }

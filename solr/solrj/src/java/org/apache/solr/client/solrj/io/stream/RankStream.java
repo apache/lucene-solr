@@ -28,7 +28,10 @@ import java.util.PriorityQueue;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
@@ -101,19 +104,28 @@ public class RankStream extends TupleStream implements Expressible {
   }
   
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException {    
+  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+    return toExpression(factory, true);
+  }
+  
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     
     // n
     expression.addParameter(new StreamExpressionNamedParameter("n", Integer.toString(size)));
     
-    // stream
-    if(stream instanceof Expressible){
-      expression.addParameter(((Expressible)stream).toExpression(factory));
+    if(includeStreams){
+      // stream
+      if(stream instanceof Expressible){
+        expression.addParameter(((Expressible)stream).toExpression(factory));
+      }
+      else{
+        throw new IOException("This RankStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      }
     }
     else{
-      throw new IOException("This RankStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      expression.addParameter("<stream>");
     }
         
     // sort
@@ -122,19 +134,33 @@ public class RankStream extends TupleStream implements Expressible {
     return expression;   
   }
   
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    return new StreamExplanation(getStreamNodeId().toString())
+      .withChildren(new Explanation[]{
+        stream.toExplanation(factory)
+      })
+      .withFunctionName(factory.getFunctionName(this.getClass()))
+      .withImplementingClass(this.getClass().getName())
+      .withExpressionType(ExpressionType.STREAM_DECORATOR)
+      .withExpression(toExpression(factory, false).toString())
+      .withHelper(comp.toExplanation(factory));
+  }
+  
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<TupleStream>();
     l.add(stream);
     return l;
   }
 
   public void open() throws IOException {
-    this.top = new PriorityQueue(size, new ReverseComp(comp));
-    this.topList = new LinkedList();
+    this.top = new PriorityQueue<Tuple>(size, new ReverseComp(comp));
+    this.topList = new LinkedList<Tuple>();
     stream.open();
   }
 
@@ -187,6 +213,7 @@ public class RankStream extends TupleStream implements Expressible {
 
   class ReverseComp implements Comparator<Tuple>, Serializable {
 
+    private static final long serialVersionUID = 1L;
     private StreamComparator comp;
 
     public ReverseComp(StreamComparator comp) {

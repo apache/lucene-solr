@@ -30,16 +30,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 import java.util.Random;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -163,8 +167,11 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
   }
 
   @Override
-  public StreamExpression toExpression(StreamFactory factory) throws IOException {    
-
+  public StreamExpression toExpression(StreamFactory factory) throws IOException{
+    return toExpression(factory, true);
+  }
+  
+  private StreamExpression toExpression(StreamFactory factory, boolean includeStreams) throws IOException {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     
@@ -174,12 +181,16 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     // workers
     expression.addParameter(new StreamExpressionNamedParameter("workers", Integer.toString(workers)));
     
-    // stream
-    if(tupleStream instanceof Expressible){
-      expression.addParameter(((Expressible)tupleStream).toExpression(factory));
+    if(includeStreams){
+      if(tupleStream instanceof Expressible){
+        expression.addParameter(((Expressible)tupleStream).toExpression(factory));
+      }
+      else{
+        throw new IOException("This ParallelStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      }
     }
     else{
-      throw new IOException("This ParallelStream contains a non-expressible TupleStream - it cannot be converted to an expression");
+      expression.addParameter("<stream>");
     }
         
     // sort
@@ -189,6 +200,24 @@ public class ParallelStream extends CloudSolrStream implements Expressible {
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
     
     return expression;   
+  }
+  
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    StreamExplanation explanation = new StreamExplanation(getStreamNodeId().toString());
+    
+    explanation.setFunctionName(factory.getFunctionName(this.getClass()));
+    explanation.setImplementingClass(this.getClass().getName());
+    explanation.setExpressionType(ExpressionType.STREAM_DECORATOR);
+    explanation.setExpression(toExpression(factory, false).toString());
+    
+    // add a child for each worker
+    for(int idx = 0; idx < workers; ++idx){
+      explanation.addChild(tupleStream.toExplanation(factory));
+    }
+    
+    return explanation;
   }
   
   public List<TupleStream> children() {

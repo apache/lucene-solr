@@ -49,7 +49,10 @@ import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.UniqueStream;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -1289,6 +1292,19 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     public void setStreamContext(StreamContext context) {
       stream.setStreamContext(context);
     }
+    
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      return new StreamExplanation(getStreamNodeId().toString())
+        .withChildren(new Explanation[]{
+          stream.toExplanation(factory)
+        })
+        .withFunctionName("SQL LIMIT")
+        .withExpression("--non-expressible--")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR);
+    }
 
     public Tuple read() throws IOException {
       ++count;
@@ -1348,6 +1364,19 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
       children.add(stream);
       return children;
     }
+    
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      return new StreamExplanation(getStreamNodeId().toString())
+        .withChildren(new Explanation[]{
+          stream.toExplanation(factory)
+        })
+        .withFunctionName("SQL HAVING")
+        .withExpression("--non-expressible--")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR);
+    }
 
     public void setStreamContext(StreamContext context) {
       stream.setStreamContext(context);
@@ -1384,6 +1413,16 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     public void open() throws IOException {
       this.catalogs = new ArrayList<>();
       this.catalogs.add(this.zkHost);
+    }
+    
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      return new StreamExplanation(getStreamNodeId().toString())
+        .withFunctionName("SQL CATALOG")
+        .withExpression("--non-expressible--")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR);
     }
 
     public Tuple read() throws IOException {
@@ -1424,6 +1463,16 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
 
     public void open() throws IOException {
 
+    }
+    
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      return new StreamExplanation(getStreamNodeId().toString())
+        .withFunctionName("SQL SCHEMA")
+        .withExpression("--non-expressible--")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR);
     }
 
     public Tuple read() throws IOException {
@@ -1469,6 +1518,16 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
         this.tables.addAll(zkStateReader.getClusterState().getCollections());
       }
       Collections.sort(this.tables);
+    }
+    
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      return new StreamExplanation(getStreamNodeId().toString())
+        .withFunctionName("SQL TABLE")
+        .withExpression("--non-expressible--")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR);
     }
 
     public Tuple read() throws IOException {
@@ -1516,6 +1575,19 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
 
     public void open() throws IOException {
       this.stream.open();
+    }
+    
+    @Override
+    public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+      return new StreamExplanation(getStreamNodeId().toString())
+        .withChildren(new Explanation[]{
+          stream.toExplanation(factory)
+        })
+        .withFunctionName("SQL METADATA")
+        .withExpression("--non-expressible--")
+        .withImplementingClass(this.getClass().getName())
+        .withExpressionType(ExpressionType.STREAM_DECORATOR);
     }
 
     // Return a metadata tuple as the first tuple and then pass through to the underlying stream.
