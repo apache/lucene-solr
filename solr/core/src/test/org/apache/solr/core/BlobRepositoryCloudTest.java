@@ -2,15 +2,12 @@ package org.apache.solr.core;
 
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Set;
 
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -19,6 +16,8 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.handler.TestBlobHandler;
 import org.apache.zookeeper.server.DataNode;
 import org.apache.zookeeper.server.DataTree;
 import org.apache.zookeeper.server.ZKDatabase;
@@ -54,10 +53,9 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
 //    Thread.sleep(2000);
     HashMap<String, String> params = new HashMap<>();
     cluster.createCollection(".system", 1, 1, null, params);
-//    Thread.sleep(2000);
     // test component will fail if it cant' find a blob with this data by this name
-    postBlob("testResource", "foo,bar\nbaz,bam");
-//    Thread.sleep(2000);
+    TestBlobHandler.postData(cluster.getSolrClient(), findLiveNodeURI(), "testResource", ByteBuffer.wrap("foo,bar\nbaz,bam".getBytes(StandardCharsets.UTF_8)));
+    //    Thread.sleep(2000);
     // if these don't load we probably failed to post the blob above
     cluster.createCollection("col1", 1, 1, "configname", params);
     cluster.createCollection("col2", 1, 1, "configname", params);
@@ -95,28 +93,10 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
     assertLastQueryToCollection("col2");
   }
 
-  // TODO: move this up to parent class? Probably accepting entity, or with alternative signatures
-  private static void postBlob(String name, String string) throws IOException {
-    HttpPost post = new HttpPost(findLiveNodeURI() + "/.system/blob/" + name);
-    StringEntity csv = new StringEntity(string, ContentType.create("application/octet-stream"));
-    post.setEntity(csv);
-    try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-      httpclient.execute(post);
-    }
-  }
-
   // TODO: move this up to parent class?
   private static String findLiveNodeURI() {
-    ZkTestServer zkServer = cluster.getZkServer();
-    ZKDatabase zkDatabase = zkServer.getZKDatabase();
-    DataTree dataTree = zkDatabase.getDataTree();
-    DataNode node = dataTree.getNode("/solr/live_nodes");
-    Set<String> children = node.getChildren();
-    String liveNode = children.iterator().next();
-    String[] split = liveNode.split("_");
-    String host = split[0];
-    String name = split[1];
-    return "http://" + host + "/" + name;
+    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    return zkStateReader.getBaseUrlForNodeName(zkStateReader.getClusterState().getCollection(".system").getSlices().iterator().next().getLeader().getNodeName());
   }
 
   private void assertLastQueryToCollection(String collection) throws SolrServerException, IOException {
