@@ -52,6 +52,8 @@ Bug Fixes
 
 * SOLR-8990: Fix top term links from schema browser page to use {!term} parser (hossman)
 
+* SOLR-8971: Preserve root cause when wrapping exceptions (hossman)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes
