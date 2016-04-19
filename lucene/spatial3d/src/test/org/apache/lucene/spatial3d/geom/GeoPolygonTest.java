@@ -84,7 +84,9 @@ public class GeoPolygonTest {
       originalPoints.add(point1);
       originalPoints.add(point3);
       originalPoints.add(point4);
+      System.err.println("Before: "+originalPoints);
       final List<GeoPoint> filteredPoints =GeoPolygonFactory.filterPoints(originalPoints);
+      System.err.println("After: "+filteredPoints);
       assertEquals(3, filteredPoints.size());
       assertEquals(point5, filteredPoints.get(0));
       assertEquals(point1, filteredPoints.get(1));

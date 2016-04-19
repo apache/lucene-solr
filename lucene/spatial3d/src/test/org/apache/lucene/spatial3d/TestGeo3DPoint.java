@@ -617,7 +617,12 @@ public class TestGeo3DPoint extends LuceneTestCase {
           geoPoints.add(gPt);
         }
         try {
-          return GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, geoPoints);
+          final GeoShape rval = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, geoPoints);
+          if (rval == null) {
+            // Degenerate polygon
+            continue;
+          }
+          return rval;
         } catch (IllegalArgumentException e) {
           // This is what happens when we create a shape that is invalid.  Although it is conceivable that there are cases where
           // the exception is thrown incorrectly, we aren't going to be able to do that in this random test.

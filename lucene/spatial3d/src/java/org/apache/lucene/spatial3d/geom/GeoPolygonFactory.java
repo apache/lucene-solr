@@ -57,26 +57,32 @@ public class GeoPolygonFactory {
    *  clockwise from a given pole, then that pole should be within the polygon.  If points go
    *  counter-clockwise, then that pole should be outside the polygon.
    * @param holes is a list of polygons representing "holes" in the outside polygon.  Null == none.
-   * @return a GeoPolygon corresponding to what was specified.
+   * @return a GeoPolygon corresponding to what was specified, or null if a valid polygon cannot be generated
+   *  from this input.
    */
   public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel,
     final List<GeoPoint> pointList,
     final List<GeoPolygon> holes) {
+    // First, exercise a sanity filter on the provided pointList, and remove identical points, linear points, and backtracks
+    final List<GeoPoint> filteredPointList = filterPoints(pointList);
+    if (filteredPointList == null) {
+      return null;
+    }
     //System.err.println("points="+pointList);
     // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
     // of points to use for poles.
     final Random generator = new Random(1234);
-    for (int counter = 0; counter < 10000; counter++) {
+    for (int counter = 0; counter < 1000000; counter++) {
       //counter++;
       // Pick the next random pole
-      final GeoPoint pole = pickPole(generator, planetModel, pointList);
+      final GeoPoint pole = pickPole(generator, planetModel, filteredPointList);
       // Is it inside or outside?
-      final Boolean isPoleInside = isInsidePolygon(pole, pointList);
+      final Boolean isPoleInside = isInsidePolygon(pole, filteredPointList);
       if (isPoleInside != null) {
         // Legal pole
         //System.out.println("Took "+counter+" iterations to find pole");
         //System.out.println("Pole = "+pole+"; isInside="+isPoleInside+"; pointList = "+pointList);
-        return makeGeoPolygon(planetModel, pointList, holes, pole, isPoleInside);
+        return generateGeoPolygon(planetModel, filteredPointList, holes, pole, isPoleInside);
       }
       // If pole choice was illegal, try another one
     }
@@ -86,19 +92,18 @@ public class GeoPolygonFactory {
   /**
    * Create a GeoPolygon using the specified points and holes and a test point.
    *
-   * @param pointList        is a list of the GeoPoints to build an arbitrary polygon out of.
+   * @param filteredPointList is a filtered list of the GeoPoints to build an arbitrary polygon out of.
    * @param holes is a list of polygons representing "holes" in the outside polygon.  Null == none.
    * @param testPoint is a test point that is either known to be within the polygon area, or not.
    * @param testPointInside is true if the test point is within the area, false otherwise.
-   * @return a GeoPolygon corresponding to what was specified.
+   * @return a GeoPolygon corresponding to what was specified, or null if what was specified
+   *  cannot be turned into a valid non-degenerate polygon.
    */
-  public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel,
-    final List<GeoPoint> pointList,
+  static GeoPolygon generateGeoPolygon(final PlanetModel planetModel,
+    final List<GeoPoint> filteredPointList,
     final List<GeoPolygon> holes,
     final GeoPoint testPoint, 
     final boolean testPointInside) {
-    // First, exercise a sanity filter on the provided pointList, and remove identical points, linear points, and backtracks
-    final List<GeoPoint> filteredPointList = filterPoints(pointList);
     // We will be trying twice to find the right GeoPolygon, using alternate siding choices for the first polygon
     // side.  While this looks like it might be 2x as expensive as it could be, there's really no other choice I can
     // find.
@@ -136,6 +141,8 @@ public class GeoPolygonFactory {
   }
 
   /** Filter duplicate points and coplanar points.
+   * @param start with input list of points
+   * @return the filtered list, or null if we can't get a legit polygon from the input.
    */
   static List<GeoPoint> filterPoints(final List<GeoPoint> input) {
     
@@ -152,7 +159,7 @@ public class GeoPolygonFactory {
       }
     }
     if (startIndex == -1) {
-      throw new IllegalArgumentException("polygon is degenerate: all points are identical");
+      return null;
     }
     
     // Now we can start the process of walking around, removing duplicate points.
@@ -176,60 +183,129 @@ public class GeoPolygonFactory {
     }
     
     if (noIdenticalPoints.size() < 3) {
-      throw new IllegalArgumentException("polygon has fewer than three non-identical points");
+      return null;
     }
     
-    // Next step: remove coplanar points and backtracks.  For this, we use a strategy that is similar but we assess whether the points
-    // are on the same plane, taking the first and last points on the same plane only.
+    // Now, do the depth-first search needed to find a path that has no coplanarities in it.
+    // This is, unfortunately, not easy, because coplanarity is not transitive as you walk around the polygon.
+    // If point C is not coplanar with edge A-B, there is no guarantee that A is not coplanar with B-C.
+    // But we have to produce a polygon that is safe no matter which way it is looked at.
+    // The approach I'm taking therefore is to do a depth-first search until we find a valid polygon.
+    // This algorithmically awful in the worst case, but luckily we can presume that real-life data
+    // does not require more than a couple of iterations.
     
-    final List<GeoPoint> nonCoplanarPoints = new ArrayList<>(noIdenticalPoints.size());
-    
-    int startPlaneIndex = -1;
-    final Plane comparePlane = new Plane(noIdenticalPoints.get(0), noIdenticalPoints.get(1));
-    for (int i = 0; i < noIdenticalPoints.size()-1; i++) {
-      final GeoPoint thePoint = noIdenticalPoints.get(getLegalIndex(- i - 1, noIdenticalPoints.size()));
-      if (!comparePlane.evaluateIsZero(thePoint)) {
-        startPlaneIndex = getLegalIndex(-i, noIdenticalPoints.size());
-        break;
+    for  (int i = 0; i < noIdenticalPoints.size(); i++) {
+      final SafePath startPath = new SafePath(null, noIdenticalPoints.get(i), i, null);
+      // Search, with this as the start path.
+      final SafePath resultPath = findSafePath(startPath, noIdenticalPoints, getLegalIndex(i+1, noIdenticalPoints.size()), i);
+      if (resultPath != null && resultPath.previous != null) {
+        // Read out result, maintaining ordering
+        final List<GeoPoint> rval = new ArrayList<>(noIdenticalPoints.size());
+        resultPath.fillInList(rval);
+        return rval;
       }
     }
-    if (startPlaneIndex == -1) {
-      throw new IllegalArgumentException("polygon is degenerate: all points are coplanar");
-    }
-
-    // Now we can start the process of walking around, removing duplicate points.
-    int currentPlaneIndex = startPlaneIndex;
-    while (true) {
-      final GeoPoint currentPoint = noIdenticalPoints.get(currentPlaneIndex);
-      nonCoplanarPoints.add(currentPoint);
-      int nextPlaneIndex = getLegalIndex(currentPlaneIndex + 1, noIdenticalPoints.size());
-      if (nextPlaneIndex == startPlaneIndex) {
-        break;
-      }
-      final Plane testPlane = new Plane(currentPoint, noIdenticalPoints.get(nextPlaneIndex));
-      while (true) {
-        currentPlaneIndex = nextPlaneIndex;
-        if (currentPlaneIndex == startPlaneIndex) {
-          break;
-        }
-        // Check if the next point is off plane
-        nextPlaneIndex = getLegalIndex(currentPlaneIndex + 1, noIdenticalPoints.size());
-        final GeoPoint nextNonCoplanarPoint = noIdenticalPoints.get(nextPlaneIndex);
-        if (!testPlane.evaluateIsZero(nextNonCoplanarPoint)) {
-          // We will want to add the point at currentPlaneIndex to the list (last on of the series)
-          break;
-        }
-      }
-      if (currentPlaneIndex == startPlaneIndex) {
-        break;
-      }
-    }
-    
-    return nonCoplanarPoints;
+    // No path found.  This means that everything was coplanar.
+    return null;
   }
   
+  /** Recursive depth-first path search.  In order to find a valid path, we must consider all possible legal extensions of
+   * the current path.  We discard any path that produces illegalities (meaning anything that would allow any coplanarity
+   * to continue to exist no matter from which direction one looks at it), and take the first legal path we find.
+   * @param currentPath is the current path (not null).
+   * @param points is the raw list of points under consideration.
+   * @param pointIndex is the index of the point that represents the next possible point for consideration for path
+   *  extension.
+   * @param startPointIndex is index of the point that starts the current path, so that we can know when we are done.
+   * @return null if there was no safe path found, or the safe path if one was discovered.
+   */
+  private static SafePath findSafePath(final SafePath currentPath, final List<GeoPoint> points, final int pointIndex,
+    final int startPointIndex) {
+    //System.err.println("extending path...");
+      
+    // Loop across all possible path extensions, and consider each in turn
+    int considerPointIndex = pointIndex;
+    while (true) {
+      // Check if the extension of currentPath to considerPointIndex is workable
+      final GeoPoint considerStartPoint = currentPath.lastPoint;
+      final GeoPoint considerEndPoint = points.get(considerPointIndex);
+      // Create a plane including these two
+      final Plane considerPlane = new Plane(considerStartPoint, considerEndPoint);
+      boolean isChoiceLegal = true;
+      //System.err.println(" considering "+considerStartPoint+" to "+considerEndPoint);
+      if (isChoiceLegal) {
+        // Consider the previous plane/point
+        if (currentPath.lastPlane != null) {
+          if (currentPath.lastPlane.evaluateIsZero(considerEndPoint)) {
+            //System.err.println("  coplanar with last plane");
+            // no good
+            isChoiceLegal = false;
+          } else if (considerPlane.evaluateIsZero(currentPath.previous.lastPoint)) {
+            //System.err.println("  last point coplanar with this plane");
+            isChoiceLegal = false;
+          }
+        }
+      }
+      
+      if (isChoiceLegal && considerPointIndex == startPointIndex) {
+        // Verify that the first plane (already recorded) works together with the last plane
+        final SafePath firstPlaneEndpoint = currentPath.findFirstEndpoint();
+        if (firstPlaneEndpoint == null) {
+          //System.err.println("  path not long enough");
+          isChoiceLegal = false;
+        } else {
+          if (firstPlaneEndpoint.lastPlane.evaluateIsZero(considerStartPoint)) {
+            //System.err.println("  last point is coplanar with start plane");
+            isChoiceLegal = false;
+          } else if (considerPlane.evaluateIsZero(firstPlaneEndpoint.lastPoint)) {
+            //System.err.println("  first point is coplanar with last plane");
+            isChoiceLegal = false;
+          }
+        }
+      }
+      
+      if (isChoiceLegal) {
+        // All points between the start and end, if any, must be on the plane.
+        int checkIndex = getLegalIndex(currentPath.lastPointIndex + 1, points.size());
+        while (checkIndex != considerPointIndex) {
+          if (!considerPlane.evaluateIsZero(points.get(checkIndex))) {
+            // This possibility is no good.  But does it say anything about other possibilities?  I think
+            // it may mean we don't have to consider any further extensions; gotta work that through
+            // mathematically though before coding it.
+            //System.err.println("  interior point not coplanar with trial plane");
+            isChoiceLegal = false;
+            break;
+            //return null;
+          }
+          checkIndex = getLegalIndex(checkIndex + 1, points.size());
+        }
+      }
+      
+      
+      final int nextPointIndex = getLegalIndex(considerPointIndex + 1, points.size());
+      if (isChoiceLegal) {
+        // Extend the path and call ourselves recursively.
+        if (considerPointIndex == startPointIndex) {
+          // Current path has been validated; return it
+          return currentPath;
+        }
+        //System.err.println(" adding to path: "+considerEndPoint+"; "+considerPlane);
+        final SafePath newPath = new SafePath(currentPath, considerEndPoint, considerPointIndex, considerPlane);
+        final SafePath result = findSafePath(newPath, points, nextPointIndex, startPointIndex);
+        if (result != null) {
+          return result;
+        }
+      }
+      if (considerPointIndex == startPointIndex) {
+        break;
+      }
+      considerPointIndex = nextPointIndex;
+    }
+    return null;
+  }
+    
   /** The maximum distance from the close point to the trial pole: 2 degrees */
-  private final static double MAX_POLE_DISTANCE = Math.PI * 2.0 / 180.0;
+  private final static double MAX_POLE_DISTANCE = Math.PI * 0.25 / 180.0;
   
   /** Pick a random pole that has a good chance of being inside the polygon described by the points.
    * @param generator is the random number generator to use.
@@ -1284,6 +1360,48 @@ public class GeoPolygonFactory {
       return oneEdge;
     }
     
+  }
+  
+  /** An instance of this class represents a known-good
+   * path of nodes that contains no coplanar points , no matter
+   * how assessed.  It's used in the depth-first search that
+   * must be executed to find a valid complete polygon without
+   * coplanarities.
+   */
+  private static class SafePath {
+    public final GeoPoint lastPoint;
+    public final int lastPointIndex;
+    public final Plane lastPlane;
+    public final SafePath previous;
+    
+    /** Create a new safe end point.
+     */
+    public SafePath(final SafePath previous, final GeoPoint lastPoint, final int lastPointIndex, final Plane lastPlane) {
+      this.lastPoint = lastPoint;
+      this.lastPointIndex = lastPointIndex;
+      this.lastPlane = lastPlane;
+      this.previous = previous;
+    }
+    
+    /** Find the first endpoint */
+    public SafePath findFirstEndpoint() {
+      if (previous == null) {
+        return null;
+      }
+      if (previous.previous == null) {
+        return this;
+      }
+      return previous.findFirstEndpoint();
+    }
+    
+    /** Fill in a list, in order, of safe points.
+     */
+    public void fillInList(final List<GeoPoint> pointList) {
+      if (previous != null) {
+        previous.fillInList(pointList);
+      }
+      pointList.add(lastPoint);
+    }
   }
   
   static class MutableBoolean {
