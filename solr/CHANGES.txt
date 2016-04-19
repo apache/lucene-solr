@@ -49,6 +49,10 @@ Optimizations
 
 Detailed Change List
 ----------------------
+
+New Features
+----------------------
+
 * SOLR-8782: Add asynchronous sugar methods to the SolrJ Collections API.  You
   can now call .processAsync() to run a method asynchronously, or
   .processAndWait() to wait for a call to finish without holding HTTP
@@ -61,9 +65,6 @@ Detailed Change List
 * SOLR-8842: authorization APIs do not use name as an identifier for a permission
   for update, delete commands and 'before' attribute (noble)
 
-
-New Features
-----------------------
 * SOLR-8814: Support GeoJSON response writer and general spatial formatting.  Adding
      &wt=geojson&geojson.field=<your geometry field>
   Will return a FeatureCollection for each SolrDocumentList and a Feature with the
@@ -135,6 +136,8 @@ Bug Fixes
 
 * SOLR-8983: Cleanup clusterstate and replicas for a failed create collection request
   (Varun Thacker, Anshum Gupta)
+
+* SOLR-8990: Fix top term links from schema browser page to use {!term} parser (hossman)
 
 Optimizations
 ----------------------

@@ -143,6 +143,9 @@ solrAdminApp.config([
   IS_COLLECTION_PAGE: 3,
   ROOT_URL: "/"
 })
+.filter('uriencode', function() {
+  return window.encodeURIComponent;
+})
 .filter('highlight', function($sce) {
   return function(input, lang) {
     if (lang && input && lang!="text") return hljs.highlight(lang, input).value;
