@@ -104,6 +104,8 @@ New Features
 * SOLR-8918: Adds Streaming to the admin page under the collections section. Includes
   ability to see graphically the expression explanation (Dennis Gove)
 
+* SOLR-8809: Implement Connection.prepareStatement (Kevin Risden)
+
 Bug Fixes
 ----------------------
 
