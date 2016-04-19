@@ -141,7 +141,7 @@ public class GeoPolygonFactory {
   }
 
   /** Filter duplicate points and coplanar points.
-   * @param start with input list of points
+   * @param input with input list of points
    * @return the filtered list, or null if we can't get a legit polygon from the input.
    */
   static List<GeoPoint> filterPoints(final List<GeoPoint> input) {
