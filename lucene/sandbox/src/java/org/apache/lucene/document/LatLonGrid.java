@@ -48,7 +48,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 // relational operations as rectangle <-> rectangle relations in integer space in log(n) time..
 final class LatLonGrid {
   // must be a power of two!
-  static final int GRID_SIZE = 1<<5;
+  static final int GRID_SIZE = 1<<7;
   final int minLat;
   final int maxLat;
   final int minLon;
