@@ -51,6 +51,21 @@ public class ArcDistance implements DistanceStyle {
     return plane.arcDistance(planetModel, x,y,z, bounds);
   }
 
+  @Override
+  public GeoPoint[] findDistancePoints(final PlanetModel planetModel, final double distanceValue, final GeoPoint startPoint, final Plane plane, final Membership... bounds) {
+    return plane.findArcDistancePoints(planetModel, distanceValue, startPoint, bounds);
+  }
+  
+  @Override
+  public double findMinimumArcDistance(final PlanetModel planetModel, final double distanceValue) {
+    return distanceValue;
+  }
+  
+  @Override
+  public double findMaximumArcDistance(final PlanetModel planetModel, final double distanceValue) {
+    return distanceValue;
+  }
+
 }
 
 

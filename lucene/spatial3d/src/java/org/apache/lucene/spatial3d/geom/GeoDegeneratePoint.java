@@ -131,5 +131,11 @@ class GeoDegeneratePoint extends GeoPoint implements GeoBBox, GeoCircle {
       return 0.0;
     return Double.MAX_VALUE;
   }
+  
+  @Override
+  public void getDistanceBounds(final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {
+    getBounds(bounds);
+  }
+
 }
 

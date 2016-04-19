@@ -1558,6 +1558,120 @@ public class Plane extends Vector {
   }
 
   /**
+   * Locate a point that is within the specified bounds and on the specified plane, that has an arcDistance as
+   * specified from the startPoint.
+   * @param planetModel is the planet model.
+   * @param arcDistanceValue is the arc distance.
+   * @param startPoint is the starting point.
+   * @param bounds are the bounds.
+   * @return zero, one, or two points.
+   */
+  public GeoPoint[] findArcDistancePoints(final PlanetModel planetModel, final double arcDistanceValue, final GeoPoint startPoint, final Membership... bounds) {
+    if (Math.abs(D) >= MINIMUM_RESOLUTION) {
+      throw new IllegalStateException("Can't find arc distance using plane that doesn't go through origin");
+    }
+    if (!evaluateIsZero(startPoint)) {
+      throw new IllegalArgumentException("Start point is not on plane");
+    }
+    assert Math.abs(x*x + y*y + z*z - 1.0) < MINIMUM_RESOLUTION_SQUARED : "Plane needs to be normalized";
+    
+    // The first step is to rotate coordinates for the point so that the plane lies on the x-y plane.
+    // To acheive this, there will need to be three rotations:
+    // (1) rotate the plane in x-y so that the y axis lies in it.
+    // (2) rotate the plane in x-z so that the plane lies on the x-y plane.
+    // (3) rotate in x-y so that the starting vector points to (1,0,0).
+    
+    // This presumes a normalized plane!!
+    final double azimuthMagnitude = Math.sqrt(this.x * this.x + this.y * this.y);
+    final double cosPlaneAltitude = this.z;
+    final double sinPlaneAltitude = azimuthMagnitude;
+    final double cosPlaneAzimuth = this.x / azimuthMagnitude;
+    final double sinPlaneAzimuth = this.y / azimuthMagnitude;
+    
+    assert Math.abs(sinPlaneAltitude * sinPlaneAltitude + cosPlaneAltitude * cosPlaneAltitude - 1.0) < MINIMUM_RESOLUTION : "Improper sin/cos of altitude: "+(sinPlaneAltitude * sinPlaneAltitude + cosPlaneAltitude * cosPlaneAltitude);
+    assert Math.abs(sinPlaneAzimuth * sinPlaneAzimuth + cosPlaneAzimuth * cosPlaneAzimuth - 1.0) < MINIMUM_RESOLUTION : "Improper sin/cos of azimuth: "+(sinPlaneAzimuth * sinPlaneAzimuth + cosPlaneAzimuth * cosPlaneAzimuth);
+
+    // Coordinate rotation formula:
+    // xT = xS cos T - yS sin T
+    // yT = xS sin T + yS cos T
+    // But we're rotating backwards, so use:
+    // sin (-T) = -sin (T)
+    // cos (-T) = cos (T)
+    
+    // Now, rotate startpoint in x-y
+    final double x0 = startPoint.x;
+    final double y0 = startPoint.y;
+    final double z0 = startPoint.z;
+    
+    final double x1 = x0 * cosPlaneAzimuth + y0 * sinPlaneAzimuth;
+    final double y1 = -x0 * sinPlaneAzimuth + y0 * cosPlaneAzimuth;
+    final double z1 = z0;
+    
+    // Rotate now in x-z
+    final double x2 = x1 * cosPlaneAltitude - z1 * sinPlaneAltitude;
+    final double y2 = y1;
+    final double z2 = +x1 * sinPlaneAltitude + z1 * cosPlaneAltitude;
+    
+    assert Math.abs(z2) < MINIMUM_RESOLUTION : "Rotation should have put startpoint on x-y plane, instead has value "+z2;
+    
+    // Ok, we have the start point on the x-y plane.  To apply the arc distance, we
+    // next need to convert to an angle (in radians).
+    final double startAngle = Math.atan2(y2, x2);
+    
+    // To apply the arc distance, just add to startAngle.
+    final double point1Angle = startAngle + arcDistanceValue;
+    final double point2Angle = startAngle - arcDistanceValue;
+    // Convert each point to x-y
+    final double point1x2 = Math.cos(point1Angle);
+    final double point1y2 = Math.sin(point1Angle);
+    final double point1z2 = 0.0;
+    
+    final double point2x2 = Math.cos(point2Angle);
+    final double point2y2 = Math.sin(point2Angle);
+    final double point2z2 = 0.0;
+    
+    // Now, do the reverse rotations for both points
+    // Altitude...
+    final double point1x1 = point1x2 * cosPlaneAltitude + point1z2 * sinPlaneAltitude;
+    final double point1y1 = point1y2;
+    final double point1z1 = -point1x2 * sinPlaneAltitude + point1z2 * cosPlaneAltitude;
+    
+    final double point2x1 = point2x2 * cosPlaneAltitude + point2z2 * sinPlaneAltitude;
+    final double point2y1 = point2y2;
+    final double point2z1 = -point2x2 * sinPlaneAltitude + point2z2 * cosPlaneAltitude;
+
+    // Azimuth...
+    final double point1x0 = point1x1 * cosPlaneAzimuth - point1y1 * sinPlaneAzimuth;
+    final double point1y0 = point1x1 * sinPlaneAzimuth + point1y1 * cosPlaneAzimuth;
+    final double point1z0 = point1z1;
+
+    final double point2x0 = point2x1 * cosPlaneAzimuth - point2y1 * sinPlaneAzimuth;
+    final double point2y0 = point2x1 * sinPlaneAzimuth + point2y1 * cosPlaneAzimuth;
+    final double point2z0 = point2z1;
+
+    final GeoPoint point1 = planetModel.createSurfacePoint(point1x0, point1y0, point1z0);
+    final GeoPoint point2 = planetModel.createSurfacePoint(point2x0, point2y0, point2z0);
+    
+    // Figure out what to return
+    boolean isPoint1Inside = meetsAllBounds(point1, bounds);
+    boolean isPoint2Inside = meetsAllBounds(point2, bounds);
+    
+    if (isPoint1Inside) {
+      if (isPoint2Inside) {
+        return new GeoPoint[]{point1, point2};
+      } else {
+        return new GeoPoint[]{point1};
+      }
+    } else {
+      if (isPoint2Inside) {
+        return new GeoPoint[]{point2};
+      } else {
+        return new GeoPoint[0];
+      }
+    }
+  }
+  
+  /**
    * Check if a vector meets the provided bounds.
    * @param p is the vector.
    * @param bounds are the bounds.
