@@ -501,16 +501,9 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
       con.clearWarnings();
       assertNull(con.getWarnings());
 
+
       try (Statement statement = con.createStatement()) {
-        assertEquals(con, statement.getConnection());
-
-        assertNull(statement.getWarnings());
-        statement.clearWarnings();
-        assertNull(statement.getWarnings());
-
-        assertEquals(0, statement.getFetchSize());
-        statement.setFetchSize(0);
-        assertEquals(0, statement.getFetchSize());
+        checkStatement(con, statement);
 
         try (ResultSet rs = statement.executeQuery(sql)) {
           assertEquals(statement, rs.getStatement());
@@ -533,15 +526,7 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
       }
 
       try (PreparedStatement statement = con.prepareStatement(sql)) {
-        assertEquals(con, statement.getConnection());
-
-        assertNull(statement.getWarnings());
-        statement.clearWarnings();
-        assertNull(statement.getWarnings());
-
-        assertEquals(0, statement.getFetchSize());
-        statement.setFetchSize(0);
-        assertEquals(0, statement.getFetchSize());
+        checkStatement(con, statement);
 
         try (ResultSet rs = statement.executeQuery()) {
           assertEquals(statement, rs.getStatement());
@@ -563,6 +548,25 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
         assertFalse(statement.getMoreResults());
       }
     }
+  }
+
+  private void checkStatement(Connection con, Statement statement) throws Exception {
+    assertEquals(con, statement.getConnection());
+
+    assertNull(statement.getWarnings());
+    statement.clearWarnings();
+    assertNull(statement.getWarnings());
+
+    assertEquals(ResultSet.TYPE_FORWARD_ONLY, statement.getResultSetType());
+    assertEquals(ResultSet.CONCUR_READ_ONLY, statement.getResultSetConcurrency());
+
+    assertEquals(ResultSet.FETCH_FORWARD, statement.getFetchDirection());
+    statement.setFetchDirection(ResultSet.FETCH_FORWARD);
+    assertEquals(ResultSet.FETCH_FORWARD, statement.getFetchDirection());
+
+    assertEquals(0, statement.getFetchSize());
+    statement.setFetchSize(0);
+    assertEquals(0, statement.getFetchSize());
   }
 
   private void checkResultSetMetadata(ResultSet rs) throws Exception {
@@ -604,11 +608,20 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
   }
 
   private void checkResultSet(ResultSet rs) throws Exception {
-    assertEquals(ResultSet.TYPE_FORWARD_ONLY, rs.getType());
-
     assertNull(rs.getWarnings());
     rs.clearWarnings();
     assertNull(rs.getWarnings());
+
+    assertEquals(ResultSet.TYPE_FORWARD_ONLY, rs.getType());
+    assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
+
+    assertEquals(ResultSet.FETCH_FORWARD, rs.getFetchDirection());
+    rs.setFetchDirection(ResultSet.FETCH_FORWARD);
+    assertEquals(ResultSet.FETCH_FORWARD, rs.getFetchDirection());
+
+    assertEquals(0, rs.getFetchSize());
+    rs.setFetchSize(10);
+    assertEquals(0, rs.getFetchSize());
 
     assertTrue(rs.next());
 
