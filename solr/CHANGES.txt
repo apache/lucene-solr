@@ -109,6 +109,8 @@ New Features
 
 * SOLR-8809: Implement Connection.prepareStatement (Kevin Risden)
 
+* SOLR-9020: Implement StatementImpl/ResultSetImpl get/set fetch* methods and proper errors for traversal methods (Kevin Risden)
+
 Bug Fixes
 ----------------------
 

@@ -51,6 +51,12 @@ class StatementImpl implements Statement {
     this.connection = connection;
   }
 
+  private void checkClosed() throws SQLException {
+    if(isClosed()) {
+      throw new SQLException("Statement is closed.");
+    }
+  }
+
   private ResultSet executeQueryImpl(String sql) throws SQLException {
     try {
       if(this.currentResultSet != null) {
@@ -171,18 +177,14 @@ class StatementImpl implements Statement {
 
   @Override
   public SQLWarning getWarnings() throws SQLException {
-    if(isClosed()) {
-      throw new SQLException("Statement is closed.");
-    }
+    checkClosed();
 
     return this.currentWarning;
   }
 
   @Override
   public void clearWarnings() throws SQLException {
-    if(isClosed()) {
-      throw new SQLException("Statement is closed.");
-    }
+    checkClosed();
 
     this.currentWarning = null;
   }
@@ -212,9 +214,7 @@ class StatementImpl implements Statement {
 
   @Override
   public int getUpdateCount() throws SQLException {
-    if(isClosed()) {
-      throw new SQLException("Statement is closed");
-    }
+    checkClosed();
 
     // TODO Add logic when update statements are added to JDBC.
     return -1;
@@ -222,9 +222,7 @@ class StatementImpl implements Statement {
 
   @Override
   public boolean getMoreResults() throws SQLException {
-    if(isClosed()) {
-      throw new SQLException("Statement is closed");
-    }
+    checkClosed();
 
     // Currently multiple result sets are not possible yet
     this.currentResultSet.close();
@@ -233,32 +231,48 @@ class StatementImpl implements Statement {
 
   @Override
   public void setFetchDirection(int direction) throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    if(direction != ResultSet.FETCH_FORWARD) {
+      throw new SQLException("Direction must be ResultSet.FETCH_FORWARD currently");
+    }
   }
 
   @Override
   public int getFetchDirection() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return ResultSet.FETCH_FORWARD;
   }
 
   @Override
   public void setFetchSize(int rows) throws SQLException {
+    checkClosed();
 
+    if(rows < 0) {
+      throw new SQLException("Rows must be >= 0");
+    }
   }
 
   @Override
   public int getFetchSize() throws SQLException {
+    checkClosed();
+
     return 0;
   }
 
   @Override
   public int getResultSetConcurrency() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return ResultSet.CONCUR_READ_ONLY;
   }
 
   @Override
   public int getResultSetType() throws SQLException {
-    throw new UnsupportedOperationException();
+    checkClosed();
+
+    return ResultSet.TYPE_FORWARD_ONLY;
   }
 
   @Override
