@@ -70,8 +70,10 @@ New Features
 
 * SOLR-8349: Allow sharing of large in memory data structures across cores (Gus Heck, noble)
 
-
 * SOLR-8809: Implement Connection.prepareStatement (Kevin Risden)
+
+* SOLR-8913: When using a shared filesystem we should store data dir and tlog dir locations in 
+  the cluster state. (Mark Miller)
 
 Bug Fixes
 ----------------------
