@@ -52,7 +52,7 @@
     <dependency org="org.aspectj" name="aspectjrt" rev="${/org.aspectj/aspectjrt}" conf="compile"/>
     <dependency org="com.drewnoakes" name="metadata-extractor" rev="${/com.drewnoakes/metadata-extractor}" conf="compile"/>
     <dependency org="de.l3s.boilerpipe" name="boilerpipe" rev="${/de.l3s.boilerpipe/boilerpipe}" conf="compile"/>
-    <dependency org="rome" name="rome" rev="${/rome/rome}" conf="compile"/>
+    <dependency org="com.rometools" name="rome" rev="${/com.rometools/rome}" conf="compile"/>
     <dependency org="jdom" name="jdom" rev="${/jdom/jdom}" conf="compile"/>
     <dependency org="com.googlecode.juniversalchardet" name="juniversalchardet" rev="${/com.googlecode.juniversalchardet/juniversalchardet}" conf="compile"/>
     <dependency org="org.tukaani" name="xz" rev="${/org.tukaani/xz}" conf="compile"/>
