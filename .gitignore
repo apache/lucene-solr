@@ -48,5 +48,7 @@ solr/contrib/morphlines-core/test-lib/
 
 solr/core/test-lib/
 
+solr/server/logs/
+solr/server/solr/zoo_data/
 solr/server/solr-webapp
 solr/server/start.jar

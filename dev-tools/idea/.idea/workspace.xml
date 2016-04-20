@@ -340,8 +340,16 @@
       <option name="TEST_SEARCH_SCOPE"><value defaultName="singleModule" /></option>
       <patterns><pattern testClass=".*\.Test[^.]*|.*\.[^.]*Test" /></patterns>
     </configuration>
- 
-    <list size="41">
+    <configuration default="false" name="solrcloud" type="Application" factoryName="Application" singleton="true">
+      <option name="MAIN_CLASS_NAME" value="org.eclipse.jetty.start.Main" />
+      <option name="VM_PARAMETERS" value="-DzkRun -Dhost=127.0.0.1 -Duser.timezone=UTC -Djetty.home=$PROJECT_DIR$/solr/server -Dsolr.solr.home=$PROJECT_DIR$/solr/server/solr -Dsolr.install.dir=$PROJECT_DIR$/solr -Dsolr.log=$PROJECT_DIR$/solr/server/logs/solr.log" />
+      <option name="PROGRAM_PARAMETERS" value="--module=http" />
+      <option name="WORKING_DIRECTORY" value="file://$PROJECT_DIR$/solr/server" />
+      <option name="PARENT_ENVS" value="true" />
+      <module name="server" />
+    </configuration>
+
+    <list size="42">
       <item index="0" class="java.lang.String" itemvalue="JUnit.Lucene core" />
       <item index="1" class="java.lang.String" itemvalue="JUnit.Module analyzers-common" />
       <item index="2" class="java.lang.String" itemvalue="JUnit.Module analyzers-icu" />
@@ -383,6 +391,7 @@
       <item index="38" class="java.lang.String" itemvalue="JUnit.Solr uima contrib" />
       <item index="39" class="java.lang.String" itemvalue="JUnit.Solr velocity contrib" />
       <item index="40" class="java.lang.String" itemvalue="JUnit.Solrj" />
+      <item index="41" class="java.lang.String" itemvalue="Application.solrcloud" />
     </list>
   </component>
 </project>
