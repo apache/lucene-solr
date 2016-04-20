@@ -56,7 +56,7 @@ public class FunctionQuery extends Query {
 
   protected class FunctionWeight extends Weight {
     protected final IndexSearcher searcher;
-    protected float queryNorm = 1f;
+    protected float queryNorm, boost, queryWeight;
     protected final Map context;
 
     public FunctionWeight(IndexSearcher searcher) throws IOException {
@@ -64,6 +64,7 @@ public class FunctionQuery extends Query {
       this.searcher = searcher;
       this.context = ValueSource.newContext(searcher);
       func.createWeight(context, searcher);
+      normalize(1f, 1f);;
     }
 
     @Override
@@ -71,22 +72,24 @@ public class FunctionQuery extends Query {
 
     @Override
     public float getValueForNormalization() throws IOException {
-      return queryNorm * queryNorm;
+      return queryWeight * queryWeight;
     }
 
     @Override
     public void normalize(float norm, float boost) {
-      this.queryNorm = norm * boost;
+      this.queryNorm = norm;
+      this.boost = boost;
+      this.queryWeight = norm * boost;
     }
 
     @Override
     public Scorer scorer(LeafReaderContext context) throws IOException {
-      return new AllScorer(context, this, queryNorm);
+      return new AllScorer(context, this, queryWeight);
     }
 
     @Override
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-      return ((AllScorer)scorer(context)).explain(doc, queryNorm);
+      return ((AllScorer)scorer(context)).explain(doc);
     }
   }
 
@@ -133,13 +136,13 @@ public class FunctionQuery extends Query {
       return 1;
     }
 
-    public Explanation explain(int doc, float queryNorm) throws IOException {
+    public Explanation explain(int doc) throws IOException {
       float sc = qWeight * vals.floatVal(doc);
 
       return Explanation.match(sc, "FunctionQuery(" + func + "), product of:",
           vals.explain(doc),
-          Explanation.match(queryNorm, "boost"),
-          Explanation.match(weight.queryNorm = 1f, "queryNorm"));
+          Explanation.match(weight.boost, "boost"),
+          Explanation.match(weight.queryNorm, "queryNorm"));
     }
 
   }

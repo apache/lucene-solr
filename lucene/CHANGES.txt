@@ -14,6 +14,8 @@ Bug fixes
   that led to IllegalStateException being thrown when nothing was wrong.
   (David Smiley, yonik)  
 
+* LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
+
 
 ======================= Lucene 5.5.0 =======================
 
