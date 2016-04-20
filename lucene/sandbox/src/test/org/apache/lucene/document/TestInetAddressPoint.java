@@ -131,4 +131,46 @@ public class TestInetAddressPoint extends LuceneTestCase {
         InetAddressPoint.newRangeQuery("a", InetAddress.getByName("2001::a000:0"), InetAddress.getByName("2001::afff:ffff")),
         InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("2001::a6bd:fc80"), 100));
   }
+
+  public void testNextUp() throws Exception {
+    assertEquals(InetAddress.getByName("::1"),
+        InetAddressPoint.nextUp(InetAddress.getByName("::")));
+
+    assertEquals(InetAddress.getByName("::1:0"),
+        InetAddressPoint.nextUp(InetAddress.getByName("::ffff")));
+
+    assertEquals(InetAddress.getByName("1.2.4.0"),
+        InetAddressPoint.nextUp(InetAddress.getByName("1.2.3.255")));
+
+    assertEquals(InetAddress.getByName("0.0.0.0"),
+        InetAddressPoint.nextUp(InetAddress.getByName("::fffe:ffff:ffff")));
+
+    assertEquals(InetAddress.getByName("::1:0:0:0"),
+        InetAddressPoint.nextUp(InetAddress.getByName("255.255.255.255")));
+
+    ArithmeticException e = expectThrows(ArithmeticException.class,
+        () -> InetAddressPoint.nextUp(InetAddress.getByName("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")));
+    assertEquals("Overflow: there is no greater InetAddress than ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", e.getMessage());
+  }
+
+  public void testNextDown() throws Exception {
+    assertEquals(InetAddress.getByName("ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe"),
+        InetAddressPoint.nextDown(InetAddress.getByName("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")));
+
+    assertEquals(InetAddress.getByName("::ffff"),
+        InetAddressPoint.nextDown(InetAddress.getByName("::1:0")));
+
+    assertEquals(InetAddress.getByName("1.2.3.255"),
+        InetAddressPoint.nextDown(InetAddress.getByName("1.2.4.0")));
+
+    assertEquals(InetAddress.getByName("::fffe:ffff:ffff"),
+        InetAddressPoint.nextDown(InetAddress.getByName("0.0.0.0")));
+
+    assertEquals(InetAddress.getByName("255.255.255.255"),
+        InetAddressPoint.nextDown(InetAddress.getByName("::1:0:0:0")));
+
+    ArithmeticException e = expectThrows(ArithmeticException.class,
+        () -> InetAddressPoint.nextDown(InetAddress.getByName("::")));
+    assertEquals("Underflow: there is no smaller InetAddress than 0:0:0:0:0:0:0:0", e.getMessage());
+  }
 }

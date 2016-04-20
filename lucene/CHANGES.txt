@@ -19,6 +19,9 @@ New Features
 * LUCENE-7069: Add LatLonPoint.nearest, to find nearest N points to a
   provided query point (Mike McCandless)
 
+* LUCENE-7234: Added InetAddressPoint.nextDown/nextUp to easily generate range
+  queries with excluded bounds. (Adrien Grand)
+
 API Changes
 
 * LUCENE-7184: Refactor LatLonPoint encoding methods to new GeoEncodingUtils
