@@ -521,9 +521,8 @@ public class ZkStateReader implements Closeable {
    * Refresh state format2 collections.
    */
   private void refreshStateFormat2Collections() {
-    // It's okay if no format2 state.json exists, if one did not previous exist.
     for (String coll : collectionWatches.keySet()) {
-      new StateWatcher(coll).refreshAndWatch(watchedCollectionStates.containsKey(coll));
+      new StateWatcher(coll).refreshAndWatch();
     }
   }
 
@@ -916,7 +915,7 @@ public class ZkStateReader implements Closeable {
       LOG.info("A cluster state change: [{}] for collection [{}] has occurred - updating... (live nodes size: [{}])",
               event, coll, liveNodesSize);
 
-      refreshAndWatch(true);
+      refreshAndWatch();
       synchronized (getUpdateLock()) {
         constructState();
       }
@@ -926,17 +925,11 @@ public class ZkStateReader implements Closeable {
      * Refresh collection state from ZK and leave a watch for future changes.
      * As a side effect, updates {@link #clusterState} and {@link #watchedCollectionStates}
      * with the results of the refresh.
-     *
-     * @param expectExists if true, error if no state node exists
      */
-    public void refreshAndWatch(boolean expectExists) {
+    public void refreshAndWatch() {
       try {
         DocCollection newState = fetchCollectionState(coll, this);
         updateWatchedCollection(coll, newState);
-      } catch (KeeperException.NoNodeException e) {
-        if (expectExists) {
-          LOG.warn("State node vanished for collection: [{}]", coll, e);
-        }
       } catch (KeeperException.SessionExpiredException | KeeperException.ConnectionLossException e) {
         LOG.warn("ZooKeeper watch triggered, but Solr cannot talk to ZK: [{}]", e.getMessage());
       } catch (KeeperException e) {
@@ -1112,7 +1105,7 @@ public class ZkStateReader implements Closeable {
       return v;
     });
     if (reconstructState.get()) {
-      new StateWatcher(collection).refreshAndWatch(false);
+      new StateWatcher(collection).refreshAndWatch();
       synchronized (getUpdateLock()) {
         constructState();
       }
@@ -1169,7 +1162,7 @@ public class ZkStateReader implements Closeable {
       return v;
     });
     if (watchSet.get()) {
-      new StateWatcher(collection).refreshAndWatch(false);
+      new StateWatcher(collection).refreshAndWatch();
       synchronized (getUpdateLock()) {
         constructState();
       }

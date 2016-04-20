@@ -74,7 +74,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       ZkStateReader reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
       if (isInteresting) {
-        reader.addCollectionWatch("c1");
+        reader.registerCore("c1");
       }
 
       ZkStateWriter writer = new ZkStateWriter(reader, new Overseer.Stats());
@@ -170,9 +170,9 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       reader.forceUpdateCollection("c1");
 
       assertTrue(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
-      reader.addCollectionWatch("c1");
+      reader.registerCore("c1");
       assertFalse(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
-      reader.removeZKWatch("c1");
+      reader.unregisterCore("c1");
       assertTrue(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
 
     } finally {
@@ -198,7 +198,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
 
       ZkStateReader reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
-      reader.addCollectionWatch("c1");
+      reader.registerCore("c1");
 
       // Initially there should be no c1 collection.
       assertNull(reader.getClusterState().getCollectionRef("c1"));
