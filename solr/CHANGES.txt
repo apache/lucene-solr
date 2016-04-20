@@ -158,6 +158,8 @@ Optimizations
 * SOLR-8937: bin/post (SimplePostTool) now streams the standard input instead of buffering fully.
   (David Smiley)
 
+* SOLR-8973: Zookeeper frenzy when a core is first created. (Janmejay Singh, Scott Blum, shalin)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
@@ -190,7 +192,7 @@ Other Changes
 
 * SOLR-9015: Adds SelectStream as a default function in the StreamHandler (Dennis Gove)
 
-* SOLR-8973: Zookeeper frenzy when a core is first created. (Janmejay Singh, Scott Blum, shalin)
+* SOLR-8929: Add an idea module for solr/server to enable launching start.jar (Scott Blum, Steve Rowe)
 
 ==================  6.0.0 ==================
 
