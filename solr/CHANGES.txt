@@ -103,6 +103,9 @@ New Features
 
 * SOLR-8918: Adds Streaming to the admin page under the collections section. Includes
   ability to see graphically the expression explanation (Dennis Gove)
+  
+* SOLR-8913: When using a shared filesystem we should store data dir and tlog dir locations in 
+  the cluster state. (Mark Miller)
 
 * SOLR-8809: Implement Connection.prepareStatement (Kevin Risden)
 
