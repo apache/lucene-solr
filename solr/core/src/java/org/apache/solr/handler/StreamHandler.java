@@ -121,10 +121,11 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       .withFunctionName("outerHashJoin", OuterHashJoinStream.class)
       .withFunctionName("intersect", IntersectStream.class)
       .withFunctionName("complement", ComplementStream.class)
-       .withFunctionName("sort", SortStream.class)
-         .withFunctionName("daemon", DaemonStream.class)
-         .withFunctionName("shortestPath", ShortestPathStream.class)
-         .withFunctionName("gatherNodes", GatherNodesStream.class)
+      .withFunctionName("sort", SortStream.class)
+      .withFunctionName("daemon", DaemonStream.class)
+      .withFunctionName("shortestPath", ShortestPathStream.class)
+      .withFunctionName("gatherNodes", GatherNodesStream.class)
+      .withFunctionName("select", SelectStream.class)
 
       // metrics
       .withFunctionName("min", MinMetric.class)

@@ -188,6 +188,8 @@ Other Changes
 
 * SOLR-8985: Added back support for 'includeDynamic' flag to /schema/fields endpoint (noble)
 
+* SOLR-9015: Adds SelectStream as a default function in the StreamHandler (Dennis Gove)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
