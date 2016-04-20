@@ -10,6 +10,8 @@ Bug Fixes
 * LUCENE-7187: Block join queries' Weight#extractTerms(...) implementations
   should delegate to the wrapped weight. (Martijn van Groningen)
 
+* LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
