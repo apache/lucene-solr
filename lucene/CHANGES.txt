@@ -90,6 +90,9 @@ Bug Fixes
 
 * LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
 
+* LUCENE-7232: Fixed InetAddressPoint.newPrefixQuery, which was generating an
+  incorrect query when the prefix length was not a multiple of 8. (Adrien Grand)
+
 Documentation
 
 * LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
