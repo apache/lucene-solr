@@ -64,7 +64,10 @@ public class GeoPolygonFactory {
     final List<GeoPoint> pointList,
     final List<GeoPolygon> holes) {
     // First, exercise a sanity filter on the provided pointList, and remove identical points, linear points, and backtracks
+    //System.err.println(" filtering "+pointList.size()+" points...");
+    //final long startTime = System.currentTimeMillis();
     final List<GeoPoint> filteredPointList = filterPoints(pointList);
+    //System.err.println("  ...done in "+(System.currentTimeMillis()-startTime)+"ms ("+((filteredPointList==null)?"degenerate":(filteredPointList.size()+" points"))+")");
     if (filteredPointList == null) {
       return null;
     }
@@ -86,7 +89,7 @@ public class GeoPolygonFactory {
       }
       // If pole choice was illegal, try another one
     }
-    throw new IllegalArgumentException("cannot find a point that is inside the polygon");
+    throw new IllegalArgumentException("cannot find a point that is inside the polygon "+filteredPointList);
   }
     
   /**
@@ -274,12 +277,12 @@ public class GeoPolygonFactory {
           while (checkIndex != considerPointIndex) {
             if (!considerPlane.evaluateIsZero(points.get(checkIndex))) {
               // This possibility is no good.  But does it say anything about other possibilities?  I think
-              // it may mean we don't have to consider any further extensions; gotta work that through
-              // mathematically though before coding it.
+              // it may mean we don't have to consider any further extensions.  I can't prove this, but
+              // it makes this algorithm complete in not an insane period of time at least...
               //System.err.println("  interior point not coplanar with trial plane");
-              isChoiceLegal = false;
-              break;
-              //return null;
+              //isChoiceLegal = false;
+              //break;
+              return null;
             }
             checkIndex = getLegalIndex(checkIndex + 1, points.size());
           }
@@ -309,9 +312,6 @@ public class GeoPolygonFactory {
     return null;
   }
     
-  /** The maximum distance from the close point to the trial pole: 2 degrees */
-  private final static double MAX_POLE_DISTANCE = Math.PI * 0.25 / 180.0;
-  
   /** Pick a random pole that has a good chance of being inside the polygon described by the points.
    * @param generator is the random number generator to use.
    * @param planetModel is the planet model to use.
@@ -323,7 +323,8 @@ public class GeoPolygonFactory {
     final GeoPoint closePoint = points.get(pointIndex);
     // We pick a random angle and random arc distance, then generate a point based on closePoint
     final double angle = generator.nextDouble() * Math.PI * 2.0 - Math.PI;
-    final double arcDistance = MAX_POLE_DISTANCE - generator.nextDouble() * MAX_POLE_DISTANCE;
+    final double maxArcDistance = points.get(0).arcDistance(points.get(1));
+    final double arcDistance = maxArcDistance - generator.nextDouble() * maxArcDistance;
     // We come up with a unit circle (x,y,z) coordinate given the random angle and arc distance.  The point is centered around the positive x axis.
     final double x = Math.cos(arcDistance);
     final double sinArcDistance = Math.sin(arcDistance);
