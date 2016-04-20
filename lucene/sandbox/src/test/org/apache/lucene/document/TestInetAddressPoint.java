@@ -119,4 +119,16 @@ public class TestInetAddressPoint extends LuceneTestCase {
     assertEquals(q1.hashCode(), q2.hashCode());
     assertFalse(q1.equals(InetAddressPoint.newSetQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.7"))));
   }
+
+  public void testPrefixQuery() throws Exception {
+    assertEquals(
+        InetAddressPoint.newRangeQuery("a", InetAddress.getByName("1.2.3.0"), InetAddress.getByName("1.2.3.255")),
+        InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.2.3.127"), 24));
+    assertEquals(
+        InetAddressPoint.newRangeQuery("a", InetAddress.getByName("1.2.3.128"), InetAddress.getByName("1.2.3.255")),
+        InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.2.3.213"), 25));
+    assertEquals(
+        InetAddressPoint.newRangeQuery("a", InetAddress.getByName("2001::a000:0"), InetAddress.getByName("2001::afff:ffff")),
+        InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("2001::a6bd:fc80"), 100));
+  }
 }

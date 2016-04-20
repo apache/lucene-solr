@@ -174,8 +174,9 @@ public class InetAddressPoint extends Field {
     byte lower[] = value.getAddress();
     byte upper[] = value.getAddress();
     for (int i = prefixLength; i < 8 * lower.length; i++) {
-      lower[i >> 3] &= ~(1 << (i & 7));
-      upper[i >> 3] |= 1 << (i & 7);
+      int m = 1 << (7 - (i & 7));
+      lower[i >> 3] &= ~m;
+      upper[i >> 3] |= m;
     }
     try {
       return newRangeQuery(field, InetAddress.getByAddress(lower), InetAddress.getByAddress(upper));
