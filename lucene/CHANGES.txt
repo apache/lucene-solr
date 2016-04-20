@@ -88,6 +88,8 @@ Bug Fixes
   match the underlying queries' (lower|upper)Term optionality logic.
   (Kaneshanathan Srivisagan, Christine Poerschke)
 
+* LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
+
 Documentation
 
 * LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
