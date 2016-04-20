@@ -111,10 +111,7 @@ public class ZkStateReader implements Closeable {
 
   public static final String SHARD_LEADERS_ZKNODE = "leaders";
   public static final String ELECTION_NODE = "election";
-
-  /** Collections we actively care about, and will try to keep watch on. */
-  private final Set<String> interestingCollections = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
+  
   /** Collections tracked in the legacy (shared) state format, reflects the contents of clusterstate.json. */
   private Map<String, ClusterState.CollectionRef> legacyCollectionStates = emptyMap();
 
@@ -473,7 +470,7 @@ public class ZkStateReader implements Closeable {
     this.clusterState = new ClusterState(liveNodes, result, legacyClusterStateVersion);
     LOG.debug("clusterStateSet: legacy [{}] interesting [{}] watched [{}] lazy [{}] total [{}]",
         legacyCollectionStates.keySet().size(),
-        interestingCollections.size(),
+        collectionWatches.keySet().size(),
         watchedCollectionStates.keySet().size(),
         lazyCollectionStates.keySet().size(),
         clusterState.getCollectionStates().size());
@@ -481,7 +478,7 @@ public class ZkStateReader implements Closeable {
     if (LOG.isTraceEnabled()) {
       LOG.trace("clusterStateSet: legacy [{}] interesting [{}] watched [{}] lazy [{}] total [{}]",
           legacyCollectionStates.keySet(),
-          interestingCollections,
+          collectionWatches.keySet(),
           watchedCollectionStates.keySet(),
           lazyCollectionStates.keySet(),
           clusterState.getCollectionStates());
@@ -525,7 +522,7 @@ public class ZkStateReader implements Closeable {
    */
   private void refreshStateFormat2Collections() {
     // It's okay if no format2 state.json exists, if one did not previous exist.
-    for (String coll : interestingCollections) {
+    for (String coll : collectionWatches.keySet()) {
       new StateWatcher(coll).refreshAndWatch(watchedCollectionStates.containsKey(coll));
     }
   }
@@ -566,7 +563,7 @@ public class ZkStateReader implements Closeable {
       this.lazyCollectionStates.keySet().retainAll(children);
       for (String coll : children) {
         // We will create an eager collection for any interesting collections, so don't add to lazy.
-        if (!interestingCollections.contains(coll)) {
+        if (!collectionWatches.containsKey(coll)) {
           // Double check contains just to avoid allocating an object.
           LazyCollectionRef existing = lazyCollectionStates.get(coll);
           if (existing == null) {
@@ -908,7 +905,7 @@ public class ZkStateReader implements Closeable {
         return;
       }
 
-      if (!interestingCollections.contains(coll)) {
+      if (!collectionWatches.containsKey(coll)) {
         // This collection is no longer interesting, stop watching.
         LOG.info("Uninteresting collection {}", coll);
         return;
@@ -1107,7 +1104,6 @@ public class ZkStateReader implements Closeable {
   public void registerCore(String collection) {
     AtomicBoolean reconstructState = new AtomicBoolean(false);
     collectionWatches.compute(collection, (k, v) -> {
-      interestingCollections.add(collection);
       if (v == null) {
         reconstructState.set(true);
         v = new CollectionWatch();
@@ -1141,7 +1137,6 @@ public class ZkStateReader implements Closeable {
       if (v.coreRefCount > 0)
         v.coreRefCount--;
       if (v.canBeRemoved()) {
-        interestingCollections.remove(collection);
         watchedCollectionStates.remove(collection);
         lazyCollectionStates.put(collection, new LazyCollectionRef(collection));
         reconstructState.set(true);
@@ -1167,7 +1162,6 @@ public class ZkStateReader implements Closeable {
     AtomicBoolean watchSet = new AtomicBoolean(false);
     collectionWatches.compute(collection, (k, v) -> {
       if (v == null) {
-        interestingCollections.add(collection);
         v = new CollectionWatch();
         watchSet.set(true);
       }
@@ -1281,7 +1275,7 @@ public class ZkStateReader implements Closeable {
 
     // CAS update loop
     while (true) {
-      if (!interestingCollections.contains(coll)) {
+      if (!collectionWatches.containsKey(coll)) {
         break;
       }
       DocCollection oldState = watchedCollectionStates.get(coll);
@@ -1305,7 +1299,7 @@ public class ZkStateReader implements Closeable {
     }
 
     // Resolve race with removeZKWatch.
-    if (!interestingCollections.contains(coll)) {
+    if (!collectionWatches.containsKey(coll)) {
       watchedCollectionStates.remove(coll);
       LOG.info("Removing uninteresting collection [{}]", coll);
     }
