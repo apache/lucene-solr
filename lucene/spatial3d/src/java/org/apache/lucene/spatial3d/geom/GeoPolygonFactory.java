@@ -48,7 +48,7 @@ public class GeoPolygonFactory {
     final List<GeoPoint> pointList) {
     return makeGeoPolygon(planetModel, pointList, null);
   }
-  
+
   /** Create a GeoPolygon using the specified points and holes, using order to determine 
    * siding of the polygon.  Much like ESRI, this method uses clockwise to indicate the space
    * on the same side of the shape as being inside, and counter-clockwise to indicate the
@@ -63,10 +63,32 @@ public class GeoPolygonFactory {
   public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel,
     final List<GeoPoint> pointList,
     final List<GeoPolygon> holes) {
+    return makeGeoPolygon(planetModel, pointList, holes, 0.0);
+  }
+  
+  /** Create a GeoPolygon using the specified points and holes, using order to determine 
+   * siding of the polygon.  Much like ESRI, this method uses clockwise to indicate the space
+   * on the same side of the shape as being inside, and counter-clockwise to indicate the
+   * space on the opposite side as being inside.
+   * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.  If points go
+   *  clockwise from a given pole, then that pole should be within the polygon.  If points go
+   *  counter-clockwise, then that pole should be outside the polygon.
+   * @param holes is a list of polygons representing "holes" in the outside polygon.  Null == none.
+   * @param leniencyValue is the maximum distance (in units) that a point can be from the plane and still be considered as
+   *  belonging to the plane.  Any value greater than zero may cause some of the provided points that are in fact outside
+   *  the strict definition of co-planarity, but are within this distance, to be discarded for the purposes of creating a
+   *  "safe" polygon.
+   * @return a GeoPolygon corresponding to what was specified, or null if a valid polygon cannot be generated
+   *  from this input.
+   */
+  public static GeoPolygon makeGeoPolygon(final PlanetModel planetModel,
+    final List<GeoPoint> pointList,
+    final List<GeoPolygon> holes,
+    final double leniencyValue) {
     // First, exercise a sanity filter on the provided pointList, and remove identical points, linear points, and backtracks
     //System.err.println(" filtering "+pointList.size()+" points...");
     //final long startTime = System.currentTimeMillis();
-    final List<GeoPoint> filteredPointList = filterPoints(pointList);
+    final List<GeoPoint> filteredPointList = filterPoints(pointList, leniencyValue);
     //System.err.println("  ...done in "+(System.currentTimeMillis()-startTime)+"ms ("+((filteredPointList==null)?"degenerate":(filteredPointList.size()+" points"))+")");
     if (filteredPointList == null) {
       return null;
@@ -145,9 +167,10 @@ public class GeoPolygonFactory {
 
   /** Filter duplicate points and coplanar points.
    * @param input with input list of points
+   * @param leniencyValue is the allowed distance of a point from the plane for cleanup of overly detailed polygons
    * @return the filtered list, or null if we can't get a legit polygon from the input.
    */
-  static List<GeoPoint> filterPoints(final List<GeoPoint> input) {
+  static List<GeoPoint> filterPoints(final List<GeoPoint> input, final double leniencyValue) {
     
     final List<GeoPoint> noIdenticalPoints = new ArrayList<>(input.size());
     
@@ -200,7 +223,7 @@ public class GeoPolygonFactory {
     for  (int i = 0; i < noIdenticalPoints.size(); i++) {
       final SafePath startPath = new SafePath(null, noIdenticalPoints.get(i), i, null);
       // Search, with this as the start path.
-      final SafePath resultPath = findSafePath(startPath, noIdenticalPoints, getLegalIndex(i+1, noIdenticalPoints.size()), i);
+      final SafePath resultPath = findSafePath(startPath, noIdenticalPoints, getLegalIndex(i+1, noIdenticalPoints.size()), i, leniencyValue);
       if (resultPath != null && resultPath.previous != null) {
         // Read out result, maintaining ordering
         final List<GeoPoint> rval = new ArrayList<>(noIdenticalPoints.size());
@@ -220,10 +243,12 @@ public class GeoPolygonFactory {
    * @param pointIndex is the index of the point that represents the next possible point for consideration for path
    *  extension.
    * @param startPointIndex is index of the point that starts the current path, so that we can know when we are done.
+   * @param leniencyValue is the maximum allowed distance of a point being skipped from the revised polygon.  Pass zero if
+   *  no leniency desired.
    * @return null if there was no safe path found, or the safe path if one was discovered.
    */
   private static SafePath findSafePath(final SafePath currentPath, final List<GeoPoint> points, final int pointIndex,
-    final int startPointIndex) {
+    final int startPointIndex, final double leniencyValue) {
     //System.err.println("extending path...");
       
     // Loop across all possible path extensions, and consider each in turn
@@ -250,6 +275,24 @@ public class GeoPolygonFactory {
             } else if (considerPlane.evaluateIsZero(currentPath.previous.lastPoint)) {
               //System.err.println("  last point coplanar with this plane");
               isChoiceLegal = false;
+            } else {
+              // To guarantee that no planes we build are coplanar with edge points, we need to verify everything back from
+              // considerEndPoint back to the start of the path.  We build the edge from considerEndPoint back to each
+              // of the SafePath points already determined.  Then, we need to look at all triangles that include that edge and
+              // the SafePath points in between.  If all of those triangles are legal, we can be assured that adding the current
+              // proposed point is safe to do.
+              // This is, of course, a lot of work -- specifically, it's O(n^2) for each point in the path, which leads to an O(n^3)
+              // evaluation time overall!!
+              // The only alternative is to understand the cases under which these triangles would be introduced, and tailor the
+              // cleaning to catch those cases only.  Still need to figure that out.  The case that blows up is when *all* the points
+              // for a triangle are coplanar, so theoretically we don't even need to generate the triangle at all(!)
+              // 
+              // Build a plane that represents the third edge in this triangle, to guarantee that we can compose
+              // the polygon from triangles
+              final Plane thirdPlane = new Plane(currentPath.previous.lastPoint, considerEndPoint);
+              if (thirdPlane.evaluateIsZero(considerStartPoint)) {
+                isChoiceLegal = false;
+              }
             }
           }
         }
@@ -267,6 +310,13 @@ public class GeoPolygonFactory {
             } else if (considerPlane.evaluateIsZero(firstPlaneEndpoint.lastPoint)) {
               //System.err.println("  first point is coplanar with last plane");
               isChoiceLegal = false;
+            } else {
+              // Build a plane that represents the third edge in this triangle, to guarantee that we can compose
+              // the polygon from triangles
+              final Plane thirdPlane = new Plane(considerStartPoint, firstPlaneEndpoint.lastPoint);
+              if (thirdPlane.evaluateIsZero(considerEndPoint)) {
+                isChoiceLegal = false;
+              }
             }
           }
         }
@@ -275,7 +325,7 @@ public class GeoPolygonFactory {
           // All points between the start and end, if any, must be on the plane.
           int checkIndex = getLegalIndex(currentPath.lastPointIndex + 1, points.size());
           while (checkIndex != considerPointIndex) {
-            if (!considerPlane.evaluateIsZero(points.get(checkIndex))) {
+            if (Math.abs(considerPlane.evaluate(points.get(checkIndex))) >= Vector.MINIMUM_RESOLUTION + leniencyValue) {
               // This possibility is no good.  But does it say anything about other possibilities?  I think
               // it may mean we don't have to consider any further extensions.  I can't prove this, but
               // it makes this algorithm complete in not an insane period of time at least...
@@ -296,7 +346,7 @@ public class GeoPolygonFactory {
           }
           //System.err.println(" adding to path: "+considerEndPoint+"; "+considerPlane);
           final SafePath newPath = new SafePath(currentPath, considerEndPoint, considerPointIndex, considerPlane);
-          final SafePath result = findSafePath(newPath, points, nextPointIndex, startPointIndex);
+          final SafePath result = findSafePath(newPath, points, nextPointIndex, startPointIndex, leniencyValue);
           if (result != null) {
             return result;
           }
@@ -791,7 +841,9 @@ public class GeoPolygonFactory {
     // If there are less than three edges, something got messed up somehow.  Don't know how this
     // can happen but check.
     if (edgeBuffer.size() < 3) {
-      throw new IllegalStateException("Ending edge buffer had only "+edgeBuffer.size()+" edges");
+      // Linear...
+      // Here we can emit GeoWorld, but probably this means we had a broken poly to start with.
+      throw new IllegalArgumentException("Illegal polygon; polygon edges intersect each other");
     }
     
     // Create the list of points
@@ -970,11 +1022,12 @@ public class GeoPolygonFactory {
     }
 
     // Ok, figure out what we've accumulated.  If it is enough for a polygon, build it.
+      
     if (includedEdges.size() < 2) {
       //System.out.println("Done edge "+currentEdge+": no poly found");
       return false;
     }
-    
+
     // It's enough to build a convex polygon
     //System.out.println("Edge "+currentEdge+": Found complex poly");
     
@@ -990,21 +1043,45 @@ public class GeoPolygonFactory {
       // Degenerate case!!  There is no return edge -- or rather, we already have it.
       if (includedEdges.size() < 3) {
         // This means we found a degenerate cycle of edges.  If we emit a polygon at this point it
-        // has no contents, so we've clearly done something wrong, but not sure what.
-        throw new IllegalArgumentException("polygon was illegal (degenerate illegal two-edge cyclical polygon encountered in processing)");
+        // has no contents, so we generate no polygon.
+        return false;
       }
+      
+      // Now look for completely planar points.  This too is a degeneracy condition that we should
+      // return "false" for.
       Edge edge = firstEdge;
       points.add(edge.startPoint);
-      int i = 0;
+      int k = 0;
       while (true) {
         if (edge == lastEdge) {
           break;
         }
         points.add(edge.endPoint);
-        internalEdges.set(i++, edge.isInternal);
+        internalEdges.set(k++, edge.isInternal);
         edge = edgeBuffer.getNext(edge);
       }
       returnIsInternal = lastEdge.isInternal;
+      
+      // Look for coplanarity; abort if so
+      for (int i = 0; i < points.size(); i++) {
+        final GeoPoint start = points.get(i);
+        final GeoPoint end = points.get(getLegalIndex(i + 1, points.size()));
+        // We have to find the next point that is not on the plane between start and end.
+        // If there is no such point, it's an error.
+        final Plane planeToFind = new Plane(start, end);
+        int endPointIndex = -1;
+        for (int j = 0; j < points.size(); j++) {
+          final int index = getLegalIndex(j + i + 2, points.size());
+          if (!planeToFind.evaluateIsZero(points.get(index))) {
+            endPointIndex = index;
+            break;
+          }
+        }
+        if (endPointIndex == -1) {
+          return false;
+        }
+      }
+
       edgeBuffer.clear();
     } else {
       // Build the return edge (internal, of course)
@@ -1015,12 +1092,14 @@ public class GeoPolygonFactory {
       final List<Edge> edges = new ArrayList<Edge>(includedEdges.size());
       returnIsInternal = true;
 
+      // Now look for completely planar points.  This too is a degeneracy condition that we should
+      // return "false" for.
       Edge edge = firstEdge;
       points.add(edge.startPoint);
-      int i = 0;
+      int k = 0;
       while (true) {
         points.add(edge.endPoint);
-        internalEdges.set(i++, edge.isInternal);
+        internalEdges.set(k++, edge.isInternal);
         edges.add(edge);
         if (edge == lastEdge) {
           break;
@@ -1028,6 +1107,26 @@ public class GeoPolygonFactory {
         edge = edgeBuffer.getNext(edge);
       }
       
+      // Look for coplanarity; abort if so
+      for (int i = 0; i < points.size(); i++) {
+        final GeoPoint start = points.get(i);
+        final GeoPoint end = points.get(getLegalIndex(i + 1, points.size()));
+        // We have to find the next point that is not on the plane between start and end.
+        // If there is no such point, it's an error.
+        final Plane planeToFind = new Plane(start, end);
+        int endPointIndex = -1;
+        for (int j = 0; j < points.size(); j++) {
+          final int index = getLegalIndex(j + i + 2, points.size());
+          if (!planeToFind.evaluateIsZero(points.get(index))) {
+            endPointIndex = index;
+            break;
+          }
+        }
+        if (endPointIndex == -1) {
+          return false;
+        }
+      }
+
       // Modify the edge buffer
       edgeBuffer.replace(edges, returnEdge);
     }
