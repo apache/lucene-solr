@@ -185,7 +185,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
           if (parts.get(0).isEmpty()) parts.remove(0);
           if (parts.size() > 1 && level2.containsKey(parts.get(1))) {
             String realName = level2.get(parts.get(1));
-            SimpleOrderedMap<Object> propertyValues = req.getSchema().getNamedPropertyValues(req.getParams());
+            Map propertyValues = req.getSchema().getNamedPropertyValues(realName, req.getParams());
             Object o = propertyValues.get(realName);
             if(parts.size()> 2) {
               String name = parts.get(2);

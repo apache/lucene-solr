@@ -20,11 +20,15 @@ import java.io.IOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 
+import com.google.common.base.Functions;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.DocValuesType;
@@ -32,19 +36,21 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.Config;
+import org.apache.solr.core.MapSerializable;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -63,6 +69,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 
@@ -780,7 +787,7 @@ public class IndexSchema {
    * @param fields The sequence of {@link org.apache.solr.schema.SchemaField}
    */
   public void registerDynamicFields(SchemaField... fields) {
-    List<DynamicField> dynFields = new ArrayList<>(Arrays.asList(dynamicFields));
+    List<DynamicField> dynFields = new ArrayList<>(asList(dynamicFields));
     for (SchemaField field : fields) {
       if (isDuplicateDynField(dynFields, field)) {
         log.debug("dynamic field already exists: dynamic field: [" + field.getName() + "]");
@@ -1352,57 +1359,137 @@ public class IndexSchema {
   /**
    * Get a map of property name -&gt; value for the whole schema.
    */
-  public SimpleOrderedMap<Object> getNamedPropertyValues() {
-    return getNamedPropertyValues(new MapSolrParams(Collections.EMPTY_MAP));
-
-  }
-  public SimpleOrderedMap<Object> getNamedPropertyValues(SolrParams params) {
-    SimpleOrderedMap<Object> topLevel = new SimpleOrderedMap<>();
-    topLevel.add(NAME, getSchemaName());
-    topLevel.add(VERSION, getVersion());
-    if (null != uniqueKeyFieldName) {
-      topLevel.add(UNIQUE_KEY, uniqueKeyFieldName);
-    }
-    if (null != defaultSearchFieldName) {
-      topLevel.add(DEFAULT_SEARCH_FIELD, defaultSearchFieldName);
-    }
-    if (isExplicitQueryParserDefaultOperator) {
-      SimpleOrderedMap<Object> solrQueryParserProperties = new SimpleOrderedMap<>();
-      solrQueryParserProperties.add(DEFAULT_OPERATOR, queryParserDefaultOperator);
-      topLevel.add(SOLR_QUERY_PARSER, solrQueryParserProperties);
-    }
-    if (isExplicitSimilarity) {
-      topLevel.add(SIMILARITY, similarityFactory.getNamedPropertyValues());
-    }
-    List<SimpleOrderedMap<Object>> fieldTypeProperties = new ArrayList<>();
-    SortedMap<String,FieldType> sortedFieldTypes = new TreeMap<>(fieldTypes);
-    for (FieldType fieldType : sortedFieldTypes.values()) {
-      fieldTypeProperties.add(fieldType.getNamedPropertyValues(params.getBool("showDefaults", false)));
-    }
-    topLevel.add(FIELD_TYPES, fieldTypeProperties);  
-    List<SimpleOrderedMap<Object>> fieldProperties = new ArrayList<>();
-    SortedSet<String> fieldNames = new TreeSet<>(fields.keySet());
-    for (String fieldName : fieldNames) {
-      fieldProperties.add(fields.get(fieldName).getNamedPropertyValues(params.getBool("showDefaults", false)));
-    }
-    if (params.getBool("includeDynamic", false)) {
-      fieldProperties.addAll(getDynamicFields(params));
-    }
-    topLevel.add(FIELDS, fieldProperties);
-    topLevel.add(DYNAMIC_FIELDS, getDynamicFields(params));
-    topLevel.add(COPY_FIELDS, getCopyFieldProperties(false, null, null));
-    return topLevel;
+  public Map getNamedPropertyValues() {
+    return getNamedPropertyValues(null, new MapSolrParams(Collections.EMPTY_MAP));
   }
 
-  private List<SimpleOrderedMap<Object>> getDynamicFields(SolrParams params) {
-    List<SimpleOrderedMap<Object>> dynamicFieldProperties = new ArrayList<>();
-    for (DynamicField dynamicField : dynamicFields) {
-      if ( ! dynamicField.getRegex().startsWith(INTERNAL_POLY_FIELD_PREFIX)) { // omit internal polyfields
-        dynamicFieldProperties.add(dynamicField.getPrototype().getNamedPropertyValues(params.getBool("showDefaults", false)));
+  static class SchemaProps implements MapSerializable {
+    private static final String SOURCE_FIELD_LIST = IndexSchema.SOURCE + "." + CommonParams.FL;
+    private static final String DESTINATION_FIELD_LIST = IndexSchema.DESTINATION + "." + CommonParams.FL;
+    private final String name;
+    private final SolrParams params;
+    private final IndexSchema schema;
+    boolean showDefaults, includeDynamic;
+    Set<String> requestedFields;
+    private Set<String> requestedSourceFields;
+    private Set<String> requestedDestinationFields;
+
+
+    enum Handler {
+      NAME(IndexSchema.NAME, sp -> sp.schema.getSchemaName()),
+      VERSION(IndexSchema.VERSION, sp -> sp.schema.getVersion()),
+      UNIQUE_KEY(IndexSchema.UNIQUE_KEY, sp -> sp.schema.uniqueKeyFieldName),
+      DEFAULT_SEARCH_FIELD(IndexSchema.DEFAULT_SEARCH_FIELD, sp -> sp.schema.defaultSearchFieldName),
+      SOLR_QUERY_PARSER(IndexSchema.SOLR_QUERY_PARSER, sp -> sp.schema.isExplicitQueryParserDefaultOperator ?
+          singletonMap(DEFAULT_OPERATOR, sp.schema.queryParserDefaultOperator) :
+          null),
+      SIMILARITY(IndexSchema.SIMILARITY, sp -> sp.schema.isExplicitSimilarity ?
+          sp.schema.similarityFactory.getNamedPropertyValues() :
+          null),
+      FIELD_TYPES(IndexSchema.FIELD_TYPES, sp -> new TreeMap<>(sp.schema.fieldTypes)
+          .values().stream()
+          .map(it -> it.getNamedPropertyValues(sp.showDefaults))
+          .collect(Collectors.toList())),
+
+      DYNAMIC_FIELDS(IndexSchema.DYNAMIC_FIELDS, sp -> Stream.of(sp.schema.dynamicFields)
+          .filter(it -> !it.getRegex().startsWith(INTERNAL_POLY_FIELD_PREFIX))
+          .filter(it -> sp.requestedFields == null || sp.requestedFields.contains(it.getPrototype().getName()))
+          .map(it -> sp.getProperties(it.getPrototype()))
+          .collect(Collectors.toList())),
+      FIELDS(IndexSchema.FIELDS, sp -> {
+        List<SimpleOrderedMap> result = (sp.requestedFields != null ? sp.requestedFields : new TreeSet<>(sp.schema.fields.keySet()))
+            .stream()
+            .map(sp.schema::getFieldOrNull)
+            .filter(it -> it != null)
+            .filter(it -> sp.includeDynamic || !sp.schema.isDynamicField(it.name))
+            .map(sp::getProperties)
+            .collect(Collectors.toList());
+        if (sp.includeDynamic && sp.requestedFields == null) {
+          result.addAll((Collection) Handler.DYNAMIC_FIELDS.fun.apply(sp));
+        }
+        return result;
+      }),
+
+
+      COPY_FIELDS(IndexSchema.COPY_FIELDS, sp -> sp.schema.getCopyFieldProperties(false,
+          sp.requestedSourceFields, sp.requestedDestinationFields));
+
+      final Function<SchemaProps, Object> fun;
+      final String name;
+      Handler(String name, Function<SchemaProps, Object> fun) {
+        this.fun = fun;
+        this.name = name;
       }
     }
-    return dynamicFieldProperties;
+
+    SchemaProps(String name, SolrParams params, IndexSchema schema) {
+      this.name = name;
+      this.params = params;
+      this.schema = schema;
+      showDefaults = params.getBool("showDefaults", false);
+      includeDynamic = params.getBool("includeDynamic", false);
+
+      String sourceFieldListParam = params.get(SOURCE_FIELD_LIST);
+      if (null != sourceFieldListParam) {
+        String[] fields = sourceFieldListParam.trim().split("[,\\s]+");
+        if (fields.length > 0) {
+          requestedSourceFields = new HashSet<>(Arrays.asList(fields));
+          requestedSourceFields.remove(""); // Remove empty values, if any
+        }
+      }
+      String destinationFieldListParam = params.get(DESTINATION_FIELD_LIST);
+      if (null != destinationFieldListParam) {
+        String[] fields = destinationFieldListParam.trim().split("[,\\s]+");
+        if (fields.length > 0) {
+          requestedDestinationFields = new HashSet<>(Arrays.asList(fields));
+          requestedDestinationFields.remove(""); // Remove empty values, if any
+        }
+      }
+
+      String flParam = params.get(CommonParams.FL);
+      if (null != flParam) {
+        String[] fields = flParam.trim().split("[,\\s]+");
+        if (fields.length > 0)
+          requestedFields = new LinkedHashSet<>(Stream.of(fields)
+              .filter(it -> !it.trim().isEmpty())
+              .collect(Collectors.toList()));
+
+      }
+
+    }
+
+
+    SimpleOrderedMap getProperties(SchemaField sf) {
+      SimpleOrderedMap<Object> result = sf.getNamedPropertyValues(showDefaults);
+      if (schema.isDynamicField(sf.name)) {
+        String dynamicBase = schema.getDynamicPattern(sf.getName());
+        // Add dynamicBase property if it's different from the field name.
+        if (!sf.getName().equals(dynamicBase)) {
+          result.add("dynamicBase", dynamicBase);
+        }
+      }
+      return result;
+    }
+
+
+    @Override
+    public Map<String, Object> toMap() {
+      Map<String, Object> topLevel = new LinkedHashMap<>();
+      Stream.of(Handler.values())
+          .filter(it -> name == null || it.name.equals(name))
+          .forEach(it -> {
+            Object val = it.fun.apply(this);
+            if (val != null) topLevel.put(it.name, val);
+          });
+      return topLevel;
+    }
   }
+
+  public Map<String, Object> getNamedPropertyValues(String name, SolrParams params) {
+    return new SchemaProps(name, params, this).toMap();
+
+  }
+
 
   /**
    * Returns a list of copyField directives, with optional details and optionally restricting to those
