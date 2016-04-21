@@ -29,11 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 
 import org.apache.lucene.index.LeafReader.CoreClosedListener;
+import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -100,6 +103,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
   private final int maxSize;
   private final long maxRamBytesUsed;
+  private final Predicate<LeafReaderContext> leavesToCache;
   // maps queries that are contained in the cache to a singleton so that this
   // cache does not store several copies of the same query
   private final Map<Query, Query> uniqueQueries;
@@ -118,16 +122,56 @@ public class LRUQueryCache implements QueryCache, Accountable {
   private volatile long cacheSize;
 
   /**
-   * Create a new instance that will cache at most <code>maxSize</code> queries
-   * with at most <code>maxRamBytesUsed</code> bytes of memory.
+   * Expert: Create a new instance that will cache at most <code>maxSize</code>
+   * queries with at most <code>maxRamBytesUsed</code> bytes of memory, only on
+   * leaves that satisfy {@code leavesToCache};
    */
-  public LRUQueryCache(int maxSize, long maxRamBytesUsed) {
+  public LRUQueryCache(int maxSize, long maxRamBytesUsed,
+      Predicate<LeafReaderContext> leavesToCache) {
     this.maxSize = maxSize;
     this.maxRamBytesUsed = maxRamBytesUsed;
+    this.leavesToCache = leavesToCache;
     uniqueQueries = new LinkedHashMap<>(16, 0.75f, true);
     mostRecentlyUsedQueries = uniqueQueries.keySet();
     cache = new IdentityHashMap<>();
     ramBytesUsed = 0;
+  }
+
+  /**
+   * Create a new instance that will cache at most <code>maxSize</code> queries
+   * with at most <code>maxRamBytesUsed</code> bytes of memory. Queries will
+   * only be cached on leaves that have more than 10k documents and have more
+   * than 3% of the total number of documents in the index.
+   * This should guarantee that all leaves from the upper
+   * {@link TieredMergePolicy tier} will be cached while ensuring that at most
+   * <tt>33</tt> leaves can make it to the cache (very likely less than 10 in
+   * practice), which is useful for this implementation since some operations
+   * perform in linear time with the number of cached leaves.
+   */
+  public LRUQueryCache(int maxSize, long maxRamBytesUsed) {
+    this(maxSize, maxRamBytesUsed, new MinSegmentSizePredicate(10000, .03f));
+  }
+
+  // pkg-private for testing
+  static class MinSegmentSizePredicate implements Predicate<LeafReaderContext> {
+    private final int minSize;
+    private final float minSizeRatio;
+
+    MinSegmentSizePredicate(int minSize, float minSizeRatio) {
+      this.minSize = minSize;
+      this.minSizeRatio = minSizeRatio;
+    }
+
+    @Override
+    public boolean test(LeafReaderContext context) {
+      final int maxDoc = context.reader().maxDoc();
+      if (maxDoc < minSize) {
+        return false;
+      }
+      final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(context);
+      final float sizeRatio = (float) context.reader().maxDoc() / topLevelContext.reader().maxDoc();
+      return sizeRatio >= minSizeRatio;
+    }
   }
 
   /**
@@ -598,9 +642,10 @@ public class LRUQueryCache implements QueryCache, Accountable {
       }
     }
 
+    /** Check whether this segment is eligible for caching, regardless of the query. */
     private boolean shouldCache(LeafReaderContext context) throws IOException {
       return cacheEntryHasReasonableWorstCaseSize(ReaderUtil.getTopLevelContext(context).reader().maxDoc())
-          && policy.shouldCache(in.getQuery(), context);
+          && leavesToCache.test(context);
     }
 
     @Override
@@ -608,9 +653,15 @@ public class LRUQueryCache implements QueryCache, Accountable {
       if (used.compareAndSet(false, true)) {
         policy.onUse(getQuery());
       }
+      // Short-circuit: Check whether this segment is eligible for caching
+      // before we take a lock because of #get
+      if (shouldCache(context) == false) {
+        return in.scorer(context);
+      }
+
       DocIdSet docIdSet = get(in.getQuery(), context);
       if (docIdSet == null) {
-        if (shouldCache(context)) {
+        if (policy.shouldCache(in.getQuery(), context)) {
           docIdSet = cache(context);
           putIfAbsent(in.getQuery(), context, docIdSet);
         } else {
@@ -635,9 +686,15 @@ public class LRUQueryCache implements QueryCache, Accountable {
       if (used.compareAndSet(false, true)) {
         policy.onUse(getQuery());
       }
+      // Short-circuit: Check whether this segment is eligible for caching
+      // before we take a lock because of #get
+      if (shouldCache(context) == false) {
+        return in.bulkScorer(context);
+      }
+
       DocIdSet docIdSet = get(in.getQuery(), context);
       if (docIdSet == null) {
-        if (shouldCache(context)) {
+        if (policy.shouldCache(in.getQuery(), context)) {
           docIdSet = cache(context);
           putIfAbsent(in.getQuery(), context, docIdSet);
         } else {
