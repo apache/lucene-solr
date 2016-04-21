@@ -194,6 +194,8 @@ Other Changes
 
 * SOLR-8929: Add an idea module for solr/server to enable launching start.jar (Scott Blum, Steve Rowe)
 
+* SOLR-8933: Solr should not close container streams. (Mike Drob, Uwe Schindler, Mark Miller)
+
 * SOLR-9037: Replace multiple "/replication" strings with one static constant. (Christine Poerschke)
 
 * SOLR-9047: zkcli should allow alternative locations for log4j configuration (Gregory Chanan)
