@@ -104,6 +104,8 @@ Other Changes
 * SOLR-8866: UpdateLog will now throw an exception if it doesn't know how to serialize a value.
   (David Smiley)
 
+* SOLR-8933: Solr should not close container streams. (Mike Drob, Uwe Schindler, Mark Miller)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes
