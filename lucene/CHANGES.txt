@@ -19,6 +19,9 @@ New Features
 * LUCENE-7069: Add LatLonPoint.nearest, to find nearest N points to a
   provided query point (Mike McCandless)
 
+* LUCENE-7234: Added InetAddressPoint.nextDown/nextUp to easily generate range
+  queries with excluded bounds. (Adrien Grand)
+
 API Changes
 
 * LUCENE-7184: Refactor LatLonPoint encoding methods to new GeoEncodingUtils
@@ -87,6 +90,11 @@ Bug Fixes
 * LUCENE-7219: Make queryparser/xml (Point|LegacyNumeric)RangeQuery builders
   match the underlying queries' (lower|upper)Term optionality logic.
   (Kaneshanathan Srivisagan, Christine Poerschke)
+
+* LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
+
+* LUCENE-7232: Fixed InetAddressPoint.newPrefixQuery, which was generating an
+  incorrect query when the prefix length was not a multiple of 8. (Adrien Grand)
 
 Documentation
 

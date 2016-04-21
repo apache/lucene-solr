@@ -29,8 +29,6 @@ solrAdminApp.controller('StreamController',
 
     $scope.doStream = function() {
 
-      // alert("doing stream")
-
       var params = {};
       params.core = $routeParams.core;
       params.handler = $scope.qt;
@@ -51,7 +49,7 @@ solrAdminApp.controller('StreamController',
         if (undefined != jsonData["explanation"]) {
           $scope.showExplanation = true;
 
-          graphSubController($scope, jsonData["explanation"])
+          streamGraphSubController($scope, jsonData["explanation"])
           delete jsonData["explanation"]
         } else {
           $scope.showExplanation = false;
@@ -76,18 +74,10 @@ solrAdminApp.controller('StreamController',
   }
 );
 
-
-var graphSubController = function($scope, explanation) {
+var streamGraphSubController = function($scope, explanation) {
   $scope.showGraph = true;
   $scope.pos = 0;
   $scope.rows = 8;
-  $scope.helperData = {
-    protocol: [],
-    host: [],
-    hostname: [],
-    port: [],
-    pathname: []
-  };
 
   $scope.resetGraph = function() {
     $scope.pos = 0;
@@ -134,7 +124,7 @@ var graphSubController = function($scope, explanation) {
 
     $scope.showPaging = false;
     $scope.isRadial = false;
-    $scope.graphData = recurse(data, 1);
+    $scope.explanationData = recurse(data, 1);
 
     $scope.depth = maxDepth + 1;
     $scope.leafCount = leafCount;
@@ -143,17 +133,16 @@ var graphSubController = function($scope, explanation) {
   $scope.initGraph(explanation);
 };
 
-solrAdminApp.directive('foograph', function(Constants) {
+solrAdminApp.directive('explanationGraph', function(Constants) {
   return {
     restrict: 'EA',
     scope: {
       data: "=",
       leafCount: "=",
-      depth: "=",
-      helperData: "=",
-      isRadial: "="
+      depth: "="
     },
     link: function(scope, element, attrs) {
+      
       var helper_path_class = function(p) {
         var classes = ['link'];
 

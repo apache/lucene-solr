@@ -103,6 +103,13 @@ New Features
 
 * SOLR-8918: Adds Streaming to the admin page under the collections section. Includes
   ability to see graphically the expression explanation (Dennis Gove)
+  
+* SOLR-8913: When using a shared filesystem we should store data dir and tlog dir locations in 
+  the cluster state. (Mark Miller)
+
+* SOLR-8809: Implement Connection.prepareStatement (Kevin Risden)
+
+* SOLR-9020: Implement StatementImpl/ResultSetImpl get/set fetch* methods and proper errors for traversal methods (Kevin Risden)
 
 Bug Fixes
 ----------------------
@@ -158,6 +165,8 @@ Optimizations
 * SOLR-8937: bin/post (SimplePostTool) now streams the standard input instead of buffering fully.
   (David Smiley)
 
+* SOLR-8973: Zookeeper frenzy when a core is first created. (Janmejay Singh, Scott Blum, shalin)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
@@ -187,6 +196,10 @@ Other Changes
   anymore. The Replication tab is only beneficial to users running Solr in master-slave mode. (Varun Thacker)
 
 * SOLR-8985: Added back support for 'includeDynamic' flag to /schema/fields endpoint (noble)
+
+* SOLR-9015: Adds SelectStream as a default function in the StreamHandler (Dennis Gove)
+
+* SOLR-8929: Add an idea module for solr/server to enable launching start.jar (Scott Blum, Steve Rowe)
 
 ==================  6.0.0 ==================
 
