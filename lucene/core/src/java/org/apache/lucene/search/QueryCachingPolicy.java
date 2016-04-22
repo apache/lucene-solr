@@ -19,11 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.IndexReaderContext;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.TieredMergePolicy;
-
 /**
  * A policy defining which filters should be cached.
  *
@@ -43,56 +38,8 @@ public interface QueryCachingPolicy {
     public void onUse(Query query) {}
 
     @Override
-    public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+    public boolean shouldCache(Query query) throws IOException {
       return true;
-    }
-
-  };
-
-  /** A simple policy that only caches on the largest segments of an index.
-   *  The reasoning is that these segments likely account for most of the
-   *  execution time of queries and are also more likely to stay around longer
-   *  than small segments, which makes them more interesting for caching.
-   */
-  public static class CacheOnLargeSegments implements QueryCachingPolicy {
-
-    /** {@link CacheOnLargeSegments} instance that only caches on segments that
-     *  account for more than 3% of the total index size. This should guarantee
-     *  that all segments from the upper {@link TieredMergePolicy tier} will be
-     *  cached while ensuring that at most <tt>33</tt> segments can make it to
-     *  the cache (given that some implementations such as {@link LRUQueryCache}
-     *  perform better when the number of cached segments is low). */
-    public static final CacheOnLargeSegments DEFAULT = new CacheOnLargeSegments(10000, 0.03f);
-
-    private final int minIndexSize;
-    private final float minSizeRatio;
-
-    /**
-     * Create a {@link CacheOnLargeSegments} instance that only caches on a
-     * given segment if the total number of documents in the index is greater
-     * than {@code minIndexSize} and the number of documents in the segment
-     * divided by the total number of documents in the index is greater than
-     * or equal to {@code minSizeRatio}.
-     */
-    public CacheOnLargeSegments(int minIndexSize, float minSizeRatio) {
-      if (minSizeRatio <= 0 || minSizeRatio >= 1) {
-        throw new IllegalArgumentException("minSizeRatio must be in ]0, 1[, got " + minSizeRatio);
-      }
-      this.minIndexSize = minIndexSize;
-      this.minSizeRatio = minSizeRatio;
-    }
-
-    @Override
-    public void onUse(Query query) {}
-
-    @Override
-    public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
-      final IndexReaderContext topLevelContext = ReaderUtil.getTopLevelContext(context);
-      if (topLevelContext.reader().maxDoc() < minIndexSize) {
-        return false;
-      }
-      final float sizeRatio = (float) context.reader().maxDoc() / topLevelContext.reader().maxDoc();
-      return sizeRatio >= minSizeRatio;
     }
 
   };
@@ -102,12 +49,12 @@ public interface QueryCachingPolicy {
    *  in order to make decisions. */
   void onUse(Query query);
 
-  /** Whether the given {@link DocIdSet} should be cached on a given segment.
-   *  This method will be called on each leaf context to know if the filter
-   *  should be cached on this particular leaf. The filter cache will first
-   *  attempt to load a {@link DocIdSet} from the cache. If it is not cached
-   *  yet and this method returns <tt>true</tt> then a cache entry will be
-   *  generated. Otherwise an uncached set will be returned. */
-  boolean shouldCache(Query query, LeafReaderContext context) throws IOException;
+  /** Whether the given {@link Query} is worth caching.
+   *  This method will be called by the {@link QueryCache} to know whether to
+   *  cache. It will first attempt to load a {@link DocIdSet} from the cache.
+   *  If it is not cached yet and this method returns <tt>true</tt> then a
+   *  cache entry will be generated. Otherwise an uncached scorer will be
+   *  returned. */
+  boolean shouldCache(Query query) throws IOException;
 
 }

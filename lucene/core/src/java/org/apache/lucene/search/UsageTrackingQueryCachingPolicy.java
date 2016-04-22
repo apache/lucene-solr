@@ -19,16 +19,11 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.FrequencyTrackingRingBuffer;
 
 /**
  * A {@link QueryCachingPolicy} that tracks usage statistics of recently-used
  * filters in order to decide on which filters are worth caching.
- *
- * It also uses some heuristics on segments, filters and the doc id sets that
- * they produce in order to cache more aggressively when the execution cost
- * significantly outweighs the caching overhead.
  *
  * @lucene.experimental
  */
@@ -66,33 +61,20 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
     return query instanceof TermQuery;
   }
 
-  private final QueryCachingPolicy.CacheOnLargeSegments segmentPolicy;
   private final FrequencyTrackingRingBuffer recentlyUsedFilters;
 
   /**
    * Create a new instance.
    *
-   * @param minIndexSize              the minimum size of the top-level index
-   * @param minSizeRatio              the minimum size ratio for segments to be cached, see {@link QueryCachingPolicy.CacheOnLargeSegments}
    * @param historySize               the number of recently used filters to track
    */
-  public UsageTrackingQueryCachingPolicy(
-      int minIndexSize,
-      float minSizeRatio,
-      int historySize) {
-    this(new QueryCachingPolicy.CacheOnLargeSegments(minIndexSize, minSizeRatio), historySize);
+  public UsageTrackingQueryCachingPolicy(int historySize) {
+    this.recentlyUsedFilters = new FrequencyTrackingRingBuffer(historySize, SENTINEL);
   }
 
   /** Create a new instance with an history size of 256. */
   public UsageTrackingQueryCachingPolicy() {
-    this(QueryCachingPolicy.CacheOnLargeSegments.DEFAULT, 256);
-  }
-
-  private UsageTrackingQueryCachingPolicy(
-      QueryCachingPolicy.CacheOnLargeSegments segmentPolicy,
-      int historySize) {
-    this.segmentPolicy = segmentPolicy;
-    this.recentlyUsedFilters = new FrequencyTrackingRingBuffer(historySize, SENTINEL);
+    this(256);
   }
 
   /**
@@ -141,7 +123,7 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
   }
 
   @Override
-  public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+  public boolean shouldCache(Query query) throws IOException {
     if (query instanceof MatchAllDocsQuery
         // MatchNoDocsQuery currently rewrites to a BooleanQuery,
         // but who knows, it might get its own Weight one day
@@ -159,9 +141,6 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
       if (dmq.getDisjuncts().isEmpty()) {
         return false;
       }
-    }
-    if (segmentPolicy.shouldCache(query, context) == false) {
-      return false;
     }
     final int frequency = frequency(query);
     final int minFrequency = minFrequencyToCache(query);

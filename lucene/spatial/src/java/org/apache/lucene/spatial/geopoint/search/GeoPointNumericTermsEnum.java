@@ -23,10 +23,11 @@ import java.util.List;
 
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
-import org.apache.lucene.spatial.util.GeoEncodingUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.LegacyNumericUtils;
+
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.BITS;
 
 /**
  * Decomposes a given {@link GeoPointMultiTermQuery} into a set of terms that represent the query criteria using
@@ -46,8 +47,8 @@ final class GeoPointNumericTermsEnum extends GeoPointTermsEnum {
 
   GeoPointNumericTermsEnum(final TermsEnum tenum, final GeoPointMultiTermQuery query) {
     super(tenum, query);
-    DETAIL_LEVEL = (short)(((GeoEncodingUtils.BITS<<1)-this.maxShift)/2);
-    computeRange(0L, (short) (((GeoEncodingUtils.BITS) << 1) - 1));
+    DETAIL_LEVEL = (short)(((BITS<<1)-this.maxShift)/2);
+    computeRange(0L, (short) (((BITS) << 1) - 1));
     assert rangeBounds.isEmpty() == false;
     Collections.sort(rangeBounds);
   }
@@ -79,12 +80,12 @@ final class GeoPointNumericTermsEnum extends GeoPointTermsEnum {
    * @param res spatial res represented as a bit shift (MSB is lower res)
    */
   private void relateAndRecurse(final long start, final long end, final short res) {
-    final double minLon = GeoEncodingUtils.mortonUnhashLon(start);
-    final double minLat = GeoEncodingUtils.mortonUnhashLat(start);
-    final double maxLon = GeoEncodingUtils.mortonUnhashLon(end);
-    final double maxLat = GeoEncodingUtils.mortonUnhashLat(end);
+    final double minLon = GeoPointField.decodeLongitude(start);
+    final double minLat = GeoPointField.decodeLatitude(start);
+    final double maxLon = GeoPointField.decodeLongitude(end);
+    final double maxLat = GeoPointField.decodeLatitude(end);
 
-    final short level = (short)((GeoEncodingUtils.BITS<<1)-res>>>1);
+    final short level = (short)((BITS<<1)-res>>>1);
 
     // if cell is within and a factor of the precision step, or it crosses the edge of the shape add the range
     final boolean within = res % GeoPointField.PRECISION_STEP == 0 && relationImpl.cellWithin(minLat, maxLat, minLon, maxLon);
