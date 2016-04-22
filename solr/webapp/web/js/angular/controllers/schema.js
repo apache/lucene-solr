@@ -475,11 +475,17 @@ var getFieldProperties = function(data, core, is, field) {
     // identify rows and cell values in field property table:
     for (var i in display.rows) {
         var row = display.rows[i];
+        var rowFlags = row.flags;
+        
         row.cells = [];
 
+        if (!rowFlags) {
+         continue; //Row for non-stored field, without flags
+        }
+        
         for (var j in display.columns) {
             var flag = display.columns[j].key;
-            row.cells.push({key: flag, value: row.flags.indexOf(flag)>=0});
+            row.cells.push({key: flag, value: rowFlags.indexOf(flag)>=0});
         }
     }
 
