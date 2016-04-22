@@ -207,7 +207,7 @@ public class TestIndexSearcher extends LuceneTestCase {
     assertEquals(IndexSearcher.getDefaultQueryCachingPolicy(), searcher.getQueryCachingPolicy());
     QueryCachingPolicy dummyPolicy = new QueryCachingPolicy() {
       @Override
-      public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+      public boolean shouldCache(Query query) throws IOException {
         return false;
       }
       @Override

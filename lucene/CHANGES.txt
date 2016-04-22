@@ -40,6 +40,9 @@ API Changes
 * LUCENE-7150: Spatial3d gets useful APIs to create common shape
   queries, matching LatLonPoint.  (Karl Wright via Mike McCandless)
 
+* LUCENE-7243: Removed the LeafReaderContext parameter from
+  QueryCachingPolicy#shouldCache. (Adrien Grand)
+
 Optimizations
 
 * LUCENE-7071: Reduce bytes copying in OfflineSorter, giving ~10%

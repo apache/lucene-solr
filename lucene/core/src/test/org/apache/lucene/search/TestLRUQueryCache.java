@@ -65,7 +65,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     public void onUse(Query query) {}
 
     @Override
-    public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+    public boolean shouldCache(Query query) throws IOException {
       return false;
     }
 
@@ -455,7 +455,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     final QueryCachingPolicy countingPolicy = new QueryCachingPolicy() {
 
       @Override
-      public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+      public boolean shouldCache(Query query) throws IOException {
         return random().nextBoolean();
       }
 
@@ -762,7 +762,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     final QueryCachingPolicy policy = new QueryCachingPolicy() {
 
       @Override
-      public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+      public boolean shouldCache(Query query) throws IOException {
         assertEquals(expectedCacheKey, query);
         return true;
       }
@@ -1080,7 +1080,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     @Override
-    public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+    public boolean shouldCache(Query query) throws IOException {
       return true;
     }
   }

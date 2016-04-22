@@ -661,7 +661,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
       DocIdSet docIdSet = get(in.getQuery(), context);
       if (docIdSet == null) {
-        if (policy.shouldCache(in.getQuery(), context)) {
+        if (policy.shouldCache(in.getQuery())) {
           docIdSet = cache(context);
           putIfAbsent(in.getQuery(), context, docIdSet);
         } else {
@@ -694,7 +694,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
       DocIdSet docIdSet = get(in.getQuery(), context);
       if (docIdSet == null) {
-        if (policy.shouldCache(in.getQuery(), context)) {
+        if (policy.shouldCache(in.getQuery())) {
           docIdSet = cache(context);
           putIfAbsent(in.getQuery(), context, docIdSet);
         } else {
