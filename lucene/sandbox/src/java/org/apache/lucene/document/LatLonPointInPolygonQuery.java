@@ -92,10 +92,11 @@ final class LatLonPointInPolygonQuery extends Query {
     NumericUtils.intToSortableBytes(encodeLongitude(box.minLon), minLon, 0);
     NumericUtils.intToSortableBytes(encodeLongitude(box.maxLon), maxLon, 0);
 
+    final LatLonTree[] tree = LatLonTree.build(polygons);
     final LatLonGrid grid = new LatLonGrid(encodeLatitude(box.minLat),
                                            encodeLatitude(box.maxLat),
                                            encodeLongitude(box.minLon),
-                                           encodeLongitude(box.maxLon), polygons);
+                                           encodeLongitude(box.maxLon), tree);
 
     return new ConstantScoreWeight(this) {
 
@@ -156,7 +157,7 @@ final class LatLonPointInPolygonQuery extends Query {
                              double cellMaxLat = decodeLatitude(maxPackedValue, 0);
                              double cellMaxLon = decodeLongitude(maxPackedValue, Integer.BYTES);
 
-                             return Polygon.relate(polygons, cellMinLat, cellMaxLat, cellMinLon, cellMaxLon);
+                             return LatLonTree.relate(tree, cellMinLat, cellMaxLat, cellMinLon, cellMaxLon);
                            }
                          });
 
