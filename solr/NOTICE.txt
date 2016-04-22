@@ -417,7 +417,7 @@ VorbisJava; Ogg and Vorbis Tools for Java
 Copyright 2012 Nick Burch
 https://github.com/Gagravarr/VorbisJava
 
-SQLite JSDC Driver; is a library for accessing and creating SQLite 
+SQLite JDBC Driver; is a library for accessing and creating SQLite 
 database files in Java
 https://bitbucket.org/xerial/sqlite-jdbc
 
