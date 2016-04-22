@@ -16,17 +16,13 @@
  */
 package org.apache.lucene.document;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.PointValues.Relation;
 
 /**
- * 2D polygon implementation represented as a randomized interval tree of edges.
+ * 2D polygon implementation represented as a balanced interval tree of edges.
  * <p>
  * contains() and crosses() are still O(n), but for most practical polygons 
  * are much faster than brute force.
@@ -338,45 +334,44 @@ final class LatLonTree {
    * @return root node of the tree.
    */
   private static Edge createTree(double polyLats[], double polyLons[]) {
-    // edge order is deterministic and reproducible based on the double values.
-    // TODO: make a real balanced tree instead :)
-    List<Integer> list = new ArrayList<Integer>(polyLats.length - 1);
+    Edge edges[] = new Edge[polyLats.length - 1];
     for (int i = 1; i < polyLats.length; i++) {
-      list.add(i);
-    }
-    Collections.shuffle(list, new Random(Arrays.hashCode(polyLats) ^ Arrays.hashCode(polyLons)));
-    Edge root = null;
-    for (int i : list) {
       double lat1 = polyLats[i-1];
       double lon1 = polyLons[i-1];
       double lat2 = polyLats[i];
       double lon2 = polyLons[i];
-      Edge newNode = new Edge(lat1, lon1, lat2, lon2, Math.min(lat1, lat2), Math.max(lat1, lat2));
-      if (root == null) {
-        // add first node
-        root = newNode;
-      } else {
-        // traverse tree to find home for new node, along the path updating all parent's max value along the way.
-        Edge node = root;
-        while (true) {
-          node.max = Math.max(node.max, newNode.max);
-          if (newNode.low < node.low) {
-            if (node.left == null) {
-              node.left = newNode;
-              break;
-            }
-            node = node.left;
-          } else {
-            if (node.right == null) {
-              node.right = newNode;
-              break;
-            }
-            node = node.right;
-          }
-        }
-      }
+      edges[i - 1] = new Edge(lat1, lon1, lat2, lon2, Math.min(lat1, lat2), Math.max(lat1, lat2));
     }
-    return root;
+    // sort the edges then build a balanced tree from them
+    Arrays.sort(edges, (left, right) -> {
+      int ret = Double.compare(left.low, right.low);
+      if (ret == 0) {
+        ret = Double.compare(left.max, right.max);
+      }
+      return ret;
+    });
+    return createTree(edges, 0, edges.length - 1);
+  }
+
+  /** Creates tree from sorted edges (with range low and high inclusive) */
+  private static Edge createTree(Edge edges[], int low, int high) {
+    if (low > high) {
+      return null;
+    }
+    // add midpoint
+    int mid = (low + high) >>> 1;
+    Edge newNode = edges[mid];
+    // add children
+    newNode.left = createTree(edges, low, mid - 1);
+    newNode.right = createTree(edges, mid + 1, high);
+    // pull up max values to this node
+    if (newNode.left != null) {
+      newNode.max = Math.max(newNode.max, newNode.left.max);
+    }
+    if (newNode.right != null) {
+      newNode.max = Math.max(newNode.max, newNode.right.max);
+    }
+    return newNode;
   }
 
   /**
