@@ -76,6 +76,9 @@ Optimizations
 * LUCENE-7238: Explicitly disable the query cache in MemoryIndex#createSearcher.
   (Adrien Grand)
 
+* LUCENE-7237: LRUQueryCache now prefers returning an uncached Scorer than
+  waiting on a lock. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7127: Fix corner case bugs in GeoPointDistanceQuery. (Robert Muir)
