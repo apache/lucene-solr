@@ -60,14 +60,14 @@ final class LatLonGrid {
   final long latPerCell;
   final long lonPerCell;
   
-  final Polygon[] polygons;
+  final LatLonTree[] tree;
   
   LatLonGrid(int minLat, int maxLat, int minLon, int maxLon, Polygon... polygons) {
     this.minLat = minLat;
     this.maxLat = maxLat;
     this.minLon = minLon;
     this.maxLon = maxLon;
-    this.polygons = polygons;
+    this.tree = LatLonTree.build(polygons);
     if (minLon > maxLon) {
       // maybe make 2 grids if you want this? 
       throw new IllegalArgumentException("Grid cannot cross the dateline");
@@ -88,12 +88,12 @@ final class LatLonGrid {
       // but it prevents edge case bugs.
       latPerCell = latitudeRange / (GRID_SIZE - 1);
       lonPerCell = longitudeRange / (GRID_SIZE - 1);
-      fill(polygons, 0, GRID_SIZE, 0, GRID_SIZE);
+      fill(0, GRID_SIZE, 0, GRID_SIZE);
     }
   }
   
   /** fills a 2D range of grid cells [minLatIndex .. maxLatIndex) X [minLonIndex .. maxLonIndex) */
-  void fill(Polygon[] polygons, int minLatIndex, int maxLatIndex, int minLonIndex, int maxLonIndex) {
+  void fill(int minLatIndex, int maxLatIndex, int minLonIndex, int maxLonIndex) {
     // grid cells at the edge of the bounding box are typically smaller than normal, because we spill over.
     long cellMinLat = minLat + (minLatIndex * latPerCell);
     long cellMaxLat = Math.min(maxLat, minLat + (maxLatIndex * latPerCell) - 1);
@@ -104,10 +104,10 @@ final class LatLonGrid {
     assert cellMaxLat >= cellMinLat;
     assert cellMaxLon >= cellMinLon;
 
-    Relation relation = Polygon.relate(polygons, decodeLatitude((int) cellMinLat),
-                                                 decodeLatitude((int) cellMaxLat),
-                                                 decodeLongitude((int) cellMinLon),
-                                                 decodeLongitude((int) cellMaxLon));
+    Relation relation = LatLonTree.relate(tree, decodeLatitude((int) cellMinLat),
+                                                decodeLatitude((int) cellMaxLat),
+                                                decodeLongitude((int) cellMinLon),
+                                                decodeLongitude((int) cellMaxLon));
     if (relation != Relation.CELL_CROSSES_QUERY) {
       // we know the answer for this region, fill the cell range
       for (int i = minLatIndex; i < maxLatIndex; i++) {
@@ -127,10 +127,10 @@ final class LatLonGrid {
       // grid range crosses our polygon, keep recursing.
       int midLatIndex = (minLatIndex + maxLatIndex) >>> 1;
       int midLonIndex = (minLonIndex + maxLonIndex) >>> 1;
-      fill(polygons, minLatIndex, midLatIndex, minLonIndex, midLonIndex);
-      fill(polygons, minLatIndex, midLatIndex, midLonIndex, maxLonIndex);
-      fill(polygons, midLatIndex, maxLatIndex, minLonIndex, midLonIndex);
-      fill(polygons, midLatIndex, maxLatIndex, midLonIndex, maxLonIndex);
+      fill(minLatIndex, midLatIndex, minLonIndex, midLonIndex);
+      fill(minLatIndex, midLatIndex, midLonIndex, maxLonIndex);
+      fill(midLatIndex, maxLatIndex, minLonIndex, midLonIndex);
+      fill(midLatIndex, maxLatIndex, midLonIndex, maxLonIndex);
     }
   }
   
@@ -147,7 +147,7 @@ final class LatLonGrid {
     // the grid is unsure (boundary): do a real test.
     double docLatitude = decodeLatitude(latitude);
     double docLongitude = decodeLongitude(longitude);
-    return Polygon.contains(polygons, docLatitude, docLongitude);
+    return LatLonTree.contains(tree, docLatitude, docLongitude);
   }
   
   /** Returns grid index of lat/lon, or -1 if the value is outside of the bounding box. */

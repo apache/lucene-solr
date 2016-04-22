@@ -48,9 +48,6 @@ Optimizations
 * LUCENE-7105, LUCENE-7215: Optimize LatLonPoint's newDistanceQuery. 
   (Robert Muir)
 
-* LUCENE-7109: LatLonPoint's newPolygonQuery supports two-phase 
-  iteration. (Robert Muir)
-
 * LUCENE-7097: IntroSorter now recurses to 2 * log_2(count) quicksort
   stack depth before switching to heapsort (Adrien Grand, Mike McCandless)
 
@@ -64,8 +61,8 @@ Optimizations
   multiple polygons and holes, with memory usage independent of
   polygon complexity. (Karl Wright, Mike McCandless, Robert Muir)
 
-* LUCENE-7159, LUCENE-7222, LUCENE-7229: Speed up LatLonPoint polygon performance for complex
-  polygons. (Robert Muir)
+* LUCENE-7159, LUCENE-7222, LUCENE-7229, LUCENE-7239: Speed up LatLonPoint 
+  polygon performance. (Robert Muir)
 
 * LUCENE-7211: Reduce memory & GC for spatial RPT Intersects when the number of
   matching docs is small. (Jeff Wartes, David Smiley)

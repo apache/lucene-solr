@@ -29,8 +29,8 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.spatial.util.GeoEncodingUtils;
 
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.geoCodedToPrefixCoded;
 import static org.apache.lucene.spatial.geopoint.document.GeoPointField.PRECISION_STEP;
 
 /**
@@ -163,7 +163,7 @@ final class GeoPointTokenStream extends TokenStream {
 
     @Override
     public BytesRef getBytesRef() {
-      GeoEncodingUtils.geoCodedToPrefixCoded(value, shift, bytes);
+      geoCodedToPrefixCoded(value, shift, bytes);
       return bytes.get();
     }
 
