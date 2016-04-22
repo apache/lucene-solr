@@ -62,12 +62,12 @@ final class LatLonGrid {
   
   final LatLonTree[] tree;
   
-  LatLonGrid(int minLat, int maxLat, int minLon, int maxLon, Polygon... polygons) {
+  LatLonGrid(int minLat, int maxLat, int minLon, int maxLon, LatLonTree[] tree) {
     this.minLat = minLat;
     this.maxLat = maxLat;
     this.minLon = minLon;
     this.maxLon = maxLon;
-    this.tree = LatLonTree.build(polygons);
+    this.tree = tree;
     if (minLon > maxLon) {
       // maybe make 2 grids if you want this? 
       throw new IllegalArgumentException("Grid cannot cross the dateline");

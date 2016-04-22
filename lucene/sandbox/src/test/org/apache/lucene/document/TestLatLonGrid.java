@@ -40,7 +40,7 @@ public class TestLatLonGrid extends LuceneTestCase {
       int maxLat = encodeLatitude(box.maxLat);
       int minLon = encodeLongitude(box.minLon);
       int maxLon = encodeLongitude(box.maxLon);
-      LatLonGrid grid = new LatLonGrid(minLat, maxLat, minLon, maxLon, polygon);
+      LatLonGrid grid = new LatLonGrid(minLat, maxLat, minLon, maxLon, LatLonTree.build(polygon));
       // we are in integer space... but exhaustive testing is slow!
       for (int j = 0; j < 10000; j++) {
         int lat = TestUtil.nextInt(random(), minLat, maxLat);
@@ -79,7 +79,7 @@ public class TestLatLonGrid extends LuceneTestCase {
       int maxLat = encodeLatitude(box.maxLat);
       int minLon = encodeLongitude(box.minLon);
       int maxLon = encodeLongitude(box.maxLon);
-      LatLonGrid grid = new LatLonGrid(minLat, maxLat, minLon, maxLon, polygon);
+      LatLonGrid grid = new LatLonGrid(minLat, maxLat, minLon, maxLon, LatLonTree.build(polygon));
       // we are in integer space... but exhaustive testing is slow!
       for (int j = 0; j < 1000; j++) {
         int lat = TestUtil.nextInt(random(), minLat, maxLat);
@@ -99,7 +99,7 @@ public class TestLatLonGrid extends LuceneTestCase {
     double ONE = decodeLatitude(1);
     Polygon tiny = new Polygon(new double[] { ZERO, ZERO, ONE, ONE, ZERO }, new double[] { ZERO, ONE, ONE, ZERO, ZERO });
     for (int max = 1; max < 500000; max++) {
-      LatLonGrid grid = new LatLonGrid(0, max, 0, max, tiny);
+      LatLonGrid grid = new LatLonGrid(0, max, 0, max, LatLonTree.build(tiny));
       assertEquals(tiny.contains(decodeLatitude(max), decodeLongitude(max)), grid.contains(max, max));
     }
   }
