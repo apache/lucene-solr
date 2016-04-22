@@ -476,7 +476,7 @@ public abstract class LuceneTestCase extends Assert {
     public void onUse(Query query) {}
 
     @Override
-    public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+    public boolean shouldCache(Query query) throws IOException {
       return random().nextBoolean();
     }
 
