@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 package org.apache.solr.rest.schema;
+import java.io.IOException;
+
 import org.apache.solr.rest.SolrRestletTestBase;
 import org.junit.Test;
 
@@ -35,6 +37,37 @@ public class TestFieldCollectionResource extends SolrRestletTestBase {
              "/fields/[0]/name=='HTMLstandardtok'",
              "/fields/[1]/name=='HTMLwhitetok'",
              "/fields/[2]/name=='_version_'");
+  }
+
+  @Test
+  public void testGetThreeFieldsDontIncludeDynamic() throws IOException {
+    //
+    assertQ("/schema/fields?indent=on&wt=xml&fl=id,_version_,price_i",
+        "count(/response/arr[@name='fields']/lst/str[@name='name']) = 2",
+        "(/response/arr[@name='fields']/lst/str[@name='name'])[1] = 'id'",
+        "(/response/arr[@name='fields']/lst/str[@name='name'])[2] = '_version_'");
+  }
+
+  @Test
+  public void testGetThreeFieldsIncludeDynamic() throws IOException {
+    assertQ("/schema/fields?indent=on&wt=xml&fl=id,_version_,price_i&includeDynamic=on",
+
+        "count(/response/arr[@name='fields']/lst/str[@name='name']) = 3",
+
+        "(/response/arr[@name='fields']/lst/str[@name='name'])[1] = 'id'",
+
+        "(/response/arr[@name='fields']/lst/str[@name='name'])[2] = '_version_'",
+
+        "(/response/arr[@name='fields']/lst/str[@name='name'])[3] = 'price_i'",
+
+        "/response/arr[@name='fields']/lst[    str[@name='name']='price_i'    "
+            +"                                  and str[@name='dynamicBase']='*_i']");
+  }
+  @Test
+  public void testNotFoundFields() throws IOException {
+    assertQ("/schema/fields?indent=on&wt=xml&fl=not_in_there,this_one_either",
+        "count(/response/arr[@name='fields']) = 1",
+        "count(/response/arr[@name='fields']/lst/str[@name='name']) = 0");
   }
 
 

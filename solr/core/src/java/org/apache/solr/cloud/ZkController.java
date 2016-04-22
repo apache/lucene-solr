@@ -1165,9 +1165,8 @@ public final class ZkController {
       if (coreNodeName != null) {
         props.put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
       }
-      
-      if (ClusterStateUtil.isAutoAddReplicas(getZkStateReader(), collection)) {
-        try (SolrCore core = cc.getCore(cd.getName())) {
+      try (SolrCore core = cc.getCore(cd.getName())) {
+        if (core != null && core.getDirectoryFactory().isSharedStorage()) {
           if (core != null && core.getDirectoryFactory().isSharedStorage()) {
             props.put("dataDir", core.getDataDir());
             UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
@@ -1478,11 +1477,13 @@ public final class ZkController {
       }
 
       publish(cd, Replica.State.DOWN, false, true);
-      DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(cd.getCloudDescriptor().getCollectionName());
-      if (collection != null) {
-        log.info("Registering watch for collection {}", cd.getCloudDescriptor().getCollectionName());
-        zkStateReader.addCollectionWatch(cd.getCloudDescriptor().getCollectionName());
-      }
+      String collectionName = cd.getCloudDescriptor().getCollectionName();
+      DocCollection collection = zkStateReader.getClusterState().getCollectionOrNull(collectionName);
+      log.info(collection == null ?
+              "Collection {} not visible yet, but flagging it so a watch is registered when it becomes visible" :
+              "Registering watch for collection {}",
+          collectionName);
+      zkStateReader.addCollectionWatch(collectionName);
     } catch (KeeperException e) {
       log.error("", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);

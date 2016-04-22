@@ -443,13 +443,6 @@ public class ZkStateReader implements Closeable {
     // To move a collection's state to format2, first create the new state2 format node, then remove legacy entry.
     Map<String, ClusterState.CollectionRef> result = new LinkedHashMap<>(legacyCollectionStates);
 
-    // Are there any interesting collections that disappeared from the legacy cluster state?
-    for (String coll : interestingCollections) {
-      if (!result.containsKey(coll) && !watchedCollectionStates.containsKey(coll)) {
-        new StateWatcher(coll).refreshAndWatch(true);
-      }
-    }
-  
     // Add state format2 collections, but don't override legacy collection states.
     for (Map.Entry<String, DocCollection> entry : watchedCollectionStates.entrySet()) {
       result.putIfAbsent(entry.getKey(), new ClusterState.CollectionRef(entry.getValue()));
@@ -1048,15 +1041,26 @@ public class ZkStateReader implements Closeable {
 
   private DocCollection fetchCollectionState(String coll, Watcher watcher) throws KeeperException, InterruptedException {
     String collectionPath = getCollectionPath(coll);
-    try {
-      Stat stat = new Stat();
-      byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
-      ClusterState state = ClusterState.load(stat.getVersion(), data,
-              Collections.<String>emptySet(), collectionPath);
-      ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
-      return collectionRef == null ? null : collectionRef.get();
-    } catch (KeeperException.NoNodeException e) {
-      return null;
+    while (true) {
+      try {
+        Stat stat = new Stat();
+        byte[] data = zkClient.getData(collectionPath, watcher, stat, true);
+        ClusterState state = ClusterState.load(stat.getVersion(), data,
+            Collections.<String>emptySet(), collectionPath);
+        ClusterState.CollectionRef collectionRef = state.getCollectionStates().get(coll);
+        return collectionRef == null ? null : collectionRef.get();
+      } catch (KeeperException.NoNodeException e) {
+        if (watcher != null) {
+          // Leave an exists watch in place in case a state.json is created later.
+          Stat exists = zkClient.exists(collectionPath, watcher, true);
+          if (exists != null) {
+            // Rare race condition, we tried to fetch the data and couldn't find it, then we found it exists.
+            // Loop and try again.
+            continue;
+          }
+        }
+        return null;
+      }
     }
   }
 

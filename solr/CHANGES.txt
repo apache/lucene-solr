@@ -103,6 +103,13 @@ New Features
 
 * SOLR-8918: Adds Streaming to the admin page under the collections section. Includes
   ability to see graphically the expression explanation (Dennis Gove)
+  
+* SOLR-8913: When using a shared filesystem we should store data dir and tlog dir locations in 
+  the cluster state. (Mark Miller)
+
+* SOLR-8809: Implement Connection.prepareStatement (Kevin Risden)
+
+* SOLR-9020: Implement StatementImpl/ResultSetImpl get/set fetch* methods and proper errors for traversal methods (Kevin Risden)
 
 Bug Fixes
 ----------------------
@@ -141,6 +148,8 @@ Bug Fixes
 
 * SOLR-8971: Preserve root cause when wrapping exceptions (hossman)
 
+* SOLR-8992: Restore Schema API GET method functionality removed in 6.0 (noble, Steve Rowe)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
@@ -157,6 +166,8 @@ Optimizations
 
 * SOLR-8937: bin/post (SimplePostTool) now streams the standard input instead of buffering fully.
   (David Smiley)
+
+* SOLR-8973: Zookeeper frenzy when a core is first created. (Janmejay Singh, Scott Blum, shalin)
 
 Other Changes
 ----------------------
@@ -187,6 +198,12 @@ Other Changes
   anymore. The Replication tab is only beneficial to users running Solr in master-slave mode. (Varun Thacker)
 
 * SOLR-8985: Added back support for 'includeDynamic' flag to /schema/fields endpoint (noble)
+
+* SOLR-9015: Adds SelectStream as a default function in the StreamHandler (Dennis Gove)
+
+* SOLR-8929: Add an idea module for solr/server to enable launching start.jar (Scott Blum, Steve Rowe)
+
+* SOLR-8933: Solr should not close container streams. (Mike Drob, Uwe Schindler, Mark Miller)
 
 ==================  6.0.0 ==================
 

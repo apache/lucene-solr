@@ -43,6 +43,7 @@
 
       <module group="Solr" filepath="$PROJECT_DIR$/solr/core/src/java/solr-core.iml" />
       <module group="Solr" filepath="$PROJECT_DIR$/solr/core/src/solr-core-tests.iml" />
+      <module group="Solr" filepath="$PROJECT_DIR$/solr/server/server.iml" />
       <module group="Solr" filepath="$PROJECT_DIR$/solr/solrj/src/java/solrj.iml" />
       <module group="Solr" filepath="$PROJECT_DIR$/solr/solrj/src/solrj-tests.iml" />
       <module group="Solr" filepath="$PROJECT_DIR$/solr/test-framework/solr-test-framework.iml" />

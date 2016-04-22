@@ -184,20 +184,20 @@ limitations under the License.
   top: 2px;
 }
 
-#content #stream #result #explanation #graph-content
+#content #stream #result #explanation #explanation-content
 {
   min-height: 50px;
   width: 100%
 }
 
-#content #stream #result #explanation #graph-content .node circle
+#content #stream #result #explanation #explanation-content .node circle
 {
   color: #c48f00;
   stroke: #c48f00;
   fill: #c48f00;
 }
 
-#content #stream #result #explanation #graph-content .link
+#content #stream #result #explanation #explanation-content .link
 {
   fill: none;
   stroke: #e0e0e0;
@@ -205,28 +205,28 @@ limitations under the License.
 }
 
 #content #stream #result #explanation #legend .datastore circle,
-#content #stream #result #explanation #graph-content .node.datastore circle
+#content #stream #result #explanation #explanation-content .node.datastore circle
 {
   stroke: #3800c4;
   fill: #3800c4;
 }
 
 #content #stream #result #explanation #legend .stream-source circle,
-#content #stream #result #explanation #graph-content .node.stream-source circle
+#content #stream #result #explanation #explanation-content .node.stream-source circle
 {
   stroke: #21a9ec;
   fill: #21a9ec;
 }
 
 #content #stream #result #explanation #legend .stream-decorator circle,
-#content #stream #result #explanation #graph-content .node.stream-decorator circle
+#content #stream #result #explanation #explanation-content .node.stream-decorator circle
 {
   stroke: #cb21ec;
   fill: #cb21ec;
 }
 
 #content #stream #result #explanation #legend .graph-source circle,
-#content #stream #result #explanation #graph-content .node.graph-source circle
+#content #stream #result #explanation #explanation-content .node.graph-source circle
 {
   stroke: #21eca9;
   fill: #21eca9;

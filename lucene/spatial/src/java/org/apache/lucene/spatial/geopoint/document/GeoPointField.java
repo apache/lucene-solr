@@ -22,8 +22,14 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.spatial.util.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoUtils;
+import org.apache.lucene.util.BitUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
+
+import static org.apache.lucene.spatial.util.MortonEncoder.encode;
+import static org.apache.lucene.geo.GeoUtils.MIN_LAT_INCL;
+import static org.apache.lucene.geo.GeoUtils.MIN_LON_INCL;
 
 /**
  * <p>
@@ -48,6 +54,19 @@ import org.apache.lucene.geo.GeoUtils;
 public final class GeoPointField extends Field {
   /** encoding step value for GeoPoint prefix terms */
   public static final int PRECISION_STEP = 9;
+
+  /** number of bits used for quantizing latitude and longitude values */
+  public static final short BITS = 31;
+  /** scaling factors to convert lat/lon into unsigned space */
+  private static final double LAT_SCALE = (0x1L<<BITS)/180.0D;
+  private static final double LON_SCALE = (0x1L<<BITS)/360.0D;
+
+  /**
+   * The maximum term length (used for <code>byte[]</code> buffer size)
+   * for encoding <code>geoEncoded</code> values.
+   * @see #geoCodedToPrefixCodedBytes(long, int, BytesRefBuilder)
+   */
+  private static final int BUF_SIZE_LONG = 28/8 + 1;
 
   /**
    * <b>Expert:</b> Optional flag to select term encoding for GeoPointField types
@@ -185,7 +204,7 @@ public final class GeoPointField extends Field {
     }
 
     // set field data
-    fieldsData = GeoEncodingUtils.mortonHash(latitude, longitude);
+    fieldsData = encodeLatLon(latitude, longitude);
   }
 
   private static FieldType getFieldType(Store stored) {
@@ -232,12 +251,12 @@ public final class GeoPointField extends Field {
 
   /** access latitude value */
   public double getLat() {
-    return GeoEncodingUtils.mortonUnhashLat((long) fieldsData);
+    return decodeLatitude((long) fieldsData);
   }
 
   /** access longitude value */
   public double getLon() {
-    return GeoEncodingUtils.mortonUnhashLon((long) fieldsData);
+    return decodeLongitude((long) fieldsData);
   }
 
   @Override
@@ -246,9 +265,88 @@ public final class GeoPointField extends Field {
       return null;
     }
     StringBuilder sb = new StringBuilder();
-    sb.append(GeoEncodingUtils.mortonUnhashLat((long) fieldsData));
+    sb.append(decodeLatitude((long) fieldsData));
     sb.append(',');
-    sb.append(GeoEncodingUtils.mortonUnhashLon((long) fieldsData));
+    sb.append(decodeLongitude((long) fieldsData));
     return sb.toString();
+  }
+
+  /*************************
+   * 31 bit encoding utils *
+   *************************/
+  public static long encodeLatLon(final double lat, final double lon) {
+    long result = encode(lat, lon);
+    if (result == 0xFFFFFFFFFFFFFFFFL) {
+      return result & 0xC000000000000000L;
+    }
+    return result >>> 2;
+  }
+
+  /** decode longitude value from morton encoded geo point */
+  public static final double decodeLongitude(final long hash) {
+    return unscaleLon(BitUtil.deinterleave(hash));
+  }
+
+  /** decode latitude value from morton encoded geo point */
+  public static final double decodeLatitude(final long hash) {
+    return unscaleLat(BitUtil.deinterleave(hash >>> 1));
+  }
+
+  private static final double unscaleLon(final long val) {
+    return (val / LON_SCALE) + MIN_LON_INCL;
+  }
+
+  private static final double unscaleLat(final long val) {
+    return (val / LAT_SCALE) + MIN_LAT_INCL;
+  }
+
+  /** Convert a geocoded morton long into a prefix coded geo term */
+  public static void geoCodedToPrefixCoded(long hash, int shift, BytesRefBuilder bytes) {
+    geoCodedToPrefixCodedBytes(hash, shift, bytes);
+  }
+
+  /** Convert a prefix coded geo term back into the geocoded morton long */
+  public static long prefixCodedToGeoCoded(final BytesRef val) {
+    final long result = 0L
+        | (val.bytes[val.offset+0] & 255L) << 24
+        | (val.bytes[val.offset+1] & 255L) << 16
+        | (val.bytes[val.offset+2] & 255L) << 8
+        | val.bytes[val.offset+3] & 255L;
+
+    return result << 32;
+  }
+
+  /**
+   * GeoTerms are coded using 4 prefix bytes + 1 byte to record number of prefix bits
+   *
+   * example prefix at shift 54 (yields 10 significant prefix bits):
+   *  pppppppp pp000000 00000000 00000000 00001010
+   *  (byte 1) (byte 2) (byte 3) (byte 4) (sigbits)
+   */
+  private static void geoCodedToPrefixCodedBytes(final long hash, final int shift, final BytesRefBuilder bytes) {
+    // ensure shift is 32..63
+    if (shift < 32 || shift > 63) {
+      throw new IllegalArgumentException("Illegal shift value, must be 32..63; got shift=" + shift);
+    }
+    int nChars = BUF_SIZE_LONG + 1; // one extra for the byte that contains the number of significant bits
+    bytes.setLength(nChars);
+    bytes.grow(nChars--);
+    final int sigBits = 64 - shift;
+    bytes.setByteAt(BUF_SIZE_LONG, (byte)(sigBits));
+    long sortableBits = hash;
+    sortableBits >>>= shift;
+    sortableBits <<= 32 - sigBits;
+    do {
+      bytes.setByteAt(--nChars, (byte)(sortableBits));
+      sortableBits >>>= 8;
+    } while (nChars > 0);
+  }
+
+  /** Get the prefix coded geo term shift value */
+  public static int getPrefixCodedShift(final BytesRef val) {
+    final int shift = val.bytes[val.offset + BUF_SIZE_LONG];
+    if (shift > 63 || shift < 0)
+      throw new NumberFormatException("Invalid shift value (" + shift + ") in prefixCoded bytes (is encoded value really a geo point?)");
+    return shift;
   }
 }

@@ -136,6 +136,7 @@ public final class Geo3DPoint extends Field {
    * @return query matching points within this polygon
    */
   public static Query newPolygonQuery(final String field, final Polygon... polygons) {
+    //System.err.println("Creating polygon...");
     if (polygons.length < 1) {
       throw new IllegalArgumentException("need at least one polygon");
     }
@@ -158,6 +159,7 @@ public final class Geo3DPoint extends Field {
       }
       shape = poly;
     }
+    //System.err.println("...done");
     return newShapeQuery(field, shape);
   }
 
@@ -221,7 +223,10 @@ public final class Geo3DPoint extends Field {
         points.add(new GeoPoint(PlanetModel.WGS84, fromDegrees(polyLats[index]), fromDegrees(polyLons[index])));
       }
     }
-    return GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points, holeList);
+    //System.err.println(" building polygon with "+points.size()+" points...");
+    final GeoPolygon rval = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points, holeList);
+    //System.err.println(" ...done");
+    return rval;
   }
   
   /** 

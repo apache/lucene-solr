@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.geopoint.search;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.util.GeoEncodingUtils;
 import org.apache.lucene.geo.BaseGeoPointTestCase;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
@@ -34,12 +33,12 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
   
   @Override
   protected double quantizeLat(double lat) {
-    return GeoEncodingUtils.mortonUnhashLat(GeoEncodingUtils.mortonHash(lat, 0));
+    return GeoPointField.decodeLatitude(GeoPointField.encodeLatLon(lat, 0));
   }
   
   @Override
   protected double quantizeLon(double lon) {
-    return GeoEncodingUtils.mortonUnhashLon(GeoEncodingUtils.mortonHash(0, lon));
+    return GeoPointField.decodeLongitude(GeoPointField.encodeLatLon(0, lon));
   }
 
   @Override
