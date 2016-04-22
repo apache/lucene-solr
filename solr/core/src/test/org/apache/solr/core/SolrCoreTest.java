@@ -29,6 +29,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -66,6 +67,42 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     old = core.registerRequestHandler( path, handler2 );
     assertEquals( old, handler1 ); // should pop out the old one
     assertEquals( core.getRequestHandlers().get( path ), handler2 );
+  }
+
+  @Test
+  public void testImplicitPlugins() {
+    final SolrCore core = h.getCore();
+    final List<PluginInfo> implicitHandlers = ImplicitPlugins.getHandlers(core);
+
+    final Map<String,String> pathToClassMap = new HashMap<>(implicitHandlers.size());
+    for (PluginInfo implicitHandler : implicitHandlers) {
+      assertEquals("wrong type for "+implicitHandler.toString(),
+          SolrRequestHandler.TYPE, implicitHandler.type);
+      pathToClassMap.put(implicitHandler.name, implicitHandler.className);
+    }
+
+    int ihCount = 0;
+    {
+      ++ihCount; assertEquals(pathToClassMap.get("/admin/file"), "org.apache.solr.handler.admin.ShowFileRequestHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/admin/logging"), "org.apache.solr.handler.admin.LoggingHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/admin/luke"), "org.apache.solr.handler.admin.LukeRequestHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/admin/mbeans"), "org.apache.solr.handler.admin.SolrInfoMBeanHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/admin/ping"), "org.apache.solr.handler.PingRequestHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/admin/plugins"), "org.apache.solr.handler.admin.PluginInfoHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/admin/properties"), "org.apache.solr.handler.admin.PropertiesRequestHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/admin/segments"), "org.apache.solr.handler.admin.SegmentsInfoRequestHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/admin/system"), "org.apache.solr.handler.admin.SystemInfoHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/admin/threads"), "org.apache.solr.handler.admin.ThreadDumpHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/config"), "org.apache.solr.handler.SolrConfigHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/get"), "org.apache.solr.handler.RealTimeGetHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/replication"), "org.apache.solr.handler.ReplicationHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/schema"), "org.apache.solr.handler.SchemaHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/update"), "org.apache.solr.handler.UpdateRequestHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/update/csv"), "org.apache.solr.handler.UpdateRequestHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/update/json"), "org.apache.solr.handler.UpdateRequestHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/update/json/docs"), "org.apache.solr.handler.UpdateRequestHandler");
+    }
+    assertEquals("wrong number of implicit handlers", ihCount, implicitHandlers.size());
   }
 
   @Test
