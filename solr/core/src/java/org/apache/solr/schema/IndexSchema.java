@@ -16,19 +16,32 @@
  */
 package org.apache.solr.schema;
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
 
-import com.google.common.base.Functions;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.DocValuesType;
@@ -40,8 +53,8 @@ import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.Version;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -1363,10 +1376,10 @@ public class IndexSchema {
     return getNamedPropertyValues(null, new MapSolrParams(Collections.EMPTY_MAP));
   }
 
-  static class SchemaProps implements MapSerializable {
+  public static class SchemaProps implements MapSerializable {
     private static final String SOURCE_FIELD_LIST = IndexSchema.SOURCE + "." + CommonParams.FL;
     private static final String DESTINATION_FIELD_LIST = IndexSchema.DESTINATION + "." + CommonParams.FL;
-    private final String name;
+    public final String name;
     private final SolrParams params;
     private final IndexSchema schema;
     boolean showDefaults, includeDynamic;
@@ -1375,7 +1388,7 @@ public class IndexSchema {
     private Set<String> requestedDestinationFields;
 
 
-    enum Handler {
+    public enum Handler {
       NAME(IndexSchema.NAME, sp -> sp.schema.getSchemaName()),
       VERSION(IndexSchema.VERSION, sp -> sp.schema.getVersion()),
       UNIQUE_KEY(IndexSchema.UNIQUE_KEY, sp -> sp.schema.uniqueKeyFieldName),
@@ -1391,11 +1404,6 @@ public class IndexSchema {
           .map(it -> it.getNamedPropertyValues(sp.showDefaults))
           .collect(Collectors.toList())),
 
-      DYNAMIC_FIELDS(IndexSchema.DYNAMIC_FIELDS, sp -> Stream.of(sp.schema.dynamicFields)
-          .filter(it -> !it.getRegex().startsWith(INTERNAL_POLY_FIELD_PREFIX))
-          .filter(it -> sp.requestedFields == null || sp.requestedFields.contains(it.getPrototype().getName()))
-          .map(it -> sp.getProperties(it.getPrototype()))
-          .collect(Collectors.toList())),
       FIELDS(IndexSchema.FIELDS, sp -> {
         List<SimpleOrderedMap> result = (sp.requestedFields != null ? sp.requestedFields : new TreeSet<>(sp.schema.fields.keySet()))
             .stream()
@@ -1405,22 +1413,37 @@ public class IndexSchema {
             .map(sp::getProperties)
             .collect(Collectors.toList());
         if (sp.includeDynamic && sp.requestedFields == null) {
-          result.addAll((Collection) Handler.DYNAMIC_FIELDS.fun.apply(sp));
+          result.addAll(sp.applyDynamic());
         }
         return result;
       }),
+      DYNAMIC_FIELDS(IndexSchema.DYNAMIC_FIELDS, sp -> Stream.of(sp.schema.dynamicFields)
+          .filter(it -> !it.getRegex().startsWith(INTERNAL_POLY_FIELD_PREFIX))
+          .filter(it -> sp.requestedFields == null || sp.requestedFields.contains(it.getPrototype().getName()))
+          .map(it -> sp.getProperties(it.getPrototype()))
+          .collect(Collectors.toList())),
 
 
       COPY_FIELDS(IndexSchema.COPY_FIELDS, sp -> sp.schema.getCopyFieldProperties(false,
           sp.requestedSourceFields, sp.requestedDestinationFields));
 
       final Function<SchemaProps, Object> fun;
-      final String name;
+      public final String realName, nameLower;
       Handler(String name, Function<SchemaProps, Object> fun) {
         this.fun = fun;
-        this.name = name;
+        this.realName = name;
+        nameLower = name.toLowerCase(Locale.ROOT);
+
+      }
+      public String getRealName(){
+        return realName;
+      }
+      public String getNameLower(){
+        return nameLower;
+
       }
     }
+
 
     SchemaProps(String name, SolrParams params, IndexSchema schema) {
       this.name = name;
@@ -1428,34 +1451,27 @@ public class IndexSchema {
       this.schema = schema;
       showDefaults = params.getBool("showDefaults", false);
       includeDynamic = params.getBool("includeDynamic", false);
+      requestedSourceFields = readMultiVals(SOURCE_FIELD_LIST);
+      requestedDestinationFields = readMultiVals(DESTINATION_FIELD_LIST);
+      requestedFields = readMultiVals(CommonParams.FL);
 
-      String sourceFieldListParam = params.get(SOURCE_FIELD_LIST);
-      if (null != sourceFieldListParam) {
-        String[] fields = sourceFieldListParam.trim().split("[,\\s]+");
-        if (fields.length > 0) {
-          requestedSourceFields = new HashSet<>(Arrays.asList(fields));
-          requestedSourceFields.remove(""); // Remove empty values, if any
-        }
-      }
-      String destinationFieldListParam = params.get(DESTINATION_FIELD_LIST);
-      if (null != destinationFieldListParam) {
-        String[] fields = destinationFieldListParam.trim().split("[,\\s]+");
-        if (fields.length > 0) {
-          requestedDestinationFields = new HashSet<>(Arrays.asList(fields));
-          requestedDestinationFields.remove(""); // Remove empty values, if any
-        }
-      }
+    }
+    public Collection applyDynamic(){
+      return (Collection) Handler.DYNAMIC_FIELDS.fun.apply(this);
+    }
 
-      String flParam = params.get(CommonParams.FL);
+    private Set<String> readMultiVals(String name) {
+      String flParam = params.get(name);
       if (null != flParam) {
         String[] fields = flParam.trim().split("[,\\s]+");
         if (fields.length > 0)
-          requestedFields = new LinkedHashSet<>(Stream.of(fields)
+          return new LinkedHashSet<>(Stream.of(fields)
               .filter(it -> !it.trim().isEmpty())
               .collect(Collectors.toList()));
 
       }
 
+      return null;
     }
 
 
@@ -1474,15 +1490,18 @@ public class IndexSchema {
 
     @Override
     public Map<String, Object> toMap() {
-      Map<String, Object> topLevel = new LinkedHashMap<>();
-      Stream.of(Handler.values())
-          .filter(it -> name == null || it.name.equals(name))
-          .forEach(it -> {
-            Object val = it.fun.apply(this);
-            if (val != null) topLevel.put(it.name, val);
-          });
-      return topLevel;
+      return Stream.of(Handler.values())
+          .filter(it -> name == null || it.nameLower.equals(name))
+          .map(it -> new Pair<>(it.realName, it.fun.apply(this)))
+          .filter(it->it.getValue() != null)
+          .collect(Collectors.toMap(
+              Pair::getKey,
+              Pair::getValue,
+              (v1, v2) -> v2,
+              LinkedHashMap::new));
     }
+    public static Map<String,String> nameMapping = Collections.unmodifiableMap(Stream.of(Handler.values())
+        .collect(Collectors.toMap(Handler::getNameLower , Handler::getRealName)));
   }
 
   public Map<String, Object> getNamedPropertyValues(String name, SolrParams params) {
