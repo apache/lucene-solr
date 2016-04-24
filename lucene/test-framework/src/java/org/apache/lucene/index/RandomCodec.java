@@ -192,7 +192,7 @@ public class RandomCodec extends AssertingCodec {
     int lowFreqCutoff = TestUtil.nextInt(random, 2, 100);
 
     maxPointsInLeafNode = TestUtil.nextInt(random, 16, 2048);
-    maxMBSortInHeap = 4.0 + (3*random.nextDouble());
+    maxMBSortInHeap = 5.0 + (3*random.nextDouble());
     bkdSplitRandomSeed = random.nextInt();
 
     add(avoidCodecs,
