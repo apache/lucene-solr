@@ -336,7 +336,7 @@ class GeoStandardPath extends GeoBasePath {
    *    we generate no circle at all.  If there is one intersection only, then we generate a plane that includes that intersection, as well as the remaining
    *    cutoff plane/edge plane points.
    */
-  public static class SegmentEndpoint {
+  private static class SegmentEndpoint {
     /** The center point of the endpoint */
     public final GeoPoint point;
     /** A plane describing the circle */
@@ -580,7 +580,7 @@ class GeoStandardPath extends GeoBasePath {
   /**
    * This is the pre-calculated data for a path segment.
    */
-  public static class PathSegment {
+  private static class PathSegment {
     /** Starting point of the segment */
     public final GeoPoint start;
     /** End point of the segment */
