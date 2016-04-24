@@ -35,6 +35,15 @@ import java.util.Map;
  */
 class GeoComplexPolygon extends GeoBasePolygon {
   
+  private final XTree xtree = new XTree();
+  private final YTree ytree = new YTree();
+  private final ZTree ztree = new ZTree();
+  
+  private final boolean testPointInSet;
+  private final Plane testPointVerticalPlane;
+  private final GeoPoint[] edgePoints;
+  private final Edge[] shapeStartEdges;
+  
   /**
    * Create a complex polygon from multiple lists of points, and a single point which is known to be in or out of
    * set.
@@ -48,7 +57,41 @@ class GeoComplexPolygon extends GeoBasePolygon {
    */
   public GeoComplexPolygon(final PlanetModel planetModel, final List<List<GeoPoint>> pointsList, final GeoPoint testPoint, final boolean testPointInSet) {
     super(planetModel);
-    // MHL
+    this.testPointInSet = testPointInSet;
+    Plane p = Plane.constructNormalizedZPlane(testPoint.x, testPoint.y);
+    if (p == null) {
+      p = new Plane(1.0, 0.0, 0.0, 0.0);
+    }
+    this.testPointVerticalPlane = p;
+    this.edgePoints = new GeoPoint[pointsList.size()];
+    this.shapeStartEdges = new Edge[pointsList.size()];
+    int edgePointIndex = 0;
+    for (final List<GeoPoint> shapePoints : pointsList) {
+      GeoPoint lastGeoPoint = pointsList.get(shapePoints.size()-1);
+      edgePoints[edgePointIndex] = lastGeoPoint;
+      Edge lastEdge = null;
+      Edge firstEdge = null;
+      for (final GeoPoint thisGeoPoint : shapePoints) {
+        final Edge edge = new Edge(planetModel, lastGeoPoint, thisGeoPoint);
+        xtree.add(edge);
+        ytree.add(edge);
+        ztree.add(edge);
+        // Now, link
+        if (firstEdge == null) {
+          firstEdge = edge;
+        }
+        if (lastEdge != null) {
+          lastEdge.next = edge;
+          edge.previous = lastEdge;
+        }
+        lastEdge = edge;
+        lastGeoPoint = thisGeoPoint;
+      }
+      firstEdge.previous = lastEdge;
+      lastEdge.next = firstEdge;
+      shapeStartEdges[edgePointIndex] = firstEdge;
+      edgePointIndex++;
+    }
   }
 
   /** Compute a legal point index from a possibly illegal one, that may have wrapped.
@@ -85,12 +128,22 @@ class GeoComplexPolygon extends GeoBasePolygon {
   @Override
   public void getBounds(Bounds bounds) {
     super.getBounds(bounds);
-    // MHL
+    for (final Edge startEdge : shapeStartEdges) {
+      Edge currentEdge = startEdge;
+      while (true) {
+        currentEdge.plane.recordBounds(this.planetModel, currentEdge.startPlane, currentEdge.edgePlane);
+        currentEdge = currentEdge.next;
+        if (currentEdge == startEdge) {
+          break;
+        }
+      }
+    }
   }
 
   @Override
   protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     // MHL
+    return 0.0;
   }
 
   /**
@@ -104,6 +157,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
     public final SidedPlane endPlane;
     public final Plane plane;
     public final XYZBounds planeBounds;
+    public Edge previous = null;
+    public Edge next = null;
     
     public Edge(final PlanetModel pm, final GeoPoint startPoint, final GeoPoint endPoint) {
       this.startPoint = startPoint;
@@ -116,6 +171,252 @@ class GeoComplexPolygon extends GeoBasePolygon {
     }
   }
   
+  /**
+   * Iterator execution interface, for tree traversal.  Pass an object implementing this interface
+   * into the traversal method of a tree, and each edge that matches will cause this object to be
+   * called.
+   */
+  private static interface EdgeIterator {
+    /**
+     * @param edge is the edge that matched.
+     * @return true if the iteration should continue, false otherwise.
+     */
+    public boolean matches(final Edge edge);
+  }
+  
+  /**
+   * Comparison interface for tree traversal.  An object implementing this interface
+   * gets to decide the relationship between the Edge object and the criteria being considered.
+   */
+  private static interface TraverseComparator {
+    
+    /**
+     * Compare an edge.
+     * @param edge is the edge to compare.
+     * @param value is the value to compare.
+     * @return -1 if "less" than this one, 0 if overlaps, or 1 if "greater".
+     */
+    public int compare(final Edge edge, final double value);
+    
+  }
+
+  /**
+   * Comparison interface for tree addition.  An object implementing this interface
+   * gets to decide the relationship between the Edge object and the criteria being considered.
+   */
+  private static interface AddComparator {
+    
+    /**
+     * Compare an edge.
+     * @param edge is the edge to compare.
+     * @param addEdge is the edge being added.
+     * @return -1 if "less" than this one, 0 if overlaps, or 1 if "greater".
+     */
+    public int compare(final Edge edge, final Edge addEdge);
+    
+  }
+  
+  /**
+   * An instance of this class represents a node in a tree.  The tree is designed to be given
+   * a value and from that to iterate over a list of edges.
+   * In order to do this efficiently, each new edge is dropped into the tree using its minimum and
+   * maximum value.  If the new edge's value does not overlap the range, then it gets added
+   * either to the lesser side or the greater side, accordingly.  If it does overlap, then the
+   * "overlapping" chain is instead traversed.
+   *
+   * This class is generic and can be used for any definition of "value".
+   *
+   */
+  private static class Node {
+    public final Edge edge;
+    public Node lesser = null;
+    public Node greater = null;
+    public Node overlaps = null;
+    
+    public Node(final Edge edge) {
+      this.edge = edge;
+    }
+    
+    public void add(final Edge newEdge, final AddComparator edgeComparator) {
+      Node currentNode = this;
+      while (true) {
+        final int result = edgeComparator.compare(edge, newEdge);
+        if (result < 0) {
+          if (lesser == null) {
+            lesser = new Node(newEdge);
+            return;
+          }
+          currentNode = lesser;
+        } else if (result > 0) {
+          if (greater == null) {
+            greater = new Node(newEdge);
+            return;
+          }
+          currentNode = greater;
+        } else {
+          if (overlaps == null) {
+            overlaps = new Node(newEdge);
+            return;
+          }
+          currentNode = overlaps;
+        }
+      }
+    }
+    
+    public boolean traverse(final EdgeIterator edgeIterator, final TraverseComparator edgeComparator, final double value) {
+      Node currentNode = this;
+      while (currentNode != null) {
+        final int result = edgeComparator.compare(currentNode.edge, value);
+        if (result < 0) {
+          currentNode = lesser;
+        } else if (result > 0) {
+          currentNode = greater;
+        } else {
+          if (!edgeIterator.matches(edge)) {
+            return false;
+          }
+          currentNode = overlaps;
+        }
+      }
+      return true;
+    }
+  }
+  
+  /** This is the z-tree.
+   */
+  private static class ZTree implements TraverseComparator, AddComparator {
+    public Node rootNode = null;
+    
+    public ZTree() {
+    }
+    
+    public void add(final Edge edge) {
+      if (rootNode == null) {
+        rootNode = new Node(edge);
+      } else {
+        rootNode.add(edge, this);
+      }
+    }
+    
+    public boolean traverse(final EdgeIterator edgeIterator, final double value) {
+      if (rootNode == null) {
+        return true;
+      }
+      return rootNode.traverse(edgeIterator, this, value);
+    }
+    
+    @Override
+    public int compare(final Edge edge, final Edge addEdge) {
+      if (edge.planeBounds.getMaximumZ() < addEdge.planeBounds.getMinimumZ()) {
+        return 1;
+      } else if (edge.planeBounds.getMinimumZ() > addEdge.planeBounds.getMaximumZ()) {
+        return -1;
+      }
+      return 0;
+    }
+    
+    @Override
+    public int compare(final Edge edge, final double value) {
+      if (edge.planeBounds.getMinimumZ() > value) {
+        return -1;
+      } else if (edge.planeBounds.getMaximumZ() < value) {
+        return 1;
+      }
+      return 0;
+    }
+    
+  }
+  
+  /** This is the y-tree.
+   */
+  private static class YTree implements TraverseComparator, AddComparator {
+    public Node rootNode = null;
+    
+    public YTree() {
+    }
+    
+    public void add(final Edge edge) {
+      if (rootNode == null) {
+        rootNode = new Node(edge);
+      } else {
+        rootNode.add(edge, this);
+      }
+    }
+    
+    public boolean traverse(final EdgeIterator edgeIterator, final double value) {
+      if (rootNode == null) {
+        return true;
+      }
+      return rootNode.traverse(edgeIterator, this, value);
+    }
+    
+    @Override
+    public int compare(final Edge edge, final Edge addEdge) {
+      if (edge.planeBounds.getMaximumY() < addEdge.planeBounds.getMinimumY()) {
+        return 1;
+      } else if (edge.planeBounds.getMinimumY() > addEdge.planeBounds.getMaximumY()) {
+        return -1;
+      }
+      return 0;
+    }
+    
+    @Override
+    public int compare(final Edge edge, final double value) {
+      if (edge.planeBounds.getMinimumY() > value) {
+        return -1;
+      } else if (edge.planeBounds.getMaximumY() < value) {
+        return 1;
+      }
+      return 0;
+    }
+    
+  }
+
+  /** This is the x-tree.
+   */
+  private static class XTree implements TraverseComparator, AddComparator {
+    public Node rootNode = null;
+    
+    public XTree() {
+    }
+    
+    public void add(final Edge edge) {
+      if (rootNode == null) {
+        rootNode = new Node(edge);
+      } else {
+        rootNode.add(edge, this);
+      }
+    }
+    
+    public boolean traverse(final EdgeIterator edgeIterator, final double value) {
+      if (rootNode == null) {
+        return true;
+      }
+      return rootNode.traverse(edgeIterator, this, value);
+    }
+    
+    @Override
+    public int compare(final Edge edge, final Edge addEdge) {
+      if (edge.planeBounds.getMaximumX() < addEdge.planeBounds.getMinimumX()) {
+        return 1;
+      } else if (edge.planeBounds.getMinimumX() > addEdge.planeBounds.getMaximumX()) {
+        return -1;
+      }
+      return 0;
+    }
+    
+    @Override
+    public int compare(final Edge edge, final double value) {
+      if (edge.planeBounds.getMinimumX() > value) {
+        return -1;
+      } else if (edge.planeBounds.getMaximumX() < value) {
+        return 1;
+      }
+      return 0;
+    }
+    
+  }
+
   @Override
   public boolean equals(Object o) {
     // MHL
