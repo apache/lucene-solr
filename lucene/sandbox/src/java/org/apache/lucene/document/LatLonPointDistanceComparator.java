@@ -158,7 +158,7 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     LeafReader reader = context.reader();
     FieldInfo info = reader.getFieldInfos().fieldInfo(field);
     if (info != null) {
-      LatLonPoint.checkCompatible(info);
+      LatLonDocValuesField.checkCompatible(info);
     }
     currentDocs = DocValues.getSortedNumeric(reader, field);
     return this;

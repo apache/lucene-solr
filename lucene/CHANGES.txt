@@ -10,8 +10,8 @@ http://s.apache.org/luceneversions
 
 New Features
 
-* LUCENE-7099: Add LatLonPoint.newDistanceSort to the sandbox's
-  LatLonPoint. (Robert Muir)
+* LUCENE-7099: Add LatLonDocValuesField.newDistanceSort to the sandbox.
+  (Robert Muir)
 
 * LUCENE-7140: Add PlanetModel.bisection to spatial3d (Karl Wright via
   Mike McCandless)
