@@ -166,6 +166,7 @@ public class TestNearest extends LuceneTestCase {
       lons[id] = quantizeLon(GeoTestUtil.nextLongitude());
       Document doc = new Document();
       doc.add(new LatLonPoint("point", lats[id], lons[id]));
+      doc.add(new LatLonDocValuesField("point", lats[id], lons[id]));
       doc.add(new StoredField("id", id));
       w.addDocument(doc);
     }
@@ -216,7 +217,7 @@ public class TestNearest extends LuceneTestCase {
       }
 
       // Also test with MatchAllDocsQuery, sorting by distance:
-      TopFieldDocs fieldDocs = s.search(new MatchAllDocsQuery(), topN, new Sort(LatLonPoint.newDistanceSort("point", pointLat, pointLon)));
+      TopFieldDocs fieldDocs = s.search(new MatchAllDocsQuery(), topN, new Sort(LatLonDocValuesField.newDistanceSort("point", pointLat, pointLon)));
 
       ScoreDoc[] hits = LatLonPoint.nearest(s, "point", pointLat, pointLon, topN).scoreDocs;
       for(int i=0;i<topN;i++) {

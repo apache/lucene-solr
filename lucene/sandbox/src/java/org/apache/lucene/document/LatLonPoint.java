@@ -24,7 +24,6 @@ import org.apache.lucene.codecs.lucene60.Lucene60PointsFormat;
 import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PointValues;
@@ -38,7 +37,6 @@ import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopFieldDocs;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -63,21 +61,23 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
  * <ul>
  *   <li>{@link #newBoxQuery newBoxQuery()} for matching points within a bounding box.
  *   <li>{@link #newDistanceQuery newDistanceQuery()} for matching points within a specified distance.
- *   <li>{@link #newDistanceSort newDistanceSort()} for ordering documents by distance from a specified location. 
  *   <li>{@link #newPolygonQuery newPolygonQuery()} for matching points within an arbitrary polygon.
  *   <li>{@link #nearest nearest()} for finding the k-nearest neighbors by distance.
  * </ul>
+ * <p>
+ * If you also need per-document operations such as sort by distance, add a separate {@link LatLonDocValuesField} instance.
+ * If you also need to store the value, you should add a separate {@link StoredField} instance.
  * <p>
  * <b>WARNING</b>: Values are indexed with some loss of precision from the
  * original {@code double} values (4.190951585769653E-8 for the latitude component
  * and 8.381903171539307E-8 for longitude).
  * @see PointValues
+ * @see LatLonDocValuesField
  */
 // TODO ^^^ that is very sandy and hurts the API, usage, and tests tremendously, because what the user passes
 // to the field is not actually what gets indexed. Float would be 1E-5 error vs 1E-7, but it might be
 // a better tradeoff? then it would be completely transparent to the user and lucene would be "lossless".
 public class LatLonPoint extends Field {
-  private long currentValue;
 
   /**
    * Type for an indexed LatLonPoint
@@ -87,7 +87,6 @@ public class LatLonPoint extends Field {
   public static final FieldType TYPE = new FieldType();
   static {
     TYPE.setDimensions(2, Integer.BYTES);
-    TYPE.setDocValuesType(DocValuesType.SORTED_NUMERIC);
     TYPE.freeze();
   }
   
@@ -98,13 +97,19 @@ public class LatLonPoint extends Field {
    * @throws IllegalArgumentException if latitude or longitude are out of bounds
    */
   public void setLocationValue(double latitude, double longitude) {
-    byte[] bytes = new byte[8];
+    final byte[] bytes;
+
+    if (fieldsData == null) {
+      bytes = new byte[8];
+      fieldsData = new BytesRef(bytes);
+    } else {
+      bytes = ((BytesRef) fieldsData).bytes;
+    }
+
     int latitudeEncoded = encodeLatitude(latitude);
     int longitudeEncoded = encodeLongitude(longitude);
     NumericUtils.intToSortableBytes(latitudeEncoded, bytes, 0);
     NumericUtils.intToSortableBytes(longitudeEncoded, bytes, Integer.BYTES);
-    fieldsData = new BytesRef(bytes);
-    currentValue = (((long)latitudeEncoded) << 32) | (longitudeEncoded & 0xFFFFFFFFL);
   }
 
   /** 
@@ -127,23 +132,13 @@ public class LatLonPoint extends Field {
     result.append(name);
     result.append(':');
 
-    result.append(decodeLatitude((int)(currentValue >> 32)));
+    byte bytes[] = ((BytesRef) fieldsData).bytes;
+    result.append(decodeLatitude(bytes, 0));
     result.append(',');
-    result.append(decodeLongitude((int)(currentValue & 0xFFFFFFFF)));
+    result.append(decodeLongitude(bytes, Integer.BYTES));
 
     result.append('>');
     return result.toString();
-  }
-
-  /**
-   * Returns a 64-bit long, where the upper 32 bits are the encoded latitude,
-   * and the lower 32 bits are the encoded longitude.
-   * @see org.apache.lucene.geo.GeoEncodingUtils#decodeLatitude(int)
-   * @see org.apache.lucene.geo.GeoEncodingUtils#decodeLongitude(int)
-   */
-  @Override
-  public Number numericValue() {
-    return currentValue;
   }
   
   /** sugar encodes a single point as a byte array */
@@ -173,11 +168,6 @@ public class LatLonPoint extends Field {
     if (fieldInfo.getPointNumBytes() != 0 && fieldInfo.getPointNumBytes() != TYPE.pointNumBytes()) {
       throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + 
                                          " but this point type has bytesPerDim=" + TYPE.pointNumBytes() + 
-                                         ", is the field really a LatLonPoint?");
-    }
-    if (fieldInfo.getDocValuesType() != DocValuesType.NONE && fieldInfo.getDocValuesType() != TYPE.docValuesType()) {
-      throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\" was indexed with docValuesType=" + fieldInfo.getDocValuesType() + 
-                                         " but this point type has docValuesType=" + TYPE.docValuesType() + 
                                          ", is the field really a LatLonPoint?");
     }
   }
@@ -279,30 +269,9 @@ public class LatLonPoint extends Field {
   }
 
   /**
-   * Creates a SortField for sorting by distance from a location.
-   * <p>
-   * This sort orders documents by ascending distance from the location. The value returned in {@link FieldDoc} for
-   * the hits contains a Double instance with the distance in meters.
-   * <p>
-   * If a document is missing the field, then by default it is treated as having {@link Double#POSITIVE_INFINITY} distance
-   * (missing values sort last).
-   * <p>
-   * If a document contains multiple values for the field, the <i>closest</i> distance to the location is used.
-   * 
-   * @param field field name. must not be null.
-   * @param latitude latitude at the center: must be within standard +/-90 coordinate bounds.
-   * @param longitude longitude at the center: must be within standard +/-180 coordinate bounds.
-   * @return SortField ordering documents by distance
-   * @throws IllegalArgumentException if {@code field} is null or location has invalid coordinates.
-   */
-  public static SortField newDistanceSort(String field, double latitude, double longitude) {
-    return new LatLonPointSortField(field, latitude, longitude);
-  }
-
-  /**
    * Finds the {@code n} nearest indexed points to the provided point, according to Haversine distance.
    * <p>
-   * This is functionally equivalent to running {@link MatchAllDocsQuery} with a {@link #newDistanceSort},
+   * This is functionally equivalent to running {@link MatchAllDocsQuery} with a {@link LatLonDocValuesField#newDistanceSort},
    * but is far more efficient since it takes advantage of properties the indexed BKD tree.  Currently this
    * only works with {@link Lucene60PointsFormat} (used by the default codec).  Multi-valued fields are
    * currently not de-duplicated, so if a document had multiple instances of the specified field that
