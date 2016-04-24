@@ -93,6 +93,29 @@ class GeoComplexPolygon extends GeoBasePolygon {
     // MHL
   }
 
+  /**
+   * An instance of this class describes a single edge, and includes what is necessary to reliably determine intersection
+   * in the context of the even/odd algorithm used.
+   */
+  private static class Edge {
+    public final GeoPoint startPoint;
+    public final GeoPoint endPoint;
+    public final SidedPlane startPlane;
+    public final SidedPlane endPlane;
+    public final Plane plane;
+    public final XYZBounds planeBounds;
+    
+    public Edge(final PlanetModel pm, final GeoPoint startPoint, final GeoPoint endPoint) {
+      this.startPoint = startPoint;
+      this.endPoint = endPoint;
+      this.plane = new Plane(startPoint, endPoint);
+      this.startPlane =  new SidedPlane(endPoint, plane, startPoint);
+      this.endPlane = new SidedPlane(startPoint, plane, endPoint);
+      this.planeBounds = new XYZBounds();
+      this.plane.recordBounds(pm, this.planeBounds, this.startPlane, this.endPlane);
+    }
+  }
+  
   @Override
   public boolean equals(Object o) {
     // MHL
