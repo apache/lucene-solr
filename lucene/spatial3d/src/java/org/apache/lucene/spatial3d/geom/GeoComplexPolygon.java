@@ -120,8 +120,27 @@ class GeoComplexPolygon extends GeoBasePolygon {
 
   @Override
   public boolean intersects(final Plane p, final GeoPoint[] notablePoints, final Membership... bounds) {
-    // MHL
-    return false;
+    // Create the intersector
+    final EdgeIterator intersector = new IntersectorEdgeIterator(p, notablePoints, bounds);
+    // First, compute the bounds for the the plane
+    final XYZBounds xyzBounds = new XYZBounds();
+    p.recordBounds(xyzBounds);
+    // Figure out which tree likely works best
+    final double xDelta = xyzBounds.getMaximumX() - xyzBounds.getMinimumX();
+    final double yDelta = xyzBounds.getMaximumY() - xyzBounds.getMinimumY();
+    final double zDelta = xyzBounds.getMaximumZ() - xyzBounds.getMinimumZ();
+    // Select the smallest range
+    if (xDelta <= yDelta && xDelta <= zDelta) {
+      // Drill down in x
+      return !xtree.traverse(intersector, xyzBounds.getMinimumX(), xyzBounds.getMaximumX());
+    } else if (yDelta <= xDelta && yDelta <= zDelta) {
+      // Drill down in y
+      return !ytree.traverse(intersector, xyzBounds.getMinimumY(), xyzBounds.getMaximumY());
+    } else if (zDelta <= xDelta && zDelta <= yDelta) {
+      // Drill down in z
+      return !ztree.traverse(intersector, xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ());
+    }
+    return true;
   }
 
 
@@ -153,6 +172,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private static class Edge {
     public final GeoPoint startPoint;
     public final GeoPoint endPoint;
+    public final GeoPoint[] notablePoints;
     public final SidedPlane startPlane;
     public final SidedPlane endPlane;
     public final Plane plane;
@@ -163,6 +183,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
     public Edge(final PlanetModel pm, final GeoPoint startPoint, final GeoPoint endPoint) {
       this.startPoint = startPoint;
       this.endPoint = endPoint;
+      this.notablePoints = new GeoPoint[]{startPoint, endPoint};
       this.plane = new Plane(startPoint, endPoint);
       this.startPlane =  new SidedPlane(endPoint, plane, startPoint);
       this.endPlane = new SidedPlane(startPoint, plane, endPoint);
@@ -193,10 +214,11 @@ class GeoComplexPolygon extends GeoBasePolygon {
     /**
      * Compare an edge.
      * @param edge is the edge to compare.
-     * @param value is the value to compare.
+     * @param minValue is the minimum value to compare (bottom of the range)
+     * @param maxValue is the maximum value to compare (top of the range)
      * @return -1 if "less" than this one, 0 if overlaps, or 1 if "greater".
      */
-    public int compare(final Edge edge, final double value);
+    public int compare(final Edge edge, final double minValue, final double maxValue);
     
   }
 
@@ -263,10 +285,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
     }
     
-    public boolean traverse(final EdgeIterator edgeIterator, final TraverseComparator edgeComparator, final double value) {
+    public boolean traverse(final EdgeIterator edgeIterator, final TraverseComparator edgeComparator, final double minValue, final double maxValue) {
       Node currentNode = this;
       while (currentNode != null) {
-        final int result = edgeComparator.compare(currentNode.edge, value);
+        final int result = edgeComparator.compare(currentNode.edge, minValue, maxValue);
         if (result < 0) {
           currentNode = lesser;
         } else if (result > 0) {
@@ -298,11 +320,11 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
     }
     
-    public boolean traverse(final EdgeIterator edgeIterator, final double value) {
+    public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue) {
       if (rootNode == null) {
         return true;
       }
-      return rootNode.traverse(edgeIterator, this, value);
+      return rootNode.traverse(edgeIterator, this, minValue, maxValue);
     }
     
     @Override
@@ -316,10 +338,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
     }
     
     @Override
-    public int compare(final Edge edge, final double value) {
-      if (edge.planeBounds.getMinimumZ() > value) {
+    public int compare(final Edge edge, final double minValue, final double maxValue) {
+      if (edge.planeBounds.getMinimumZ() > maxValue) {
         return -1;
-      } else if (edge.planeBounds.getMaximumZ() < value) {
+      } else if (edge.planeBounds.getMaximumZ() < minValue) {
         return 1;
       }
       return 0;
@@ -343,11 +365,11 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
     }
     
-    public boolean traverse(final EdgeIterator edgeIterator, final double value) {
+    public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue) {
       if (rootNode == null) {
         return true;
       }
-      return rootNode.traverse(edgeIterator, this, value);
+      return rootNode.traverse(edgeIterator, this, minValue, maxValue);
     }
     
     @Override
@@ -361,10 +383,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
     }
     
     @Override
-    public int compare(final Edge edge, final double value) {
-      if (edge.planeBounds.getMinimumY() > value) {
+    public int compare(final Edge edge, final double minValue, final double maxValue) {
+      if (edge.planeBounds.getMinimumY() > maxValue) {
         return -1;
-      } else if (edge.planeBounds.getMaximumY() < value) {
+      } else if (edge.planeBounds.getMaximumY() < minValue) {
         return 1;
       }
       return 0;
@@ -388,11 +410,11 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
     }
     
-    public boolean traverse(final EdgeIterator edgeIterator, final double value) {
+    public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue) {
       if (rootNode == null) {
         return true;
       }
-      return rootNode.traverse(edgeIterator, this, value);
+      return rootNode.traverse(edgeIterator, this, minValue, maxValue);
     }
     
     @Override
@@ -406,10 +428,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
     }
     
     @Override
-    public int compare(final Edge edge, final double value) {
-      if (edge.planeBounds.getMinimumX() > value) {
+    public int compare(final Edge edge, final double minValue, final double maxValue) {
+      if (edge.planeBounds.getMinimumX() > maxValue) {
         return -1;
-      } else if (edge.planeBounds.getMaximumX() < value) {
+      } else if (edge.planeBounds.getMaximumX() < minValue) {
         return 1;
       }
       return 0;
@@ -417,6 +439,27 @@ class GeoComplexPolygon extends GeoBasePolygon {
     
   }
 
+  /** Assess whether edge intersects the provided plane plus bounds.
+   */
+  private class IntersectorEdgeIterator implements EdgeIterator {
+    
+    private final Plane plane;
+    private final GeoPoint[] notablePoints;
+    private final Membership[] bounds;
+    
+    public IntersectorEdgeIterator(final Plane plane, final GeoPoint[] notablePoints, final Membership... bounds) {
+      this.plane = plane;
+      this notablePoints = notablePoints;
+      this.bounds = bounds;
+    }
+    
+    @Override
+    public boolean matches(final Edge edge) {
+      return !plane.intersects(planetModel, edge.plane, notablePoints, edge.notablePoints, bounds, edge.startPlane, edge.endPlane);
+    }
+
+  }
+  
   @Override
   public boolean equals(Object o) {
     // MHL
@@ -426,6 +469,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
   @Override
   public int hashCode() {
     // MHL
+    return 0;
   }
 
   @Override
