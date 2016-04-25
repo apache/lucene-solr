@@ -40,7 +40,11 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private final ZTree ztree = new ZTree();
   
   private final boolean testPointInSet;
-  private final Plane testPointZPlane;
+  
+  private final Plane testPointXZPlane;
+  private final Plane testPointYZPlane;
+  private final Plane testPointXYPlane;
+  
   private final GeoPoint[] edgePoints;
   private final Edge[] shapeStartEdges;
   
@@ -58,11 +62,11 @@ class GeoComplexPolygon extends GeoBasePolygon {
   public GeoComplexPolygon(final PlanetModel planetModel, final List<List<GeoPoint>> pointsList, final GeoPoint testPoint, final boolean testPointInSet) {
     super(planetModel);
     this.testPointInSet = testPointInSet;
-    Plane p = Plane.constructNormalizedZPlane(testPoint.x, testPoint.y);
-    if (p == null) {
-      p = new Plane(1.0, 0.0, 0.0, 0.0);
-    }
-    this.testPointZPlane = p;
+    
+    this.testPointXZPlane = new Plane(0.0, 1.0, 0.0, -testPoint.y);
+    this.testPointYZPlane = new Plane(1.0, 0.0, 0.0, -testPoint.x);
+    this.testPointXYPlane = new Plane(0.0, 0.0, 1.0, -testPoint.z);
+    
     this.edgePoints = new GeoPoint[pointsList.size()];
     this.shapeStartEdges = new Edge[pointsList.size()];
     int edgePointIndex = 0;
@@ -114,42 +118,112 @@ class GeoComplexPolygon extends GeoBasePolygon {
   
   @Override
   public boolean isWithin(final Vector thePoint) {
-    // Construct a horizontal plane that goes through the provided z value.  This, along with the
-    // testPointZPlane, will provide a way of counting intersections between this point and the test point.
-    // We use z exclusively for this logic at the moment but we may in the future choose x or y based on which
-    // is bigger.
+    // If we're right on top of the point, we know the answer.
     if (testPoint.isNumericallyIdentical(thePoint)) {
-      return true;
+      return testPointInSet;
     }
-    if (testPointZPlane.evaluateIsZero(thePoint)) {
-      // The point we are assessing goes through only one plane.
-      // Compute cutoff planes
-      final SidedPlane testPointCutoff =  new SidedPlane(thePoint, testPointZPlane, testPoint);
-      final SidedPlane checkPointCutoff = new SidedPlane(testPoint, testPointZPlane, thePoint);
-
-      // Count crossings
-      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointZPlane, testPointCutoff, checkPointCutoff);
-      
-      // Compute bounds for this part of testZPlane
-      final XYZBounds testZPlaneBounds = new XYZBounds();
-      testPointZPlane.recordBounds(planetModel, testZPlaneBounds, testPointCutoff, checkPointCutoff);
-      
-      // Pick which tree to use
-      final double xDelta = testZPlaneBounds.getMaximumX() - testZPlaneBounds.getMinimumX();
-      final double yDelta = testZPlaneBounds.getMaximumY() - testZPlaneBounds.getMinimumY();
-      if (xDelta <= yDelta) {
-        xTree.traverse(crossingEdgeIterator, testZPlaneBounds.getMinimumX(), testZPlaneBounds.getMaximumX());
-      } else if (yDelta <= xDelta) {
-        yTree.traverse(crossingEdgeIterator, testZPlaneBounds.getMinimumY(), testZPlaneBounds.getMaximumY());
-      }
-      return ((crossingEdgeIterator.getCrossingCount() & 0x00000001) == 0)?testPointInSet:!testPointInSet;
-    } else {
-      // The point requires two planes
-      final Plane xyPlane = new Plane(planetModel, z);
-      // We need to plan a path from the test point to the point to be evaluated.
-      // This requires finding the intersection point between the xyPlane and the testPointZPlane
-      // that is closest to our point.
+    
+    // Choose our navigation route!
+    final double xDelta = Math.abs(thePoint.x - testPoint.x);
+    final double yDelta = Math.abs(thePoint.y - testPoint.y);
+    final double zDelta = Math.abs(thePoint.z - testPoint.z);
+    
+    // If we're right on top of any of the test planes, we navigate solely on that plane.
+    if (testPointXZPlane.evaluateIsZero(thePoint)) {
+      // Use the XZ plane exclusively.
+      final SidedPlane testPointCutoff =  new SidedPlane(thePoint, testPointXZPlane, testPoint);
+      final SidedPlane checkPointCutoff = new SidedPlane(testPoint, testPointXZPlane, thePoint);
+      // Note: need to detect condition where edge endpoint is the check point!
       // MHL
+      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointXZPlane, testPointCutoff, checkPointCutoff);
+      // Traverse our way from the test point to the check point.  Use the y tree because that's fixed.
+      yTree.traverse(crossingEdgeIterator, testPoint.y, testPoint.y);
+      return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
+    } else if (testPointYZPlane.evaluateIsZero(thePoint)) {
+      // Use the YZ plane exclusively.
+      final SidedPlane testPointCutoff =  new SidedPlane(thePoint, testPointYZPlane, testPoint);
+      final SidedPlane checkPointCutoff = new SidedPlane(testPoint, testPointYZPlane, thePoint);
+      // Note: need to detect condition where edge endpoint is the check point!
+      // MHL
+      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointYZPlane, testPointCutoff, checkPointCutoff);
+      // Traverse our way from the test point to the check point.  Use the x tree because that's fixed.
+      xTree.traverse(crossingEdgeIterator, testPoint.x, testPoint.x);
+      return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
+    } else if (testPointXYPlane.evaluateIsZero(thePoint)) {
+      // Use the XY plane exclusively.
+      final SidedPlane testPointCutoff =  new SidedPlane(thePoint, testPointXYPlane, testPoint);
+      final SidedPlane checkPointCutoff = new SidedPlane(testPoint, testPointXYPlane, thePoint);
+      // Note: need to detect condition where edge endpoint is the check point!
+      // MHL
+      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointXYPlane, testPointCutoff, checkPointCutoff);
+      // Traverse our way from the test point to the check point.  Use the z tree because that's fixed.
+      zTree.traverse(crossingEdgeIterator, testPoint.z, testPoint.z);
+      return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
+    } else {
+      
+      // We need to use two planes to get there.  We can use any two planes, and order doesn't matter.
+      // The best to pick are the ones with the shortest overall distance.
+      if (xDelta + yDelta <= xDelta + zDelta && xDelta + yDelta <= yDelta + zDelta) {
+        // Travel in X and Y
+        // We'll do this using the testPointYZPlane, and create a travel plane for the right XZ plane.
+        final Plane travelPlane = new Plane(0.0, 1.0, 0.0, -thePoint.y);
+        // We need cutoff planes for both legs.
+        final SidedPlane testPointCutoffPlane = new SidedPlane(thePoint, testPointYZPlane, testPoint);
+        final SidedPlane checkPointCutoffPlane = new SidedPlane(testPoint, travelPlane, thePoint);
+        // Now, find the intersection of the check and test point planes.
+        final GeoPoint[] intersectionPoints = travelPlane.findIntersections(planetModel, testPointYZPlane, testPointCutoffPlane, checkPointCutoffPlane);
+        assert intersectionPoints != null : "couldn't find any intersections";
+        assert intersectionPoints.length != 1 : "wrong number of intersection points";
+        final SidedPlane testPointOtherCutoffPlane = new SidedPlane(testPoint, testPointYZPlane, intersectionPoints[0]);
+        final SidedPlane checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
+        // Note: we need to handle the cases where end point of the leg sits on an edge!
+        // MHL
+        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointYZPlane, testPointCutoffPlane, testPointOtherCutoffPlane);
+        xTree.traverse(testPointEdgeIterator, testPoint.x, testPoint.x);
+        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane);
+        yTree.traverse(checkPointEdgeIterator, thePoint.y, thePoint.y);
+        return (((testPointEdgeIterator.crossingCount + checkPointEdgeIterator.crossingCount) & 1) == 0)?testPointInSet:!testPointInSet;
+      } else if (xDelta + zDelta <= xDelta + yDelta && xDelta + zDelta <= zDelta + yDelta) {
+        // Travel in X and Z
+        // We'll do this using the testPointXYPlane, and create a travel plane for the right YZ plane.
+        final Plane travelPlane = new Plane(1.0, 0.0, 0.0, -thePoint.x);
+        // We need cutoff planes for both legs.
+        final SidedPlane testPointCutoffPlane = new SidedPlane(thePoint, testPointXYPlane, testPoint);
+        final SidedPlane checkPointCutoffPlane = new SidedPlane(testPoint, travelPlane, thePoint);
+        // Now, find the intersection of the check and test point planes.
+        final GeoPoint[] intersectionPoints = travelPlane.findIntersections(planetModel, testPointXYPlane, testPointCutoffPlane, checkPointCutoffPlane);
+        assert intersectionPoints != null : "couldn't find any intersections";
+        assert intersectionPoints.length != 1 : "wrong number of intersection points";
+        final SidedPlane testPointOtherCutoffPlane = new SidedPlane(testPoint, testPointXYPlane, intersectionPoints[0]);
+        final SidedPlane checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
+        // Note: we need to handle the cases where end point of the leg sits on an edge!
+        // MHL
+        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXYPlane, testPointCutoffPlane, testPointOtherCutoffPlane);
+        zTree.traverse(testPointEdgeIterator, testPoint.z, testPoint.z);
+        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane);
+        xTree.traverse(checkPointEdgeIterator, thePoint.x, thePoint.x);
+        return (((testPointEdgeIterator.crossingCount + checkPointEdgeIterator.crossingCount) & 1) == 0)?testPointInSet:!testPointInSet;
+      } else if (yDelta + zDelta <= xDelta + yDelta && yDelta + zDelta <= xDelta + zDelta) {
+        // Travel in Y and Z
+        // We'll do this using the testPointXZPlane, and create a travel plane for the right XY plane.
+        final Plane travelPlane = new Plane(0.0, 0.0, 1.0, -thePoint.z);
+        // We need cutoff planes for both legs.
+        final SidedPlane testPointCutoffPlane = new SidedPlane(thePoint, testPointXZPlane, testPoint);
+        final SidedPlane checkPointCutoffPlane = new SidedPlane(testPoint, travelPlane, thePoint);
+        // Now, find the intersection of the check and test point planes.
+        final GeoPoint[] intersectionPoints = travelPlane.findIntersections(planetModel, testPointXZPlane, testPointCutoffPlane, checkPointCutoffPlane);
+        assert intersectionPoints != null : "couldn't find any intersections";
+        assert intersectionPoints.length != 1 : "wrong number of intersection points";
+        final SidedPlane testPointOtherCutoffPlane = new SidedPlane(testPoint, testPointXZPlane, intersectionPoints[0]);
+        final SidedPlane checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
+        // Note: we need to handle the cases where end point of the leg sits on an edge!
+        // MHL
+        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXZPlane, testPointCutoffPlane, testPointOtherCutoffPlane);
+        yTree.traverse(testPointEdgeIterator, testPoint.y, testPoint.y);
+        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane);
+        zTree.traverse(checkPointEdgeIterator, thePoint.z, thePoint.z);
+        return (((testPointEdgeIterator.crossingCount + checkPointEdgeIterator.crossingCount) & 1) == 0)?testPointInSet:!testPointInSet;
+      }
     }
     return false;
   }
