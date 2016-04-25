@@ -39,6 +39,11 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
   }
 
   @Override
+  public void grow(int count) {
+    hits.grow(count);
+  }
+
+  @Override
   public void visit(int docID) {
     hits.add(docID);
   }
