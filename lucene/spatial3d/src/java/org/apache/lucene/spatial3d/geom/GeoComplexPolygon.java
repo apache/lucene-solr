@@ -43,8 +43,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private final GeoPoint testPoint;
   
   private final Plane testPointXZPlane;
+  private final Plane testPointXZAbovePlane;
+  private final Plane testPointXZBelowPlane;
   private final Plane testPointYZPlane;
+  private final Plane testPointYZAbovePlane;
+  private final Plane testPointYZBelowPlane;
   private final Plane testPointXYPlane;
+  private final Plane testPointXYAbovePlane;
+  private final Plane testPointXYBelowPlane;
   
   private final GeoPoint[] edgePoints;
   private final Edge[] shapeStartEdges;
@@ -69,6 +75,13 @@ class GeoComplexPolygon extends GeoBasePolygon {
     this.testPointYZPlane = new Plane(1.0, 0.0, 0.0, -testPoint.x);
     this.testPointXYPlane = new Plane(0.0, 0.0, 1.0, -testPoint.z);
     
+    this.testPointXZAbovePlane = new Plane(testPointXZPlane, true);
+    this.testPointXZBelowPlane = new Plane(testPointXZPlane, false);
+    this.testPointYZAbovePlane = new Plane(testPointYZPlane, true);
+    this.testPointYZBelowPlane = new Plane(testPointYZPlane, false);
+    this.testPointXYAbovePlane = new Plane(testPointXYPlane, true);
+    this.testPointXYBelowPlane = new Plane(testPointXYPlane, false);
+
     this.edgePoints = new GeoPoint[pointsList.size()];
     this.shapeStartEdges = new Edge[pointsList.size()];
     int edgePointIndex = 0;
@@ -122,7 +135,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // Use the XZ plane exclusively.
       final SidedPlane testPointCutoff =  new SidedPlane(thePoint, testPointXZPlane, testPoint);
       final SidedPlane checkPointCutoff = new SidedPlane(testPoint, testPointXZPlane, thePoint);
-      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointXZPlane, testPointCutoff, checkPointCutoff, thePoint);
+      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointXZPlane, testPointXZAbovePlane, testPointXZBelowPlane, testPointCutoff, checkPointCutoff, thePoint);
       // Traverse our way from the test point to the check point.  Use the y tree because that's fixed.
       if (!yTree.traverse(crossingEdgeIterator, testPoint.y, testPoint.y)) {
         // Endpoint is on edge
@@ -133,7 +146,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // Use the YZ plane exclusively.
       final SidedPlane testPointCutoff =  new SidedPlane(thePoint, testPointYZPlane, testPoint);
       final SidedPlane checkPointCutoff = new SidedPlane(testPoint, testPointYZPlane, thePoint);
-      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointYZPlane, testPointCutoff, checkPointCutoff, thePoint);
+      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointYZPlane, testPointYZAbovePlane, testPointYZBelowPlane, testPointCutoff, checkPointCutoff, thePoint);
       // Traverse our way from the test point to the check point.  Use the x tree because that's fixed.
       if (!xTree.traverse(crossingEdgeIterator, testPoint.x, testPoint.x)) {
         // Endpoint is on edge
@@ -144,7 +157,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // Use the XY plane exclusively.
       final SidedPlane testPointCutoff =  new SidedPlane(thePoint, testPointXYPlane, testPoint);
       final SidedPlane checkPointCutoff = new SidedPlane(testPoint, testPointXYPlane, thePoint);
-      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointXYPlane, testPointCutoff, checkPointCutoff, thePoint);
+      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointXYPlane, testPointXYAbovePlane, testPointXYBelowPlane, testPointCutoff, checkPointCutoff, thePoint);
       // Traverse our way from the test point to the check point.  Use the z tree because that's fixed.
       if (!zTree.traverse(crossingEdgeIterator, testPoint.z, testPoint.z)) {
         // Endpoint is on edge
@@ -159,6 +172,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
         // Travel in X and Y
         // We'll do this using the testPointYZPlane, and create a travel plane for the right XZ plane.
         final Plane travelPlane = new Plane(0.0, 1.0, 0.0, -thePoint.y);
+        final Plane travelAbovePlane = new Plane(travelPlane, true);
+        final Plane travelBelowPlane = new Plane(travelPlane, false);
         // We need cutoff planes for both legs.
         final SidedPlane testPointCutoffPlane = new SidedPlane(thePoint, testPointYZPlane, testPoint);
         final SidedPlane checkPointCutoffPlane = new SidedPlane(testPoint, travelPlane, thePoint);
@@ -170,9 +185,9 @@ class GeoComplexPolygon extends GeoBasePolygon {
         final SidedPlane checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
         // Note: we need to handle the cases where end point of the leg sits on an edge!
         // MHL
-        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointYZPlane, testPointCutoffPlane, testPointOtherCutoffPlane, null);
+        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointYZPlane, testPointYZAbovePlane, testPointYZBelowPlane, testPointCutoffPlane, testPointOtherCutoffPlane, null);
         xTree.traverse(testPointEdgeIterator, testPoint.x, testPoint.x);
-        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
+        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, travelAbovePlane, travelBelowPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
         if (!yTree.traverse(checkPointEdgeIterator, thePoint.y, thePoint.y)) {
           // Endpoint is on edge
           return true;
@@ -182,6 +197,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
         // Travel in X and Z
         // We'll do this using the testPointXYPlane, and create a travel plane for the right YZ plane.
         final Plane travelPlane = new Plane(1.0, 0.0, 0.0, -thePoint.x);
+        final Plane travelAbovePlane = new Plane(travelPlane, true);
+        final Plane travelBelowPlane = new Plane(travelPlane, false);
         // We need cutoff planes for both legs.
         final SidedPlane testPointCutoffPlane = new SidedPlane(thePoint, testPointXYPlane, testPoint);
         final SidedPlane checkPointCutoffPlane = new SidedPlane(testPoint, travelPlane, thePoint);
@@ -193,9 +210,9 @@ class GeoComplexPolygon extends GeoBasePolygon {
         final SidedPlane checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
         // Note: we need to handle the cases where end point of the leg sits on an edge!
         // MHL
-        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXYPlane, testPointCutoffPlane, testPointOtherCutoffPlane, null);
+        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXYPlane, testPointXYAbovePlane, testPointXYBelowPlane, testPointCutoffPlane, testPointOtherCutoffPlane, null);
         zTree.traverse(testPointEdgeIterator, testPoint.z, testPoint.z);
-        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
+        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, travelAbovePlane, travelBelowPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
         if (!xTree.traverse(checkPointEdgeIterator, thePoint.x, thePoint.x)) {
           // Endpoint is on edge
           return true;
@@ -205,6 +222,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
         // Travel in Y and Z
         // We'll do this using the testPointXZPlane, and create a travel plane for the right XY plane.
         final Plane travelPlane = new Plane(0.0, 0.0, 1.0, -thePoint.z);
+        final Plane travelAbovePlane = new Plane(travelPlane, true);
+        final Plane travelBelowPlane = new Plane(travelPlane, false);
         // We need cutoff planes for both legs.
         final SidedPlane testPointCutoffPlane = new SidedPlane(thePoint, testPointXZPlane, testPoint);
         final SidedPlane checkPointCutoffPlane = new SidedPlane(testPoint, travelPlane, thePoint);
@@ -216,9 +235,9 @@ class GeoComplexPolygon extends GeoBasePolygon {
         final SidedPlane checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
         // Note: we need to handle the cases where end point of the first leg sits on an edge!
         // MHL
-        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXZPlane, testPointCutoffPlane, testPointOtherCutoffPlane, null);
+        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXZPlane, testPointXZAbovePlane, testPointXZBelowPlane, testPointCutoffPlane, testPointOtherCutoffPlane, null);
         yTree.traverse(testPointEdgeIterator, testPoint.y, testPoint.y);
-        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
+        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, travelAbovePlane, travelBelowPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
         if (!zTree.traverse(checkPointEdgeIterator, thePoint.z, thePoint.z)) {
           // Endpoint is on edge
           return true;
@@ -589,10 +608,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
     
     public int crossingCount = 0;
     
-    public CrossingEdgeIterator(final Plane plane, final Membership bound1, final Membership bound2, final Vector thePoint) {
+    public CrossingEdgeIterator(final Plane plane, final Plane abovePlane, final Plane belowPlane, final Membership bound1, final Membership bound2, final Vector thePoint) {
       this.plane = plane;
-      this.abovePlane = new Plane(plane, true);
-      this.belowPlane = new Plane(plane, false);
+      this.abovePlane = abovePlane;
+      this.belowPlane = belowPlane;
       this.bound1 = bound1;
       this.bound2 = bound2;
       this.thePoint = thePoint;
