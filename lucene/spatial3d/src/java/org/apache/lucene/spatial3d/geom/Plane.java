@@ -94,6 +94,24 @@ public class Plane extends Vector {
     this.D = D;
   }
 
+  /** Construct a plane that is parallel to the one provided, but which is just barely numerically
+   * distinguishable from it, in the direction desired.
+   * @param basePlane is the starting plane.
+   * @param above is set to true if the desired plane is in the positive direction from the base plane,
+   *   or false in the negative direction.
+   */
+  public Plane(final Plane basePlane, final boolean above) {
+    this(basePlane.x, basePlane.y, basePlane.z, outsideEnvelope(basePlane.D, above));
+  }
+  
+  private double outsideEnvelope(final double value, boolean above) {
+    if (above) {
+      return Math.nextUp(value + MINIMUM_RESOLUTION);
+    } else {
+      return Math.nextDown(value - MINIMUM_RESOLUTION);
+    }
+  }
+  
   /** Construct the most accurate normalized plane through an x-y point and including the Z axis.
    * If none of the points can determine the plane, return null.
    * @param planePoints is a set of points to choose from.  The best one for constructing the most precise plane is picked.
@@ -191,7 +209,7 @@ public class Plane extends Vector {
     final double denom = 1.0 / Math.sqrt(y*y + z*z);
     return new Plane(0.0, z * denom, -y * denom, DValue);
   }
-  
+
   /**
    * Evaluate the plane equation for a given point, as represented
    * by a vector.
