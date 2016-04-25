@@ -23,8 +23,8 @@ import org.apache.lucene.util.BytesRef;
 /** A field that is indexed but not tokenized: the entire
  *  String value is indexed as a single token.  For example
  *  this might be used for a 'country' field or an 'id'
- *  field, or any field that you intend to use for sorting
- *  or access through the field cache. */
+ *  field.  If you also need to sort on this field, separately
+ *  add a {@link SortedDocValuesField} to your document. */
 
 public final class StringField extends Field {
 
