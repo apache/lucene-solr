@@ -1112,7 +1112,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
         } else if (Double.isNaN(lats[id])) {
           expected = false;
         } else {
-          expected = polygon.contains(lats[id], lons[id]);
+          expected = GeoTestUtil.containsSlowly(polygon, lats[id], lons[id]);
         }
 
         if (hits.get(docID) != expected) {

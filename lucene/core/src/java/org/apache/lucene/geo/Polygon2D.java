@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.document;
+package org.apache.lucene.geo;
 
 import java.util.Arrays;
 
@@ -24,38 +24,55 @@ import org.apache.lucene.index.PointValues.Relation;
 /**
  * 2D polygon implementation represented as a balanced interval tree of edges.
  * <p>
- * contains() and crosses() are still O(n), but for most practical polygons 
- * are much faster than brute force.
+ * Construction takes {@code O(n log n)} time for sorting and tree construction.
+ * {@link #contains contains()} and {@link #relate relate()} are {@code O(n)}, but for most 
+ * practical polygons are much faster than brute force.
  * <p>
  * Loosely based on the algorithm described in <a href="http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf">
  * http://www-ma2.upc.es/geoc/Schirra-pointPolygon.pdf</a>.
+ * @lucene.internal
  */
 // Both Polygon.contains() and Polygon.crossesSlowly() loop all edges, and first check that the edge is within a range.
 // we just organize the edges to do the same computations on the same subset of edges more efficiently. 
-// TODO: clean this up, call it Polygon2D, and remove all the 2D methods from Polygon?
-final class LatLonTree {
-  private final LatLonTree[] holes;
-
+public final class Polygon2D {
   /** minimum latitude of this polygon's bounding box area */
-  final double minLat;
+  public final double minLat;
   /** maximum latitude of this polygon's bounding box area */
-  final double maxLat;
+  public final double maxLat;
   /** minimum longitude of this polygon's bounding box area */
-  final double minLon;
+  public final double minLon;
   /** maximum longitude of this polygon's bounding box area */
-  final double maxLon;
+  public final double maxLon;
   
-  /** root node of our tree */
-  final Edge tree;
+  // each component/hole is a node in an augmented 2d kd-tree: we alternate splitting between latitude/longitude,
+  // and pull up max values for both dimensions to each parent node (regardless of split).
 
-  // TODO: "pack" all the gons and holes into one tree with separator.
-  // the algorithms support this, but we have to be careful.
-  LatLonTree(Polygon polygon, LatLonTree... holes) {
-    this.holes = holes.clone();
+  /** maximum latitude of this component or any of its children */
+  private double maxY;
+  /** maximum longitude of this component or any of its children */
+  private double maxX;
+  /** which dimension was this node split on */
+  // TODO: its implicit based on level, but boolean keeps code simple
+  private boolean splitX;
+
+  // child components, or null
+  private Polygon2D left;
+  private Polygon2D right;
+  
+  /** tree of holes, or null */
+  private final Polygon2D holes;
+  
+  /** root node of edge tree */
+  private final Edge tree;
+
+  private Polygon2D(Polygon polygon, Polygon2D holes) {
+    this.holes = holes;
     this.minLat = polygon.minLat;
     this.maxLat = polygon.maxLat;
     this.minLon = polygon.minLon;
     this.maxLon = polygon.maxLon;
+    this.maxY = maxLat;
+    this.maxX = maxLon;
     
     // create interval tree of edges
     this.tree = createTree(polygon.getPolyLats(), polygon.getPolyLons());
@@ -67,17 +84,35 @@ final class LatLonTree {
    * See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
    * https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html</a> for more information.
    */
-  boolean contains(double latitude, double longitude) {
+  public boolean contains(double latitude, double longitude) {
+    if (latitude <= maxY && longitude <= maxX) {
+      if (componentContains(latitude, longitude)) {
+        return true;
+      }
+      if (left != null) {
+        if (left.contains(latitude, longitude)) {
+          return true;
+        }
+      }
+      if (right != null && ((splitX == false && latitude >= minLat) || (splitX && longitude >= minLon))) {
+        if (right.contains(latitude, longitude)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  
+  /** Returns true if the point is contained within this polygon component. */
+  private boolean componentContains(double latitude, double longitude) {
     // check bounding box
     if (latitude < minLat || latitude > maxLat || longitude < minLon || longitude > maxLon) {
       return false;
     }
     
     if (tree.contains(latitude, longitude)) {
-      for (LatLonTree hole : holes) {
-        if (hole.contains(latitude, longitude)) {
-          return false;
-        }
+      if (holes != null && holes.contains(latitude, longitude)) {
+        return false;
       }
       return true;
     }
@@ -86,7 +121,30 @@ final class LatLonTree {
   }
   
   /** Returns relation to the provided rectangle */
-  Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
+  public Relation relate(double minLat, double maxLat, double minLon, double maxLon) {
+    if (minLat <= maxY && minLon <= maxX) {
+      Relation relation = componentRelate(minLat, maxLat, minLon, maxLon);
+      if (relation != Relation.CELL_OUTSIDE_QUERY) {
+        return relation;
+      }
+      if (left != null) {
+        relation = left.relate(minLat, maxLat, minLon, maxLon);
+        if (relation != Relation.CELL_OUTSIDE_QUERY) {
+          return relation;
+        }
+      }
+      if (right != null && ((splitX == false && maxLat >= this.minLat) || (splitX && maxLon >= this.minLon))) {
+        relation = right.relate(minLat, maxLat, minLon, maxLon);
+        if (relation != Relation.CELL_OUTSIDE_QUERY) {
+          return relation;
+        }
+      }
+    }
+    return Relation.CELL_OUTSIDE_QUERY;
+  }
+
+  /** Returns relation to the provided rectangle for this component */
+  private Relation componentRelate(double minLat, double maxLat, double minLon, double maxLon) {
     // if the bounding boxes are disjoint then the shape does not cross
     if (maxLon < this.minLon || minLon > this.maxLon || maxLat < this.minLat || minLat > this.maxLat) {
       return Relation.CELL_OUTSIDE_QUERY;
@@ -96,8 +154,8 @@ final class LatLonTree {
       return Relation.CELL_CROSSES_QUERY;
     }
     // check any holes
-    for (LatLonTree hole : holes) {
-      Relation holeRelation = hole.relate(minLat, maxLat, minLon, maxLon);
+    if (holes != null) {
+      Relation holeRelation = holes.relate(minLat, maxLat, minLon, maxLon);
       if (holeRelation == Relation.CELL_CROSSES_QUERY) {
         return Relation.CELL_CROSSES_QUERY;
       } else if (holeRelation == Relation.CELL_INSIDE_QUERY) {
@@ -126,66 +184,85 @@ final class LatLonTree {
   // returns 0, 4, or something in between
   private int numberOfCorners(double minLat, double maxLat, double minLon, double maxLon) {
     int containsCount = 0;
-    if (contains(minLat, minLon)) {
+    if (componentContains(minLat, minLon)) {
       containsCount++;
     }
-    if (contains(minLat, maxLon)) {
+    if (componentContains(minLat, maxLon)) {
       containsCount++;
     }
     if (containsCount == 1) {
       return containsCount;
     }
-    if (contains(maxLat, maxLon)) {
+    if (componentContains(maxLat, maxLon)) {
       containsCount++;
     }
     if (containsCount == 2) {
       return containsCount;
     }
-    if (contains(maxLat, minLon)) {
+    if (componentContains(maxLat, minLon)) {
       containsCount++;
     }
     return containsCount;
   }
-
-  /** Helper for multipolygon logic: returns true if any of the supplied polygons contain the point */
-  static boolean contains(LatLonTree[] polygons, double latitude, double longitude) {
-    for (LatLonTree polygon : polygons) {
-      if (polygon.contains(latitude, longitude)) {
-        return true;
+  
+  /** Creates tree from sorted components (with range low and high inclusive) */
+  private static Polygon2D createTree(Polygon2D components[], int low, int high, boolean splitX) {
+    if (low > high) {
+      return null;
+    } else if (low < high) {
+      // TODO: do one sort instead! there are better algorithms!
+      if (splitX) {
+        Arrays.sort(components, low, high+1, (left, right) -> {
+          int ret = Double.compare(left.minLon, right.minLon);
+          if (ret == 0) {
+            ret = Double.compare(left.maxX, right.maxX);
+          }
+          return ret;
+        });
+      } else {
+        Arrays.sort(components, low, high+1, (left, right) -> {
+          int ret = Double.compare(left.minLat, right.minLat);
+          if (ret == 0) {
+            ret = Double.compare(left.maxY, right.maxY);
+          }
+          return ret;
+        });
       }
     }
-    return false;
-  }
-
-  /** Returns the multipolygon relation for the rectangle */
-  static Relation relate(LatLonTree[] polygons, double minLat, double maxLat, double minLon, double maxLon) {
-    for (LatLonTree polygon : polygons) {
-      Relation relation = polygon.relate(minLat, maxLat, minLon, maxLon);
-      if (relation != Relation.CELL_OUTSIDE_QUERY) {
-        // note: we optimize for non-overlapping multipolygons. so if we cross one,
-        // we won't keep iterating to try to find a contains.
-        return relation;
-      }
+    // add midpoint
+    int mid = (low + high) >>> 1;
+    Polygon2D newNode = components[mid];
+    newNode.splitX = splitX;
+    // add children
+    newNode.left = createTree(components, low, mid - 1, !splitX);
+    newNode.right = createTree(components, mid + 1, high, !splitX);
+    // pull up max values to this node
+    if (newNode.left != null) {
+      newNode.maxX = Math.max(newNode.maxX, newNode.left.maxX);
+      newNode.maxY = Math.max(newNode.maxY, newNode.left.maxY);
     }
-    return Relation.CELL_OUTSIDE_QUERY;
+    if (newNode.right != null) {
+      newNode.maxX = Math.max(newNode.maxX, newNode.right.maxX);
+      newNode.maxY = Math.max(newNode.maxY, newNode.right.maxY);
+    }
+    return newNode;
   }
   
-  /** Builds a tree from multipolygon */
-  static LatLonTree[] build(Polygon... polygons) {
-    // TODO: use one tree with separators (carefully!)
-    LatLonTree trees[] = new LatLonTree[polygons.length];
-    for (int i = 0; i < trees.length; i++) {
+  /** Builds a Polygon2D from multipolygon */
+  public static Polygon2D create(Polygon... polygons) {
+    Polygon2D components[] = new Polygon2D[polygons.length];
+    for (int i = 0; i < components.length; i++) {
       Polygon gon = polygons[i];
       Polygon gonHoles[] = gon.getHoles();
-      LatLonTree holes[] = new LatLonTree[gonHoles.length];
-      for (int j = 0; j < holes.length; j++) {
-        holes[j] = new LatLonTree(gonHoles[j]);
+      Polygon2D holes = null;
+      if (gonHoles.length > 0) {
+        holes = create(gonHoles);
       }
-      trees[i] = new LatLonTree(gon, holes);
+      components[i] = new Polygon2D(gon, holes);
     }
-    return trees;
+    return createTree(components, 0, components.length - 1, false);
   }
-  
+
   /** 
    * Internal tree node: represents polygon edge from lat1,lon1 to lat2,lon2.
    * The sort value is {@code low}, which is the minimum latitude of the edge.
