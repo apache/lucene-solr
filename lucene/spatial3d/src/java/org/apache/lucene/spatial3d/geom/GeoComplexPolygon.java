@@ -133,31 +133,34 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // Use the XZ plane exclusively.
       final SidedPlane testPointCutoff =  new SidedPlane(thePoint, testPointXZPlane, testPoint);
       final SidedPlane checkPointCutoff = new SidedPlane(testPoint, testPointXZPlane, thePoint);
-      // Note: need to detect condition where edge endpoint is the check point!
-      // MHL
-      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointXZPlane, testPointCutoff, checkPointCutoff);
+      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointXZPlane, testPointCutoff, checkPointCutoff, thePoint);
       // Traverse our way from the test point to the check point.  Use the y tree because that's fixed.
-      yTree.traverse(crossingEdgeIterator, testPoint.y, testPoint.y);
+      if (!yTree.traverse(crossingEdgeIterator, testPoint.y, testPoint.y)) {
+        // Endpoint is on edge
+        return true;
+      }
       return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
     } else if (testPointYZPlane.evaluateIsZero(thePoint)) {
       // Use the YZ plane exclusively.
       final SidedPlane testPointCutoff =  new SidedPlane(thePoint, testPointYZPlane, testPoint);
       final SidedPlane checkPointCutoff = new SidedPlane(testPoint, testPointYZPlane, thePoint);
-      // Note: need to detect condition where edge endpoint is the check point!
-      // MHL
-      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointYZPlane, testPointCutoff, checkPointCutoff);
+      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointYZPlane, testPointCutoff, checkPointCutoff, thePoint);
       // Traverse our way from the test point to the check point.  Use the x tree because that's fixed.
-      xTree.traverse(crossingEdgeIterator, testPoint.x, testPoint.x);
+      if (!xTree.traverse(crossingEdgeIterator, testPoint.x, testPoint.x)) {
+        // Endpoint is on edge
+        return true;
+      }
       return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
     } else if (testPointXYPlane.evaluateIsZero(thePoint)) {
       // Use the XY plane exclusively.
       final SidedPlane testPointCutoff =  new SidedPlane(thePoint, testPointXYPlane, testPoint);
       final SidedPlane checkPointCutoff = new SidedPlane(testPoint, testPointXYPlane, thePoint);
-      // Note: need to detect condition where edge endpoint is the check point!
-      // MHL
-      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointXYPlane, testPointCutoff, checkPointCutoff);
+      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointXYPlane, testPointCutoff, checkPointCutoff, thePoint);
       // Traverse our way from the test point to the check point.  Use the z tree because that's fixed.
-      zTree.traverse(crossingEdgeIterator, testPoint.z, testPoint.z);
+      if (!zTree.traverse(crossingEdgeIterator, testPoint.z, testPoint.z)) {
+        // Endpoint is on edge
+        return true;
+      }
       return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
     } else {
       
@@ -180,8 +183,11 @@ class GeoComplexPolygon extends GeoBasePolygon {
         // MHL
         final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointYZPlane, testPointCutoffPlane, testPointOtherCutoffPlane);
         xTree.traverse(testPointEdgeIterator, testPoint.x, testPoint.x);
-        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane);
-        yTree.traverse(checkPointEdgeIterator, thePoint.y, thePoint.y);
+        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
+        if (!yTree.traverse(checkPointEdgeIterator, thePoint.y, thePoint.y)) {
+          // Endpoint is on edge
+          return true;
+        }
         return (((testPointEdgeIterator.crossingCount + checkPointEdgeIterator.crossingCount) & 1) == 0)?testPointInSet:!testPointInSet;
       } else if (xDelta + zDelta <= xDelta + yDelta && xDelta + zDelta <= zDelta + yDelta) {
         // Travel in X and Z
@@ -200,8 +206,11 @@ class GeoComplexPolygon extends GeoBasePolygon {
         // MHL
         final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXYPlane, testPointCutoffPlane, testPointOtherCutoffPlane);
         zTree.traverse(testPointEdgeIterator, testPoint.z, testPoint.z);
-        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane);
-        xTree.traverse(checkPointEdgeIterator, thePoint.x, thePoint.x);
+        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
+        if (!xTree.traverse(checkPointEdgeIterator, thePoint.x, thePoint.x)) {
+          // Endpoint is on edge
+          return true;
+        }
         return (((testPointEdgeIterator.crossingCount + checkPointEdgeIterator.crossingCount) & 1) == 0)?testPointInSet:!testPointInSet;
       } else if (yDelta + zDelta <= xDelta + yDelta && yDelta + zDelta <= xDelta + zDelta) {
         // Travel in Y and Z
@@ -216,12 +225,15 @@ class GeoComplexPolygon extends GeoBasePolygon {
         assert intersectionPoints.length != 1 : "wrong number of intersection points";
         final SidedPlane testPointOtherCutoffPlane = new SidedPlane(testPoint, testPointXZPlane, intersectionPoints[0]);
         final SidedPlane checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
-        // Note: we need to handle the cases where end point of the leg sits on an edge!
+        // Note: we need to handle the cases where end point of the first leg sits on an edge!
         // MHL
         final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXZPlane, testPointCutoffPlane, testPointOtherCutoffPlane);
         yTree.traverse(testPointEdgeIterator, testPoint.y, testPoint.y);
-        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane);
-        zTree.traverse(checkPointEdgeIterator, thePoint.z, thePoint.z);
+        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
+        if (!zTree.traverse(checkPointEdgeIterator, thePoint.z, thePoint.z)) {
+          // Endpoint is on edge
+          return true;
+        }
         return (((testPointEdgeIterator.crossingCount + checkPointEdgeIterator.crossingCount) & 1) == 0)?testPointInSet:!testPointInSet;
       }
     }
@@ -584,19 +596,25 @@ class GeoComplexPolygon extends GeoBasePolygon {
     private final Plane belowPlane;
     private final Membership bound1;
     private final Membership bound2;
+    private final GeoPoint thePoint;
     
     public int crossingCount = 0;
     
-    public CrossingEdgeIterator(final Plane plane, final Membership bound1, final Membership bound2) {
+    public CrossingEdgeIterator(final Plane plane, final Membership bound1, final Membership bound2, final GeoPoint thePoint) {
       this.plane = plane;
       this.abovePlane = new Plane(plane, true);
       this.belowPlane = new Plane(plane, false);
       this.bound1 = bound1;
       this.bound2 = bound2;
+      this.thePoint = thePoint;
     }
     
     @Override
     public boolean matches(final Edge edge) {
+      // Early exit if the point is on the edge.
+      if (edge.plane.evaluateIsZero(thePoint) && edge.startPlane.isWithin(thePoint) && edge.endPlane.isWithin(thePoint)) {
+        return false;
+      }
       final GeoPoint[] crossingPoints = plane.findCrossings(planetModel, edge.plane, bound1, bound2, edge.startPlane, edge.endPlane);
       if (crossingPoints != null) {
         // We need to handle the endpoint case, which is quite tricky.
