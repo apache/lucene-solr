@@ -425,7 +425,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
         ClusterState clusterState = h.coreContainer.getZkController().getClusterState();
 
-        ZkNodeProps leaderProps = clusterState.getLeader(collection, shard);
+        DocCollection docCollection = clusterState.getCollection(collection);
+        ZkNodeProps leaderProps = docCollection.getLeader(shard);
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
 
         try (HttpSolrClient client = new Builder(nodeProps.getBaseUrl()).build()) {
@@ -828,18 +829,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   private static void forceLeaderElection(SolrQueryRequest req, CollectionsHandler handler) {
     ClusterState clusterState = handler.coreContainer.getZkController().getClusterState();
-    String collection = req.getParams().required().get(COLLECTION_PROP);
+    String collectionName = req.getParams().required().get(COLLECTION_PROP);
     String sliceId = req.getParams().required().get(SHARD_ID_PROP);
 
     log.info("Force leader invoked, state: {}", clusterState);
-    Slice slice = clusterState.getSlice(collection, sliceId);
+    DocCollection collection = clusterState.getCollection(collectionName);
+    Slice slice = collection.getSlice(sliceId);
     if (slice == null) {
-      if (clusterState.hasCollection(collection)) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-            "No shard with name " + sliceId + " exists for collection " + collection);
-      } else {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "No collection with the specified name exists: " + collection);
-      }
+      throw new SolrException(ErrorCode.BAD_REQUEST,
+          "No shard with name " + sliceId + " exists for collection " + collectionName);
     }
 
     try {
@@ -851,7 +849,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
       // Clear out any LIR state
-      String lirPath = handler.coreContainer.getZkController().getLeaderInitiatedRecoveryZnodePath(collection, sliceId);
+      String lirPath = handler.coreContainer.getZkController().getLeaderInitiatedRecoveryZnodePath(collectionName, sliceId);
       if (handler.coreContainer.getZkController().getZkClient().exists(lirPath, true)) {
         StringBuilder sb = new StringBuilder();
         handler.coreContainer.getZkController().getZkClient().printLayout(lirPath, 4, sb);
@@ -880,7 +878,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       for (int i = 0; i < 9; i++) {
         Thread.sleep(5000);
         clusterState = handler.coreContainer.getZkController().getClusterState();
-        slice = clusterState.getSlice(collection, sliceId);
+        collection = clusterState.getCollection(collectionName);
+        slice = collection.getSlice(sliceId);
         if (slice.getLeader() != null && slice.getLeader().getState() == State.ACTIVE) {
           success = true;
           break;
@@ -889,15 +888,15 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       }
 
       if (success) {
-        log.info("Successfully issued FORCELEADER command for collection: {}, shard: {}", collection, sliceId);
+        log.info("Successfully issued FORCELEADER command for collection: {}, shard: {}", collectionName, sliceId);
       } else {
-        log.info("Couldn't successfully force leader, collection: {}, shard: {}. Cluster state: {}", collection, sliceId, clusterState);
+        log.info("Couldn't successfully force leader, collection: {}, shard: {}. Cluster state: {}", collectionName, sliceId, clusterState);
       }
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Error executing FORCELEADER operation for collection: " + collection + " shard: " + sliceId, e);
+          "Error executing FORCELEADER operation for collection: " + collectionName + " shard: " + sliceId, e);
     }
   }
 

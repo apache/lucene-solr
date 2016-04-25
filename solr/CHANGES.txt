@@ -169,6 +169,9 @@ Optimizations
 
 * SOLR-8973: Zookeeper frenzy when a core is first created. (Janmejay Singh, Scott Blum, shalin)
 
+* SOLR-9014: Deprecate and reduce usage of ClusterState methods which may make calls to ZK via
+  the lazy collection reference. (Scott Blum, shalin)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.

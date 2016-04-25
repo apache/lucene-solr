@@ -945,16 +945,13 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
                 + router.getClass().getName());
       }
     } else {
-      parentSlice = clusterState.getSlice(collectionName, slice);
+      parentSlice = collection.getSlice(slice);
     }
     
     if (parentSlice == null) {
-      if (clusterState.hasCollection(collectionName)) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "No shard with the specified name exists: " + slice);
-      } else {
-        throw new SolrException(ErrorCode.BAD_REQUEST,
-            "No collection with the specified name exists: " + collectionName);
-      }
+      // no chance of the collection being null because ClusterState#getCollection(String) would have thrown
+      // an exception already
+      throw new SolrException(ErrorCode.BAD_REQUEST, "No shard with the specified name exists: " + slice);
     }
     
     // find the leader for the shard
@@ -1039,7 +1036,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         String subShardName = collectionName + "_" + subSlice + "_replica1";
         subShardNames.add(subShardName);
         
-        Slice oSlice = clusterState.getSlice(collectionName, subSlice);
+        Slice oSlice = collection.getSlice(subSlice);
         if (oSlice != null) {
           final Slice.State state = oSlice.getState();
           if (state == Slice.State.ACTIVE) {
@@ -1180,7 +1177,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       
       // TODO: Have replication factor decided in some other way instead of numShards for the parent
       
-      int repFactor = clusterState.getSlice(collectionName, slice).getReplicas().size();
+      int repFactor = parentSlice.getReplicas().size();
       
       // we need to look at every node and see how many cores it serves
       // add our new cores to existing nodes serving the least number of cores
@@ -1379,18 +1376,18 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   }
 
   private void deleteShard(ClusterState clusterState, ZkNodeProps message, NamedList results) {
-    String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+    String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
     
     log.info("Delete shard invoked");
-    Slice slice = clusterState.getSlice(collection, sliceId);
+    Slice slice = clusterState.getSlice(collectionName, sliceId);
     
     if (slice == null) {
-      if (clusterState.hasCollection(collection)) {
+      if (clusterState.hasCollection(collectionName)) {
         throw new SolrException(ErrorCode.BAD_REQUEST,
-            "No shard with name " + sliceId + " exists for collection " + collection);
+            "No shard with name " + sliceId + " exists for collection " + collectionName);
       } else {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "No collection with the specified name exists: " + collection);
+        throw new SolrException(ErrorCode.BAD_REQUEST, "No collection with the specified name exists: " + collectionName);
       }
     }
     // For now, only allow for deletions of Inactive slices or custom hashes (range==null).
@@ -1421,7 +1418,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       processResponses(results, shardHandler, true, "Failed to delete shard", asyncId, requestMap, Collections.emptySet());
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETESHARD.toLower(), ZkStateReader.COLLECTION_PROP,
-          collection, ZkStateReader.SHARD_ID_PROP, sliceId);
+          collectionName, ZkStateReader.SHARD_ID_PROP, sliceId);
       Overseer.getStateUpdateQueue(zkStateReader.getZkClient()).offer(Utils.toJSON(m));
       
       // wait for a while until we don't see the shard
@@ -1429,7 +1426,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       boolean removed = false;
       while (! timeout.hasTimedOut()) {
         Thread.sleep(100);
-        removed = zkStateReader.getClusterState().getSlice(collection, sliceId) == null;
+        DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
+        removed = collection.getSlice(sliceId) == null;
         if (removed) {
           Thread.sleep(100); // just a bit of time so it's more likely other readers see on return
           break;
@@ -1437,16 +1435,16 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       }
       if (!removed) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
-            "Could not fully remove collection: " + collection + " shard: " + sliceId);
+            "Could not fully remove collection: " + collectionName + " shard: " + sliceId);
       }
       
-      log.info("Successfully deleted collection: " + collection + ", shard: " + sliceId);
+      log.info("Successfully deleted collection: " + collectionName + ", shard: " + sliceId);
       
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR,
-          "Error executing delete operation for collection: " + collection + " shard: " + sliceId, e);
+          "Error executing delete operation for collection: " + collectionName + " shard: " + sliceId, e);
     }
   }
 
@@ -1561,7 +1559,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     boolean added = false;
     while (! waitUntil.hasTimedOut()) {
       Thread.sleep(100);
-      Map<String, RoutingRule> rules = zkStateReader.getClusterState().getSlice(sourceCollection.getName(), sourceSlice.getName()).getRoutingRules();
+      sourceCollection = zkStateReader.getClusterState().getCollection(sourceCollection.getName());
+      sourceSlice = sourceCollection.getSlice(sourceSlice.getName());
+      Map<String, RoutingRule> rules = sourceSlice.getRoutingRules();
       if (rules != null) {
         RoutingRule rule = rules.get(SolrIndexSplitter.getRouteKey(splitKey) + "!");
         if (rule != null && rule.getRouteRanges().contains(splitRange)) {

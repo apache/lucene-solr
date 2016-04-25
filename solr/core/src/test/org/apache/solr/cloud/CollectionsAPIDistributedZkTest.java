@@ -1193,12 +1193,12 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
     String collectionName = "addReplicaColl";
     try (CloudSolrClient client = createCloudClient(null)) {
       createCollection(collectionName, client, 2, 2);
-      String newReplicaName = Assign.assignNode(collectionName, client.getZkStateReader().getClusterState());
+      String newReplicaName = Assign.assignNode(client.getZkStateReader().getClusterState().getCollection(collectionName));
       ArrayList<String> nodeList = new ArrayList<>(client.getZkStateReader().getClusterState().getLiveNodes());
       Collections.shuffle(nodeList, random());
 
       Replica newReplica = doAddReplica(collectionName, "shard1",
-          Assign.assignNode(collectionName, client.getZkStateReader().getClusterState()),
+          Assign.assignNode(client.getZkStateReader().getClusterState().getCollection(collectionName)),
           nodeList.get(0), client, null);
 
       log.info("newReplica {},\n{} ", newReplica, client.getZkStateReader().getBaseUrlForNodeName(nodeList.get(0)));
@@ -1210,7 +1210,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       String instancePathStr = createTempDir().toString();
       props.put(CoreAdminParams.INSTANCE_DIR, instancePathStr); //Use name via the property.instanceDir method
       newReplica = doAddReplica(collectionName, "shard2",
-          Assign.assignNode(collectionName, client.getZkStateReader().getClusterState()),
+          Assign.assignNode(client.getZkStateReader().getClusterState().getCollection(collectionName)),
           null, client, props);
       assertNotNull(newReplica);
 
@@ -1244,7 +1244,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       props.put(CoreAdminParams.NAME, "propertyDotName");
 
       newReplica = doAddReplica(collectionName, "shard1",
-          Assign.assignNode(collectionName, client.getZkStateReader().getClusterState()),
+          Assign.assignNode(client.getZkStateReader().getClusterState().getCollection(collectionName)),
           nodeList.get(0), client, props);
       assertEquals("'core' should be 'propertyDotName' ", "propertyDotName", newReplica.getStr("core"));
     }
