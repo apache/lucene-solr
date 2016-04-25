@@ -614,17 +614,34 @@ public class Plane extends Vector {
   }
 
   /**
-   * Public version of findIntersections.
+   * Find the intersection points between two planes, given a set of bounds.
    * @param planetModel is the planet model.
    * @param q is the plane to intersect with.
    * @param bounds are the bounds to consider to determine legal intersection points.
-   * @return the set of legal intersection points.
+   * @return the set of legal intersection points, or null if the planes are numerically identical.
    */
   public GeoPoint[] findIntersections(final PlanetModel planetModel, final Plane q, final Membership... bounds) {
     if (isNumericallyIdentical(q)) {
       return null;
     }
     return findIntersections(planetModel, q, bounds, NO_BOUNDS);
+  }
+
+  /**
+   * Find the points between two planes, where one plane crosses the other, given a set of bounds.
+   * Crossing is not just intersection; the planes cannot touch at just one point on the ellipsoid,
+   * but must cross at two.
+   *
+   * @param planetModel is the planet model.
+   * @param q is the plane to intersect with.
+   * @param bounds are the bounds to consider to determine legal intersection points.
+   * @return the set of legal crossing points, or null if the planes are numerically identical.
+   */
+  public GeoPoint[] findCrossings(final PlanetModel planetModel, final Plane q, final Membership... bounds) {
+    if (isNumericallyIdentical(q)) {
+      return null;
+    }
+    return findCrossings(planetModel, q, bounds, NO_BOUNDS);
   }
   
   /**
@@ -751,6 +768,124 @@ public class Plane extends Vector {
       return NO_POINTS;
     } else {
       //System.err.println(" no solutions - no intersection");
+      return NO_POINTS;
+    }
+  }
+
+  /**
+   * Find the points between two planes, where one plane crosses the other, given a set of bounds.
+   * Crossing is not just intersection; the planes cannot touch at just one point on the ellipsoid,
+   * but must cross at two.
+   *
+   * @param planetModel is the planet model to use in finding points.
+   * @param q          is the plane to intersect with.
+   * @param bounds     is the set of bounds.
+   * @param moreBounds is another set of bounds.
+   * @return the intersection point(s) on the ellipsoid, if there are any.
+   */
+  protected GeoPoint[] findCrosses(final PlanetModel planetModel, final Plane q, final Membership[] bounds, final Membership[] moreBounds) {
+    // This code in this method is very similar to findIntersections(), but eliminates the cases where
+    // crossings are detected.
+    // Unnormalized, unchecked...
+    final Vector lineVector = new Vector(y * q.z - z * q.y, z * q.x - x * q.z, x * q.y - y * q.x);
+    if (Math.abs(lineVector.x) < MINIMUM_RESOLUTION && Math.abs(lineVector.y) < MINIMUM_RESOLUTION && Math.abs(lineVector.z) < MINIMUM_RESOLUTION) {
+      // Degenerate case: parallel planes
+      return NO_POINTS;
+    }
+
+    // The line will have the equation: A t + A0 = x, B t + B0 = y, C t + C0 = z.
+    // We have A, B, and C.  In order to come up with A0, B0, and C0, we need to find a point that is on both planes.
+    // To do this, we find the largest vector value (either x, y, or z), and look for a point that solves both plane equations
+    // simultaneous.  For example, let's say that the vector is (0.5,0.5,1), and the two plane equations are:
+    // 0.7 x + 0.3 y + 0.1 z + 0.0 = 0
+    // and
+    // 0.9 x - 0.1 y + 0.2 z + 4.0 = 0
+    // Then we'd pick z = 0, so the equations to solve for x and y would be:
+    // 0.7 x + 0.3y = 0.0
+    // 0.9 x - 0.1y = -4.0
+    // ... which can readily be solved using standard linear algebra.  Generally:
+    // Q0 x + R0 y = S0
+    // Q1 x + R1 y = S1
+    // ... can be solved by Cramer's rule:
+    // x = det(S0 R0 / S1 R1) / det(Q0 R0 / Q1 R1)
+    // y = det(Q0 S0 / Q1 S1) / det(Q0 R0 / Q1 R1)
+    // ... where det( a b / c d ) = ad - bc, so:
+    // x = (S0 * R1 - R0 * S1) / (Q0 * R1 - R0 * Q1)
+    // y = (Q0 * S1 - S0 * Q1) / (Q0 * R1 - R0 * Q1)
+    double x0;
+    double y0;
+    double z0;
+    // We try to maximize the determinant in the denominator
+    final double denomYZ = this.y * q.z - this.z * q.y;
+    final double denomXZ = this.x * q.z - this.z * q.x;
+    final double denomXY = this.x * q.y - this.y * q.x;
+    if (Math.abs(denomYZ) >= Math.abs(denomXZ) && Math.abs(denomYZ) >= Math.abs(denomXY)) {
+      // X is the biggest, so our point will have x0 = 0.0
+      if (Math.abs(denomYZ) < MINIMUM_RESOLUTION_SQUARED) {
+        return NO_POINTS;
+      }
+      final double denom = 1.0 / denomYZ;
+      x0 = 0.0;
+      y0 = (-this.D * q.z - this.z * -q.D) * denom;
+      z0 = (this.y * -q.D + this.D * q.y) * denom;
+    } else if (Math.abs(denomXZ) >= Math.abs(denomXY) && Math.abs(denomXZ) >= Math.abs(denomYZ)) {
+      // Y is the biggest, so y0 = 0.0
+      if (Math.abs(denomXZ) < MINIMUM_RESOLUTION_SQUARED) {
+        return NO_POINTS;
+      }
+      final double denom = 1.0 / denomXZ;
+      x0 = (-this.D * q.z - this.z * -q.D) * denom;
+      y0 = 0.0;
+      z0 = (this.x * -q.D + this.D * q.x) * denom;
+    } else {
+      // Z is the biggest, so Z0 = 0.0
+      if (Math.abs(denomXY) < MINIMUM_RESOLUTION_SQUARED) {
+        return NO_POINTS;
+      }
+      final double denom = 1.0 / denomXY;
+      x0 = (-this.D * q.y - this.y * -q.D) * denom;
+      y0 = (this.x * -q.D + this.D * q.x) * denom;
+      z0 = 0.0;
+    }
+
+    // Once an intersecting line is determined, the next step is to intersect that line with the ellipsoid, which
+    // will yield zero, one, or two points.
+    // The ellipsoid equation: 1,0 = x^2/a^2 + y^2/b^2 + z^2/c^2
+    // 1.0 = (At+A0)^2/a^2 + (Bt+B0)^2/b^2 + (Ct+C0)^2/c^2
+    // A^2 t^2 / a^2 + 2AA0t / a^2 + A0^2 / a^2 + B^2 t^2 / b^2 + 2BB0t / b^2 + B0^2 / b^2 + C^2 t^2 / c^2 + 2CC0t / c^2 + C0^2 / c^2  - 1,0 = 0.0
+    // [A^2 / a^2 + B^2 / b^2 + C^2 / c^2] t^2 + [2AA0 / a^2 + 2BB0 / b^2 + 2CC0 / c^2] t + [A0^2 / a^2 + B0^2 / b^2 + C0^2 / c^2 - 1,0] = 0.0
+    // Use the quadratic formula to determine t values and candidate point(s)
+    final double A = lineVector.x * lineVector.x * planetModel.inverseAbSquared +
+      lineVector.y * lineVector.y * planetModel.inverseAbSquared +
+      lineVector.z * lineVector.z * planetModel.inverseCSquared;
+    final double B = 2.0 * (lineVector.x * x0 * planetModel.inverseAbSquared + lineVector.y * y0 * planetModel.inverseAbSquared + lineVector.z * z0 * planetModel.inverseCSquared);
+    final double C = x0 * x0 * planetModel.inverseAbSquared + y0 * y0 * planetModel.inverseAbSquared + z0 * z0 * planetModel.inverseCSquared - 1.0;
+
+    final double BsquaredMinus = B * B - 4.0 * A * C;
+    if (Math.abs(BsquaredMinus) < MINIMUM_RESOLUTION_SQUARED) {
+      // One point of intersection: cannot be a crossing.
+      return NO_POINTS;
+    } else if (BsquaredMinus > 0.0) {
+      final double inverse2A = 1.0 / (2.0 * A);
+      // Two solutions
+      final double sqrtTerm = Math.sqrt(BsquaredMinus);
+      final double t1 = (-B + sqrtTerm) * inverse2A;
+      final double t2 = (-B - sqrtTerm) * inverse2A;
+      GeoPoint point1 = new GeoPoint(lineVector.x * t1 + x0, lineVector.y * t1 + y0, lineVector.z * t1 + z0);
+      GeoPoint point2 = new GeoPoint(lineVector.x * t2 + x0, lineVector.y * t2 + y0, lineVector.z * t2 + z0);
+      //verifyPoint(planetModel, point1, q);
+      //verifyPoint(planetModel, point2, q);
+      //System.err.println("  "+point1+" and "+point2);
+      if (point1.isWithin(bounds, moreBounds)) {
+        if (point2.isWithin(bounds, moreBounds))
+          return new GeoPoint[]{point1, point2};
+        return new GeoPoint[]{point1};
+      }
+      if (point2.isWithin(bounds, moreBounds))
+        return new GeoPoint[]{point2};
+      return NO_POINTS;
+    } else {
+      // No solutions.
       return NO_POINTS;
     }
   }
