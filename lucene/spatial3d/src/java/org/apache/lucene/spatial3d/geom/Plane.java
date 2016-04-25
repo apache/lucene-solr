@@ -101,15 +101,7 @@ public class Plane extends Vector {
    *   or false in the negative direction.
    */
   public Plane(final Plane basePlane, final boolean above) {
-    this(basePlane.x, basePlane.y, basePlane.z, outsideEnvelope(basePlane.D, above));
-  }
-  
-  private double outsideEnvelope(final double value, boolean above) {
-    if (above) {
-      return Math.nextUp(value + MINIMUM_RESOLUTION);
-    } else {
-      return Math.nextDown(value - MINIMUM_RESOLUTION);
-    }
+    this(basePlane.x, basePlane.y, basePlane.z, above?Math.nextUp(basePlane.D + MINIMUM_RESOLUTION):Math.nextDown(basePlane.D - MINIMUM_RESOLUTION));
   }
   
   /** Construct the most accurate normalized plane through an x-y point and including the Z axis.
@@ -801,7 +793,7 @@ public class Plane extends Vector {
    * @param moreBounds is another set of bounds.
    * @return the intersection point(s) on the ellipsoid, if there are any.
    */
-  protected GeoPoint[] findCrosses(final PlanetModel planetModel, final Plane q, final Membership[] bounds, final Membership[] moreBounds) {
+  protected GeoPoint[] findCrossings(final PlanetModel planetModel, final Plane q, final Membership[] bounds, final Membership[] moreBounds) {
     // This code in this method is very similar to findIntersections(), but eliminates the cases where
     // crossings are detected.
     // Unnormalized, unchecked...
