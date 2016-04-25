@@ -35,11 +35,12 @@ import java.util.Map;
  */
 class GeoComplexPolygon extends GeoBasePolygon {
   
-  private final XTree xtree = new XTree();
-  private final YTree ytree = new YTree();
-  private final ZTree ztree = new ZTree();
+  private final XTree xTree = new XTree();
+  private final YTree yTree = new YTree();
+  private final ZTree zTree = new ZTree();
   
   private final boolean testPointInSet;
+  private final GeoPoint testPoint;
   
   private final Plane testPointXZPlane;
   private final Plane testPointYZPlane;
@@ -62,6 +63,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
   public GeoComplexPolygon(final PlanetModel planetModel, final List<List<GeoPoint>> pointsList, final GeoPoint testPoint, final boolean testPointInSet) {
     super(planetModel);
     this.testPointInSet = testPointInSet;
+    this.testPoint = testPoint;
     
     this.testPointXZPlane = new Plane(0.0, 1.0, 0.0, -testPoint.y);
     this.testPointYZPlane = new Plane(1.0, 0.0, 0.0, -testPoint.x);
@@ -71,15 +73,15 @@ class GeoComplexPolygon extends GeoBasePolygon {
     this.shapeStartEdges = new Edge[pointsList.size()];
     int edgePointIndex = 0;
     for (final List<GeoPoint> shapePoints : pointsList) {
-      GeoPoint lastGeoPoint = pointsList.get(shapePoints.size()-1);
+      GeoPoint lastGeoPoint = shapePoints.get(shapePoints.size()-1);
       edgePoints[edgePointIndex] = lastGeoPoint;
       Edge lastEdge = null;
       Edge firstEdge = null;
       for (final GeoPoint thisGeoPoint : shapePoints) {
         final Edge edge = new Edge(planetModel, lastGeoPoint, thisGeoPoint);
-        xtree.add(edge);
-        ytree.add(edge);
-        ztree.add(edge);
+        xTree.add(edge);
+        yTree.add(edge);
+        zTree.add(edge);
         // Now, link
         if (firstEdge == null) {
           firstEdge = edge;
@@ -96,19 +98,6 @@ class GeoComplexPolygon extends GeoBasePolygon {
       shapeStartEdges[edgePointIndex] = firstEdge;
       edgePointIndex++;
     }
-  }
-
-  /** Compute a legal point index from a possibly illegal one, that may have wrapped.
-   *@param index is the index.
-   *@return the normalized index.
-   */
-  protected int legalIndex(int index) {
-    while (index >= points.size())
-      index -= points.size();
-    while (index < 0) {
-      index += points.size();
-    }
-    return index;
   }
 
   @Override
@@ -181,7 +170,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         final SidedPlane checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
         // Note: we need to handle the cases where end point of the leg sits on an edge!
         // MHL
-        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointYZPlane, testPointCutoffPlane, testPointOtherCutoffPlane);
+        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointYZPlane, testPointCutoffPlane, testPointOtherCutoffPlane, null);
         xTree.traverse(testPointEdgeIterator, testPoint.x, testPoint.x);
         final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
         if (!yTree.traverse(checkPointEdgeIterator, thePoint.y, thePoint.y)) {
@@ -204,7 +193,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         final SidedPlane checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
         // Note: we need to handle the cases where end point of the leg sits on an edge!
         // MHL
-        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXYPlane, testPointCutoffPlane, testPointOtherCutoffPlane);
+        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXYPlane, testPointCutoffPlane, testPointOtherCutoffPlane, null);
         zTree.traverse(testPointEdgeIterator, testPoint.z, testPoint.z);
         final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
         if (!xTree.traverse(checkPointEdgeIterator, thePoint.x, thePoint.x)) {
@@ -227,7 +216,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         final SidedPlane checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
         // Note: we need to handle the cases where end point of the first leg sits on an edge!
         // MHL
-        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXZPlane, testPointCutoffPlane, testPointOtherCutoffPlane);
+        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXZPlane, testPointCutoffPlane, testPointOtherCutoffPlane, null);
         yTree.traverse(testPointEdgeIterator, testPoint.y, testPoint.y);
         final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
         if (!zTree.traverse(checkPointEdgeIterator, thePoint.z, thePoint.z)) {
@@ -251,7 +240,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
     final EdgeIterator intersector = new IntersectorEdgeIterator(p, notablePoints, bounds);
     // First, compute the bounds for the the plane
     final XYZBounds xyzBounds = new XYZBounds();
-    p.recordBounds(xyzBounds);
+    p.recordBounds(planetModel, xyzBounds, bounds);
     // Figure out which tree likely works best
     final double xDelta = xyzBounds.getMaximumX() - xyzBounds.getMinimumX();
     final double yDelta = xyzBounds.getMaximumY() - xyzBounds.getMinimumY();
@@ -259,13 +248,13 @@ class GeoComplexPolygon extends GeoBasePolygon {
     // Select the smallest range
     if (xDelta <= yDelta && xDelta <= zDelta) {
       // Drill down in x
-      return !xtree.traverse(intersector, xyzBounds.getMinimumX(), xyzBounds.getMaximumX());
+      return !xTree.traverse(intersector, xyzBounds.getMinimumX(), xyzBounds.getMaximumX());
     } else if (yDelta <= xDelta && yDelta <= zDelta) {
       // Drill down in y
-      return !ytree.traverse(intersector, xyzBounds.getMinimumY(), xyzBounds.getMaximumY());
+      return !yTree.traverse(intersector, xyzBounds.getMinimumY(), xyzBounds.getMaximumY());
     } else if (zDelta <= xDelta && zDelta <= yDelta) {
       // Drill down in z
-      return !ztree.traverse(intersector, xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ());
+      return !zTree.traverse(intersector, xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ());
     }
     return true;
   }
@@ -277,7 +266,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
     for (final Edge startEdge : shapeStartEdges) {
       Edge currentEdge = startEdge;
       while (true) {
-        currentEdge.plane.recordBounds(this.planetModel, currentEdge.startPlane, currentEdge.edgePlane);
+        bounds.addPlane(this.planetModel, currentEdge.plane, currentEdge.startPlane, currentEdge.endPlane);
         currentEdge = currentEdge.next;
         if (currentEdge == startEdge) {
           break;
@@ -576,7 +565,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
     
     public IntersectorEdgeIterator(final Plane plane, final GeoPoint[] notablePoints, final Membership... bounds) {
       this.plane = plane;
-      this notablePoints = notablePoints;
+      this.notablePoints = notablePoints;
       this.bounds = bounds;
     }
     
@@ -596,11 +585,11 @@ class GeoComplexPolygon extends GeoBasePolygon {
     private final Plane belowPlane;
     private final Membership bound1;
     private final Membership bound2;
-    private final GeoPoint thePoint;
+    private final Vector thePoint;
     
     public int crossingCount = 0;
     
-    public CrossingEdgeIterator(final Plane plane, final Membership bound1, final Membership bound2, final GeoPoint thePoint) {
+    public CrossingEdgeIterator(final Plane plane, final Membership bound1, final Membership bound2, final Vector thePoint) {
       this.plane = plane;
       this.abovePlane = new Plane(plane, true);
       this.belowPlane = new Plane(plane, false);
@@ -612,7 +601,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
     @Override
     public boolean matches(final Edge edge) {
       // Early exit if the point is on the edge.
-      if (edge.plane.evaluateIsZero(thePoint) && edge.startPlane.isWithin(thePoint) && edge.endPlane.isWithin(thePoint)) {
+      if (thePoint != null && edge.plane.evaluateIsZero(thePoint) && edge.startPlane.isWithin(thePoint) && edge.endPlane.isWithin(thePoint)) {
         return false;
       }
       final GeoPoint[] crossingPoints = plane.findCrossings(planetModel, edge.plane, bound1, bound2, edge.startPlane, edge.endPlane);
@@ -637,6 +626,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         
         if (aboveIntersections.length == 0 && belowIntersections.length == 0) {
           return;
+        }
 
         final boolean edgeCrossesAbove = aboveIntersections.length > 0;
 
@@ -698,6 +688,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         
         if (aboveIntersections.length == 0 && belowIntersections.length == 0) {
           return;
+        }
 
         final boolean edgeCrossesAbove = aboveIntersections.length > 0;
 
