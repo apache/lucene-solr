@@ -66,6 +66,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
   private Iterator<Tuple> out;
   private Traversal traversal;
   private List<Metric> metrics;
+  private int maxDocFreq;
 
   public GatherNodesStream(String zkHost,
                            String collection,
@@ -76,7 +77,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
                            Map queryParams,
                            List<Metric> metrics,
                            boolean trackTraversal,
-                           Set<Traversal.Scatter> scatter) {
+                           Set<Traversal.Scatter> scatter,
+                           int maxDocFreq) {
 
     init(zkHost,
         collection,
@@ -87,7 +89,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         queryParams,
         metrics,
         trackTraversal,
-        scatter);
+        scatter,
+        maxDocFreq);
   }
 
   public GatherNodesStream(StreamExpression expression, StreamFactory factory) throws IOException {
@@ -185,10 +188,11 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       useDefaultTraversal = true;
     }
 
-    StreamExpressionNamedParameter scopeExpression = factory.getNamedOperand(expression, "localScope");
+    StreamExpressionNamedParameter docFreqExpression = factory.getNamedOperand(expression, "maxDocFreq");
+    int docFreq = -1;
 
-    if(trackExpression != null) {
-      trackTraversal = Boolean.parseBoolean(((StreamExpressionValue) trackExpression.getParameter()).getValue());
+    if(docFreqExpression != null) {
+      docFreq = Integer.parseInt(((StreamExpressionValue) docFreqExpression.getParameter()).getValue());
     }
 
     Map<String,String> params = new HashMap<String,String>();
@@ -197,6 +201,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
           !namedParam.getName().equals("gather") &&
           !namedParam.getName().equals("walk") &&
           !namedParam.getName().equals("scatter") &&
+          !namedParam.getName().equals("maxDocFreq") &&
           !namedParam.getName().equals("trackTraversal"))
       {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
@@ -228,7 +233,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
          params,
          metrics,
          trackTraversal,
-         scatter);
+         scatter,
+         docFreq);
   }
 
   private void init(String zkHost,
@@ -240,7 +246,8 @@ public class GatherNodesStream extends TupleStream implements Expressible {
                     Map queryParams,
                     List<Metric> metrics,
                     boolean trackTraversal,
-                    Set<Traversal.Scatter> scatter) {
+                    Set<Traversal.Scatter> scatter,
+                    int maxDocFreq) {
     this.zkHost = zkHost;
     this.collection = collection;
     this.tupleStream = tupleStream;
@@ -251,6 +258,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     this.metrics = metrics;
     this.trackTraversal = trackTraversal;
     this.scatter = scatter;
+    this.maxDocFreq = maxDocFreq;
   }
 
   @Override
@@ -298,6 +306,9 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     expression.addParameter(new StreamExpressionNamedParameter("zkHost", zkHost));
     expression.addParameter(new StreamExpressionNamedParameter("gather", zkHost));
+    if(maxDocFreq > -1) {
+      expression.addParameter(new StreamExpressionNamedParameter("maxDocFreq", Integer.toString(maxDocFreq)));
+    }
     expression.addParameter(new StreamExpressionNamedParameter("walk", traverseFrom+"->"+traverseTo));
     expression.addParameter(new StreamExpressionNamedParameter("trackTraversal", Boolean.toString(trackTraversal)));
 
@@ -410,7 +421,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       }
 
       if(queryParams.containsKey("fl")) {
-        String flString = (String)queryParams.get("fl");
+        String flString = queryParams.get("fl");
         String[] flArray = flString.split(",");
         for(String f : flArray) {
           flSet.add(f.trim());
@@ -433,14 +444,22 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
       StringBuffer nodeQuery = new StringBuffer();
 
+      boolean comma = false;
       for(String node : nodes) {
-        nodeQuery.append(node).append(" ");
+        if(comma) {
+          nodeQuery.append(",");
+        }
+        nodeQuery.append(node);
+        comma = true;
       }
 
-      String q = traverseTo + ":(" + nodeQuery.toString().trim() + ")";
+      if(maxDocFreq > -1) {
+        String docFreqParam = " maxDocFreq="+maxDocFreq;
+        joinParams.put("q", "{!graphTerms f=" + traverseTo + docFreqParam + "}" + nodeQuery.toString());
+      } else {
+        joinParams.put("q", "{!terms f=" + traverseTo+"}" + nodeQuery.toString());
+      }
 
-
-      joinParams.put("q", q);
       TupleStream stream = null;
       try {
         stream = new UniqueStream(new CloudSolrStream(zkHost, collection, joinParams), new MultipleFieldEqualitor(new FieldEqualitor(gather), new FieldEqualitor(traverseTo)));

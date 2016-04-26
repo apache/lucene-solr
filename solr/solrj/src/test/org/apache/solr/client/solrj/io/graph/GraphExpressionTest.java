@@ -326,6 +326,23 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     assertTrue(tuples.get(2).getString("node").equals("basket3"));
     assertTrue(tuples.get(3).getString("node").equals("basket4"));
 
+
+    //Test maxDocFreq param
+    String docFreqExpr = "gatherNodes(collection1, " +
+                         "walk=\"product1, product7->product_s\"," +
+                         "maxDocFreq=\"2\","+
+                         "gather=\"basket_s\")";
+
+    stream = (GatherNodesStream)factory.constructStream(docFreqExpr);
+    stream.setStreamContext(context);
+
+    tuples = getTuples(stream);
+    Collections.sort(tuples, new FieldComparator("node", ComparatorOrder.ASCENDING));
+    assertTrue(tuples.size() == 1);
+    assertTrue(tuples.get(0).getString("node").equals("basket2"));
+
+
+
     String expr2 = "gatherNodes(collection1, " +
                                  expr+","+
                                 "walk=\"node->basket_s\"," +

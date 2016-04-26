@@ -133,7 +133,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
         collectTermContext(reader, contexts, termContexts, this.queryTerms);
         for(int i=0; i<termContexts.length; i++) {
           TermContext termContext = termContexts[i];
-          if(termContext != null && termContext.docFreq() < this.maxDocFreq) {
+          if(termContext != null && termContext.docFreq() <= this.maxDocFreq) {
             this.finalContexts.add(termContext);
             this.finalTerms.add(queryTerms[i]);
           }
