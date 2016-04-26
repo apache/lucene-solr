@@ -122,7 +122,7 @@ public class ClusterStateMutator {
   public static ClusterState newState(ClusterState state, String name, DocCollection collection) {
     ClusterState newClusterState = null;
     if (collection == null) {
-      newClusterState = state.copyWith(name, (DocCollection) null);
+      newClusterState = state.copyWith(name, null);
     } else {
       newClusterState = state.copyWith(name, collection);
     }
@@ -153,9 +153,8 @@ public class ClusterStateMutator {
   /*
        * Return an already assigned id or null if not assigned
        */
-  public static String getAssignedId(final ClusterState state, final String nodeName,
-                              final ZkNodeProps coreState) {
-    Collection<Slice> slices = state.getSlices(coreState.getStr(ZkStateReader.COLLECTION_PROP));
+  public static String getAssignedId(final DocCollection collection, final String nodeName) {
+    Collection<Slice> slices = collection != null ? collection.getSlices() : null;
     if (slices != null) {
       for (Slice slice : slices) {
         if (slice.getReplicasMap().get(nodeName) != null) {
@@ -166,18 +165,15 @@ public class ClusterStateMutator {
     return null;
   }
 
-  public static String getAssignedCoreNodeName(ClusterState state, ZkNodeProps message) {
-    Collection<Slice> slices = state.getSlices(message.getStr(ZkStateReader.COLLECTION_PROP));
+  public static String getAssignedCoreNodeName(DocCollection collection, String forNodeName, String forCoreName) {
+    Collection<Slice> slices = collection != null ? collection.getSlices() : null;
     if (slices != null) {
       for (Slice slice : slices) {
         for (Replica replica : slice.getReplicas()) {
           String nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
           String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
 
-          String msgNodeName = message.getStr(ZkStateReader.NODE_NAME_PROP);
-          String msgCore = message.getStr(ZkStateReader.CORE_NAME_PROP);
-
-          if (nodeName.equals(msgNodeName) && core.equals(msgCore)) {
+          if (nodeName.equals(forNodeName) && core.equals(forCoreName)) {
             return replica.getName();
           }
         }

@@ -82,7 +82,7 @@ public class AssignTest extends SolrTestCaseJ4 {
     
     Set<String> liveNodes = new HashSet<>();
     ClusterState state = new ClusterState(-1,liveNodes, collectionStates);
-    String nodeName = Assign.assignNode("collection1", state);
+    String nodeName = Assign.assignNode(state.getCollection("collection1"));
     
     assertEquals("core_node2", nodeName);
   }

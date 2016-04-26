@@ -221,13 +221,15 @@ public class TestCoreParser extends LuceneTestCase {
 
   protected void dumpResults(String qType, Query q, int numDocs) throws IOException {
     if (VERBOSE) {
-      System.out.println("TEST: qType=" + qType + " query=" + q + " numDocs=" + numDocs);
+      System.out.println("TEST: qType=" + qType + " numDocs=" + numDocs + " " + q.getClass().getCanonicalName() + " query=" + q);
     }
     final IndexSearcher searcher = searcher();
     TopDocs hits = searcher.search(q, numDocs);
-    assertTrue(qType + " should produce results ", hits.totalHits > 0);
+    final boolean producedResults = (hits.totalHits > 0);
+    if (!producedResults) {
+      System.out.println("TEST: qType=" + qType + " numDocs=" + numDocs + " " + q.getClass().getCanonicalName() + " query=" + q);
+    }
     if (VERBOSE) {
-      System.out.println("=========" + qType + "============");
       ScoreDoc[] scoreDocs = hits.scoreDocs;
       for (int i = 0; i < Math.min(numDocs, hits.totalHits); i++) {
         Document ldoc = searcher.doc(scoreDocs[i].doc);
@@ -235,5 +237,6 @@ public class TestCoreParser extends LuceneTestCase {
       }
       System.out.println();
     }
+    assertTrue(qType + " produced no results", producedResults);
   }
 }

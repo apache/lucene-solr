@@ -56,7 +56,8 @@ public class GeoPolygonFactory {
    * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.  If points go
    *  clockwise from a given pole, then that pole should be within the polygon.  If points go
    *  counter-clockwise, then that pole should be outside the polygon.
-   * @param holes is a list of polygons representing "holes" in the outside polygon.  Null == none.
+   * @param holes is a list of polygons representing "holes" in the outside polygon.  Holes describe the area outside
+   *  each hole as being "in set".  Null == none.
    * @return a GeoPolygon corresponding to what was specified, or null if a valid polygon cannot be generated
    *  from this input.
    */
@@ -73,7 +74,8 @@ public class GeoPolygonFactory {
    * @param pointList is a list of the GeoPoints to build an arbitrary polygon out of.  If points go
    *  clockwise from a given pole, then that pole should be within the polygon.  If points go
    *  counter-clockwise, then that pole should be outside the polygon.
-   * @param holes is a list of polygons representing "holes" in the outside polygon.  Null == none.
+   * @param holes is a list of polygons representing "holes" in the outside polygon.  Holes describe the area outside
+   *  each hole as being "in set".  Null == none.
    * @param leniencyValue is the maximum distance (in units) that a point can be from the plane and still be considered as
    *  belonging to the plane.  Any value greater than zero may cause some of the provided points that are in fact outside
    *  the strict definition of co-planarity, but are within this distance, to be discarded for the purposes of creating a

@@ -19,16 +19,11 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.util.FrequencyTrackingRingBuffer;
 
 /**
  * A {@link QueryCachingPolicy} that tracks usage statistics of recently-used
  * filters in order to decide on which filters are worth caching.
- *
- * It also uses some heuristics on segments, filters and the doc id sets that
- * they produce in order to cache more aggressively when the execution cost
- * significantly outweighs the caching overhead.
  *
  * @lucene.experimental
  */
@@ -128,7 +123,7 @@ public final class UsageTrackingQueryCachingPolicy implements QueryCachingPolicy
   }
 
   @Override
-  public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+  public boolean shouldCache(Query query) throws IOException {
     if (query instanceof MatchAllDocsQuery
         // MatchNoDocsQuery currently rewrites to a BooleanQuery,
         // but who knows, it might get its own Weight one day

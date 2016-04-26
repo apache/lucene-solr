@@ -66,6 +66,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -756,11 +757,15 @@ public class HttpSolrCall {
     return result;
   }
 
-  private SolrCore getCoreByCollection(String collection) {
+  private SolrCore getCoreByCollection(String collectionName) {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
 
     ClusterState clusterState = zkStateReader.getClusterState();
-    Map<String, Slice> slices = clusterState.getActiveSlicesMap(collection);
+    DocCollection collection = clusterState.getCollectionOrNull(collectionName);
+    if (collection == null) {
+      return null;
+    }
+    Map<String, Slice> slices = collection.getActiveSlicesMap();
     if (slices == null) {
       return null;
     }
@@ -773,7 +778,7 @@ public class HttpSolrCall {
     //For queries it doesn't matter and hence we don't distinguish here.
     for (Map.Entry<String, Slice> entry : entries) {
       // first see if we have the leader
-      Replica leaderProps = clusterState.getLeader(collection, entry.getKey());
+      Replica leaderProps = collection.getLeader(entry.getKey());
       if (leaderProps != null && liveNodes.contains(leaderProps.getNodeName()) && leaderProps.getState() == Replica.State.ACTIVE) {
         core = checkProps(leaderProps);
         if (core != null) {

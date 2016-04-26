@@ -152,6 +152,8 @@ Bug Fixes
 
 * SOLR-8992: Restore Schema API GET method functionality removed in 6.0 (noble, Steve Rowe)
 
+* SOLR-9029: fix rare ZkStateReader visibility race during collection state format update (Scott Blum, hossman)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
@@ -170,6 +172,9 @@ Optimizations
   (David Smiley)
 
 * SOLR-8973: Zookeeper frenzy when a core is first created. (Janmejay Singh, Scott Blum, shalin)
+
+* SOLR-9014: Deprecate and reduce usage of ClusterState methods which may make calls to ZK via
+  the lazy collection reference. (Scott Blum, shalin)
 
 Other Changes
 ----------------------

@@ -209,4 +209,10 @@ public class DocCollection extends ZkNodeProps {
     }
     return null;
   }
+
+  public Replica getLeader(String sliceName) {
+    Slice slice = getSlice(sliceName);
+    if (slice == null) return null;
+    return slice.getLeader();
+  }
 }

@@ -69,7 +69,7 @@ public class SliceMutator {
       return ZkStateWriter.NO_OP;
     }
 
-    String coreNodeName = Assign.assignNode(coll, clusterState);
+    String coreNodeName = Assign.assignNode(collection);
     Replica replica = new Replica(coreNodeName,
         makeMap(
             ZkStateReader.CORE_NAME_PROP, message.getStr(ZkStateReader.CORE_NAME_PROP),
@@ -149,18 +149,19 @@ public class SliceMutator {
   }
 
   public ZkWriteCommand updateShardState(ClusterState clusterState, ZkNodeProps message) {
-    String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+    String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
-    log.info("Update shard state invoked for collection: " + collection + " with message: " + message);
+    log.info("Update shard state invoked for collection: " + collectionName + " with message: " + message);
 
-    Map<String, Slice> slicesCopy = new LinkedHashMap<>(clusterState.getSlicesMap(collection));
+    DocCollection collection = clusterState.getCollection(collectionName);
+    Map<String, Slice> slicesCopy = new LinkedHashMap<>(collection.getSlicesMap());
     for (String key : message.keySet()) {
       if (ZkStateReader.COLLECTION_PROP.equals(key)) continue;
       if (Overseer.QUEUE_OPERATION.equals(key)) continue;
 
-      Slice slice = clusterState.getSlice(collection, key);
+      Slice slice = collection.getSlice(key);
       if (slice == null) {
-        throw new RuntimeException("Overseer.updateShardState unknown collection: " + collection + " slice: " + key);
+        throw new RuntimeException("Overseer.updateShardState unknown collection: " + collectionName + " slice: " + key);
       }
       log.info("Update shard state " + key + " to " + message.getStr(key));
       Map<String, Object> props = slice.shallowCopy();
@@ -174,11 +175,11 @@ public class SliceMutator {
       slicesCopy.put(slice.getName(), newSlice);
     }
 
-    return new ZkWriteCommand(collection, clusterState.getCollection(collection).copyWithSlices(slicesCopy));
+    return new ZkWriteCommand(collectionName, collection.copyWithSlices(slicesCopy));
   }
 
   public ZkWriteCommand addRoutingRule(final ClusterState clusterState, ZkNodeProps message) {
-    String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+    String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
     String routeKey = message.getStr("routeKey");
@@ -187,9 +188,10 @@ public class SliceMutator {
     String targetShard = message.getStr("targetShard");
     String expireAt = message.getStr("expireAt");
 
-    Slice slice = clusterState.getSlice(collection, shard);
+    DocCollection collection = clusterState.getCollection(collectionName);
+    Slice slice = collection.getSlice(shard);
     if (slice == null) {
-      throw new RuntimeException("Overseer.addRoutingRule unknown collection: " + collection + " slice:" + shard);
+      throw new RuntimeException("Overseer.addRoutingRule unknown collection: " + collectionName + " slice:" + shard);
     }
 
     Map<String, RoutingRule> routingRules = slice.getRoutingRules();
@@ -215,22 +217,23 @@ public class SliceMutator {
     props.put("routingRules", routingRules);
 
     Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props);
-    return new ZkWriteCommand(collection,
-        CollectionMutator.updateSlice(collection, clusterState.getCollection(collection), newSlice));
+    return new ZkWriteCommand(collectionName,
+        CollectionMutator.updateSlice(collectionName, collection, newSlice));
   }
 
   public ZkWriteCommand removeRoutingRule(final ClusterState clusterState, ZkNodeProps message) {
-    String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+    String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String shard = message.getStr(ZkStateReader.SHARD_ID_PROP);
     String routeKeyStr = message.getStr("routeKey");
 
-    log.info("Overseer.removeRoutingRule invoked for collection: " + collection
+    log.info("Overseer.removeRoutingRule invoked for collection: " + collectionName
         + " shard: " + shard + " routeKey: " + routeKeyStr);
 
-    Slice slice = clusterState.getSlice(collection, shard);
+    DocCollection collection = clusterState.getCollection(collectionName);
+    Slice slice = collection.getSlice(shard);
     if (slice == null) {
-      log.warn("Unknown collection: " + collection + " shard: " + shard);
+      log.warn("Unknown collection: " + collectionName + " shard: " + shard);
       return ZkStateWriter.NO_OP;
     }
     Map<String, RoutingRule> routingRules = slice.getRoutingRules();
@@ -239,8 +242,8 @@ public class SliceMutator {
       Map<String, Object> props = slice.shallowCopy();
       props.put("routingRules", routingRules);
       Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props);
-      return new ZkWriteCommand(collection,
-          CollectionMutator.updateSlice(collection, clusterState.getCollection(collection), newSlice));
+      return new ZkWriteCommand(collectionName,
+          CollectionMutator.updateSlice(collectionName, collection, newSlice));
     }
 
     return ZkStateWriter.NO_OP;

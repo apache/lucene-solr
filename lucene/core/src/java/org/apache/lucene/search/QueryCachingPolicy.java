@@ -19,8 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.LeafReaderContext;
-
 /**
  * A policy defining which filters should be cached.
  *
@@ -40,7 +38,7 @@ public interface QueryCachingPolicy {
     public void onUse(Query query) {}
 
     @Override
-    public boolean shouldCache(Query query, LeafReaderContext context) throws IOException {
+    public boolean shouldCache(Query query) throws IOException {
       return true;
     }
 
@@ -51,12 +49,12 @@ public interface QueryCachingPolicy {
    *  in order to make decisions. */
   void onUse(Query query);
 
-  /** Whether the given {@link DocIdSet} should be cached on a given segment.
-   *  This method will be called on each leaf context to know if the filter
-   *  should be cached on this particular leaf. The filter cache will first
-   *  attempt to load a {@link DocIdSet} from the cache. If it is not cached
-   *  yet and this method returns <tt>true</tt> then a cache entry will be
-   *  generated. Otherwise an uncached set will be returned. */
-  boolean shouldCache(Query query, LeafReaderContext context) throws IOException;
+  /** Whether the given {@link Query} is worth caching.
+   *  This method will be called by the {@link QueryCache} to know whether to
+   *  cache. It will first attempt to load a {@link DocIdSet} from the cache.
+   *  If it is not cached yet and this method returns <tt>true</tt> then a
+   *  cache entry will be generated. Otherwise an uncached scorer will be
+   *  returned. */
+  boolean shouldCache(Query query) throws IOException;
 
 }

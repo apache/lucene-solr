@@ -14,27 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.search;
+package org.apache.lucene.document;
 
-import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
-
-  public void testCostlyFilter() {
-    assertTrue(UsageTrackingQueryCachingPolicy.isCostly(new PrefixQuery(new Term("field", "prefix"))));
-    assertTrue(UsageTrackingQueryCachingPolicy.isCostly(IntPoint.newRangeQuery("intField", 1, 1000)));
-    assertFalse(UsageTrackingQueryCachingPolicy.isCostly(new TermQuery(new Term("field", "value"))));
+/** Simple tests for LatLonDocValuesField */
+public class TestLatLonDocValuesField extends LuceneTestCase {
+  public void testToString() throws Exception {
+    // looks crazy due to lossiness
+    assertEquals("LatLonDocValuesField <field:18.313693958334625,-65.22744401358068>",(new LatLonDocValuesField("field", 18.313694, -65.227444)).toString());
+    
+    // sort field
+    assertEquals("<distance:\"field\" latitude=18.0 longitude=19.0>", LatLonDocValuesField.newDistanceSort("field", 18.0, 19.0).toString());
   }
-
-  public void testNeverCacheMatchAll() throws Exception {
-    Query q = new MatchAllDocsQuery();
-    UsageTrackingQueryCachingPolicy policy = new UsageTrackingQueryCachingPolicy();
-    for (int i = 0; i < 1000; ++i) {
-      policy.onUse(q);
-    }
-    assertFalse(policy.shouldCache(q));
-  }
-
 }

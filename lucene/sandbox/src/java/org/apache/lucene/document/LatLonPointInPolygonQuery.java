@@ -24,8 +24,6 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
@@ -34,10 +32,10 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Polygon2D;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -92,10 +90,7 @@ final class LatLonPointInPolygonQuery extends Query {
     NumericUtils.intToSortableBytes(encodeLongitude(box.minLon), minLon, 0);
     NumericUtils.intToSortableBytes(encodeLongitude(box.maxLon), maxLon, 0);
 
-    final LatLonGrid grid = new LatLonGrid(encodeLatitude(box.minLat),
-                                           encodeLatitude(box.maxLat),
-                                           encodeLongitude(box.minLon),
-                                           encodeLongitude(box.maxLon), polygons);
+    final Polygon2D tree = Polygon2D.create(polygons);
 
     return new ConstantScoreWeight(this) {
 
@@ -115,7 +110,7 @@ final class LatLonPointInPolygonQuery extends Query {
         LatLonPoint.checkCompatible(fieldInfo);
 
         // matching docids
-        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
+        MatchingPoints result = new MatchingPoints(reader, field);
 
         values.intersect(field, 
                          new IntersectVisitor() {
@@ -126,17 +121,8 @@ final class LatLonPointInPolygonQuery extends Query {
 
                            @Override
                            public void visit(int docID, byte[] packedValue) {
-                             // we bounds check individual values, as subtrees may cross, but we are being sent the values anyway:
-                             // this reduces the amount of docvalues fetches (improves approximation)
-                             if (StringHelper.compare(Integer.BYTES, packedValue, 0, maxLat, 0) > 0 ||
-                                 StringHelper.compare(Integer.BYTES, packedValue, 0, minLat, 0) < 0 ||
-                                 StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, maxLon, 0) > 0 ||
-                                 StringHelper.compare(Integer.BYTES, packedValue, Integer.BYTES, minLon, 0) < 0) {
-                               // outside of global bounding box range
-                               return;
-                             }
-                             if (grid.contains(NumericUtils.sortableBytesToInt(packedValue, 0), 
-                                               NumericUtils.sortableBytesToInt(packedValue, Integer.BYTES))) {
+                             if (tree.contains(decodeLatitude(packedValue, 0), 
+                                               decodeLongitude(packedValue, Integer.BYTES))) {
                                result.add(docID);
                              }
                            }
@@ -156,17 +142,11 @@ final class LatLonPointInPolygonQuery extends Query {
                              double cellMaxLat = decodeLatitude(maxPackedValue, 0);
                              double cellMaxLon = decodeLongitude(maxPackedValue, Integer.BYTES);
 
-                             return Polygon.relate(polygons, cellMinLat, cellMaxLat, cellMinLon, cellMaxLon);
+                             return tree.relate(cellMinLat, cellMaxLat, cellMinLon, cellMaxLon);
                            }
                          });
 
-        DocIdSet set = result.build();
-        final DocIdSetIterator disi = set.iterator();
-        if (disi == null) {
-          return null;
-        }
-
-        return new ConstantScoreScorer(this, score(), disi);
+        return new ConstantScoreScorer(this, score(), result.iterator());
       }
     };
   }

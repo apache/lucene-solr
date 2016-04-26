@@ -46,8 +46,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 public class Assign {
   private static Pattern COUNT = Pattern.compile("core_node(\\d+)");
 
-  public static String assignNode(String collection, ClusterState state) {
-    Map<String, Slice> sliceMap = state.getSlicesMap(collection);
+  public static String assignNode(DocCollection collection) {
+    Map<String, Slice> sliceMap = collection != null ? collection.getSlicesMap() : null;
     if (sliceMap == null) {
       return "core_node1";
     }
@@ -70,12 +70,12 @@ public class Assign {
    *
    * @return the assigned shard id
    */
-  public static String assignShard(String collection, ClusterState state, Integer numShards) {
+  public static String assignShard(DocCollection collection, Integer numShards) {
     if (numShards == null) {
       numShards = 1;
     }
     String returnShardId = null;
-    Map<String, Slice> sliceMap = state.getActiveSlicesMap(collection);
+    Map<String, Slice> sliceMap = collection != null ? collection.getActiveSlicesMap() : null;
 
 
     // TODO: now that we create shards ahead of time, is this code needed?  Esp since hash ranges aren't assigned when creating via this method?
