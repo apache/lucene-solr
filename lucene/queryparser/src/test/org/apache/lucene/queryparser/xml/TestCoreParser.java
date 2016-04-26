@@ -66,6 +66,11 @@ public class TestCoreParser extends LuceneTestCase {
     dumpResults("TermQuery", q, 5);
   }
 
+  public void testTermQueryEmptyXML() throws ParserException, IOException {
+    parseShouldFail("TermQueryEmpty.xml",
+        "TermQuery has no text");
+  }
+
   public void testTermsQueryXML() throws ParserException, IOException {
     Query q = parse("TermsQuery.xml");
     dumpResults("TermsQuery", q, 5);
@@ -205,6 +210,20 @@ public class TestCoreParser extends LuceneTestCase {
 
   protected IndexSearcher searcher() {
     return indexData().searcher;
+  }
+
+  protected void parseShouldFail(String xmlFileName, String expectedParserExceptionMessage) throws IOException {
+    Query q = null;
+    ParserException pe = null;
+    try {
+      q = parse(xmlFileName);
+    } catch (ParserException e) {
+      pe = e;
+    }
+    assertNull("for "+xmlFileName+" unexpectedly got "+q, q);
+    assertNotNull("expected a ParserException for "+xmlFileName, pe);
+    assertEquals("expected different ParserException for "+xmlFileName,
+        expectedParserExceptionMessage, pe.getMessage());
   }
 
   protected Query parse(String xmlFileName) throws ParserException, IOException {
