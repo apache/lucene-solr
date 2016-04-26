@@ -88,7 +88,7 @@ public class GeoPolygonFactory {
     // First, exercise a sanity filter on the provided pointList, and remove identical points, linear points, and backtracks
     //System.err.println(" filtering "+pointList.size()+" points...");
     //final long startTime = System.currentTimeMillis();
-    final List<GeoPoint> filteredPointList = filterPoints(pointList, leniencyValue);
+    final List<GeoPoint> filteredPointList = filterEdges(filterPoints(pointList), leniencyValue);
     //System.err.println("  ...done in "+(System.currentTimeMillis()-startTime)+"ms ("+((filteredPointList==null)?"degenerate":(filteredPointList.size()+" points"))+")");
     if (filteredPointList == null) {
       return null;
@@ -165,12 +165,11 @@ public class GeoPolygonFactory {
     }
   }
 
-  /** Filter duplicate points and coplanar points.
+  /** Filter duplicate points.
    * @param input with input list of points
-   * @param leniencyValue is the allowed distance of a point from the plane for cleanup of overly detailed polygons
    * @return the filtered list, or null if we can't get a legit polygon from the input.
    */
-  static List<GeoPoint> filterPoints(final List<GeoPoint> input, final double leniencyValue) {
+  static List<GeoPoint> filterPoints(final List<GeoPoint> input) {
     
     final List<GeoPoint> noIdenticalPoints = new ArrayList<>(input.size());
     
@@ -212,6 +211,16 @@ public class GeoPolygonFactory {
       return null;
     }
     
+    return noIdenticalPoints;
+  }
+  
+  /** Filter coplanar points.
+   * @param noIdenticalPoints with input list of points
+   * @param leniencyValue is the allowed distance of a point from the plane for cleanup of overly detailed polygons
+   * @return the filtered list, or null if we can't get a legit polygon from the input.
+   */
+  static List<GeoPoint> filterEdges(final List<GeoPoint> noIdenticalPoints, final double leniencyValue) {
+  
     // Now, do the depth-first search needed to find a path that has no coplanarities in it.
     // This is, unfortunately, not easy, because coplanarity is not transitive as you walk around the polygon.
     // If point C is not coplanar with edge A-B, there is no guarantee that A is not coplanar with B-C.
