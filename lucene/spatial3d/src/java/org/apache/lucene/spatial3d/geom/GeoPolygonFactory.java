@@ -113,7 +113,114 @@ public class GeoPolygonFactory {
     }
     throw new IllegalArgumentException("cannot find a point that is inside the polygon "+filteredPointList);
   }
+  
+  /** Use this class to specify a polygon with associated holes.
+   */
+  public static class PolygonDescription {
+    /** The list of points */
+    public final List<? extends GeoPoint> points;
+    /** The list of holes */
+    public final List<? extends PolygonDescription> holes;
     
+    /** Instantiate the polygon description.
+     * @param points is the list of points.
+     * @param holes is the list of holes.
+     */
+    public PolygonDescription(final List<? extends GeoPoint> points, final List<? extends PolygonDescription> holes) {
+      this.points = points;
+      this.holes = holes;
+    }
+    
+  }
+  
+  /** Create a large GeoPolygon.  This is one which has more than 100 sides and/or may have resolution problems
+   * with very closely spaced points, which often occurs when the polygon was constructed to approximate curves.  No tiling
+   * is done, and intersections and membership are optimized for having large numbers of sides.
+   *
+   * This method does very little checking for legality.  It expects the incoming shapes to not intersect
+   * each other.  The shapes can be disjoint or nested.  If the shapes listed are nested, then we are describing holes.
+   * There is no limit to the depth of holes.  However, if a shape is nested within another it must be explicitly
+   * described as being a child of the other shape.
+   *
+   * Membership in any given shape is described by the clockwise/counterclockwise direction of the points.  The
+   * clockwise direction indicates that a point inside is "in-set", while a counter-clockwise direction implies that
+   * a point inside is "out-of-set".
+   * 
+   * @param planetModel is the planet model.
+   * @param shapesList is the list of polygons we should be making.
+   * @return the GeoPolygon, or null if it cannot be constructed.
+   */
+  public static GeoPolygon makeLargeGeoPolygon(final PlanetModel planetModel,
+    final List<PolygonDescription> shapesList) {
+      
+    // We're going to be building a single-level list of shapes in the end, with a single point that we know to be inside/outside, which is
+    // not on an edge.
+    
+    final List<List<GeoPoint>> pointsList = new ArrayList<>();
+    
+    List<GeoPoint> testPointShape = null;
+    for (final PolygonDescription shape : shapesList) {
+      // Convert this shape and its holes to a general list of shapes.  We also need to identify exactly one
+      // legal, non-degenerate shape with no children that we can use to find a test point.  We also optimize
+      // to choose as small as possible a polygon for determining the in-set-ness of the test point.
+      testPointShape = convertPolygon(pointsList, shape, testPointShape);
+    }
+    
+    // If there's no polygon we can use to determine a test point, we throw up.
+    if (testPointShape == null) {
+      throw new IllegalArgumentException("couldn't find a non-degenerate polygon for in-set determination");
+    }
+    
+    // Create a random number generator.  Effectively this furnishes us with a repeatable sequence
+    // of points to use for poles.
+    final Random generator = new Random(1234);
+    for (int counter = 0; counter < 1000000; counter++) {
+      // Pick the next random pole
+      final GeoPoint pole = pickPole(generator, planetModel, testPointShape);
+      // Is it inside or outside?
+      final Boolean isPoleInside = isInsidePolygon(pole, testPointShape);
+      if (isPoleInside != null) {
+        // Legal pole
+        return new GeoComplexPolygon(planetModel, pointsList, pole, isPoleInside);
+      }
+      // If pole choice was illegal, try another one
+    }
+    throw new IllegalArgumentException("cannot find a point that is inside the polygon "+testPointShape);
+
+  }
+
+  /** Convert a polygon description to a list of shapes.  Also locate an optimal shape for evaluating a test point.
+   * @param pointsList is the structure to add new polygons to.
+   * @param shape is the current polygon description.
+   * @param testPointShape is the current best choice for a low-level polygon to evaluate.
+   * @return an updated best-choice for a test point polygon, and update the points list.
+   */
+  private static List<GeoPoint> convertPolygon(final List<List<GeoPoint>> pointsList, final PolygonDescription shape, List<GeoPoint> testPointShape) {
+    // First, remove duplicate points.  If degenerate, just ignore the shape.
+    final List<GeoPoint> filteredPoints = filterPoints(shape.points);
+    if (filteredPoints == null) {
+      return testPointShape;
+    }
+    
+    // Non-degenerate.  Check if this is a candidate for in-set determination.
+    if (shape.holes.size() == 0) {
+      // This shape is a candidate for a test point.
+      if (testPointShape == null || testPointShape.size() > filteredPoints.size()) {
+        testPointShape = filteredPoints;
+      }
+    }
+    
+    pointsList.add(filteredPoints);
+    
+    // Now, do all holes too
+    for (final PolygonDescription hole : shape.holes) {
+      testPointShape = convertPolygon(pointsList, hole, testPointShape);
+    }
+    
+    // Done; return the updated test point shape.
+    return testPointShape;
+  }
+  
   /**
    * Create a GeoPolygon using the specified points and holes and a test point.
    *
@@ -169,7 +276,7 @@ public class GeoPolygonFactory {
    * @param input with input list of points
    * @return the filtered list, or null if we can't get a legit polygon from the input.
    */
-  static List<GeoPoint> filterPoints(final List<GeoPoint> input) {
+  static List<GeoPoint> filterPoints(final List<? extends GeoPoint> input) {
     
     final List<GeoPoint> noIdenticalPoints = new ArrayList<>(input.size());
     
