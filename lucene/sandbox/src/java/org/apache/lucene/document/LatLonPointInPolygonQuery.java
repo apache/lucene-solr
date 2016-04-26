@@ -24,8 +24,6 @@ import org.apache.lucene.index.PointValues.IntersectVisitor;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
-import org.apache.lucene.search.DocIdSet;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
@@ -34,7 +32,6 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.geo.Polygon;
@@ -113,15 +110,10 @@ final class LatLonPointInPolygonQuery extends Query {
         LatLonPoint.checkCompatible(fieldInfo);
 
         // matching docids
-        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
+        MatchingPoints result = new MatchingPoints(reader, field);
 
         values.intersect(field, 
                          new IntersectVisitor() {
-                           @Override
-                           public void grow(int count) {
-                             result.grow(count);
-                           }
-
                            @Override
                            public void visit(int docID) {
                              result.add(docID);
@@ -154,13 +146,7 @@ final class LatLonPointInPolygonQuery extends Query {
                            }
                          });
 
-        DocIdSet set = result.build();
-        final DocIdSetIterator disi = set.iterator();
-        if (disi == null) {
-          return null;
-        }
-
-        return new ConstantScoreScorer(this, score(), disi);
+        return new ConstantScoreScorer(this, score(), result.iterator());
       }
     };
   }
