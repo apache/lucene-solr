@@ -28,7 +28,7 @@ import org.apache.solr.common.SolrException;
  * Identifiers are allowed to contain underscores, periods, hyphens, and alphanumeric characters.
  */
 public class SolrIdentifierValidator {
-  final static Pattern identifierPattern = Pattern.compile("^(?!\\-)[\\._A-Za-z0-9\\-]*$");
+  final static Pattern identifierPattern = Pattern.compile("^(?!\\-)[\\._A-Za-z0-9\\-]+$");
 
   public enum IdentifierType {
     SHARD, COLLECTION, CORE, ALIAS
@@ -64,11 +64,9 @@ public class SolrIdentifierValidator {
   }
 
   public static String getIdentifierMessage(IdentifierType identifierType, String name) {
-      return "Invalid " + identifierType.toString().toLowerCase(Locale.ROOT) + ": " + name + ". "
-          + identifierType.toString().toLowerCase(Locale.ROOT)
-          + " names must consist entirely of periods, underscores, hyphens, and alphanumerics";
-
+      String typeStr = identifierType.toString().toLowerCase(Locale.ROOT);
+    return "Invalid " + typeStr + ": [" + name + "]. " + typeStr + " names must consist entirely of periods, "
+        + "underscores, hyphens, and alphanumerics as well not start with a hyphen";
   }
+
 }
-
-
