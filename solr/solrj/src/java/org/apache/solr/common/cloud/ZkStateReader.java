@@ -263,9 +263,9 @@ public class ZkStateReader implements Closeable {
       }
 
       ClusterState.CollectionRef ref = clusterState.getCollectionRef(collection);
-      if (ref == null) {
-        // We don't know anything about this collection, maybe it's new?
-        // First try to update the legacy cluster state.
+      if (ref == null || legacyCollectionStates.containsKey(collection)) {
+        // We either don't know anything about this collection (maybe it's new?) or it's legacy.
+        // First update the legacy cluster state.
         refreshLegacyClusterState(null);
         if (!legacyCollectionStates.containsKey(collection)) {
           // No dice, see if a new collection just got created.
@@ -282,9 +282,6 @@ public class ZkStateReader implements Closeable {
           return;
         }
         // Edge case: if there's no external collection, try refreshing legacy cluster state in case it's there.
-        refreshLegacyClusterState(null);
-      } else if (legacyCollectionStates.containsKey(collection)) {
-        // Exists, and lives in legacy cluster state, force a refresh.
         refreshLegacyClusterState(null);
       } else if (watchedCollectionStates.containsKey(collection)) {
         // Exists as a watched collection, force a refresh.
