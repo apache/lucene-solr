@@ -151,7 +151,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext ctx) {
     String action = ctx.getParams().get("action");
-    if (action == null) return null;
+    if (action == null) return PermissionNameProvider.Name.COLL_READ_PERM;
     CollectionParams.CollectionAction collectionAction = CollectionParams.CollectionAction.get(action);
     if (collectionAction == null) return null;
     return collectionAction.isWrite ?
