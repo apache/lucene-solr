@@ -116,7 +116,7 @@ public class CoreParser implements QueryBuilder {
     queryFactory.addBuilder(nodeName, builder);
   }
 
-  private static Document parseXML(InputStream pXmlFile) throws ParserException {
+  static Document parseXML(InputStream pXmlFile) throws ParserException {
     DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
     DocumentBuilder db = null;
     try {
