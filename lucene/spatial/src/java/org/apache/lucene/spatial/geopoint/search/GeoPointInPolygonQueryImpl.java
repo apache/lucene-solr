@@ -20,7 +20,7 @@ import java.util.Objects;
 
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
-import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 
 /** Package private implementation for the public facing GeoPointInPolygonQuery delegate class.
@@ -29,13 +29,13 @@ import org.apache.lucene.index.PointValues.Relation;
  */
 final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
   private final GeoPointInPolygonQuery polygonQuery;
-  private final Polygon[] polygons;
+  private final Polygon2D polygons;
 
   GeoPointInPolygonQueryImpl(final String field, final TermEncoding termEncoding, final GeoPointInPolygonQuery q,
                              final double minLat, final double maxLat, final double minLon, final double maxLon) {
     super(field, termEncoding, minLat, maxLat, minLon, maxLon);
     this.polygonQuery = Objects.requireNonNull(q);
-    this.polygons = Objects.requireNonNull(q.polygons);
+    this.polygons = Polygon2D.create(q.polygons);
   }
 
   @Override
@@ -59,17 +59,17 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
 
     @Override
     protected boolean cellCrosses(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return Polygon.relate(polygons, minLat, maxLat, minLon, maxLon) == Relation.CELL_CROSSES_QUERY;
+      return polygons.relate(minLat, maxLat, minLon, maxLon) == Relation.CELL_CROSSES_QUERY;
     }
 
     @Override
     protected boolean cellWithin(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return Polygon.relate(polygons, minLat, maxLat, minLon, maxLon) == Relation.CELL_INSIDE_QUERY;
+      return polygons.relate(minLat, maxLat, minLon, maxLon) == Relation.CELL_INSIDE_QUERY;
     }
 
     @Override
     protected boolean cellIntersectsShape(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-      return Polygon.relate(polygons, minLat, maxLat, minLon, maxLon) != Relation.CELL_OUTSIDE_QUERY;
+      return polygons.relate(minLat, maxLat, minLon, maxLon) != Relation.CELL_OUTSIDE_QUERY;
     }
 
     /**
@@ -77,11 +77,11 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
      * {@link org.apache.lucene.spatial.geopoint.search.GeoPointTermsEnum#accept} method is called to match
      * encoded terms that fall within the bounding box of the polygon. Those documents that pass the initial
      * bounding box filter are then compared to the provided polygon using the
-     * {@link Polygon#contains(Polygon[], double, double)} method.
+     * {@link Polygon2D#contains(double, double)} method.
      */
     @Override
     protected boolean postFilter(final double lat, final double lon) {
-      return Polygon.contains(polygons, lat, lon);
+      return polygons.contains(lat, lon);
     }
   }
 

@@ -28,6 +28,7 @@ import org.apache.log4j.spi.ThrowableInformation;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.SolrCore;
@@ -236,10 +237,11 @@ public class SolrLogLayout extends Layout {
     return sb.toString();
   }
 
-  private Map<String,Object> getReplicaProps(ZkController zkController, SolrCore core) {
-    final String collection = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
-    Replica replica = zkController.getClusterState().getReplica(collection, zkController.getCoreNodeName(core.getCoreDescriptor()));
-    if(replica!=null) {
+  private Map<String, Object> getReplicaProps(ZkController zkController, SolrCore core) {
+    final String collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
+    DocCollection collection = zkController.getClusterState().getCollectionOrNull(collectionName);
+    Replica replica = collection.getReplica(zkController.getCoreNodeName(core.getCoreDescriptor()));
+    if (replica != null) {
       return replica.getProperties();
     }
     return Collections.EMPTY_MAP;

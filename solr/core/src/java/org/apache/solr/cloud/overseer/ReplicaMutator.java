@@ -127,7 +127,8 @@ public class ReplicaMutator {
       isUnique = Boolean.parseBoolean(shardUnique);
     }
 
-    Replica replica = clusterState.getReplica(collectionName, replicaName);
+    DocCollection collection = clusterState.getCollection(collectionName);
+    Replica replica = collection.getReplica(replicaName);
 
     if (replica == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection/slice/replica " +
@@ -138,7 +139,7 @@ public class ReplicaMutator {
     if (StringUtils.equalsIgnoreCase(replica.getStr(property), propVal)) return ZkStateWriter.NO_OP; // already the value we're going to set
 
     // OK, there's no way we won't change the cluster state now
-    Map<String,Replica> replicas = clusterState.getSlice(collectionName, sliceName).getReplicasCopy();
+    Map<String,Replica> replicas = collection.getSlice(sliceName).getReplicasCopy();
     if (isUnique == false) {
       replicas.get(replicaName).getProperties().put(property, propVal);
     } else { // Set prop for this replica, but remove it for all others.
@@ -150,8 +151,8 @@ public class ReplicaMutator {
         }
       }
     }
-    Slice newSlice = new Slice(sliceName, replicas, clusterState.getSlice(collectionName, sliceName).shallowCopy());
-    DocCollection newCollection = CollectionMutator.updateSlice(collectionName, clusterState.getCollection(collectionName),
+    Slice newSlice = new Slice(sliceName, replicas, collection.getSlice(sliceName).shallowCopy());
+    DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection,
         newSlice);
     return new ZkWriteCommand(collectionName, newCollection);
   }
@@ -174,7 +175,8 @@ public class ReplicaMutator {
       property = OverseerCollectionMessageHandler.COLL_PROP_PREFIX + property;
     }
 
-    Replica replica = clusterState.getReplica(collectionName, replicaName);
+    DocCollection collection = clusterState.getCollection(collectionName);
+    Replica replica = collection.getReplica(replicaName);
 
     if (replica == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Could not find collection/slice/replica " +
@@ -188,7 +190,6 @@ public class ReplicaMutator {
 
     log.info("Deleting property " + property + " for collection: " + collectionName +
         " slice " + sliceName + " replica " + replicaName + ". Full message: " + message);
-    DocCollection collection = clusterState.getCollection(collectionName);
     Slice slice = collection.getSlice(sliceName);
     DocCollection newCollection = SliceMutator.updateReplica(collection,
         slice, replicaName, unsetProperty(replica, property));
@@ -232,13 +233,15 @@ public class ReplicaMutator {
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
 
     String coreNodeName = message.getStr(ZkStateReader.CORE_NODE_NAME_PROP);
+    DocCollection collection = prevState.getCollectionOrNull(collectionName);
     if (coreNodeName == null) {
-      coreNodeName = ClusterStateMutator.getAssignedCoreNodeName(prevState, message);
+      coreNodeName = ClusterStateMutator.getAssignedCoreNodeName(collection,
+          message.getStr(ZkStateReader.NODE_NAME_PROP), message.getStr(ZkStateReader.CORE_NAME_PROP));
       if (coreNodeName != null) {
         log.info("node=" + coreNodeName + " is already registered");
       } else {
         // if coreNodeName is null, auto assign one
-        coreNodeName = Assign.assignNode(collectionName, prevState);
+        coreNodeName = Assign.assignNode(collection);
       }
       message.getProperties().put(ZkStateReader.CORE_NODE_NAME_PROP,
           coreNodeName);
@@ -247,7 +250,7 @@ public class ReplicaMutator {
     // use the provided non null shardId
     if (sliceName == null) {
       //get shardId from ClusterState
-      sliceName = ClusterStateMutator.getAssignedId(prevState, coreNodeName, message);
+      sliceName = ClusterStateMutator.getAssignedId(collection, coreNodeName);
       if (sliceName != null) {
         log.info("shard=" + sliceName + " is already registered");
       }
@@ -256,14 +259,14 @@ public class ReplicaMutator {
       //request new shardId
       if (collectionExists) {
         // use existing numShards
-        numShards = prevState.getCollection(collectionName).getSlices().size();
+        numShards = collection.getSlices().size();
         log.info("Collection already exists with " + ZkStateReader.NUM_SHARDS_PROP + "=" + numShards);
       }
-      sliceName = Assign.assignShard(collectionName, prevState, numShards);
+      sliceName = Assign.assignShard(collection, numShards);
       log.info("Assigning new node to shard shard=" + sliceName);
     }
 
-    Slice slice = prevState.getSlice(collectionName, sliceName);
+    Slice slice = collection != null ?  collection.getSlice(sliceName) : null;
 
     Map<String, Object> replicaProps = new LinkedHashMap<>();
 
@@ -313,9 +316,7 @@ public class ReplicaMutator {
     Map<String, Object> sliceProps = null;
     Map<String, Replica> replicas;
 
-    DocCollection collection = prevState.getCollectionOrNull(collectionName);
     if (slice != null) {
-      collection = prevState.getCollection(collectionName);
       collection = checkAndCompleteShardSplit(prevState, collection, coreNodeName, sliceName, replica);
       // get the current slice again because it may have been updated due to checkAndCompleteShardSplit method
       slice = collection.getSlice(sliceName);
@@ -340,15 +341,16 @@ public class ReplicaMutator {
    * Handles non-legacy state updates
    */
   protected ZkWriteCommand updateStateNew(ClusterState clusterState, final ZkNodeProps message) {
-    String collection = message.getStr(ZkStateReader.COLLECTION_PROP);
+    String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String sliceName = message.getStr(ZkStateReader.SHARD_ID_PROP);
 
-    if (collection == null || sliceName == null) {
+    if (collectionName == null || sliceName == null) {
       log.error("Invalid collection and slice {}", message);
       return ZkStateWriter.NO_OP;
     }
-    Slice slice = clusterState.getSlice(collection, sliceName);
+    DocCollection collection = clusterState.getCollectionOrNull(collectionName);
+    Slice slice = collection != null ? collection.getSlice(sliceName) : null;
     if (slice == null) {
       log.error("No such slice exists {}", message);
       return ZkStateWriter.NO_OP;

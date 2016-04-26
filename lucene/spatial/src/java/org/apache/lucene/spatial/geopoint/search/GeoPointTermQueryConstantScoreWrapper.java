@@ -32,14 +32,11 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.spatial.geopoint.document.GeoPointField;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.SparseFixedBitSet;
-
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.mortonUnhashLat;
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.mortonUnhashLon;
-
 
 /**
  * Custom ConstantScoreWrapper for {@code GeoPointMultiTermQuery} that cuts over to DocValues
@@ -140,7 +137,7 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointMultiTermQu
               int count = sdv.count();
               for (int i = 0; i < count; i++) {
                 long hash = sdv.valueAt(i);
-                if (termsEnum.postFilter(mortonUnhashLat(hash), mortonUnhashLon(hash))) {
+                if (termsEnum.postFilter(GeoPointField.decodeLatitude(hash), GeoPointField.decodeLongitude(hash))) {
                   return true;
                 }
               }

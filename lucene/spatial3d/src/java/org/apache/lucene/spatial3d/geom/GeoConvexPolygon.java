@@ -203,21 +203,6 @@ class GeoConvexPolygon extends GeoBasePolygon {
       edges[i] = sp;
       notableEdgePoints[i] = new GeoPoint[]{start, end};
     }
-    /* Disabled since GeoPolygonFactory does the checking too.
-    // In order to naively confirm that the polygon is convex, I would need to
-    // check every edge, and verify that every point (other than the edge endpoints)
-    // is within the edge's sided plane.  This is an order n^2 operation.  That's still
-    // not wrong, though, because everything else about polygons has a similar cost.
-    for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
-      final SidedPlane edge = edges[edgeIndex];
-      for (int pointIndex = 0; pointIndex < points.size(); pointIndex++) {
-        if (pointIndex != edgeIndex && pointIndex != legalIndex(edgeIndex + 1)) {
-          if (!edge.isWithin(points.get(pointIndex)))
-            throw new IllegalArgumentException("Polygon is not convex: Point " + points.get(pointIndex) + " Edge " + edge);
-        }
-      }
-    }
-    */
     
     // For each edge, create a bounds object.
     eitherBounds = new HashMap<>(edges.length);
@@ -234,10 +219,47 @@ class GeoConvexPolygon extends GeoBasePolygon {
       eitherBounds.put(edge, new EitherBound(edges[legalIndex(bound1Index)], edges[legalIndex(bound2Index)]));
     }
     
-    // Pick an edge point arbitrarily
-    edgePoints = new GeoPoint[]{points.get(0)};
+    // Pick an edge point arbitrarily from the outer polygon.  Glom this together with all edge points from
+    // inner polygons.
+    int edgePointCount = 1;
+    if (holes != null) {
+      for (final GeoPolygon hole : holes) {
+        edgePointCount += hole.getEdgePoints().length;
+      }
+    }
+    edgePoints = new GeoPoint[edgePointCount];
+    edgePointCount = 0;
+    edgePoints[edgePointCount++] = points.get(0);
+    if (holes != null) {
+      for (final GeoPolygon hole : holes) {
+        final GeoPoint[] holeEdgePoints = hole.getEdgePoints();
+        for (final GeoPoint p : holeEdgePoints) {
+          edgePoints[edgePointCount++] = p;
+        }
+      }
+    }
+    
+    if (isWithinHoles(points.get(0))) {
+      throw new IllegalArgumentException("Polygon edge intersects a polygon hole; not allowed");
+    }
+
   }
 
+  /** Check if a point is within the provided holes.
+   *@param point point to check.
+   *@return true if the point is within any of the holes.
+   */
+  protected boolean isWithinHoles(final GeoPoint point) {
+    if (holes != null) {
+      for (final GeoPolygon hole : holes) {
+        if (!hole.isWithin(point)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  
   /** Compute a legal point index from a possibly illegal one, that may have wrapped.
    *@param index is the index.
    *@return the normalized index.
@@ -258,7 +280,7 @@ class GeoConvexPolygon extends GeoBasePolygon {
     }
     if (holes != null) {
       for (final GeoPolygon polygon : holes) {
-        if (polygon.isWithin(x, y, z)) {
+        if (!polygon.isWithin(x, y, z)) {
           return false;
         }
       }
@@ -386,6 +408,14 @@ class GeoConvexPolygon extends GeoBasePolygon {
       final double newDist = distanceStyle.computeDistance(planetModel, edgePlane, x, y, z, eitherBounds.get(edgePlane));
       if (newDist < minimumDistance) {
         minimumDistance = newDist;
+      }
+    }
+    if (holes != null) {
+      for (final GeoPolygon hole : holes) {
+        double holeDistance = hole.computeOutsideDistance(distanceStyle, x, y, z);
+        if (holeDistance != 0.0 && holeDistance < minimumDistance) {
+          minimumDistance = holeDistance;
+        }
       }
     }
     return minimumDistance;

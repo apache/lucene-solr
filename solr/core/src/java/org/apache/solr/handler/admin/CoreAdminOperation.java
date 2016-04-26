@@ -369,7 +369,7 @@ enum CoreAdminOperation {
           String collectionName = req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName();
           DocCollection collection = clusterState.getCollection(collectionName);
           String sliceName = req.getCore().getCoreDescriptor().getCloudDescriptor().getShardId();
-          Slice slice = clusterState.getSlice(collectionName, sliceName);
+          Slice slice = collection.getSlice(sliceName);
           router = collection.getRouter() != null ? collection.getRouter() : DocRouter.DEFAULT;
           if (ranges == null) {
             DocRouter.Range currentRange = slice.getRange();
@@ -461,7 +461,7 @@ enum CoreAdminOperation {
             // to accept updates
             CloudDescriptor cloudDescriptor = core.getCoreDescriptor()
                 .getCloudDescriptor();
-            String collection = cloudDescriptor.getCollectionName();
+            String collectionName = cloudDescriptor.getCollectionName();
 
             if (retry % 15 == 0) {
               if (retry > 0 && log.isInfoEnabled())
@@ -471,7 +471,7 @@ enum CoreAdminOperation {
                     waitForState + "; forcing ClusterState update from ZooKeeper");
 
               // force a cluster state update
-              coreContainer.getZkController().getZkStateReader().forceUpdateCollection(collection);
+              coreContainer.getZkController().getZkStateReader().forceUpdateCollection(collectionName);
             }
 
             if (maxTries == 0) {
@@ -484,7 +484,8 @@ enum CoreAdminOperation {
             }
 
             ClusterState clusterState = coreContainer.getZkController().getClusterState();
-            Slice slice = clusterState.getSlice(collection, cloudDescriptor.getShardId());
+            DocCollection collection = clusterState.getCollection(collectionName);
+            Slice slice = collection.getSlice(cloudDescriptor.getShardId());
             if (slice != null) {
               final Replica replica = slice.getReplicasMap().get(coreNodeName);
               if (replica != null) {
@@ -508,7 +509,7 @@ enum CoreAdminOperation {
                 }
 
                 boolean onlyIfActiveCheckResult = onlyIfLeaderActive != null && onlyIfLeaderActive && localState != Replica.State.ACTIVE;
-                log.info("In WaitForState(" + waitForState + "): collection=" + collection + ", shard=" + slice.getName() +
+                log.info("In WaitForState(" + waitForState + "): collection=" + collectionName + ", shard=" + slice.getName() +
                     ", thisCore=" + core.getName() + ", leaderDoesNotNeedRecovery=" + leaderDoesNotNeedRecovery +
                     ", isLeader? " + core.getCoreDescriptor().getCloudDescriptor().isLeader() +
                     ", live=" + live + ", checkLive=" + checkLive + ", currentState=" + state.toString() + ", localState=" + localState + ", nodeName=" + nodeName +

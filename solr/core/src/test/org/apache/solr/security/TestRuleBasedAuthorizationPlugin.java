@@ -35,6 +35,7 @@ import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.handler.admin.CollectionsHandler;
+import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.security.AuthorizationContext.CollectionRequest;
 import org.apache.solr.security.AuthorizationContext.RequestType;
@@ -210,6 +211,45 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "handler", new CollectionsHandler(),
         "params", new MapSolrParams(singletonMap("action", "CREATE")))
         , STATUS_OK, rules);
+
+    rules = (Map) Utils.fromJSONString(permissions);
+    ((List)rules.get("permissions")).add( makeMap("name", "core-admin-edit", "role", "su"));
+    ((List)rules.get("permissions")).add( makeMap("name", "core-admin-read", "role", "user"));
+    ((Map)rules.get("user-role")).put("cio","su");
+    ((List)rules.get("permissions")).add( makeMap("name", "all", "role", "su"));
+    permissions = Utils.toJSONString(rules);
+
+    checkRules(makeMap("resource", "/admin/cores",
+        "userPrincipal", null,
+        "requestType", RequestType.ADMIN,
+        "collectionRequests", null,
+        "handler", new CoreAdminHandler(null),
+        "params", new MapSolrParams(singletonMap("action", "CREATE")))
+        , PROMPT_FOR_CREDENTIALS);
+
+    checkRules(makeMap("resource", "/admin/cores",
+        "userPrincipal", "joe",
+        "requestType", RequestType.ADMIN,
+        "collectionRequests", null,
+        "handler", new CoreAdminHandler(null),
+        "params", new MapSolrParams(singletonMap("action", "CREATE")))
+        , FORBIDDEN);
+
+  checkRules(makeMap("resource", "/admin/cores",
+        "userPrincipal", "joe",
+        "requestType", RequestType.ADMIN,
+        "collectionRequests", null,
+        "handler", new CoreAdminHandler(null),
+        "params", new MapSolrParams(singletonMap("action", "STATUS")))
+        , STATUS_OK);
+
+    checkRules(makeMap("resource", "/admin/cores",
+        "userPrincipal", "cio",
+        "requestType", RequestType.ADMIN,
+        "collectionRequests", null,
+        "handler", new CoreAdminHandler(null),
+        "params", new MapSolrParams(singletonMap("action", "CREATE")))
+        ,STATUS_OK );
 
   }
 

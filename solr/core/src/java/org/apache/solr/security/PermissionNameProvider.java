@@ -36,6 +36,8 @@ public interface PermissionNameProvider {
   enum Name {
     COLL_EDIT_PERM("collection-admin-edit", null),
     COLL_READ_PERM("collection-admin-read", null),
+    CORE_READ_PERM("core-admin-read", null),
+    CORE_EDIT_PERM("core-admin-edit", null),
     READ_PERM("read", "*"),
     UPDATE_PERM("update", "*"),
     CONFIG_EDIT_PERM("config-edit", "*"),

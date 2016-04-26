@@ -103,6 +103,15 @@ New Features
 
 * SOLR-8918: Adds Streaming to the admin page under the collections section. Includes
   ability to see graphically the expression explanation (Dennis Gove)
+  
+* SOLR-8913: When using a shared filesystem we should store data dir and tlog dir locations in 
+  the cluster state. (Mark Miller)
+
+* SOLR-8809: Implement Connection.prepareStatement (Kevin Risden)
+
+* SOLR-9020: Implement StatementImpl/ResultSetImpl get/set fetch* methods and proper errors for traversal methods (Kevin Risden)
+
+* SOLR-9041: 'core-admin-read' and 'core-admin-edit' are well known permissions (noble)
 
 Bug Fixes
 ----------------------
@@ -141,6 +150,12 @@ Bug Fixes
 
 * SOLR-8971: Preserve root cause when wrapping exceptions (hossman)
 
+* SOLR-8992: Restore Schema API GET method functionality removed in 6.0 (noble, Steve Rowe)
+
+* SOLR-9029: fix rare ZkStateReader visibility race during collection state format update (Scott Blum, hossman)
+
+* SOLR-9016: Fix SolrIdentifierValidator to not allow empty identifiers. (Shai Erera)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
@@ -159,6 +174,9 @@ Optimizations
   (David Smiley)
 
 * SOLR-8973: Zookeeper frenzy when a core is first created. (Janmejay Singh, Scott Blum, shalin)
+
+* SOLR-9014: Deprecate and reduce usage of ClusterState methods which may make calls to ZK via
+  the lazy collection reference. (Scott Blum, shalin)
 
 Other Changes
 ----------------------
@@ -193,6 +211,8 @@ Other Changes
 * SOLR-9015: Adds SelectStream as a default function in the StreamHandler (Dennis Gove)
 
 * SOLR-8929: Add an idea module for solr/server to enable launching start.jar (Scott Blum, Steve Rowe)
+
+* SOLR-8933: Solr should not close container streams. (Mike Drob, Uwe Schindler, Mark Miller)
 
 ==================  6.0.0 ==================
 

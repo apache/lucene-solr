@@ -51,7 +51,8 @@ public class CollectionMutator {
     String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     if (!checkCollectionKeyExistence(message)) return ZkStateWriter.NO_OP;
     String shardId = message.getStr(ZkStateReader.SHARD_ID_PROP);
-    Slice slice = clusterState.getSlice(collectionName, shardId);
+    DocCollection collection = clusterState.getCollection(collectionName);
+    Slice slice = collection.getSlice(shardId);
     if (slice == null) {
       Map<String, Replica> replicas = Collections.EMPTY_MAP;
       Map<String, Object> sliceProps = new HashMap<>();
@@ -63,8 +64,7 @@ public class CollectionMutator {
       if (shardParent != null) {
         sliceProps.put(Slice.PARENT, shardParent);
       }
-      DocCollection collection = updateSlice(collectionName,
-          clusterState.getCollection(collectionName), new Slice(shardId, replicas, sliceProps));
+      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps));
       return new ZkWriteCommand(collectionName, collection);
     } else {
       log.error("Unable to create Shard: " + shardId + " because it already exists in collection: " + collectionName);

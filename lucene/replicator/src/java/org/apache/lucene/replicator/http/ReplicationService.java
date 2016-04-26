@@ -148,6 +148,7 @@ public class ReplicationService {
       throw new ServletException("unrecognized shard ID " + pathElements[SHARD_IDX]);
     }
     
+    // SOLR-8933 Don't close this stream.
     ServletOutputStream resOut = resp.getOutputStream();
     try {
       switch (action) {

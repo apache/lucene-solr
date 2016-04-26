@@ -1165,9 +1165,8 @@ public final class ZkController {
       if (coreNodeName != null) {
         props.put(ZkStateReader.CORE_NODE_NAME_PROP, coreNodeName);
       }
-      
-      if (ClusterStateUtil.isAutoAddReplicas(getZkStateReader(), collection)) {
-        try (SolrCore core = cc.getCore(cd.getName())) {
+      try (SolrCore core = cc.getCore(cd.getName())) {
+        if (core != null && core.getDirectoryFactory().isSharedStorage()) {
           if (core != null && core.getDirectoryFactory().isSharedStorage()) {
             props.put("dataDir", core.getDataDir());
             UpdateLog ulog = core.getUpdateHandler().getUpdateLog();

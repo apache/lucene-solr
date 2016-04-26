@@ -547,8 +547,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                       throw new SolrException(ErrorCode.SERVER_ERROR,
                           "No active slices serving " + id + " found for target collection: " + rule.getTargetCollectionName());
                     }
-                    Replica targetLeader = cstate.getLeader(rule.getTargetCollectionName(), activeSlices.iterator().next().getName());
-                    if (nodes == null) nodes = new ArrayList<>(1);
+                    Replica targetLeader = targetColl.getLeader(activeSlices.iterator().next().getName());
+                    nodes = new ArrayList<>(1);
                     nodes.add(new StdNode(new ZkCoreNodeProps(targetLeader)));
                     break;
                   }
@@ -596,7 +596,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     ClusterState clusterState = zkController.getClusterState();
         
     CloudDescriptor cloudDescriptor = req.getCore().getCoreDescriptor().getCloudDescriptor();
-    Slice mySlice = clusterState.getSlice(collection, cloudDescriptor.getShardId());
+    DocCollection docCollection = clusterState.getCollection(collection);
+    Slice mySlice = docCollection.getSlice(cloudDescriptor.getShardId());
     boolean localIsLeader = cloudDescriptor.isLeader();
     if (DistribPhase.FROMLEADER == phase && localIsLeader && from != null) { // from will be null on log replay
       String fromShard = req.getParams().get(DISTRIB_FROM_PARENT);
@@ -606,7 +607,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               "Request says it is coming from parent shard leader but we are in active state");
         }
         // shard splitting case -- check ranges to see if we are a sub-shard
-        Slice fromSlice = zkController.getClusterState().getCollection(collection).getSlice(fromShard);
+        Slice fromSlice = docCollection.getSlice(fromShard);
         DocRouter.Range parentRange = fromSlice.getRange();
         if (parentRange == null) parentRange = new DocRouter.Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
         if (mySlice.getRange() != null && !mySlice.getRange().isSubsetOf(parentRange)) {

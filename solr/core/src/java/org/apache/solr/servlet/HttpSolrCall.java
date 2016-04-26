@@ -17,9 +17,9 @@
 package org.apache.solr.servlet;
 
 import javax.servlet.ServletInputStream;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,7 +41,10 @@ import java.util.Random;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
+
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.CloseShieldInputStream;
+import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.Header;
 import org.apache.http.HeaderIterator;
@@ -63,6 +66,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -534,7 +538,8 @@ public class HttpSolrCall {
       } else if (isPostOrPutRequest) {
         HttpEntityEnclosingRequestBase entityRequest =
             "POST".equals(req.getMethod()) ? new HttpPost(urlstr) : new HttpPut(urlstr);
-        HttpEntity entity = new InputStreamEntity(req.getInputStream(), req.getContentLength());
+        InputStream in = new CloseShieldInputStream(req.getInputStream()); // Prevent close of container streams
+        HttpEntity entity = new InputStreamEntity(in, req.getContentLength());
         entityRequest.setEntity(entity);
         method = entityRequest;
       } else if ("DELETE".equals(req.getMethod())) {
@@ -723,7 +728,8 @@ public class HttpSolrCall {
       }
 
       if (Method.HEAD != reqMethod) {
-        QueryResponseWriterUtil.writeQueryResponse(response.getOutputStream(), responseWriter, solrReq, solrRsp, ct);
+        OutputStream out = new CloseShieldOutputStream(response.getOutputStream()); // Prevent close of container streams, see SOLR-8933
+        QueryResponseWriterUtil.writeQueryResponse(out, responseWriter, solrReq, solrRsp, ct);
       }
       //else http HEAD request, nothing to write out, waited this long just to get ContentType
     } catch (EOFException e) {
@@ -751,11 +757,15 @@ public class HttpSolrCall {
     return result;
   }
 
-  private SolrCore getCoreByCollection(String collection) {
+  private SolrCore getCoreByCollection(String collectionName) {
     ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
 
     ClusterState clusterState = zkStateReader.getClusterState();
-    Map<String, Slice> slices = clusterState.getActiveSlicesMap(collection);
+    DocCollection collection = clusterState.getCollectionOrNull(collectionName);
+    if (collection == null) {
+      return null;
+    }
+    Map<String, Slice> slices = collection.getActiveSlicesMap();
     if (slices == null) {
       return null;
     }
@@ -768,7 +778,7 @@ public class HttpSolrCall {
     //For queries it doesn't matter and hence we don't distinguish here.
     for (Map.Entry<String, Slice> entry : entries) {
       // first see if we have the leader
-      Replica leaderProps = clusterState.getLeader(collection, entry.getKey());
+      Replica leaderProps = collection.getLeader(entry.getKey());
       if (leaderProps != null && liveNodes.contains(leaderProps.getNodeName()) && leaderProps.getState() == Replica.State.ACTIVE) {
         core = checkProps(leaderProps);
         if (core != null) {

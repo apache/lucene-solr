@@ -276,7 +276,7 @@ public class CollectionsAPISolrJTest extends AbstractFullDistribZkTestBase {
 
     cloudClient.setDefaultCollection(collectionName);
 
-    String newReplicaName = Assign.assignNode(collectionName, cloudClient.getZkStateReader().getClusterState());
+    String newReplicaName = Assign.assignNode(cloudClient.getZkStateReader().getClusterState().getCollection(collectionName));
     ArrayList<String> nodeList = new ArrayList<>(cloudClient.getZkStateReader().getClusterState().getLiveNodes());
     Collections.shuffle(nodeList, random());
     CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica()

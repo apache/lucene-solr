@@ -88,17 +88,17 @@ class ConnectionImpl implements Connection {
 
   @Override
   public PreparedStatement prepareStatement(String sql) throws SQLException {
-    return null;
+    return new PreparedStatementImpl(this, sql);
   }
 
   @Override
   public CallableStatement prepareCall(String sql) throws SQLException {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public String nativeSQL(String sql) throws SQLException {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override

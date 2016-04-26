@@ -142,7 +142,7 @@ public final class Geo3DPoint extends Field {
     }
     final GeoShape shape;
     if (polygons.length == 1) {
-      final GeoShape component = fromPolygon(polygons[0], false);
+      final GeoShape component = fromPolygon(polygons[0]);
       if (component == null) {
         // Polygon is degenerate
         shape = new GeoCompositePolygon();
@@ -152,7 +152,7 @@ public final class Geo3DPoint extends Field {
     } else {
       final GeoCompositePolygon poly = new GeoCompositePolygon();
       for (final Polygon p : polygons) {
-        final GeoPolygon component = fromPolygon(p, false);
+        final GeoPolygon component = fromPolygon(p);
         if (component != null) {
           poly.addShape(component);
         }
@@ -192,17 +192,16 @@ public final class Geo3DPoint extends Field {
     * Convert a Polygon object into a GeoPolygon.
     * This method uses
     * @param polygon is the Polygon object.
-    * @param reverseMe is true if the order of the points should be reversed.
     * @return the GeoPolygon.
     */
-  private static GeoPolygon fromPolygon(final Polygon polygon, final boolean reverseMe) {
+  private static GeoPolygon fromPolygon(final Polygon polygon) {
     // First, assemble the "holes".  The geo3d convention is to use the same polygon sense on the inner ring as the
     // outer ring, so we process these recursively with reverseMe flipped.
     final Polygon[] theHoles = polygon.getHoles();
     final List<GeoPolygon> holeList = new ArrayList<>(theHoles.length);
     for (final Polygon hole : theHoles) {
       //System.out.println("Hole: "+hole);
-      final GeoPolygon component = fromPolygon(hole, !reverseMe);
+      final GeoPolygon component = fromPolygon(hole);
       if (component != null) {
         holeList.add(component);
       }
@@ -216,12 +215,8 @@ public final class Geo3DPoint extends Field {
     final List<GeoPoint> points = new ArrayList<>(polyLats.length-1);
     // We skip the last point anyway because the API requires it to be repeated, and geo3d doesn't repeat it.
     for (int i = 0; i < polyLats.length - 1; i++) {
-      if (reverseMe) {
-        points.add(new GeoPoint(PlanetModel.WGS84, fromDegrees(polyLats[i]), fromDegrees(polyLons[i])));
-      } else {
-        final int index = polyLats.length - 2 - i;
-        points.add(new GeoPoint(PlanetModel.WGS84, fromDegrees(polyLats[index]), fromDegrees(polyLons[index])));
-      }
+      final int index = polyLats.length - 2 - i;
+      points.add(new GeoPoint(PlanetModel.WGS84, fromDegrees(polyLats[index]), fromDegrees(polyLons[index])));
     }
     //System.err.println(" building polygon with "+points.size()+" points...");
     final GeoPolygon rval = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, points, holeList);
