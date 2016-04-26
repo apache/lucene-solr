@@ -125,7 +125,7 @@ public class TestGraphTermsQParserPlugin extends SolrTestCaseJ4 {
 
     //Test with int field
     params = new ModifiableSolrParams();
-    params.add("q", "{!graphTerms f=test_ti maxDocFreq=3}5,10");
+    params.add("q", "{!graphTerms f=test_ti maxDocFreq=2}5,10");
     params.add("sort", "id asc");
     assertQ(req(params, "indent", "on"), "*[count(//doc)=2]",
         "//result/doc[1]/float[@name='id'][.='6.0']",
