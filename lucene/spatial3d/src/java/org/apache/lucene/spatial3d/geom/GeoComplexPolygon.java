@@ -133,9 +133,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
     // If we're right on top of any of the test planes, we navigate solely on that plane.
     if (testPointXZPlane.evaluateIsZero(thePoint)) {
       // Use the XZ plane exclusively.
-      final SidedPlane testPointCutoff =  new SidedPlane(thePoint, testPointXZPlane, testPoint);
-      final SidedPlane checkPointCutoff = new SidedPlane(testPoint, testPointXZPlane, thePoint);
-      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointXZPlane, testPointXZAbovePlane, testPointXZBelowPlane, testPointCutoff, checkPointCutoff, thePoint);
+      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointXZPlane, testPointXZAbovePlane, testPointXZBelowPlane, testPoint, thePoint);
       // Traverse our way from the test point to the check point.  Use the y tree because that's fixed.
       if (!yTree.traverse(crossingEdgeIterator, testPoint.y, testPoint.y)) {
         // Endpoint is on edge
@@ -144,9 +142,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
     } else if (testPointYZPlane.evaluateIsZero(thePoint)) {
       // Use the YZ plane exclusively.
-      final SidedPlane testPointCutoff =  new SidedPlane(thePoint, testPointYZPlane, testPoint);
-      final SidedPlane checkPointCutoff = new SidedPlane(testPoint, testPointYZPlane, thePoint);
-      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointYZPlane, testPointYZAbovePlane, testPointYZBelowPlane, testPointCutoff, checkPointCutoff, thePoint);
+      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointYZPlane, testPointYZAbovePlane, testPointYZBelowPlane, testPoint, thePoint);
       // Traverse our way from the test point to the check point.  Use the x tree because that's fixed.
       if (!xTree.traverse(crossingEdgeIterator, testPoint.x, testPoint.x)) {
         // Endpoint is on edge
@@ -155,9 +151,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
     } else if (testPointXYPlane.evaluateIsZero(thePoint)) {
       // Use the XY plane exclusively.
-      final SidedPlane testPointCutoff =  new SidedPlane(thePoint, testPointXYPlane, testPoint);
-      final SidedPlane checkPointCutoff = new SidedPlane(testPoint, testPointXYPlane, thePoint);
-      final CrossingEdgeIterator crossingEdgeIterator = new CrossingEdgeIterator(testPointXYPlane, testPointXYAbovePlane, testPointXYBelowPlane, testPointCutoff, checkPointCutoff, thePoint);
+      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointXYPlane, testPointXYAbovePlane, testPointXYBelowPlane, testPoint, thePoint);
       // Traverse our way from the test point to the check point.  Use the z tree because that's fixed.
       if (!zTree.traverse(crossingEdgeIterator, testPoint.z, testPoint.z)) {
         // Endpoint is on edge
@@ -172,77 +166,41 @@ class GeoComplexPolygon extends GeoBasePolygon {
         // Travel in X and Y
         // We'll do this using the testPointYZPlane, and create a travel plane for the right XZ plane.
         final Plane travelPlane = new Plane(0.0, 1.0, 0.0, -thePoint.y);
-        final Plane travelAbovePlane = new Plane(travelPlane, true);
-        final Plane travelBelowPlane = new Plane(travelPlane, false);
-        // We need cutoff planes for both legs.
-        final SidedPlane testPointCutoffPlane = new SidedPlane(thePoint, testPointYZPlane, testPoint);
-        final SidedPlane checkPointCutoffPlane = new SidedPlane(testPoint, travelPlane, thePoint);
-        // Now, find the intersection of the check and test point planes.
-        final GeoPoint[] intersectionPoints = travelPlane.findIntersections(planetModel, testPointYZPlane, testPointCutoffPlane, checkPointCutoffPlane);
-        assert intersectionPoints != null : "couldn't find any intersections";
-        assert intersectionPoints.length != 1 : "wrong number of intersection points";
-        final SidedPlane testPointOtherCutoffPlane = new SidedPlane(testPoint, testPointYZPlane, intersectionPoints[0]);
-        final SidedPlane checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
-        // Note: we need to handle the cases where end point of the leg sits on an edge!
-        // MHL
-        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointYZPlane, testPointYZAbovePlane, testPointYZBelowPlane, testPointCutoffPlane, testPointOtherCutoffPlane, null);
-        xTree.traverse(testPointEdgeIterator, testPoint.x, testPoint.x);
-        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, travelAbovePlane, travelBelowPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
-        if (!yTree.traverse(checkPointEdgeIterator, thePoint.y, thePoint.y)) {
-          // Endpoint is on edge
+        final DualCrossingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(testPointYZPlane, testPointYZAbovePlane, testPointYZBelowPlane, travelPlane, testPoint, thePoint);
+        if (!xTree.traverse(edgeIterator, testPoint.x, testPoint.x)) {
           return true;
         }
-        return (((testPointEdgeIterator.crossingCount + checkPointEdgeIterator.crossingCount) & 1) == 0)?testPointInSet:!testPointInSet;
+        edgeIterator.setSecondLeg();
+        if (!yTree.traverse(edgeIterator, thePoint.y, thePoint.y)) {
+          return true;
+        }
+        return ((edgeIterator.crossingCount  & 1) == 0)?testPointInSet:!testPointInSet;
       } else if (xDelta + zDelta <= xDelta + yDelta && xDelta + zDelta <= zDelta + yDelta) {
         // Travel in X and Z
         // We'll do this using the testPointXYPlane, and create a travel plane for the right YZ plane.
         final Plane travelPlane = new Plane(1.0, 0.0, 0.0, -thePoint.x);
-        final Plane travelAbovePlane = new Plane(travelPlane, true);
-        final Plane travelBelowPlane = new Plane(travelPlane, false);
-        // We need cutoff planes for both legs.
-        final SidedPlane testPointCutoffPlane = new SidedPlane(thePoint, testPointXYPlane, testPoint);
-        final SidedPlane checkPointCutoffPlane = new SidedPlane(testPoint, travelPlane, thePoint);
-        // Now, find the intersection of the check and test point planes.
-        final GeoPoint[] intersectionPoints = travelPlane.findIntersections(planetModel, testPointXYPlane, testPointCutoffPlane, checkPointCutoffPlane);
-        assert intersectionPoints != null : "couldn't find any intersections";
-        assert intersectionPoints.length != 1 : "wrong number of intersection points";
-        final SidedPlane testPointOtherCutoffPlane = new SidedPlane(testPoint, testPointXYPlane, intersectionPoints[0]);
-        final SidedPlane checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
-        // Note: we need to handle the cases where end point of the leg sits on an edge!
-        // MHL
-        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXYPlane, testPointXYAbovePlane, testPointXYBelowPlane, testPointCutoffPlane, testPointOtherCutoffPlane, null);
-        zTree.traverse(testPointEdgeIterator, testPoint.z, testPoint.z);
-        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, travelAbovePlane, travelBelowPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
-        if (!xTree.traverse(checkPointEdgeIterator, thePoint.x, thePoint.x)) {
-          // Endpoint is on edge
+        final DualCrossingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(testPointXYPlane, testPointXYAbovePlane, testPointXYBelowPlane, travelPlane, testPoint, thePoint);
+        if (!zTree.traverse(edgeIterator, testPoint.z, testPoint.z)) {
           return true;
         }
-        return (((testPointEdgeIterator.crossingCount + checkPointEdgeIterator.crossingCount) & 1) == 0)?testPointInSet:!testPointInSet;
+        edgeIterator.setSecondLeg();
+        if (!xTree.traverse(edgeIterator, thePoint.x, thePoint.x)) {
+          return true;
+        }
+        return ((edgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
       } else if (yDelta + zDelta <= xDelta + yDelta && yDelta + zDelta <= xDelta + zDelta) {
         // Travel in Y and Z
         // We'll do this using the testPointXZPlane, and create a travel plane for the right XY plane.
         final Plane travelPlane = new Plane(0.0, 0.0, 1.0, -thePoint.z);
-        final Plane travelAbovePlane = new Plane(travelPlane, true);
-        final Plane travelBelowPlane = new Plane(travelPlane, false);
-        // We need cutoff planes for both legs.
-        final SidedPlane testPointCutoffPlane = new SidedPlane(thePoint, testPointXZPlane, testPoint);
-        final SidedPlane checkPointCutoffPlane = new SidedPlane(testPoint, travelPlane, thePoint);
-        // Now, find the intersection of the check and test point planes.
-        final GeoPoint[] intersectionPoints = travelPlane.findIntersections(planetModel, testPointXZPlane, testPointCutoffPlane, checkPointCutoffPlane);
-        assert intersectionPoints != null : "couldn't find any intersections";
-        assert intersectionPoints.length != 1 : "wrong number of intersection points";
-        final SidedPlane testPointOtherCutoffPlane = new SidedPlane(testPoint, testPointXZPlane, intersectionPoints[0]);
-        final SidedPlane checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
-        // Note: we need to handle the cases where end point of the first leg sits on an edge!
-        // MHL
-        final CrossingEdgeIterator testPointEdgeIterator = new CrossingEdgeIterator(testPointXZPlane, testPointXZAbovePlane, testPointXZBelowPlane, testPointCutoffPlane, testPointOtherCutoffPlane, null);
-        yTree.traverse(testPointEdgeIterator, testPoint.y, testPoint.y);
-        final CrossingEdgeIterator checkPointEdgeIterator = new CrossingEdgeIterator(travelPlane, travelAbovePlane, travelBelowPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane, thePoint);
-        if (!zTree.traverse(checkPointEdgeIterator, thePoint.z, thePoint.z)) {
-          // Endpoint is on edge
+        final DualCrossingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(testPointXZPlane, testPointXZAbovePlane, testPointXZBelowPlane, travelPlane, testPoint, thePoint);
+        if (!yTree.traverse(edgeIterator, testPoint.y, testPoint.y)) {
           return true;
         }
-        return (((testPointEdgeIterator.crossingCount + checkPointEdgeIterator.crossingCount) & 1) == 0)?testPointInSet:!testPointInSet;
+        edgeIterator.setSecondLeg();
+        if (!zTree.traverse(edgeIterator, thePoint.z, thePoint.z)) {
+          return true;
+        }
+        return ((edgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
       }
     }
     return false;
@@ -597,7 +555,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
   
   /** Count the number of verifiable edge crossings.
    */
-  private class CrossingEdgeIterator implements EdgeIterator {
+  private class LinearCrossingEdgeIterator implements EdgeIterator {
     
     private final Plane plane;
     private final Plane abovePlane;
@@ -608,12 +566,12 @@ class GeoComplexPolygon extends GeoBasePolygon {
     
     public int crossingCount = 0;
     
-    public CrossingEdgeIterator(final Plane plane, final Plane abovePlane, final Plane belowPlane, final Membership bound1, final Membership bound2, final Vector thePoint) {
+    public LinearCrossingEdgeIterator(final Plane plane, final Plane abovePlane, final Plane belowPlane, final Vector testPoint, final Vector thePoint) {
       this.plane = plane;
       this.abovePlane = abovePlane;
       this.belowPlane = belowPlane;
-      this.bound1 = bound1;
-      this.bound2 = bound2;
+      this.bound1 = new SidedPlane(thePoint, plane, testPoint);
+      this.bound2 = new SidedPlane(testPoint, plane, thePoint);
       this.thePoint = thePoint;
     }
     
@@ -627,13 +585,217 @@ class GeoComplexPolygon extends GeoBasePolygon {
       if (crossingPoints != null) {
         // We need to handle the endpoint case, which is quite tricky.
         for (final GeoPoint crossingPoint : crossingPoints) {
-          countCrossingPoint(crossingPoint, plane, edge);
+          countCrossingPoint(crossingPoint, edge);
         }
       }
       return true;
     }
 
-    private void countCrossingPoint(final GeoPoint crossingPoint, final Plane plane, final Edge edge) {
+    private void countCrossingPoint(final GeoPoint crossingPoint, final Edge edge) {
+      if (crossingPoint.isNumericallyIdentical(edge.startPoint)) {
+        // We have to figure out if this crossing should be counted.
+        
+        // Does the crossing for this edge go up, or down?  Or can't we tell?
+        final GeoPoint[] aboveIntersections = abovePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane);
+        final GeoPoint[] belowIntersections = belowPlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane);
+        
+        assert !(aboveIntersections.length > 0 && belowIntersections.length > 0) : "edge that ends in a crossing can't both up and down";
+        
+        if (aboveIntersections.length == 0 && belowIntersections.length == 0) {
+          return;
+        }
+
+        final boolean edgeCrossesAbove = aboveIntersections.length > 0;
+
+        // This depends on the previous edge that first departs from identicalness.
+        Edge assessEdge = edge;
+        GeoPoint[] assessAboveIntersections;
+        GeoPoint[] assessBelowIntersections;
+        while (true) {
+          assessEdge = assessEdge.previous;
+          assessAboveIntersections = abovePlane.findIntersections(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
+          assessBelowIntersections = belowPlane.findIntersections(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
+
+          assert !(assessAboveIntersections.length > 0 && assessBelowIntersections.length > 0) : "assess edge that ends in a crossing can't both up and down";
+
+          if (assessAboveIntersections.length == 0 && assessBelowIntersections.length == 0) {
+            continue;
+          }
+          break;
+        }
+        
+        // Basically, we now want to assess whether both edges that come together at this endpoint leave the plane in opposite
+        // directions.  If they do, then we should count it as a crossing; if not, we should not.  We also have to remember that
+        // each edge we look at can also be looked at again if it, too, seems to cross the plane.
+        
+        // To handle the latter situation, we need to know if the other edge will be looked at also, and then we can make
+        // a decision whether to count or not based on that.
+        
+        // Compute the crossing points of this other edge.
+        final GeoPoint[] otherCrossingPoints = plane.findCrossings(planetModel, assessEdge.plane, bound1, bound2, assessEdge.startPlane, assessEdge.endPlane);
+        
+        // Look for a matching endpoint.  If the other endpoint doesn't show up, it is either out of bounds (in which case the
+        // transition won't be counted for that edge), or it is not a crossing for that edge (so, same conclusion).
+        for (final GeoPoint otherCrossingPoint : otherCrossingPoints) {
+          if (otherCrossingPoint.isNumericallyIdentical(assessEdge.endPoint)) {
+            // Found it!
+            // Both edges will try to contribute to the crossing count.  By convention, we'll only include the earlier one.
+            // Since we're the latter point, we exit here in that case.
+            return;
+          }
+        }
+        
+        // Both edges will not count the same point, so we can proceed.  We need to determine the direction of both edges at the
+        // point where they hit the plane.  This may be complicated by the 3D geometry; it may not be safe just to look at the endpoints of the edges
+        // and make an assessment that way, since a single edge can intersect the plane at more than one point.
+        
+        final boolean assessEdgeAbove = assessAboveIntersections.length > 0;
+        if (assessEdgeAbove != edgeCrossesAbove) {
+          crossingCount++;
+        }
+        
+      } else if (crossingPoint.isNumericallyIdentical(edge.endPoint)) {
+        // Figure out if the crossing should be counted.
+        
+        // Does the crossing for this edge go up, or down?  Or can't we tell?
+        final GeoPoint[] aboveIntersections = abovePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane);
+        final GeoPoint[] belowIntersections = belowPlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane);
+        
+        assert !(aboveIntersections.length > 0 && belowIntersections.length > 0) : "edge that ends in a crossing can't both up and down";
+        
+        if (aboveIntersections.length == 0 && belowIntersections.length == 0) {
+          return;
+        }
+
+        final boolean edgeCrossesAbove = aboveIntersections.length > 0;
+
+        // This depends on the previous edge that first departs from identicalness.
+        Edge assessEdge = edge;
+        GeoPoint[] assessAboveIntersections;
+        GeoPoint[] assessBelowIntersections;
+        while (true) {
+          assessEdge = assessEdge.next;
+          assessAboveIntersections = abovePlane.findIntersections(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
+          assessBelowIntersections = belowPlane.findIntersections(planetModel, assessEdge.plane, assessEdge.startPlane, assessEdge.endPlane);
+
+          assert !(assessAboveIntersections.length > 0 && assessBelowIntersections.length > 0) : "assess edge that ends in a crossing can't both up and down";
+
+          if (assessAboveIntersections.length == 0 && assessBelowIntersections.length == 0) {
+            continue;
+          }
+          break;
+        }
+        
+        // Basically, we now want to assess whether both edges that come together at this endpoint leave the plane in opposite
+        // directions.  If they do, then we should count it as a crossing; if not, we should not.  We also have to remember that
+        // each edge we look at can also be looked at again if it, too, seems to cross the plane.
+        
+        // By definition, we're the earlier plane in this case, so any crossing we detect we must count, by convention.  It is unnecessary
+        // to consider what the other edge does, because when we get to it, it will look back and figure out what we did for this one.
+        
+        // We need to determine the direction of both edges at the
+        // point where they hit the plane.  This may be complicated by the 3D geometry; it may not be safe just to look at the endpoints of the edges
+        // and make an assessment that way, since a single edge can intersect the plane at more than one point.
+
+        final boolean assessEdgeAbove = assessAboveIntersections.length > 0;
+        if (assessEdgeAbove != edgeCrossesAbove) {
+          crossingCount++;
+        }
+
+      } else {
+        crossingCount++;
+      }
+    }
+  }
+  
+  /** Count the number of verifiable edge crossings for a dual-leg journey.
+   */
+  private class DualCrossingEdgeIterator implements EdgeIterator {
+    
+    private boolean isSecondLeg = false;
+    
+    private final Plane testPointPlane;
+    private final Plane testPointAbovePlane;
+    private final Plane testPointBelowPlane;
+    private final Plane travelPlane;
+    private final Plane travelAbovePlane;
+    private final Plane travelBelowPlane;
+    private final Vector thePoint;
+    
+    private final SidedPlane testPointCutoffPlane;
+    private final SidedPlane checkPointCutoffPlane;
+    private final SidedPlane testPointOtherCutoffPlane;
+    private final SidedPlane checkPointOtherCutoffPlane;
+
+    public int crossingCount = 0;
+
+    public DualCrossingEdgeIterator(final Plane testPointPlane, final Plane testPointAbovePlane, final Plane testPointBelowPlane,
+      final Plane travelPlane, final Vector testPoint, final Vector thePoint) {
+      this.testPointPlane = testPointPlane;
+      this.testPointAbovePlane = testPointAbovePlane;
+      this.testPointBelowPlane = testPointBelowPlane;
+      this.travelPlane = travelPlane;
+      this.thePoint = thePoint;
+      this.travelAbovePlane = new Plane(travelPlane, true);
+      this.travelBelowPlane = new Plane(travelPlane, false);
+      this.testPointCutoffPlane = new SidedPlane(thePoint, testPointPlane, testPoint);
+      this.checkPointCutoffPlane = new SidedPlane(testPoint, travelPlane, thePoint);
+      // Now, find the intersection of the check and test point planes.
+      final GeoPoint[] intersectionPoints = travelPlane.findIntersections(planetModel, testPointPlane, testPointCutoffPlane, checkPointCutoffPlane);
+      assert intersectionPoints != null : "couldn't find any intersections";
+      assert intersectionPoints.length != 1 : "wrong number of intersection points";
+      this.testPointOtherCutoffPlane = new SidedPlane(testPoint, testPointPlane, intersectionPoints[0]);
+      this.checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoints[0]);
+    
+    }
+
+    public void setSecondLeg() {
+      isSecondLeg = true;
+    }
+    
+    @Override
+    public boolean matches(final Edge edge) {
+      // Early exit if the point is on the edge.
+      if (thePoint != null && edge.plane.evaluateIsZero(thePoint) && edge.startPlane.isWithin(thePoint) && edge.endPlane.isWithin(thePoint)) {
+        return false;
+      }
+      final GeoPoint[] crossingPoints;
+      if (isSecondLeg) {
+        crossingPoints = travelPlane.findCrossings(planetModel, edge.plane, checkPointCutoffPlane, checkPointOtherCutoffPlane, edge.startPlane, edge.endPlane);
+      } else {
+        crossingPoints = testPointPlane.findCrossings(planetModel, edge.plane, testPointCutoffPlane, testPointOtherCutoffPlane, edge.startPlane, edge.endPlane);
+      }
+      if (crossingPoints != null) {
+        // We need to handle the endpoint case, which is quite tricky.
+        for (final GeoPoint crossingPoint : crossingPoints) {
+          countCrossingPoint(crossingPoint, edge);
+        }
+      }
+      return true;
+    }
+
+    private void countCrossingPoint(final GeoPoint crossingPoint, final Edge edge) {
+      final Plane plane;
+      final Plane abovePlane;
+      final Plane belowPlane;
+      final SidedPlane bound1;
+      final SidedPlane bound2;
+      if (isSecondLeg) {
+        plane = travelPlane;
+        abovePlane = travelAbovePlane;
+        belowPlane = travelBelowPlane;
+        bound1 = checkPointCutoffPlane;
+        bound2 = checkPointOtherCutoffPlane;
+      } else {
+        plane = testPointPlane;
+        abovePlane = testPointAbovePlane;
+        belowPlane = testPointBelowPlane;
+        bound1 = testPointCutoffPlane;
+        bound2 = testPointOtherCutoffPlane;
+      }
+      
+      // MHL - this code below is temporary code copied from LinearCrossing above
+      
       if (crossingPoint.isNumericallyIdentical(edge.startPoint)) {
         // We have to figure out if this crossing should be counted.
         
