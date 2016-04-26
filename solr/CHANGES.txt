@@ -111,6 +111,8 @@ New Features
 
 * SOLR-9020: Implement StatementImpl/ResultSetImpl get/set fetch* methods and proper errors for traversal methods (Kevin Risden)
 
+* SOLR-9041: 'core-admin-read' and 'core-admin-edit' are well known permissions (noble)
+
 Bug Fixes
 ----------------------
 
