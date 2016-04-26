@@ -34,7 +34,6 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
-import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopFieldDocs;
@@ -229,7 +228,7 @@ public class LatLonPoint extends Field {
   }
   
   private static Query newBoxInternal(String field, byte[] min, byte[] max) {
-    return new PointRangeQuery(field, min, max, 2) {
+    return new LatLonPointBoxQuery(field, min, max, 2) {
       @Override
       protected String toString(int dimension, byte[] value) {
         if (dimension == 0) {
