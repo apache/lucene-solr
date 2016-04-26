@@ -150,6 +150,8 @@ Bug Fixes
 
 * SOLR-8992: Restore Schema API GET method functionality removed in 6.0 (noble, Steve Rowe)
 
+* SOLR-9029: fix rare ZkStateReader visibility race during collection state format update (Scott Blum, hossman)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
