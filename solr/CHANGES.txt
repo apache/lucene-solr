@@ -138,6 +138,8 @@ Bug Fixes
   numeric field.  For more complex functions, FunctionValues.exists() must also return true
   for the document to match.  (yonik)
 
+* SOLR-9016: Fix SolrIdentifierValidator to not allow empty identifiers. (Shai Erera)
+
 Other Changes
 ----------------------
 

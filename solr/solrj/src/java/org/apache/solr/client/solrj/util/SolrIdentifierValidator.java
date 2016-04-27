@@ -1,7 +1,3 @@
-package org.apache.solr.client.solrj.util;
-
-import java.util.regex.Pattern;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,15 +14,18 @@ import java.util.regex.Pattern;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj.util;
+
+import java.util.regex.Pattern;
 
 /**
  * Ensures that provided identifiers align with Solr's recommendations/requirements for choosing
  * collection, core, etc identifiers.
  *  
- * Identifiers are allowed to contain underscores, periods, and alphanumeric characters. 
+ * Identifiers are allowed to contain underscores, periods, hyphens, and alphanumeric characters.
  */
 public class SolrIdentifierValidator {
-  final static Pattern identifierPattern = Pattern.compile("^[\\._A-Za-z0-9]*$");
+  final static Pattern identifierPattern = Pattern.compile("^(?!\\\\-)[\\\\._A-Za-z0-9\\\\-]+$");
   
   public static boolean validateShardName(String shardName) {
     return validateIdentifier(shardName);
