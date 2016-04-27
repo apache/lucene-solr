@@ -58,7 +58,7 @@
 
   <fields>
 
-    <field name="id" type="string" required="true" />
+    <field name="id" type="int" required="true" />
 
     <field name="floatdv" type="float" indexed="false" stored="false" docValues="true" default="1" />
     <field name="intdv" type="int" indexed="false" stored="false" docValues="true" default="2" />
