@@ -87,43 +87,51 @@ public abstract class PointValues {
   public static final int MAX_DIMENSIONS = BKDWriter.MAX_DIMS;
 
   /** Return the cumulated number of points across all leaves of the given
-   * {@link IndexReader}.
+   * {@link IndexReader}. Leaves that do not have points for the given field
+   * are ignored.
    *  @see PointValues#size(String) */
   public static long size(IndexReader reader, String field) throws IOException {
     long size = 0;
     for (LeafReaderContext ctx : reader.leaves()) {
-      PointValues values = ctx.reader().getPointValues();
-      if (values != null) {
-        size += values.size(field);
+      FieldInfo info = ctx.reader().getFieldInfos().fieldInfo(field);
+      if (info == null || info.getPointDimensionCount() == 0) {
+        continue;
       }
+      PointValues values = ctx.reader().getPointValues();
+      size += values.size(field);
     }
     return size;
   }
 
   /** Return the cumulated number of docs that have points across all leaves
-   * of the given {@link IndexReader}.
+   * of the given {@link IndexReader}. Leaves that do not have points for the
+   * given field are ignored.
    *  @see PointValues#getDocCount(String) */
   public static int getDocCount(IndexReader reader, String field) throws IOException {
     int count = 0;
     for (LeafReaderContext ctx : reader.leaves()) {
-      PointValues values = ctx.reader().getPointValues();
-      if (values != null) {
-        count += values.getDocCount(field);
+      FieldInfo info = ctx.reader().getFieldInfos().fieldInfo(field);
+      if (info == null || info.getPointDimensionCount() == 0) {
+        continue;
       }
+      PointValues values = ctx.reader().getPointValues();
+      count += values.getDocCount(field);
     }
     return count;
   }
 
   /** Return the minimum packed values across all leaves of the given
-   * {@link IndexReader}.
+   * {@link IndexReader}. Leaves that do not have points for the given field
+   * are ignored.
    *  @see PointValues#getMinPackedValue(String) */
   public static byte[] getMinPackedValue(IndexReader reader, String field) throws IOException {
     byte[] minValue = null;
     for (LeafReaderContext ctx : reader.leaves()) {
-      PointValues values = ctx.reader().getPointValues();
-      if (values == null) {
+      FieldInfo info = ctx.reader().getFieldInfos().fieldInfo(field);
+      if (info == null || info.getPointDimensionCount() == 0) {
         continue;
       }
+      PointValues values = ctx.reader().getPointValues();
       byte[] leafMinValue = values.getMinPackedValue(field);
       if (leafMinValue == null) {
         continue;
@@ -145,15 +153,17 @@ public abstract class PointValues {
   }
 
   /** Return the maximum packed values across all leaves of the given
-   * {@link IndexReader}.
+   * {@link IndexReader}. Leaves that do not have points for the given field
+   * are ignored.
    *  @see PointValues#getMaxPackedValue(String) */
   public static byte[] getMaxPackedValue(IndexReader reader, String field) throws IOException {
     byte[] maxValue = null;
     for (LeafReaderContext ctx : reader.leaves()) {
-      PointValues values = ctx.reader().getPointValues();
-      if (values == null) {
+      FieldInfo info = ctx.reader().getFieldInfos().fieldInfo(field);
+      if (info == null || info.getPointDimensionCount() == 0) {
         continue;
       }
+      PointValues values = ctx.reader().getPointValues();
       byte[] leafMaxValue = values.getMaxPackedValue(field);
       if (leafMaxValue == null) {
         continue;
