@@ -567,8 +567,8 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     @Override
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
-      params.set(CoreAdminParams.COLLECTION, collection);
-      params.set(CoreAdminParams.NAME, name);
+      params.set(CoreAdminParams.COLLECTION, collection); // nocommit reconsider to use NAME (set via super.getParams)
+      params.set(CoreAdminParams.NAME, name); // nocommit reconsider to use backupName?
       params.set("location", location); //note: optional
       return params;
     }
@@ -583,7 +583,13 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
   public static class Restore extends AsyncCollectionSpecificAdminRequest {
     protected final String backupName;
     protected String location;
-    protected Create createOptions;//lazy created
+
+    // in common with collection creation:
+    protected String configName;
+    protected Integer maxShardsPerNode;
+    protected Integer replicationFactor;
+    protected Boolean autoAddReplicas;
+    protected Properties properties;
 
     public Restore(String collection, String backupName) {
       super(CollectionAction.RESTORE, collection);
@@ -611,36 +617,45 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       return this;
     }
 
-    /** The returned create command is used as a POJO to pass additional parameters -- restoring a collection involves
-     * creating a collection.  However, note some options aren't supported like numShards and configuring the router.
-     */
-    // note: it was either this (hack?) or we extend Create which would be weird/hack, or we verbosely duplicate lots of
-    //   POJO methods, or we perhaps modify the base class to have an addParam() but we loose typed/documented options.
-    //   nocommit but unfortunately, setConfigName & setReplicationFactor are deprecated. Now what?
-    public Create getCreateOptions() {
-      if (createOptions == null) {
-        createOptions = new Create(collection, null, -1, -1);
-      }
-      return createOptions;
+    // Collection creation params in common:
+    public Restore setConfigName(String config) { this.configName = config; return this; }
+    public String getConfigName()  { return configName; }
+
+    public Integer getMaxShardsPerNode() { return maxShardsPerNode; }
+    public Restore setMaxShardsPerNode(int maxShardsPerNode) { this.maxShardsPerNode = maxShardsPerNode; return this; }
+
+    public Integer getReplicationFactor() { return replicationFactor; }
+    public Restore setReplicationFactor(Integer repl) { this.replicationFactor = repl; return this; }
+
+    public Boolean getAutoAddReplicas() { return autoAddReplicas; }
+    public Restore setAutoAddReplicas(boolean autoAddReplicas) { this.autoAddReplicas = autoAddReplicas; return this; }
+
+    public Properties getProperties() {
+      return properties;
     }
+    public Restore setProperties(Properties properties) { this.properties = properties; return this;}
+
+    // TODO support createNodeSet, rule, snitch
 
     @Override
     public SolrParams getParams() {
-      ModifiableSolrParams params;
-      if (createOptions != null) {
-        params = (ModifiableSolrParams) createOptions.getParams();
-        // remove these two settings that create() made us set (unless customized)
-        if ("-1".equals(params.get("replicationFactor"))) {
-          params.remove("replicationFactor");
-        }
-        params.remove("numShards"); // not customizable
-        params.add(super.getParams());//override action, and we override some below too...
-      } else {
-        params = (ModifiableSolrParams) super.getParams();
-      }
-      params.set(CoreAdminParams.COLLECTION, collection);
-      params.set(CoreAdminParams.NAME, backupName);
+      ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
+      params.set(CoreAdminParams.COLLECTION, collection); // nocommit reconsider to use NAME (set via super.getParams)
+      params.set(CoreAdminParams.NAME, backupName); // nocommit reconsider to use backupName?
       params.set("location", location); //note: optional
+      params.set("collection.configName", configName); //note: optional
+      if (maxShardsPerNode != null) {
+        params.set( "maxShardsPerNode", maxShardsPerNode);
+      }
+      if (replicationFactor != null) {
+        params.set("replicationFactor", replicationFactor);
+      }
+      if (autoAddReplicas != null) {
+        params.set(ZkStateReader.AUTO_ADD_REPLICAS, autoAddReplicas);
+      }
+      if (properties != null) {
+        addProperties(params, properties);
+      }
       return params;
     }
 

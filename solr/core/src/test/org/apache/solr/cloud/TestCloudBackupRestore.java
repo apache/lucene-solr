@@ -164,13 +164,13 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
               .setLocation(location);
       if (origShardToDocCount.size() > cluster.getJettySolrRunners().size()) {
         // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
-        restore.getCreateOptions().setMaxShardsPerNode(origShardToDocCount.size());
+        restore.setMaxShardsPerNode(origShardToDocCount.size());
       }
       Properties props = new Properties();
       props.setProperty("customKey", "customVal");
-      restore.getCreateOptions().setProperties(props);
+      restore.setProperties(props);
       if (sameConfig==false) {
-        restore.getCreateOptions().setConfigName("customConfigName");//nocommit ugh, this is deprecated
+        restore.setConfigName("customConfigName");
       }
       if (random().nextBoolean()) {
         assertEquals(0, restore.process(client).getStatus());
