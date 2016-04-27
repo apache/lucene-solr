@@ -50,11 +50,11 @@ public class Slice extends ZkNodeProps {
   /** The slice's state. */
   public enum State {
     
-    /** The default state of a slice. */
+    /** The normal/default state of a shard. */
     ACTIVE,
     
     /**
-     * A slice is put in that state after it has been successfully split. See
+     * A shard is put in that state after it has been successfully split. See
      * <a href="https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-api3">
      * the reference guide</a> for more details.
      */
@@ -62,7 +62,8 @@ public class Slice extends ZkNodeProps {
     
     /**
      * When a shard is split, the new sub-shards are put in that state while the
-     * split operation is in progress. A shard in that state still receives
+     * split operation is in progress. It's also used when the shard is undergoing data restoration.
+     * A shard in this state still receives
      * update requests from the parent shard leader, however does not participate
      * in distributed search.
      */

@@ -414,6 +414,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
     //Mark all shards in CONSTRUCTION STATE while we restore the data
     {
+      //TODO might instead createCollection accept an initial state?  Is there a race?
       Map<String, Object> propMap = new HashMap<>();
       propMap.put(Overseer.QUEUE_OPERATION, OverseerAction.UPDATESHARDSTATE.toLower());
       for (Slice shard : restoreCollection.getSlices()) {
@@ -448,9 +449,9 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     //Copy data from backed up index to each replica
     for (Slice slice: restoreCollection.getSlices()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set(CoreAdminParams.ACTION, CoreAdminAction.RESTORECORE.toString());
       params.set(NAME, "snapshot." + slice.getName());
       params.set("location", backupPath.toString());
-      params.set(CoreAdminParams.ACTION, CoreAdminAction.RESTORECORE.toString());
       sliceCmd(clusterState, params, null, slice, shardHandler, asyncId, requestMap);
     }
     processResponses(new NamedList(), shardHandler, true, "Could not restore core", asyncId, requestMap);
