@@ -340,12 +340,12 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     Path backupZkPath =  backupPath.resolve("zk_backup");
 
     Properties properties = new Properties();
-    try (Reader in = Files.newBufferedReader(backupZkPath.resolve("backup.properties"), StandardCharsets.UTF_8)) {
+    try (Reader in = Files.newBufferedReader(backupPath.resolve("backup.properties"), StandardCharsets.UTF_8)) {
       properties.load(in);
     }
 
     String backupCollection = (String) properties.get("collection");
-    byte[] data = Files.readAllBytes(backupZkPath.resolve("collection_state_backup.json"));
+    byte[] data = Files.readAllBytes(backupZkPath.resolve("collection_state.json"));
     ClusterState backupClusterState = ClusterState.load(-1, data, Collections.emptySet());
     DocCollection backupCollectionState = backupClusterState.getCollection(backupCollection);
 
@@ -546,11 +546,10 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     //Save the collection's state. Can be part of the monolithic clusterstate.json or a individual state.json
     //Since we don't want to distinguish we extract the state and back it up as a separate json
     DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
-    Files.write(zkBackup.resolve("collection_state_backup.json"),//nocommit or simply clusterstate.json?
+    Files.write(zkBackup.resolve("collection_state.json"),
         Utils.toJSON(Collections.singletonMap(collectionName, collection)));
 
-    //nocommit why is it stored in zk_backup; shouldn't it be in backupPath?
-    Path propertiesPath = zkBackup.resolve("backup.properties");
+    Path propertiesPath = backupPath.resolve("backup.properties");
     Properties properties = new Properties();
 
     properties.put("snapshotName", backupName);
