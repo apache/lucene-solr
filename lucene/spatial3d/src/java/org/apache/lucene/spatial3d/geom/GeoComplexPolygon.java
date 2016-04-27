@@ -864,9 +864,9 @@ class GeoComplexPolygon extends GeoBasePolygon {
         
       this.testPointCutoffPlane = new SidedPlane(thePoint, testPointPlane, testPoint);
       this.checkPointCutoffPlane = new SidedPlane(testPoint, travelPlane, thePoint);
-        
-      this.testPointOtherCutoffPlane = new SidedPlane(testPoint, testPointPlane, intersectionPoint);
-      this.checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoint);
+
+      this.testPointOtherCutoffPlane = new SidedPlane(testPoint, travelPlane, -(travelPlane.x * intersectionPoint.x + travelPlane.y * intersectionPoint.y + travelPlane.z * intersectionPoint.z));
+      this.checkPointOtherCutoffPlane = new SidedPlane(thePoint, testPointPlane, -(testPointPlane.x * intersectionPoint.x + testPointPlane.y * intersectionPoint.y + testPointPlane.z * intersectionPoint.z));
         
       // Figure out which of the above/below planes are inside vs. outside.  To do this,
       // we look for the point that is within the bounds of the testPointPlane and travelPlane.  The two sides that intersected there are the inside
@@ -882,7 +882,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       final GeoPoint[] belowAbove = travelBelowPlane.findIntersections(planetModel, testPointAbovePlane, testPointCutoffPlane, testPointOtherCutoffPlane, checkPointCutoffPlane, checkPointOtherCutoffPlane);
       assert belowAbove != null : "Below + above should not be coplanar";
       
-      assert aboveAbove.length + aboveBelow.length + belowBelow.length + belowAbove.length == 1 : "Can be exactly one inside point";
+      assert aboveAbove.length + aboveBelow.length + belowBelow.length + belowAbove.length == 1 : "Can be exactly one inside point, instead was: aa="+aboveAbove.length+" ab=" + aboveBelow.length+" bb="+ belowBelow.length+" ba=" + belowAbove.length;
       
       final GeoPoint insideIntersection;
       if (aboveAbove.length > 0) {
