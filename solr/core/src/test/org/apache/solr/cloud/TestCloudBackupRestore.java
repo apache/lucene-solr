@@ -30,12 +30,11 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -88,7 +87,6 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
     }
 
     create.process(cluster.getSolrClient());
-    waitForCollection(collectionName);
     indexDocs(collectionName);
 
     if (!isImplicit && random().nextBoolean()) {
@@ -135,7 +133,6 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
 
   private void testBackupAndRestore(String collectionName) throws Exception {
     String backupName = "mytestbackup";
-    String restoreCollectionName = collectionName + "_restored";
 
     CloudSolrClient client = cluster.getSolrClient();
     DocCollection backupCollection = client.getZkStateReader().getClusterState().getCollection(collectionName);
@@ -147,30 +144,42 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
 
     log.info("Triggering Backup command");
 
-    CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
-        .setLocation(location);
-    NamedList<Object> rsp = cluster.getSolrClient().request(backup);
-    assertEquals(0, ((NamedList)rsp.get("responseHeader")).get("status"));
+    {
+      CollectionAdminRequest.Backup backup = CollectionAdminRequest.backupCollection(collectionName, backupName)
+          .setLocation(location);
+      if (random().nextBoolean()) {
+        assertEquals(0, backup.process(client).getStatus());
+      } else {
+        assertEquals(RequestStatusState.COMPLETED, backup.processAndWait(client, 30));//async
+      }
+    }
 
     log.info("Triggering Restore command");
 
-    //nocommit test with async
-    CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
-        .setLocation(location);
-    if (origShardToDocCount.size() > cluster.getJettySolrRunners().size()) {
-      // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
-      restore.getCreateOptions().setMaxShardsPerNode(origShardToDocCount.size());
-    }
-    Properties props = new Properties();
-    props.setProperty("customKey", "customVal");
-    restore.getCreateOptions().setProperties(props);
+    String restoreCollectionName = collectionName + "_restored";
     boolean sameConfig = random().nextBoolean();
-    if (sameConfig==false) {
-      restore.getCreateOptions().setConfigName("customConfigName");//nocommit ugh, this is deprecated
+
+    {
+      CollectionAdminRequest.Restore restore = CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
+              .setLocation(location);
+      if (origShardToDocCount.size() > cluster.getJettySolrRunners().size()) {
+        // may need to increase maxShardsPerNode (e.g. if it was shard split, then now we need more)
+        restore.getCreateOptions().setMaxShardsPerNode(origShardToDocCount.size());
+      }
+      Properties props = new Properties();
+      props.setProperty("customKey", "customVal");
+      restore.getCreateOptions().setProperties(props);
+      if (sameConfig==false) {
+        restore.getCreateOptions().setConfigName("customConfigName");//nocommit ugh, this is deprecated
+      }
+      if (random().nextBoolean()) {
+        assertEquals(0, restore.process(client).getStatus());
+      } else {
+        assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(client, 30));//async
+      }
+      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+          restoreCollectionName, cluster.getSolrClient().getZkStateReader(), log.isDebugEnabled(), true, 30);
     }
-    rsp = cluster.getSolrClient().request(restore); // DO IT!
-    assertEquals(0, ((NamedList)rsp.get("responseHeader")).get("status"));
-    waitForCollection(restoreCollectionName);
 
     //Check the number of results are the same
     DocCollection restoreCollection = client.getZkStateReader().getClusterState().getCollection(restoreCollectionName);
@@ -202,15 +211,6 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
       shardToDocCount.put(shardName, (int) docsInShard);
     }
     return shardToDocCount;
-  }
-
-  public void waitForCollection(String collection) throws Exception {
-    // note: NUM_SHARDS may be too small because of shard split, but that's okay?
-    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    AbstractFullDistribZkTestBase.waitForCollection(zkStateReader, collection, NUM_SHARDS);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, zkStateReader, log.isDebugEnabled(), true, 30);
-    AbstractDistribZkTestBase.assertAllActive(collection, zkStateReader);
-    assertFalse(zkStateReader.getClusterState().getCollection(collection).getActiveSlices().isEmpty());
   }
 
 }
