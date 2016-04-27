@@ -33,6 +33,8 @@ import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.queries.function.ValueSource;
@@ -111,30 +113,51 @@ public class TrieField extends PrimitiveFieldType {
     }
   }
 
+
   @Override
   public Object toObject(IndexableField f) {
     final Number val = f.numericValue();
     if (val != null) {
+
+      if (f.fieldType().stored() == false && f.fieldType().docValuesType() == DocValuesType.NUMERIC ) {
+        long bits = val.longValue();
+        switch (type) {
+          case INTEGER:
+            return (int)bits;
+          case FLOAT:
+            return Float.intBitsToFloat((int)bits);
+          case LONG:
+            return bits;
+          case DOUBLE:
+            return Double.longBitsToDouble(bits);
+          case DATE:
+            return new Date(bits);
+          default:
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
+        }
+      }
+
+      // normal stored case
       return (type == TrieTypes.DATE) ? new Date(val.longValue()) : val;
     } else {
-      // the following code is "deprecated" and only to support pre-3.2 indexes using the old BinaryField encoding:
-      final BytesRef bytes = f.binaryValue();
-      if (bytes==null) return badFieldString(f);
+      // multi-valued numeric docValues currently use SortedSet on the indexed terms.
+      BytesRef term = f.binaryValue();
       switch (type) {
         case INTEGER:
-          return toInt(bytes.bytes, bytes.offset);
+          return NumericUtils.prefixCodedToInt(term);
         case FLOAT:
-          return Float.intBitsToFloat(toInt(bytes.bytes, bytes.offset));
+          return NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(term));
         case LONG:
-          return toLong(bytes.bytes, bytes.offset);
+          return NumericUtils.prefixCodedToLong(term);
         case DOUBLE:
-          return Double.longBitsToDouble(toLong(bytes.bytes, bytes.offset));
+          return NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term));
         case DATE:
-          return new Date(toLong(bytes.bytes, bytes.offset));
+          return new Date(NumericUtils.prefixCodedToLong(term));
         default:
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + f.name());
       }
     }
+
   }
 
   @Override
@@ -421,7 +444,7 @@ public class TrieField extends PrimitiveFieldType {
 
     return query;
   }
-  
+
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     if (!field.indexed() && field.hasDocValues()) {
@@ -436,7 +459,7 @@ public class TrieField extends PrimitiveFieldType {
   static int toInt(byte[] arr, int offset) {
     return (arr[offset]<<24) | ((arr[offset+1]&0xff)<<16) | ((arr[offset+2]&0xff)<<8) | (arr[offset+3]&0xff);
   }
-  
+
   @Deprecated
   static long toLong(byte[] arr, int offset) {
     int high = (arr[offset]<<24) | ((arr[offset+1]&0xff)<<16) | ((arr[offset+2]&0xff)<<8) | (arr[offset+3]&0xff);

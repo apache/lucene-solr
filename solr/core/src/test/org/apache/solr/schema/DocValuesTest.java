@@ -16,6 +16,7 @@
  */
 package org.apache.solr.schema;
 
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
@@ -27,6 +28,9 @@ import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
 
 import java.io.IOException;
+import java.util.Date;
+import java.util.List;
+
 
 public class DocValuesTest extends SolrTestCaseJ4 {
 
@@ -79,9 +83,29 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         values = longDv.getType().getValueSource(longDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
         assertEquals(4L, values.longVal(0));
         assertEquals(4L, values.objectVal(0));
+
+        // check reversability of created fields
+        tstToObj(schema.getField("floatdv"), -1.5f);
+        tstToObj(schema.getField("floatdvs"), -1.5f);
+        tstToObj(schema.getField("doubledv"), -1.5d);
+        tstToObj(schema.getField("doubledvs"), -1.5d);
+        tstToObj(schema.getField("intdv"), -7);
+        tstToObj(schema.getField("intdvs"), -7);
+        tstToObj(schema.getField("longdv"), -11L);
+        tstToObj(schema.getField("longdvs"), -11L);
+        tstToObj(schema.getField("datedv"), new Date(1000));
+        tstToObj(schema.getField("datedvs"), new Date(1000));
+
       } finally {
         searcherRef.decref();
       }
+    }
+  }
+
+  private void tstToObj(SchemaField sf, Object o) {
+    List<IndexableField> fields = sf.createFields(o, 1.0f);
+    for (IndexableField field : fields) {
+      assertEquals( sf.getType().toObject(field), o);
     }
   }
 
@@ -252,7 +276,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "3", "floatdv", "3", "intdv", "1", "doubledv", "2", "longdv", "1", "datedv", "1996-12-31T23:59:59.999Z", "stringdv", "c"));
     assertU(adoc("id", "4", "floatdv", "3", "intdv", "1", "doubledv", "2", "longdv", "1", "datedv", "1996-12-31T23:59:59.999Z", "stringdv", "car"));
     assertU(commit());
-    
+
     // string: termquery
     assertQ(req("q", "stringdv:car", "sort", "id asc"),
         "//*[@numFound='1']",
@@ -314,7 +338,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         "//result/doc[1]/str[@name='id'][.=1]",
         "//result/doc[2]/str[@name='id'][.=2]"
     );
-    
+
     // long: termquery
     assertQ(req("q", "longdv:1", "sort", "id asc"),
         "//*[@numFound='2']",

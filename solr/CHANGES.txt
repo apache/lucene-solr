@@ -127,6 +127,10 @@ Bug Fixes
 
 * SOLR-9016: Fix SolrIdentifierValidator to not allow empty identifiers. (Shai Erera)
 
+* SOLR-8886: Fix TrieField.toObject(IndexableField) to work for field with docValues
+  enabled. (yonik)
+
+
 Other Changes
 ----------------------
 
