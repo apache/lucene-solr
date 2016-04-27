@@ -156,6 +156,9 @@ Bug Fixes
 
 * SOLR-9016: Fix SolrIdentifierValidator to not allow empty identifiers. (Shai Erera)
 
+* SOLR-9046: Fix solr.cmd that wrongly assumes Jetty will always listen on 0.0.0.0.
+  (Bram Van Dam, Uwe Schindler)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
