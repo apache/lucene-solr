@@ -190,14 +190,14 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     ((Map)rules.get("user-role")).put("cio","su");
     ((List)rules.get("permissions")).add( makeMap("name", "all", "role", "su"));
 
-    checkRules(makeMap("resource", "/replication",
+    checkRules(makeMap("resource", ReplicationHandler.PATH,
         "httpMethod", "POST",
         "userPrincipal", "tim",
         "handler", new ReplicationHandler(),
         "collectionRequests", singletonList(new CollectionRequest("mycoll")) )
         , FORBIDDEN, rules);
 
-    checkRules(makeMap("resource", "/replication",
+    checkRules(makeMap("resource", ReplicationHandler.PATH,
         "httpMethod", "POST",
         "userPrincipal", "cio",
         "handler", new ReplicationHandler(),
