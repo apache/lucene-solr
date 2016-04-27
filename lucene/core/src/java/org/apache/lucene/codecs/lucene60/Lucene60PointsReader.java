@@ -114,7 +114,10 @@ public class Lucene60PointsReader extends PointsReader implements Closeable {
     }
   }
 
-  private BKDReader getBKDReader(String fieldName) {
+  /** Returns the underlying {@link BKDReader}.
+   *
+   * @lucene.internal */
+  public BKDReader getBKDReader(String fieldName) {
     FieldInfo fieldInfo = readState.fieldInfos.fieldInfo(fieldName);
     if (fieldInfo == null) {
       throw new IllegalArgumentException("field=\"" + fieldName + "\" is unrecognized");

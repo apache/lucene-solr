@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.MultipleFieldComparator;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -226,7 +227,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
     assert(tuples.size() == 5);
-    assertOrder(tuples, 0,1,3,4,6);
+    assertOrder(tuples, 0, 1, 3, 4, 6);
 
     //Test the eofTuples
 
@@ -1363,13 +1364,131 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     assertTrue(count.doubleValue() == 2);
 
 
+    //Test will null value in the grouping field
+    indexr(id, "12", "a_s", null, "a_i", "14", "a_f", "10");
+    commit();
+
+    paramsA = mapParams("q","*:*","fl","a_s,a_i,a_f","sort", "a_s asc", "qt", "/export");
+    stream = new CloudSolrStream(zkHost, "collection1", paramsA);
+
+    Bucket[] buckets1 =  {new Bucket("a_s")};
+
+    Metric[] metrics1 = {new SumMetric("a_i"),
+        new SumMetric("a_f"),
+        new MinMetric("a_i"),
+        new MinMetric("a_f"),
+        new MaxMetric("a_i"),
+        new MaxMetric("a_f"),
+        new MeanMetric("a_i"),
+        new MeanMetric("a_f"),
+        new CountMetric()};
+
+    rollupStream = new RollupStream(stream, buckets1, metrics1);
+    tuples = getTuples(rollupStream);
+    //Check that we've got the extra NULL bucket
+    assert(tuples.size() == 4);
+    tuple = tuples.get(0);
+    assert(tuple.getString("a_s").equals("NULL"));
+
+    sumi = tuple.getDouble("sum(a_i)");
+    sumf = tuple.getDouble("sum(a_f)");
+    mini = tuple.getDouble("min(a_i)");
+    minf = tuple.getDouble("min(a_f)");
+    maxi = tuple.getDouble("max(a_i)");
+    maxf = tuple.getDouble("max(a_f)");
+    avgi = tuple.getDouble("avg(a_i)");
+    avgf = tuple.getDouble("avg(a_f)");
+    count = tuple.getDouble("count(*)");
+
+    assertTrue(sumi.doubleValue() == 14.0D);
+    assertTrue(sumf.doubleValue() == 10.0D);
+    assertTrue(mini.doubleValue() == 14.0D);
+    assertTrue(minf.doubleValue() == 10.0D);
+    assertTrue(maxi.doubleValue() == 14.0D);
+    assertTrue(maxf.doubleValue() == 10.0D);
+    assertTrue(avgi.doubleValue() == 14.0D);
+    assertTrue(avgf.doubleValue() == 10.0D);
+    assertTrue(count.doubleValue() == 1);
+
 
     del("*:*");
     commit();
   }
 
 
+  private void testDaemonTopicStream() throws Exception {
 
+    String zkHost = zkServer.getZkAddress();
+
+    StreamContext context = new StreamContext();
+    SolrClientCache cache = new SolrClientCache();
+    context.setSolrClientCache(cache);
+
+    Map params = new HashMap();
+    params.put("q","a_s:hello0");
+    params.put("rows", "500");
+    params.put("fl", "id");
+
+    TopicStream topicStream = new TopicStream(zkHost, "collection1", "collection1", "50000000", 1000000, params);
+
+    DaemonStream daemonStream = new DaemonStream(topicStream, "daemon1", 1000, 500);
+    daemonStream.setStreamContext(context);
+
+    daemonStream.open();
+
+    // Wait for the checkpoint
+    CloudJettyRunner jetty = this.cloudJettys.get(0);
+
+    Map params1 = new HashMap();
+    params1.put("qt","/get");
+    params1.put("ids","50000000");
+    params1.put("fl","id");
+    int count = 0;
+    while(count == 0) {
+      SolrStream solrStream = new SolrStream(jetty.url, params1);
+      List<Tuple> tuples = getTuples(solrStream);
+      count = tuples.size();
+      if(count > 0) {
+        Tuple t = tuples.get(0);
+        assertTrue(t.getLong("id") == 50000000);
+      } else {
+        System.out.println("###### Waiting for checkpoint #######:" + count);
+      }
+    }
+
+    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
+    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
+    indexr(id, "3", "a_s", "hello0", "a_i", "3", "a_f", "3");
+    indexr(id, "4", "a_s", "hello0", "a_i", "4", "a_f", "4");
+    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
+
+    commit();
+
+
+    for(int i=0; i<5; i++) {
+      daemonStream.read();
+    }
+
+
+    indexr(id, "5", "a_s", "hello0", "a_i", "4", "a_f", "4");
+    indexr(id, "6", "a_s", "hello0", "a_i", "4", "a_f", "4");
+
+    commit();
+
+    for(int i=0; i<2; i++) {
+      daemonStream.read();
+    }
+
+    daemonStream.shutdown();
+
+    Tuple tuple = daemonStream.read();
+
+    assertTrue(tuple.EOF);
+    daemonStream.close();
+    cache.close();
+    del("*:*");
+    commit();
+  }
 
   private void testParallelRollupStream() throws Exception {
 
@@ -1504,7 +1623,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     String zkHost = zkServer.getZkAddress();
     streamFactory.withCollectionZkHost("collection1", zkHost);
 
-    Map paramsA = mapParams("q","blah","fl","id,a_s,a_i,a_f","sort", "a_s asc,a_f asc", "partitionKeys", "a_s");
+    Map paramsA = mapParams("q", "blah", "fl", "id,a_s,a_i,a_f","sort", "a_s asc,a_f asc", "partitionKeys", "a_s");
     CloudSolrStream stream = new CloudSolrStream(zkHost, "collection1", paramsA);
     ReducerStream rstream = new ReducerStream(stream,
                                               new FieldEqualitor("a_s"),
@@ -1799,6 +1918,7 @@ public class StreamingTest extends AbstractFullDistribZkTestBase {
     testSubFacetStream();
     testStatsStream();
     //testExceptionStream();
+    testDaemonTopicStream();
     testParallelEOF();
     testParallelUniqueStream();
     testParallelRankStream();

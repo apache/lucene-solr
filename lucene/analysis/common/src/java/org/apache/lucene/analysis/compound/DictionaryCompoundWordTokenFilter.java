@@ -41,7 +41,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
   public DictionaryCompoundWordTokenFilter(TokenStream input, CharArraySet dictionary) {
     super(input, dictionary);
     if (dictionary == null) {
-      throw new IllegalArgumentException("dictionary cannot be null");
+      throw new IllegalArgumentException("dictionary must not be null");
     }
   }
 
@@ -65,7 +65,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
                                            int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(input, dictionary, minWordSize, minSubwordSize, maxSubwordSize, onlyLongestMatch);
     if (dictionary == null) {
-      throw new IllegalArgumentException("dictionary cannot be null");
+      throw new IllegalArgumentException("dictionary must not be null");
     }
   }
 

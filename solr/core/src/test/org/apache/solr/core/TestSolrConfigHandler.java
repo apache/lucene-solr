@@ -454,8 +454,8 @@ public class TestSolrConfigHandler extends RestTestBase {
       Thread.sleep(100);
 
     }
+    assertTrue(StrUtils.formatString("Could not get expected value  ''{0}'' for path ''{1}'' full output: {2},  from server:  {3}", expected, StrUtils.join(jsonPath, '/'), getAsString(m), testServerBaseUrl), success);
 
-    assertTrue(StrUtils.formatString("Could not get expected value  ''{0}'' for path ''{1}'' full output: {2}", expected, StrUtils.join(jsonPath, '/'), getAsString(m)), success);
     return m;
   }
 

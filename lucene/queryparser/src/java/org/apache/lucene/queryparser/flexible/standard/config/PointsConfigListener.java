@@ -45,7 +45,7 @@ public class PointsConfigListener implements FieldConfigListener {
    */
   public PointsConfigListener(QueryConfigHandler config) { 
     if (config == null) {
-      throw new IllegalArgumentException("config cannot be null!");
+      throw new IllegalArgumentException("config must not be null!");
     }
     this.config = config;
   }

@@ -698,7 +698,7 @@ public class FullSolrCloudDistribCmdsTest extends AbstractFullDistribZkTestBase 
     QueryResponse results = query(cloudClient);
     long beforeCount = results.getResults().getNumFound();
     int cnt = TEST_NIGHTLY ? 2933 : 313;
-    try (ConcurrentUpdateSolrClient concurrentClient = new ConcurrentUpdateSolrClient(
+    try (ConcurrentUpdateSolrClient concurrentClient = getConcurrentUpdateSolrClient(
         ((HttpSolrClient) clients.get(0)).getBaseURL(), 10, 2)) {
       concurrentClient.setConnectionTimeout(120000);
       for (int i = 0; i < cnt; i++) {

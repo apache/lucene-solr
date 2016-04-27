@@ -79,11 +79,10 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   private static SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
-      HttpSolrClient client = new HttpSolrClient(buildUrl(port, context) + "/" + DEFAULT_TEST_CORENAME);
+      final String baseUrl = buildUrl(port, context) + "/" + DEFAULT_TEST_CORENAME;
+      HttpSolrClient client = getHttpSolrClient(baseUrl);
       client.setConnectionTimeout(15000);
       client.setSoTimeout(60000);
-      client.setDefaultMaxConnectionsPerHost(100);
-      client.setMaxTotalConnections(100);
       return client;
     }
     catch (Exception ex) {
@@ -273,7 +272,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   public static void runBackupCommand(JettySolrRunner masterJetty, String cmd, String params) throws IOException {
     String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME
-        + "/replication?command=" + cmd + params;
+        + ReplicationHandler.PATH+"?command=" + cmd + params;
     InputStream stream = null;
     try {
       URL url = new URL(masterUrl);
@@ -296,7 +295,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
 
     public boolean fetchStatus() throws IOException {
-      String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=" + ReplicationHandler.CMD_DETAILS;
+      String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH + "?command=" + ReplicationHandler.CMD_DETAILS;
       URL url;
       InputStream stream = null;
       try {

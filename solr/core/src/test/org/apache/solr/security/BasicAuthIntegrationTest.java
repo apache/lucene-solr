@@ -36,6 +36,7 @@ import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -59,8 +60,8 @@ import org.slf4j.LoggerFactory;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;
+import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-
 
 public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
 
@@ -78,7 +79,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     cloudSolrClient.setDefaultCollection(null);
 
     NamedList<Object> rsp;
-    HttpClient cl = cloudSolrClient.getLbClient().getHttpClient();
+    HttpClient cl = HttpClientUtil.createClient(null);
     String baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
     verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
     zkClient.setData("/security.json", STD_CONF.replaceAll("'", "\"").getBytes(UTF_8), true);
@@ -94,6 +95,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
         break;
       }
     }
+
     assertTrue("No server found to restart , looking for : "+baseUrl , found);
 
     String command = "{\n" +
@@ -118,6 +120,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
     HttpResponse r = cl.execute(httpPost);
     int statusCode = r.getStatusLine().getStatusCode();
+    Utils.consumeFully(r.getEntity());
     assertEquals("proper_cred sent, but access denied", 200, statusCode);
     baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
 
@@ -132,6 +135,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     r = cl.execute(httpPost);
     assertEquals(200, r.getStatusLine().getStatusCode());
+    Utils.consumeFully(r.getEntity());
 
     baseUrl = getRandomReplica(zkStateReader.getClusterState().getCollection(defaultCollName), random()).getStr(BASE_URL_PROP);
     verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/user-role/harry", NOT_NULL_PREDICATE, 20);
@@ -140,8 +144,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     httpPost = new HttpPost(baseUrl + authzPrefix);
     setBasicAuthHeader(httpPost, "harry", "HarryIsUberCool");
     httpPost.setEntity(new ByteArrayEntity(Utils.toJSON(singletonMap("set-permission", Utils.makeMap
-        ("name", "x-update",
-            "collection", "x",
+        ("collection", "x",
             "path", "/update/*",
             "role", "dev")))));
 
@@ -149,6 +152,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/user-role/harry", NOT_NULL_PREDICATE, 20);
     r = cl.execute(httpPost);
     assertEquals(200, r.getStatusLine().getStatusCode());
+    Utils.consumeFully(r.getEntity());
 
     verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[1]/collection", "x", 20);
 
@@ -157,25 +161,26 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     httpPost.setEntity(new ByteArrayEntity(Utils.toJSON(singletonMap("set-permission", Utils.makeMap
         ("name","collection-admin-edit", "role", "admin" )))));
     r = cl.execute(httpPost);
-
+    Utils.consumeFully(r.getEntity());
     verifySecurityStatus(cl, baseUrl + authzPrefix, "authorization/permissions[2]/name", "collection-admin-edit", 20);
 
     CollectionAdminRequest.Reload reload = new CollectionAdminRequest.Reload();
     reload.setCollectionName(defaultCollName);
 
-    HttpSolrClient solrClient = new HttpSolrClient(baseUrl);
-    try {
-      rsp = solrClient.request(reload);
-      fail("must have failed");
-    } catch (HttpSolrClient.RemoteSolrException e) {
+    try (HttpSolrClient solrClient = getHttpSolrClient(baseUrl)) {
+      try {
+        rsp = solrClient.request(reload);
+        fail("must have failed");
+      } catch (HttpSolrClient.RemoteSolrException e) {
 
-    }
-    reload.setMethod(SolrRequest.METHOD.POST);
-    try {
-      rsp = solrClient.request(reload);
-      fail("must have failed");
-    } catch (HttpSolrClient.RemoteSolrException e) {
+      }
+      reload.setMethod(SolrRequest.METHOD.POST);
+      try {
+        rsp = solrClient.request(reload);
+        fail("must have failed");
+      } catch (HttpSolrClient.RemoteSolrException e) {
 
+      }
     }
     cloudSolrClient.request(new CollectionAdminRequest.Reload()
         .setCollectionName(defaultCollName)
@@ -198,6 +203,7 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     r = cl.execute(httpPost);
     assertEquals(200,r.getStatusLine().getStatusCode());
+    Utils.consumeFully(r.getEntity());
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id","4");
@@ -206,6 +212,8 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     update.add(doc);
     update.setCommitWithin(100);
     cloudSolrClient.request(update);
+    
+    HttpClientUtil.close(cl);
   }
 
   public static void verifySecurityStatus(HttpClient cl, String url, String objPath, Object expected, int count) throws Exception {
@@ -214,9 +222,10 @@ public class BasicAuthIntegrationTest extends TestMiniSolrCloudClusterBase {
     List<String> hierarchy = StrUtils.splitSmart(objPath, '/');
     for (int i = 0; i < count; i++) {
       HttpGet get = new HttpGet(url);
-      s = EntityUtils.toString(cl.execute(get).getEntity());
+      HttpResponse rsp = cl.execute(get);
+      s = EntityUtils.toString(rsp.getEntity());
       Map m = (Map) Utils.fromJSONString(s);
-
+      Utils.consumeFully(rsp.getEntity());
       Object actual = Utils.getObjectByPath(m, true, hierarchy);
       if (expected instanceof Predicate) {
         Predicate predicate = (Predicate) expected;

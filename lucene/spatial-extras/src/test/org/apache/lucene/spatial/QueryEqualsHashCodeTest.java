@@ -19,8 +19,6 @@ package org.apache.lucene.spatial;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.spatial.bbox.BBoxStrategy;
 import org.apache.lucene.spatial.composite.CompositeSpatialStrategy;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
@@ -34,6 +32,8 @@ import org.apache.lucene.spatial.serialized.SerializedDVStrategy;
 import org.apache.lucene.spatial.vector.PointVectorStrategy;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.shape.Shape;
 
 public class QueryEqualsHashCodeTest extends LuceneTestCase {
 
@@ -57,8 +57,10 @@ public class QueryEqualsHashCodeTest extends LuceneTestCase {
     RecursivePrefixTreeStrategy recursive_geohash = new RecursivePrefixTreeStrategy(gridGeohash, "recursive_geohash");
     strategies.add(recursive_geohash);
     strategies.add(new TermQueryPrefixTreeStrategy(gridQuad, "termquery_quad"));
-    strategies.add(new PointVectorStrategy(ctx, "pointvector"));
-    strategies.add(new BBoxStrategy(ctx, "bbox"));
+    strategies.add(PointVectorStrategy.newInstance(ctx, "pointvector"));
+    strategies.add(PointVectorStrategy.newLegacyInstance(ctx, "pointvector_legacy"));
+    strategies.add(BBoxStrategy.newInstance(ctx, "bbox"));
+    strategies.add(BBoxStrategy.newLegacyInstance(ctx, "bbox_legacy"));
     final SerializedDVStrategy serialized = new SerializedDVStrategy(ctx, "serialized");
     strategies.add(serialized);
     strategies.add(new CompositeSpatialStrategy("composite", recursive_geohash, serialized));

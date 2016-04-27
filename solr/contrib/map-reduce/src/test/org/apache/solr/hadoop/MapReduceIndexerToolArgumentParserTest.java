@@ -57,6 +57,7 @@ public class MapReduceIndexerToolArgumentParserTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() {
+    assumeFalse("This test fails on Java 9 (https://issues.apache.org/jira/browse/SOLR-8876)", Constants.JRE_IS_MINIMUM_JAVA9);
     assumeFalse("Does not work on Windows, because it uses UNIX shell commands or POSIX paths", Constants.WINDOWS);
     assumeFalse("This test fails on UNIX with Turkish default locale (https://issues.apache.org/jira/browse/SOLR-6387)",
                 new Locale("tr").getLanguage().equals(Locale.getDefault().getLanguage()));

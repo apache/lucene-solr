@@ -156,11 +156,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   private static SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
-      HttpSolrClient client = new HttpSolrClient(buildUrl(port) + "/" + DEFAULT_TEST_CORENAME);
+      final String baseUrl = buildUrl(port) + "/" + DEFAULT_TEST_CORENAME;
+      HttpSolrClient client = getHttpSolrClient(baseUrl);
       client.setConnectionTimeout(15000);
       client.setSoTimeout(60000);
-      client.setDefaultMaxConnectionsPerHost(100);
-      client.setMaxTotalConnections(100);
       return client;
     }
     catch (Exception ex) {
@@ -211,7 +210,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command","details");
     params.set("_trace","getDetails");
-    params.set("qt","/replication");
+    params.set("qt",ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
 
     NamedList<Object> res = s.request(req);
@@ -232,7 +231,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command","commits");
     params.set("_trace","getCommits");
-    params.set("qt","/replication");
+    params.set("qt",ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
 
     NamedList<Object> res = s.request(req);
@@ -248,7 +247,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command","indexversion");
     params.set("_trace","getIndexVersion");
-    params.set("qt","/replication");
+    params.set("qt",ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
 
     NamedList<Object> res = s.request(req);
@@ -277,7 +276,12 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   private HttpSolrClient adminClient(SolrClient client) {
     String adminUrl = ((HttpSolrClient)client).getBaseURL().replace("/collection1", "");
-    return new HttpSolrClient(adminUrl);
+    return getHttpSolrClient(adminUrl);
+  }
+
+  @Test
+  public void doTestHandlerPathUnchanged() throws Exception {
+    assertEquals("/replication", ReplicationHandler.PATH);
   }
 
   @Test
@@ -452,7 +456,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   //jetty servers.
   private void invokeReplicationCommand(int pJettyPort, String pCommand) throws IOException
   {
-    String masterUrl = buildUrl(pJettyPort) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=" + pCommand;
+    String masterUrl = buildUrl(pJettyPort) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH+"?command=" + pCommand;
     URL u = new URL(masterUrl);
     InputStream stream = u.openStream();
     stream.close();
@@ -611,8 +615,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(nDocs, masterQueryResult.getNumFound());
 
     // index fetch
-    String masterUrl = buildUrl(slaveJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + "/replication?command=fetchindex&masterUrl=";
-    masterUrl += buildUrl(masterJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + "/replication";
+    String masterUrl = buildUrl(slaveJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH+"?command=fetchindex&masterUrl=";
+    masterUrl += buildUrl(masterJetty.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH;
     URL url = new URL(masterUrl);
     InputStream stream = url.openStream();
     stream.close();
@@ -926,7 +930,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     
     // check vs /replication?command=indexversion call
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/replication");
+    params.set("qt", ReplicationHandler.PATH);
     params.set("_trace", "assertVersions");
     params.set("command", "indexversion");
     QueryRequest req = new QueryRequest(params);
@@ -965,9 +969,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     InputStream stream;
     masterUrl = buildUrl(to.getLocalPort())
         + "/" + DEFAULT_TEST_CORENAME
-        + "/replication?wait=true&command=fetchindex&masterUrl="
+        + ReplicationHandler.PATH+"?wait=true&command=fetchindex&masterUrl="
         + buildUrl(from.getLocalPort())
-        + "/" + DEFAULT_TEST_CORENAME + "/replication";
+        + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH;
     url = new URL(masterUrl);
     stream = url.openStream();
     stream.close();

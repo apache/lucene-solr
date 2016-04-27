@@ -23,6 +23,7 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -54,7 +55,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     try {
       // setup the server...
       String url = "http" + (isSSLMode() ? "s" : "") +  "://127.0.0.1/?core=xxx";
-      HttpSolrClient client = new HttpSolrClient(url);
+      HttpSolrClient client = getHttpSolrClient(url);
       Assert.fail("HttpSolrServer should not allow a path with a parameter: " + client.getBaseURL());
     }
     catch( Exception ex ) {
@@ -75,7 +76,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     HttpPost post = new HttpPost(client.getBaseURL() + "/update/json/docs");
     post.setHeader("Content-Type", "application/json");
     post.setEntity(new InputStreamEntity(new ByteArrayInputStream(json.getBytes("UTF-8")), -1));
-    HttpResponse response = httpClient.execute(post);
+    HttpResponse response = httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
     assertEquals(200, response.getStatusLine().getStatusCode());
     client.commit();
     QueryResponse rsp = getSolrClient().query(new SolrQuery("*:*"));

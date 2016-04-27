@@ -52,8 +52,11 @@ import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextDocValuesFormat;
 import org.apache.lucene.codecs.simpletext.SimpleTextPostingsFormat;
+import org.apache.lucene.index.PointValues.IntersectVisitor;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.bkd.BKDWriter;
 
 /**
  * Codec that assigns per-field random postings formats.
@@ -93,13 +96,55 @@ public class RandomCodec extends AssertingCodec {
   // TODO: improve how we randomize this...
   private final int maxPointsInLeafNode;
   private final double maxMBSortInHeap;
+  private final int bkdSplitRandomSeed;
 
   @Override
   public PointsFormat pointsFormat() {
     return new AssertingPointsFormat(new PointsFormat() {
       @Override
       public PointsWriter fieldsWriter(SegmentWriteState writeState) throws IOException {
-        return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap);
+
+        // Randomize how BKDWriter chooses its splis:
+
+        return new Lucene60PointsWriter(writeState, maxPointsInLeafNode, maxMBSortInHeap) {
+          @Override
+          public void writeField(FieldInfo fieldInfo, PointsReader values) throws IOException {
+
+            boolean singleValuePerDoc = values.size(fieldInfo.name) == values.getDocCount(fieldInfo.name);
+
+            try (BKDWriter writer = new RandomlySplittingBKDWriter(writeState.segmentInfo.maxDoc(),
+                                                                   writeState.directory,
+                                                                   writeState.segmentInfo.name,
+                                                                   fieldInfo.getPointDimensionCount(),
+                                                                   fieldInfo.getPointNumBytes(),
+                                                                   maxPointsInLeafNode,
+                                                                   maxMBSortInHeap,
+                                                                   values.size(fieldInfo.name),
+                                                                   singleValuePerDoc,
+                                                                   bkdSplitRandomSeed ^ fieldInfo.name.hashCode())) {
+                values.intersect(fieldInfo.name, new IntersectVisitor() {
+                    @Override
+                    public void visit(int docID) {
+                      throw new IllegalStateException();
+                    }
+
+                    public void visit(int docID, byte[] packedValue) throws IOException {
+                      writer.add(packedValue, docID);
+                    }
+
+                    @Override
+                    public PointValues.Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
+                      return PointValues.Relation.CELL_CROSSES_QUERY;
+                    }
+                  });
+
+                // We could have 0 points on merge since all docs with dimensional fields may be deleted:
+                if (writer.getPointCount() > 0) {
+                  indexFPs.put(fieldInfo.name, writer.finish(dataOut));
+                }
+              }
+          }
+        };
       }
 
       @Override
@@ -151,7 +196,8 @@ public class RandomCodec extends AssertingCodec {
     int lowFreqCutoff = TestUtil.nextInt(random, 2, 100);
 
     maxPointsInLeafNode = TestUtil.nextInt(random, 16, 2048);
-    maxMBSortInHeap = 4.0 + (3*random.nextDouble());
+    maxMBSortInHeap = 5.0 + (3*random.nextDouble());
+    bkdSplitRandomSeed = random.nextInt();
 
     add(avoidCodecs,
         TestUtil.getDefaultPostingsFormat(minItemsPerBlock, maxItemsPerBlock),
@@ -220,5 +266,47 @@ public class RandomCodec extends AssertingCodec {
            ", docValues:" + previousDVMappings.toString() +
            ", maxPointsInLeafNode=" + maxPointsInLeafNode +
            ", maxMBSortInHeap=" + maxMBSortInHeap;
+  }
+
+  /** Just like {@link BKDWriter} except it evilly picks random ways to split cells on
+   *  recursion to try to provoke geo APIs that get upset at fun rectangles. */
+  private static class RandomlySplittingBKDWriter extends BKDWriter {
+
+    final Random random;
+
+    public RandomlySplittingBKDWriter(int maxDoc, Directory tempDir, String tempFileNamePrefix, int numDims,
+                                      int bytesPerDim, int maxPointsInLeafNode, double maxMBSortInHeap,
+                                      long totalPointCount, boolean singleValuePerDoc, int randomSeed) throws IOException {
+      super(maxDoc, tempDir, tempFileNamePrefix, numDims, bytesPerDim, maxPointsInLeafNode, maxMBSortInHeap, totalPointCount,
+            getRandomSingleValuePerDoc(singleValuePerDoc, randomSeed),
+            getRandomLongOrds(totalPointCount, singleValuePerDoc, randomSeed),
+            getRandomOfflineSorterBufferMB(randomSeed),
+            getRandomOfflineSorterMaxTempFiles(randomSeed));
+      this.random = new Random(randomSeed);
+    }
+
+    private static boolean getRandomSingleValuePerDoc(boolean singleValuePerDoc, int randomSeed) {
+      // If we are single valued, sometimes pretend we aren't:
+      return singleValuePerDoc && (new Random(randomSeed).nextBoolean());
+    }
+
+    private static boolean getRandomLongOrds(long totalPointCount, boolean singleValuePerDoc, int randomSeed) {
+      // Always use long ords if we have too many points, but sometimes randomly use it anyway when singleValuePerDoc is false:
+      return totalPointCount > Integer.MAX_VALUE || (getRandomSingleValuePerDoc(singleValuePerDoc, randomSeed) == false && new Random(randomSeed).nextBoolean());
+    }
+
+    private static long getRandomOfflineSorterBufferMB(int randomSeed) {
+      return TestUtil.nextInt(new Random(randomSeed), 1, 8);
+    }
+
+    private static int getRandomOfflineSorterMaxTempFiles(int randomSeed) {
+      return TestUtil.nextInt(new Random(randomSeed), 2, 20);
+    }
+
+    @Override
+    protected int split(byte[] minPackedValue, byte[] maxPackedValue) {
+      // BKD normally defaults by the widest dimension, to try to make as squarish cells as possible, but we just pick a random one ;)
+      return random.nextInt(numDims);
+    }
   }
 }

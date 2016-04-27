@@ -37,11 +37,9 @@ public class SolrExampleXMLTest extends SolrExampleTests {
   public SolrClient createNewSolrClient() {
     try {
       String url = jetty.getBaseUrl().toString() + "/collection1";
-      HttpSolrClient client = new HttpSolrClient(url);
+      HttpSolrClient client = getHttpSolrClient(url);
       client.setUseMultiPartPost(random().nextBoolean());
       client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-      client.setDefaultMaxConnectionsPerHost(100);
-      client.setMaxTotalConnections(100);
       client.setParser(new XMLResponseParser());
       client.setRequestWriter(new RequestWriter());
       return client;

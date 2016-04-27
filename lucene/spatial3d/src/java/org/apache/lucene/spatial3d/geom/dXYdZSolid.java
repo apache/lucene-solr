@@ -23,7 +23,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class dXYdZSolid extends BaseXYZSolid {
+class dXYdZSolid extends BaseXYZSolid {
 
   /** The points in this figure on the planet surface; also doubles for edge points */
   protected final GeoPoint[] surfacePoints;

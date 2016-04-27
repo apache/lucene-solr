@@ -78,8 +78,8 @@ public class SchemaXmlWriter extends TextResponseWriter {
       writer.write(MANAGED_SCHEMA_DO_NOT_EDIT_WARNING);
     }
 
-    @SuppressWarnings("unchecked") SimpleOrderedMap<Object> schemaProperties
-        = (SimpleOrderedMap<Object>)rsp.getValues().get(IndexSchema.SCHEMA);
+    @SuppressWarnings("unchecked") Map<String,Object> schemaProperties
+        = (Map<String , Object>)rsp.getValues().get(IndexSchema.SCHEMA);
 
     openStartTag(IndexSchema.SCHEMA);
     writeAttr(IndexSchema.NAME, schemaProperties.get(IndexSchema.NAME).toString());
@@ -87,34 +87,33 @@ public class SchemaXmlWriter extends TextResponseWriter {
     closeStartTag(false);
     incLevel();
 
-    for (int schemaPropNum = 0 ; schemaPropNum < schemaProperties.size() ; ++schemaPropNum) {
-      String schemaPropName = schemaProperties.getName(schemaPropNum);
+    for (Map.Entry<String, Object> entry : schemaProperties.entrySet()) {
+      String schemaPropName = entry.getKey();
+      Object val = entry.getValue();
       if (schemaPropName.equals(IndexSchema.NAME) || schemaPropName.equals(IndexSchema.VERSION)) {
         continue;
       }
       if (schemaPropName.equals(IndexSchema.UNIQUE_KEY)) {
         openStartTag(IndexSchema.UNIQUE_KEY);
         closeStartTag(false);
-        writer.write(schemaProperties.getVal(schemaPropNum).toString());
+        writer.write(val.toString());
         endTag(IndexSchema.UNIQUE_KEY, false);
       } else if (schemaPropName.equals(IndexSchema.DEFAULT_SEARCH_FIELD)) {
         openStartTag(IndexSchema.DEFAULT_SEARCH_FIELD);
         closeStartTag(false);
-        writer.write(schemaProperties.getVal(schemaPropNum).toString());
+        writer.write(val.toString());
         endTag(IndexSchema.DEFAULT_SEARCH_FIELD, false);
       } else if (schemaPropName.equals(IndexSchema.SOLR_QUERY_PARSER)) {
         openStartTag(IndexSchema.SOLR_QUERY_PARSER);
-        @SuppressWarnings("unchecked") SimpleOrderedMap<Object> solrQueryParserProperties
-            = (SimpleOrderedMap<Object>)schemaProperties.getVal(schemaPropNum);
-        writeAttr(IndexSchema.DEFAULT_OPERATOR, solrQueryParserProperties.get(IndexSchema.DEFAULT_OPERATOR).toString());
+        writeAttr(IndexSchema.DEFAULT_OPERATOR, ((Map<String ,Object>) val).get(IndexSchema.DEFAULT_OPERATOR).toString());
         closeStartTag(true);
       } else if (schemaPropName.equals(IndexSchema.SIMILARITY)) {
-        writeSimilarity((SimpleOrderedMap<Object>) schemaProperties.getVal(schemaPropNum));
+        writeSimilarity((SimpleOrderedMap<Object>) val);
       } else if (schemaPropName.equals(IndexSchema.FIELD_TYPES)) {
-        writeFieldTypes((List<SimpleOrderedMap<Object>>)schemaProperties.getVal(schemaPropNum));
+        writeFieldTypes((List<SimpleOrderedMap<Object>>) val);
       } else if (schemaPropName.equals(IndexSchema.FIELDS)) {
         @SuppressWarnings("unchecked") List<SimpleOrderedMap<Object>> fieldPropertiesList
-            = (List<SimpleOrderedMap<Object>>)schemaProperties.getVal(schemaPropNum);
+            = (List<SimpleOrderedMap<Object>>) val;
         for (SimpleOrderedMap<Object> fieldProperties : fieldPropertiesList) {
           openStartTag(IndexSchema.FIELD);
           for (int fieldPropNum = 0 ; fieldPropNum < fieldProperties.size() ; ++fieldPropNum) {
@@ -124,7 +123,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
         }
       } else if (schemaPropName.equals(IndexSchema.DYNAMIC_FIELDS)) {
         @SuppressWarnings("unchecked") List<SimpleOrderedMap<Object>> dynamicFieldPropertiesList 
-            = (List<SimpleOrderedMap<Object>>)schemaProperties.getVal(schemaPropNum);
+            = (List<SimpleOrderedMap<Object>>) val;
         for (SimpleOrderedMap<Object> dynamicFieldProperties : dynamicFieldPropertiesList) {
           openStartTag(IndexSchema.DYNAMIC_FIELD);
           for (int dynamicFieldPropNum = 0 ; dynamicFieldPropNum < dynamicFieldProperties.size() ; ++dynamicFieldPropNum) {
@@ -135,7 +134,7 @@ public class SchemaXmlWriter extends TextResponseWriter {
         }
       } else if (schemaPropName.equals(IndexSchema.COPY_FIELDS)) {
         @SuppressWarnings("unchecked") List<SimpleOrderedMap<Object>> copyFieldPropertiesList
-            = (List<SimpleOrderedMap<Object>>)schemaProperties.getVal(schemaPropNum);
+            = (List<SimpleOrderedMap<Object>>) val;
         for (SimpleOrderedMap<Object> copyFieldProperties : copyFieldPropertiesList) {
           openStartTag(IndexSchema.COPY_FIELD);
           for (int copyFieldPropNum = 0 ; copyFieldPropNum < copyFieldProperties.size() ; ++ copyFieldPropNum) {

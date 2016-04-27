@@ -67,14 +67,19 @@ solrAdminApp.controller('QueryController',
         }
       }
 
-      var qt = $scope.qt ? $scope.qt : "select";
+      var qt = $scope.qt ? $scope.qt : "/select";
 
       for (var filter in $scope.filters) {
         copy(params, $scope.filters[filter]);
       }
 
       params.core = $routeParams.core;
-      params.handler = qt;
+      if (qt[0] == '/') {
+        params.handler = qt.substring(1);
+      } else { // Support legacy style handleSelect=true configs
+        params.handler = "select";
+        set("qt", qt);
+      }
       var url = Query.url(params);
       Query.query(params, function(data) {
         $scope.lang = $scope.query.wt;

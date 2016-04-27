@@ -70,7 +70,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
       runner.stop();
     }
     
-    HttpClientUtil.setConfigurer(sslConfig.getHttpClientConfigurer());
+    HttpClientUtil.setHttpClientBuilder(sslConfig.getHttpClientBuilder());
     for(int i = 0; i < this.jettys.size(); i++) {
       JettySolrRunner runner = jettys.get(i);
       JettyConfig config = JettyConfig.builder()
@@ -130,7 +130,7 @@ public class SSLMigrationTest extends AbstractFullDistribZkTestBase {
       urls.add(replica.getStr(ZkStateReader.BASE_URL_PROP));
     }
     //Create new SolrServer to configure new HttpClient w/ SSL config
-    new LBHttpSolrClient(urls.toArray(new String[]{})).request(request);
+    getLBHttpSolrClient(urls.toArray(new String[]{})).request(request);
   }
   
 }

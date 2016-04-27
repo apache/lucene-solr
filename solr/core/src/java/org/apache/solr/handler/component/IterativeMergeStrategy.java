@@ -20,15 +20,13 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -84,7 +82,9 @@ public abstract class IterativeMergeStrategy implements MergeStrategy  {
 
     public CallBack(ShardResponse originalShardResponse, QueryRequest req) {
 
-      this.solrClient = new HttpSolrClient(originalShardResponse.getShardAddress(), getHttpClient());
+      this.solrClient = new Builder(originalShardResponse.getShardAddress())
+          .withHttpClient(getHttpClient())
+          .build();
       this.req = req;
       this.originalShardResponse = originalShardResponse;
       req.setMethod(SolrRequest.METHOD.POST);

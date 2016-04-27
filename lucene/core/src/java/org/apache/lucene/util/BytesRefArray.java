@@ -19,14 +19,6 @@ package org.apache.lucene.util;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.ByteBlockPool;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefIterator;
-import org.apache.lucene.util.Counter;
-import org.apache.lucene.util.IntroSorter;
-import org.apache.lucene.util.RamUsageEstimator;
-
 /**
  * A simple append only random-access {@link BytesRef} array that stores full
  * copies of the appended bytes in a {@link ByteBlockPool}.
@@ -37,7 +29,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * @lucene.internal
  * @lucene.experimental
  */
-public final class BytesRefArray {
+public final class BytesRefArray implements SortableBytesRefArray {
   private final ByteBlockPool pool;
   private int[] offsets = new int[1];
   private int lastElement = 0;
@@ -58,9 +50,11 @@ public final class BytesRefArray {
   /**
    * Clears this {@link BytesRefArray}
    */
+  @Override
   public void clear() {
     lastElement = 0;
     currentOffset = 0;
+    // TODO: it's trappy that this does not return storage held by int[] offsets array!
     Arrays.fill(offsets, 0);
     pool.reset(false, true); // no need to 0 fill the buffers we control the allocator
   }
@@ -70,6 +64,7 @@ public final class BytesRefArray {
    * @param bytes the bytes to append
    * @return the index of the appended bytes
    */
+  @Override
   public int append(BytesRef bytes) {
     if (lastElement >= offsets.length) {
       int oldLen = offsets.length;
@@ -86,6 +81,7 @@ public final class BytesRefArray {
    * Returns the current size of this {@link BytesRefArray}
    * @return the current size of this {@link BytesRefArray}
    */
+  @Override
   public int size() {
     return lastElement;
   }
@@ -192,6 +188,7 @@ public final class BytesRefArray {
    * This is a non-destructive operation.
    * </p>
    */
+  @Override
   public BytesRefIterator iterator(final Comparator<BytesRef> comp) {
     final BytesRefBuilder spare = new BytesRefBuilder();
     final BytesRef result = new BytesRef();

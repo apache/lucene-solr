@@ -46,6 +46,7 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
@@ -58,9 +59,9 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesReader;
 import org.apache.lucene.util.OfflineSorter.ByteSequencesWriter;
+import org.apache.lucene.util.OfflineSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -830,6 +831,7 @@ public class Dictionary {
           }
         }
       }
+      CodecUtil.writeFooter(unsorted);
     }
 
     OfflineSorter sorter = new OfflineSorter(tempDir, tempFileNamePrefix, new Comparator<BytesRef>() {
@@ -885,18 +887,21 @@ public class Dictionary {
     
     boolean success2 = false;
     
-    try (ByteSequencesReader reader = new ByteSequencesReader(tempDir.openInput(sorted, IOContext.READONCE))) {
-      BytesRefBuilder scratchLine = new BytesRefBuilder();
+    try (ByteSequencesReader reader = new ByteSequencesReader(tempDir.openChecksumInput(sorted, IOContext.READONCE), sorted)) {
     
       // TODO: the flags themselves can be double-chars (long) or also numeric
       // either way the trick is to encode them as char... but they must be parsed differently
     
       String currentEntry = null;
       IntsRefBuilder currentOrds = new IntsRefBuilder();
-    
-      String line;
-      while (reader.read(scratchLine)) {
-        line = scratchLine.get().utf8ToString();
+
+      while (true) {
+        BytesRef scratch = reader.next();
+        if (scratch == null) {
+          break;
+        }
+        
+        String line = scratch.utf8ToString();
         String entry;
         char wordForm[];
         int end;

@@ -326,7 +326,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   }
 
   private static class MockCoreContainer extends CoreContainer {
-
+    UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
     public MockCoreContainer() {
       super((Object)null);
       this.shardHandlerFactory = new HttpShardHandlerFactory();
@@ -338,7 +338,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     
     @Override
     public UpdateShardHandler getUpdateShardHandler() {
-      return new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
+      return updateShardHandler;
+    }
+    
+    @Override
+    public void shutdown() {
+      updateShardHandler.close();
     }
 
   }

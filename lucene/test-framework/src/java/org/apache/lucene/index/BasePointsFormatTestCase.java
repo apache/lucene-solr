@@ -229,7 +229,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
             throw ise;
           }
         } catch (AssertionError ae) {
-          if (ae.getMessage().contains("does not exist; files=")) {
+          if (ae.getMessage() != null && ae.getMessage().contains("does not exist; files=")) {
             // OK: likely we threw the random IOExc when IW was asserting the commit files exist
             done = true;
           } else {

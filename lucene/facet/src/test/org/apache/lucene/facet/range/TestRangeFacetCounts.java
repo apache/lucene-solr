@@ -22,14 +22,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DoubleDocValuesField;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.facet.DrillDownQuery;
-import org.apache.lucene.facet.DrillSideways;
 import org.apache.lucene.facet.DrillSideways.DrillSidewaysResult;
+import org.apache.lucene.facet.DrillSideways;
 import org.apache.lucene.facet.FacetField;
 import org.apache.lucene.facet.FacetResult;
 import org.apache.lucene.facet.FacetTestCase;
@@ -59,6 +59,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 
 public class TestRangeFacetCounts extends FacetTestCase {
@@ -532,7 +533,11 @@ public class TestRangeFacetCounts extends FacetTestCase {
 
         boolean minIncl;
         boolean maxIncl;
-        if (min == max) {
+        
+        long minAsLong = NumericUtils.doubleToSortableLong(min);
+        long maxAsLong = NumericUtils.doubleToSortableLong(max);
+        // NOTE: maxAsLong - minAsLong >= 0 is here to handle the common overflow case!
+        if (maxAsLong - minAsLong >= 0 && maxAsLong - minAsLong < 2) {
           minIncl = true;
           maxIncl = true;
         } else {

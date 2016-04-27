@@ -28,9 +28,9 @@ public class GeoPathTest {
   @Test
   public void testPathDistance() {
     // Start with a really simple case
-    GeoPath p;
+    GeoStandardPath p;
     GeoPoint gp;
-    p = new GeoPath(PlanetModel.SPHERE, 0.1);
+    p = new GeoStandardPath(PlanetModel.SPHERE, 0.1);
     p.addPoint(0.0, 0.0);
     p.addPoint(0.0, 0.1);
     p.addPoint(0.0, 0.2);
@@ -49,7 +49,7 @@ public class GeoPathTest {
     assertEquals(0.0 + 0.05, p.computeDistance(DistanceStyle.ARC,gp), 0.000001);
 
     // Compute path distances now
-    p = new GeoPath(PlanetModel.SPHERE, 0.1);
+    p = new GeoStandardPath(PlanetModel.SPHERE, 0.1);
     p.addPoint(0.0, 0.0);
     p.addPoint(0.0, 0.1);
     p.addPoint(0.0, 0.2);
@@ -60,7 +60,7 @@ public class GeoPathTest {
     assertEquals(0.12, p.computeDistance(DistanceStyle.ARC,gp), 0.000001);
 
     // Now try a vertical path, and make sure distances are as expected
-    p = new GeoPath(PlanetModel.SPHERE, 0.1);
+    p = new GeoStandardPath(PlanetModel.SPHERE, 0.1);
     p.addPoint(-Math.PI * 0.25, -0.5);
     p.addPoint(Math.PI * 0.25, -0.5);
     p.done();
@@ -77,9 +77,9 @@ public class GeoPathTest {
   @Test
   public void testPathPointWithin() {
     // Tests whether we can properly detect whether a point is within a path or not
-    GeoPath p;
+    GeoStandardPath p;
     GeoPoint gp;
-    p = new GeoPath(PlanetModel.SPHERE, 0.1);
+    p = new GeoStandardPath(PlanetModel.SPHERE, 0.1);
     // Build a diagonal path crossing the equator
     p.addPoint(-0.2, -0.2);
     p.addPoint(0.2, 0.2);
@@ -101,7 +101,7 @@ public class GeoPathTest {
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
     assertFalse(p.isWithin(gp));
     // Repeat the test, but across the terminator
-    p = new GeoPath(PlanetModel.SPHERE, 0.1);
+    p = new GeoStandardPath(PlanetModel.SPHERE, 0.1);
     // Build a diagonal path crossing the equator
     p.addPoint(-0.2, Math.PI - 0.2);
     p.addPoint(0.2, -Math.PI + 0.2);
@@ -128,8 +128,8 @@ public class GeoPathTest {
   @Test
   public void testGetRelationship() {
     GeoArea rect;
-    GeoPath p;
-    GeoPath c;
+    GeoStandardPath p;
+    GeoStandardPath c;
     GeoPoint point;
     GeoPoint pointApprox;
     int relationship;
@@ -137,7 +137,7 @@ public class GeoPathTest {
     PlanetModel planetModel;
     
     planetModel = new PlanetModel(1.151145876105594, 0.8488541238944061);
-    c = new GeoPath(planetModel, 0.008726646259971648);
+    c = new GeoStandardPath(planetModel, 0.008726646259971648);
     c.addPoint(-0.6925658899376476, 0.6316613927914589);
     c.addPoint(0.27828548161836364, 0.6785795524104564);
     c.done();
@@ -148,7 +148,7 @@ public class GeoPathTest {
     
     // Start by testing the basic kinds of relationship, increasing in order of difficulty.
 
-    p = new GeoPath(PlanetModel.SPHERE, 0.1);
+    p = new GeoStandardPath(PlanetModel.SPHERE, 0.1);
     p.addPoint(-0.3, -0.3);
     p.addPoint(0.3, 0.3);
     p.done();
@@ -179,7 +179,7 @@ public class GeoPathTest {
 
   @Test
   public void testPathBounds() {
-    GeoPath c;
+    GeoStandardPath c;
     LatLonBounds b;
     XYZBounds xyzb;
     GeoPoint point;
@@ -188,7 +188,7 @@ public class GeoPathTest {
     PlanetModel planetModel;
     
     planetModel = new PlanetModel(0.751521665790406,1.248478334209594);
-    c = new GeoPath(planetModel, 0.7504915783575618);
+    c = new GeoStandardPath(planetModel, 0.7504915783575618);
     c.addPoint(0.10869761172400265, 0.08895880215465272);
     c.addPoint(0.22467878641991612, 0.10972973084229565);
     c.addPoint(-0.7398772468744732, -0.4465812941383364);
@@ -202,10 +202,10 @@ public class GeoPathTest {
     relationship = area.getRelationship(c);
     assertTrue(relationship == GeoArea.WITHIN || relationship == GeoArea.OVERLAPS);
     assertTrue(area.isWithin(point));
-    // No longer true due to fixed GeoPath waypoints.
+    // No longer true due to fixed GeoStandardPath waypoints.
     //assertTrue(c.isWithin(point));
     
-    c = new GeoPath(PlanetModel.WGS84, 0.6894050545377601);
+    c = new GeoStandardPath(PlanetModel.WGS84, 0.6894050545377601);
     c.addPoint(-0.0788176065762948, 0.9431251741731624);
     c.addPoint(0.510387871458147, 0.5327078872484678);
     c.addPoint(-0.5624521609859962, 1.5398841746888388);
@@ -224,7 +224,7 @@ public class GeoPathTest {
     assertTrue(relationship == GeoArea.WITHIN || relationship == GeoArea.OVERLAPS);
     assertTrue(area.isWithin(point));
     
-    c = new GeoPath(PlanetModel.WGS84, 0.7766715171374766);
+    c = new GeoStandardPath(PlanetModel.WGS84, 0.7766715171374766);
     c.addPoint(-0.2751718361148076, -0.7786721269011477);
     c.addPoint(0.5728375851539309, -1.2700115736820465);
     c.done();
@@ -240,7 +240,7 @@ public class GeoPathTest {
     assertTrue(relationship == GeoArea.WITHIN || relationship == GeoArea.OVERLAPS);
     assertTrue(area.isWithin(point));
 
-    c = new GeoPath(PlanetModel.SPHERE, 0.1);
+    c = new GeoStandardPath(PlanetModel.SPHERE, 0.1);
     c.addPoint(-0.3, -0.3);
     c.addPoint(0.3, 0.3);
     c.done();
@@ -260,7 +260,7 @@ public class GeoPathTest {
   @Test
   public void testCoLinear() {
     // p1: (12,-90), p2: (11, -55), (129, -90)
-    GeoPath p = new GeoPath(PlanetModel.SPHERE, 0.1);
+    GeoStandardPath p = new GeoStandardPath(PlanetModel.SPHERE, 0.1);
     p.addPoint(toRadians(-90), toRadians(12));//south pole
     p.addPoint(toRadians(-55), toRadians(11));
     p.addPoint(toRadians(-90), toRadians(129));//south pole again

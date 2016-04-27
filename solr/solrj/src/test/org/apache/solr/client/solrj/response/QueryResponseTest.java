@@ -20,6 +20,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 
 import junit.framework.Assert;
@@ -27,7 +29,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestRuleLimitSysouts.Limit;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;
@@ -82,8 +83,8 @@ public class QueryResponseTest extends LuceneTestCase {
     assertEquals("4.0", price.getCounts().get(4).getValue());
     assertEquals(0, price.getCounts().get(4).getCount());
 
-    assertEquals(DateUtil.parseDate("2005-02-13T15:26:37Z"), manufacturedateDt.getStart());
-    assertEquals(DateUtil.parseDate("2008-02-13T15:26:37Z"), manufacturedateDt.getEnd());
+    assertEquals(new Date(Instant.parse("2005-02-13T15:26:37Z").toEpochMilli()), manufacturedateDt.getStart());
+    assertEquals(new Date(Instant.parse("2008-02-13T15:26:37Z").toEpochMilli()), manufacturedateDt.getEnd());
     assertEquals("+1YEAR", manufacturedateDt.getGap());
     assertEquals("2005-02-13T15:26:37Z", manufacturedateDt.getCounts().get(0).getValue());
     assertEquals(4, manufacturedateDt.getCounts().get(0).getCount());

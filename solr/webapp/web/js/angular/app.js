@@ -109,6 +109,10 @@ solrAdminApp.config([
         templateUrl: 'partials/query.html',
         controller: 'QueryController'
       }).
+      when('/:core/stream', {
+        templateUrl: 'partials/stream.html',
+        controller: 'StreamController'
+      }).
       when('/:core/replication', {
         templateUrl: 'partials/replication.html',
         controller: 'ReplicationController'
@@ -138,6 +142,9 @@ solrAdminApp.config([
   IS_CORE_PAGE: 2,
   IS_COLLECTION_PAGE: 3,
   ROOT_URL: "/"
+})
+.filter('uriencode', function() {
+  return window.encodeURIComponent;
 })
 .filter('highlight', function($sce) {
   return function(input, lang) {
@@ -434,6 +441,7 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
 
   $scope.ping = function() {
     Ping.ping({core: $scope.currentCore.name}, function(data) {
+      $scope.showPing = true;
       $scope.pingMS = data.responseHeader.QTime;
     });
     // @todo .attr( 'title', '/admin/ping is not configured (' + xhr.status + ': ' + error_thrown + ')' );

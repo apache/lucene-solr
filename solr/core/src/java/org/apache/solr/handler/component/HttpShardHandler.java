@@ -35,7 +35,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -54,7 +54,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,64 +159,61 @@ public class HttpShardHandler extends ShardHandler {
     // do this outside of the callable for thread safety reasons
     final List<String> urls = getURLs(shard, preferredHostAddress);
 
-    Callable<ShardResponse> task = new Callable<ShardResponse>() {
-      @Override
-      public ShardResponse call() throws Exception {
+    Callable<ShardResponse> task = () -> {
 
-        ShardResponse srsp = new ShardResponse();
-        if (sreq.nodeName != null) {
-          srsp.setNodeName(sreq.nodeName);
-        }
-        srsp.setShardRequest(sreq);
-        srsp.setShard(shard);
-        SimpleSolrResponse ssr = new SimpleSolrResponse();
-        srsp.setSolrResponse(ssr);
-        long startTime = System.nanoTime();
-
-        try {
-          params.remove(CommonParams.WT); // use default (currently javabin)
-          params.remove(CommonParams.VERSION);
-
-          QueryRequest req = makeQueryRequest(sreq, params, shard);
-          req.setMethod(SolrRequest.METHOD.POST);
-
-          // no need to set the response parser as binary is the default
-          // req.setResponseParser(new BinaryResponseParser());
-
-          // if there are no shards available for a slice, urls.size()==0
-          if (urls.size()==0) {
-            // TODO: what's the right error code here? We should use the same thing when
-            // all of the servers for a shard are down.
-            throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
-          }
-
-          if (urls.size() <= 1) {
-            String url = urls.get(0);
-            srsp.setShardAddress(url);
-            try (SolrClient client = new HttpSolrClient(url, httpClient)) {
-              ssr.nl = client.request(req);
-            }
-          } else {
-            LBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
-            ssr.nl = rsp.getResponse();
-            srsp.setShardAddress(rsp.getServer());
-          }
-        }
-        catch( ConnectException cex ) {
-          srsp.setException(cex); //????
-        } catch (Exception th) {
-          srsp.setException(th);
-          if (th instanceof SolrException) {
-            srsp.setResponseCode(((SolrException)th).code());
-          } else {
-            srsp.setResponseCode(-1);
-          }
-        }
-
-        ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
-
-        return transfomResponse(sreq, srsp, shard);
+      ShardResponse srsp = new ShardResponse();
+      if (sreq.nodeName != null) {
+        srsp.setNodeName(sreq.nodeName);
       }
+      srsp.setShardRequest(sreq);
+      srsp.setShard(shard);
+      SimpleSolrResponse ssr = new SimpleSolrResponse();
+      srsp.setSolrResponse(ssr);
+      long startTime = System.nanoTime();
+
+      try {
+        params.remove(CommonParams.WT); // use default (currently javabin)
+        params.remove(CommonParams.VERSION);
+
+        QueryRequest req = makeQueryRequest(sreq, params, shard);
+        req.setMethod(SolrRequest.METHOD.POST);
+
+        // no need to set the response parser as binary is the default
+        // req.setResponseParser(new BinaryResponseParser());
+
+        // if there are no shards available for a slice, urls.size()==0
+        if (urls.size()==0) {
+          // TODO: what's the right error code here? We should use the same thing when
+          // all of the servers for a shard are down.
+          throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
+        }
+
+        if (urls.size() <= 1) {
+          String url = urls.get(0);
+          srsp.setShardAddress(url);
+          try (SolrClient client = new Builder(url).withHttpClient(httpClient).build()) {
+            ssr.nl = client.request(req);
+          }
+        } else {
+          LBHttpSolrClient.Rsp rsp = httpShardHandlerFactory.makeLoadBalancedRequest(req, urls);
+          ssr.nl = rsp.getResponse();
+          srsp.setShardAddress(rsp.getServer());
+        }
+      }
+      catch( ConnectException cex ) {
+        srsp.setException(cex); //????
+      } catch (Exception th) {
+        srsp.setException(th);
+        if (th instanceof SolrException) {
+          srsp.setResponseCode(((SolrException)th).code());
+        } else {
+          srsp.setResponseCode(-1);
+        }
+      }
+
+      ssr.elapsedTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
+
+      return transfomResponse(sreq, srsp, shard);
     };
 
     try {

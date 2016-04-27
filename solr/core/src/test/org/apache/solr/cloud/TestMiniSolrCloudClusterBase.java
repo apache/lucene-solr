@@ -63,7 +63,7 @@ public class TestMiniSolrCloudClusterBase extends LuceneTestCase {
     NUM_SHARDS = 2;
     REPLICATION_FACTOR = 2;
   }
-
+  
   @Rule
   public TestRule solrTestRules = RuleChain
       .outerRule(new SystemPropertiesRestoreRule());

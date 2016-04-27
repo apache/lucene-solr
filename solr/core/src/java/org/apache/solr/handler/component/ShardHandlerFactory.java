@@ -50,7 +50,7 @@ public abstract class ShardHandlerFactory {
     catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           String.format(Locale.ROOT, "Error instantiating shardHandlerFactory class [%s]: %s",
-              info.className, e.getMessage()));
+                        info.className, e.getMessage()), e);
     }
 
   }

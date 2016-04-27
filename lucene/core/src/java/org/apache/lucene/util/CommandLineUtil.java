@@ -96,7 +96,7 @@ public final class CommandLineUtil {
   private static String adjustDirectoryClassName(String clazzName) {
     if (clazzName == null || clazzName.trim().length() == 0) {
       throw new IllegalArgumentException("The " + FSDirectory.class.getSimpleName()
-          + " implementation cannot be null or empty");
+          + " implementation must not be null or empty");
     }
     
     if (clazzName.indexOf(".") == -1) {// if not fully qualified, assume .store

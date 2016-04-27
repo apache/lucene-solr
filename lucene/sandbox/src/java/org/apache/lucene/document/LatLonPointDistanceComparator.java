@@ -26,10 +26,13 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.spatial.util.GeoProjectionUtils;
-import org.apache.lucene.spatial.util.GeoRect;
-import org.apache.lucene.spatial.util.GeoUtils;
+import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.util.SloppyMath;
+
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
+import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
 /**
  * Compares documents by distance from an origin point
@@ -84,20 +87,20 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     // sampling if we get called way too much: don't make gobs of bounding
     // boxes if comparator hits a worst case order (e.g. backwards distance order)
     if (setBottomCounter < 1024 || (setBottomCounter & 0x3F) == 0x3F) {
-      GeoRect box = GeoUtils.circleToBBox(longitude, latitude, haversin2(bottom));
+      Rectangle box = Rectangle.fromPointDistance(latitude, longitude, haversin2(bottom));
       // pre-encode our box to our integer encoding, so we don't have to decode 
       // to double values for uncompetitive hits. This has some cost!
-      minLat = LatLonPoint.encodeLatitude(box.minLat);
-      maxLat = LatLonPoint.encodeLatitude(box.maxLat);
+      minLat = encodeLatitude(box.minLat);
+      maxLat = encodeLatitude(box.maxLat);
       if (box.crossesDateline()) {
         // box1
         minLon = Integer.MIN_VALUE;
-        maxLon = LatLonPoint.encodeLongitude(box.maxLon);
+        maxLon = encodeLongitude(box.maxLon);
         // box2
-        minLon2 = LatLonPoint.encodeLongitude(box.minLon);
+        minLon2 = encodeLongitude(box.minLon);
       } else {
-        minLon = LatLonPoint.encodeLongitude(box.minLon);
-        maxLon = LatLonPoint.encodeLongitude(box.maxLon);
+        minLon = encodeLongitude(box.minLon);
+        maxLon = encodeLongitude(box.maxLon);
         // disable box2
         minLon2 = Integer.MAX_VALUE;
       }
@@ -134,9 +137,9 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
       }
 
       // only compute actual distance if its inside "competitive bounding box"
-      double docLatitude = LatLonPoint.decodeLatitude(latitudeBits);
-      double docLongitude = LatLonPoint.decodeLongitude(longitudeBits);
-      cmp = Math.max(cmp, Double.compare(bottom, haversin1(latitude, longitude, docLatitude, docLongitude)));
+      double docLatitude = decodeLatitude(latitudeBits);
+      double docLongitude = decodeLongitude(longitudeBits);
+      cmp = Math.max(cmp, Double.compare(bottom, SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude)));
       // once we compete in the PQ, no need to continue.
       if (cmp > 0) {
         return cmp;
@@ -155,7 +158,7 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     LeafReader reader = context.reader();
     FieldInfo info = reader.getFieldInfos().fieldInfo(field);
     if (info != null) {
-      LatLonPoint.checkCompatible(info);
+      LatLonDocValuesField.checkCompatible(info);
     }
     currentDocs = DocValues.getSortedNumeric(reader, field);
     return this;
@@ -180,25 +183,11 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     int numValues = currentDocs.count();
     for (int i = 0; i < numValues; i++) {
       long encoded = currentDocs.valueAt(i);
-      double docLatitude = LatLonPoint.decodeLatitude((int)(encoded >> 32));
-      double docLongitude = LatLonPoint.decodeLongitude((int)(encoded & 0xFFFFFFFF));
-      minValue = Math.min(minValue, haversin1(latitude, longitude, docLatitude, docLongitude));
+      double docLatitude = decodeLatitude((int)(encoded >> 32));
+      double docLongitude = decodeLongitude((int)(encoded & 0xFFFFFFFF));
+      minValue = Math.min(minValue, SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude));
     }
     return minValue;
-  }
-
-  // sort by first part of the haversin computation. note that this value is meaningless to the user.
-  // invoke haversin2() to "complete" the calculation and get a distance in meters.
-  static double haversin1(double lat1, double lon1, double lat2, double lon2) {
-    double dLat = SloppyMath.TO_RADIANS * (lat2 - lat1);
-    double dLon = SloppyMath.TO_RADIANS * (lon2 - lon1);
-    lat1 = SloppyMath.TO_RADIANS * (lat1);
-    lat2 = SloppyMath.TO_RADIANS * (lat2);
-
-    final double sinDLatO2 = SloppyMath.sin(dLat / 2);
-    final double sinDLonO2 = SloppyMath.sin(dLon / 2);
-
-    return sinDLatO2*sinDLatO2 + sinDLonO2 * sinDLonO2 * SloppyMath.cos(lat1) * SloppyMath.cos(lat2);
   }
 
   // second half of the haversin calculation, used to convert results from haversin1 (used internally
@@ -207,7 +196,6 @@ class LatLonPointDistanceComparator extends FieldComparator<Double> implements L
     if (Double.isInfinite(partial)) {
       return partial;
     }
-    double c = 2 * SloppyMath.asin(Math.sqrt(partial));
-    return (GeoProjectionUtils.SEMIMAJOR_AXIS * c);
+    return SloppyMath.haversinMeters(partial);
   }
 }

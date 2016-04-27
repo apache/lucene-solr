@@ -16,9 +16,23 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.common.SolrException;
@@ -33,21 +47,6 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-
-import java.io.Closeable;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 
 // TODO: how to tmp exclude nodes?
@@ -248,13 +247,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       log.debug("submit call to {}", createUrl);
       MDC.put("OverseerAutoReplicaFailoverThread.createUrl", createUrl);
       try {
-        updateExecutor.submit(new Callable<Boolean>() {
-
-          @Override
-          public Boolean call() {
-            return createSolrCore(collection, createUrl, dataDir, ulogDir, coreNodeName, coreName);
-          }
-        });
+        updateExecutor.submit(() -> createSolrCore(collection, createUrl, dataDir, ulogDir, coreNodeName, coreName));
       } finally {
         MDC.remove("OverseerAutoReplicaFailoverThread.createUrl");
       }
@@ -440,7 +433,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
       final String createUrl, final String dataDir, final String ulogDir,
       final String coreNodeName, final String coreName) {
 
-    try (HttpSolrClient client = new HttpSolrClient(createUrl)) {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(createUrl).build()) {
       log.debug("create url={}", createUrl);
       client.setConnectionTimeout(30000);
       client.setSoTimeout(60000);

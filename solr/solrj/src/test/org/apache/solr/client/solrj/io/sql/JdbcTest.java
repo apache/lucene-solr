@@ -20,6 +20,7 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
@@ -28,15 +29,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
+import org.apache.solr.common.cloud.DocCollection;
 import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -80,7 +80,6 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
   public void distribSetUp() throws Exception {
     super.distribSetUp();
   }
-
 
   @Override
   @After
@@ -444,9 +443,9 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
       con.setCatalog(zkServer.getZkAddress());
       assertEquals(zkServer.getZkAddress(), con.getCatalog());
 
-      assertEquals(collection, con.getSchema());
-      con.setSchema(collection);
-      assertEquals(collection, con.getSchema());
+      assertEquals(null, con.getSchema());
+      con.setSchema("myschema");
+      assertEquals(null, con.getSchema());
 
       DatabaseMetaData databaseMetaData = con.getMetaData();
       assertNotNull(databaseMetaData);
@@ -478,25 +477,34 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
       List<String> collections = new ArrayList<>();
       collections.addAll(cloudClient.getZkStateReader().getClusterState().getCollections());
       Collections.sort(collections);
+
       try(ResultSet rs = databaseMetaData.getSchemas()) {
+        assertFalse(rs.next());
+      }
+
+      try(ResultSet rs = databaseMetaData.getTables(zkServer.getZkAddress(), null, "%", null)) {
         for(String acollection : collections) {
           assertTrue(rs.next());
-          assertEquals(acollection, rs.getString("TABLE_SCHEM"));
-          assertEquals(zkServer.getZkAddress(), rs.getString("TABLE_CATALOG"));
+          assertEquals(zkServer.getZkAddress(), rs.getString("TABLE_CAT"));
+          assertNull(rs.getString("TABLE_SCHEM"));
+          assertEquals(acollection, rs.getString("TABLE_NAME"));
+          assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+          assertNull(rs.getString("REMARKS"));
         }
         assertFalse(rs.next());
       }
+
+      assertTrue(con.isReadOnly());
+      con.setReadOnly(true);
+      assertTrue(con.isReadOnly());
 
       assertNull(con.getWarnings());
       con.clearWarnings();
       assertNull(con.getWarnings());
 
-      try (Statement statement = con.createStatement()) {
-        assertEquals(con, statement.getConnection());
 
-        assertNull(statement.getWarnings());
-        statement.clearWarnings();
-        assertNull(statement.getWarnings());
+      try (Statement statement = con.createStatement()) {
+        checkStatement(con, statement);
 
         try (ResultSet rs = statement.executeQuery(sql)) {
           assertEquals(statement, rs.getStatement());
@@ -517,7 +525,49 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
         assertFalse(statement.getMoreResults());
       }
+
+      try (PreparedStatement statement = con.prepareStatement(sql)) {
+        checkStatement(con, statement);
+
+        try (ResultSet rs = statement.executeQuery()) {
+          assertEquals(statement, rs.getStatement());
+
+          checkResultSetMetadata(rs);
+          checkResultSet(rs);
+        }
+
+        assertTrue(statement.execute());
+        assertEquals(-1, statement.getUpdateCount());
+
+        try (ResultSet rs = statement.getResultSet()) {
+          assertEquals(statement, rs.getStatement());
+
+          checkResultSetMetadata(rs);
+          checkResultSet(rs);
+        }
+
+        assertFalse(statement.getMoreResults());
+      }
     }
+  }
+
+  private void checkStatement(Connection con, Statement statement) throws Exception {
+    assertEquals(con, statement.getConnection());
+
+    assertNull(statement.getWarnings());
+    statement.clearWarnings();
+    assertNull(statement.getWarnings());
+
+    assertEquals(ResultSet.TYPE_FORWARD_ONLY, statement.getResultSetType());
+    assertEquals(ResultSet.CONCUR_READ_ONLY, statement.getResultSetConcurrency());
+
+    assertEquals(ResultSet.FETCH_FORWARD, statement.getFetchDirection());
+    statement.setFetchDirection(ResultSet.FETCH_FORWARD);
+    assertEquals(ResultSet.FETCH_FORWARD, statement.getFetchDirection());
+
+    assertEquals(0, statement.getFetchSize());
+    statement.setFetchSize(0);
+    assertEquals(0, statement.getFetchSize());
   }
 
   private void checkResultSetMetadata(ResultSet rs) throws Exception {
@@ -562,6 +612,17 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     assertNull(rs.getWarnings());
     rs.clearWarnings();
     assertNull(rs.getWarnings());
+
+    assertEquals(ResultSet.TYPE_FORWARD_ONLY, rs.getType());
+    assertEquals(ResultSet.CONCUR_READ_ONLY, rs.getConcurrency());
+
+    assertEquals(ResultSet.FETCH_FORWARD, rs.getFetchDirection());
+    rs.setFetchDirection(ResultSet.FETCH_FORWARD);
+    assertEquals(ResultSet.FETCH_FORWARD, rs.getFetchDirection());
+
+    assertEquals(0, rs.getFetchSize());
+    rs.setFetchSize(10);
+    assertEquals(0, rs.getFetchSize());
 
     assertTrue(rs.next());
 

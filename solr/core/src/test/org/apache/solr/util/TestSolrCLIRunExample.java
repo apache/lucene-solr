@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.After;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -60,6 +61,12 @@ import org.slf4j.LoggerFactory;
 public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
+  @BeforeClass
+  public static void beforeClass() throws IOException {
+    assumeFalse("FIXME: This test does not work with whitespace in CWD (https://issues.apache.org/jira/browse/SOLR-8877)",
+        Paths.get(".").toAbsolutePath().toString().contains(" "));
+  }
 
   /**
    * Overrides the call to exec bin/solr to start Solr nodes to start them using the Solr test-framework
@@ -344,7 +351,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         exampleSolrHomeDir.isDirectory());
 
     if ("techproducts".equals(exampleName)) {
-      HttpSolrClient solrClient = new HttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
+      HttpSolrClient solrClient = getHttpSolrClient("http://localhost:" + bindPort + "/solr/" + exampleName);
       SolrQuery query = new SolrQuery("*:*");
       QueryResponse qr = solrClient.query(query);
       long numFound = qr.getResults().getNumFound();
@@ -432,7 +439,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     CloudSolrClient cloudClient = null;
 
     try {
-      cloudClient = new CloudSolrClient(executor.solrCloudCluster.getZkServer().getZkAddress());
+      cloudClient = getCloudSolrClient(executor.solrCloudCluster.getZkServer().getZkAddress());
       cloudClient.connect();
       cloudClient.setDefaultCollection(collectionName);
 

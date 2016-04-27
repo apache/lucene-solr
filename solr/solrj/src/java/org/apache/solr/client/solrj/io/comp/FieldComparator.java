@@ -16,9 +16,13 @@
  */
 package org.apache.solr.client.solrj.io.comp;
 
+import java.io.IOException;
 import java.util.Map;
+import java.util.UUID;
 
 import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -29,6 +33,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class FieldComparator implements StreamComparator {
 
   private static final long serialVersionUID = 1;
+  private UUID comparatorNodeId = UUID.randomUUID();
   
   private String leftFieldName;
   private String rightFieldName;
@@ -84,6 +89,14 @@ public class FieldComparator implements StreamComparator {
     
     return new StreamExpressionValue(sb.toString());
   }
+
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+    return new Explanation(comparatorNodeId.toString())
+      .withExpressionType(ExpressionType.SORTER)
+      .withImplementingClass(getClass().getName())
+      .withExpression(toExpression(factory).toString());
+  }
   
   /*
    * What're we doing here messing around with lambdas for the comparator logic?
@@ -97,34 +110,28 @@ public class FieldComparator implements StreamComparator {
    */
   private void assignComparator(){
     if(ComparatorOrder.DESCENDING == order){
-      comparator = new ComparatorLambda() {
-        @Override
-        public int compare(Tuple leftTuple, Tuple rightTuple) {
-          Comparable leftComp = (Comparable)leftTuple.get(leftFieldName);
-          Comparable rightComp = (Comparable)rightTuple.get(rightFieldName);
-          
-          if(leftComp == rightComp){ return 0; } // if both null then they are equal. if both are same ref then are equal
-          if(null == leftComp){ return 1; }
-          if(null == rightComp){ return -1; }
-          
-          return rightComp.compareTo(leftComp);
-        }
+      comparator = (leftTuple, rightTuple) -> {
+        Comparable leftComp = (Comparable)leftTuple.get(leftFieldName);
+        Comparable rightComp = (Comparable)rightTuple.get(rightFieldName);
+
+        if(leftComp == rightComp){ return 0; } // if both null then they are equal. if both are same ref then are equal
+        if(null == leftComp){ return 1; }
+        if(null == rightComp){ return -1; }
+
+        return rightComp.compareTo(leftComp);
       };
     }
     else{
       // See above for black magic reasoning.
-      comparator = new ComparatorLambda() {
-        @Override
-        public int compare(Tuple leftTuple, Tuple rightTuple) {
-          Comparable leftComp = (Comparable)leftTuple.get(leftFieldName);
-          Comparable rightComp = (Comparable)rightTuple.get(rightFieldName);
-          
-          if(leftComp == rightComp){ return 0; } // if both null then they are equal. if both are same ref then are equal
-          if(null == leftComp){ return -1; }
-          if(null == rightComp){ return 1; }
-          
-          return leftComp.compareTo(rightComp);
-        }
+      comparator = (leftTuple, rightTuple) -> {
+        Comparable leftComp = (Comparable)leftTuple.get(leftFieldName);
+        Comparable rightComp = (Comparable)rightTuple.get(rightFieldName);
+
+        if(leftComp == rightComp){ return 0; } // if both null then they are equal. if both are same ref then are equal
+        if(null == leftComp){ return -1; }
+        if(null == rightComp){ return 1; }
+
+        return leftComp.compareTo(rightComp);
       };
     }
   }

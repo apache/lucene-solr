@@ -666,6 +666,7 @@ public class MemoryIndex {
     MemoryIndexReader reader = new MemoryIndexReader();
     IndexSearcher searcher = new IndexSearcher(reader); // ensures no auto-close !!
     searcher.setSimilarity(normSimilarity);
+    searcher.setQueryCache(null);
     return searcher;
   }
 

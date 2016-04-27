@@ -127,7 +127,7 @@ public class TestExpressionValueSource extends LuceneTestCase {
     FunctionValues values = vs.getValues(new HashMap<String,Object>(), leaf);
     
     // everything
-    ValueSourceScorer scorer = values.getRangeScorer(leaf.reader(), "4", "40", true, true);
+    ValueSourceScorer scorer = values.getRangeScorer(leaf, "4", "40", true, true);
     DocIdSetIterator iter = scorer.iterator();
     assertEquals(-1, iter.docID());
     assertEquals(0, iter.nextDoc());
@@ -136,7 +136,7 @@ public class TestExpressionValueSource extends LuceneTestCase {
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, iter.nextDoc());
 
     // just the first doc
-    scorer = values.getRangeScorer(leaf.reader(), "4", "40", false, false);
+    scorer = values.getRangeScorer(leaf, "4", "40", false, false);
     iter = scorer.iterator();
     assertEquals(-1, scorer.docID());
     assertEquals(0, iter.nextDoc());

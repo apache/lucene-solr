@@ -16,20 +16,20 @@
  */
 package org.apache.solr.util;
 
-import static org.apache.solr.util.DateFormatUtil.UTC;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.util.DateMathParser;
-
-import java.text.SimpleDateFormat;
 import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.TimeZone;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.HashMap;
-import java.text.ParseException;
+import java.util.TimeZone;
+
+import org.apache.lucene.util.LuceneTestCase;
+
+import static org.apache.solr.util.DateMathParser.UTC;
 
 /**
  * Tests that the functions in DateMathParser
@@ -333,6 +333,111 @@ public class DateMathParserTest extends LuceneTestCase {
     }
     
   }
-    
+
+  /*
+  PARSING / FORMATTING (without date math)  Formerly in DateFieldTest.
+   */
+
+
+  public void testFormatter() {
+    assertFormat("1995-12-31T23:59:59.999Z", 820454399999l);
+    assertFormat("1995-12-31T23:59:59.990Z", 820454399990l);
+    assertFormat("1995-12-31T23:59:59.900Z", 820454399900l);
+    assertFormat("1995-12-31T23:59:59Z", 820454399000l);
+
+    // just after epoch
+    assertFormat("1970-01-01T00:00:00.005Z", 5L);
+    assertFormat("1970-01-01T00:00:00Z",     0L);
+    assertFormat("1970-01-01T00:00:00.370Z",  370L);
+    assertFormat("1970-01-01T00:00:00.900Z",   900L);
+
+    // well after epoch
+    assertFormat("1999-12-31T23:59:59.005Z", 946684799005L);
+    assertFormat("1999-12-31T23:59:59Z",     946684799000L);
+    assertFormat("1999-12-31T23:59:59.370Z",  946684799370L);
+    assertFormat("1999-12-31T23:59:59.900Z",   946684799900L);
+
+    // waaaay after epoch  ('+' is required for more than 4 digits in a year)
+    assertFormat("+12345-12-31T23:59:59.005Z", 327434918399005L);
+    assertFormat("+12345-12-31T23:59:59Z",     327434918399000L);
+    assertFormat("+12345-12-31T23:59:59.370Z",  327434918399370L);
+    assertFormat("+12345-12-31T23:59:59.900Z",   327434918399900L);
+
+    // well before epoch
+    assertFormat("0299-12-31T23:59:59Z",     -52700112001000L);
+    assertFormat("0299-12-31T23:59:59.123Z", -52700112000877L);
+    assertFormat("0299-12-31T23:59:59.090Z",  -52700112000910L);
+
+    // BC (negative years)
+    assertFormat("-12021-12-01T02:02:02Z", Instant.parse("-12021-12-01T02:02:02Z").toEpochMilli());
+  }
+
+  private void assertFormat(final String expected, final long millis) {
+    assertEquals(expected, Instant.ofEpochMilli(millis).toString());
+  }
+
+  /**
+   * Using dates in the canonical format, verify that parsing+formatting
+   * is an identify function
+   */
+  public void testRoundTrip() throws Exception {
+    // NOTE: the 2nd arg is what the round trip result looks like (may be null if same as input)
+
+    assertParseFormatEquals("1995-12-31T23:59:59.999666Z",  "1995-12-31T23:59:59.999Z"); // beyond millis is truncated
+    assertParseFormatEquals("1995-12-31T23:59:59.999Z",     "1995-12-31T23:59:59.999Z");
+    assertParseFormatEquals("1995-12-31T23:59:59.99Z",      "1995-12-31T23:59:59.990Z");
+    assertParseFormatEquals("1995-12-31T23:59:59.9Z",       "1995-12-31T23:59:59.900Z");
+    assertParseFormatEquals("1995-12-31T23:59:59Z",         "1995-12-31T23:59:59Z");
+
+    // here the input isn't in the canonical form, but we should be forgiving
+    assertParseFormatEquals("1995-12-31T23:59:59.990Z", "1995-12-31T23:59:59.990Z");
+    assertParseFormatEquals("1995-12-31T23:59:59.900Z", "1995-12-31T23:59:59.900Z");
+    assertParseFormatEquals("1995-12-31T23:59:59.90Z",  "1995-12-31T23:59:59.900Z");
+    assertParseFormatEquals("1995-12-31T23:59:59.000Z", "1995-12-31T23:59:59Z");
+    assertParseFormatEquals("1995-12-31T23:59:59.00Z",  "1995-12-31T23:59:59Z");
+    assertParseFormatEquals("1995-12-31T23:59:59.0Z",   "1995-12-31T23:59:59Z");
+
+    // kind of kludgy, but we have other tests for the actual date math
+    //assertParseFormatEquals("NOW/DAY", p.parseMath("/DAY").toInstant().toString());
+
+    // as of Solr 1.3
+    assertParseFormatEquals("1995-12-31T23:59:59Z/DAY", "1995-12-31T00:00:00Z");
+    assertParseFormatEquals("1995-12-31T23:59:59.123Z/DAY", "1995-12-31T00:00:00Z");
+    assertParseFormatEquals("1995-12-31T23:59:59.123999Z/DAY", "1995-12-31T00:00:00Z");
+
+    // typical dates, various precision  (0,1,2,3 digits of millis)
+    assertParseFormatEquals("1995-12-31T23:59:59.987Z", null);
+    assertParseFormatEquals("1995-12-31T23:59:59.98Z", "1995-12-31T23:59:59.980Z");//add 0 ms
+    assertParseFormatEquals("1995-12-31T23:59:59.9Z",  "1995-12-31T23:59:59.900Z");//add 00 ms
+    assertParseFormatEquals("1995-12-31T23:59:59Z", null);
+    assertParseFormatEquals("1976-03-06T03:06:00Z", null);
+    assertParseFormatEquals("1995-12-31T23:59:59.987654Z", "1995-12-31T23:59:59.987Z");//truncate nanoseconds off
+
+    // dates with atypical years
+    assertParseFormatEquals("0001-01-01T01:01:01Z", null);
+    assertParseFormatEquals("+12021-12-01T03:03:03Z", null);
+
+    assertParseFormatEquals("0000-04-04T04:04:04Z", null); // note: 0 AD is also known as 1 BC
+
+    // dates with negative years (BC)
+    assertParseFormatEquals("-0005-05-05T05:05:05Z", null);
+    assertParseFormatEquals("-2021-12-01T04:04:04Z", null);
+    assertParseFormatEquals("-12021-12-01T02:02:02Z", null);
+  }
+
+  public void testParseLenient() throws Exception {
+    // dates that only parse thanks to lenient mode of DateTimeFormatter
+    assertParseFormatEquals("10995-12-31T23:59:59.990Z", "+10995-12-31T23:59:59.990Z"); // missing '+' 5 digit year
+    assertParseFormatEquals("995-1-2T3:4:5Z", "0995-01-02T03:04:05Z"); // wasn't 0 padded
+  }
+
+  private void assertParseFormatEquals(String inputStr, String expectedStr) {
+    if (expectedStr == null) {
+      expectedStr = inputStr;
+    }
+    Date inputDate = DateMathParser.parseMath(null, inputStr);
+    String resultStr = inputDate.toInstant().toString();
+    assertEquals("d:" + inputDate.getTime(), expectedStr, resultStr);
+  }
 }
 

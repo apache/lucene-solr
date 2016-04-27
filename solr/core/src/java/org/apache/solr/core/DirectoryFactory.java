@@ -60,6 +60,8 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   public final static String LOCK_TYPE_SINGLE = "single";
   public final static String LOCK_TYPE_NONE   = "none";
   public final static String LOCK_TYPE_HDFS   = "hdfs";
+
+  protected volatile CoreContainer coreContainer;
   
   /**
    * Indicates a Directory will no longer be used, and when its ref count
@@ -324,5 +326,9 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     File dirToRm = new File(oldDirPath);
     FileUtils.deleteDirectory(dirToRm);
     return !dirToRm.isDirectory();
+  }
+  
+  public void initCoreContainer(CoreContainer cc) {
+    this.coreContainer = cc;
   }
 }

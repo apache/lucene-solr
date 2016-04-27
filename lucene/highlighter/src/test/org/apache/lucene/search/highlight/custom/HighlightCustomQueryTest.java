@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.search.highlight.custom;
 
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -35,6 +36,7 @@ import org.apache.lucene.search.highlight.WeightedSpanTermExtractor;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -80,6 +82,19 @@ public class HighlightCustomQueryTest extends LuceneTestCase {
         "Query in a named field does not result in highlighting when that field isn't in the query",
         s1, highlightField(q, FIELD_NAME, s1));
 
+  }
+
+  public void testHighlightKnownQuery() throws IOException {
+    WeightedSpanTermExtractor extractor = new WeightedSpanTermExtractor() {
+      @Override
+      protected void extractUnknownQuery(Query query, Map<String,WeightedSpanTerm> terms) throws IOException {
+        terms.put("foo", new WeightedSpanTerm(3, "foo"));
+      }
+    };
+    Map<String,WeightedSpanTerm> terms = extractor.getWeightedSpanTerms(
+        new TermQuery(new Term("bar", "quux")), 3, new CannedTokenStream());
+    // no foo
+    assertEquals(Collections.singleton("quux"), terms.keySet());
   }
 
   /**

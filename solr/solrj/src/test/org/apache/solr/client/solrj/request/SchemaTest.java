@@ -105,12 +105,11 @@ public class SchemaTest extends RestTestBase {
   }
 
   @After
-  public void cleanup() throws Exception {
+  public void cleanup() throws Exception  {
     if (jetty != null) {
       jetty.stop();
       jetty = null;
     }
-    client = null;
     if (restTestHarness != null) {
       restTestHarness.close();
     }
@@ -424,7 +423,8 @@ public class SchemaTest extends RestTestBase {
     fieldAttributes.put("type", "string");
     SchemaRequest.AddDynamicField addDFieldUpdateSchemaRequest =
         new SchemaRequest.AddDynamicField(fieldAttributes);
-    SchemaResponse.UpdateResponse addDFieldFirstResponse = addDFieldUpdateSchemaRequest.process(getSolrClient());
+    SolrClient client = getSolrClient();
+    SchemaResponse.UpdateResponse addDFieldFirstResponse = addDFieldUpdateSchemaRequest.process(client);
     assertValidSchemaResponse(addDFieldFirstResponse);
 
     SchemaResponse.UpdateResponse addDFieldSecondResponse = addDFieldUpdateSchemaRequest.process(getSolrClient());
@@ -680,7 +680,8 @@ public class SchemaTest extends RestTestBase {
     fieldTypeDefinition.setAttributes(fieldTypeAttributes);
     SchemaRequest.AddFieldType addFieldTypeRequest =
         new SchemaRequest.AddFieldType(fieldTypeDefinition);
-    SchemaResponse.UpdateResponse addFieldTypeResponse = addFieldTypeRequest.process(getSolrClient());
+    SolrClient c = getSolrClient();
+    SchemaResponse.UpdateResponse addFieldTypeResponse = addFieldTypeRequest.process(c);
     assertValidSchemaResponse(addFieldTypeResponse);
 
     SchemaRequest.FieldType fieldTypeRequest = new SchemaRequest.FieldType(fieldTypeName);

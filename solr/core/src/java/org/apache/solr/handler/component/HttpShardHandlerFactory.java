@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 package org.apache.solr.handler.component;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.client.HttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.LBHttpSolrClient;
+import org.apache.solr.client.solrj.impl.LBHttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -67,7 +67,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       new DefaultSolrThreadFactory("httpShardExecutor")
   );
 
-  protected HttpClient defaultClient;
+  protected CloseableHttpClient defaultClient;
   private LBHttpSolrClient loadbalancer;
   //default values:
   int soTimeout = UpdateShardHandlerConfig.DEFAULT_DISTRIBUPDATESOTIMEOUT;
@@ -79,7 +79,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   int keepAliveTime = 5;
   int queueSize = -1;
   boolean accessPolicy = false;
-  boolean useRetries = false;
 
   private String scheme = null;
 
@@ -140,7 +139,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     this.keepAliveTime = getParameter(args, MAX_THREAD_IDLE_TIME, keepAliveTime,sb);
     this.queueSize = getParameter(args, INIT_SIZE_OF_QUEUE, queueSize,sb);
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy,sb);
-    this.useRetries = getParameter(args, USE_RETRIES, useRetries,sb);
     log.info("created with {}",sb);
     
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
@@ -165,13 +163,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
     this.defaultClient = HttpClientUtil.createClient(clientParams);
     
-    // must come after createClient
-    if (useRetries) {
-      // our default retry handler will never retry on IOException if the request has been sent already,
-      // but for these read only requests we can use the standard DefaultHttpRequestRetryHandler rules
-      ((DefaultHttpClient) this.defaultClient).setHttpRequestRetryHandler(new DefaultHttpRequestRetryHandler());
-    }
-    
     this.loadbalancer = createLoadbalancer(defaultClient);
   }
   
@@ -179,22 +170,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     ModifiableSolrParams clientParams = new ModifiableSolrParams();
     clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, maxConnectionsPerHost);
     clientParams.set(HttpClientUtil.PROP_MAX_CONNECTIONS, maxConnections);
-    clientParams.set(HttpClientUtil.PROP_SO_TIMEOUT, soTimeout);
-    clientParams.set(HttpClientUtil.PROP_CONNECTION_TIMEOUT, connectionTimeout);
-    if (!useRetries) {
-      clientParams.set(HttpClientUtil.PROP_USE_RETRY, false);
-    }
     return clientParams;
-  }
-
-  /**
-   * For an already created internal httpclient, this can be used to configure it 
-   * again. Useful for authentication plugins.
-   * @param configurer an HttpClientConfigurer instance
-   */
-  public void reconfigureHttpClient(HttpClientConfigurer configurer) {
-    log.info("Reconfiguring the default client with: " + configurer);
-    configurer.configure((DefaultHttpClient)this.defaultClient, getClientParams());
   }
 
   protected ThreadPoolExecutor getThreadPoolExecutor(){
@@ -202,7 +178,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   protected LBHttpSolrClient createLoadbalancer(HttpClient httpClient){
-    return new LBHttpSolrClient(httpClient);
+    LBHttpSolrClient client = new Builder()
+        .withHttpClient(httpClient)
+        .build();
+    client.setConnectionTimeout(connectionTimeout);
+    client.setSoTimeout(soTimeout);
+    return client;
   }
 
   protected <T> T getParameter(NamedList initArgs, String configKey, T defaultValue, StringBuilder sb) {
@@ -222,13 +203,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
       ExecutorUtil.shutdownAndAwaitTermination(commExecutor);
     } finally {
       try {
-        if (defaultClient != null) {
-          defaultClient.getConnectionManager().shutdown();
-        }
-      } finally {
-        
         if (loadbalancer != null) {
           loadbalancer.close();
+        }
+      } finally { 
+        if (defaultClient != null) {
+          HttpClientUtil.close(defaultClient);
         }
       }
     }

@@ -121,7 +121,7 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
         .getBaseURL();
     baseUrl = baseUrl.substring(0, baseUrl.length() - "collection1".length());
 
-    try (HttpSolrClient baseServer = new HttpSolrClient(baseUrl)) {
+    try (HttpSolrClient baseServer = getHttpSolrClient(baseUrl)) {
       baseServer.setConnectionTimeout(15000);
       baseServer.setSoTimeout(60000);
       baseServer.request(request);
@@ -173,7 +173,7 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
     String instanceDir;
     String dataDir;
 
-    try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
+    try (HttpSolrClient client = getHttpSolrClient(baseUrl)) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(core, client);
       NamedList r = statusResp.getCoreStatus().get(core);
       instanceDir = (String) r.findRecursive("instanceDir");
@@ -199,7 +199,7 @@ public class DeleteShardTest extends AbstractFullDistribZkTestBase {
     baseUrl = (String) leader.get("base_url");
     core = (String) leader.get("core");
 
-    try (HttpSolrClient client = new HttpSolrClient(baseUrl)) {
+    try (HttpSolrClient client = getHttpSolrClient(baseUrl)) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(core, client);
       NamedList r = statusResp.getCoreStatus().get(core);
       instanceDir = (String) r.findRecursive("instanceDir");

@@ -134,7 +134,7 @@ public class KNearestNeighborClassifierTest extends ClassificationTestBase<Bytes
 
       long evaluationStart = System.currentTimeMillis();
       ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
-          kNearestNeighborClassifier, categoryFieldName, textFieldName);
+          kNearestNeighborClassifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
       long evaluationEnd = System.currentTimeMillis();
       long evaluationTime = evaluationEnd - evaluationStart;

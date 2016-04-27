@@ -105,7 +105,7 @@ public class DistributedVersionInfoTest extends AbstractFullDistribZkTestBase {
     assertEquals("leader and replica should have same max version: " + maxOnLeader, maxOnLeader, maxOnReplica);
 
     // send the same doc but with a lower version than the max in the index
-    try (SolrClient client = new HttpSolrClient(replica.getCoreUrl())) {
+    try (SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
       String docId = String.valueOf(1);
       SolrInputDocument doc = new SolrInputDocument();
       doc.setField(id, docId);
@@ -276,7 +276,7 @@ public class DistributedVersionInfoTest extends AbstractFullDistribZkTestBase {
     query.addSort(new SolrQuery.SortClause("_version_", SolrQuery.ORDER.desc));
     query.setParam("distrib", false);
 
-    try (SolrClient client = new HttpSolrClient(replica.getCoreUrl())) {
+    try (SolrClient client = getHttpSolrClient(replica.getCoreUrl())) {
       QueryResponse qr = client.query(query);
       SolrDocumentList hits = qr.getResults();
       if (hits.isEmpty())
@@ -289,22 +289,6 @@ public class DistributedVersionInfoTest extends AbstractFullDistribZkTestBase {
       fail("Failed to get version using query " + query + " from " + replica.getCoreUrl());
 
     return vers.longValue();
-  }
-
-  private void createCollectionRetry(String testCollectionName, int numShards, int replicationFactor, int maxShardsPerNode)
-      throws SolrServerException, IOException {
-    CollectionAdminResponse resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
-    if (resp.getResponse().get("failure") != null) {
-      CollectionAdminRequest.Delete req = new CollectionAdminRequest.Delete();
-      req.setCollectionName(testCollectionName);
-      req.process(cloudClient);
-
-      resp = createCollection(testCollectionName, numShards, replicationFactor, maxShardsPerNode);
-
-      if (resp.getResponse().get("failure") != null) {
-        fail("Could not create " + testCollectionName);
-      }
-    }
   }
 
   protected void assertDocsExistInAllReplicas(List<Replica> notLeaders,
@@ -343,7 +327,7 @@ public class DistributedVersionInfoTest extends AbstractFullDistribZkTestBase {
   }
 
   protected HttpSolrClient getHttpSolrClient(Replica replica) throws Exception {
-    return new HttpSolrClient(replica.getCoreUrl());
+    return getHttpSolrClient(replica.getCoreUrl());
   }
 
   protected void sendDoc(int docId) throws Exception {
@@ -378,7 +362,7 @@ public class DistributedVersionInfoTest extends AbstractFullDistribZkTestBase {
     ZkCoreNodeProps coreProps = new ZkCoreNodeProps(replica);
     String coreName = coreProps.getCoreName();
     boolean reloadedOk = false;
-    try (HttpSolrClient client = new HttpSolrClient(coreProps.getBaseUrl())) {
+    try (HttpSolrClient client = getHttpSolrClient(coreProps.getBaseUrl())) {
       CoreAdminResponse statusResp = CoreAdminRequest.getStatus(coreName, client);
       long leaderCoreStartTime = statusResp.getStartTime(coreName).getTime();
 

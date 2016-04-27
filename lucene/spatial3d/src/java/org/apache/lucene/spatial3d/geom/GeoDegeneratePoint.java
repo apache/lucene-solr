@@ -22,7 +22,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public class GeoDegeneratePoint extends GeoPoint implements GeoBBox, GeoCircle {
+class GeoDegeneratePoint extends GeoPoint implements GeoBBox, GeoCircle {
   /** Current planet model, since we don't extend BasePlanetObject */
   protected final PlanetModel planetModel;
   /** Edge point is an area containing just this */
@@ -131,5 +131,11 @@ public class GeoDegeneratePoint extends GeoPoint implements GeoBBox, GeoCircle {
       return 0.0;
     return Double.MAX_VALUE;
   }
+  
+  @Override
+  public void getDistanceBounds(final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {
+    getBounds(bounds);
+  }
+
 }
 

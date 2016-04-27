@@ -22,10 +22,10 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.util.ExternalPaths;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -119,6 +119,11 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
     return jetty;
   }
 
+  @After
+  public void afterClass() throws Exception {
+    if (client != null) client.close();
+    client = null;
+  }
 
   @AfterClass
   public static void afterSolrJettyTestBase() throws Exception {
@@ -126,8 +131,6 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       jetty.stop();
       jetty = null;
     }
-    if (client != null) client.close();
-    client = null;
   }
 
 
@@ -151,17 +154,20 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
       try {
         // setup the client...
         String url = jetty.getBaseUrl().toString() + "/" + "collection1";
-        HttpSolrClient client = new HttpSolrClient( url );
+        HttpSolrClient client = getHttpSolrClient(url);
         client.setConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT);
-        client.setDefaultMaxConnectionsPerHost(100);
-        client.setMaxTotalConnections(100);
         return client;
       }
       catch( Exception ex ) {
         throw new RuntimeException( ex );
       }
     } else {
-      return new EmbeddedSolrServer( h.getCoreContainer(), "collection1" );
+      return new EmbeddedSolrServer( h.getCoreContainer(), "collection1" ) {
+        @Override
+        public void close() {
+          // do not close core container
+        }
+      };
     }
   }
 

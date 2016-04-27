@@ -22,7 +22,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.internal
  */
-public abstract class GeoBaseBBox extends GeoBaseMembershipShape implements GeoBBox {
+abstract class GeoBaseBBox extends GeoBaseMembershipShape implements GeoBBox {
 
   /** Construct, given planet model.
    *@param planetModel is the planet model.

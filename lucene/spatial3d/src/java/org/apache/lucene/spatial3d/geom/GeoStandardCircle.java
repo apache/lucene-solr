@@ -21,7 +21,7 @@ package org.apache.lucene.spatial3d.geom;
  *
  * @lucene.experimental
  */
-public class GeoStandardCircle extends GeoBaseCircle {
+class GeoStandardCircle extends GeoBaseCircle {
   /** Center of circle */
   protected final GeoPoint center;
   /** Cutoff angle of circle (not quite the same thing as radius) */
@@ -104,6 +104,12 @@ public class GeoStandardCircle extends GeoBaseCircle {
   @Override
   protected double distance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     return distanceStyle.computeDistance(this.center, x, y, z);
+  }
+
+  @Override
+  protected void distanceBounds(final Bounds bounds, final DistanceStyle distanceStyle, final double distanceValue) {
+    // TBD: Compute actual bounds based on distance
+    getBounds(bounds);
   }
 
   @Override

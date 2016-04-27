@@ -16,15 +16,8 @@
  */
 package org.apache.lucene.search;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
@@ -41,15 +34,7 @@ public class TestUsageTrackingFilterCachingPolicy extends LuceneTestCase {
     for (int i = 0; i < 1000; ++i) {
       policy.onUse(q);
     }
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(null));
-    w.addDocument(new Document());
-    IndexReader r = DirectoryReader.open(w);
-    assertFalse(policy.shouldCache(q, getOnlyLeafReader(r).getContext()));
-    
-    r.close();
-    w.close();
-    dir.close();
+    assertFalse(policy.shouldCache(q));
   }
 
 }

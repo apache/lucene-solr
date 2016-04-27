@@ -211,21 +211,6 @@ public class GeoCircleTest extends LuceneTestCase {
       xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
     assertTrue(GeoArea.WITHIN == area.getRelationship(c) || GeoArea.OVERLAPS == area.getRelationship(c));
     
-    // Yet another test case from BKD
-    c = GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, 0.006229478708446979, 0.005570196723795424, 3.840276763694387E-5);
-    xyzb = new XYZBounds();
-    c.getBounds(xyzb);
-    area = GeoAreaFactory.makeGeoArea(PlanetModel.WGS84,
-      xyzb.getMinimumX(), xyzb.getMaximumX(), xyzb.getMinimumY(), xyzb.getMaximumY(), xyzb.getMinimumZ(), xyzb.getMaximumZ());
-    p1 = new GeoPoint(PlanetModel.WGS84, 0.006224927111830945, 0.005597367237251763);
-    p2 = new GeoPoint(1.0010836083810235, 0.005603490759433942, 0.006231850560862502);
-    assertTrue(PlanetModel.WGS84.pointOnSurface(p1));
-    //assertTrue(PlanetModel.WGS84.pointOnSurface(p2));
-    assertTrue(c.isWithin(p1));
-    assertTrue(c.isWithin(p2));
-    assertTrue(area.isWithin(p1));
-    assertTrue(area.isWithin(p2));
-    
     // Another test case from BKD
     c = GeoCircleFactory.makeGeoCircle(PlanetModel.SPHERE, -0.005955031040627789, -0.0029274772647399153, 1.601488279374338E-5);
     xyzb = new XYZBounds();
@@ -407,4 +392,21 @@ public class GeoCircleTest extends LuceneTestCase {
 
   }
 
+  @Test
+  public void testBoundsFailureCase1() {
+    // lat=2.7399499693409367E-13, lon=-3.141592653589793([X=-1.0011188539924791, Y=-1.226017000107956E-16, Z=2.743015573303327E-13])], radius=2.1814042682464985
+    final GeoCircle gc = GeoCircleFactory.makeGeoCircle(PlanetModel.WGS84, 2.7399499693409367E-13, -3.141592653589793, 2.1814042682464985);
+    // With a circle like this, zmin should equal zmax, and xmin should be PlanetModel.minimumX.
+    final GeoPoint gp = new GeoPoint(0.0054866241253590815, -0.004009749293376541, 0.997739304376186);
+    final GeoPoint gpOnSurface = PlanetModel.WGS84.createSurfacePoint(gp);
+    final XYZBounds bounds = new XYZBounds();
+    gc.getBounds(bounds);
+    //System.out.println("Bounds: "+bounds);
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, bounds.getMinimumX(), bounds.getMaximumX(), bounds.getMinimumY(), bounds.getMaximumY(), bounds.getMinimumZ(), bounds.getMaximumZ());
+    assertTrue(gc.isWithin(gpOnSurface));
+    assertTrue(gc.isWithin(gp));
+    assertTrue(solid.isWithin(gpOnSurface)); // This fails
+    assertTrue(solid.isWithin(gp));
+  }
+  
 }

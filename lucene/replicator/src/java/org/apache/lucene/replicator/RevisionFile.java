@@ -34,7 +34,7 @@ public class RevisionFile {
   /** Constructor with the given file name. */
   public RevisionFile(String fileName) {
     if (fileName == null || fileName.isEmpty()) {
-      throw new IllegalArgumentException("fileName cannot be null or empty");
+      throw new IllegalArgumentException("fileName must not be null or empty");
     }
     this.fileName = fileName;
   }

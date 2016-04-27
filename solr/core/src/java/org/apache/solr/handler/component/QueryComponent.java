@@ -497,7 +497,7 @@ public class QueryComponent extends SearchComponent
           }
         }
 
-        if (rb.doHighlights || rb.isDebug() || params.getBool(MoreLikeThisParams.MLT, false)) {
+        if( rb.isNeedDocList() || rb.isDebug() ){
           // we need a single list of the returned docs
           cmd.setFlags(SolrIndexSearcher.GET_DOCLIST);
         }
@@ -794,14 +794,9 @@ public class QueryComponent extends SearchComponent
       rb.resultIds = new HashMap<>();
     }
 
-    EndResultTransformer.SolrDocumentSource solrDocumentSource = new EndResultTransformer.SolrDocumentSource() {
-
-      @Override
-      public SolrDocument retrieve(ScoreDoc doc) {
-        ShardDoc solrDoc = (ShardDoc) doc;
-        return rb.retrievedDocuments.get(solrDoc.id);
-      }
-
+    EndResultTransformer.SolrDocumentSource solrDocumentSource = doc -> {
+      ShardDoc solrDoc = (ShardDoc) doc;
+      return rb.retrievedDocuments.get(solrDoc.id);
     };
     EndResultTransformer endResultTransformer;
     if (groupSpec.isMain()) {

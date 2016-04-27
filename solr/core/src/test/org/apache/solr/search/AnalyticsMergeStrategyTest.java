@@ -16,14 +16,17 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.util.Constants;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
 
 /**
  * Test for QueryComponent's distributed querying
@@ -32,6 +35,8 @@ import org.junit.Test;
  */
 
 @SolrTestCaseJ4.SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-8433")
+@SuppressObjectReleaseTracker(bugUrl="https://issues.apache.org/jira/browse/SOLR-8899")
+@ThreadLeakScope(Scope.NONE)
 public class AnalyticsMergeStrategyTest extends BaseDistributedSearchTestCase {
 
 

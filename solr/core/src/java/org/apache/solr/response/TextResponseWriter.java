@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -40,7 +41,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
-import org.apache.solr.util.DateFormatUtil;
 import org.apache.solr.util.FastWriter;
 
 /** Base class for text-oriented response writers.
@@ -166,6 +166,8 @@ public abstract class TextResponseWriter {
       writeNamedList(name, (NamedList)val);
     } else if (val instanceof TupleStream) {
       writeTupleStream((TupleStream) val);
+    } else if (val instanceof Explanation){
+      writeExplanation((Explanation) val);
     } else if (val instanceof Path) {
       writeStr(name, ((Path) val).toAbsolutePath().toString(), true);
     } else if (val instanceof Iterable) {
@@ -317,6 +319,10 @@ public abstract class TextResponseWriter {
     tupleStream.writeStreamClose(writer);
     tupleStream.close();
   }
+  
+  public void writeExplanation(Explanation explanation) throws IOException {
+    writeMap(null, explanation.toMap(), false, true);
+  }
 
 
   /** if this form of the method is called, val is the Java string form of a double */
@@ -335,7 +341,7 @@ public abstract class TextResponseWriter {
 
 
   public void writeDate(String name, Date val) throws IOException {
-    writeDate(name, DateFormatUtil.formatExternal(val));
+    writeDate(name, val.toInstant().toString());
   }
   
 

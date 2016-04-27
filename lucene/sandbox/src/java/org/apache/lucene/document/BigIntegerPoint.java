@@ -85,10 +85,10 @@ public class BigIntegerPoint extends Field {
 
   private static BytesRef pack(BigInteger... point) {
     if (point == null) {
-      throw new IllegalArgumentException("point cannot be null");
+      throw new IllegalArgumentException("point must not be null");
     }
     if (point.length == 0) {
-      throw new IllegalArgumentException("point cannot be 0 dimensions");
+      throw new IllegalArgumentException("point must not be 0 dimensions");
     }
     byte[] packed = new byte[point.length * BYTES];
     
@@ -128,16 +128,6 @@ public class BigIntegerPoint extends Field {
 
     result.append('>');
     return result.toString();
-  }
-  
-  /** sugar: Encode n-dimensional BigInteger values into binary encoding */
-  private static byte[][] encode(BigInteger value[]) {
-    byte[][] encoded = new byte[value.length][];
-    for (int i = 0; i < value.length; i++) {
-      encoded[i] = new byte[BYTES];
-      encodeDimension(value[i], encoded[i], 0);
-    }
-    return encoded;
   }
 
   // public helper methods (e.g. for queries)
@@ -212,7 +202,7 @@ public class BigIntegerPoint extends Field {
    */
   public static Query newRangeQuery(String field, BigInteger[] lowerValue, BigInteger[] upperValue) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, BigIntegerPoint.encode(lowerValue), BigIntegerPoint.encode(upperValue)) {
+    return new PointRangeQuery(field, pack(lowerValue).bytes, pack(upperValue).bytes, lowerValue.length) {
       @Override
       protected String toString(int dimension, byte[] value) {
         return BigIntegerPoint.decodeDimension(value, 0).toString();

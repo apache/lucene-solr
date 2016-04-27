@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.io.Closeable;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -73,8 +72,6 @@ public class RecoveryStrategy extends Thread implements Closeable {
   private static final int WAIT_FOR_UPDATES_WITH_STALE_STATE_PAUSE = Integer.getInteger("solr.cloud.wait-for-updates-with-stale-state-pause", 7000);
   private static final int MAX_RETRIES = 500;
   private static final int STARTING_RECOVERY_DELAY = 5000;
-  
-  private static final String REPLICATION_HANDLER = "/replication";
 
   public static interface RecoveryListener {
     public void recovered();
@@ -144,12 +141,12 @@ public class RecoveryStrategy extends Thread implements Closeable {
     commitOnLeader(leaderUrl);
     
     // use rep handler directly, so we can do this sync rather than async
-    SolrRequestHandler handler = core.getRequestHandler(REPLICATION_HANDLER);
+    SolrRequestHandler handler = core.getRequestHandler(ReplicationHandler.PATH);
     ReplicationHandler replicationHandler = (ReplicationHandler) handler;
     
     if (replicationHandler == null) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE,
-          "Skipping recovery, no " + REPLICATION_HANDLER + " handler found");
+          "Skipping recovery, no " + ReplicationHandler.PATH + " handler found");
     }
     
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
@@ -195,7 +192,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
 
   private void commitOnLeader(String leaderUrl) throws SolrServerException,
       IOException {
-    try (HttpSolrClient client = new HttpSolrClient(leaderUrl)) {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(leaderUrl).build()) {
       client.setConnectionTimeout(30000);
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
@@ -575,7 +572,7 @@ public class RecoveryStrategy extends Thread implements Closeable {
   private void sendPrepRecoveryCmd(String leaderBaseUrl, String leaderCoreName, Slice slice)
       throws SolrServerException, IOException, InterruptedException, ExecutionException {
 
-    try (HttpSolrClient client = new HttpSolrClient(leaderBaseUrl)) {
+    try (HttpSolrClient client = new HttpSolrClient.Builder(leaderBaseUrl).build()) {
       client.setConnectionTimeout(30000);
       WaitForState prepCmd = new WaitForState();
       prepCmd.setCoreName(leaderCoreName);

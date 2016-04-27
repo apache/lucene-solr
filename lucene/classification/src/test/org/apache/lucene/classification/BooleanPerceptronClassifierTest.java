@@ -86,7 +86,7 @@ public class BooleanPerceptronClassifierTest extends ClassificationTestBase<Bool
 
       long evaluationStart = System.currentTimeMillis();
       ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
-          classifier, categoryFieldName, textFieldName);
+          classifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
       long evaluationEnd = System.currentTimeMillis();
       long evaluationTime = evaluationEnd - evaluationStart;

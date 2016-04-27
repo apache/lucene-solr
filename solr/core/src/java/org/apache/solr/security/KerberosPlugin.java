@@ -30,6 +30,7 @@ import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.FilterRegistration;
+import javax.servlet.FilterRegistration.Dynamic;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
@@ -39,23 +40,22 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
-import javax.servlet.FilterRegistration.Dynamic;
 import javax.servlet.descriptor.JspConfigDescriptor;
 
 import org.apache.commons.collections.iterators.IteratorEnumeration;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
-import org.apache.solr.client.solrj.impl.Krb5HttpClientConfigurer;
-import org.apache.solr.cloud.ZkController;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
+import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class KerberosPlugin extends AuthenticationPlugin implements HttpClientInterceptorPlugin {
+public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  HttpClientConfigurer kerberosConfigurer = new Krb5HttpClientConfigurer();
+  Krb5HttpClientBuilder kerberosBuilder = new Krb5HttpClientBuilder();
   Filter kerberosFilter = new KerberosFilter();
   
   public static final String NAME_RULES_PARAM = "solr.kerberos.name.rules";
@@ -145,12 +145,13 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientIn
   }
 
   @Override
-  public HttpClientConfigurer getClientConfigurer() {
-    return kerberosConfigurer;
+  public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder builder) {
+    return kerberosBuilder.getBuilder(builder);
   }
 
   public void close() {
     kerberosFilter.destroy();
+    kerberosBuilder.close();
   }
 
   protected static ServletContext noContext = new ServletContext() {

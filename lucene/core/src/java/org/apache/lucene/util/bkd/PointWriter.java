@@ -19,6 +19,7 @@ package org.apache.lucene.util.bkd;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.List;
 
 /** Appends many points, and then at the end provides a {@link PointReader} to iterate
  *  those points.  This abstracts away whether we write to disk, or use simple arrays
@@ -28,7 +29,10 @@ interface PointWriter extends Closeable {
   void append(byte[] packedValue, long ord, int docID) throws IOException;
 
   /** Returns a {@link PointReader} iterator to step through all previously added points */
-  PointReader getReader(long startPoint) throws IOException;
+  PointReader getReader(long startPoint, long length) throws IOException;
+
+  /** Returns the single shared reader, used at multiple times during the recursion, to read previously added points */
+  PointReader getSharedReader(long startPoint, long length, List<Closeable> toCloseHeroically) throws IOException;
 
   /** Removes any temp files behind this writer */
   void destroy() throws IOException;

@@ -80,7 +80,7 @@ public class LeaderInitiatedRecoveryOnShardRestartTest extends AbstractFullDistr
     QueryRequest request = new QueryRequest(params);
     request.setPath("/admin/collections");
     String baseUrl = ((HttpSolrClient) clients.get(0)).getBaseURL();
-    HttpSolrClient delClient = new HttpSolrClient(baseUrl.substring(0, baseUrl.lastIndexOf("/")));
+    HttpSolrClient delClient = getHttpSolrClient(baseUrl.substring(0, baseUrl.lastIndexOf("/")));
     delClient.request(request);
     delClient.close();
     

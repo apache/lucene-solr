@@ -103,12 +103,9 @@ class PerSegmentSingleValuedFaceting {
     for (final LeafReaderContext leave : leaves) {
       final SegFacet segFacet = new SegFacet(leave);
 
-      Callable<SegFacet> task = new Callable<SegFacet>() {
-        @Override
-        public SegFacet call() throws Exception {
-          segFacet.countTerms();
-          return segFacet;
-        }
+      Callable<SegFacet> task = () -> {
+        segFacet.countTerms();
+        return segFacet;
       };
 
       // TODO: if limiting threads, submit by largest segment first?

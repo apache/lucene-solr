@@ -21,6 +21,7 @@ import java.util.Enumeration;
 import java.util.List;
 
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrRequestHandler;
 
 /**
  * Request context for Solr to be used by Authorization plugin.
@@ -56,5 +57,7 @@ public abstract class AuthorizationContext {
   public abstract String getHttpMethod();
 
   public enum RequestType {READ, WRITE, ADMIN, UNKNOWN}
+
+  public abstract Object getHandler();
 
 }

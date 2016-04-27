@@ -275,6 +275,7 @@ limitations under the License.
 
 .sub-menu .overview a { background-image: url( ../../img/ico/home.png ); }
 .sub-menu .query a { background-image: url( ../../img/ico/magnifier.png ); }
+.sub-menu .stream a { background-image: url( ../../img/ico/node.png ); }
 .sub-menu .analysis a { background-image: url( ../../img/ico/funnel.png ); }
 .sub-menu .documents a { background-image: url( ../../img/ico/documents-stack.png ); }
 .sub-menu .files a { background-image: url( ../../img/ico/folder.png ); }

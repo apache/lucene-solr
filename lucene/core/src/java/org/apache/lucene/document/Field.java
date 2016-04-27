@@ -97,11 +97,11 @@ public class Field implements IndexableField {
    */
   protected Field(String name, FieldType type) {
     if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
+      throw new IllegalArgumentException("name must not be null");
     }
     this.name = name;
     if (type == null) {
-      throw new IllegalArgumentException("type cannot be null");
+      throw new IllegalArgumentException("type must not be null");
     }
     this.type = type;
   }
@@ -118,13 +118,13 @@ public class Field implements IndexableField {
    */
   public Field(String name, Reader reader, FieldType type) {
     if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
+      throw new IllegalArgumentException("name must not be null");
     }
     if (type == null) {
-      throw new IllegalArgumentException("type cannot be null");
+      throw new IllegalArgumentException("type must not be null");
     }
     if (reader == null) {
-      throw new NullPointerException("reader cannot be null");
+      throw new NullPointerException("reader must not be null");
     }
     if (type.stored()) {
       throw new IllegalArgumentException("fields with a Reader value cannot be stored");
@@ -150,10 +150,10 @@ public class Field implements IndexableField {
    */
   public Field(String name, TokenStream tokenStream, FieldType type) {
     if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
+      throw new IllegalArgumentException("name must not be null");
     }
     if (tokenStream == null) {
-      throw new NullPointerException("tokenStream cannot be null");
+      throw new NullPointerException("tokenStream must not be null");
     }
     if (type.indexOptions() == IndexOptions.NONE || !type.tokenized()) {
       throw new IllegalArgumentException("TokenStream fields must be indexed and tokenized");
@@ -216,10 +216,10 @@ public class Field implements IndexableField {
    */
   public Field(String name, BytesRef bytes, FieldType type) {
     if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
+      throw new IllegalArgumentException("name must not be null");
     }
     if (bytes == null) {
-      throw new IllegalArgumentException("bytes cannot be null");
+      throw new IllegalArgumentException("bytes must not be null");
     }
     this.fieldsData = bytes;
     this.type = type;
@@ -240,10 +240,10 @@ public class Field implements IndexableField {
    */
   public Field(String name, String value, FieldType type) {
     if (name == null) {
-      throw new IllegalArgumentException("name cannot be null");
+      throw new IllegalArgumentException("name must not be null");
     }
     if (value == null) {
-      throw new IllegalArgumentException("value cannot be null");
+      throw new IllegalArgumentException("value must not be null");
     }
     if (!type.stored() && type.indexOptions() == IndexOptions.NONE) {
       throw new IllegalArgumentException("it doesn't make sense to have a field that "
@@ -307,7 +307,7 @@ public class Field implements IndexableField {
       throw new IllegalArgumentException("cannot change value type from " + fieldsData.getClass().getSimpleName() + " to String");
     }
     if (value == null) {
-      throw new IllegalArgumentException("value cannot be null");
+      throw new IllegalArgumentException("value must not be null");
     }
     fieldsData = value;
   }
@@ -346,7 +346,7 @@ public class Field implements IndexableField {
       throw new IllegalArgumentException("cannot set a BytesRef value on an indexed field");
     }
     if (value == null) {
-      throw new IllegalArgumentException("value cannot be null");
+      throw new IllegalArgumentException("value must not be null");
     }
     fieldsData = value;
   }

@@ -404,7 +404,7 @@ interface FieldCache {
     
     @Override
     public String toString() {
-      StringBuilder b = new StringBuilder();
+      StringBuilder b = new StringBuilder(250);
       b.append("'").append(getReaderKey()).append("'=>");
       b.append("'").append(getFieldName()).append("',");
       b.append(getCacheType()).append(",").append(getCustom());

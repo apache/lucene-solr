@@ -127,22 +127,19 @@ class SolrCores {
           new DefaultSolrThreadFactory("coreCloseExecutor"));
       try {
         for (SolrCore core : coreList) {
-          coreCloseExecutor.submit(new Callable<SolrCore>() {
-            @Override
-            public SolrCore call() throws Exception {
-              MDCLoggingContext.setCore(core);
-              try {
-                core.close();
-              } catch (Throwable e) {
-                SolrException.log(log, "Error shutting down core", e);
-                if (e instanceof Error) {
-                  throw (Error) e;
-                }
-              } finally {
-                MDCLoggingContext.clear();
+          coreCloseExecutor.submit(() -> {
+            MDCLoggingContext.setCore(core);
+            try {
+              core.close();
+            } catch (Throwable e) {
+              SolrException.log(log, "Error shutting down core", e);
+              if (e instanceof Error) {
+                throw (Error) e;
               }
-              return core;
+            } finally {
+              MDCLoggingContext.clear();
             }
+            return core;
           });
         }
       } finally {

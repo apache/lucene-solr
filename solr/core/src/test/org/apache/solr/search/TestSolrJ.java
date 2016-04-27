@@ -59,7 +59,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
     ConcurrentUpdateSolrClient concurrentClient = null;
 
     // server = concurrentClient = new ConcurrentUpdateSolrServer(addr,32,8);
-    client = concurrentClient = new ConcurrentUpdateSolrClient(addr,64,nConnections);
+    client = concurrentClient = getConcurrentUpdateSolrClient(addr,64,nConnections);
 
     client.deleteByQuery("*:*");
     client.commit();
@@ -164,7 +164,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
 
   public void doCommitPerf() throws Exception {
 
-    try (HttpSolrClient client = new HttpSolrClient("http://127.0.0.1:8983/solr")) {
+    try (HttpSolrClient client = getHttpSolrClient("http://127.0.0.1:8983/solr")) {
 
       final RTimer timer = new RTimer();
 

@@ -26,7 +26,8 @@ public class PlanetModel {
   public static final PlanetModel SPHERE = new PlanetModel(1.0,1.0);
 
   /** Mean radius */
-  public static final double WGS84_MEAN = 6371009.0;
+  // see http://earth-info.nga.mil/GandG/publications/tr8350.2/wgs84fin.pdf
+  public static final double WGS84_MEAN = 6371008.7714;
   /** Polar radius */
   public static final double WGS84_POLAR = 6356752.314245;
   /** Equatorial radius */
@@ -188,65 +189,120 @@ public class PlanetModel {
     return (x * x + y * y) * inverseAb * inverseAb + z * z * inverseC * inverseC - 1.0 > Vector.MINIMUM_RESOLUTION;
   }
   
+  /** Compute a GeoPoint that's scaled to actually be on the planet surface.
+   * @param vector is the vector.
+   * @return the scaled point.
+   */
+  public GeoPoint createSurfacePoint(final Vector vector) {
+    return createSurfacePoint(vector.x, vector.y, vector.z);
+  }
+
+  /** Compute a GeoPoint that's based on (x,y,z) values, but is scaled to actually be on the planet surface.
+   * @param x is the x value.
+   * @param y is the y value.
+   * @param z is the z value.
+   * @return the scaled point.
+   */
+  public GeoPoint createSurfacePoint(final double x, final double y, final double z) {
+    // The equation of the surface is:
+    // (x^2 / a^2 + y^2 / b^2 + z^2 / c^2) = 1
+    // We will need to scale the passed-in x, y, z values:
+    // ((tx)^2 / a^2 + (ty)^2 / b^2 + (tz)^2 / c^2) = 1
+    // t^2 * (x^2 / a^2 + y^2 / b^2 + z^2 / c^2)  = 1
+    // t = sqrt ( 1 / (x^2 / a^2 + y^2 / b^2 + z^2 / c^2))
+    final double t = Math.sqrt(1.0 / (x*x*inverseAbSquared + y*y*inverseAbSquared + z*z*inverseCSquared));
+    return new GeoPoint(t*x, t*y, t*z);
+  }
+  
+  /** Compute a GeoPoint that's a bisection between two other GeoPoints.
+   * @param pt1 is the first point.
+   * @param pt2 is the second point.
+   * @return the bisection point, or null if a unique one cannot be found.
+   */
+  public GeoPoint bisection(final GeoPoint pt1, final GeoPoint pt2) {
+    final double A0 = (pt1.x + pt2.x) * 0.5;
+    final double B0 = (pt1.y + pt2.y) * 0.5;
+    final double C0 = (pt1.z + pt2.z) * 0.5;
+      
+    final double denom = inverseAbSquared * A0 * A0 +
+      inverseAbSquared * B0 * B0 +
+      inverseCSquared * C0 * C0;
+          
+    if(denom < Vector.MINIMUM_RESOLUTION) {
+      // Bisection is undefined
+      return null;
+    }
+      
+    final double t = Math.sqrt(1.0 / denom);
+      
+    return new GeoPoint(t * A0, t * B0, t * C0);
+  }
+  
   /** Compute surface distance between two points.
-   * @param p1 is the first point.
-   * @param p2 is the second point.
+   * @param pt1 is the first point.
+   * @param pt2 is the second point.
    * @return the adjusted angle, when multiplied by the mean earth radius, yields a surface distance.  This will differ
    * from GeoPoint.arcDistance() only when the planet model is not a sphere. @see {@link GeoPoint#arcDistance(GeoPoint)}
    */
-  public double surfaceDistance(final GeoPoint p1, final GeoPoint p2) {
-    final double latA = p1.getLatitude();
-    final double lonA = p1.getLongitude();
-    final double latB = p2.getLatitude();
-    final double lonB = p2.getLongitude();
+  public double surfaceDistance(final GeoPoint pt1, final GeoPoint pt2) {
+    final double L = pt2.getLongitude() - pt1.getLongitude();
+    final double U1 = Math.atan((1.0-flattening) * Math.tan(pt1.getLatitude()));
+    final double U2 = Math.atan((1.0-flattening) * Math.tan(pt2.getLatitude()));
 
-    final double L = lonB - lonA;
-    final double oF = 1.0 - this.flattening;
-    final double U1 = Math.atan(oF * Math.tan(latA));
-    final double U2 = Math.atan(oF * Math.tan(latB));
-    final double sU1 = Math.sin(U1);
-    final double cU1 = Math.cos(U1);
-    final double sU2 = Math.sin(U2);
-    final double cU2 = Math.cos(U2);
+    final double sinU1 = Math.sin(U1);
+    final double cosU1 = Math.cos(U1);
+    final double sinU2 = Math.sin(U2);
+    final double cosU2 = Math.cos(U2);
 
-    double sigma, sinSigma, cosSigma;
-    double cos2Alpha, cos2SigmaM;
-    
+    final double dCosU1CosU2 = cosU1 * cosU2;
+    final double dCosU1SinU2 = cosU1 * sinU2;
+
+    final double dSinU1SinU2 = sinU1 * sinU2;
+    final double dSinU1CosU2 = sinU1 * cosU2;
+
+
     double lambda = L;
-    double iters = 100;
+    double lambdaP = Math.PI * 2.0;
+    int iterLimit = 0;
+    double cosSqAlpha;
+    double sinSigma;
+    double cos2SigmaM;
+    double cosSigma;
+    double sigma;
+    double sinAlpha;
+    double C;
+    double sinLambda, cosLambda;
 
     do {
-      final double sinLambda = Math.sin(lambda);
-      final double cosLambda = Math.cos(lambda);
-      sinSigma = Math.sqrt((cU2 * sinLambda) * (cU2 * sinLambda) + (cU1 * sU2 - sU1 * cU2 * cosLambda)
-          * (cU1 * sU2 - sU1 * cU2 * cosLambda));
-      if (Math.abs(sinSigma) < Vector.MINIMUM_RESOLUTION)
+      sinLambda = Math.sin(lambda);
+      cosLambda = Math.cos(lambda);
+      sinSigma = Math.sqrt((cosU2*sinLambda) * (cosU2*sinLambda) +
+                                    (dCosU1SinU2 - dSinU1CosU2 * cosLambda) * (dCosU1SinU2 - dSinU1CosU2 * cosLambda));
+
+      if (sinSigma==0.0) {
         return 0.0;
-
-      cosSigma = sU1 * sU2 + cU1 * cU2 * cosLambda;
+      }
+      cosSigma = dSinU1SinU2 + dCosU1CosU2 * cosLambda;
       sigma = Math.atan2(sinSigma, cosSigma);
-      final double sinAlpha = cU1 * cU2 * sinLambda / sinSigma;
-      cos2Alpha = 1.0 - sinAlpha * sinAlpha;
-      cos2SigmaM = cosSigma - 2.0 * sU1 * sU2 / cos2Alpha;
+      sinAlpha = dCosU1CosU2 * sinLambda / sinSigma;
+      cosSqAlpha = 1.0 - sinAlpha * sinAlpha;
+      cos2SigmaM = cosSigma - 2.0 * dSinU1SinU2 / cosSqAlpha;
 
-      final double c = this.flattening * 0.625 * cos2Alpha * (4.0 + this.flattening * (4.0 - 3.0 * cos2Alpha));
-      final double lambdaP = lambda;
-      lambda = L + (1.0 - c) * this.flattening * sinAlpha * (sigma + c * sinSigma * (cos2SigmaM + c * cosSigma *
-          (-1.0 + 2.0 * cos2SigmaM * cos2SigmaM)));
-      if (Math.abs(lambda - lambdaP) < Vector.MINIMUM_RESOLUTION)
-        break;
-    } while (--iters > 0);
+      if (Double.isNaN(cos2SigmaM))
+        cos2SigmaM = 0.0;  // equatorial line: cosSqAlpha=0
+      C = flattening / 16.0 * cosSqAlpha * (4.0 + flattening * (4.0 - 3.0 * cosSqAlpha));
+      lambdaP = lambda;
+      lambda = L + (1.0 - C) * flattening * sinAlpha *
+        (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1.0 + 2.0 * cos2SigmaM *cos2SigmaM)));
+    } while (Math.abs(lambda-lambdaP) > Vector.MINIMUM_RESOLUTION && ++iterLimit < 40);
 
-    if (iters == 0)
-      return 0.0;
+    final double uSq = cosSqAlpha * this.squareRatio;
+    final double A = 1.0 + uSq / 16384.0 * (4096.0 + uSq * (-768.0 + uSq * (320.0 - 175.0 * uSq)));
+    final double B = uSq / 1024.0 * (256.0 + uSq * (-128.0 + uSq * (74.0 - 47.0 * uSq)));
+    final double deltaSigma = B * sinSigma * (cos2SigmaM + B / 4.0 * (cosSigma * (-1.0 + 2.0 * cos2SigmaM * cos2SigmaM)-
+                                        B / 6.0 * cos2SigmaM * (-3.0 + 4.0 * sinSigma * sinSigma) * (-3.0 + 4.0 * cos2SigmaM * cos2SigmaM)));
 
-    final double uSq = cos2Alpha * this.squareRatio;
-    final double A = 1.0 + uSq * 0.00006103515625 * (4096.0 + uSq * (-768.0 + uSq * (320.0 - 175.0 * uSq)));
-    final double B = uSq * 0.0009765625 * (256.0 + uSq * (-128.0 + uSq * (74.0 - 47.0 * uSq)));
-    final double deltaSigma = B * sinSigma * (cos2SigmaM + B * 0.25 * (cosSigma * (-1.0 + 2.0 * cos2SigmaM * cos2SigmaM) - B * 0.16666666666666666666667 * cos2SigmaM
-            * (-3.0 + 4.0 * sinSigma * sinSigma) * (-3.0 + 4.0 * cos2SigmaM * cos2SigmaM)));
-
-    return this.c * A * (sigma - deltaSigma);
+    return c * A * (sigma - deltaSigma);
   }
 
   @Override

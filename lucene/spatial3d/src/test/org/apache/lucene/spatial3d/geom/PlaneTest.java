@@ -20,6 +20,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test basic plane functionality.
@@ -60,5 +61,24 @@ public class PlaneTest {
       assertTrue(p.evaluateIsZero(point));
     }
   }
+  
+  @Test
+  public void testFindArcPoints() {
+    // Create two points
+    final GeoPoint p1 = new GeoPoint(PlanetModel.WGS84, 0.123, -0.456);
+    final GeoPoint p2 = new GeoPoint(PlanetModel.WGS84, -0.368, 0.888);
+    // Create a plane that links them.
+    final Plane plane = new Plane(p1, p2);
+    // Now, use that plane to find points that are a certain distance from the original
+    final GeoPoint[] newPoints = plane.findArcDistancePoints(PlanetModel.WGS84, 0.20, p1);
+    assertTrue(newPoints.length == 2);
+    assertTrue(plane.evaluateIsZero(newPoints[0]));
+    assertTrue(plane.evaluateIsZero(newPoints[1]));
+    assertTrue(PlanetModel.WGS84.pointOnSurface(newPoints[0]));
+    assertTrue(PlanetModel.WGS84.pointOnSurface(newPoints[1]));
+    assertEquals(0.20, p1.arcDistance(newPoints[0]), 1e-6);
+    assertEquals(0.20, p1.arcDistance(newPoints[1]), 1e-6);
+  }
+  
 }
 

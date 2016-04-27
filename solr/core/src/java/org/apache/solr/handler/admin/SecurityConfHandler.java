@@ -33,15 +33,29 @@ import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.ConfigEditablePlugin;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.CommandOperation;
 import org.apache.zookeeper.KeeperException;
 
-public class SecurityConfHandler extends RequestHandlerBase {
+public class SecurityConfHandler extends RequestHandlerBase implements PermissionNameProvider {
   private CoreContainer cores;
 
   public SecurityConfHandler(CoreContainer coreContainer) {
     this.cores = coreContainer;
+  }
+
+  @Override
+  public PermissionNameProvider.Name getPermissionName(AuthorizationContext ctx) {
+    switch (ctx.getHttpMethod()) {
+      case "GET":
+        return PermissionNameProvider.Name.SECURITY_READ_PERM;
+      case "POST":
+        return PermissionNameProvider.Name.SECURITY_EDIT_PERM;
+      default:
+        return null;
+    }
   }
 
   @Override

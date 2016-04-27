@@ -25,4 +25,13 @@ public interface Expressible {
 //  public String getFunctionName();
 //  public void setFunctionName(String functionName);
   StreamExpressionParameter toExpression(StreamFactory factory) throws IOException;
+  
+  /**
+   * Returns an explanation about the stream object
+   * @param factory Stream factory for this, contains information about the function name
+   * @return Explanation about this stream object containing explanations of any child stream objects
+   * @throws IOException throw on any error
+   */
+  Explanation toExplanation(StreamFactory factory) throws IOException;
+  
 }

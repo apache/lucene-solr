@@ -92,7 +92,8 @@ import org.slf4j.LoggerFactory;
 // NOT mt-safe... create a new processor for each add thread
 // TODO: we really should not wait for distrib after local? unless a certain replication factor is asked for
 public class DistributedUpdateProcessor extends UpdateRequestProcessor {
-  
+
+  final static String PARAM_WHITELIST_CTX_KEY = DistributedUpdateProcessor.class + "PARAM_WHITELIST_CTX_KEY";
   public static final String DISTRIB_FROM_SHARD = "distrib.from.shard";
   public static final String DISTRIB_FROM_COLLECTION = "distrib.from.collection";
   public static final String DISTRIB_FROM_PARENT = "distrib.from.parent";
@@ -291,6 +292,10 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // SolrRequestInfo reqInfo = returnVersions ? SolrRequestInfo.getRequestInfo() : null;
 
     this.req = req;
+    
+    // this should always be used - see filterParams
+    DistributedUpdateProcessorFactory.addParamToDistributedRequestWhitelist
+      (this.req, UpdateParams.UPDATE_CHAIN, TEST_DISTRIB_SKIP_SERVERS);
     
     CoreDescriptor coreDesc = req.getCore().getCoreDescriptor();
     
@@ -542,8 +547,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
                       throw new SolrException(ErrorCode.SERVER_ERROR,
                           "No active slices serving " + id + " found for target collection: " + rule.getTargetCollectionName());
                     }
-                    Replica targetLeader = cstate.getLeader(rule.getTargetCollectionName(), activeSlices.iterator().next().getName());
-                    if (nodes == null) nodes = new ArrayList<>(1);
+                    Replica targetLeader = targetColl.getLeader(activeSlices.iterator().next().getName());
+                    nodes = new ArrayList<>(1);
                     nodes.add(new StdNode(new ZkCoreNodeProps(targetLeader)));
                     break;
                   }
@@ -591,7 +596,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     ClusterState clusterState = zkController.getClusterState();
         
     CloudDescriptor cloudDescriptor = req.getCore().getCoreDescriptor().getCloudDescriptor();
-    Slice mySlice = clusterState.getSlice(collection, cloudDescriptor.getShardId());
+    DocCollection docCollection = clusterState.getCollection(collection);
+    Slice mySlice = docCollection.getSlice(cloudDescriptor.getShardId());
     boolean localIsLeader = cloudDescriptor.isLeader();
     if (DistribPhase.FROMLEADER == phase && localIsLeader && from != null) { // from will be null on log replay
       String fromShard = req.getParams().get(DISTRIB_FROM_PARENT);
@@ -601,7 +607,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
               "Request says it is coming from parent shard leader but we are in active state");
         }
         // shard splitting case -- check ranges to see if we are a sub-shard
-        Slice fromSlice = zkController.getClusterState().getCollection(collection).getSlice(fromShard);
+        Slice fromSlice = docCollection.getSlice(fromShard);
         DocRouter.Range parentRange = fromSlice.getRange();
         if (parentRange == null) parentRange = new DocRouter.Range(Integer.MIN_VALUE, Integer.MAX_VALUE);
         if (mySlice.getRange() != null && !mySlice.getRange().isSubsetOf(parentRange)) {
@@ -790,38 +796,30 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     cmdDistrib.finish();    
     List<Error> errors = cmdDistrib.getErrors();
     // TODO - we may need to tell about more than one error...
-    
-    // if it's a forward, any fail is a problem - 
-    // otherwise we assume things are fine if we got it locally
-    // until we start allowing min replication param
-    if (errors.size() > 0) {
-      // if one node is a RetryNode, this was a forward request
-      if (errors.get(0).req.node instanceof RetryNode) {
-        rsp.setException(errors.get(0).e);
-      } else {
-        if (log.isWarnEnabled()) {
-          for (Error error : errors) {
-            log.warn("Error sending update to " + error.req.node.getBaseUrl(), error.e);
-          }
-        }
-      }
-      // else
-      // for now we don't error - we assume if it was added locally, we
-      // succeeded 
-    }
-   
-    
-    // if it is not a forward request, for each fail, try to tell them to
-    // recover - the doc was already added locally, so it should have been
-    // legit
 
+    List<Error> errorsForClient = new ArrayList<>(errors.size());
+    
     for (final SolrCmdDistributor.Error error : errors) {
       
       if (error.req.node instanceof RetryNode) {
-        // we don't try to force a leader to recover
-        // when we cannot forward to it
+        // if it's a forward, any fail is a problem - 
+        // otherwise we assume things are fine if we got it locally
+        // until we start allowing min replication param
+        errorsForClient.add(error);
         continue;
       }
+
+      // else...
+      
+      // for now we don't error - we assume if it was added locally, we
+      // succeeded 
+      if (log.isWarnEnabled()) {
+        log.warn("Error sending update to " + error.req.node.getBaseUrl(), error.e);
+      }
+      
+      // Since it is not a forward request, for each fail, try to tell them to
+      // recover - the doc was already added locally, so it should have been
+      // legit
        
       DistribPhase phase =
           DistribPhase.parseParam(error.req.uReq.getParams().get(DISTRIB_UPDATE_PARAM));       
@@ -841,8 +839,8 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
         // let's just fail this request and let the client retry? or just call processAdd again?
         log.error("On "+cloudDesc.getCoreNodeName()+", replica "+replicaUrl+
             " now thinks it is the leader! Failing the request to let the client retry! "+error.e);
-        rsp.setException(error.e);
-        break;
+        errorsForClient.add(error);
+        continue;
       }
 
       String collection = null;
@@ -927,7 +925,12 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       rsp.getResponseHeader().add(UpdateRequest.REPFACT, replicationTracker.getAchievedRf());
       rsp.getResponseHeader().add(UpdateRequest.MIN_REPFACT, replicationTracker.minRf);
       replicationTracker = null;
-    }    
+    }
+
+    
+    if (0 < errorsForClient.size()) {
+      throw new DistributedUpdatesAsyncException(errorsForClient);
+    }
   }
 
  
@@ -1210,10 +1213,16 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     }
   }
 
+  /** @see DistributedUpdateProcessorFactory#addParamToDistributedRequestWhitelist */
   protected ModifiableSolrParams filterParams(SolrParams params) {
     ModifiableSolrParams fparams = new ModifiableSolrParams();
-    passParam(params, fparams, UpdateParams.UPDATE_CHAIN);
-    passParam(params, fparams, TEST_DISTRIB_SKIP_SERVERS);
+    
+    Set<String> whitelist = (Set<String>) this.req.getContext().get(PARAM_WHITELIST_CTX_KEY);
+    assert null != whitelist : "whitelist can't be null, constructor adds to it";
+
+    for (String p : whitelist) {
+      passParam(params, fparams, p);
+    }
     return fparams;
   }
 
@@ -1697,5 +1706,68 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     // if we have been told we are coming from a leader, then we are 
     // definitely not the leader.  Otherwise assume we are.
     return DistribPhase.FROMLEADER != phase;
+  }
+
+  public static final class DistributedUpdatesAsyncException extends SolrException {
+    public final List<Error> errors;
+    public DistributedUpdatesAsyncException(List<Error> errors) {
+      super(buildCode(errors), buildMsg(errors), null);
+      this.errors = errors;
+
+      // create a merged copy of the metadata from all wrapped exceptions
+      NamedList<String> metadata = new NamedList<String>();
+      for (Error error : errors) {
+        if (error.e instanceof SolrException) {
+          SolrException e = (SolrException) error.e;
+          NamedList<String> eMeta = e.getMetadata();
+          if (null != eMeta) {
+            metadata.addAll(eMeta);
+          }
+        }
+      }
+      if (0 < metadata.size()) {
+        this.setMetadata(metadata);
+      }
+    }
+
+    /** Helper method for constructor */
+    private static final int buildCode(List<Error> errors) {
+      assert null != errors;
+      assert 0 < errors.size();
+
+      int minCode = Integer.MAX_VALUE;
+      int maxCode = Integer.MIN_VALUE;
+      for (Error error : errors) {
+        log.trace("REMOTE ERROR: {}", error);
+        minCode = Math.min(error.statusCode, minCode);
+        maxCode = Math.max(error.statusCode, maxCode);
+      }
+      if (minCode == maxCode) {
+        // all codes are consistent, use that...
+        return minCode;
+      } else if (400 <= minCode && maxCode < 500) {
+        // all codes are 4xx, use 400
+        return ErrorCode.BAD_REQUEST.code;
+      } 
+      // ...otherwise use sensible default
+      return ErrorCode.SERVER_ERROR.code;
+    }
+    
+    /** Helper method for constructor */
+    private static final String buildMsg(List<Error> errors) {
+      assert null != errors;
+      assert 0 < errors.size();
+      
+      if (1 == errors.size()) {
+        return "Async exception during distributed update: " + errors.get(0).e.getMessage();
+      } else {
+        StringBuilder buf = new StringBuilder(errors.size() + " Async exceptions during distributed update: ");
+        for (Error error : errors) {
+          buf.append("\n");
+          buf.append(error.e.getMessage());
+        }
+        return buf.toString();
+      }
+    }
   }
 }

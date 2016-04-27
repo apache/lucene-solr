@@ -90,11 +90,18 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   
   public static final String CONFIG_DIRECTORY = "solr.hdfs.confdir";
   
+  public static final String CACHE_MERGES = "solr.hdfs.blockcache.cachemerges";
+  public static final String CACHE_READONCE = "solr.hdfs.blockcache.cachereadonce";
+  
   private SolrParams params;
   
   private String hdfsDataDir;
   
   private String confDir;
+
+  private boolean cacheReadOnce;
+
+  private boolean cacheMerges;
 
   private static BlockCache globalBlockCache;
   
@@ -136,6 +143,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
 
   @Override
   public void init(NamedList args) {
+    super.init(args);
     params = SolrParams.toSolrParams(args);
     this.hdfsDataDir = getConfig(HDFS_HOME, null);
     if (this.hdfsDataDir != null && this.hdfsDataDir.length() == 0) {
@@ -143,6 +151,8 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     } else {
       LOG.info(HDFS_HOME + "=" + this.hdfsDataDir);
     }
+    cacheMerges = getConfig(CACHE_MERGES, false);
+    cacheReadOnce = getConfig(CACHE_READONCE, false);
     boolean kerberosEnabled = getConfig(KERBEROS_ENABLED, false);
     LOG.info("Solr Kerberos Authentication "
         + (kerberosEnabled ? "enabled" : "disabled"));
@@ -214,7 +224,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
       
       Cache cache = new BlockDirectoryCache(blockCache, path, metrics, blockCacheGlobal);
       hdfsDir = new HdfsDirectory(new Path(path), lockFactory, conf);
-      dir = new BlockDirectory(path, hdfsDir, cache, null, blockCacheReadEnabled, false);
+      dir = new BlockDirectory(path, hdfsDir, cache, null, blockCacheReadEnabled, false, cacheMerges, cacheReadOnce);
     } else {
       hdfsDir = new HdfsDirectory(new Path(path), lockFactory, conf);
       dir = hdfsDir;
@@ -308,12 +318,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     FileSystem fileSystem = null;
     try {
       // no need to close the fs, the cache will do it
-      fileSystem = tmpFsCache.get(path, new Callable<FileSystem>() {
-        @Override
-        public FileSystem call() throws IOException {
-          return FileSystem.get(hdfsDirPath.toUri(), conf);
-        }
-      });
+      fileSystem = tmpFsCache.get(path, () -> FileSystem.get(hdfsDirPath.toUri(), conf));
     } catch (ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -341,12 +346,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     
     try {
       // no need to close the fs, the cache will do it
-      fileSystem = tmpFsCache.get(cacheValue.path, new Callable<FileSystem>() {
-        @Override
-        public FileSystem call() throws IOException {
-          return FileSystem.get(new Path(cacheValue.path).toUri(), conf);
-        }
-      });
+      fileSystem = tmpFsCache.get(cacheValue.path, () -> FileSystem.get(new Path(cacheValue.path).toUri(), conf));
     } catch (ExecutionException e) {
       throw new RuntimeException(e);
     }
@@ -477,12 +477,7 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     final Configuration conf = getConf();
     FileSystem fileSystem = null;
     try {
-      fileSystem = tmpFsCache.get(dataDir, new Callable<FileSystem>() {
-        @Override
-        public FileSystem call() throws IOException {
-          return FileSystem.get(dataDirPath.toUri(), conf);
-        }
-      });
+      fileSystem = tmpFsCache.get(dataDir, () -> FileSystem.get(dataDirPath.toUri(), conf));
     } catch (ExecutionException e) {
       throw new RuntimeException(e);
     }

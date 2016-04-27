@@ -257,7 +257,7 @@ public class CollectionsAPISolrJTest extends AbstractFullDistribZkTestBase {
 
     Replica replica1 = testCollection.getReplica("core_node1");
 
-    try (HttpSolrClient client = new HttpSolrClient(replica1.getStr("base_url"))) {
+    try (HttpSolrClient client = getHttpSolrClient(replica1.getStr("base_url"))) {
       CoreAdminResponse status = CoreAdminRequest.getStatus(replica1.getStr("core"), client);
       NamedList<Object> coreStatus = status.getCoreStatus(replica1.getStr("core"));
       String dataDirStr = (String) coreStatus.get("dataDir");
@@ -276,7 +276,7 @@ public class CollectionsAPISolrJTest extends AbstractFullDistribZkTestBase {
 
     cloudClient.setDefaultCollection(collectionName);
 
-    String newReplicaName = Assign.assignNode(collectionName, cloudClient.getZkStateReader().getClusterState());
+    String newReplicaName = Assign.assignNode(cloudClient.getZkStateReader().getClusterState().getCollection(collectionName));
     ArrayList<String> nodeList = new ArrayList<>(cloudClient.getZkStateReader().getClusterState().getLiveNodes());
     Collections.shuffle(nodeList, random());
     CollectionAdminRequest.AddReplica addReplica = new CollectionAdminRequest.AddReplica()

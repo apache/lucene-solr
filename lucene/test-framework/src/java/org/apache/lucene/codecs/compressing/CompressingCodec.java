@@ -60,6 +60,19 @@ public abstract class CompressingCodec extends FilterCodec {
     final int blockSize = random.nextBoolean() ? RandomInts.randomIntBetween(random, 1, 10) : RandomInts.randomIntBetween(random, 1, 1024);
     return randomInstance(random, chunkSize, chunkDocs, false, blockSize);
   }
+
+  /**
+   * Creates a random {@link CompressingCodec} with more reasonable parameters for big tests.
+   */
+  public static CompressingCodec reasonableInstance(Random random) {
+    // e.g. defaults use 2^14 for FAST and ~ 2^16 for HIGH
+    final int chunkSize = TestUtil.nextInt(random, 1<<13, 1<<17);
+    // e.g. defaults use 128 for FAST and 512 for HIGH
+    final int chunkDocs = TestUtil.nextInt(random, 1<<6, 1<<10);
+    // e.g. defaults use 1024 for both cases
+    final int blockSize = TestUtil.nextInt(random, 1<<9, 1<<11);
+    return randomInstance(random, chunkSize, chunkDocs, false, blockSize);
+  }
   
   /**
    * Creates a random {@link CompressingCodec} that is using a segment suffix

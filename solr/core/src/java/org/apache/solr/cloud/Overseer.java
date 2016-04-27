@@ -151,6 +151,7 @@ public class Overseer implements Closeable {
             continue; // not a no, not a yes, try ask again
           }
 
+          //TODO consider removing 'refreshClusterState' and simply check if clusterState is null
           if (refreshClusterState) {
             try {
               reader.updateClusterState();

@@ -27,7 +27,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 /** 
- * An indexed {@code float} field.
+ * An indexed {@code float} field for fast range filters.  If you also
+ * need to store the value, you should add a separate {@link StoredField} instance.
  * <p>
  * Finding all documents within an N-dimensional at search time is
  * efficient.  Multiple values for the same field in one document
@@ -81,10 +82,10 @@ public final class FloatPoint extends Field {
 
   private static BytesRef pack(float... point) {
     if (point == null) {
-      throw new IllegalArgumentException("point cannot be null");
+      throw new IllegalArgumentException("point must not be null");
     }
     if (point.length == 0) {
-      throw new IllegalArgumentException("point cannot be 0 dimensions");
+      throw new IllegalArgumentException("point must not be 0 dimensions");
     }
     byte[] packed = new byte[point.length * Float.BYTES];
     
@@ -124,16 +125,6 @@ public final class FloatPoint extends Field {
 
     result.append('>');
     return result.toString();
-  }
-  
-  /** Encode n-dimensional float values into binary encoding */
-  private static byte[][] encode(float value[]) {
-    byte[][] encoded = new byte[value.length][];
-    for (int i = 0; i < value.length; i++) {
-      encoded[i] = new byte[Float.BYTES];
-      encodeDimension(value[i], encoded[i], 0);
-    }
-    return encoded;
   }
   
   // public helper methods (e.g. for queries)
@@ -207,7 +198,7 @@ public final class FloatPoint extends Field {
    */
   public static Query newRangeQuery(String field, float[] lowerValue, float[] upperValue) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, encode(lowerValue), encode(upperValue)) {
+    return new PointRangeQuery(field, pack(lowerValue).bytes, pack(upperValue).bytes, lowerValue.length) {
       @Override
       protected String toString(int dimension, byte[] value) {
         return Float.toString(decodeDimension(value, 0));

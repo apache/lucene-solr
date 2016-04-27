@@ -113,7 +113,7 @@ public class LegacyNumericConfig {
   public void setType(LegacyNumericType type) {
     
     if (type == null) {
-      throw new IllegalArgumentException("type cannot be null!");
+      throw new IllegalArgumentException("type must not be null!");
     }
     
     this.type = type;
@@ -126,12 +126,12 @@ public class LegacyNumericConfig {
    * 
    * @param format
    *          the {@link NumberFormat} used to parse a {@link String} to
-   *          {@link Number}, cannot be <code>null</code>
+   *          {@link Number}, must not be <code>null</code>
    */
   public void setNumberFormat(NumberFormat format) {
     
     if (format == null) {
-      throw new IllegalArgumentException("format cannot be null!");
+      throw new IllegalArgumentException("format must not be null!");
     }
     
     this.format = format;

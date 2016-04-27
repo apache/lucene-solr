@@ -16,20 +16,19 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.FacetParams;
-import org.apache.solr.common.params.HighlightParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.StatsParams;
-import org.apache.solr.common.params.TermsParams;
-import org.apache.solr.common.util.DateUtil;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
+
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.FacetParams;
+import org.apache.solr.common.params.HighlightParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.StatsParams;
+import org.apache.solr.common.params.TermsParams;
 
 
 /**
@@ -266,9 +265,9 @@ public class SolrQuery extends ModifiableSolrParams
    */
   public SolrQuery addDateRangeFacet(String field, Date start, Date end, String gap) {
     add(FacetParams.FACET_RANGE, field);
-    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_START), DateUtil.getThreadLocalDateFormat().format(start));
-    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_END), DateUtil.getThreadLocalDateFormat().format(end));
-    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_GAP), gap);
+    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_START), start.toInstant().toString());
+    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_END),   end.toInstant().toString());
+    add(String.format(Locale.ROOT, "f.%s.%s", field, FacetParams.FACET_RANGE_GAP),   gap);
     this.set(FacetParams.FACET, true);
     return this;
   }

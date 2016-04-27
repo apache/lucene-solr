@@ -114,12 +114,9 @@ final class ZooKeeperInspector {
   
   public List<Slice> getSortedSlices(Collection<Slice> slices) {
     List<Slice> sorted = new ArrayList(slices);
-    Collections.sort(sorted, new Comparator<Slice>() {
-      @Override
-      public int compare(Slice slice1, Slice slice2) {
-        Comparator c = new AlphaNumericComparator();
-        return c.compare(slice1.getName(), slice2.getName());
-      }      
+    Collections.sort(sorted, (slice1, slice2) -> {
+      Comparator c = new AlphaNumericComparator();
+      return c.compare(slice1.getName(), slice2.getName());
     });
     LOG.trace("Sorted slices: {}", sorted);
     return sorted;

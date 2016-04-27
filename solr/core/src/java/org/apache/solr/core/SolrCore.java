@@ -55,6 +55,7 @@ import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CommonParams;
@@ -125,6 +126,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  *
  */
 public final class SolrCore implements SolrInfoMBean, Closeable {
+
   public static final String version="1.0";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -480,10 +482,13 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
     if (info != null) {
       log.info(info.className);
       dirFactory = getResourceLoader().newInstance(info.className, DirectoryFactory.class);
+      // allow DirectoryFactory instances to access the CoreContainer
+      dirFactory.initCoreContainer(getCoreDescriptor().getCoreContainer());
       dirFactory.init(info.initArgs);
     } else {
       log.info("solr.NRTCachingDirectoryFactory");
       dirFactory = new NRTCachingDirectoryFactory();
+      dirFactory.initCoreContainer(getCoreDescriptor().getCoreContainer());
     }
     return dirFactory;
   }
@@ -731,12 +736,9 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
-      searcherExecutor.submit(new Callable<Void>() {
-        @Override
-        public Void call() throws Exception {
-          latch.await();
-          return null;
-        }
+      searcherExecutor.submit(() -> {
+        latch.await();
+        return null;
       });
 
       this.updateHandler = initUpdateHandler(updateHandler);
@@ -833,8 +835,8 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
 
       // ZK pre-register would have already happened so we read slice properties now
       final ClusterState clusterState = cc.getZkController().getClusterState();
-      final Slice slice = clusterState.getSlice(coreDescriptor.getCloudDescriptor().getCollectionName(), 
-          coreDescriptor.getCloudDescriptor().getShardId());
+      final DocCollection collection = clusterState.getCollection(coreDescriptor.getCloudDescriptor().getCollectionName());
+      final Slice slice = collection.getSlice(coreDescriptor.getCloudDescriptor().getShardId());
       if (slice.getState() == Slice.State.CONSTRUCTION) {
         // set update log to buffer before publishing the core
         getUpdateHandler().getUpdateLog().bufferUpdates();
@@ -850,14 +852,7 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       if (iwRef != null) {
         final IndexWriter iw = iwRef.get();
         final SolrCore core = this;
-        newReaderCreator = new Callable<DirectoryReader>() {
-          // this is used during a core reload
-
-          @Override
-          public DirectoryReader call() throws Exception {
-            return indexReaderFactory.newReader(iw, core);
-          }
-        };
+        newReaderCreator = () -> indexReaderFactory.newReader(iw, core);
       }
     }
 
@@ -1775,57 +1770,48 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
         // warm the new searcher based on the current searcher.
         // should this go before the other event handlers or after?
         if (currSearcher != null) {
-          future = searcherExecutor.submit(new Callable() {
-            @Override
-            public Object call() throws Exception {
-              try {
-                newSearcher.warm(currSearcher);
-              } catch (Throwable e) {
-                SolrException.log(log, e);
-                if (e instanceof Error) {
-                  throw (Error) e;
-                }
+          future = searcherExecutor.submit(() -> {
+            try {
+              newSearcher.warm(currSearcher);
+            } catch (Throwable e) {
+              SolrException.log(log, e);
+              if (e instanceof Error) {
+                throw (Error) e;
               }
-              return null;
             }
+            return null;
           });
         }
 
         if (currSearcher == null) {
-          future = searcherExecutor.submit(new Callable() {
-            @Override
-            public Object call() throws Exception {
-              try {
-                for (SolrEventListener listener : firstSearcherListeners) {
-                  listener.newSearcher(newSearcher, null);
-                }
-              } catch (Throwable e) {
-                SolrException.log(log, null, e);
-                if (e instanceof Error) {
-                  throw (Error) e;
-                }
+          future = searcherExecutor.submit(() -> {
+            try {
+              for (SolrEventListener listener : firstSearcherListeners) {
+                listener.newSearcher(newSearcher, null);
               }
-              return null;
+            } catch (Throwable e) {
+              SolrException.log(log, null, e);
+              if (e instanceof Error) {
+                throw (Error) e;
+              }
             }
+            return null;
           });
         }
 
         if (currSearcher != null) {
-          future = searcherExecutor.submit(new Callable() {
-            @Override
-            public Object call() throws Exception {
-              try {
-                for (SolrEventListener listener : newSearcherListeners) {
-                  listener.newSearcher(newSearcher, currSearcher);
-                }
-              } catch (Throwable e) {
-                SolrException.log(log, null, e);
-                if (e instanceof Error) {
-                  throw (Error) e;
-                }
+          future = searcherExecutor.submit(() -> {
+            try {
+              for (SolrEventListener listener : newSearcherListeners) {
+                listener.newSearcher(newSearcher, currSearcher);
               }
-              return null;
+            } catch (Throwable e) {
+              SolrException.log(log, null, e);
+              if (e instanceof Error) {
+                throw (Error) e;
+              }
             }
+            return null;
           });
         }
 
@@ -1837,25 +1823,22 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       final RefCounted<SolrIndexSearcher> currSearcherHolderF = currSearcherHolder;
       if (!alreadyRegistered) {
         future = searcherExecutor.submit(
-            new Callable() {
-              @Override
-              public Object call() throws Exception {
-                try {
-                  // registerSearcher will decrement onDeckSearchers and
-                  // do a notify, even if it fails.
-                  registerSearcher(newSearchHolder);
-                } catch (Throwable e) {
-                  SolrException.log(log, e);
-                  if (e instanceof Error) {
-                    throw (Error) e;
-                  }
-                } finally {
-                  // we are all done with the old searcher we used
-                  // for warming...
-                  if (currSearcherHolderF!=null) currSearcherHolderF.decref();
+            () -> {
+              try {
+                // registerSearcher will decrement onDeckSearchers and
+                // do a notify, even if it fails.
+                registerSearcher(newSearchHolder);
+              } catch (Throwable e) {
+                SolrException.log(log, e);
+                if (e instanceof Error) {
+                  throw (Error) e;
                 }
-                return null;
+              } finally {
+                // we are all done with the old searcher we used
+                // for warming...
+                if (currSearcherHolderF!=null) currSearcherHolderF.decref();
               }
+              return null;
             }
         );
       }
@@ -2586,6 +2569,38 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       implicits.add(new PluginInfo(SolrRequestHandler.TYPE, info));
     }
     return implicits;
+  }
+
+  /**
+   * Convenience method to load a blob. This method minimizes the degree to which component and other code needs 
+   * to depend on the structure of solr's object graph and ensures that a proper close hook is registered. This method 
+   * should normally be called in {@link SolrCoreAware#inform(SolrCore)}, and should never be called during request
+   * processing. The Decoder will only run on the first invocations, subsequent invocations will return the 
+   * cached object. 
+   * 
+   * @param key A key in the format of name/version for a blob stored in the .system blob store via the Blob Store API
+   * @param decoder a decoder with which to convert the blob into a Java Object representation (first time only)
+   * @return a reference to the blob that has already cached the decoded version.
+   */
+  public BlobRepository.BlobContentRef loadDecodeAndCacheBlob(String key, BlobRepository.Decoder<Object> decoder) {
+    // make sure component authors don't give us oddball keys with no version...
+    if (!BlobRepository.BLOB_KEY_PATTERN_CHECKER.matcher(key).matches()) {
+      throw new IllegalArgumentException("invalid key format, must end in /N where N is the version number");
+    }
+    CoreContainer coreContainer = getCoreDescriptor().getCoreContainer();
+    // define the blob
+    BlobRepository.BlobContentRef blobRef = coreContainer.getBlobRepository().getBlobIncRef(key, decoder);
+    addCloseHook(new CloseHook() {
+      @Override
+      public void preClose(SolrCore core) {
+      }
+
+      @Override
+      public void postClose(SolrCore core) {
+        core.getCoreDescriptor().getCoreContainer().getBlobRepository().decrementBlobRefCount(blobRef);
+      }
+    });
+    return blobRef;
   }
 }
 

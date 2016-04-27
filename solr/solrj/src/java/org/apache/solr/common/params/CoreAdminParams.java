@@ -109,7 +109,7 @@ public abstract class CoreAdminParams
   public static final String NODE = "node";
 
   public enum CoreAdminAction {
-    STATUS,
+    STATUS(true),
     UNLOAD,
     RELOAD,
     CREATE,
@@ -118,13 +118,13 @@ public abstract class CoreAdminParams
     MERGEINDEXES,
     SPLIT,
     PREPRECOVERY,
-    REQUESTRECOVERY, 
+    REQUESTRECOVERY,
     REQUESTSYNCSHARD,
     DELETEALIAS,
     REQUESTBUFFERUPDATES,
     REQUESTAPPLYUPDATES,
     OVERSEEROP,
-    REQUESTSTATUS,
+    REQUESTSTATUS(true),
     REJOINLEADERELECTION,
     //internal API used by force shard leader election
     FORCEPREPAREFORLEADERSHIP,
@@ -132,6 +132,16 @@ public abstract class CoreAdminParams
     //Internal APIs to backup and restore a core
     BACKUPCORE,
     RESTORECORE;
+
+    public final boolean isRead;
+
+    CoreAdminAction(boolean isRead) {
+      this.isRead = isRead;
+    }
+
+    CoreAdminAction() {
+      this.isRead = false;
+    }
 
     public static CoreAdminAction get( String p ) {
       if (p != null) {

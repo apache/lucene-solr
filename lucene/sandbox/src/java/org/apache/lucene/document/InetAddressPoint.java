@@ -26,6 +26,7 @@ import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 
 /** 
@@ -65,10 +66,57 @@ public class InetAddressPoint extends Field {
     TYPE.freeze();
   }
 
+  /** The minimum value that an ip address can hold. */
+  public static final InetAddress MIN_VALUE;
+  /** The maximum value that an ip address can hold. */
+  public static final InetAddress MAX_VALUE;
+  static {
+    MIN_VALUE = decode(new byte[BYTES]);
+    byte[] maxValueBytes = new byte[BYTES];
+    Arrays.fill(maxValueBytes, (byte) 0xFF);
+    MAX_VALUE = decode(maxValueBytes);
+  }
+
+  /**
+   * Return the {@link InetAddress} that compares immediately greater than
+   * {@code address}.
+   * @throws ArithmeticException if the provided address is the
+   *              {@link #MAX_VALUE maximum ip address}
+   */
+  public static InetAddress nextUp(InetAddress address) {
+    if (address.equals(MAX_VALUE)) {
+      throw new ArithmeticException("Overflow: there is no greater InetAddress than "
+          + address.getHostAddress());
+    }
+    byte[] delta = new byte[BYTES];
+    delta[BYTES-1] = 1;
+    byte[] nextUpBytes = new byte[InetAddressPoint.BYTES];
+    NumericUtils.add(InetAddressPoint.BYTES, 0, encode(address), delta, nextUpBytes);
+    return decode(nextUpBytes);
+  }
+
+  /**
+   * Return the {@link InetAddress} that compares immediately less than
+   * {@code address}.
+   * @throws ArithmeticException if the provided address is the
+   *              {@link #MIN_VALUE minimum ip address}
+   */
+  public static InetAddress nextDown(InetAddress address) {
+    if (address.equals(MIN_VALUE)) {
+      throw new ArithmeticException("Underflow: there is no smaller InetAddress than "
+          + address.getHostAddress());
+    }
+    byte[] delta = new byte[BYTES];
+    delta[BYTES-1] = 1;
+    byte[] nextDownBytes = new byte[InetAddressPoint.BYTES];
+    NumericUtils.subtract(InetAddressPoint.BYTES, 0, encode(address), delta, nextDownBytes);
+    return decode(nextDownBytes);
+  }
+
   /** Change the values of this field */
   public void setInetAddressValue(InetAddress value) {
     if (value == null) {
-      throw new IllegalArgumentException("point cannot be null");
+      throw new IllegalArgumentException("point must not be null");
     }
     fieldsData = new BytesRef(encode(value));
   }
@@ -165,7 +213,7 @@ public class InetAddressPoint extends Field {
    */
   public static Query newPrefixQuery(String field, InetAddress value, int prefixLength) {
     if (value == null) {
-      throw new IllegalArgumentException("InetAddress cannot be null");
+      throw new IllegalArgumentException("InetAddress must not be null");
     }
     if (prefixLength < 0 || prefixLength > 8 * value.getAddress().length) {
       throw new IllegalArgumentException("illegal prefixLength '" + prefixLength + "'. Must be 0-32 for IPv4 ranges, 0-128 for IPv6 ranges");
@@ -174,8 +222,9 @@ public class InetAddressPoint extends Field {
     byte lower[] = value.getAddress();
     byte upper[] = value.getAddress();
     for (int i = prefixLength; i < 8 * lower.length; i++) {
-      lower[i >> 3] &= ~(1 << (i & 7));
-      upper[i >> 3] |= 1 << (i & 7);
+      int m = 1 << (7 - (i & 7));
+      lower[i >> 3] &= ~m;
+      upper[i >> 3] |= m;
     }
     try {
       return newRangeQuery(field, InetAddress.getByAddress(lower), InetAddress.getByAddress(upper));
@@ -186,6 +235,12 @@ public class InetAddressPoint extends Field {
 
   /** 
    * Create a range query for network addresses.
+   * <p>
+   * You can have half-open ranges (which are in fact &lt;/&le; or &gt;/&ge; queries)
+   * by setting {@code lowerValue = InetAddressPoint.MIN_VALUE} or
+   * {@code upperValue = InetAddressPoint.MAX_VALUE}.
+   * <p> Ranges are inclusive. For exclusive ranges, pass {@code InetAddressPoint#nextUp(lowerValue)}
+   * or {@code InetAddressPoint#nexDown(upperValue)}.
    *
    * @param field field name. must not be {@code null}.
    * @param lowerValue lower portion of the range (inclusive). must not be null.
@@ -196,11 +251,7 @@ public class InetAddressPoint extends Field {
    */
   public static Query newRangeQuery(String field, InetAddress lowerValue, InetAddress upperValue) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
-    byte[][] lowerBytes = new byte[1][];
-    lowerBytes[0] = encode(lowerValue);
-    byte[][] upperBytes = new byte[1][];
-    upperBytes[0] = encode(upperValue);
-    return new PointRangeQuery(field, lowerBytes, upperBytes) {
+    return new PointRangeQuery(field, encode(lowerValue), encode(upperValue), 1) {
       @Override
       protected String toString(int dimension, byte[] value) {
         return decode(value).getHostAddress(); // for ranges, the range itself is already bracketed

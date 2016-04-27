@@ -24,15 +24,15 @@ package org.apache.lucene.spatial3d.geom;
  */
 public class Plane extends Vector {
   /** An array with no points in it */
-  protected final static GeoPoint[] NO_POINTS = new GeoPoint[0];
+  public final static GeoPoint[] NO_POINTS = new GeoPoint[0];
   /** An array with no bounds in it */
-  protected final static Membership[] NO_BOUNDS = new Membership[0];
+  public final static Membership[] NO_BOUNDS = new Membership[0];
   /** A vertical plane normal to the Y axis */
-  protected final static Plane normalYPlane = new Plane(0.0,1.0,0.0,0.0);
+  public final static Plane normalYPlane = new Plane(0.0,1.0,0.0,0.0);
   /** A vertical plane normal to the X axis */
-  protected final static Plane normalXPlane = new Plane(1.0,0.0,0.0,0.0);
+  public final static Plane normalXPlane = new Plane(1.0,0.0,0.0,0.0);
   /** A vertical plane normal to the Z axis */
-  protected final static Plane normalZPlane = new Plane(0.0,0.0,1.0,0.0);
+  public final static Plane normalZPlane = new Plane(0.0,0.0,1.0,0.0);
 
   /** Ax + By + Cz + D = 0 */
   public final double D;
@@ -926,17 +926,23 @@ public class Plane extends Vector {
         if (Math.abs(sqrtTerm) < MINIMUM_RESOLUTION_SQUARED) {
           // One solution
           final double m = -b / (2.0 * a);
-          final double l = r * m + q;
-          // x = ((1 - l*A) * ab^2 ) / (2 * m)
-          // y = (-l*B * ab^2) / ( 2 * m)
-          // z = (-l*C * c^2)/ (2 * m)
-          final double denom0 = 0.5 / m;
-          final GeoPoint thePoint = new GeoPoint((1.0-l*A) * abSquared * denom0, -l*B * abSquared * denom0, -l*C * cSquared * denom0);
-          //Math is not quite accurate enough for this
-          //assert planetModel.pointOnSurface(thePoint): "Point: "+thePoint+"; Planetmodel="+planetModel+"; A="+A+" B="+B+" C="+C+" D="+D+" planetfcn="+
-          //  (thePoint.x*thePoint.x*planetModel.inverseAb*planetModel.inverseAb + thePoint.y*thePoint.y*planetModel.inverseAb*planetModel.inverseAb + thePoint.z*thePoint.z*planetModel.inverseC*planetModel.inverseC);
-          //assert evaluateIsZero(thePoint): "Evaluation of point: "+evaluate(thePoint);
-          addPoint(boundsInfo, bounds, thePoint);
+          // Valid?
+          if (Math.abs(m) >= MINIMUM_RESOLUTION) {
+            final double l = r * m + q;
+            // x = ((1 - l*A) * ab^2 ) / (2 * m)
+            // y = (-l*B * ab^2) / ( 2 * m)
+            // z = (-l*C * c^2)/ (2 * m)
+            final double denom0 = 0.5 / m;
+            final GeoPoint thePoint = new GeoPoint((1.0-l*A) * abSquared * denom0, -l*B * abSquared * denom0, -l*C * cSquared * denom0);
+            //Math is not quite accurate enough for this
+            //assert planetModel.pointOnSurface(thePoint): "Point: "+thePoint+"; Planetmodel="+planetModel+"; A="+A+" B="+B+" C="+C+" D="+D+" planetfcn="+
+            //  (thePoint.x*thePoint.x*planetModel.inverseAb*planetModel.inverseAb + thePoint.y*thePoint.y*planetModel.inverseAb*planetModel.inverseAb + thePoint.z*thePoint.z*planetModel.inverseC*planetModel.inverseC);
+            //assert evaluateIsZero(thePoint): "Evaluation of point: "+evaluate(thePoint);
+            addPoint(boundsInfo, bounds, thePoint);
+          } else {
+            // This is a plane of the form A=n B=0 C=0.  We can set a bound only by noting the D value.
+            boundsInfo.addXValue(-D/A);
+          }
         } else if (sqrtTerm > 0.0) {
           // Two solutions
           final double sqrtResult = Math.sqrt(sqrtTerm);
@@ -1089,17 +1095,23 @@ public class Plane extends Vector {
         if (Math.abs(sqrtTerm) < MINIMUM_RESOLUTION_SQUARED) {
           // One solution
           final double m = -b / (2.0 * a);
-          final double l = r * m + q;
-          // x = (-l*A * ab^2 ) / (2 * m)
-          // y = ((1.0-l*B) * ab^2) / ( 2 * m)
-          // z = (-l*C * c^2)/ (2 * m)
-          final double denom0 = 0.5 / m;
-          final GeoPoint thePoint = new GeoPoint(-l*A * abSquared * denom0, (1.0-l*B) * abSquared * denom0, -l*C * cSquared * denom0);
-          //Math is not quite accurate enough for this
-          //assert planetModel.pointOnSurface(thePoint): "Point: "+thePoint+"; Planetmodel="+planetModel+"; A="+A+" B="+B+" C="+C+" D="+D+" planetfcn="+
-          //  (thePoint1.x*thePoint.x*planetModel.inverseAb*planetModel.inverseAb + thePoint.y*thePoint.y*planetModel.inverseAb*planetModel.inverseAb + thePoint.z*thePoint.z*planetModel.inverseC*planetModel.inverseC);
-          //assert evaluateIsZero(thePoint): "Evaluation of point: "+evaluate(thePoint);
-          addPoint(boundsInfo, bounds, thePoint);
+          // Valid?
+          if (Math.abs(m) >= MINIMUM_RESOLUTION) {
+            final double l = r * m + q;
+            // x = (-l*A * ab^2 ) / (2 * m)
+            // y = ((1.0-l*B) * ab^2) / ( 2 * m)
+            // z = (-l*C * c^2)/ (2 * m)
+            final double denom0 = 0.5 / m;
+            final GeoPoint thePoint = new GeoPoint(-l*A * abSquared * denom0, (1.0-l*B) * abSquared * denom0, -l*C * cSquared * denom0);
+            //Math is not quite accurate enough for this
+            //assert planetModel.pointOnSurface(thePoint): "Point: "+thePoint+"; Planetmodel="+planetModel+"; A="+A+" B="+B+" C="+C+" D="+D+" planetfcn="+
+            //  (thePoint1.x*thePoint.x*planetModel.inverseAb*planetModel.inverseAb + thePoint.y*thePoint.y*planetModel.inverseAb*planetModel.inverseAb + thePoint.z*thePoint.z*planetModel.inverseC*planetModel.inverseC);
+            //assert evaluateIsZero(thePoint): "Evaluation of point: "+evaluate(thePoint);
+            addPoint(boundsInfo, bounds, thePoint);
+          } else {
+            // This is a plane of the form A=0 B=n C=0.  We can set a bound only by noting the D value.
+            boundsInfo.addYValue(-D/B);
+          }
         } else if (sqrtTerm > 0.0) {
           // Two solutions
           final double sqrtResult = Math.sqrt(sqrtTerm);
@@ -1463,7 +1475,7 @@ public class Plane extends Vector {
    * @param bounds is the area that the point must be within.
    * @param point is the point.
    */
-  protected static void addPoint(final Bounds boundsInfo, final Membership[] bounds, final GeoPoint point) {
+  private static void addPoint(final Bounds boundsInfo, final Membership[] bounds, final GeoPoint point) {
     // Make sure the discovered point is within the bounds
     for (Membership bound : bounds) {
       if (!bound.isWithin(point))
@@ -1472,28 +1484,6 @@ public class Plane extends Vector {
     // Add the point
     boundsInfo.addPoint(point);
   }
-
-  /** Add a point to boundsInfo if within a specifically bounded area.
-   * @param boundsInfo is the object to be modified.
-   * @param bounds is the area that the point must be within.
-   * @param x is the x value.
-   * @param y is the y value.
-   * @param z is the z value.
-   */
-  /*
-  protected static void addPoint(final Bounds boundsInfo, final Membership[] bounds, final double x, final double y, final double z) {
-    //System.err.println(" Want to add point x="+x+" y="+y+" z="+z);
-    // Make sure the discovered point is within the bounds
-    for (Membership bound : bounds) {
-      if (!bound.isWithin(x, y, z))
-        return;
-    }
-    // Add the point
-    //System.err.println("  point added");
-    //System.out.println("Adding point x="+x+" y="+y+" z="+z);
-    boundsInfo.addPoint(x, y, z);
-  }
-  */
 
   /**
    * Determine whether the plane intersects another plane within the
@@ -1540,7 +1530,7 @@ public class Plane extends Vector {
    * @param p is the plane to compare against.
    * @return true if the planes are numerically identical.
    */
-  protected boolean isNumericallyIdentical(final Plane p) {
+  public boolean isNumericallyIdentical(final Plane p) {
     // We can get the correlation by just doing a parallel plane check.  If that passes, then compute a point on the plane
     // (using D) and see if it also on the other plane.
     if (Math.abs(this.y * p.z - this.z * p.y) >= MINIMUM_RESOLUTION)
@@ -1568,12 +1558,126 @@ public class Plane extends Vector {
   }
 
   /**
+   * Locate a point that is within the specified bounds and on the specified plane, that has an arcDistance as
+   * specified from the startPoint.
+   * @param planetModel is the planet model.
+   * @param arcDistanceValue is the arc distance.
+   * @param startPoint is the starting point.
+   * @param bounds are the bounds.
+   * @return zero, one, or two points.
+   */
+  public GeoPoint[] findArcDistancePoints(final PlanetModel planetModel, final double arcDistanceValue, final GeoPoint startPoint, final Membership... bounds) {
+    if (Math.abs(D) >= MINIMUM_RESOLUTION) {
+      throw new IllegalStateException("Can't find arc distance using plane that doesn't go through origin");
+    }
+    if (!evaluateIsZero(startPoint)) {
+      throw new IllegalArgumentException("Start point is not on plane");
+    }
+    assert Math.abs(x*x + y*y + z*z - 1.0) < MINIMUM_RESOLUTION_SQUARED : "Plane needs to be normalized";
+    
+    // The first step is to rotate coordinates for the point so that the plane lies on the x-y plane.
+    // To acheive this, there will need to be three rotations:
+    // (1) rotate the plane in x-y so that the y axis lies in it.
+    // (2) rotate the plane in x-z so that the plane lies on the x-y plane.
+    // (3) rotate in x-y so that the starting vector points to (1,0,0).
+    
+    // This presumes a normalized plane!!
+    final double azimuthMagnitude = Math.sqrt(this.x * this.x + this.y * this.y);
+    final double cosPlaneAltitude = this.z;
+    final double sinPlaneAltitude = azimuthMagnitude;
+    final double cosPlaneAzimuth = this.x / azimuthMagnitude;
+    final double sinPlaneAzimuth = this.y / azimuthMagnitude;
+    
+    assert Math.abs(sinPlaneAltitude * sinPlaneAltitude + cosPlaneAltitude * cosPlaneAltitude - 1.0) < MINIMUM_RESOLUTION : "Improper sin/cos of altitude: "+(sinPlaneAltitude * sinPlaneAltitude + cosPlaneAltitude * cosPlaneAltitude);
+    assert Math.abs(sinPlaneAzimuth * sinPlaneAzimuth + cosPlaneAzimuth * cosPlaneAzimuth - 1.0) < MINIMUM_RESOLUTION : "Improper sin/cos of azimuth: "+(sinPlaneAzimuth * sinPlaneAzimuth + cosPlaneAzimuth * cosPlaneAzimuth);
+
+    // Coordinate rotation formula:
+    // xT = xS cos T - yS sin T
+    // yT = xS sin T + yS cos T
+    // But we're rotating backwards, so use:
+    // sin (-T) = -sin (T)
+    // cos (-T) = cos (T)
+    
+    // Now, rotate startpoint in x-y
+    final double x0 = startPoint.x;
+    final double y0 = startPoint.y;
+    final double z0 = startPoint.z;
+    
+    final double x1 = x0 * cosPlaneAzimuth + y0 * sinPlaneAzimuth;
+    final double y1 = -x0 * sinPlaneAzimuth + y0 * cosPlaneAzimuth;
+    final double z1 = z0;
+    
+    // Rotate now in x-z
+    final double x2 = x1 * cosPlaneAltitude - z1 * sinPlaneAltitude;
+    final double y2 = y1;
+    final double z2 = +x1 * sinPlaneAltitude + z1 * cosPlaneAltitude;
+    
+    assert Math.abs(z2) < MINIMUM_RESOLUTION : "Rotation should have put startpoint on x-y plane, instead has value "+z2;
+    
+    // Ok, we have the start point on the x-y plane.  To apply the arc distance, we
+    // next need to convert to an angle (in radians).
+    final double startAngle = Math.atan2(y2, x2);
+    
+    // To apply the arc distance, just add to startAngle.
+    final double point1Angle = startAngle + arcDistanceValue;
+    final double point2Angle = startAngle - arcDistanceValue;
+    // Convert each point to x-y
+    final double point1x2 = Math.cos(point1Angle);
+    final double point1y2 = Math.sin(point1Angle);
+    final double point1z2 = 0.0;
+    
+    final double point2x2 = Math.cos(point2Angle);
+    final double point2y2 = Math.sin(point2Angle);
+    final double point2z2 = 0.0;
+    
+    // Now, do the reverse rotations for both points
+    // Altitude...
+    final double point1x1 = point1x2 * cosPlaneAltitude + point1z2 * sinPlaneAltitude;
+    final double point1y1 = point1y2;
+    final double point1z1 = -point1x2 * sinPlaneAltitude + point1z2 * cosPlaneAltitude;
+    
+    final double point2x1 = point2x2 * cosPlaneAltitude + point2z2 * sinPlaneAltitude;
+    final double point2y1 = point2y2;
+    final double point2z1 = -point2x2 * sinPlaneAltitude + point2z2 * cosPlaneAltitude;
+
+    // Azimuth...
+    final double point1x0 = point1x1 * cosPlaneAzimuth - point1y1 * sinPlaneAzimuth;
+    final double point1y0 = point1x1 * sinPlaneAzimuth + point1y1 * cosPlaneAzimuth;
+    final double point1z0 = point1z1;
+
+    final double point2x0 = point2x1 * cosPlaneAzimuth - point2y1 * sinPlaneAzimuth;
+    final double point2y0 = point2x1 * sinPlaneAzimuth + point2y1 * cosPlaneAzimuth;
+    final double point2z0 = point2z1;
+
+    final GeoPoint point1 = planetModel.createSurfacePoint(point1x0, point1y0, point1z0);
+    final GeoPoint point2 = planetModel.createSurfacePoint(point2x0, point2y0, point2z0);
+    
+    // Figure out what to return
+    boolean isPoint1Inside = meetsAllBounds(point1, bounds);
+    boolean isPoint2Inside = meetsAllBounds(point2, bounds);
+    
+    if (isPoint1Inside) {
+      if (isPoint2Inside) {
+        return new GeoPoint[]{point1, point2};
+      } else {
+        return new GeoPoint[]{point1};
+      }
+    } else {
+      if (isPoint2Inside) {
+        return new GeoPoint[]{point2};
+      } else {
+        return new GeoPoint[0];
+      }
+    }
+  }
+  
+  /**
    * Check if a vector meets the provided bounds.
    * @param p is the vector.
    * @param bounds are the bounds.
    * @return true if the vector describes a point within the bounds.
    */
-  protected static boolean meetsAllBounds(final Vector p, final Membership[] bounds) {
+  private static boolean meetsAllBounds(final Vector p, final Membership[] bounds) {
     return meetsAllBounds(p.x, p.y, p.z, bounds);
   }
 
@@ -1585,7 +1689,7 @@ public class Plane extends Vector {
    * @param bounds are the bounds.
    * @return true if the vector describes a point within the bounds.
    */
-  protected static boolean meetsAllBounds(final double x, final double y, final double z, final Membership[] bounds) {
+  private static boolean meetsAllBounds(final double x, final double y, final double z, final Membership[] bounds) {
     for (final Membership bound : bounds) {
       if (!bound.isWithin(x,y,z))
         return false;
@@ -1600,7 +1704,7 @@ public class Plane extends Vector {
    * @param moreBounds are an additional set of bounds.
    * @return true if the vector describes a point within the bounds.
    */
-  protected static boolean meetsAllBounds(final Vector p, final Membership[] bounds, final Membership[] moreBounds) {
+  private static boolean meetsAllBounds(final Vector p, final Membership[] bounds, final Membership[] moreBounds) {
     return meetsAllBounds(p.x, p.y, p.z, bounds, moreBounds);
   }
 
@@ -1613,7 +1717,7 @@ public class Plane extends Vector {
    * @param moreBounds are an additional set of bounds.
    * @return true if the vector describes a point within the bounds.
    */
-  protected static boolean meetsAllBounds(final double x, final double y, final double z, final Membership[] bounds,
+  private static boolean meetsAllBounds(final double x, final double y, final double z, final Membership[] bounds,
                                           final Membership[] moreBounds) {
     return meetsAllBounds(x,y,z, bounds) && meetsAllBounds(x,y,z, moreBounds);
   }

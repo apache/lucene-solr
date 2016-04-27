@@ -56,4 +56,5 @@ public interface GeoDistance extends Membership {
    */
   public double computeDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z);
 
+ 
 }

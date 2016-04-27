@@ -595,7 +595,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     @Override
     public Long call() throws Exception {
-      try (HttpSolrClient server = new HttpSolrClient(baseUrl)) {
+      try (HttpSolrClient server = new HttpSolrClient.Builder(baseUrl).build()) {
         server.setConnectionTimeout(15000);
         server.setSoTimeout(60000);
 

@@ -121,8 +121,8 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
     public abstract ConfigSetAdminRequest createRequest();
 
     public void run() {
-      final SolrClient solrClient =
-          new HttpSolrClient(solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString());
+      final String baseUrl = solrCluster.getJettySolrRunners().get(0).getBaseUrl().toString();
+      final SolrClient solrClient = getHttpSolrClient(baseUrl);
       ConfigSetAdminRequest request = createRequest();
 
       for (int i = 0; i < trials; ++i) {

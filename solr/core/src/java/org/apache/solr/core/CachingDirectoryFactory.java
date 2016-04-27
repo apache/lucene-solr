@@ -25,27 +25,17 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.store.LockFactory;
-import org.apache.lucene.store.NRTCachingDirectory;
-import org.apache.lucene.store.NativeFSLockFactory;
-import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.SimpleFSLockFactory;
-import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
-import org.apache.solr.store.blockcache.BlockDirectory;
-import org.apache.solr.store.hdfs.HdfsDirectory;
-import org.apache.solr.store.hdfs.HdfsLockFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -302,9 +292,15 @@ public abstract class CachingDirectoryFactory extends DirectoryFactory {
   }
 
   private void close(CacheValue val) {
+    log.info("Closing directory, CoreContainer#isShutdown={}", coreContainer != null ? coreContainer.isShutDown() : "null");
     try {
-      log.info("Closing directory: " + val.path);
-      val.directory.close();
+      if (coreContainer != null && coreContainer.isShutDown() && val.directory instanceof ShutdownAwareDirectory) {
+        log.info("Closing directory on shutdown: " + val.path);
+        ((ShutdownAwareDirectory) val.directory).closeOnShutdown();
+      } else {
+        log.info("Closing directory: " + val.path);
+        val.directory.close();
+      }
       assert ObjectReleaseTracker.release(val.directory);
     } catch (Exception e) {
       SolrException.log(log, "Error closing directory", e);

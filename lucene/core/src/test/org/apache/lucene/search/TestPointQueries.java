@@ -1153,7 +1153,7 @@ public class TestPointQueries extends LuceneTestCase {
   private static Codec getCodec() {
     if (Codec.getDefault().getName().equals("Lucene60")) {
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 16, 2048);
-      double maxMBSortInHeap = 4.0 + (3*random().nextDouble());
+      double maxMBSortInHeap = 5.0 + (3*random().nextDouble());
       if (VERBOSE) {
         System.out.println("TEST: using Lucene60PointsFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
@@ -1896,82 +1896,133 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testPointRangeEquals() {
-    Query q = IntPoint.newRangeQuery("a", 0, 1000);
-    assertEquals(q, IntPoint.newRangeQuery("a", 0, 1000));
-    assertFalse(q.equals(IntPoint.newRangeQuery("a", 1, 1000)));
+    Query q1, q2;
 
-    q = LongPoint.newRangeQuery("a", 0, 1000);
-    assertEquals(q, LongPoint.newRangeQuery("a", 0, 1000));
-    assertFalse(q.equals(LongPoint.newRangeQuery("a", 1, 1000)));
+    q1 = IntPoint.newRangeQuery("a", 0, 1000);
+    q2 = IntPoint.newRangeQuery("a", 0, 1000);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(IntPoint.newRangeQuery("a", 1, 1000)));
+    assertFalse(q1.equals(IntPoint.newRangeQuery("b", 0, 1000)));
 
-    q = FloatPoint.newRangeQuery("a", 0, 1000);
-    assertEquals(q, FloatPoint.newRangeQuery("a", 0, 1000));
-    assertFalse(q.equals(FloatPoint.newRangeQuery("a", 1, 1000)));
+    q1 = LongPoint.newRangeQuery("a", 0, 1000);
+    q2 = LongPoint.newRangeQuery("a", 0, 1000);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(LongPoint.newRangeQuery("a", 1, 1000)));
 
-    q = DoublePoint.newRangeQuery("a", 0, 1000);
-    assertEquals(q, DoublePoint.newRangeQuery("a", 0, 1000));
-    assertFalse(q.equals(DoublePoint.newRangeQuery("a", 1, 1000)));
+    q1 = FloatPoint.newRangeQuery("a", 0, 1000);
+    q2 = FloatPoint.newRangeQuery("a", 0, 1000);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(FloatPoint.newRangeQuery("a", 1, 1000)));
+
+    q1 = DoublePoint.newRangeQuery("a", 0, 1000);
+    q2 = DoublePoint.newRangeQuery("a", 0, 1000);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(DoublePoint.newRangeQuery("a", 1, 1000)));
 
     byte[] zeros = new byte[5];
     byte[] ones = new byte[5];
     Arrays.fill(ones, (byte) 0xff);
-    q = BinaryPoint.newRangeQuery("a", new byte[][] {zeros}, new byte[][] {ones});
-    assertEquals(q, BinaryPoint.newRangeQuery("a", new byte[][] {zeros}, new byte[][] {ones}));
+    q1 = BinaryPoint.newRangeQuery("a", new byte[][] {zeros}, new byte[][] {ones});
+    q2 = BinaryPoint.newRangeQuery("a", new byte[][] {zeros}, new byte[][] {ones});
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
     byte[] other = ones.clone();
     other[2] = (byte) 5;
-    assertFalse(q.equals(BinaryPoint.newRangeQuery("a", new byte[][] {zeros}, new byte[][] {other})));
+    assertFalse(q1.equals(BinaryPoint.newRangeQuery("a", new byte[][] {zeros}, new byte[][] {other})));
   }
 
   public void testPointExactEquals() {
-    Query q = IntPoint.newExactQuery("a", 1000);
-    assertEquals(q, IntPoint.newExactQuery("a", 1000));
-    assertFalse(q.equals(IntPoint.newExactQuery("a", 1)));
+    Query q1, q2;
 
-    q = LongPoint.newExactQuery("a", 1000);
-    assertEquals(q, LongPoint.newExactQuery("a", 1000));
-    assertFalse(q.equals(LongPoint.newExactQuery("a", 1)));
+    q1 = IntPoint.newExactQuery("a", 1000);
+    q2 = IntPoint.newExactQuery("a", 1000);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(IntPoint.newExactQuery("a", 1)));
+    assertFalse(q1.equals(IntPoint.newExactQuery("b", 1000)));
 
-    q = FloatPoint.newExactQuery("a", 1000);
-    assertEquals(q, FloatPoint.newExactQuery("a", 1000));
-    assertFalse(q.equals(FloatPoint.newExactQuery("a", 1)));
+    q1 = LongPoint.newExactQuery("a", 1000);
+    q2 = LongPoint.newExactQuery("a", 1000);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(LongPoint.newExactQuery("a", 1)));
 
-    q = DoublePoint.newExactQuery("a", 1000);
-    assertEquals(q, DoublePoint.newExactQuery("a", 1000));
-    assertFalse(q.equals(DoublePoint.newExactQuery("a", 1)));
+    q1 = FloatPoint.newExactQuery("a", 1000);
+    q2 = FloatPoint.newExactQuery("a", 1000);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(FloatPoint.newExactQuery("a", 1)));
+
+    q1 = DoublePoint.newExactQuery("a", 1000);
+    q2 = DoublePoint.newExactQuery("a", 1000);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(DoublePoint.newExactQuery("a", 1)));
 
     byte[] ones = new byte[5];
     Arrays.fill(ones, (byte) 0xff);
-    q = BinaryPoint.newExactQuery("a", ones);
-    assertEquals(q, BinaryPoint.newExactQuery("a", ones));
+    q1 = BinaryPoint.newExactQuery("a", ones);
+    q2 = BinaryPoint.newExactQuery("a", ones);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
     byte[] other = ones.clone();
     other[2] = (byte) 5;
-    assertFalse(q.equals(BinaryPoint.newExactQuery("a", other)));
+    assertFalse(q1.equals(BinaryPoint.newExactQuery("a", other)));
   }
 
   public void testPointInSetEquals() {
-    Query q = IntPoint.newSetQuery("a", 0, 1000, 17);
-    assertEquals(q, IntPoint.newSetQuery("a", 17, 0, 1000));
-    assertFalse(q.equals(IntPoint.newSetQuery("a", 1, 17, 1000)));
+    Query q1, q2;
+    q1 = IntPoint.newSetQuery("a", 0, 1000, 17);
+    q2 = IntPoint.newSetQuery("a", 17, 0, 1000);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(IntPoint.newSetQuery("a", 1, 17, 1000)));
+    assertFalse(q1.equals(IntPoint.newSetQuery("b", 0, 1000, 17)));
 
-    q = LongPoint.newSetQuery("a", 0, 1000, 17);
-    assertEquals(q, LongPoint.newSetQuery("a", 17, 0, 1000));
-    assertFalse(q.equals(LongPoint.newSetQuery("a", 1, 17, 1000)));
+    q1 = LongPoint.newSetQuery("a", 0, 1000, 17);
+    q2 = LongPoint.newSetQuery("a", 17, 0, 1000);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(LongPoint.newSetQuery("a", 1, 17, 1000)));
 
-    q = FloatPoint.newSetQuery("a", 0, 1000, 17);
-    assertEquals(q, FloatPoint.newSetQuery("a", 17, 0, 1000));
-    assertFalse(q.equals(FloatPoint.newSetQuery("a", 1, 17, 1000)));
+    q1 = FloatPoint.newSetQuery("a", 0, 1000, 17);
+    q2 = FloatPoint.newSetQuery("a", 17, 0, 1000);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(FloatPoint.newSetQuery("a", 1, 17, 1000)));
 
-    q = DoublePoint.newSetQuery("a", 0, 1000, 17);
-    assertEquals(q, DoublePoint.newSetQuery("a", 17, 0, 1000));
-    assertFalse(q.equals(DoublePoint.newSetQuery("a", 1, 17, 1000)));
+    q1 = DoublePoint.newSetQuery("a", 0, 1000, 17);
+    q2 = DoublePoint.newSetQuery("a", 17, 0, 1000);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(DoublePoint.newSetQuery("a", 1, 17, 1000)));
 
     byte[] zeros = new byte[5];
     byte[] ones = new byte[5];
     Arrays.fill(ones, (byte) 0xff);
-    q = BinaryPoint.newSetQuery("a", new byte[][] {zeros, ones});
-    assertEquals(q, BinaryPoint.newSetQuery("a", new byte[][] {zeros, ones}));
+    q1 = BinaryPoint.newSetQuery("a", new byte[][] {zeros, ones});
+    q2 = BinaryPoint.newSetQuery("a", new byte[][] {zeros, ones});
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
     byte[] other = ones.clone();
     other[2] = (byte) 5;
-    assertFalse(q.equals(BinaryPoint.newSetQuery("a", new byte[][] {zeros, other})));
+    assertFalse(q1.equals(BinaryPoint.newSetQuery("a", new byte[][] {zeros, other})));
+  }
+
+  public void testInvalidPointLength() {
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class,
+                                              () -> {
+                                                new PointRangeQuery("field", new byte[4], new byte[8], 1) {
+                                                  @Override
+                                                  protected String toString(int dimension, byte[] value) {
+                                                    return "foo";
+                                                  }
+                                                };
+                                              });
+    assertEquals("lowerPoint has length=4 but upperPoint has different length=8", e.getMessage());
   }
 }

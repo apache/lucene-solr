@@ -291,7 +291,7 @@ public abstract class ReferenceManager<G> implements Closeable {
    */
   public void addListener(RefreshListener listener) {
     if (listener == null) {
-      throw new NullPointerException("Listener cannot be null");
+      throw new NullPointerException("Listener must not be null");
     }
     refreshListeners.add(listener);
   }
@@ -301,7 +301,7 @@ public abstract class ReferenceManager<G> implements Closeable {
    */
   public void removeListener(RefreshListener listener) {
     if (listener == null) {
-      throw new NullPointerException("Listener cannot be null");
+      throw new NullPointerException("Listener must not be null");
     }
     refreshListeners.remove(listener);
   }

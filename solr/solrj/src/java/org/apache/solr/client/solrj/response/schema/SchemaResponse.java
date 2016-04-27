@@ -132,38 +132,38 @@ public class SchemaResponse extends SolrResponseBase {
     }
   }
 
-  private static SchemaRepresentation createSchemaConfiguration(NamedList<Object> schemaNamedList) {
+  private static SchemaRepresentation createSchemaConfiguration(Map schemaObj) {
     SchemaRepresentation schemaRepresentation = new SchemaRepresentation();
-    schemaRepresentation.setName(getSchemaName(schemaNamedList));
-    schemaRepresentation.setVersion(getSchemaVersion(schemaNamedList));
-    schemaRepresentation.setUniqueKey(getSchemaUniqueKey(schemaNamedList));
-    schemaRepresentation.setDefaultSearchField(getDefaultSearchField(schemaNamedList));
-    schemaRepresentation.setDefaultOperator(getDefaultOperator(schemaNamedList));
-    schemaRepresentation.setSimilarity(getSimilarity(schemaNamedList));
-    schemaRepresentation.setFields(getFields(schemaNamedList));
-    schemaRepresentation.setDynamicFields(getDynamicFields(schemaNamedList));
-    schemaRepresentation.setFieldTypes(getFieldTypeDefinitions(schemaNamedList));
-    schemaRepresentation.setCopyFields(getCopyFields(schemaNamedList));
+    schemaRepresentation.setName(getSchemaName(schemaObj));
+    schemaRepresentation.setVersion(getSchemaVersion(schemaObj));
+    schemaRepresentation.setUniqueKey(getSchemaUniqueKey(schemaObj));
+    schemaRepresentation.setDefaultSearchField(getDefaultSearchField(schemaObj));
+    schemaRepresentation.setDefaultOperator(getDefaultOperator(schemaObj));
+    schemaRepresentation.setSimilarity(getSimilarity(schemaObj));
+    schemaRepresentation.setFields(getFields(schemaObj));
+    schemaRepresentation.setDynamicFields(getDynamicFields(schemaObj));
+    schemaRepresentation.setFieldTypes(getFieldTypeDefinitions(schemaObj));
+    schemaRepresentation.setCopyFields(getCopyFields(schemaObj));
     return schemaRepresentation;
   }
 
-  private static String getSchemaName(NamedList<Object> schemaNamedList) {
+  private static String getSchemaName(Map schemaNamedList) {
     return (String) schemaNamedList.get("name");
   }
 
-  private static Float getSchemaVersion(NamedList<Object> schemaNamedList) {
+  private static Float getSchemaVersion(Map schemaNamedList) {
     return (Float) schemaNamedList.get("version");
   }
 
-  private static String getSchemaUniqueKey(NamedList<Object> schemaNamedList) {
+  private static String getSchemaUniqueKey(Map schemaNamedList) {
     return (String) schemaNamedList.get("uniqueKey");
   }
 
-  private static String getDefaultSearchField(NamedList<Object> schemaNamedList) {
+  private static String getDefaultSearchField(Map schemaNamedList) {
     return (String) schemaNamedList.get("defaultSearchField");
   }
 
-  private static Map<String, Object> getSimilarity(NamedList<Object> schemaNamedList) {
+  private static Map<String, Object> getSimilarity(Map schemaNamedList) {
     NamedList<Object> similarityNamedList = (NamedList<Object>) schemaNamedList.get("similarity");
     Map<String, Object> similarity = null;
     if (similarityNamedList != null) similarity = extractAttributeMap(similarityNamedList);
@@ -171,7 +171,7 @@ public class SchemaResponse extends SolrResponseBase {
   }
 
   @SuppressWarnings("unchecked")
-  private static String getDefaultOperator(NamedList<Object> schemaNamedList) {
+  private static String getDefaultOperator(Map schemaNamedList) {
     String defaultOperator = null;
     NamedList<Object> solrQueryParserProperties = (NamedList<Object>) schemaNamedList.get("solrQueryParser");
     if (solrQueryParserProperties != null) defaultOperator = (String) solrQueryParserProperties.get("defaultOperator");
@@ -179,7 +179,7 @@ public class SchemaResponse extends SolrResponseBase {
   }
 
   @SuppressWarnings("unchecked")
-  private static List<Map<String, Object>> getFields(NamedList<Object> schemaNamedList) {
+  private static List<Map<String, Object>> getFields(Map schemaNamedList) {
     List<Map<String, Object>> fieldsAttributes = new LinkedList<>();
     List<NamedList<Object>> fieldsResponse = (List<NamedList<Object>>) schemaNamedList.get("fields");
     for (NamedList<Object> fieldNamedList : fieldsResponse) {
@@ -192,7 +192,7 @@ public class SchemaResponse extends SolrResponseBase {
   }
 
   @SuppressWarnings("unchecked")
-  private static List<Map<String, Object>> getDynamicFields(NamedList<Object> schemaNamedList) {
+  private static List<Map<String, Object>> getDynamicFields(Map schemaNamedList) {
     List<Map<String, Object>> dynamicFieldsAttributes = new LinkedList<>();
     List<NamedList<Object>> dynamicFieldsResponse = (List<NamedList<Object>>) schemaNamedList.get("dynamicFields");
     for (NamedList<Object> fieldNamedList : dynamicFieldsResponse) {
@@ -205,7 +205,7 @@ public class SchemaResponse extends SolrResponseBase {
   }
 
   @SuppressWarnings("unchecked")
-  private static List<Map<String, Object>> getCopyFields(NamedList<Object> schemaNamedList) {
+  private static List<Map<String, Object>> getCopyFields(Map schemaNamedList) {
     List<Map<String, Object>> copyFieldsAttributes = new LinkedList<>();
     List<NamedList<Object>> copyFieldsResponse = (List<NamedList<Object>>) schemaNamedList.get("copyFields");
     for (NamedList<Object> copyFieldNamedList : copyFieldsResponse) {
@@ -218,7 +218,7 @@ public class SchemaResponse extends SolrResponseBase {
   }
 
   @SuppressWarnings("unchecked")
-  private static List<FieldTypeDefinition> getFieldTypeDefinitions(NamedList<Object> schemaNamedList) {
+  private static List<FieldTypeDefinition> getFieldTypeDefinitions(Map schemaNamedList) {
     List<FieldTypeDefinition> fieldTypeDefinitions = new LinkedList<>();
     List<NamedList<Object>> fieldsResponse = (List<NamedList<Object>>) schemaNamedList.get("fieldTypes");
     for (NamedList<Object> fieldNamedList : fieldsResponse) {
@@ -230,7 +230,7 @@ public class SchemaResponse extends SolrResponseBase {
   }
 
   @SuppressWarnings("unchecked")
-  private static List<FieldTypeRepresentation> getFieldTypeRepresentations(NamedList<Object> schemaNamedList) {
+  private static List<FieldTypeRepresentation> getFieldTypeRepresentations(Map schemaNamedList) {
     List<FieldTypeRepresentation> fieldTypeRepresentations = new LinkedList<>();
     List<NamedList<Object>> fieldsResponse = (List<NamedList<Object>>) schemaNamedList.get("fieldTypes");
     for (NamedList<Object> fieldNamedList : fieldsResponse) {
@@ -249,8 +249,8 @@ public class SchemaResponse extends SolrResponseBase {
   public void setResponse(NamedList<Object> response) {
     super.setResponse(response);
 
-    NamedList<Object> schemaNamedList = (NamedList<Object>) response.get("schema");
-    schemaRepresentation = createSchemaConfiguration(schemaNamedList);
+    Map schemaObj = (Map) response.get("schema");
+    schemaRepresentation = createSchemaConfiguration(schemaObj);
   }
 
   public SchemaRepresentation getSchemaRepresentation() {
@@ -268,7 +268,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      schemaName = SchemaResponse.getSchemaName(response);
+      schemaName = SchemaResponse.getSchemaName(response.asShallowMap());
     }
 
     public String getSchemaName() {
@@ -288,7 +288,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      schemaVersion = SchemaResponse.getSchemaVersion(response);
+      schemaVersion = SchemaResponse.getSchemaVersion(response.asShallowMap());
     }
 
     public float getSchemaVersion() {
@@ -329,7 +329,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      fields = SchemaResponse.getFields(response);
+      fields = SchemaResponse.getFields(response.asShallowMap());
     }
 
     public List<Map<String, Object>> getFields() {
@@ -369,7 +369,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      dynamicFields = SchemaResponse.getDynamicFields(response);
+      dynamicFields = SchemaResponse.getDynamicFields(response.asMap(3));
     }
 
     public List<Map<String, Object>> getDynamicFields() {
@@ -388,7 +388,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      uniqueKey = SchemaResponse.getSchemaUniqueKey(response);
+      uniqueKey = SchemaResponse.getSchemaUniqueKey(response.asShallowMap());
     }
 
     public String getUniqueKey() {
@@ -407,7 +407,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      similarity = SchemaResponse.getSimilarity(response);
+      similarity = SchemaResponse.getSimilarity(response.asShallowMap());
     }
 
     public Map<String, Object> getSimilarity() {
@@ -446,7 +446,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      copyFields = SchemaResponse.getCopyFields(response);
+      copyFields = SchemaResponse.getCopyFields(response.asShallowMap());
     }
 
     public List<Map<String, Object>> getCopyFields() {
@@ -486,7 +486,7 @@ public class SchemaResponse extends SolrResponseBase {
     public void setResponse(NamedList<Object> response) {
       super.setResponse(response);
 
-      fieldTypes = SchemaResponse.getFieldTypeRepresentations(response);
+      fieldTypes = SchemaResponse.getFieldTypeRepresentations(response.asShallowMap());
     }
 
     public List<FieldTypeRepresentation> getFieldTypes() {

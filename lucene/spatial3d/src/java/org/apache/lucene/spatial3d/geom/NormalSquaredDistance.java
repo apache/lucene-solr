@@ -51,6 +51,21 @@ public class NormalSquaredDistance implements DistanceStyle {
     return plane.normalDistanceSquared(x,y,z, bounds);
   }
 
+  @Override
+  public GeoPoint[] findDistancePoints(final PlanetModel planetModel, final double distanceValue, final GeoPoint startPoint, final Plane plane, final Membership... bounds) {
+    throw new IllegalStateException("Reverse mapping not implemented for this distance metric");
+  }
+  
+  @Override
+  public double findMinimumArcDistance(final PlanetModel planetModel, final double distanceValue) {
+    throw new IllegalStateException("Reverse mapping not implemented for this distance metric");
+  }
+  
+  @Override
+  public double findMaximumArcDistance(final PlanetModel planetModel, final double distanceValue) {
+    throw new IllegalStateException("Reverse mapping not implemented for this distance metric");
+  }
+
 }
 
 

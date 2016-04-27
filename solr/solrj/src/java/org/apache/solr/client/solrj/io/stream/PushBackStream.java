@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -51,12 +52,16 @@ public class PushBackStream extends TupleStream implements Expressible {
     throw new IOException("This PushBackStream contains a non-expressible TupleStream - it cannot be converted to an expression");
   }
 
+  public Explanation toExplanation(StreamFactory factory) throws IOException{
+    return stream.toExplanation(factory);
+  }
+  
   public void setStreamContext(StreamContext context) {
     this.stream.setStreamContext(context);
   }
 
   public List<TupleStream> children() {
-    List<TupleStream> l =  new ArrayList();
+    List<TupleStream> l =  new ArrayList<TupleStream>();
     l.add(stream);
     return l;
   }

@@ -79,12 +79,7 @@ public class SolrMorphlineZkAvroTest extends AbstractSolrMorphlineZkTestBase {
     assertEquals(2104, collector.getRecords().size());
     assertEquals(collector.getRecords().size(), rsp.getResults().size());
     
-    Collections.sort(collector.getRecords(), new Comparator<Record>() {
-      @Override
-      public int compare(Record r1, Record r2) {
-        return r1.get("id").toString().compareTo(r2.get("id").toString());
-      }      
-    });   
+    Collections.sort(collector.getRecords(), (r1, r2) -> r1.get("id").toString().compareTo(r2.get("id").toString()));
 
     // fetch test input data and sort like solr result set
     List<GenericData.Record> records = new ArrayList();
@@ -94,12 +89,7 @@ public class SolrMorphlineZkAvroTest extends AbstractSolrMorphlineZkTestBase {
       records.add(expected);
     }
     assertEquals(collector.getRecords().size(), records.size());    
-    Collections.sort(records, new Comparator<GenericData.Record>() {
-      @Override
-      public int compare(GenericData.Record r1, GenericData.Record r2) {
-        return r1.get("id").toString().compareTo(r2.get("id").toString());
-      }      
-    });   
+    Collections.sort(records, (r1, r2) -> r1.get("id").toString().compareTo(r2.get("id").toString()));
     
     Object lastId = null;
     for (int i = 0; i < records.size(); i++) {  

@@ -42,6 +42,7 @@ import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -206,12 +207,7 @@ public class MiniSolrCloudCluster {
 
     List<Callable<JettySolrRunner>> startups = new ArrayList<>(numServers);
     for (int i = 0; i < numServers; ++i) {
-      startups.add(new Callable<JettySolrRunner>() {
-        @Override
-        public JettySolrRunner call() throws Exception {
-          return startJettySolrRunner(newNodeName(), jettyConfig.context, jettyConfig);
-        }
-      });
+      startups.add(() -> startJettySolrRunner(newNodeName(), jettyConfig.context, jettyConfig));
     }
 
     Collection<Future<JettySolrRunner>> futures = executor.invokeAll(startups);
@@ -424,12 +420,7 @@ public class MiniSolrCloudCluster {
         solrClient.close();
       List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
       for (final JettySolrRunner jetty : jettys) {
-        shutdowns.add(new Callable<JettySolrRunner>() {
-          @Override
-          public JettySolrRunner call() throws Exception {
-            return stopJettySolrRunner(jetty);
-          }
-        });
+        shutdowns.add(() -> stopJettySolrRunner(jetty));
       }
       jettys.clear();
       Collection<Future<JettySolrRunner>> futures = executor.invokeAll(shutdowns);
@@ -455,7 +446,9 @@ public class MiniSolrCloudCluster {
   }
   
   protected CloudSolrClient buildSolrClient() {
-    return new CloudSolrClient(getZkServer().getZkAddress());
+    return new Builder()
+        .withZkHost(getZkServer().getZkAddress())
+        .build();
   }
 
   private static String getHostContextSuitableForServletContext(String ctx) {

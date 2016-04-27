@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud;
 
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -54,7 +56,7 @@ class SegmentTerminateEarlyTestState {
         final Integer docKey = new Integer(numDocs);
         SolrInputDocument doc = new SolrInputDocument();
         doc.setField(keyField, ""+docKey);
-        final int MM = TestMiniSolrCloudCluster.random().nextInt(60);
+        final int MM = TestMiniSolrCloudCluster.random().nextInt(60); // minutes
         if (minTimestampMM == null || MM <= minTimestampMM.intValue()) {
           if (minTimestampMM != null && MM < minTimestampMM.intValue()) {
             minTimestampDocKeys.clear();
@@ -69,7 +71,7 @@ class SegmentTerminateEarlyTestState {
           maxTimestampMM = new Integer(MM);
           maxTimestampDocKeys.add(docKey);
         }
-        doc.setField(timestampField, "2016-01-01T00:"+MM+":00Z");
+        doc.setField(timestampField, ZonedDateTime.of(2016, 1, 1, 0, MM, 0, 0, ZoneOffset.UTC).toInstant().toString());
         doc.setField(oddField, ""+(numDocs % 2));
         doc.setField(quadField, ""+(numDocs % 4)+1);
         cloudSolrClient.add(doc);

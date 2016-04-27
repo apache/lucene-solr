@@ -16,44 +16,53 @@
  */
 package org.apache.lucene.spatial3d;
 
+import org.apache.lucene.spatial3d.geom.PlanetModel;
+
 class Geo3DUtil {
 
-  /** Clips the incoming value to the allowed min/max range before encoding, instead of throwing an exception. */
-  public static int encodeValueLenient(double planetMax, double x) {
-    if (x > planetMax) {
-      x = planetMax;
-    } else if (x < -planetMax) {
-      x = -planetMax;
+  private static final double MAX_VALUE = PlanetModel.WGS84.getMaximumMagnitude();
+  private static final int BITS = 32;
+  private static final double MUL = (0x1L<<BITS)/(2*MAX_VALUE);
+  static final double DECODE = 1/MUL;
+  private static final int MIN_ENCODED_VALUE = encodeValue(-MAX_VALUE);
+
+  public static int encodeValue(double x) {
+    if (x > MAX_VALUE) {
+      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (greater than WGS84's planetMax=" + MAX_VALUE + ")");
     }
-    return encodeValue(planetMax, x);
+    if (x < -MAX_VALUE) {
+      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (less than than WGS84's -planetMax=" + -MAX_VALUE + ")");
+    }
+    // the maximum possible value cannot be encoded without overflow
+    if (x == MAX_VALUE) {
+      x = Math.nextDown(x);
+    }
+    long result = (long) Math.floor(x / DECODE);
+    //System.out.println("    enc: " + x + " -> " + result);
+    assert result >= Integer.MIN_VALUE;
+    assert result <= Integer.MAX_VALUE;
+    return (int) result;
   }
 
-  public static int encodeValue(double planetMax, double x) {
-    if (x > planetMax) {
-      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (greater than planetMax=" + planetMax + ")");
-    }
-    if (x < -planetMax) {
-      throw new IllegalArgumentException("value=" + x + " is out-of-bounds (less than than -planetMax=" + -planetMax + ")");
-    }
-    long y = Math.round (x * (Integer.MAX_VALUE / planetMax));
-    assert y >= Integer.MIN_VALUE;
-    assert y <= Integer.MAX_VALUE;
-
-    return (int) y;
+  public static double decodeValue(int x) {
+    // We decode to the center value; this keeps the encoding stable
+    return (x+0.5) * DECODE;
   }
 
-  /** Center decode */
-  public static double decodeValueCenter(double planetMax, int x) {
-    return x * (planetMax / Integer.MAX_VALUE);
-  }
-
-  /** More negative decode, at bottom of cell */
-  public static double decodeValueMin(double planetMax, int x) {
-    return (((double)x) - 0.5) * (planetMax / Integer.MAX_VALUE);
+  /** Returns smallest double that would encode to int x. */
+  // NOTE: keep this package private!!
+  static double decodeValueFloor(int x) {
+    return x * DECODE;
   }
   
-  /** More positive decode, at top of cell  */
-  public static double decodeValueMax(double planetMax, int x) {
-    return (((double)x) + 0.5) * (planetMax / Integer.MAX_VALUE);
+  /** Returns largest double that would encode to int x. */
+  // NOTE: keep this package private!!
+  static double decodeValueCeil(int x) {
+    if (x == Integer.MAX_VALUE) {
+      return MAX_VALUE;
+    } else {
+      return Math.nextDown((x+1) * DECODE);
+    }
   }
+  
 }

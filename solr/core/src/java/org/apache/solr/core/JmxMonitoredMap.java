@@ -258,7 +258,15 @@ public class JmxMonitoredMap<K, V> extends
 
     public SolrDynamicMBean(String coreHashCode, SolrInfoMBean managedResource, boolean useCachedStatsBetweenGetMBeanInfoCalls) {
       this.useCachedStatsBetweenGetMBeanInfoCalls = useCachedStatsBetweenGetMBeanInfoCalls;
-      this.infoBean = managedResource;
+      if (managedResource instanceof JmxAugmentedSolrInfoMBean) {
+        final JmxAugmentedSolrInfoMBean jmxSpecific = (JmxAugmentedSolrInfoMBean)managedResource;
+        this.infoBean = new SolrInfoMBeanWrapper(jmxSpecific) {
+          @Override
+          public NamedList getStatistics() { return jmxSpecific.getStatisticsForJmx(); }
+        };
+      } else {
+        this.infoBean = managedResource;
+      }
       staticStats = new HashSet<>();
 
       // For which getters are already available in SolrInfoMBean
@@ -411,5 +419,18 @@ public class JmxMonitoredMap<K, V> extends
             throws MBeanException, ReflectionException {
       throw new UnsupportedOperationException("Operation not Supported");
     }
+  }
+
+  /**
+   * SolrInfoMBean that provides JMX-specific statistics.  Used, for example,
+   * if generating full statistics is expensive; the expensive statistics can
+   * be generated normally for use with the web ui, while an abbreviated version
+   * are generated for period jmx use.
+   */
+  public interface JmxAugmentedSolrInfoMBean extends SolrInfoMBean {
+    /**
+     * JMX-specific statistics
+     */
+    public NamedList getStatisticsForJmx();
   }
 }

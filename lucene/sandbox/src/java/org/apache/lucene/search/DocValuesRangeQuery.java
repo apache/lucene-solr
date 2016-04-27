@@ -141,7 +141,7 @@ public final class DocValuesRangeQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher, boolean needsScores) throws IOException {
     if (lowerVal == null && upperVal == null) {
-      throw new IllegalStateException("Both min and max values cannot be null, call rewrite first");
+      throw new IllegalStateException("Both min and max values must not be null, call rewrite first");
     }
     return new RandomAccessWeight(DocValuesRangeQuery.this) {
       
@@ -157,6 +157,9 @@ public final class DocValuesRangeQuery extends Query {
           } else if (includeLower) {
             min = (long) lowerVal;
           } else {
+            if ((long) lowerVal == Long.MAX_VALUE) {
+              return null;
+            }
             min = 1 + (long) lowerVal;
           }
 
@@ -166,6 +169,9 @@ public final class DocValuesRangeQuery extends Query {
           } else if (includeUpper) {
             max = (long) upperVal;
           } else {
+            if ((long) upperVal == Long.MIN_VALUE) {
+              return null;
+            }
             max = -1 + (long) upperVal;
           }
 

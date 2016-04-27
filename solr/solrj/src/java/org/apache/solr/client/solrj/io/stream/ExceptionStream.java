@@ -24,6 +24,10 @@ import java.util.Map;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation;
+import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
+import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
+import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +73,16 @@ public class ExceptionStream extends TupleStream {
       SolrException.log(log, e);
       return new Tuple(fields);
     }
+  }
+  
+  @Override
+  public Explanation toExplanation(StreamFactory factory) throws IOException {
+
+    return new StreamExplanation(getStreamNodeId().toString())
+      .withFunctionName("non-expressible")
+      .withImplementingClass(this.getClass().getName())
+      .withExpressionType(ExpressionType.STREAM_SOURCE)
+      .withExpression("non-expressible");
   }
 
   public StreamComparator getStreamSort() {

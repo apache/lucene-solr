@@ -90,21 +90,15 @@ public class ClusterState implements JSONWriter.Writable {
 
   /**
    * Get the lead replica for specific collection, or null if one currently doesn't exist.
+   * @deprecated Use {@link DocCollection#getLeader(String)} instead
    */
+  @Deprecated
   public Replica getLeader(String collection, String sliceName) {
     DocCollection coll = getCollectionOrNull(collection);
     if (coll == null) return null;
     Slice slice = coll.getSlice(sliceName);
     if (slice == null) return null;
     return slice.getLeader();
-  }
-  private Replica getReplica(DocCollection coll, String replicaName) {
-    if (coll == null) return null;
-    for (Slice slice : coll.getSlices()) {
-      Replica replica = slice.getReplica(replicaName);
-      if (replica != null) return replica;
-    }
-    return null;
   }
 
   /**
@@ -113,48 +107,76 @@ public class ClusterState implements JSONWriter.Writable {
    * Implementation note: This method resolves the collection reference by calling
    * {@link CollectionRef#get()} which can make a call to ZooKeeper. This is necessary
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
-   * Please javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
+   * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
    */
   public boolean hasCollection(String collectionName) {
     return getCollectionOrNull(collectionName) != null;
   }
 
   /**
-   * Gets the replica by the core name (assuming the slice is unknown) or null if replica is not found.
+   * Gets the replica by the core node name (assuming the slice is unknown) or null if replica is not found.
    * If the slice is known, do not use this method.
    * coreNodeName is the same as replicaName
+   *
+   * @deprecated use {@link DocCollection#getReplica(String)} instead
    */
+  @Deprecated
   public Replica getReplica(final String collection, final String coreNodeName) {
-    return getReplica(getCollectionOrNull(collection), coreNodeName);
+    DocCollection coll = getCollectionOrNull(collection);
+    if (coll == null) return null;
+    for (Slice slice : coll.getSlices()) {
+      Replica replica = slice.getReplica(coreNodeName);
+      if (replica != null) return replica;
+    }
+    return null;
   }
 
   /**
    * Get the named Slice for collection, or null if not found.
+   *
+   * @deprecated use {@link DocCollection#getSlice(String)} instead
    */
+  @Deprecated
   public Slice getSlice(String collection, String sliceName) {
     DocCollection coll = getCollectionOrNull(collection);
     if (coll == null) return null;
     return coll.getSlice(sliceName);
   }
 
+  /**
+   * @deprecated use {@link DocCollection#getSlicesMap()} instead
+   */
+  @Deprecated
   public Map<String, Slice> getSlicesMap(String collection) {
     DocCollection coll = getCollectionOrNull(collection);
     if (coll == null) return null;
     return coll.getSlicesMap();
   }
-  
+
+  /**
+   * @deprecated use {@link DocCollection#getActiveSlicesMap()} instead
+   */
+  @Deprecated
   public Map<String, Slice> getActiveSlicesMap(String collection) {
     DocCollection coll = getCollectionOrNull(collection);
     if (coll == null) return null;
     return coll.getActiveSlicesMap();
   }
 
+  /**
+   * @deprecated use {@link DocCollection#getSlices()} instead
+   */
+  @Deprecated
   public Collection<Slice> getSlices(String collection) {
     DocCollection coll = getCollectionOrNull(collection);
     if (coll == null) return null;
     return coll.getSlices();
   }
 
+  /**
+   * @deprecated use {@link DocCollection#getActiveSlices()} instead
+   */
+  @Deprecated
   public Collection<Slice> getActiveSlices(String collection) {
     DocCollection coll = getCollectionOrNull(collection);
     if (coll == null) return null;
@@ -195,7 +217,7 @@ public class ClusterState implements JSONWriter.Writable {
    * Implementation note: This method resolves the collection reference by calling
    * {@link CollectionRef#get()} which can make a call to ZooKeeper. This is necessary
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
-   * Please javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
+   * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
    */
   public Set<String> getCollections() {
     Set<String> result = new HashSet<>();

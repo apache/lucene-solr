@@ -10,24 +10,119 @@ http://s.apache.org/luceneversions
 
 New Features
 
-* LUCENE-7099: Add LatLonPoint.newDistanceSort to the sandbox's
-  LatLonPoint. (Robert Muir)
+* LUCENE-7099: Add LatLonDocValuesField.newDistanceSort to the sandbox.
+  (Robert Muir)
+
+* LUCENE-7140: Add PlanetModel.bisection to spatial3d (Karl Wright via
+  Mike McCandless)
+
+* LUCENE-7069: Add LatLonPoint.nearest, to find nearest N points to a
+  provided query point (Mike McCandless)
+
+* LUCENE-7234: Added InetAddressPoint.nextDown/nextUp to easily generate range
+  queries with excluded bounds. (Adrien Grand)
+
+API Changes
+
+* LUCENE-7184: Refactor LatLonPoint encoding methods to new GeoEncodingUtils
+  helper class in core geo package. Also refactors LatLonPointTests to
+  TestGeoEncodingUtils (Nick Knize)
+
+* LUCENE-7163: refactor GeoRect, Polygon, and GeoUtils tests to geo
+  package in core (Nick Knize)
+
+* LUCENE-7152: Refactor GeoUtils from lucene-spatial package to
+  core (Nick Knize)
+
+* LUCENE-7141: Switch OfflineSorter's ByteSequencesReader to
+  BytesRefIterator (Mike McCandless)
+
+* LUCENE-7150: Spatial3d gets useful APIs to create common shape
+  queries, matching LatLonPoint.  (Karl Wright via Mike McCandless)
+
+* LUCENE-7243: Removed the LeafReaderContext parameter from
+  QueryCachingPolicy#shouldCache. (Adrien Grand)
 
 Optimizations
 
 * LUCENE-7071: Reduce bytes copying in OfflineSorter, giving ~10%
   speedup on merging 2D LatLonPoint values (Mike McCandless)
 
-* LUCENE-7099: LatLonPoint's newDistanceQuery supports two-phase
-  iteration. (Robert Muir)
-
-* LUCENE-7105: Optimize LatLonPoint's newDistanceQuery. (Robert Muir)
-
-* LUCENE-7109: LatLonPoint's newPolygonQuery supports two-phase 
-  iteration. (Robert Muir)
+* LUCENE-7105, LUCENE-7215: Optimize LatLonPoint's newDistanceQuery. 
+  (Robert Muir)
 
 * LUCENE-7097: IntroSorter now recurses to 2 * log_2(count) quicksort
   stack depth before switching to heapsort (Adrien Grand, Mike McCandless)
+
+* LUCENE-7115: Speed up FieldCache.CacheEntry toString by setting initial
+  StringBuilder capacity (Gregory Chanan)
+
+* LUCENE-7147: Improve disjoint check for geo distance query traversal
+  (Ryan Ernst, Robert Muir, Mike McCandless)
+
+* LUCENE-7153: GeoPointField and LatLonPoint polygon queries now support
+  multiple polygons and holes, with memory usage independent of
+  polygon complexity. (Karl Wright, Mike McCandless, Robert Muir)
+
+* LUCENE-7159: Speed up LatLonPoint polygon performance. (Robert Muir, Ryan Ernst)
+
+* LUCENE-7211: Reduce memory & GC for spatial RPT Intersects when the number of
+  matching docs is small. (Jeff Wartes, David Smiley)
+
+* LUCENE-7235: LRUQueryCache should not take a lock for segments that it will
+  not cache on anyway. (Adrien Grand)
+
+* LUCENE-7238: Explicitly disable the query cache in MemoryIndex#createSearcher.
+  (Adrien Grand)
+
+* LUCENE-7237: LRUQueryCache now prefers returning an uncached Scorer than
+  waiting on a lock. (Adrien Grand)
+
+Bug Fixes
+
+* LUCENE-7127: Fix corner case bugs in GeoPointDistanceQuery. (Robert Muir)
+
+* LUCENE-7166: Fix corner case bugs in LatLonPoint/GeoPointField bounding box
+  queries. (Robert Muir)
+
+* LUCENE-7168: Switch to stable encode for geo3d, remove quantization
+  test leniency, remove dead code (Mike McCandless)
+
+* LUCENE-7187: Block join queries' Weight#extractTerms(...) implementations
+  should delegate to the wrapped weight. (Martijn van Groningen)
+
+* LUCENE-7188: remove incorrect sanity check in NRTCachingDirectory.listAll()
+  that led to IllegalStateException being thrown when nothing was wrong.
+  (David Smiley, yonik)  
+
+* LUCENE-7219: Make queryparser/xml (Point|LegacyNumeric)RangeQuery builders
+  match the underlying queries' (lower|upper)Term optionality logic.
+  (Kaneshanathan Srivisagan, Christine Poerschke)
+
+* LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
+
+* LUCENE-7232: Fixed InetAddressPoint.newPrefixQuery, which was generating an
+  incorrect query when the prefix length was not a multiple of 8. (Adrien Grand)
+
+* LUCENE-7257: Fixed PointValues#size(IndexReader, String), docCount,
+  minPackedValue and maxPackedValue to skip leaves that do not have points
+  rather than raising an IllegalStateException. (Adrien Grand)
+
+Documentation
+
+* LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
+  should separately add StoredField if you want to retrieve these
+  field values at search time (Greg Huber, Robert Muir, Mike McCandless)
+
+Other
+
+* LUCENE-7174: Upgrade randomizedtesting to 2.3.4. (Uwe Schindler, Dawid Weiss)
+
+* LUCENE-7205: Remove repeated nl.getLength() calls in
+  (Boolean|DisjunctionMax|FuzzyLikeThis)QueryBuilder. (Christine Poerschke)
+
+* LUCENE-7210: Make TestCore*Parser's analyzer choice override-able
+  (Christine Poerschke, Daniel Collins)
 
 ======================= Lucene 6.0.0 =======================
 
@@ -100,6 +195,12 @@ New Features
 
 API Changes
 
+* LUCENE-7094: BBoxStrategy and PointVectorStrategy now support
+  PointValues (in addition to legacy numeric trie).  Their APIs
+  were changed a little and also made more consistent.  PointValues/Trie
+  is optional, DocValues is optional, stored value is optional.
+  (Nick Knize, David Smiley)
+
 * LUCENE-6067: Accountable.getChildResources has a default
   implementation returning the empty list.  (Robert Muir)
 
@@ -154,6 +255,10 @@ API Changes
   FilterCollector, FilterDirectory.  And some Filter* classes in
   lucene-test-framework too. (David Smiley)
 
+* SOLR-8867: FunctionValues.getRangeScorer now takes a LeafReaderContext instead
+  of an IndexReader, and avoids matching documents without a value in the field
+  for numeric fields. (yonik)
+
 Optimizations
 
 * LUCENE-6891: Use prefix coding when writing points in 
@@ -204,6 +309,22 @@ Bug Fixes
 * LUCENE-7101: OfflineSorter had O(N^2) merge cost, and used too many
   temporary file descriptors, for large sorts (Mike McCandless)
 
+* LUCENE-7111: DocValuesRangeQuery.newLongRange behaves incorrectly for
+  Long.MAX_VALUE and Long.MIN_VALUE (Ishan Chattopadhyaya via Steve Rowe)
+
+* LUCENE-7139: Fix bugs in geo3d's Vincenty surface distance
+  implementation (Karl Wright via Mike McCandless)
+
+* LUCENE-7112: WeightedSpanTermExtractor.extractUnknownQuery is only called
+  on queries that could not be extracted. (Adrien Grand)
+
+* LUCENE-7126: Remove GeoPointDistanceRangeQuery. This query was implemented
+  with boolean NOT, and incorrect for multi-valued documents. (Robert Muir)
+
+* LUCENE-7158: Consistently use earth's WGS84 mean radius wherever our
+  geo search implementations approximate the earth as a sphere (Karl
+  Wright via Mike McCandless)
+
 Other
 
 * LUCENE-7035: Upgrade icu4j to 56.1/unicode 8. (Robert Muir)
@@ -215,6 +336,9 @@ Other
   (Martijn van Groningen, David Smiley)
 
 * LUCENE-7093: Add point values support to MemoryIndex
+  (Martijn van Groningen, Mike McCandless)
+
+* LUCENE-7095: Add point values support to the numeric field query time join.
   (Martijn van Groningen, Mike McCandless)
 
 ======================= Lucene 5.5.0 =======================

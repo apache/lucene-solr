@@ -16,11 +16,15 @@
  */
 package org.apache.lucene.queryparser.xml;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.search.Query;
 
 public class TestCorePlusExtensionsParser extends TestCorePlusQueriesParser {
 
-  private CoreParser corePlusExtensionsParser;
+  @Override
+  protected CoreParser newCoreParser(String defaultField, Analyzer analyzer) {
+    return new CorePlusExtensionsParser(defaultField, analyzer);
+  }
 
   public void testFuzzyLikeThisQueryXML() throws Exception {
     Query q = parse("FuzzyLikeThisQuery.xml");
@@ -29,18 +33,6 @@ public class TestCorePlusExtensionsParser extends TestCorePlusQueriesParser {
       System.out.println(rewrite(q));
     }
     dumpResults("FuzzyLikeThis", q, 5);
-  }
-
-  //================= Helper methods ===================================
-
-  @Override
-  protected CoreParser coreParser() {
-    if (corePlusExtensionsParser == null) {
-      corePlusExtensionsParser = new CorePlusExtensionsParser(
-          super.defaultField(),
-          super.analyzer());
-    }
-    return corePlusExtensionsParser;
   }
 
 }

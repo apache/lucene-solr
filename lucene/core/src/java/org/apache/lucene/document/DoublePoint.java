@@ -27,7 +27,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 
 /** 
- * An indexed {@code double} field.
+ * An indexed {@code double} field for fast range filters.  If you also
+ * need to store the value, you should add a separate {@link StoredField} instance.
  * <p>
  * Finding all documents within an N-dimensional shape or range at search time is
  * efficient.  Multiple values for the same field in one document
@@ -81,10 +82,10 @@ public final class DoublePoint extends Field {
 
   private static BytesRef pack(double... point) {
     if (point == null) {
-      throw new IllegalArgumentException("point cannot be null");
+      throw new IllegalArgumentException("point must not be null");
     }
     if (point.length == 0) {
-      throw new IllegalArgumentException("point cannot be 0 dimensions");
+      throw new IllegalArgumentException("point must not be 0 dimensions");
     }
     byte[] packed = new byte[point.length * Double.BYTES];
     
@@ -124,16 +125,6 @@ public final class DoublePoint extends Field {
 
     result.append('>');
     return result.toString();
-  }
-  
-  /** Encode n-dimensional double point into binary encoding */
-  private static byte[][] encode(double value[]) {
-    byte[][] encoded = new byte[value.length][];
-    for (int i = 0; i < value.length; i++) {
-      encoded[i] = new byte[Double.BYTES];
-      encodeDimension(value[i], encoded[i], 0);
-    }
-    return encoded;
   }
   
   // public helper methods (e.g. for queries)
@@ -207,7 +198,7 @@ public final class DoublePoint extends Field {
    */
   public static Query newRangeQuery(String field, double[] lowerValue, double[] upperValue) {
     PointRangeQuery.checkArgs(field, lowerValue, upperValue);
-    return new PointRangeQuery(field, encode(lowerValue), encode(upperValue)) {
+    return new PointRangeQuery(field, pack(lowerValue).bytes, pack(upperValue).bytes, lowerValue.length) {
       @Override
       protected String toString(int dimension, byte[] value) {
         return Double.toString(decodeDimension(value, 0));

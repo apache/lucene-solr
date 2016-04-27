@@ -317,7 +317,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     
     // Delete one document with commitWithin
     req.setContentStreams( toContentStreams(
-      delI("529", "commitWithin", "1000"), null ) );
+      delI("529", "commitWithin", "2000"), null ) );
     trigger.reset();
     handler.handleRequest( req, rsp );
       

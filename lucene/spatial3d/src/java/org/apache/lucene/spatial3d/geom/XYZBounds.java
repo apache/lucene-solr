@@ -29,27 +29,27 @@ public class XYZBounds implements Bounds {
    * of the shape, and we cannot guarantee that without making MINIMUM_RESOLUTION
    * unacceptably large.
    */
-  protected static final double FUDGE_FACTOR = Vector.MINIMUM_RESOLUTION * 2.0;
+  private static final double FUDGE_FACTOR = Vector.MINIMUM_RESOLUTION * 500.0;
   
   /** Minimum x */
-  protected Double minX = null;
+  private Double minX = null;
   /** Maximum x */
-  protected Double maxX = null;
+  private Double maxX = null;
   /** Minimum y */
-  protected Double minY = null;
+  private Double minY = null;
   /** Maximum y */
-  protected Double maxY = null;
+  private Double maxY = null;
   /** Minimum z */
-  protected Double minZ = null;
+  private Double minZ = null;
   /** Maximum z */
-  protected Double maxZ = null;
+  private Double maxZ = null;
   
   /** Set to true if no longitude bounds can be stated */
-  protected boolean noLongitudeBound = false;
+  private boolean noLongitudeBound = false;
   /** Set to true if no top latitude bound can be stated */
-  protected boolean noTopLatitudeBound = false;
+  private boolean noTopLatitudeBound = false;
   /** Set to true if no bottom latitude bound can be stated */
-  protected boolean noBottomLatitudeBound = false;
+  private boolean noBottomLatitudeBound = false;
 
   /** Construct an empty bounds object */
   public XYZBounds() {
@@ -195,7 +195,14 @@ public class XYZBounds implements Bounds {
 
   @Override
   public Bounds addXValue(final GeoPoint point) {
-    final double x = point.x;
+    return addXValue(point.x);
+  }
+  
+  /** Add a specific X value.
+   * @param x is the value to add.
+   * @return the bounds object.
+   */
+  public Bounds addXValue(final double x) {
     final double small = x - FUDGE_FACTOR;
     if (minX == null || minX > small) {
       minX = new Double(small);
@@ -209,7 +216,14 @@ public class XYZBounds implements Bounds {
 
   @Override
   public Bounds addYValue(final GeoPoint point) {
-    final double y = point.y;
+    return addYValue(point.y);
+  }
+  
+  /** Add a specific Y value.
+   * @param y is the value to add.
+   * @return the bounds object.
+   */
+  public Bounds addYValue(final double y) {
     final double small = y - FUDGE_FACTOR;
     if (minY == null || minY > small) {
       minY = new Double(small);
@@ -223,7 +237,14 @@ public class XYZBounds implements Bounds {
 
   @Override
   public Bounds addZValue(final GeoPoint point) {
-    final double z = point.z;
+    return addZValue(point.z);
+  }
+  
+  /** Add a specific Z value.
+   * @param z is the value to add.
+   * @return the bounds object.
+   */
+  public Bounds addZValue(final double z) {
     final double small = z - FUDGE_FACTOR;
     if (minZ == null || minZ > small) {
       minZ = new Double(small);
@@ -264,4 +285,9 @@ public class XYZBounds implements Bounds {
     return this;
   }
 
+  @Override
+  public String toString() {
+    return "XYZBounds: [xmin="+minX+" xmax="+maxX+" ymin="+minY+" ymax="+maxY+" zmin="+minZ+" zmax="+maxZ+"]";
+  }
+  
 }

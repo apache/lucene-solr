@@ -72,11 +72,10 @@ public class TestRestoreCore extends SolrJettyTestBase {
   private static SolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
-      HttpSolrClient client = new HttpSolrClient(buildUrl(port, context) + "/" + DEFAULT_TEST_CORENAME);
+      final String baseUrl = buildUrl(port, context) + "/" + DEFAULT_TEST_CORENAME;
+      HttpSolrClient client = getHttpSolrClient(baseUrl);
       client.setConnectionTimeout(15000);
       client.setSoTimeout(60000);
-      client.setDefaultMaxConnectionsPerHost(100);
-      client.setMaxTotalConnections(100);
       return client;
     }
     catch (Exception ex) {
@@ -233,7 +232,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   private boolean fetchRestoreStatus() throws IOException {
     String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME +
-        "/replication?command=" + ReplicationHandler.CMD_RESTORE_STATUS;
+        ReplicationHandler.PATH + "?command=" + ReplicationHandler.CMD_RESTORE_STATUS;
     final Pattern pException = Pattern.compile("<str name=\"exception\">(.*?)</str>");
 
     InputStream stream = null;

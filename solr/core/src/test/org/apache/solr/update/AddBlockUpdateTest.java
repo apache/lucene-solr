@@ -575,22 +575,14 @@ public class AddBlockUpdateTest extends SolrTestCaseJ4 {
     for (Document block : blocks) {
       final String msg = block.asXML();
       if (msg.length() > 0) {
-        rez.add(new Callable<Void>() {
-          @Override
-          public Void call() {
-            assertBlockU(msg);
-            return null;
-          }
-          
+        rez.add(() -> {
+          assertBlockU(msg);
+          return null;
         });
         if (rarely()) {
-          rez.add(new Callable<Void>() {
-            @Override
-            public Void call() {
-              assertBlockU(commit());
-              return null;
-            }
-            
+          rez.add(() -> {
+            assertBlockU(commit());
+            return null;
           });
         }
       }

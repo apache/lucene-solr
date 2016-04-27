@@ -29,8 +29,8 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.spatial.util.GeoEncodingUtils;
 
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.geoCodedToPrefixCoded;
 import static org.apache.lucene.spatial.geopoint.document.GeoPointField.PRECISION_STEP;
 
 /**
@@ -56,18 +56,18 @@ import static org.apache.lucene.spatial.geopoint.document.GeoPointField.PRECISIO
  *
  * <pre class="prettyprint">
  *   // using prefix terms
- *   GeoPointField geoPointField = new GeoPointField(fieldName1, lon, lat, GeoPointField.PREFIX_TYPE_NOT_STORED);
+ *   GeoPointField geoPointField = new GeoPointField(fieldName1, lat, lon, GeoPointField.PREFIX_TYPE_NOT_STORED);
  *   document.add(geoPointField);
  *
  *   // query by bounding box (default uses TermEncoding.PREFIX)
- *   Query q = new GeoPointInBBoxQuery(fieldName1, minLon, minLat, maxLon, maxLat);
+ *   Query q = new GeoPointInBBoxQuery(fieldName1, minLat, maxLat, minLon, maxLon);
  *
  *   // using numeric terms
- *   geoPointField = new GeoPointField(fieldName2, lon, lat, GeoPointField.NUMERIC_TYPE_NOT_STORED);
+ *   geoPointField = new GeoPointField(fieldName2, lat, lon, GeoPointField.NUMERIC_TYPE_NOT_STORED);
  *   document.add(geoPointField);
  *
  *   // query by distance (requires TermEncoding.NUMERIC)
- *   q = new GeoPointDistanceQuery(fieldName2, TermEncoding.NUMERIC, centerLon, centerLat, radiusMeters);
+ *   q = new GeoPointDistanceQuery(fieldName2, TermEncoding.NUMERIC, centerLat, centerLon, radiusMeters);
  * </pre>
  *
  * @lucene.experimental
@@ -163,7 +163,7 @@ final class GeoPointTokenStream extends TokenStream {
 
     @Override
     public BytesRef getBytesRef() {
-      GeoEncodingUtils.geoCodedToPrefixCoded(value, shift, bytes);
+      geoCodedToPrefixCoded(value, shift, bytes);
       return bytes.get();
     }
 

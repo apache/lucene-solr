@@ -19,9 +19,9 @@ package org.apache.lucene.spatial3d.geom;
 /**
  * GeoBasePolygon objects are the base class of most GeoPolygon objects.
  *
- * @lucene.experimental
+ * @lucene.internal
  */
-public abstract class GeoBasePolygon extends GeoBaseMembershipShape implements GeoPolygon {
+abstract class GeoBasePolygon extends GeoBaseMembershipShape implements GeoPolygon {
 
   /** Constructor.
    *@param planetModel is the planet model to use.

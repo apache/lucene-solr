@@ -1188,12 +1188,7 @@ public class MapReduceIndexerTool extends Configured implements Tool {
     }
     
     // use alphanumeric sort (rather than lexicographical sort) to properly handle more than 99999 shards
-    Arrays.sort(dirs, new Comparator<FileStatus>() {
-      @Override
-      public int compare(FileStatus f1, FileStatus f2) {
-        return new AlphaNumericComparator().compare(f1.getPath().getName(), f2.getPath().getName());
-      }
-    });
+    Arrays.sort(dirs, (f1, f2) -> new AlphaNumericComparator().compare(f1.getPath().getName(), f2.getPath().getName()));
 
     return dirs;
   }

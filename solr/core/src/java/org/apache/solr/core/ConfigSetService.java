@@ -204,12 +204,9 @@ public abstract class ConfigSetService {
       if (Files.exists(schemaFile)) {
         try {
           String cachedName = cacheName(schemaFile);
-          return schemaCache.get(cachedName, new Callable<IndexSchema>() {
-            @Override
-            public IndexSchema call() throws Exception {
-              logger.info("Creating new index schema for core {}", cd.getName());
-              return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);
-            }
+          return schemaCache.get(cachedName, () -> {
+            logger.info("Creating new index schema for core {}", cd.getName());
+            return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);
           });
         } catch (ExecutionException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,

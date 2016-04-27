@@ -19,11 +19,11 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.InflaterInputStream;
 
@@ -37,40 +37,50 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.params.ClientParamBean;
-import org.apache.http.conn.ClientConnectionManager;
-import org.apache.http.conn.scheme.Scheme;
-import org.apache.http.conn.ssl.SSLSocketFactory;
-import org.apache.http.conn.ssl.X509HostnameVerifier;
+import org.apache.http.client.config.RequestConfig;
+import org.apache.http.client.config.RequestConfig.Builder;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.ConnectionKeepAliveStrategy;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.http.entity.HttpEntityWrapper;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.client.SystemDefaultHttpClient;
-import org.apache.http.impl.conn.PoolingClientConnectionManager;
-import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager; // jdoc
-import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Utility class for creating/configuring httpclient instances. 
+ * 
+ * This class can touch internal HttpClient details and is subject to change.
+ * 
+ * @lucene.experimental
  */
 public class HttpClientUtil {
-  // socket timeout measured in ms, closes a socket if read
-  // takes longer than x ms to complete. throws
-  // java.net.SocketTimeoutException: Read timed out exception
-  public static final String PROP_SO_TIMEOUT = "socketTimeout";
-  // connection timeout measures in ms, closes a socket if connection
-  // cannot be established within x ms. with a
-  // java.net.SocketTimeoutException: Connection timed out
-  public static final String PROP_CONNECTION_TIMEOUT = "connTimeout";
+  
+  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
+  private static final int DEFAULT_CONNECT_TIMEOUT = 60000;
+  private static final int DEFAULT_SO_TIMEOUT = 600000;
+  
+  private static final int VALIDATE_AFTER_INACTIVITY_DEFAULT = 3000;
+  private static final int EVICT_IDLE_CONNECTIONS_DEFAULT = 50000;
+  private static final String VALIDATE_AFTER_INACTIVITY = "validateAfterInactivity";
+  private static final String EVICT_IDLE_CONNECTIONS = "evictIdleConnections";
+
   // Maximum connections allowed per host
   public static final String PROP_MAX_CONNECTIONS_PER_HOST = "maxConnectionsPerHost";
   // Maximum total connections allowed
@@ -79,8 +89,6 @@ public class HttpClientUtil {
   public static final String PROP_USE_RETRY = "retry";
   // Allow compression (deflate,gzip) if server supports it
   public static final String PROP_ALLOW_COMPRESSION = "allowCompression";
-  // Follow redirects
-  public static final String PROP_FOLLOW_REDIRECTS = "followRedirects";
   // Basic auth username 
   public static final String PROP_BASIC_AUTH_USER = "httpBasicAuthUser";
   // Basic auth password 
@@ -88,25 +96,92 @@ public class HttpClientUtil {
   
   public static final String SYS_PROP_CHECK_PEER_NAME = "solr.ssl.checkPeerName";
   
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  // * NOTE* The following params configure the default request config and this
+  // is overridden by SolrJ clients. Use the setters on the SolrJ clients to
+  // to configure these settings if that is the intent.
+  
+  // Follow redirects
+  public static final String PROP_FOLLOW_REDIRECTS = "followRedirects";
+  
+  // socket timeout measured in ms, closes a socket if read
+  // takes longer than x ms to complete. throws
+  // java.net.SocketTimeoutException: Read timed out exception
+  public static final String PROP_SO_TIMEOUT = "socketTimeout";
+  // connection timeout measures in ms, closes a socket if connection
+  // cannot be established within x ms. with a
+  // java.net.SocketTimeoutException: Connection timed out
+  public static final String PROP_CONNECTION_TIMEOUT = "connTimeout";
   
   static final DefaultHttpRequestRetryHandler NO_RETRY = new DefaultHttpRequestRetryHandler(
       0, false);
 
-  private static HttpClientConfigurer configurer = new HttpClientConfigurer();
+  private static volatile SolrHttpClientBuilder httpClientBuilder;
+  
+  private static SolrHttpClientContextBuilder httpClientRequestContextBuilder = new SolrHttpClientContextBuilder();
+  
+  static {
+    resetHttpClientBuilder();
+  }
+  
+  public static abstract class SchemaRegistryProvider {
+    public abstract Registry<ConnectionSocketFactory> getSchemaRegistry();
+  }
+  
+  private static volatile SchemaRegistryProvider schemaRegistryProvider;
+  private static volatile String cookiePolicy;
 
   private static final List<HttpRequestInterceptor> interceptors = Collections.synchronizedList(new ArrayList<HttpRequestInterceptor>());
   
-  /**
-   * Replace the {@link HttpClientConfigurer} class used in configuring the http
-   * clients with a custom implementation.
-   */
-  public static void setConfigurer(HttpClientConfigurer newConfigurer) {
-    configurer = newConfigurer;
+  private static class DynamicInterceptor implements HttpRequestInterceptor {
+
+    @Override
+    public void process(HttpRequest request, HttpContext context) throws HttpException, IOException {
+      interceptors.forEach(new Consumer<HttpRequestInterceptor>() {
+
+        @Override
+        public void accept(HttpRequestInterceptor interceptor) {
+          try {
+            interceptor.process(request, context);
+          } catch (Exception e) {
+            logger.error("", e);
+          }
+        }
+      });
+
+    }
   }
   
-  public static HttpClientConfigurer getConfigurer() {
-    return configurer;
+  public static void setHttpClientBuilder(SolrHttpClientBuilder newHttpClientBuilder) {
+    httpClientBuilder = newHttpClientBuilder;
+  }
+  
+  public static void setHttpClientProvider(SolrHttpClientBuilder newHttpClientBuilder) {
+    httpClientBuilder = newHttpClientBuilder;
+  }
+
+  public static void setSchemeRegistryProvider(SchemaRegistryProvider newRegistryProvider) {
+    schemaRegistryProvider = newRegistryProvider;
+  }
+  
+  public static SolrHttpClientBuilder getHttpClientBuilder() {
+    return httpClientBuilder;
+  }
+  
+  public static SchemaRegistryProvider getSchemaRegisteryProvider() {
+    return schemaRegistryProvider;
+  }
+  
+  public static void resetHttpClientBuilder() {
+    schemaRegistryProvider = new SchemaRegistryProvider() {
+
+      @Override
+      public Registry<ConnectionSocketFactory> getSchemaRegistry() {
+        return RegistryBuilder.<ConnectionSocketFactory> create()
+            .register("http", PlainConnectionSocketFactory.getSocketFactory()).build();
+      }
+    };
+    httpClientBuilder = SolrHttpClientBuilder.create();
+
   }
   
   /**
@@ -116,50 +191,125 @@ public class HttpClientUtil {
    *          http client configuration, if null a client with default
    *          configuration (no additional configuration) is created. 
    */
-  public static CloseableHttpClient createClient(final SolrParams params) {
-    final ModifiableSolrParams config = new ModifiableSolrParams(params);
-    if (logger.isDebugEnabled()) {
-      logger.debug("Creating new http client, config:" + config);
+  public static CloseableHttpClient createClient(SolrParams params) {
+    PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager(schemaRegistryProvider.getSchemaRegistry());
+
+    return createClient(params, cm);
+  }
+  
+  public static CloseableHttpClient createClient(SolrParams params, PoolingHttpClientConnectionManager cm) {
+    if (params == null) {
+      params = new ModifiableSolrParams();
     }
-    final DefaultHttpClient httpClient = HttpClientFactory.createHttpClient();
-    configureClient(httpClient, config);
-    return httpClient;
+    
+    return createClient(params, cm, false);
   }
   
   /**
    * Creates new http client by using the provided configuration.
    * 
    */
-  public static CloseableHttpClient createClient(final SolrParams params, ClientConnectionManager cm) {
+  public static CloseableHttpClient createClient(final SolrParams params, PoolingHttpClientConnectionManager cm, boolean sharedConnectionManager) {
     final ModifiableSolrParams config = new ModifiableSolrParams(params);
     if (logger.isDebugEnabled()) {
       logger.debug("Creating new http client, config:" + config);
     }
-    final DefaultHttpClient httpClient = HttpClientFactory.createHttpClient(cm);
-    configureClient(httpClient, config);
-    return httpClient;
-  }
-
-  /**
-   * Configures {@link DefaultHttpClient}, only sets parameters if they are
-   * present in config.
-   */
-  public static void configureClient(final DefaultHttpClient httpClient,
-      SolrParams config) {
-    configurer.configure(httpClient,  config);
-    synchronized(interceptors) {
-      for(HttpRequestInterceptor interceptor: interceptors) {
-        httpClient.addRequestInterceptor(interceptor);
-      }
+ 
+    if (params.get(PROP_SO_TIMEOUT) != null || params.get(PROP_CONNECTION_TIMEOUT) != null) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "The socket connect and read timeout cannot be set here and must be set");
     }
+    
+    cm.setMaxTotal(params.getInt(HttpClientUtil.PROP_MAX_CONNECTIONS, 10000));
+    cm.setDefaultMaxPerRoute(params.getInt(HttpClientUtil.PROP_MAX_CONNECTIONS_PER_HOST, 10000));
+    cm.setValidateAfterInactivity(Integer.getInteger(VALIDATE_AFTER_INACTIVITY, VALIDATE_AFTER_INACTIVITY_DEFAULT));
+
+    
+    HttpClientBuilder newHttpClientBuilder = HttpClientBuilder.create();
+
+    if (sharedConnectionManager) {
+      newHttpClientBuilder.setConnectionManagerShared(true);
+    } else {
+      newHttpClientBuilder.setConnectionManagerShared(false);
+    }
+    
+    ConnectionKeepAliveStrategy keepAliveStrat = new ConnectionKeepAliveStrategy() {
+      @Override
+      public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
+        // we only close connections based on idle time, not ttl expiration
+        return -1;
+      }
+    };
+
+    if (httpClientBuilder.getAuthSchemeRegistryProvider() != null) {
+      newHttpClientBuilder.setDefaultAuthSchemeRegistry(httpClientBuilder.getAuthSchemeRegistryProvider().getAuthSchemeRegistry());
+    }
+    if (httpClientBuilder.getCookieSpecRegistryProvider() != null) {
+      newHttpClientBuilder.setDefaultCookieSpecRegistry(httpClientBuilder.getCookieSpecRegistryProvider().getCookieSpecRegistry());
+    }
+    if (httpClientBuilder.getCredentialsProviderProvider() != null) {
+      newHttpClientBuilder.setDefaultCredentialsProvider(httpClientBuilder.getCredentialsProviderProvider().getCredentialsProvider());
+    }
+
+    newHttpClientBuilder.addInterceptorLast(new DynamicInterceptor());
+    
+    newHttpClientBuilder = newHttpClientBuilder.setKeepAliveStrategy(keepAliveStrat)
+        .evictIdleConnections((long) Integer.getInteger(EVICT_IDLE_CONNECTIONS, EVICT_IDLE_CONNECTIONS_DEFAULT), TimeUnit.MILLISECONDS);
+    
+    HttpClientBuilder builder = setupBuilder(newHttpClientBuilder, params == null ? new ModifiableSolrParams() : params);
+    
+    HttpClient httpClient = builder.setConnectionManager(cm).build();
+    
+    assert ObjectReleaseTracker.track(httpClient);
+    return (CloseableHttpClient) httpClient;
   }
   
-  public static void close(HttpClient httpClient) { 
-    if (httpClient instanceof CloseableHttpClient) {
-      org.apache.solr.common.util.IOUtils.closeQuietly((CloseableHttpClient) httpClient);
-    } else {
-      httpClient.getConnectionManager().shutdown();
+  private static HttpClientBuilder setupBuilder(HttpClientBuilder builder, SolrParams config) {
+   
+    Builder requestConfigBuilder = RequestConfig.custom()
+        .setRedirectsEnabled(config.getBool(HttpClientUtil.PROP_FOLLOW_REDIRECTS, false)).setDecompressionEnabled(false)
+        .setConnectTimeout(config.getInt(HttpClientUtil.PROP_CONNECTION_TIMEOUT, DEFAULT_CONNECT_TIMEOUT))
+        .setSocketTimeout(config.getInt(HttpClientUtil.PROP_SO_TIMEOUT, DEFAULT_SO_TIMEOUT));
+
+    String cpolicy = cookiePolicy;
+    if (cpolicy != null) {
+      requestConfigBuilder.setCookieSpec(cpolicy);
     }
+    
+    RequestConfig requestConfig = requestConfigBuilder.build();
+    
+    HttpClientBuilder retBuilder = builder.setDefaultRequestConfig(requestConfig);
+
+    if (config.getBool(HttpClientUtil.PROP_USE_RETRY, true)) {
+      retBuilder = retBuilder.setRetryHandler(new SolrHttpRequestRetryHandler(3));
+
+    } else {
+      retBuilder = retBuilder.setRetryHandler(NO_RETRY);
+    }
+
+    final String basicAuthUser = config.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
+    final String basicAuthPass = config.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
+    
+    if (basicAuthUser != null && basicAuthPass != null) {
+      CredentialsProvider credsProvider = new BasicCredentialsProvider();
+      credsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(basicAuthUser, basicAuthPass));
+      retBuilder.setDefaultCredentialsProvider(credsProvider);
+    }
+    
+    if (config.getBool(HttpClientUtil.PROP_ALLOW_COMPRESSION, false)) {
+      retBuilder.addInterceptorFirst(new UseCompressionRequestInterceptor());
+      retBuilder.addInterceptorFirst(new UseCompressionResponseInterceptor());
+    } else {
+      retBuilder.disableContentCompression();
+    }
+
+    return retBuilder;
+  }
+
+  public static void close(HttpClient httpClient) { 
+
+    org.apache.solr.common.util.IOUtils.closeQuietly((CloseableHttpClient) httpClient);
+
+    assert ObjectReleaseTracker.release(httpClient);
   }
 
   public static void addRequestInterceptor(HttpRequestInterceptor interceptor) {
@@ -169,142 +319,9 @@ public class HttpClientUtil {
   public static void removeRequestInterceptor(HttpRequestInterceptor interceptor) {
     interceptors.remove(interceptor);
   }
-
-  /**
-   * Control HTTP payload compression.
-   * 
-   * @param allowCompression
-   *          true will enable compression (needs support from server), false
-   *          will disable compression.
-   */
-  public static void setAllowCompression(DefaultHttpClient httpClient,
-      boolean allowCompression) {
-    httpClient
-        .removeRequestInterceptorByClass(UseCompressionRequestInterceptor.class);
-    httpClient
-        .removeResponseInterceptorByClass(UseCompressionResponseInterceptor.class);
-    if (allowCompression) {
-      httpClient.addRequestInterceptor(new UseCompressionRequestInterceptor());
-      httpClient
-          .addResponseInterceptor(new UseCompressionResponseInterceptor());
-    }
-  }
-
-  /**
-   * Set http basic auth information. If basicAuthUser or basicAuthPass is null
-   * the basic auth configuration is cleared. Currently this is not preemtive
-   * authentication. So it is not currently possible to do a post request while
-   * using this setting.
-   */
-  public static void setBasicAuth(DefaultHttpClient httpClient,
-      String basicAuthUser, String basicAuthPass) {
-    if (basicAuthUser != null && basicAuthPass != null) {
-      httpClient.getCredentialsProvider().setCredentials(AuthScope.ANY,
-          new UsernamePasswordCredentials(basicAuthUser, basicAuthPass));
-    } else {
-      httpClient.getCredentialsProvider().clear();
-    }
-  }
-
-  /**
-   * Set max connections allowed per host. This call will only work when
-   * {@link ThreadSafeClientConnManager} or
-   * {@link PoolingClientConnectionManager} is used.
-   */
-  public static void setMaxConnectionsPerHost(HttpClient httpClient,
-      int max) {
-    // would have been nice if there was a common interface
-    if (httpClient.getConnectionManager() instanceof ThreadSafeClientConnManager) {
-      ThreadSafeClientConnManager mgr = (ThreadSafeClientConnManager)httpClient.getConnectionManager();
-      mgr.setDefaultMaxPerRoute(max);
-    } else if (httpClient.getConnectionManager() instanceof PoolingClientConnectionManager) {
-      PoolingClientConnectionManager mgr = (PoolingClientConnectionManager)httpClient.getConnectionManager();
-      mgr.setDefaultMaxPerRoute(max);
-    }
-  }
-
-  /**
-   * Set max total connections allowed. This call will only work when
-   * {@link ThreadSafeClientConnManager} or
-   * {@link PoolingClientConnectionManager} is used.
-   */
-  public static void setMaxConnections(final HttpClient httpClient,
-      int max) {
-    // would have been nice if there was a common interface
-    if (httpClient.getConnectionManager() instanceof ThreadSafeClientConnManager) {
-      ThreadSafeClientConnManager mgr = (ThreadSafeClientConnManager)httpClient.getConnectionManager();
-      mgr.setMaxTotal(max);
-    } else if (httpClient.getConnectionManager() instanceof PoolingClientConnectionManager) {
-      PoolingClientConnectionManager mgr = (PoolingClientConnectionManager)httpClient.getConnectionManager();
-      mgr.setMaxTotal(max);
-    }
-  }
   
-
-  /**
-   * Defines the socket timeout (SO_TIMEOUT) in milliseconds. A timeout value of
-   * zero is interpreted as an infinite timeout.
-   * 
-   * @param timeout timeout in milliseconds
-   */
-  public static void setSoTimeout(HttpClient httpClient, int timeout) {
-    HttpConnectionParams.setSoTimeout(httpClient.getParams(),
-        timeout);
-  }
-
-  /**
-   * Control retry handler 
-   * @param useRetry when false the client will not try to retry failed requests.
-   */
-  public static void setUseRetry(final DefaultHttpClient httpClient,
-      boolean useRetry) {
-    if (!useRetry) {
-      httpClient.setHttpRequestRetryHandler(NO_RETRY);
-    } else {
-      // if the request is not fully sent, we retry
-      // streaming updates are not a problem, because they are not retryable
-      httpClient.setHttpRequestRetryHandler(new SolrHttpRequestRetryHandler(3));
-    }
-  }
-
-  /**
-   * Set connection timeout. A timeout value of zero is interpreted as an
-   * infinite timeout.
-   * 
-   * @param timeout
-   *          connection Timeout in milliseconds
-   */
-  public static void setConnectionTimeout(final HttpClient httpClient,
-      int timeout) {
-      HttpConnectionParams.setConnectionTimeout(httpClient.getParams(),
-          timeout);
-  }
-
-  /**
-   * Set follow redirects.
-   *
-   * @param followRedirects  When true the client will follow redirects.
-   */
-  public static void setFollowRedirects(HttpClient httpClient,
-      boolean followRedirects) {
-    new ClientParamBean(httpClient.getParams()).setHandleRedirects(followRedirects);
-  }
-
-  public static void setHostNameVerifier(DefaultHttpClient httpClient,
-      X509HostnameVerifier hostNameVerifier) {
-    Scheme httpsScheme = httpClient.getConnectionManager().getSchemeRegistry().get("https");
-    if (httpsScheme != null) {
-      SSLSocketFactory sslSocketFactory = (SSLSocketFactory) httpsScheme.getSchemeSocketFactory();
-      sslSocketFactory.setHostnameVerifier(hostNameVerifier);
-    }
-  }
-  
-  public static void setStaleCheckingEnabled(final HttpClient httpClient, boolean enabled) {
-    HttpConnectionParams.setStaleCheckingEnabled(httpClient.getParams(), enabled);
-  }
-  
-  public static void setTcpNoDelay(final HttpClient httpClient, boolean tcpNoDelay) {
-    HttpConnectionParams.setTcpNoDelay(httpClient.getParams(), tcpNoDelay);
+  public static void clearRequestInterceptors() {
+    interceptors.clear();
   }
   
   private static class UseCompressionRequestInterceptor implements
@@ -374,35 +391,34 @@ public class HttpClientUtil {
     }
   }
 
-  public static class HttpClientFactory {
-    private static Class<? extends DefaultHttpClient> defaultHttpClientClass = DefaultHttpClient.class;
-    private static Class<? extends SystemDefaultHttpClient> systemDefaultHttpClientClass = SystemDefaultHttpClient.class;
-
-
-    public static SystemDefaultHttpClient createHttpClient() {
-      Constructor<? extends SystemDefaultHttpClient> constructor;
-      try {
-        constructor = systemDefaultHttpClientClass.getDeclaredConstructor();
-        return constructor.newInstance();
-      } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create HttpClient instance. ", e);
-      }
-    }
-
-    public static DefaultHttpClient createHttpClient(ClientConnectionManager cm) {
-      Constructor<? extends DefaultHttpClient> constructor;
-      try {
-        constructor = defaultHttpClientClass.getDeclaredConstructor(new Class[]{ClientConnectionManager.class});
-        return constructor.newInstance(new Object[]{cm});
-      } catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to create HttpClient instance, registered class is: " + defaultHttpClientClass, e);
-      }
-    }
-
-    public static void setHttpClientImpl(Class<? extends DefaultHttpClient> defaultHttpClient, Class<? extends SystemDefaultHttpClient> systemDefaultHttpClient) {
-      defaultHttpClientClass = defaultHttpClient;
-      systemDefaultHttpClientClass = systemDefaultHttpClient;
-    }
+  public static void setHttpClientRequestContextBuilder(SolrHttpClientContextBuilder httpClientContextBuilder) {
+    httpClientRequestContextBuilder = httpClientContextBuilder;
   }
+
+  /**
+   * 
+   */
+  public static HttpClientContext createNewHttpClientRequestContext() {
+    return httpClientRequestContextBuilder.createContext();
+  }
+  
+  public static Builder createDefaultRequestConfigBuilder() {
+    String cpolicy = cookiePolicy;
+    Builder builder = RequestConfig.custom();
+
+    builder.setSocketTimeout(DEFAULT_SO_TIMEOUT)
+        .setConnectTimeout(DEFAULT_CONNECT_TIMEOUT)
+        .setRedirectsEnabled(false)
+        .setDecompressionEnabled(false); // we do our own compression / decompression
+    if (cpolicy != null) {
+      builder.setCookieSpec(cpolicy);
+    }
+    return builder;
+  }
+
+  public static void setCookiePolicy(String policyName) {
+    cookiePolicy = policyName;
+  }
+
 
 }

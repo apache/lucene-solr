@@ -16,19 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.*;
-import org.apache.solr.client.solrj.request.IsUpdateRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
-import org.apache.solr.common.SolrException;
-import org.slf4j.MDC;
-
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.ConnectException;
@@ -36,9 +23,36 @@ import java.net.MalformedURLException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URL;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.*;
+
+import org.apache.http.client.HttpClient;
+import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.IsUpdateRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrjNamedThreadFactory;
+import org.slf4j.MDC;
 
 /**
  * LBHttpSolrClient or "LoadBalanced HttpSolrClient" is a load balancing wrapper around
@@ -109,6 +123,9 @@ public class LBHttpSolrClient extends SolrClient {
   private volatile RequestWriter requestWriter;
 
   private Set<String> queryParams = new HashSet<>();
+  private Integer connectionTimeout;
+
+  private Integer soTimeout;
 
   static {
     solrQuery.setRows(0);
@@ -206,19 +223,31 @@ public class LBHttpSolrClient extends SolrClient {
     }
   }
 
+  /**
+   * @deprecated use {@link Builder} instead.
+   */
+  @Deprecated
   public LBHttpSolrClient(String... solrServerUrls) throws MalformedURLException {
     this(null, solrServerUrls);
   }
   
-  /** The provided httpClient should use a multi-threaded connection manager */ 
+  /**
+   * The provided httpClient should use a multi-threaded connection manager
+   * @deprecated use {@link Builder} instead.
+   */ 
+  @Deprecated
   public LBHttpSolrClient(HttpClient httpClient, String... solrServerUrl) {
     this(httpClient, new BinaryResponseParser(), solrServerUrl);
   }
 
-  /** The provided httpClient should use a multi-threaded connection manager */  
+  /**
+   * The provided httpClient should use a multi-threaded connection manager
+   * @deprecated use {@link Builder} instead.  This will soon be a protected
+   * method and will only be available for use in implementing subclasses.
+   */
+  @Deprecated
   public LBHttpSolrClient(HttpClient httpClient, ResponseParser parser, String... solrServerUrl) {
     clientIsInternal = (httpClient == null);
-    this.parser = parser;
     if (httpClient == null) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       if (solrServerUrl.length > 1) {
@@ -231,6 +260,9 @@ public class LBHttpSolrClient extends SolrClient {
     } else {
       this.httpClient = httpClient;
     }
+    
+    this.parser = parser;
+    
     for (String s : solrServerUrl) {
       ServerWrapper wrapper = new ServerWrapper(makeSolrClient(s));
       aliveServers.put(wrapper.getKey(), wrapper);
@@ -260,7 +292,16 @@ public class LBHttpSolrClient extends SolrClient {
   }
 
   protected HttpSolrClient makeSolrClient(String server) {
-    HttpSolrClient client = new HttpSolrClient(server, httpClient, parser);
+    HttpSolrClient client = new HttpSolrClient.Builder(server)
+        .withHttpClient(httpClient)
+        .withResponseParser(parser)
+        .build();
+    if (connectionTimeout != null) {
+      client.setConnectionTimeout(connectionTimeout);
+    }
+    if (soTimeout != null) {
+      client.setSoTimeout(soTimeout);
+    }
     if (requestWriter != null) {
       client.setRequestWriter(requestWriter);
     }
@@ -459,7 +500,17 @@ public class LBHttpSolrClient extends SolrClient {
   }
 
   public void setConnectionTimeout(int timeout) {
-    HttpClientUtil.setConnectionTimeout(httpClient, timeout);
+    this.connectionTimeout = timeout;
+    synchronized (aliveServers) {
+      Iterator<ServerWrapper> wrappersIt = aliveServers.values().iterator();
+      while (wrappersIt.hasNext()) {
+        wrappersIt.next().client.setConnectionTimeout(timeout);
+      }
+    }
+    Iterator<ServerWrapper> wrappersIt = zombieServers.values().iterator();
+    while (wrappersIt.hasNext()) {
+      wrappersIt.next().client.setConnectionTimeout(timeout);
+    }
   }
 
   /**
@@ -467,7 +518,17 @@ public class LBHttpSolrClient extends SolrClient {
    * not for indexing.
    */
   public void setSoTimeout(int timeout) {
-    HttpClientUtil.setSoTimeout(httpClient, timeout);
+    this.soTimeout = timeout;
+    synchronized (aliveServers) {
+      Iterator<ServerWrapper> wrappersIt = aliveServers.values().iterator();
+      while (wrappersIt.hasNext()) {
+        wrappersIt.next().client.setSoTimeout(timeout);
+      }
+    }
+    Iterator<ServerWrapper> wrappersIt = zombieServers.values().iterator();
+    while (wrappersIt.hasNext()) {
+      wrappersIt.next().client.setSoTimeout(timeout);
+    }
   }
 
   @Override
@@ -717,4 +778,64 @@ public class LBHttpSolrClient extends SolrClient {
   private static final int CHECK_INTERVAL = 60 * 1000; //1 minute between checks
   private static final int NONSTANDARD_PING_LIMIT = 5;  // number of times we'll ping dead servers not in the server list
 
+  /**
+   * Constructs {@link LBHttpSolrClient} instances from provided configuration.
+   */
+  public static class Builder {
+    private final List<String> baseSolrUrls;
+    private HttpClient httpClient;
+    private ResponseParser responseParser;
+    
+    public Builder() {
+      this.baseSolrUrls = new ArrayList<String>();
+      this.responseParser = new BinaryResponseParser();
+    }
+    
+    /**
+     * Provide a Solr endpoint to be used when configuring {@link LBHttpSolrClient} instances.
+     * 
+     * Method may be called multiple times.  All provided values will be used.
+     */
+    public Builder withBaseSolrUrl(String baseSolrUrl) {
+      this.baseSolrUrls.add(baseSolrUrl);
+      return this;
+    }
+    
+    /**
+     * Provide Solr endpoints to be used when configuring {@link LBHttpSolrClient} instances.
+     * 
+     * Method may be called multiple times.  All provided values will be used.
+     */
+    public Builder withBaseSolrUrls(String... solrUrls) {
+      for (String baseSolrUrl : solrUrls) {
+        this.baseSolrUrls.add(baseSolrUrl);
+      }
+      return this;
+    }
+    
+    
+    /**
+     * Provides a {@link HttpClient} for the builder to use when creating clients.
+     */
+    public Builder withHttpClient(HttpClient httpClient) {
+      this.httpClient = httpClient;
+      return this;
+    }
+    
+    /**
+     * Provides a {@link ResponseParser} for created clients to use when handling requests.
+     */
+    public Builder withResponseParser(ResponseParser responseParser) {
+      this.responseParser = responseParser;
+      return this;
+    }
+    
+    /**
+     * Create a {@link HttpSolrClient} based on provided configuration.
+     */
+    public LBHttpSolrClient build() {
+      final String[] baseUrlArray = new String[baseSolrUrls.size()];
+      return new LBHttpSolrClient(httpClient, responseParser, baseSolrUrls.toArray(baseUrlArray));
+    }
+  }
 }

@@ -17,16 +17,14 @@
 package org.apache.solr.analytics.statistics;
 
 import java.lang.invoke.MethodHandles;
-import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import com.google.common.base.Supplier;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
@@ -36,7 +34,6 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.solr.analytics.expression.ExpressionFactory;
 import org.apache.solr.analytics.request.ExpressionRequest;
 import org.apache.solr.analytics.util.AnalyticsParams;
-import org.apache.solr.analytics.util.AnalyticsParsers;
 import org.apache.solr.analytics.util.valuesource.AbsoluteValueDoubleFunction;
 import org.apache.solr.analytics.util.valuesource.AddDoubleFunction;
 import org.apache.solr.analytics.util.valuesource.ConcatStringFunction;
@@ -67,11 +64,9 @@ import org.apache.solr.schema.TrieDoubleField;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
-import org.apache.solr.util.DateFormatUtil;
+import org.apache.solr.util.DateMathParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Supplier;
 
 public class StatsCollectorSupplierFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -443,11 +438,7 @@ public class StatsCollectorSupplierFactory {
         throw new SolrException(ErrorCode.BAD_REQUEST,"The filter value "+arguments[1]+" cannot be converted into an integer.",e);
       }
     } else if ( src instanceof DateFieldSource || src instanceof MultiDateFunction) {
-      try {
-        defaultObject = DateFormatUtil.parseDate(arguments[1]);
-      } catch (ParseException e) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,"The filter value "+arguments[1]+" cannot be converted into a date.",e);
-      }
+      defaultObject = DateMathParser.parseMath(null, arguments[1]);
     } else if ( src instanceof LongFieldSource ) {
       try {
         defaultObject = new Long(arguments[1]);
@@ -578,11 +569,7 @@ public class StatsCollectorSupplierFactory {
       if (arguments.length!=1) {
         throw new SolrException(ErrorCode.BAD_REQUEST,"The constant date declaration ["+expressionString+"] does not have exactly 1 argument.");
       }
-      try {
-        return new ConstDateSource(DateFormatUtil.parseDate(operands));
-      } catch (ParseException e) {
-        throw new SolrException(ErrorCode.BAD_REQUEST,"The constant "+operands+" cannot be converted into a date.",e);
-      }
+      return new ConstDateSource(DateMathParser.parseMath(null, operands));
     } else if (operation.equals(AnalyticsParams.FILTER)) {
       return buildFilterSource(schema, operands, DATE_TYPE);
     }

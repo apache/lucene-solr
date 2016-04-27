@@ -21,14 +21,10 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
-import org.apache.lucene.spatial.util.GeoEncodingUtils;
 
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.mortonHash;
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.mortonUnhashLat;
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.mortonUnhashLon;
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.geoCodedToPrefixCoded;
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.prefixCodedToGeoCoded;
-import static org.apache.lucene.spatial.util.GeoEncodingUtils.getPrefixCodedShift;
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.geoCodedToPrefixCoded;
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.prefixCodedToGeoCoded;
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.getPrefixCodedShift;
 
 /**
  * Decomposes a given {@link GeoPointMultiTermQuery} into a set of terms that represent the query criteria using
@@ -58,7 +54,7 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
 
   public GeoPointPrefixTermsEnum(final TermsEnum tenum, final GeoPointMultiTermQuery query) {
     super(tenum, query);
-    this.start = mortonHash(query.minLon, query.minLat);
+    this.start = GeoPointField.encodeLatLon(query.minLat, query.minLon);
     this.currentRange = new Range(0, shift, true);
     // start shift at maxShift value (from computeMaxShift)
     this.shift = maxShift;
@@ -67,12 +63,12 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
     this.currEnd = currStart | mask;
   }
 
-  private boolean within(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return relationImpl.cellWithin(minLon, minLat, maxLon, maxLat);
+  private boolean within(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+    return relationImpl.cellWithin(minLat, maxLat, minLon, maxLon);
   }
 
-  private boolean boundary(final double minLon, final double minLat, final double maxLon, final double maxLat) {
-    return shift == maxShift && relationImpl.cellIntersectsShape(minLon, minLat, maxLon, maxLat);
+  private boolean boundary(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+    return shift == maxShift && relationImpl.cellIntersectsShape(minLat, maxLat, minLon, maxLon);
   }
 
   private boolean nextWithin() {
@@ -90,17 +86,19 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
   }
 
   private void nextRelation() {
-    double minLon = mortonUnhashLon(currStart);
-    double minLat = mortonUnhashLat(currStart);
+    double minLon = GeoPointField.decodeLongitude(currStart);
+    double minLat = GeoPointField.decodeLatitude(currStart);
     double maxLon;
     double maxLat;
     boolean isWithin;
     do {
-      maxLon = mortonUnhashLon(currEnd);
-      maxLat = mortonUnhashLat(currEnd);
+      maxLon = GeoPointField.decodeLongitude(currEnd);
+      maxLat = GeoPointField.decodeLatitude(currEnd);
 
+      isWithin = false;
       // within or a boundary
-      if ((isWithin = within(minLon, minLat, maxLon, maxLat) == true) || boundary(minLon, minLat, maxLon, maxLat) == true) {
+      if (boundary(minLat, maxLat, minLon, maxLon) == true) {
+        isWithin = within(minLat, maxLat, minLon, maxLon);
         final int m;
         if (isWithin == false || (m = shift % GeoPointField.PRECISION_STEP) == 0) {
           setNextRange(isWithin == false);
@@ -116,13 +114,13 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
       }
 
       // within cell but not at a depth factor of PRECISION_STEP
-      if (isWithin == true || (relationImpl.cellIntersectsMBR(minLon, minLat, maxLon , maxLat) == true && shift != maxShift)) {
+      if (isWithin == true || (relationImpl.cellIntersectsMBR(minLat, maxLat, minLon, maxLon) == true && shift != maxShift)) {
         // descend: currStart need not change since shift handles end of range
         currEnd = currStart | (1L<<--shift) - 1;
       } else {
         advanceVariables();
-        minLon = mortonUnhashLon(currStart);
-        minLat = mortonUnhashLat(currStart);
+        minLon = GeoPointField.decodeLongitude(currStart);
+        minLat = GeoPointField.decodeLatitude(currStart);
       }
     } while(shift < 63);
   }
@@ -192,7 +190,7 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
 
       final int comparison = term.compareTo(currentCell);
       if (comparison > 0) {
-        seek(GeoEncodingUtils.prefixCodedToGeoCoded(term), (short)(64-GeoEncodingUtils.getPrefixCodedShift(term)));
+        seek(prefixCodedToGeoCoded(term), (short)(64 - getPrefixCodedShift(term)));
         continue;
       }
       return currentCell;

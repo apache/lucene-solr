@@ -16,13 +16,10 @@
  */
 package org.apache.solr.client.solrj.io.ops;
 
-import java.io.IOException;
 import java.io.Serializable;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
-import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
-import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
 /**
  * Interface for any operation one can perform on a tuple in a TupleStream

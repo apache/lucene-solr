@@ -16,26 +16,26 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.Map;
+
 import javax.servlet.FilterChain;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.Map;
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
+
 import org.apache.http.HttpException;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.protocol.HttpContext;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
 import org.apache.solr.security.AuthenticationPlugin;
-import org.apache.solr.security.HttpClientInterceptorPlugin;
+import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -44,6 +44,8 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 
 /**
  * Test of the MiniSolrCloudCluster functionality with authentication enabled.
@@ -114,10 +116,10 @@ public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
     super.tearDown();
   }
   
-  public static class MockAuthenticationPlugin extends AuthenticationPlugin implements HttpClientInterceptorPlugin {
+  public static class MockAuthenticationPlugin extends AuthenticationPlugin implements HttpClientBuilderPlugin {
     public static String expectedUsername;
     public static String expectedPassword;
-
+    private HttpRequestInterceptor interceptor;
     @Override
     public void init(Map<String,Object> pluginConfig) {}
 
@@ -141,25 +143,23 @@ public class TestAuthenticationFramework extends TestMiniSolrCloudCluster {
     }
 
     @Override
-    public HttpClientConfigurer getClientConfigurer() {
-      return new MockClientConfigurer();
+    public SolrHttpClientBuilder getHttpClientBuilder(SolrHttpClientBuilder httpClientBuilder) {
+      interceptor = new HttpRequestInterceptor() {
+        @Override
+        public void process(HttpRequest req, HttpContext rsp) throws HttpException, IOException {
+          req.addHeader("username", requestUsername);
+          req.addHeader("password", requestPassword);
+        }
+      };
+
+      HttpClientUtil.addRequestInterceptor(interceptor);
+      return httpClientBuilder;
     }
 
     @Override
-    public void close() {}
-    
-    private static class MockClientConfigurer extends HttpClientConfigurer {
-      @Override
-      public void configure(DefaultHttpClient httpClient, SolrParams config) {
-        super.configure(httpClient, config);
-        httpClient.addRequestInterceptor(new HttpRequestInterceptor() {
-          @Override
-          public void process(HttpRequest req, HttpContext rsp) throws HttpException, IOException {
-            req.addHeader("username", requestUsername);
-            req.addHeader("password", requestPassword);
-          }
-        });
-      }
+    public void close() {
+      HttpClientUtil.removeRequestInterceptor(interceptor);
     }
+    
   }
 }

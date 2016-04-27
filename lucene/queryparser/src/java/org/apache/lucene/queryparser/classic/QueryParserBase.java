@@ -342,7 +342,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    */
   public void setDateResolution(String fieldName, DateTools.Resolution dateResolution) {
     if (fieldName == null) {
-      throw new IllegalArgumentException("Field cannot be null.");
+      throw new IllegalArgumentException("Field must not be null.");
     }
 
     if (fieldToDateResolution == null) {
@@ -361,7 +361,7 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
    */
   public DateTools.Resolution getDateResolution(String fieldName) {
     if (fieldName == null) {
-      throw new IllegalArgumentException("Field cannot be null.");
+      throw new IllegalArgumentException("Field must not be null.");
     }
 
     if (fieldToDateResolution == null) {

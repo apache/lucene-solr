@@ -92,21 +92,85 @@ public class TestInetAddressPoint extends LuceneTestCase {
   }
 
   public void testQueryEquals() throws Exception {
-    Query q = InetAddressPoint.newRangeQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5"));
-    assertEquals(q, InetAddressPoint.newRangeQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5")));
-    assertFalse(q.equals(InetAddressPoint.newRangeQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.7"))));
+    Query q1, q2;
+    q1 = InetAddressPoint.newRangeQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5"));
+    q2 = InetAddressPoint.newRangeQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5"));
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(InetAddressPoint.newRangeQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.7"))));
+    assertFalse(q1.equals(InetAddressPoint.newRangeQuery("b", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5"))));
 
-    q = InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.2.3.3"), 16);
-    assertEquals(q, InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.2.3.3"), 16));
-    assertFalse(q.equals(InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.1.3.5"), 16)));
-    assertFalse(q.equals(InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.2.3.5"), 24)));
+    q1 = InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.2.3.3"), 16);
+    q2 = InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.2.3.3"), 16);
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.1.3.5"), 16)));
+    assertFalse(q1.equals(InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.2.3.5"), 24)));
 
-    q = InetAddressPoint.newExactQuery("a", InetAddress.getByName("1.2.3.3"));
-    assertEquals(q, InetAddressPoint.newExactQuery("a", InetAddress.getByName("1.2.3.3")));
-    assertFalse(q.equals(InetAddressPoint.newExactQuery("a", InetAddress.getByName("1.2.3.5"))));
+    q1 = InetAddressPoint.newExactQuery("a", InetAddress.getByName("1.2.3.3"));
+    q2 = InetAddressPoint.newExactQuery("a", InetAddress.getByName("1.2.3.3"));
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(InetAddressPoint.newExactQuery("a", InetAddress.getByName("1.2.3.5"))));
 
-    q = InetAddressPoint.newSetQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5"));
-    assertEquals(q, InetAddressPoint.newSetQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5")));
-    assertFalse(q.equals(InetAddressPoint.newSetQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.7"))));
+    q1 = InetAddressPoint.newSetQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5"));
+    q2 = InetAddressPoint.newSetQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.5"));
+    assertEquals(q1, q2);
+    assertEquals(q1.hashCode(), q2.hashCode());
+    assertFalse(q1.equals(InetAddressPoint.newSetQuery("a", InetAddress.getByName("1.2.3.3"), InetAddress.getByName("1.2.3.7"))));
+  }
+
+  public void testPrefixQuery() throws Exception {
+    assertEquals(
+        InetAddressPoint.newRangeQuery("a", InetAddress.getByName("1.2.3.0"), InetAddress.getByName("1.2.3.255")),
+        InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.2.3.127"), 24));
+    assertEquals(
+        InetAddressPoint.newRangeQuery("a", InetAddress.getByName("1.2.3.128"), InetAddress.getByName("1.2.3.255")),
+        InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("1.2.3.213"), 25));
+    assertEquals(
+        InetAddressPoint.newRangeQuery("a", InetAddress.getByName("2001::a000:0"), InetAddress.getByName("2001::afff:ffff")),
+        InetAddressPoint.newPrefixQuery("a", InetAddress.getByName("2001::a6bd:fc80"), 100));
+  }
+
+  public void testNextUp() throws Exception {
+    assertEquals(InetAddress.getByName("::1"),
+        InetAddressPoint.nextUp(InetAddress.getByName("::")));
+
+    assertEquals(InetAddress.getByName("::1:0"),
+        InetAddressPoint.nextUp(InetAddress.getByName("::ffff")));
+
+    assertEquals(InetAddress.getByName("1.2.4.0"),
+        InetAddressPoint.nextUp(InetAddress.getByName("1.2.3.255")));
+
+    assertEquals(InetAddress.getByName("0.0.0.0"),
+        InetAddressPoint.nextUp(InetAddress.getByName("::fffe:ffff:ffff")));
+
+    assertEquals(InetAddress.getByName("::1:0:0:0"),
+        InetAddressPoint.nextUp(InetAddress.getByName("255.255.255.255")));
+
+    ArithmeticException e = expectThrows(ArithmeticException.class,
+        () -> InetAddressPoint.nextUp(InetAddress.getByName("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")));
+    assertEquals("Overflow: there is no greater InetAddress than ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", e.getMessage());
+  }
+
+  public void testNextDown() throws Exception {
+    assertEquals(InetAddress.getByName("ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffe"),
+        InetAddressPoint.nextDown(InetAddress.getByName("ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff")));
+
+    assertEquals(InetAddress.getByName("::ffff"),
+        InetAddressPoint.nextDown(InetAddress.getByName("::1:0")));
+
+    assertEquals(InetAddress.getByName("1.2.3.255"),
+        InetAddressPoint.nextDown(InetAddress.getByName("1.2.4.0")));
+
+    assertEquals(InetAddress.getByName("::fffe:ffff:ffff"),
+        InetAddressPoint.nextDown(InetAddress.getByName("0.0.0.0")));
+
+    assertEquals(InetAddress.getByName("255.255.255.255"),
+        InetAddressPoint.nextDown(InetAddress.getByName("::1:0:0:0")));
+
+    ArithmeticException e = expectThrows(ArithmeticException.class,
+        () -> InetAddressPoint.nextDown(InetAddress.getByName("::")));
+    assertEquals("Underflow: there is no smaller InetAddress than 0:0:0:0:0:0:0:0", e.getMessage());
   }
 }

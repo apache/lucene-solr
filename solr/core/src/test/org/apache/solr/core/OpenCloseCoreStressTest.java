@@ -148,15 +148,13 @@ public class OpenCloseCoreStressTest extends SolrTestCaseJ4 {
     // Mostly to keep annoying logging messages from being sent out all the time.
 
     for (int idx = 0; idx < indexingThreads; ++idx) {
-      HttpSolrClient client = new HttpSolrClient(url);
-      client.setDefaultMaxConnectionsPerHost(25);
+      HttpSolrClient client = getHttpSolrClient(url);
       client.setConnectionTimeout(30000);
       client.setSoTimeout(60000);
       indexingClients.add(client);
     }
     for (int idx = 0; idx < queryThreads; ++idx) {
-      HttpSolrClient client = new HttpSolrClient(url);
-      client.setDefaultMaxConnectionsPerHost(25);
+      HttpSolrClient client = getHttpSolrClient(url);
       client.setConnectionTimeout(30000);
       client.setSoTimeout(30000);
       queryingClients.add(client);

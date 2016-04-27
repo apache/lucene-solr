@@ -55,7 +55,7 @@ class ConnectionImpl implements Connection {
   ConnectionImpl(String url, String zkHost, String collection, Properties properties) throws SQLException {
     this.url = url;
     this.client = this.solrClientCache.getCloudSolrClient(zkHost);
-    this.setSchema(collection);
+    this.collection = collection;
     this.properties = properties;
     this.connectionStatement = createStatement();
     this.databaseMetaData = new DatabaseMetaDataImpl(this, this.connectionStatement);
@@ -67,6 +67,10 @@ class ConnectionImpl implements Connection {
 
   CloudSolrClient getClient() {
     return client;
+  }
+
+  String getCollection() {
+    return collection;
   }
 
   Properties getProperties() {
@@ -84,17 +88,17 @@ class ConnectionImpl implements Connection {
 
   @Override
   public PreparedStatement prepareStatement(String sql) throws SQLException {
-    return null;
+    return new PreparedStatementImpl(this, sql);
   }
 
   @Override
   public CallableStatement prepareCall(String sql) throws SQLException {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public String nativeSQL(String sql) throws SQLException {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -148,7 +152,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public void setReadOnly(boolean readOnly) throws SQLException {
-    throw new UnsupportedOperationException();
+
   }
 
   @Override
@@ -345,12 +349,12 @@ class ConnectionImpl implements Connection {
 
   @Override
   public void setSchema(String schema) throws SQLException {
-    this.collection = schema;
+
   }
 
   @Override
   public String getSchema() throws SQLException {
-    return this.collection;
+    return null;
   }
 
   @Override

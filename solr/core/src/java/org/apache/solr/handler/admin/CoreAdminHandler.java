@@ -33,6 +33,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -45,6 +46,8 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+import org.apache.solr.security.PermissionNameProvider;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,12 +55,14 @@ import org.slf4j.MDC;
 
 import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
+import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.CORE_READ_PERM;
 
 /**
  *
  * @since solr 1.3
  */
-public class CoreAdminHandler extends RequestHandlerBase {
+public class CoreAdminHandler extends RequestHandlerBase implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected final CoreContainer coreContainer;
   protected final Map<String, Map<String, TaskObject>> requestStatusMap;
@@ -260,6 +265,17 @@ public class CoreAdminHandler extends RequestHandlerBase {
   @Override
   public String getDescription() {
     return "Manage Multiple Solr Cores";
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext ctx) {
+    String action = ctx.getParams().get(CoreAdminParams.ACTION);
+    if (action == null) return CORE_READ_PERM;
+    CoreAdminParams.CoreAdminAction coreAction = CoreAdminParams.CoreAdminAction.get(action);
+    if (coreAction == null) return CORE_READ_PERM;
+    return coreAction.isRead ?
+        CORE_READ_PERM :
+        CORE_EDIT_PERM;
   }
 
   /**

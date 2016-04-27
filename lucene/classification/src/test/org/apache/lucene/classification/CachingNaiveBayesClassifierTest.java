@@ -104,7 +104,7 @@ public class CachingNaiveBayesClassifierTest extends ClassificationTestBase<Byte
 
       long evaluationStart = System.currentTimeMillis();
       ConfusionMatrixGenerator.ConfusionMatrix confusionMatrix = ConfusionMatrixGenerator.getConfusionMatrix(leafReader,
-          simpleNaiveBayesClassifier, categoryFieldName, textFieldName);
+          simpleNaiveBayesClassifier, categoryFieldName, textFieldName, -1);
       assertNotNull(confusionMatrix);
       long evaluationEnd = System.currentTimeMillis();
       long evaluationTime = evaluationEnd - evaluationStart;

@@ -31,7 +31,7 @@ public class SidedPlane extends Plane implements Membership {
    *
    * @param sidedPlane is the existing plane.
    */
-  public SidedPlane(SidedPlane sidedPlane) {
+  public SidedPlane(final SidedPlane sidedPlane) {
     super(sidedPlane, sidedPlane.D);
     this.sigNum = -sidedPlane.sigNum;
   }
@@ -44,9 +44,25 @@ public class SidedPlane extends Plane implements Membership {
    * @param A is the first in-plane point
    * @param B is the second in-plane point
    */
-  public SidedPlane(Vector p, Vector A, Vector B) {
+  public SidedPlane(final Vector p, final Vector A, final Vector B) {
     super(A, B);
     sigNum = Math.signum(evaluate(p));
+    if (sigNum == 0.0)
+      throw new IllegalArgumentException("Cannot determine sidedness because check point is on plane.");
+  }
+
+  /**
+   * Construct a sided plane from a pair of vectors describing points, and including
+   * origin, plus a point p which describes the side.
+   *
+   * @param p point to evaluate
+   * @param onSide is true if the point is on the correct side of the plane, false otherwise.
+   * @param A is the first in-plane point
+   * @param B is the second in-plane point
+   */
+  public SidedPlane(final Vector p, final boolean onSide, final Vector A, final Vector B) {
+    super(A, B);
+    sigNum = onSide?Math.signum(evaluate(p)):-Math.signum(evaluate(p));
     if (sigNum == 0.0)
       throw new IllegalArgumentException("Cannot determine sidedness because check point is on plane.");
   }
