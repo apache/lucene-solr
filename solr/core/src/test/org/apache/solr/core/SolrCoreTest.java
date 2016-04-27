@@ -18,6 +18,7 @@ package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SpellCheckComponent;
@@ -95,7 +96,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount; assertEquals(pathToClassMap.get("/admin/threads"), "org.apache.solr.handler.admin.ThreadDumpHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/config"), "org.apache.solr.handler.SolrConfigHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/get"), "org.apache.solr.handler.RealTimeGetHandler");
-      ++ihCount; assertEquals(pathToClassMap.get("/replication"), "org.apache.solr.handler.ReplicationHandler");
+      ++ihCount; assertEquals(pathToClassMap.get(ReplicationHandler.PATH), "org.apache.solr.handler.ReplicationHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/schema"), "org.apache.solr.handler.SchemaHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/update"), "org.apache.solr.handler.UpdateRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/update/csv"), "org.apache.solr.handler.UpdateRequestHandler");
