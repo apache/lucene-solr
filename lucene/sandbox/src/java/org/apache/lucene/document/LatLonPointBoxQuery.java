@@ -109,6 +109,11 @@ abstract class LatLonPointBoxQuery extends Query {
             new IntersectVisitor() {
 
               @Override
+              public void grow(int count) {
+                result.grow(count);
+              }
+
+              @Override
               public void visit(int docID) {
                 result.add(docID);
               }
