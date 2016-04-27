@@ -492,12 +492,13 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       }
     }
 
-    log.info("Completed restoring collection={} backup={}", restoreCollection, backupName);
+    log.info("Completed restoring collection={} snapshotName={}", restoreCollection, backupName);
   }
 
+  //nocommit this should precede processRestoreAction
   private void processBackupAction(ZkNodeProps message, NamedList results) throws IOException, KeeperException, InterruptedException {
     String collectionName =  message.getStr(COLLECTION_PROP);
-    String name =  message.getStr(NAME);
+    String backupName =  message.getStr(NAME);
     String location = message.getStr("location");
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     String asyncId = message.getStr(ASYNC);
@@ -505,7 +506,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     Instant startTime = Instant.now();
 
     // note: we assume a shared files system to backup a collection, since a collection is distributed
-    Path backupPath = Paths.get(location).resolve(name).toAbsolutePath();
+    Path backupPath = Paths.get(location).resolve(backupName).toAbsolutePath();
 
     //Validating if the directory already exists.
     if (Files.exists(backupPath)) {
@@ -514,7 +515,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
     Files.createDirectory(backupPath); // create now
 
-    log.info("Starting backup of collection={} with backup_name={} at location={}", collectionName, name,
+    log.info("Starting backup of collection={} with snapshotName={} at location={}", collectionName, backupName,
         backupPath);
 
     for (Slice slice : zkStateReader.getClusterState().getCollection(collectionName).getActiveSlices()) {
@@ -529,13 +530,13 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       params.set(CORE_NAME_PROP, coreName);
 
       sendShardRequest(replica.getNodeName(), params, shardHandler, asyncId, requestMap);
-      log.debug("Sent backup request to core={} for backup_name={}", coreName, name);
+      log.debug("Sent backup request to core={} for snapshotName={}", coreName, backupName);
     }
-    log.debug("Sent backup requests to all shard leaders for backup_name={}", name);
+    log.debug("Sent backup requests to all shard leaders for snapshotName={}", backupName);
 
     processResponses(results, shardHandler, true, "Could not backup all replicas", asyncId, requestMap);
 
-    log.info("Starting to backup ZK data for backup_name={}", name);
+    log.info("Starting to backup ZK data for snapshotName={}", backupName);
 
     //Download the configs
     String configName = zkStateReader.readConfigName(collectionName);
@@ -552,7 +553,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     Path propertiesPath = zkBackup.resolve("backup.properties");
     Properties properties = new Properties();
 
-    properties.put("snapshotName", name); //nocommit or simply "backupName" (consistent with "backup" term?)
+    properties.put("snapshotName", backupName);
     properties.put("collection", collectionName);
     properties.put("collection.configName", configName);
     properties.put("startTime", startTime.toString());
@@ -564,7 +565,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       properties.store(os, "Snapshot properties file");
     }
 
-    log.info("Completed backing up ZK data for backup={}", name);
+    log.info("Completed backing up ZK data for snapshotName={}", backupName);
   }
 
   @SuppressWarnings("unchecked")

@@ -568,7 +568,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CoreAdminParams.COLLECTION, collection); // nocommit reconsider to use NAME (set via super.getParams)
-      params.set(CoreAdminParams.NAME, name); // nocommit reconsider to use backupName?
+      params.set(CoreAdminParams.NAME, name); // nocommit reconsider to use snapshotName or snapshot?
       params.set("location", location); //note: optional
       return params;
     }
@@ -641,7 +641,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     public SolrParams getParams() {
       ModifiableSolrParams params = (ModifiableSolrParams) super.getParams();
       params.set(CoreAdminParams.COLLECTION, collection); // nocommit reconsider to use NAME (set via super.getParams)
-      params.set(CoreAdminParams.NAME, backupName); // nocommit reconsider to use backupName?
+      params.set(CoreAdminParams.NAME, backupName); // nocommit reconsider to use snapshotName or snapshot?
       params.set("location", location); //note: optional
       params.set("collection.configName", configName); //note: optional
       if (maxShardsPerNode != null) {
