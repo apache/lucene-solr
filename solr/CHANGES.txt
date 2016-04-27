@@ -136,6 +136,9 @@ Bug Fixes
 * SOLR-8865: Real-time get sometimes fails to retrieve stored fields from docValues.
   (Ishan Chattopadhyaya, yonik)
 
+* SOLR-9046: Fix solr.cmd that wrongly assumes Jetty will always listen on 0.0.0.0.
+  (Bram Van Dam, Uwe Schindler)
+
 Other Changes
 ----------------------
 
