@@ -41,7 +41,7 @@ public class TestRealTimeGet extends TestRTGBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-tlog.xml","schema15.xml");
+    initCore("solrconfig-tlog.xml","schema_latest.xml");
   }
 
 
@@ -50,12 +50,22 @@ public class TestRealTimeGet extends TestRTGBase {
     clearIndex();
     assertU(commit());
 
-    assertU(adoc("id","1"));
+    assertU(adoc("id","1",
+        "a_f","-1.5", "a_fd","-1.5", "a_fdS","-1.5",                        "a_fs","1.0","a_fs","2.5", "a_fds","1.0","a_fds","2.5",  "a_fdsS","1.0","a_fdsS","2.5",
+        "a_d","-1.2E99", "a_dd","-1.2E99", "a_ddS","-1.2E99",               "a_ds","1.0","a_ds","2.5", "a_dds","1.0","a_dds","2.5",  "a_ddsS","1.0","a_ddsS","2.5",
+        "a_i","-1", "a_id","-1", "a_idS","-1",                              "a_is","1","a_is","2",     "a_ids","1","a_ids","2",      "a_idsS","1","a_idsS","2",
+        "a_l","-9999999999", "a_ld","-9999999999", "a_ldS","-9999999999",   "a_ls","1","a_ls","9999999999",     "a_lds","1","a_lds","9999999999",      "a_ldsS","1","a_ldsS","9999999999"
+    ));
     assertJQ(req("q","id:1")
         ,"/response/numFound==0"
     );
-    assertJQ(req("qt","/get", "id","1", "fl","id")
-        ,"=={'doc':{'id':'1'}}"
+    assertJQ(req("qt","/get", "id","1", "fl","id, a_f,a_fd,a_fdS   a_fs,a_fds,a_fdsS,  a_d,a_dd,a_ddS,  a_ds,a_dds,a_ddsS,  a_i,a_id,a_idS   a_is,a_ids,a_idsS,   a_l,a_ld,a_ldS   a_ls,a_lds,a_ldsS")
+        ,"=={'doc':{'id':'1'" +
+            ", a_f:-1.5, a_fd:-1.5, a_fdS:-1.5,  a_fs:[1.0,2.5],      a_fds:[1.0,2.5],a_fdsS:[1.0,2.5]" +
+            ", a_d:-1.2E99, a_dd:-1.2E99, a_ddS:-1.2E99,              a_ds:[1.0,2.5],a_dds:[1.0,2.5],a_ddsS:[1.0,2.5]" +
+            ", a_i:-1, a_id:-1, a_idS:-1,                             a_is:[1,2],a_ids:[1,2],a_idsS:[1,2]" +
+            ", a_l:-9999999999, a_ld:-9999999999, a_ldS:-9999999999,  a_ls:[1,9999999999],a_lds:[1,9999999999],a_ldsS:[1,9999999999]" +
+            "       }}"
     );
     assertJQ(req("qt","/get","ids","1", "fl","id")
         ,"=={" +
@@ -70,6 +80,17 @@ public class TestRealTimeGet extends TestRTGBase {
     assertJQ(req("q","id:1")
         ,"/response/numFound==1"
     );
+
+    // a cut-n-paste of the first big query, but this time it will be retrieved from the index rather than the transaction log
+    assertJQ(req("qt","/get", "id","1", "fl","id, a_f,a_fd,a_fdS   a_fs,a_fds,a_fdsS,  a_d,a_dd,a_ddS,  a_ds,a_dds,a_ddsS,  a_i,a_id,a_idS   a_is,a_ids,a_idsS,   a_l,a_ld,a_ldS   a_ls,a_lds,a_ldsS")
+        ,"=={'doc':{'id':'1'" +
+            ", a_f:-1.5, a_fd:-1.5, a_fdS:-1.5,  a_fs:[1.0,2.5],      a_fds:[1.0,2.5],a_fdsS:[1.0,2.5]" +
+            ", a_d:-1.2E99, a_dd:-1.2E99, a_ddS:-1.2E99,              a_ds:[1.0,2.5],a_dds:[1.0,2.5],a_ddsS:[1.0,2.5]" +
+            ", a_i:-1, a_id:-1, a_idS:-1,                             a_is:[1,2],a_ids:[1,2],a_idsS:[1,2]" +
+            ", a_l:-9999999999, a_ld:-9999999999, a_ldS:-9999999999,  a_ls:[1,9999999999],a_lds:[1,9999999999],a_ldsS:[1,9999999999]" +
+            "       }}"
+    );
+
     assertJQ(req("qt","/get","id","1", "fl","id")
         ,"=={'doc':{'id':'1'}}"
     );
@@ -99,12 +120,30 @@ public class TestRealTimeGet extends TestRTGBase {
     assertJQ(req("qt","/get","id","10", "fl","id")
         ,"=={'doc':{'id':'10'}}"
     );
-    assertU(delQ("id:10 abcdef"));
+    assertU(delQ("id:10 foo_s:abcdef"));
     assertJQ(req("qt","/get","id","10")
         ,"=={'doc':null}"
     );
     assertJQ(req("qt","/get","id","11", "fl","id")
         ,"=={'doc':{'id':'11'}}"
+    );
+
+    // multivalued field
+    assertU(adoc("id","12", "val_ls","1", "val_ls","2"));
+    assertJQ(req("q","id:12")
+        ,"/response/numFound==0"
+    );
+    assertJQ(req("qt","/get", "id","12", "fl","id,val_ls")
+        ,"=={'doc':{'id':'12', 'val_ls':[1,2]}}"
+    );
+
+    assertU(commit());
+
+    assertJQ(req("qt","/get", "id","12", "fl","id,val_ls")
+        ,"=={'doc':{'id':'12', 'val_ls':[1,2]}}"
+    );
+    assertJQ(req("q","id:12")
+        ,"/response/numFound==1"
     );
 
 
