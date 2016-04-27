@@ -42,6 +42,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.handler.CheckBackupStatus;
+import org.apache.solr.handler.ReplicationHandler;
 import org.junit.Test;
 
 /**
@@ -400,7 +401,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     // try a backup command
     final HttpSolrClient client = (HttpSolrClient) shardToJetty.get(SHARD2).get(0).client.solrClient;
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", "/replication");
+    params.set("qt", ReplicationHandler.PATH);
     params.set("command", "backup");
     Path location = createTempDir();
     location = FilterPath.unwrap(location).toRealPath();

@@ -214,6 +214,8 @@ Other Changes
 
 * SOLR-8933: Solr should not close container streams. (Mike Drob, Uwe Schindler, Mark Miller)
 
+* SOLR-9037: Replace multiple "/replication" strings with one static constant. (Christine Poerschke)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
