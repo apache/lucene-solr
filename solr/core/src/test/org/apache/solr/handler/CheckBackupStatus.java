@@ -44,7 +44,7 @@ public class CheckBackupStatus extends SolrTestCaseJ4 {
   }
 
   public void fetchStatus() throws IOException {
-    String masterUrl = client.getBaseURL() + "/replication?command=" + ReplicationHandler.CMD_DETAILS;
+    String masterUrl = client.getBaseURL() + ReplicationHandler.PATH + "?command=" + ReplicationHandler.CMD_DETAILS;
     response = client.getHttpClient().execute(new HttpGet(masterUrl), new BasicResponseHandler());
     if(pException.matcher(response).find()) {
       fail("Failed to create backup");

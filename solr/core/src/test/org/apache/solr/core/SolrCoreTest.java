@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.SpellCheckComponent;
@@ -98,7 +99,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount; assertEquals(pathToClassMap.get("/config"), "solr.SolrConfigHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/export"), "solr.SearchHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/get"), "solr.RealTimeGetHandler");
-      ++ihCount; assertEquals(pathToClassMap.get("/replication"), "solr.ReplicationHandler");
+      ++ihCount; assertEquals(pathToClassMap.get(ReplicationHandler.PATH), "solr.ReplicationHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/schema"), "solr.SchemaHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/sql"), "solr.SQLHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/stream"), "solr.StreamHandler");

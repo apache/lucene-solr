@@ -125,6 +125,8 @@ Other Changes
     test-framework jar so users subclassing SolrTestCaseJ4 don't need to preserve magic paths.
   (hossman)
 
+* SOLR-9037: Replace multiple "/replication" strings with one static constant. (Christine Poerschke)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
