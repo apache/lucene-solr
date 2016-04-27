@@ -32,6 +32,10 @@ Bug Fixes
   match the underlying queries' (lower|upper)Term optionality logic.
   (Kaneshanathan Srivisagan, Christine Poerschke)
 
+* LUCENE-7257: Fixed PointValues#size(IndexReader, String), docCount,
+  minPackedValue and maxPackedValue to skip leaves that do not have points
+  rather than raising an IllegalStateException. (Adrien Grand)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
