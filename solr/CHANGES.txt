@@ -125,6 +125,8 @@ Bug Fixes
 * SOLR-8804: Fix a race condition in the ClusterStatus API call whereby the call would fail when a concurrent delete
   collection api command was executed (Alexey Serba, Varun Thacker)
 
+* SOLR-9016: Fix SolrIdentifierValidator to not allow empty identifiers. (Shai Erera)
+
 Other Changes
 ----------------------
 

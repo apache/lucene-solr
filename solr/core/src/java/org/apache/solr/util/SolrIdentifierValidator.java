@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SolrIdentifierValidator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  final static Pattern identifierPattern = Pattern.compile("^(?!\\-)[\\._A-Za-z0-9\\-]*$");
+  final static Pattern identifierPattern = Pattern.compile("^(?!\\\\-)[\\\\._A-Za-z0-9\\\\-]+$");
   
   public static void validateCollectionName(String collectionName) throws SolrException {
     validateCoreName(collectionName);
