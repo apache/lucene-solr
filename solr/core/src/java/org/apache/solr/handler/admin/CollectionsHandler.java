@@ -353,9 +353,7 @@ public class CollectionsHandler extends RequestHandlerBase {
         }
         final String shardsParam = (String) props.get(SHARDS_PROP);
         if (StringUtils.isNotEmpty(shardsParam)) {
-          log.info("Validating shards param!!!!!!!!" + shardsParam);
           verifyShardsParam(shardsParam);
-          log.info("Validating shards param!!!!!!! done" + shardsParam);
         }
         if (SYSTEM_COLL.equals(collectionName)) {
           //We must always create a .system collection with only a single shard
