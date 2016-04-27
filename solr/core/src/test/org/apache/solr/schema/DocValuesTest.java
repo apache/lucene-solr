@@ -115,6 +115,8 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         tstToObj(schema.getField("longdvs"), -11L);
         tstToObj(schema.getField("datedv"), new Date(1000));
         tstToObj(schema.getField("datedvs"), new Date(1000));
+        tstToObj(schema.getField("stringdv"), "foo");
+        tstToObj(schema.getField("stringdvs"), "foo");
 
       } finally {
         searcherRef.decref();
