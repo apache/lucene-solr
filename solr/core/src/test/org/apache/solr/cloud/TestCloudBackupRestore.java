@@ -199,7 +199,8 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
         cluster.getSolrClient().getZkStateReader().readConfigName(restoreCollectionName));
 
     // assert added core properties:
-    // nocommit how?
+    // DWS: did via manual inspection.
+    // TODO Find the applicable core.properties on the file system but how?
   }
 
   private Map<String, Integer> getShardToDocCountMap(CloudSolrClient client, DocCollection docCollection) throws SolrServerException, IOException {
