@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.function.Consumer;
 
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
@@ -36,6 +37,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
+import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
@@ -75,21 +77,6 @@ public class SnapShooter {
     }
   }
 
-  void createSnapAsync(final IndexCommit indexCommit, final int numberToKeep, final ReplicationHandler replicationHandler) {
-    solrCore.getDeletionPolicy().saveCommitPoint(indexCommit.getGeneration());
-
-    new Thread() {
-      @Override
-      public void run() {
-        if(snapshotName != null) {
-          createSnapshot(indexCommit, replicationHandler);
-        } else {
-          createSnapshot(indexCommit, replicationHandler);
-          deleteOldBackups(numberToKeep);
-        }
-      }
-    }.start();
-  }
 
   public void validateDeleteSnapshot() {
     boolean dirFound = false;
@@ -126,50 +113,55 @@ public class SnapShooter {
     }
   }
 
-  //nocommit - copy pasted from createSnapshot. Need to reconcile tho
-  public NamedList createSnapshot() {
+  public NamedList createSnapshot() throws Exception {
+    IndexDeletionPolicyWrapper deletionPolicy = solrCore.getDeletionPolicy();
     RefCounted<SolrIndexSearcher> searcher = solrCore.getSearcher();
-    IndexCommit indexCommit = null;
-
-    NamedList<Object> details = new NamedList<>();
     try {
-      details.add("startTime", new Date().toString());
-      LOG.info("Creating backup snapshot " + (snapshotName == null ? "<not named>" : snapshotName) + " at " + snapDir);
-
-      indexCommit = searcher.get().getIndexReader().getIndexCommit();
-      Collection<String> files = indexCommit.getFileNames();
-
-      Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
+      //TODO should we try solrCore.getDeletionPolicy().getLatestCommit() first?
+      IndexCommit indexCommit = searcher.get().getIndexReader().getIndexCommit();
+      deletionPolicy.saveCommitPoint(indexCommit.getGeneration());
       try {
-        copyFiles(dir, files, snapShotDir);
+        return createSnapshot(indexCommit);
       } finally {
-        solrCore.getDirectoryFactory().release(dir);
+        deletionPolicy.releaseCommitPoint(indexCommit.getGeneration());
       }
-
-      details.add("fileCount", files.size());
-      details.add("status", "success");
-      details.add("snapshotCompletedAt", new Date().toString());
-      details.add("snapshotName", snapshotName);
-      LOG.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName) +
-          " at " + snapDir);
-    } catch (Exception e) {
-      IndexFetcher.delTree(snapShotDir);
-      LOG.error("Exception while creating snapshot", e);
-      details.add("snapShootException", e.getMessage());
     } finally {
-      solrCore.getDeletionPolicy().releaseCommitPoint(indexCommit.getGeneration());
       searcher.decref();
     }
-    return details;
   }
 
-  void createSnapshot(final IndexCommit indexCommit, ReplicationHandler replicationHandler) {
-    LOG.info("Creating backup snapshot " + (snapshotName == null ? "<not named>" : snapshotName) + " at " + snapDir);
-    NamedList<Object> details = new NamedList<>();
-    details.add("startTime", new Date().toString());
-    try {
-      Collection<String> files = indexCommit.getFileNames();
+  public void createSnapAsync(final IndexCommit indexCommit, final int numberToKeep, Consumer<NamedList> result) {
+    solrCore.getDeletionPolicy().saveCommitPoint(indexCommit.getGeneration());
 
+    new Thread() { //TODO should use Solr's ExecutorUtil
+      @Override
+      public void run() {
+        try {
+          result.accept(createSnapshot(indexCommit));
+        } catch (Exception e) {
+          LOG.error("Exception while creating snapshot", e);
+          NamedList snapShootDetails = new NamedList<>();
+          snapShootDetails.add("snapShootException", e.getMessage());
+          result.accept(snapShootDetails);
+        } finally {
+          solrCore.getDeletionPolicy().releaseCommitPoint(indexCommit.getGeneration());
+        }
+        if (snapshotName == null) {
+          deleteOldBackups(numberToKeep);
+        }
+      }
+    }.start();
+  }
+
+  // note: remember to reserve the indexCommit first so it won't get deleted concurrently
+  protected NamedList createSnapshot(final IndexCommit indexCommit) throws Exception {
+    LOG.info("Creating backup snapshot " + (snapshotName == null ? "<not named>" : snapshotName) + " at " + snapDir);
+    boolean success = false;
+    try {
+      NamedList<Object> details = new NamedList<>();
+      details.add("startTime", new Date().toString());//bad; should be Instant.now().toString()
+
+      Collection<String> files = indexCommit.getFileNames();
       Directory dir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
       try {
         copyFiles(dir, files, snapShotDir);
@@ -179,17 +171,16 @@ public class SnapShooter {
 
       details.add("fileCount", files.size());
       details.add("status", "success");
-      details.add("snapshotCompletedAt", new Date().toString());
+      details.add("snapshotCompletedAt", new Date().toString());//bad; should be Instant.now().toString()
       details.add("snapshotName", snapshotName);
       LOG.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName) +
           " at " + snapDir);
-    } catch (Exception e) {
-      IndexFetcher.delTree(snapShotDir);
-      LOG.error("Exception while creating snapshot", e);
-      details.add("snapShootException", e.getMessage());
+      success = true;
+      return details;
     } finally {
-      solrCore.getDeletionPolicy().releaseCommitPoint(indexCommit.getGeneration());
-      replicationHandler.snapShootDetails = details;
+      if (!success) {
+        IndexFetcher.delTree(snapShotDir);
+      }
     }
   }
 

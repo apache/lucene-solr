@@ -39,7 +39,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.SyncStrategy;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.NonExistentCoreException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -82,26 +81,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.DocCollection.DOC_ROUTER;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.BACKUPCORE;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.CREATE;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.FORCEPREPAREFORLEADERSHIP;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.INVOKE;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.MERGEINDEXES;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.OVERSEEROP;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.PREPRECOVERY;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REJOINLEADERELECTION;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.RELOAD;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.RENAME;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTBUFFERUPDATES;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTRECOVERY;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTSTATUS;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REQUESTSYNCSHARD;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.RESTORECORE;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.SPLIT;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.STATUS;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.SWAP;
-import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.UNLOAD;
+import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.*;
 import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
 import static org.apache.solr.handler.admin.CoreAdminHandler.FAILED;
@@ -885,10 +865,10 @@ enum CoreAdminOperation {
       try (SolrCore core = callInfo.handler.coreContainer.getCore(cname)) {
         SnapShooter snapShooter = new SnapShooter(core, location, name);
         snapShooter.validateCreateSnapshot();
-        NamedList details = snapShooter.createSnapshot();
-        if (details.get("snapShootException") != null) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to backup core=" + core.getName());
-        }
+        snapShooter.createSnapshot();
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            "Failed to backup core=" + cname + " because " + e, e);
       }
     }
   },
@@ -912,7 +892,7 @@ enum CoreAdminOperation {
       }
 
       String location = params.get("location");
-      if (name == null) {
+      if (location == null) {
         throw new IllegalArgumentException("location is required");
       }
 
