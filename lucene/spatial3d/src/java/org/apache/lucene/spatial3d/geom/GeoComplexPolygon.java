@@ -254,8 +254,25 @@ class GeoComplexPolygon extends GeoBasePolygon {
 
   @Override
   protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    // MHL
-    return 0.0;
+    double minimumDistance = Double.MAX_VALUE;
+    for (final Edge shapeStartEdge : shapeStartEdges) {
+      Edge shapeEdge = shapeStartEdge;
+      while (true) {
+        final double newDist = distanceStyle.computeDistance(shapeEdge.startPoint, x, y, z);
+        if (newDist < minimumDistance) {
+          minimumDistance = newDist;
+        }
+        final double newPlaneDist = distanceStyle.computeDistance(planetModel, shapeEdge.plane, x, y, z, shapeEdge.startPlane, shapeEdge.endPlane);
+        if (newPlaneDist < minimumDistance) {
+          minimumDistance = newPlaneDist;
+        }
+        shapeEdge = shapeEdge.next;
+        if (shapeEdge == shapeStartEdge) {
+          break;
+        }
+      }
+    }
+    return minimumDistance;
   }
 
   /**
@@ -1002,19 +1019,19 @@ class GeoComplexPolygon extends GeoBasePolygon {
   
   @Override
   public boolean equals(Object o) {
-    // MHL
-    return false;
+    // Way too expensive to do this the hard way, so each complex polygon will be considered unique.
+    return this == o;
   }
 
   @Override
   public int hashCode() {
-    // MHL
-    return 0;
+    // Each complex polygon is considered unique.
+    return System.identityHashCode(this);
   }
 
   @Override
   public String toString() {
-    return "GeoComplexPolygon: {planetmodel=" + planetModel + "}";
+    return "GeoComplexPolygon: {planetmodel=" + planetModel + ", number of shapes="+shapeStartEdges.length+", address="+ Integer.toHexString(hashCode())+"}";
   }
 }
   
