@@ -124,6 +124,13 @@ public class GeoPolygonFactory {
     
     /** Instantiate the polygon description.
      * @param points is the list of points.
+     */
+    public PolygonDescription(final List<? extends GeoPoint> points) {
+      this(points, new ArrayList<>());
+    }
+
+    /** Instantiate the polygon description.
+     * @param points is the list of points.
      * @param holes is the list of holes.
      */
     public PolygonDescription(final List<? extends GeoPoint> points, final List<? extends PolygonDescription> holes) {
