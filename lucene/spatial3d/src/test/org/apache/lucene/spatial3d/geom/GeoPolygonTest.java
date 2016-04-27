@@ -84,9 +84,7 @@ public class GeoPolygonTest {
       originalPoints.add(point1);
       originalPoints.add(point3);
       originalPoints.add(point4);
-      System.err.println("Before: "+originalPoints);
       final List<GeoPoint> filteredPoints = GeoPolygonFactory.filterEdges(GeoPolygonFactory.filterPoints(originalPoints), 0.0);
-      System.err.println("After: "+filteredPoints);
       assertEquals(3, filteredPoints.size());
       assertEquals(point5, filteredPoints.get(0));
       assertEquals(point1, filteredPoints.get(1));
@@ -100,6 +98,7 @@ public class GeoPolygonTest {
     GeoPolygon c;
     GeoPoint gp;
     List<GeoPoint> points;
+    List<GeoPolygonFactory.PolygonDescription> shapes;
 
     // Points go counterclockwise, so 
     points = new ArrayList<GeoPoint>();
@@ -115,6 +114,12 @@ public class GeoPolygonTest {
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertTrue(!c.isWithin(gp));
 
+    shapes = new ArrayList<>();
+    shapes.add(new GeoPolygonFactory.PolygonDescription(points));
+    
+    c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
+    assertTrue(!c.isWithin(gp));
+    
     // Now, go clockwise
     points = new ArrayList<GeoPoint>();
     points.add(new GeoPoint(PlanetModel.SPHERE, 0.0, -0.4));

@@ -35,9 +35,9 @@ import java.util.Map;
  */
 class GeoComplexPolygon extends GeoBasePolygon {
   
-  private final XTree xTree = new XTree();
-  private final YTree yTree = new YTree();
-  private final ZTree zTree = new ZTree();
+  private final Tree xTree = new XTree();
+  private final Tree yTree = new YTree();
+  private final Tree zTree = new ZTree();
   
   private final boolean testPointInSet;
   private final GeoPoint testPoint;
@@ -125,11 +125,6 @@ class GeoComplexPolygon extends GeoBasePolygon {
       return testPointInSet;
     }
     
-    // Choose our navigation route!
-    final double xDelta = Math.abs(thePoint.x - testPoint.x);
-    final double yDelta = Math.abs(thePoint.y - testPoint.y);
-    final double zDelta = Math.abs(thePoint.z - testPoint.z);
-    
     // If we're right on top of any of the test planes, we navigate solely on that plane.
     if (testPointXZPlane.evaluateIsZero(thePoint)) {
       // Use the XZ plane exclusively.
@@ -160,50 +155,141 @@ class GeoComplexPolygon extends GeoBasePolygon {
       return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
     } else {
       
-      // We need to use two planes to get there.  We can use any two planes, and order doesn't matter.
-      // The best to pick are the ones with the shortest overall distance.
-      if (xDelta + yDelta <= xDelta + zDelta && xDelta + yDelta <= yDelta + zDelta) {
-        // Travel in X and Y
-        // We'll do this using the testPointYZPlane, and create a travel plane for the right XZ plane.
-        final Plane travelPlane = new Plane(0.0, 1.0, 0.0, -thePoint.y);
-        final DualCrossingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(testPointYZPlane, testPointYZAbovePlane, testPointYZBelowPlane, travelPlane, testPoint, thePoint);
-        if (!xTree.traverse(edgeIterator, testPoint.x, testPoint.x)) {
-          return true;
+      // We need to use two planes to get there.  We don't know which two planes will do it but we can figure it out.
+      final Plane travelPlaneFixedX = new Plane(1.0, 0.0, 0.0, -thePoint.x);
+      final Plane travelPlaneFixedY = new Plane(0.0, 1.0, 0.0, -thePoint.y);
+      final Plane travelPlaneFixedZ = new Plane(0.0, 0.0, 1.0, -thePoint.z);
+
+      // Find the intersection points for each one of these and the complementary test point planes.
+      final GeoPoint[] XZIntersectionsYZ = travelPlaneFixedX.findIntersections(planetModel, testPointYZPlane);
+      final GeoPoint[] XZIntersectionsXY = travelPlaneFixedX.findIntersections(planetModel, testPointXYPlane);
+      final GeoPoint[] YZIntersectionsXZ = travelPlaneFixedY.findIntersections(planetModel, testPointXZPlane);
+      final GeoPoint[] YZIntersectionsXY = travelPlaneFixedY.findIntersections(planetModel, testPointXYPlane);
+      final GeoPoint[] XYIntersectionsYZ = travelPlaneFixedZ.findIntersections(planetModel, testPointYZPlane);
+      final GeoPoint[] XYIntersectionsXZ = travelPlaneFixedZ.findIntersections(planetModel, testPointXZPlane);
+
+      // There will be multiple intersection points found.  We choose the one that has the lowest total distance, as measured in delta X, delta Y, and delta Z.
+      double bestDistance = Double.MAX_VALUE;
+      double firstLegValue = 0.0;
+      double secondLegValue = 0.0;
+      Plane firstLegPlane = null;
+      Plane firstLegAbovePlane = null;
+      Plane firstLegBelowPlane = null;
+      Plane secondLegPlane = null;
+      Tree firstLegTree = null;
+      Tree secondLegTree = null;
+      GeoPoint intersectionPoint = null;
+      
+      for (final GeoPoint p : XZIntersectionsYZ) {
+        // Travel would be in XZ plane (fixed y) then in YZ (fixed x)
+        final double newDistance = Math.abs(thePoint.x - p.x) + Math.abs(testPoint.y - p.y);
+        if (newDistance < bestDistance) {
+          bestDistance = newDistance;
+          firstLegValue = testPoint.y;
+          secondLegValue = thePoint.x;
+          firstLegPlane = testPointYZPlane;
+          firstLegAbovePlane = testPointYZAbovePlane;
+          firstLegBelowPlane = testPointYZBelowPlane;
+          secondLegPlane = travelPlaneFixedX;
+          firstLegTree = xTree;
+          secondLegTree = yTree;
+          intersectionPoint = p;
         }
-        edgeIterator.setSecondLeg();
-        if (!yTree.traverse(edgeIterator, thePoint.y, thePoint.y)) {
-          return true;
-        }
-        return ((edgeIterator.crossingCount  & 1) == 0)?testPointInSet:!testPointInSet;
-      } else if (xDelta + zDelta <= xDelta + yDelta && xDelta + zDelta <= zDelta + yDelta) {
-        // Travel in X and Z
-        // We'll do this using the testPointXYPlane, and create a travel plane for the right YZ plane.
-        final Plane travelPlane = new Plane(1.0, 0.0, 0.0, -thePoint.x);
-        final DualCrossingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(testPointXYPlane, testPointXYAbovePlane, testPointXYBelowPlane, travelPlane, testPoint, thePoint);
-        if (!zTree.traverse(edgeIterator, testPoint.z, testPoint.z)) {
-          return true;
-        }
-        edgeIterator.setSecondLeg();
-        if (!xTree.traverse(edgeIterator, thePoint.x, thePoint.x)) {
-          return true;
-        }
-        return ((edgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
-      } else if (yDelta + zDelta <= xDelta + yDelta && yDelta + zDelta <= xDelta + zDelta) {
-        // Travel in Y and Z
-        // We'll do this using the testPointXZPlane, and create a travel plane for the right XY plane.
-        final Plane travelPlane = new Plane(0.0, 0.0, 1.0, -thePoint.z);
-        final DualCrossingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(testPointXZPlane, testPointXZAbovePlane, testPointXZBelowPlane, travelPlane, testPoint, thePoint);
-        if (!yTree.traverse(edgeIterator, testPoint.y, testPoint.y)) {
-          return true;
-        }
-        edgeIterator.setSecondLeg();
-        if (!zTree.traverse(edgeIterator, thePoint.z, thePoint.z)) {
-          return true;
-        }
-        return ((edgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
       }
+      for (final GeoPoint p : XZIntersectionsXY) {
+        // Travel would be in XZ plane (fixed y) then in XY (fixed z)
+        final double newDistance = Math.abs(thePoint.z - p.z) + Math.abs(testPoint.y - p.y);
+        if (newDistance < bestDistance) {
+          bestDistance = newDistance;
+          firstLegValue = testPoint.y;
+          secondLegValue = thePoint.z;
+          firstLegPlane = testPointXYPlane;
+          firstLegAbovePlane = testPointXYAbovePlane;
+          firstLegBelowPlane = testPointXYBelowPlane;
+          secondLegPlane = travelPlaneFixedX;
+          firstLegTree = yTree;
+          secondLegTree = zTree;
+          intersectionPoint = p;
+        }
+      }
+      for (final GeoPoint p : YZIntersectionsXZ) {
+        // Travel would be in YZ plane (fixed x) then in XZ (fixed y)
+        final double newDistance = Math.abs(thePoint.y - p.y) + Math.abs(testPoint.x - p.x);
+        if (newDistance < bestDistance) {
+          bestDistance = newDistance;
+          firstLegValue = testPoint.x;
+          secondLegValue = thePoint.y;
+          firstLegPlane = testPointXZPlane;
+          firstLegAbovePlane = testPointXZAbovePlane;
+          firstLegBelowPlane = testPointXZBelowPlane;
+          secondLegPlane = travelPlaneFixedY;
+          firstLegTree = xTree;
+          secondLegTree = yTree;
+          intersectionPoint = p;
+        }
+      }
+      for (final GeoPoint p : YZIntersectionsXY) {
+        // Travel would be in YZ plane (fixed x) then in XY (fixed z)
+        final double newDistance = Math.abs(thePoint.z - p.z) + Math.abs(testPoint.x - p.x);
+        if (newDistance < bestDistance) {
+          bestDistance = newDistance;
+          firstLegValue = testPoint.x;
+          secondLegValue = thePoint.z;
+          firstLegPlane = testPointXYPlane;
+          firstLegAbovePlane = testPointXYAbovePlane;
+          firstLegBelowPlane = testPointXYBelowPlane;
+          secondLegPlane = travelPlaneFixedX;
+          firstLegTree = xTree;
+          secondLegTree = zTree;
+          intersectionPoint = p;
+        }
+      }
+      for (final GeoPoint p : XYIntersectionsYZ) {
+        // Travel would be in XY plane (fixed z) then in YZ (fixed x)
+        final double newDistance = Math.abs(thePoint.x - p.x) + Math.abs(testPoint.z - p.z);
+        if (newDistance < bestDistance) {
+          bestDistance = newDistance;
+          firstLegValue = testPoint.z;
+          secondLegValue = thePoint.x;
+          firstLegPlane = testPointYZPlane;
+          firstLegAbovePlane = testPointYZAbovePlane;
+          firstLegBelowPlane = testPointYZBelowPlane;
+          secondLegPlane = travelPlaneFixedZ;
+          firstLegTree = zTree;
+          secondLegTree = xTree;
+          intersectionPoint = p;
+        }
+      }
+      for (final GeoPoint p : XYIntersectionsXZ) {
+        // Travel would be in XY plane (fixed z) then in XZ (fixed y)
+        final double newDistance = Math.abs(thePoint.y - p.y) + Math.abs(testPoint.z - p.z);
+        if (newDistance < bestDistance) {
+          bestDistance = newDistance;
+          firstLegValue = testPoint.z;
+          secondLegValue = thePoint.y;
+          firstLegPlane = testPointXZPlane;
+          firstLegAbovePlane = testPointXZAbovePlane;
+          firstLegBelowPlane = testPointXZBelowPlane;
+          secondLegPlane = travelPlaneFixedZ;
+          firstLegTree = zTree;
+          secondLegTree = yTree;
+          intersectionPoint = p;
+        }
+      }
+
+      assert bestDistance < Double.MAX_VALUE : "Couldn't find an intersection point of any kind";
+      
+      final DualCrossingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(firstLegPlane, firstLegAbovePlane, firstLegBelowPlane, secondLegPlane, testPoint, thePoint, intersectionPoint);
+      if (!firstLegTree.traverse(edgeIterator, firstLegValue, firstLegValue)) {
+        return true;
+      }
+      edgeIterator.setSecondLeg();
+      if (!secondLegTree.traverse(edgeIterator, secondLegValue, secondLegValue)) {
+        return true;
+      }
+      return ((edgeIterator.crossingCount  & 1) == 0)?testPointInSet:!testPointInSet;
+
     }
-    return false;
   }
   
   @Override
@@ -298,6 +384,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
       this.startPlane =  new SidedPlane(endPoint, plane, startPoint);
       this.endPlane = new SidedPlane(startPoint, plane, endPoint);
       this.planeBounds = new XYZBounds();
+      this.planeBounds.addPoint(startPoint);
+      this.planeBounds.addPoint(endPoint);
       this.plane.recordBounds(pm, this.planeBounds, this.startPlane, this.endPlane);
     }
   }
@@ -372,25 +460,25 @@ class GeoComplexPolygon extends GeoBasePolygon {
     public void add(final Edge newEdge, final AddComparator edgeComparator) {
       Node currentNode = this;
       while (true) {
-        final int result = edgeComparator.compare(edge, newEdge);
+        final int result = edgeComparator.compare(currentNode.edge, newEdge);
         if (result < 0) {
-          if (lesser == null) {
-            lesser = new Node(newEdge);
+          if (currentNode.lesser == null) {
+            currentNode.lesser = new Node(newEdge);
             return;
           }
-          currentNode = lesser;
+          currentNode = currentNode.lesser;
         } else if (result > 0) {
-          if (greater == null) {
-            greater = new Node(newEdge);
+          if (currentNode.greater == null) {
+            currentNode.greater = new Node(newEdge);
             return;
           }
-          currentNode = greater;
+          currentNode = currentNode.greater;
         } else {
-          if (overlaps == null) {
-            overlaps = new Node(newEdge);
+          if (currentNode.overlaps == null) {
+            currentNode.overlaps = new Node(newEdge);
             return;
           }
-          currentNode = overlaps;
+          currentNode = currentNode.overlaps;
         }
       }
     }
@@ -400,28 +488,39 @@ class GeoComplexPolygon extends GeoBasePolygon {
       while (currentNode != null) {
         final int result = edgeComparator.compare(currentNode.edge, minValue, maxValue);
         if (result < 0) {
-          currentNode = lesser;
+          currentNode = currentNode.lesser;
         } else if (result > 0) {
-          currentNode = greater;
+          currentNode = currentNode.greater;
         } else {
-          if (!edgeIterator.matches(edge)) {
+          if (!edgeIterator.matches(currentNode.edge)) {
             return false;
           }
-          currentNode = overlaps;
+          currentNode = currentNode.overlaps;
         }
       }
       return true;
     }
   }
   
+  /** An interface describing a tree.
+   */
+  private static interface Tree {
+    
+    public void add(final Edge edge);
+    
+    public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue);
+
+  }
+  
   /** This is the z-tree.
    */
-  private static class ZTree implements TraverseComparator, AddComparator {
+  private static class ZTree implements Tree, TraverseComparator, AddComparator {
     public Node rootNode = null;
     
     public ZTree() {
     }
     
+    @Override
     public void add(final Edge edge) {
       if (rootNode == null) {
         rootNode = new Node(edge);
@@ -430,6 +529,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
     }
     
+    @Override
     public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue) {
       if (rootNode == null) {
         return true;
@@ -461,12 +561,13 @@ class GeoComplexPolygon extends GeoBasePolygon {
   
   /** This is the y-tree.
    */
-  private static class YTree implements TraverseComparator, AddComparator {
+  private static class YTree implements Tree, TraverseComparator, AddComparator {
     public Node rootNode = null;
     
     public YTree() {
     }
     
+    @Override
     public void add(final Edge edge) {
       if (rootNode == null) {
         rootNode = new Node(edge);
@@ -475,6 +576,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
     }
     
+    @Override
     public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue) {
       if (rootNode == null) {
         return true;
@@ -506,12 +608,13 @@ class GeoComplexPolygon extends GeoBasePolygon {
 
   /** This is the x-tree.
    */
-  private static class XTree implements TraverseComparator, AddComparator {
+  private static class XTree implements Tree, TraverseComparator, AddComparator {
     public Node rootNode = null;
     
     public XTree() {
     }
     
+    @Override
     public void add(final Edge edge) {
       if (rootNode == null) {
         rootNode = new Node(edge);
@@ -520,6 +623,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
     }
     
+    @Override
     public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue) {
       if (rootNode == null) {
         return true;
@@ -752,17 +856,15 @@ class GeoComplexPolygon extends GeoBasePolygon {
     public int crossingCount = 0;
 
     public DualCrossingEdgeIterator(final Plane testPointPlane, final Plane testPointAbovePlane, final Plane testPointBelowPlane,
-      final Plane travelPlane, final Vector testPoint, final Vector thePoint) {
+      final Plane travelPlane, final Vector testPoint, final Vector thePoint, final GeoPoint intersectionPoint) {
       this.testPointPlane = testPointPlane;
       this.travelPlane = travelPlane;
       this.thePoint = thePoint;
+      this.intersectionPoint = intersectionPoint;
+        
       this.testPointCutoffPlane = new SidedPlane(thePoint, testPointPlane, testPoint);
       this.checkPointCutoffPlane = new SidedPlane(testPoint, travelPlane, thePoint);
-      // Now, find the intersection of the check and test point planes.
-      final GeoPoint[] intersectionPoints = travelPlane.findIntersections(planetModel, testPointPlane, testPointCutoffPlane, checkPointCutoffPlane);
-      assert intersectionPoints != null : "couldn't find any intersections";
-      assert intersectionPoints.length != 1 : "wrong number of intersection points";
-      this.intersectionPoint = intersectionPoints[0];
+        
       this.testPointOtherCutoffPlane = new SidedPlane(testPoint, testPointPlane, intersectionPoint);
       this.checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoint);
         
