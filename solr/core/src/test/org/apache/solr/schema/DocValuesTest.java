@@ -21,22 +21,42 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.queries.function.FunctionValues;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
 
 public class DocValuesTest extends SolrTestCaseJ4 {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   @BeforeClass
   public static void beforeTests() throws Exception {
     initCore("solrconfig-basic.xml", "schema-docValues.xml");
+
+    // sanity check our schema meets our expectations
+    final IndexSchema schema = h.getCore().getLatestSchema();
+    for (String f : new String[] {"floatdv", "intdv", "doubledv", "longdv", "datedv", "stringdv"}) {
+      final SchemaField sf = schema.getField(f);
+      assertFalse(f + " is multiValued, test is useless, who changed the schema?",
+                  sf.multiValued());
+      assertFalse(f + " is indexed, test is useless, who changed the schema?",
+                  sf.indexed());
+      assertTrue(f + " has no docValues, test is useless, who changed the schema?",
+                 sf.hasDocValues());
+    }
   }
 
   public void setUp() throws Exception {
@@ -116,48 +136,48 @@ public class DocValuesTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "4"));
     assertU(commit());
     assertQ(req("q", "*:*", "sort", "floatdv desc", "rows", "1", "fl", "id"),
-        "//str[@name='id'][.='2']");
+        "//int[@name='id'][.='2']");
     assertQ(req("q", "*:*", "sort", "intdv desc", "rows", "1", "fl", "id"),
-        "//str[@name='id'][.='2']");
+        "//int[@name='id'][.='2']");
     assertQ(req("q", "*:*", "sort", "doubledv desc", "rows", "1", "fl", "id"),
-        "//str[@name='id'][.='1']");
+        "//int[@name='id'][.='1']");
     assertQ(req("q", "*:*", "sort", "longdv desc", "rows", "1", "fl", "id"),
-        "//str[@name='id'][.='1']");
+        "//int[@name='id'][.='1']");
     assertQ(req("q", "*:*", "sort", "datedv desc", "rows", "1", "fl", "id"),
-        "//str[@name='id'][.='2']");
+        "//int[@name='id'][.='2']");
     assertQ(req("q", "*:*", "sort", "stringdv desc", "rows", "1", "fl", "id"),
-        "//str[@name='id'][.='4']");
+        "//int[@name='id'][.='4']");
     assertQ(req("q", "*:*", "sort", "floatdv asc", "rows", "1", "fl", "id"),
-        "//str[@name='id'][.='4']");
+        "//int[@name='id'][.='4']");
     assertQ(req("q", "*:*", "sort", "intdv asc", "rows", "1", "fl", "id"),
-        "//str[@name='id'][.='3']");
+        "//int[@name='id'][.='3']");
     assertQ(req("q", "*:*", "sort", "doubledv asc", "rows", "1", "fl", "id"),
-        "//str[@name='id'][.='3']");
+        "//int[@name='id'][.='3']");
     assertQ(req("q", "*:*", "sort", "longdv asc", "rows", "1", "fl", "id"),
-        "//str[@name='id'][.='3']");
+        "//int[@name='id'][.='3']");
     assertQ(req("q", "*:*", "sort", "datedv asc", "rows", "1", "fl", "id"),
-        "//str[@name='id'][.='1']");
+        "//int[@name='id'][.='1']");
     assertQ(req("q", "*:*", "sort", "stringdv asc", "rows", "1", "fl", "id"),
-        "//str[@name='id'][.='2']");
+        "//int[@name='id'][.='2']");
   }
-  
+
   public void testDocValuesSorting2() {
     assertU(adoc("id", "1", "doubledv", "12"));
     assertU(adoc("id", "2", "doubledv", "50.567"));
     assertU(adoc("id", "3", "doubledv", "+0"));
     assertU(adoc("id", "4", "doubledv", "4.9E-324"));
-    assertU(adoc("id", "5", "doubledv", "-0"));
+    assertU(adoc("id", "5", "doubledv", "-0.1"));
     assertU(adoc("id", "6", "doubledv", "-5.123"));
     assertU(adoc("id", "7", "doubledv", "1.7976931348623157E308"));
     assertU(commit());
     assertQ(req("fl", "id", "q", "*:*", "sort", "doubledv asc"),
-        "//result/doc[1]/str[@name='id'][.='6']",
-        "//result/doc[2]/str[@name='id'][.='5']",
-        "//result/doc[3]/str[@name='id'][.='3']",
-        "//result/doc[4]/str[@name='id'][.='4']",
-        "//result/doc[5]/str[@name='id'][.='1']",
-        "//result/doc[6]/str[@name='id'][.='2']",
-        "//result/doc[7]/str[@name='id'][.='7']"
+        "//result/doc[1]/int[@name='id'][.='6']",
+        "//result/doc[2]/int[@name='id'][.='5']",
+        "//result/doc[3]/int[@name='id'][.='3']",
+        "//result/doc[4]/int[@name='id'][.='4']",
+        "//result/doc[5]/int[@name='id'][.='1']",
+        "//result/doc[6]/int[@name='id'][.='2']",
+        "//result/doc[7]/int[@name='id'][.='7']"
         );
   }
 
@@ -266,92 +286,403 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         "//lst[@name='datedv']/lst[@name='1904-12-31T23:59:59.999Z']/long[@name='count'][.='8']",
         "//lst[@name='datedv']/lst[@name='1905-12-31T23:59:59.999Z']/long[@name='count'][.='8']");
   }
-  
+
   /** Tests the ability to do basic queries (without scoring, just match-only) on
    *  docvalues fields that are not inverted (indexed "forward" only)
    */
   public void testDocValuesMatch() throws Exception {
-    assertU(adoc("id", "1", "floatdv", "2", "intdv", "3", "doubledv", "4", "longdv", "5", "datedv", "1995-12-31T23:59:59.999Z", "stringdv", "b"));
-    assertU(adoc("id", "2", "floatdv", "5", "intdv", "4", "doubledv", "3", "longdv", "2", "datedv", "1997-12-31T23:59:59.999Z", "stringdv", "a"));
-    assertU(adoc("id", "3", "floatdv", "3", "intdv", "1", "doubledv", "2", "longdv", "1", "datedv", "1996-12-31T23:59:59.999Z", "stringdv", "c"));
-    assertU(adoc("id", "4", "floatdv", "3", "intdv", "1", "doubledv", "2", "longdv", "1", "datedv", "1996-12-31T23:59:59.999Z", "stringdv", "car"));
+    assertU(adoc("id", "1", "floatdv", "2", "intdv", "3", "doubledv", "3.1", "longdv", "5", "datedv", "1995-12-31T23:59:59.999Z", "stringdv", "b"));
+    assertU(adoc("id", "2", "floatdv", "-5", "intdv", "4", "doubledv", "-4.3", "longdv", "2", "datedv", "1997-12-31T23:59:59.999Z", "stringdv", "a"));
+    assertU(adoc("id", "3", "floatdv", "3", "intdv", "1", "doubledv", "2.1", "longdv", "1", "datedv", "1996-12-31T23:59:59.999Z", "stringdv", "c"));
+    assertU(adoc("id", "4", "floatdv", "3", "intdv", "-1", "doubledv", "1.5", "longdv", "1", "datedv", "1996-12-31T23:59:59.999Z", "stringdv", "car"));
     assertU(commit());
 
     // string: termquery
     assertQ(req("q", "stringdv:car", "sort", "id asc"),
         "//*[@numFound='1']",
-        "//result/doc[1]/str[@name='id'][.=4]"
+        "//result/doc[1]/int[@name='id'][.=4]"
     );
-    
+
     // string: range query
     assertQ(req("q", "stringdv:[b TO d]", "sort", "id asc"),
         "//*[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.=1]",
-        "//result/doc[2]/str[@name='id'][.=3]",
-        "//result/doc[3]/str[@name='id'][.=4]"
+        "//result/doc[1]/int[@name='id'][.=1]",
+        "//result/doc[2]/int[@name='id'][.=3]",
+        "//result/doc[3]/int[@name='id'][.=4]"
     );
-    
+
     // string: prefix query
     assertQ(req("q", "stringdv:c*", "sort", "id asc"),
         "//*[@numFound='2']",
-        "//result/doc[1]/str[@name='id'][.=3]",
-        "//result/doc[2]/str[@name='id'][.=4]"
+        "//result/doc[1]/int[@name='id'][.=3]",
+        "//result/doc[2]/int[@name='id'][.=4]"
     );
-    
+
     // string: wildcard query
     assertQ(req("q", "stringdv:c?r", "sort", "id asc"),
         "//*[@numFound='1']",
-        "//result/doc[1]/str[@name='id'][.=4]"
+        "//result/doc[1]/int[@name='id'][.=4]"
     );
-    
+
     // string: regexp query
     assertQ(req("q", "stringdv:/c[a-b]r/", "sort", "id asc"),
         "//*[@numFound='1']",
-        "//result/doc[1]/str[@name='id'][.=4]"
+        "//result/doc[1]/int[@name='id'][.=4]"
     );
-    
+
     // float: termquery
     assertQ(req("q", "floatdv:3", "sort", "id asc"),
         "//*[@numFound='2']",
-        "//result/doc[1]/str[@name='id'][.=3]",
-        "//result/doc[2]/str[@name='id'][.=4]"
+        "//result/doc[1]/int[@name='id'][.=3]",
+        "//result/doc[2]/int[@name='id'][.=4]"
     );
-    
+
     // float: rangequery
     assertQ(req("q", "floatdv:[2 TO 3]", "sort", "id asc"),
         "//*[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.=1]",
-        "//result/doc[2]/str[@name='id'][.=3]",
-        "//result/doc[3]/str[@name='id'][.=4]"
+        "//result/doc[1]/int[@name='id'][.=1]",
+        "//result/doc[2]/int[@name='id'][.=3]",
+        "//result/doc[3]/int[@name='id'][.=4]"
     );
-    
+
+    // (neg) float: termquery
+    assertQ(req("q", "floatdv:\"-5\"", "sort", "id asc"),
+            "//*[@numFound='1']",
+            "//result/doc[1]/int[@name='id'][.=2]"
+            );
+
+    // (neg) float: rangequery
+    assertQ(req("q", "floatdv:[-6 TO -4]", "sort", "id asc"),
+            "//*[@numFound='1']",
+            "//result/doc[1]/int[@name='id'][.=2]"
+            );
+
+    // (cross zero bounds) float: rangequery
+    assertQ(req("q", "floatdv:[-6 TO 2.1]", "sort", "id asc"),
+            "//*[@numFound='2']",
+            "//result/doc[1]/int[@name='id'][.=1]",
+            "//result/doc[2]/int[@name='id'][.=2]"
+            );
+
     // int: termquery
     assertQ(req("q", "intdv:1", "sort", "id asc"),
-        "//*[@numFound='2']",
-        "//result/doc[1]/str[@name='id'][.=3]",
-        "//result/doc[2]/str[@name='id'][.=4]"
-    );
-    
+            "//*[@numFound='1']",
+            "//result/doc[1]/int[@name='id'][.=3]"
+            );
+
     // int: rangequery
     assertQ(req("q", "intdv:[3 TO 4]", "sort", "id asc"),
-        "//*[@numFound='2']",
-        "//result/doc[1]/str[@name='id'][.=1]",
-        "//result/doc[2]/str[@name='id'][.=2]"
-    );
+            "//*[@numFound='2']",
+            "//result/doc[1]/int[@name='id'][.=1]",
+            "//result/doc[2]/int[@name='id'][.=2]"
+            );
+
+    // (neg) int: termquery
+    assertQ(req("q", "intdv:\"-1\"", "sort", "id asc"),
+            "//*[@numFound='1']",
+            "//result/doc[1]/int[@name='id'][.=4]"
+            );
+
+    // (neg) int: rangequery
+    assertQ(req("q", "intdv:[-1 TO 1]", "sort", "id asc"),
+            "//*[@numFound='2']",
+            "//result/doc[1]/int[@name='id'][.=3]",
+            "//result/doc[2]/int[@name='id'][.=4]"
+            );
 
     // long: termquery
     assertQ(req("q", "longdv:1", "sort", "id asc"),
         "//*[@numFound='2']",
-        "//result/doc[1]/str[@name='id'][.=3]",
-        "//result/doc[2]/str[@name='id'][.=4]"
+        "//result/doc[1]/int[@name='id'][.=3]",
+        "//result/doc[2]/int[@name='id'][.=4]"
     );
-    
+
     // long: rangequery
     assertQ(req("q", "longdv:[1 TO 2]", "sort", "id asc"),
         "//*[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.=2]",
-        "//result/doc[2]/str[@name='id'][.=3]",
-        "//result/doc[3]/str[@name='id'][.=4]"
+        "//result/doc[1]/int[@name='id'][.=2]",
+        "//result/doc[2]/int[@name='id'][.=3]",
+        "//result/doc[3]/int[@name='id'][.=4]"
     );
+
+    // double: termquery
+    assertQ(req("q", "doubledv:3.1", "sort", "id asc"),
+            "//*[@numFound='1']",
+            "//result/doc[1]/int[@name='id'][.=1]"
+            );
+
+    // double: rangequery
+    assertQ(req("q", "doubledv:[2 TO 3.3]", "sort", "id asc"),
+            "//*[@numFound='2']",
+            "//result/doc[1]/int[@name='id'][.=1]",
+            "//result/doc[2]/int[@name='id'][.=3]"
+            );
+
+    // (neg) double: termquery
+    assertQ(req("q", "doubledv:\"-4.3\"", "sort", "id asc"),
+            "//*[@numFound='1']",
+            "//result/doc[1]/int[@name='id'][.=2]"
+            );
+
+    // (neg) double: rangequery
+    assertQ(req("q", "doubledv:[-6 TO -4]", "sort", "id asc"),
+            "//*[@numFound='1']",
+            "//result/doc[1]/int[@name='id'][.=2]"
+            );
+
+    // (cross zero bounds) double: rangequery
+    assertQ(req("q", "doubledv:[-6 TO 2.0]", "sort", "id asc"),
+            "//*[@numFound='2']",
+            "//result/doc[1]/int[@name='id'][.=2]",
+            "//result/doc[2]/int[@name='id'][.=4]"
+            );
+  }
+
+  public void testFloatAndDoubleRangeQueryRandom() throws Exception {
+
+    String fieldName[] = new String[] {"floatdv", "doubledv"};
+
+    Number largestNegative[] = new Number[] {0f-Float.MIN_NORMAL, 0f-Double.MIN_NORMAL};
+    Number smallestPositive[] = new Number[] {Float.MIN_NORMAL, Double.MIN_NORMAL};
+    Number positiveInfinity[] = new Number[] {Float.POSITIVE_INFINITY, Double.POSITIVE_INFINITY};
+    Number negativeInfinity[] = new Number[] {Float.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY};
+    Number largestValue[] = new Number[] {Float.MAX_VALUE, Double.MAX_VALUE};
+    Number zero[] = new Number[] {0f, 0d};
+
+    abstract class NextRandNoNaN {
+      protected abstract Number next();
+      Number get() {
+        Number num;
+        while (String.valueOf(num = next()).equals("NaN"));
+        return num;
+      }
+    }
+    List<NextRandNoNaN> nextRandNoNaN = Arrays.asList(
+        new NextRandNoNaN() {
+          @Override protected Number next() {
+            return Float.intBitsToFloat(random().nextInt());
+          } },
+        new NextRandNoNaN() {
+          @Override protected Number next() {
+            return Double.longBitsToDouble(random().nextLong());
+          } } );
+
+    abstract class ToSortableLong {
+      abstract long apply(Number num);
+    }
+    List<ToSortableLong> toSortableLong = Arrays.asList(
+        new ToSortableLong() {
+          @Override long apply(Number num) {
+            return (long)NumericUtils.floatToSortableInt(num.floatValue());
+          } },
+        new ToSortableLong() {
+          @Override long apply(Number num) {
+            return NumericUtils.doubleToSortableLong(num.doubleValue());
+          } } );
+
+    // Number minusZero[] = new Number[] {-0f, -0d}; // -0 == 0, so we should not treat them differently (and we should not guarantee that sign is preserved... we should be able to index both as 0)
+
+    for (int i=0; i<fieldName.length; i++) {
+      assertU(delQ("*:*"));
+      commit();
+
+      Number specialValues[] = new Number[] {largestNegative[i], smallestPositive[i], negativeInfinity[i],
+          largestValue[i], positiveInfinity[i], zero[i]};
+
+      List<Number> values = new ArrayList<>();
+      int numDocs = 1 + random().nextInt(10);
+      for (int j=0; j<numDocs; j++) {
+
+        if (random().nextInt(100) < 5) { // Add a boundary value with 5% probability
+          values.add(specialValues[random().nextInt(specialValues.length)]);
+        } else
+        {
+          if (fieldName[i].equals("floatdv")) { // Add random values with 95% probability
+            values.add(Float.intBitsToFloat(random().nextInt()));
+          } else {
+            values.add(Double.longBitsToDouble(random().nextLong()));
+          }
+        }
+      }
+      // Indexing
+      for (int j=0; j<values.size(); j++) {
+        assertU(adoc("id", String.valueOf(j+1), fieldName[i], String.valueOf(values.get(j))));
+      }
+      assertU(commit());
+
+      log.info("Indexed values: "+values);
+      // Querying
+      int numQueries = 10000;
+      for (int j=0; j<numQueries; j++) {
+        boolean minInclusive = random().nextBoolean();
+        boolean maxInclusive = random().nextBoolean();
+
+        Number minVal, maxVal;
+        String min = String.valueOf(minVal = nextRandNoNaN.get(i).get());
+        String max = String.valueOf(maxVal = nextRandNoNaN.get(i).get());
+
+        // randomly use boundary values for min, 15% of the time
+        int r = random().nextInt(100);
+        if (r<5) {
+          minVal = negativeInfinity[i]; min = "*";
+        } else if (r<10) {
+          minVal = specialValues[random().nextInt(specialValues.length)]; min = String.valueOf(minVal);
+        } else if (r<15) {
+          minVal = values.get(random().nextInt(values.size())); min = String.valueOf(minVal);
+        }
+
+        // randomly use boundary values for max, 15% of the time
+        r = random().nextInt(100);
+        if (r<5) {
+          maxVal = positiveInfinity[i]; max = "*";
+        } else if (r<10) {
+            maxVal = specialValues[random().nextInt(specialValues.length)]; max = String.valueOf(maxVal);
+        } else if (r<15) {
+          // Don't pick a NaN for the range query
+          Number tmp = values.get(random().nextInt(values.size()));
+          if (!Double.isNaN(tmp.doubleValue()) && !Float.isNaN(tmp.floatValue())) {
+            maxVal = tmp; max = String.valueOf(maxVal);
+          }
+        }
+
+        List<String> tests = new ArrayList<>();
+        int counter = 0;
+
+        for (int k=0; k<values.size(); k++) {
+          Number val = values.get(k);
+          long valSortable = toSortableLong.get(i).apply(val);
+          long minSortable = toSortableLong.get(i).apply(minVal);
+          long maxSortable = toSortableLong.get(i).apply(maxVal);
+
+          if((minInclusive && minSortable<=valSortable || !minInclusive && minSortable<valSortable) &&
+              (maxInclusive && maxSortable>=valSortable || !maxInclusive && maxSortable>valSortable)) {
+            counter++;
+            tests.add("//result/doc["+counter+"]/int[@name='id'][.="+(k+1)+"]");
+            tests.add("//result/doc["+counter+"]/float[@name='score'][.=1.0]");
+          }
+        }
+
+        tests.add(0, "//*[@numFound='"+counter+"']");
+
+        String testsArr[] = new String[tests.size()];
+        for (int k=0; k<tests.size(); k++) {
+          testsArr[k] = tests.get(k);
+        }
+        log.info("Expected: "+tests);
+        assertQ(req("q", fieldName[i] + ":" + (minInclusive? '[': '{') + min + " TO " + max + (maxInclusive? ']': '}'),
+                         "sort", "id asc", "fl", "id,"+fieldName[i]+",score"),
+            testsArr);
+      }
+    }
+  }
+
+  public void testFloatAndDoubleRangeQuery() throws Exception {
+    String fieldName[] = new String[] {"floatdv", "doubledv"};
+    String largestNegative[] = new String[] {String.valueOf(0f-Float.MIN_NORMAL), String.valueOf(0f-Double.MIN_NORMAL)};
+    String negativeInfinity[] = new String[] {String.valueOf(Float.NEGATIVE_INFINITY), String.valueOf(Double.NEGATIVE_INFINITY)};
+    String largestValue[] = new String[] {String.valueOf(Float.MAX_VALUE), String.valueOf(Double.MAX_VALUE)};
+
+    for (int i=0; i<fieldName.length; i++) {
+      assertU(adoc("id", "1", fieldName[i], "2"));
+      assertU(adoc("id", "2", fieldName[i], "-5"));
+      assertU(adoc("id", "3", fieldName[i], "3"));
+      assertU(adoc("id", "4", fieldName[i], "3"));
+      assertU(adoc("id", "5", fieldName[i], largestNegative[i]));
+      assertU(adoc("id", "6", fieldName[i], negativeInfinity[i]));
+      assertU(adoc("id", "7", fieldName[i], largestValue[i]));
+      assertU(commit());
+
+      // Negative Zero to Positive
+      assertQ(req("q", fieldName[i]+":[-0.0 TO 2.5]", "sort", "id asc", "fl", "id,"+fieldName[i]+",score"),
+          "//*[@numFound='1']",
+          "//result/doc[1]/int[@name='id'][.=1]"
+          );
+
+      // Negative to Positive Zero
+      assertQ(req("q", fieldName[i]+":[-6 TO 0]", "sort", "id asc", "fl", "id,"+fieldName[i]+",score"),
+          "//*[@numFound='2']",
+          "//result/doc[1]/int[@name='id'][.=2]",
+          "//result/doc[2]/int[@name='id'][.=5]"
+          );
+
+      // Negative to Positive
+      assertQ(req("q", fieldName[i]+":[-6 TO 2.5]", "sort", "id asc", "fl", "id,"+fieldName[i]+",score"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/int[@name='id'][.=1]",
+          "//result/doc[2]/int[@name='id'][.=2]",
+          "//result/doc[3]/int[@name='id'][.=5]"
+          );
+
+      // Positive to Positive
+      assertQ(req("q", fieldName[i]+":[2 TO 3]", "sort", "id asc", "fl", "id,"+fieldName[i]+",score"),
+          "//*[@numFound='3']",
+          "//result/doc[1]/int[@name='id'][.=1]",
+          "//result/doc[2]/int[@name='id'][.=3]",
+          "//result/doc[3]/int[@name='id'][.=4]"
+          );
+
+      // Positive to POSITIVE_INF
+      assertQ(req("q", fieldName[i]+":[2 TO *]", "sort", "id asc", "fl", "id,"+fieldName[i]+",score"),
+          "//*[@numFound='4']",
+          "//result/doc[1]/int[@name='id'][.=1]",
+          "//result/doc[2]/int[@name='id'][.=3]",
+          "//result/doc[3]/int[@name='id'][.=4]",
+          "//result/doc[4]/int[@name='id'][.=7]"
+          );
+
+      // NEGATIVE_INF to Negative
+      assertQ(req("q", fieldName[i]+":[* TO -1]", "sort", "id asc", "fl", "id,"+fieldName[i]+",score"),
+          "//*[@numFound='2']",
+          "//result/doc[1]/int[@name='id'][.=2]",
+          "//result/doc[2]/int[@name='id'][.=6]"
+          );
+
+      // NEGATIVE_INF to Positive
+      assertQ(req("q", fieldName[i]+":[* TO 2]", "sort", "id asc", "fl", "id,"+fieldName[i]),
+          "//*[@numFound='4']",
+          "//result/doc[1]/int[@name='id'][.=1]",
+          "//result/doc[2]/int[@name='id'][.=2]",
+          "//result/doc[3]/int[@name='id'][.=5]",
+          "//result/doc[4]/int[@name='id'][.=6]"
+          );
+
+      // NEGATIVE_INF to Positive (non-inclusive)
+      assertQ(req("q", fieldName[i]+":[* TO 2}", "sort", "id asc", "fl", "id,"+fieldName[i]),
+          "//*[@numFound='3']",
+          "//result/doc[1]/int[@name='id'][.=2]",
+          "//result/doc[2]/int[@name='id'][.=5]",
+          "//result/doc[3]/int[@name='id'][.=6]"
+          );
+
+      // Negative to POSITIVE_INF
+      assertQ(req("q", fieldName[i]+":[-6 TO *]", "sort", "id asc", "fl", "id,"+fieldName[i]),
+          "//*[@numFound='6']",
+          "//result/doc[1]/int[@name='id'][.=1]",
+          "//result/doc[2]/int[@name='id'][.=2]",
+          "//result/doc[3]/int[@name='id'][.=3]",
+          "//result/doc[4]/int[@name='id'][.=4]",
+          "//result/doc[5]/int[@name='id'][.=5]",
+          "//result/doc[6]/int[@name='id'][.=7]"
+          );
+
+      // NEGATIVE_INF to POSITIVE_INF
+      assertQ(req("q", fieldName[i]+":[* TO *]", "sort", "id asc", "fl", "id,"+fieldName[i]+",score"),
+          "//*[@numFound='7']",
+          "//result/doc[1]/int[@name='id'][.=1]",
+          "//result/doc[2]/int[@name='id'][.=2]",
+          "//result/doc[3]/int[@name='id'][.=3]",
+          "//result/doc[4]/int[@name='id'][.=4]",
+          "//result/doc[5]/int[@name='id'][.=5]",
+          "//result/doc[6]/int[@name='id'][.=6]",
+          "//result/doc[7]/int[@name='id'][.=7]",
+          "//result/doc[1]/float[@name='score'][.=1.0]",
+          "//result/doc[2]/float[@name='score'][.=1.0]",
+          "//result/doc[3]/float[@name='score'][.=1.0]",
+          "//result/doc[4]/float[@name='score'][.=1.0]",
+          "//result/doc[5]/float[@name='score'][.=1.0]",
+          "//result/doc[6]/float[@name='score'][.=1.0]",
+          "//result/doc[7]/float[@name='score'][.=1.0]"
+          );
+    }
   }
 }

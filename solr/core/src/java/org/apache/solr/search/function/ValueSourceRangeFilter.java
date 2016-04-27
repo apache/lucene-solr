@@ -48,8 +48,10 @@ public class ValueSourceRangeFilter extends SolrFilter {
     this.valueSource = valueSource;
     this.lowerVal = lowerVal;
     this.upperVal = upperVal;
-    this.includeLower = lowerVal != null && includeLower;
-    this.includeUpper = upperVal != null && includeUpper;
+    this.includeLower = includeLower;
+    this.includeUpper = includeUpper;
+//    this.includeLower = lowerVal != null && includeLower;
+//    this.includeUpper = upperVal != null && includeUpper;
   }
 
   public ValueSource getValueSource() {
