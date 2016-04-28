@@ -88,7 +88,11 @@ public class GeoPolygonFactory {
     // First, exercise a sanity filter on the provided pointList, and remove identical points, linear points, and backtracks
     //System.err.println(" filtering "+pointList.size()+" points...");
     //final long startTime = System.currentTimeMillis();
-    final List<GeoPoint> filteredPointList = filterEdges(filterPoints(pointList), leniencyValue);
+    final List<GeoPoint> firstFilteredPointList = filterPoints(pointList);
+    if (firstFilteredPointList == null) {
+      return null;
+    }
+    final List<GeoPoint> filteredPointList = filterEdges(firstFilteredPointList, leniencyValue);
     //System.err.println("  ...done in "+(System.currentTimeMillis()-startTime)+"ms ("+((filteredPointList==null)?"degenerate":(filteredPointList.size()+" points"))+")");
     if (filteredPointList == null) {
       return null;
