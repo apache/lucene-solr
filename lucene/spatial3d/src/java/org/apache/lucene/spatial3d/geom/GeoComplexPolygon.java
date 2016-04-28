@@ -598,8 +598,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
     }
     
     /** Compare a node against a subrange of a new edge.
-     * @param node is the node to compare.
-     * @param newEdge is the edge being added.
+     * @param nodeMinimumValue is the node's minimum value.
+     * @param nodeMaximumValue is the node's maximum value.
      * @param minimumValue is the minimum value for the edge being added.
      * @param maximumValue is the maximum value for the edge being added.
      * @return the comparison result.
