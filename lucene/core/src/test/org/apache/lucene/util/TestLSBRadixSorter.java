@@ -19,28 +19,38 @@ package org.apache.lucene.util;
 
 import java.util.Arrays;
 
+import org.apache.lucene.util.packed.PackedInts;
+
 public class TestLSBRadixSorter extends LuceneTestCase {
 
   public void test(LSBRadixSorter sorter, int maxLen) {
     for (int iter = 0; iter < 10; ++iter) {
-      int off = random().nextInt(10);
       final int len = TestUtil.nextInt(random(), 0, maxLen);
-      int[] arr = new int[off + len + random().nextInt(10)];
+      int[] arr = new int[len + random().nextInt(10)];
       final int numBits = random().nextInt(31);
       final int maxValue = (1 << numBits) - 1;
       for (int i = 0; i < arr.length; ++i) {
         arr[i] = TestUtil.nextInt(random(), 0, maxValue);
       }
-      test(sorter, arr, off, len);
+      test(sorter, arr, len);
     }
   }
 
-  public void test(LSBRadixSorter sorter, int[] arr, int off, int len) {
-    final int[] expected = Arrays.copyOfRange(arr, off, off + len);
+  public void test(LSBRadixSorter sorter, int[] arr, int len) {
+    final int[] expected = Arrays.copyOf(arr, len);
     Arrays.sort(expected);
 
-    sorter.sort(arr, off, len);
-    final int[] actual = Arrays.copyOfRange(arr, off, off + len);
+    int numBits = 0;
+    for (int i = 0; i < len; ++i) {
+      numBits = Math.max(numBits, PackedInts.bitsRequired(arr[i]));
+    }
+
+    if (random().nextBoolean()) {
+      numBits = TestUtil.nextInt(random(), numBits, 32);
+    }
+
+    sorter.sort(numBits, arr, len);
+    final int[] actual = Arrays.copyOf(arr, len);
     assertArrayEquals(expected, actual);
   }
 
@@ -73,9 +83,8 @@ public class TestLSBRadixSorter extends LuceneTestCase {
         a += random().nextInt(10);
         arr[i] = a;
       }
-      final int off = random().nextInt(arr.length);
-      final int len = TestUtil.nextInt(random(), 0, arr.length - off);
-      test(sorter, arr, off, len);
+      final int len = TestUtil.nextInt(random(), 0, arr.length);
+      test(sorter, arr, len);
     }
   }
 }
