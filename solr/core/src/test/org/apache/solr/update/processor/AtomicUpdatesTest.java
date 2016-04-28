@@ -43,6 +43,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     h.update("<delete><query>*:*</query></delete>");
     assertU(commit());
   }
+  
   @Test
   public void testRemove() throws Exception {
     SolrInputDocument doc;
@@ -1064,6 +1065,49 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
         "/response/docs/[0]/title/[0]=='newtitle1'",
         "/response/docs/[0]/multi_ii_dvo/[0]==100",
         "/response/docs/[0]/multi_ii_dvo/[1]==" + Integer.MAX_VALUE);
+  }
+  
+  @Test
+  public void testAtomicUpdatesOnNonStoredDocValuesCopyField() throws Exception {
+    assertU(adoc(sdoc("id", 101, "title", "title2", "single_i_dvn", 100)));
+    assertU(adoc(sdoc("id", 102, "title", "title3", "single_d_dvn", 3.14)));
+    assertU(adoc(sdoc("id", 103, "single_s_dvn", "abc", "single_i_dvn", 1)));
+    assertU(commit());
+
+    // Do each one twice... the first time it will be retrieved from the index, and the second time from the transaction log.
+    for (int i=0; i<2; i++) {
+      assertU(adoc(sdoc("id", 101, "title", ImmutableMap.of("set", "newtitle2"),
+          "single_i_dvn", ImmutableMap.of("inc", 1))));
+      assertU(adoc(sdoc("id", 102, "title", ImmutableMap.of("set", "newtitle3"),
+          "single_d_dvn", ImmutableMap.of("inc", 1))));
+      assertU(adoc(sdoc("id", 103, "single_i_dvn", ImmutableMap.of("inc", 1))));
+    }
+    assertU(commit());
+
+    assertJQ(req("q", "id:101"),
+        "/response/docs/[0]/id==101",
+        "/response/docs/[0]/title/[0]=='newtitle2'",
+        "/response/docs/[0]/single_i_dvn==102");
+
+    assertJQ(req("q", "id:102"),
+        1e-4,
+        "/response/docs/[0]/id==102",
+        "/response/docs/[0]/title/[0]=='newtitle3'",
+        "/response/docs/[0]/single_d_dvn==5.14");
+
+    assertJQ(req("q", "id:103"),
+        "/response/docs/[0]/id==103",
+        "/response/docs/[0]/single_s_dvn=='abc'",
+        "/response/docs/[0]/single_i_dvn==3");
+
+    // test that non stored docvalues was carried forward for a non-docvalue update
+    assertU(adoc(sdoc("id", 103, "single_s_dvn", ImmutableMap.of("set", "abcupdate"),
+        "single_i_dvn", ImmutableMap.of("set", 5))));
+    assertU(commit());
+    assertJQ(req("q", "id:103"),
+        "/response/docs/[0]/id==103",
+        "/response/docs/[0]/single_s_dvn=='abcupdate'",
+        "/response/docs/[0]/single_i_dvn==5");
   }
 
   @Test

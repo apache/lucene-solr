@@ -646,20 +646,30 @@
    <dynamicField name="*_sev_enum" type="severityType" indexed="true" stored="true" docValues="true" multiValued="true" />
    
    <!-- With DocValues=true -->
-   <dynamicField name="*_i_dv"  type="int"    indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_l_dv"  type="long"    indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_f_dv"  type="float"    indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_d_dv"  type="double"    indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_dt_dv"  type="date"    indexed="true"  stored="true" docValues="true"/>
-   <dynamicField name="*_f1_dv"  type="float"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+   <dynamicField name="*_i_dv"  type="int"    indexed="true"  stored="true" docValues="true" />
+   <dynamicField name="*_l_dv"  type="long"    indexed="true"  stored="true" docValues="true" />
+   <dynamicField name="*_f_dv"  type="float"    indexed="true"  stored="true" docValues="true" />
+   <dynamicField name="*_d_dv"  type="double"    indexed="true"  stored="true" docValues="true" />
+   <dynamicField name="*_dt_dv"  type="date"    indexed="true"  stored="true" docValues="true" />
+   <dynamicField name="*_f1_dv"  type="float"    indexed="true"  stored="true" docValues="true" multiValued="false" />
 
    <!--  Non-stored, DocValues=true -->
-   <dynamicField name="*_i_dvo" multiValued="false" type="int"    docValues="true" indexed="true" stored="false" useDocValuesAsStored="true"/>
-   <dynamicField name="*_d_dvo" multiValued="false" type="double" docValues="true" indexed="true" stored="false" useDocValuesAsStored="true"/>
-   <dynamicField name="*_s_dvo" multiValued="false" type="string" docValues="true" indexed="true" stored="false" useDocValuesAsStored="true"/>
-   <dynamicField name="*_ii_dvo" multiValued="true" type="int"    docValues="true" indexed="true" stored="false" useDocValuesAsStored="true"/>
-   <dynamicField name="*_dd_dvo" multiValued="true" type="double" docValues="true" indexed="true" stored="false" useDocValuesAsStored="true"/>
+   <dynamicField name="*_i_dvo" multiValued="false" type="int"    docValues="true" indexed="true" stored="false" useDocValuesAsStored="true" />
+   <dynamicField name="*_d_dvo" multiValued="false" type="double" docValues="true" indexed="true" stored="false" useDocValuesAsStored="true" />
+   <dynamicField name="*_s_dvo" multiValued="false" type="string" docValues="true" indexed="true" stored="false" useDocValuesAsStored="true" />
+   <dynamicField name="*_ii_dvo" multiValued="true" type="int"    docValues="true" indexed="true" stored="false" useDocValuesAsStored="true" />
+   <dynamicField name="*_dd_dvo" multiValued="true" type="double" docValues="true" indexed="true" stored="false" useDocValuesAsStored="true" />
 
+   <!--  Non-stored, DocValues=true, useDocValuesAsStored=false -->
+   <field name="single_i_dvn" multiValued="false" type="int"    indexed="true" stored="true" />
+   <field name="single_d_dvn" multiValued="false" type="double" indexed="true" stored="true" />
+   <field name="single_s_dvn" multiValued="false" type="string" indexed="true" stored="true" />
+   <field name="copy_single_i_dvn" multiValued="false" type="int"    docValues="true" indexed="true" stored="false" useDocValuesAsStored="false" />
+   <field name="copy_single_d_dvn" multiValued="false" type="double" docValues="true" indexed="true" stored="false" useDocValuesAsStored="false" />
+   <field name="copy_single_s_dvn" multiValued="false" type="string" docValues="true" indexed="true" stored="false" useDocValuesAsStored="false" />
+   <copyField source="single_i_dvn" dest="copy_single_i_dvn" />
+   <copyField source="single_d_dvn" dest="copy_single_d_dvn" />
+   <copyField source="single_s_dvn" dest="copy_single_s_dvn" />
  </fields>
 
  <defaultSearchField>text</defaultSearchField>
