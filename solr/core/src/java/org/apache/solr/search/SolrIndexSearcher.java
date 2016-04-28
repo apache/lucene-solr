@@ -183,6 +183,9 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   /** Contains the names/patterns of all docValues=true,stored=false,useDocValuesAsStored=true fields in the schema. */
   private final Set<String> nonStoredDVsUsedAsStored;
 
+  /** Contains the names/patterns of all docValues=true,stored=false fields, excluding those that are copyField targets in the schema. */
+  private final Set<String> nonStoredDVsWithoutCopyTargets;
+
   private Collection<String> storedHighlightFieldNames;
   private DirectoryFactory directoryFactory;
 
@@ -359,6 +362,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     final Set<String> nonStoredDVsUsedAsStored = new HashSet<>();
     final Set<String> allNonStoredDVs = new HashSet<>();
+    final Set<String> nonStoredDVsWithoutCopyTargets = new HashSet<>();
+
     this.fieldInfos = leafReader.getFieldInfos();
     for (FieldInfo fieldInfo : fieldInfos) {
       final SchemaField schemaField = schema.getFieldOrNull(fieldInfo.name);
@@ -367,11 +372,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           nonStoredDVsUsedAsStored.add(fieldInfo.name);
         }
         allNonStoredDVs.add(fieldInfo.name);
+        if (!schema.isCopyFieldTarget(schemaField)) {
+          nonStoredDVsWithoutCopyTargets.add(fieldInfo.name);
+        }
       }
     }
 
     this.nonStoredDVsUsedAsStored = Collections.unmodifiableSet(nonStoredDVsUsedAsStored);
     this.allNonStoredDVs = Collections.unmodifiableSet(allNonStoredDVs);
+    this.nonStoredDVsWithoutCopyTargets = Collections.unmodifiableSet(nonStoredDVsWithoutCopyTargets);
 
     // We already have our own filter cache
     setQueryCache(null);
@@ -874,6 +883,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   public Set<String> getNonStoredDVs(boolean onlyUseDocValuesAsStored) {
     return onlyUseDocValuesAsStored ? nonStoredDVsUsedAsStored : allNonStoredDVs;
+  }
+
+  /**
+   * Returns an unmodifiable set of names of non-stored docValues fields, except those that are targets of a copy field.
+   */
+  public Set<String> getNonStoredDVsWithoutCopyTargets() {
+    return nonStoredDVsWithoutCopyTargets;
   }
 
   /* ********************** end document retrieval *************************/
