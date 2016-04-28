@@ -30,7 +30,6 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.core.ShutdownAwareDirectory;
-import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -260,22 +259,7 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
   }
   
   String getFileCacheName(String name) throws IOException {
-    return getFileCacheLocation(name) + ":" + getFileModified(name);
-  }
-  
-  private long getFileModified(String name) throws IOException {
-    if (in instanceof FSDirectory) {
-      File directory = ((FSDirectory) in).getDirectory().toFile();
-      File file = new File(directory, name);
-      if (!file.exists()) {
-        throw new FileNotFoundException("File [" + name + "] not found");
-      }
-      return file.lastModified();
-    } else if (in instanceof HdfsDirectory) {
-      return ((HdfsDirectory) in).fileModified(name);
-    } else {
-      throw new UnsupportedOperationException();
-    }
+    return getFileCacheLocation(name) + ":" + in.fileModified(name);
   }
   
   String getFileCacheLocation(String name) {

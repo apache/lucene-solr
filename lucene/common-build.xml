@@ -1454,6 +1454,7 @@ ${tests-output}/junit4-*.suites     - per-JVM executed suites
   <!-- Run the actual tests (must be wrapped with -init-totals, -check-totals) -->
   <target name="-test">
     <mkdir dir="${junit.output.dir}"/>
+    <!-- test-macro threadNum="${tests.jvms.override}" additional.vm.args="-Xdebug -agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=y" / -->
     <test-macro threadNum="${tests.jvms.override}" />
   </target>
 

@@ -165,4 +165,13 @@ public abstract class Directory implements Closeable {
    * @throws AlreadyClosedException if this Directory is closed
    */
   protected void ensureOpen() throws AlreadyClosedException {}
+  
+  /**
+   * Implementations can override this if they are capable of reporting modification time
+   * of a file in seconds since the epoch.
+   */
+  public long fileModified(String name) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+  
 }

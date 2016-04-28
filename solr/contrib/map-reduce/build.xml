@@ -37,11 +37,20 @@
     </ant>
   </target>
   
+  <solr-contrib-uptodate name="hdfs" 
+                         property="solr-hdfs.uptodate"/>
+  
+  <target name="compile-hdfs" unless="solr-hdfs.uptodate">
+   <ant dir="${common-solr.dir}/contrib/hdfs" target="compile-core" inheritAll="false">
+      <propertyset refid="uptodate.and.compiled.properties"/>
+    </ant>
+  </target>
+  
   <solr-contrib-uptodate name="morphlines-core" 
                          property="solr-morphlines-core.uptodate"/>
   
   <target name="compile-morphlines-core" unless="solr-morphlines-core.uptodate">
-   <ant dir="${common-solr.dir}/contrib/morphlines-core" target="compile-core" inheritAll="false">
+    <ant dir="${common-solr.dir}/contrib/morphlines-core" target="compile-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
@@ -60,6 +69,12 @@
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>
   </target>
+	 
+  <target name="resolve-hdfs-libs">
+	  <ant dir="${common-solr.dir}/contrib/hdfs" target="resolve" inheritAll="false">
+	    <propertyset refid="uptodate.and.compiled.properties"/>
+	  </ant>
+	</target>
 
   <target name="resolve-morphlines-core-libs">
     <ant dir="${common-solr.dir}/contrib/morphlines-core" target="resolve" inheritAll="false">
@@ -74,6 +89,8 @@
   </target>
 
   <path id="classpath.additions">
+    <pathelement location="${common-solr.dir}/build/contrib/solr-hdfs/classes/java"/>
+    <fileset dir="${common-solr.dir}/contrib/hdfs/lib" excludes="${common.classpath.excludes}"/>
     <pathelement location="${common-solr.dir}/build/contrib/solr-cell/classes/java"/>
     <fileset dir="${common-solr.dir}/contrib/extraction/lib" excludes="${common.classpath.excludes}"/>
     <pathelement location="${common-solr.dir}/build/contrib/solr-morphlines-core/classes/java"/>
@@ -141,7 +158,7 @@
     </ant>
   </target>
   
-  <target name="compile-core" depends="resolve-extraction-libs, resolve-morphlines-core-libs, resolve-morphlines-cell-libs, compile-solr-extraction, compile-morphlines-core, compile-morphlines-cell, solr-contrib-build.compile-core"/>
+  <target name="compile-core" depends="resolve-extraction-libs, resolve-hdfs-libs, resolve-morphlines-core-libs, resolve-morphlines-cell-libs, compile-solr-extraction, compile-hdfs, compile-morphlines-core, compile-morphlines-cell, solr-contrib-build.compile-core"/>
 
   <property name="main.class" value="org.apache.solr.hadoop.MapReduceIndexerTool" />
   <target name="jar-core" depends="compile-core">

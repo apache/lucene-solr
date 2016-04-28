@@ -838,7 +838,7 @@ public class Overseer implements Closeable {
     ThreadGroup ohcfTg = new ThreadGroup("Overseer Hdfs SolrCore Failover Thread.");
 
     OverseerAutoReplicaFailoverThread autoReplicaFailoverThread = new OverseerAutoReplicaFailoverThread(config, reader, updateShardHandler);
-    arfoThread = new OverseerThread(ohcfTg, autoReplicaFailoverThread, "OverseerHdfsCoreFailoverThread-" + id);
+    arfoThread = new OverseerThread(ohcfTg, autoReplicaFailoverThread, "OverseerAutoReplicaFailoverThread-" + id);
     arfoThread.setDaemon(true);
     
     updaterThread.start();

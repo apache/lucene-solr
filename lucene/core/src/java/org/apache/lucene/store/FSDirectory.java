@@ -17,6 +17,7 @@
 package org.apache.lucene.store;
 
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilterOutputStream;
 import java.io.IOException;
@@ -320,6 +321,16 @@ public abstract class FSDirectory extends BaseDirectory {
 
   protected void fsync(String name) throws IOException {
     IOUtils.fsync(directory.resolve(name), false);
+  }
+  
+  @Override
+  public long fileModified(String name) throws IOException {
+    File directory = getDirectory().toFile();
+    File file = new File(directory, name);
+    if (!file.exists()) {
+      throw new FileNotFoundException("File [" + name + "] not found");
+    }
+    return file.lastModified();
   }
 
   @Override

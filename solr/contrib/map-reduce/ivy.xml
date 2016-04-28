@@ -24,6 +24,8 @@
   </configurations>
 
   <dependencies>
+    <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="compile" />
+    <dependency org="org.apache.hadoop" name="hadoop-annotations" rev="${/org.apache.hadoop/hadoop-annotations}" conf="compile" />
     <dependency org="org.apache.hadoop" name="hadoop-mapreduce-client-core" rev="${/org.apache.hadoop/hadoop-mapreduce-client-core}" conf="compile" />
     <dependency org="net.sourceforge.argparse4j" name="argparse4j" rev="${/net.sourceforge.argparse4j/argparse4j}" conf="compile" />
     <dependency org="org.kitesdk" name="kite-morphlines-saxon" rev="${/org.kitesdk/kite-morphlines-saxon}" conf="compile" />

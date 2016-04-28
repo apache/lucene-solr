@@ -21,8 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Vector;
 
-import org.apache.solr.core.DirectoryFactory;
-import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
@@ -113,18 +111,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
         dataDir = core.getDataDir();
       }
 
-      if (dataDir != null && dataDir.startsWith("hdfs:/")) {
-        DirectoryFactory dirFactory = core.getDirectoryFactory();
-        if (dirFactory instanceof HdfsDirectoryFactory) {
-          ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
-        } else {
-          ulog = new HdfsUpdateLog();
-        }
-
-      } else {
-        String className = ulogPluginInfo.className == null ? UpdateLog.class.getName() : ulogPluginInfo.className;
-        ulog = core.getResourceLoader().newInstance(className, UpdateLog.class);
-      }
+      ulog = initialisePluginUpdateLog(core, dataDir, ulogPluginInfo);
 
       if (!core.isReloaded() && !core.getDirectoryFactory().isPersistent()) {
         ulog.clearLog(core, ulogPluginInfo);
@@ -200,4 +187,16 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   }
 
   public abstract void split(SplitIndexCommand cmd) throws IOException;
+  
+  private static UpdateLog initialisePluginUpdateLog(SolrCore core, String dataDir, PluginInfo ulogPluginInfo)
+  {
+    String className = ulogPluginInfo.className;
+    if (System.getProperty("test.hdfs.forceHdfsUpdateLog") != null) {
+      className = "solr.HdfsUpdateLog";
+    }
+    if (className != null) {
+      return core.getResourceLoader().newInstance(className, UpdateLog.class);
+    }
+    return new UpdateLog();
+  }
 }

@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
@@ -150,7 +149,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
           // version whenever a leader registers.
           log.info("Removing leader registration node on cancel: {} {}", leaderPath, leaderZkNodeParentVersion);
           List<Op> ops = new ArrayList<>(2);
-          ops.add(Op.check(new Path(leaderPath).getParent().toString(), leaderZkNodeParentVersion));
+          ops.add(Op.check(CloudUtil.getPathParent(leaderPath), leaderZkNodeParentVersion));
           ops.add(Op.delete(leaderPath, -1));
           zkClient.multi(ops, true);
         } catch (KeeperException.NoNodeException nne) {
@@ -175,7 +174,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
       throws KeeperException, InterruptedException, IOException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
-    String parent = new Path(leaderPath).getParent().toString();
+    String parent = CloudUtil.getPathParent(leaderPath);
     ZkCmdExecutor zcmd = new ZkCmdExecutor(30000);
     zcmd.ensureExists(parent, zkClient);
 

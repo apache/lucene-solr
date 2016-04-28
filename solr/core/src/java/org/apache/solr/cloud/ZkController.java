@@ -2144,7 +2144,7 @@ public final class ZkController {
     // TODO: should we do this optimistically to avoid races?
     if (zkClient.exists(znodePath, retryOnConnLoss)) {
       List<Op> ops = new ArrayList<>(2);
-      ops.add(Op.check(new org.apache.hadoop.fs.Path(((ShardLeaderElectionContextBase)context).leaderPath).getParent().toString(), leaderZkNodeParentVersion));
+      ops.add(Op.check(CloudUtil.getPathParent(((ShardLeaderElectionContextBase)context).leaderPath), leaderZkNodeParentVersion));
       ops.add(Op.setData(znodePath, znodeData, -1));
       zkClient.multi(ops, retryOnConnLoss);
     } else {
@@ -2157,7 +2157,7 @@ public final class ZkController {
       
       // we only create the entry if the context we are using is registered as the current leader in ZK
       List<Op> ops = new ArrayList<>(2);
-      ops.add(Op.check(new org.apache.hadoop.fs.Path(((ShardLeaderElectionContextBase)context).leaderPath).getParent().toString(), leaderZkNodeParentVersion));
+      ops.add(Op.check(CloudUtil.getPathParent(((ShardLeaderElectionContextBase)context).leaderPath), leaderZkNodeParentVersion));
       ops.add(Op.create(znodePath, znodeData, zkClient.getZkACLProvider().getACLsToAdd(znodePath),
           CreateMode.PERSISTENT));
       zkClient.multi(ops, retryOnConnLoss);

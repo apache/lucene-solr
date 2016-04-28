@@ -128,4 +128,14 @@ public class CloudUtil {
 
   }
 
+  /**
+   * Simple path 'get parent' function that doesn't invoke java.io.File (which mangles
+   * leading protocol e.g. hdfs://) or org.apache.hadoop.fs.Path. We assume the path
+   * separator is '/', as per the latter.
+   */
+  public static String getPathParent(String path) {
+    int j = path.lastIndexOf('/');
+    return path.substring(0, j > 0 ? j : 0);
+  }
+  
 }
