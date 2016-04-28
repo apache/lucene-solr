@@ -88,6 +88,10 @@ class SolrSchema extends AbstractSchema {
         case "long":
           type = typeFactory.createJavaType(Long.class);
           break;
+        case "float":
+        case "double":
+          type = typeFactory.createJavaType(Double.class);
+          break;
         default:
           type = typeFactory.createJavaType(String.class);
       }
