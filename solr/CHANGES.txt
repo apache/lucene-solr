@@ -162,6 +162,8 @@ Bug Fixes
 * SOLR-9034: Atomic updates failed to work when there were copyField targets that had docValues
   enabled. (Karthik Ramachandran, Ishan Chattopadhyaya, yonik)
 
+* SOLR-9028: Fixed some test related bugs preventing SSL + ClientAuth from ever being tested (hossman)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
