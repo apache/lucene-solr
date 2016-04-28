@@ -16,11 +16,9 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
-import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 /**
  * GeoComplexPolygon objects are structures designed to handle very large numbers of edges.
@@ -130,7 +128,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // Use the XZ plane exclusively.
       final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointXZPlane, testPointXZAbovePlane, testPointXZBelowPlane, testPoint, thePoint);
       // Traverse our way from the test point to the check point.  Use the y tree because that's fixed.
-      if (!yTree.traverse(crossingEdgeIterator, testPoint.y, testPoint.y)) {
+      if (!yTree.traverse(crossingEdgeIterator, testPoint.y)) {
         // Endpoint is on edge
         return true;
       }
@@ -139,7 +137,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // Use the YZ plane exclusively.
       final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointYZPlane, testPointYZAbovePlane, testPointYZBelowPlane, testPoint, thePoint);
       // Traverse our way from the test point to the check point.  Use the x tree because that's fixed.
-      if (!xTree.traverse(crossingEdgeIterator, testPoint.x, testPoint.x)) {
+      if (!xTree.traverse(crossingEdgeIterator, testPoint.x)) {
         // Endpoint is on edge
         return true;
       }
@@ -148,7 +146,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // Use the XY plane exclusively.
       final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointXYPlane, testPointXYAbovePlane, testPointXYBelowPlane, testPoint, thePoint);
       // Traverse our way from the test point to the check point.  Use the z tree because that's fixed.
-      if (!zTree.traverse(crossingEdgeIterator, testPoint.z, testPoint.z)) {
+      if (!zTree.traverse(crossingEdgeIterator, testPoint.z)) {
         // Endpoint is on edge
         return true;
       }
@@ -280,11 +278,11 @@ class GeoComplexPolygon extends GeoBasePolygon {
       assert bestDistance < Double.MAX_VALUE : "Couldn't find an intersection point of any kind";
       
       final DualCrossingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(firstLegPlane, firstLegAbovePlane, firstLegBelowPlane, secondLegPlane, testPoint, thePoint, intersectionPoint);
-      if (!firstLegTree.traverse(edgeIterator, firstLegValue, firstLegValue)) {
+      if (!firstLegTree.traverse(edgeIterator, firstLegValue)) {
         return true;
       }
       edgeIterator.setSecondLeg();
-      if (!secondLegTree.traverse(edgeIterator, secondLegValue, secondLegValue)) {
+      if (!secondLegTree.traverse(edgeIterator, secondLegValue)) {
         return true;
       }
       return ((edgeIterator.crossingCount  & 1) == 0)?testPointInSet:!testPointInSet;
@@ -304,6 +302,9 @@ class GeoComplexPolygon extends GeoBasePolygon {
     // First, compute the bounds for the the plane
     final XYZBounds xyzBounds = new XYZBounds();
     p.recordBounds(planetModel, xyzBounds, bounds);
+    for (final GeoPoint point : notablePoints) {
+      xyzBounds.addPoint(point);
+    }
     // Figure out which tree likely works best
     final double xDelta = xyzBounds.getMaximumX() - xyzBounds.getMinimumX();
     final double yDelta = xyzBounds.getMaximumY() - xyzBounds.getMinimumY();
@@ -387,6 +388,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       this.planeBounds.addPoint(startPoint);
       this.planeBounds.addPoint(endPoint);
       this.plane.recordBounds(pm, this.planeBounds, this.startPlane, this.endPlane);
+      System.err.println("Recording edge from "+startPoint+" to "+endPoint+"; bounds = "+planeBounds);
     }
   }
   
@@ -404,39 +406,6 @@ class GeoComplexPolygon extends GeoBasePolygon {
   }
   
   /**
-   * Comparison interface for tree traversal.  An object implementing this interface
-   * gets to decide the relationship between the Edge object and the criteria being considered.
-   */
-  private static interface TraverseComparator {
-    
-    /**
-     * Compare an edge.
-     * @param edge is the edge to compare.
-     * @param minValue is the minimum value to compare (bottom of the range)
-     * @param maxValue is the maximum value to compare (top of the range)
-     * @return -1 if "less" than this one, 0 if overlaps, or 1 if "greater".
-     */
-    public int compare(final Edge edge, final double minValue, final double maxValue);
-    
-  }
-
-  /**
-   * Comparison interface for tree addition.  An object implementing this interface
-   * gets to decide the relationship between the Edge object and the criteria being considered.
-   */
-  private static interface AddComparator {
-    
-    /**
-     * Compare an edge.
-     * @param edge is the edge to compare.
-     * @param addEdge is the edge being added.
-     * @return -1 if "less" than this one, 0 if overlaps, or 1 if "greater".
-     */
-    public int compare(final Edge edge, final Edge addEdge);
-    
-  }
-  
-  /**
    * An instance of this class represents a node in a tree.  The tree is designed to be given
    * a value and from that to iterate over a list of edges.
    * In order to do this efficiently, each new edge is dropped into the tree using its minimum and
@@ -448,207 +417,249 @@ class GeoComplexPolygon extends GeoBasePolygon {
    *
    */
   private static class Node {
+    public final double minimumValue;
+    public final double maximumValue;
     public final Edge edge;
     public Node lesser = null;
     public Node greater = null;
-    public Node overlaps = null;
+    public Node within = null;
     
-    public Node(final Edge edge) {
+    public Node(final Edge edge, final double minimumValue, final double maximumValue) {
       this.edge = edge;
+      this.minimumValue = minimumValue;
+      this.maximumValue = maximumValue;
     }
     
-    public void add(final Edge newEdge, final AddComparator edgeComparator) {
-      Node currentNode = this;
-      while (true) {
-        final int result = edgeComparator.compare(currentNode.edge, newEdge);
-        if (result < 0) {
-          if (currentNode.lesser == null) {
-            currentNode.lesser = new Node(newEdge);
-            return;
-          }
-          currentNode = currentNode.lesser;
-        } else if (result > 0) {
-          if (currentNode.greater == null) {
-            currentNode.greater = new Node(newEdge);
-            return;
-          }
-          currentNode = currentNode.greater;
-        } else {
-          if (currentNode.overlaps == null) {
-            currentNode.overlaps = new Node(newEdge);
-            return;
-          }
-          currentNode = currentNode.overlaps;
-        }
-      }
-    }
-    
-    public boolean traverse(final EdgeIterator edgeIterator, final TraverseComparator edgeComparator, final double minValue, final double maxValue) {
-      Node currentNode = this;
-      while (currentNode != null) {
-        final int result = edgeComparator.compare(currentNode.edge, minValue, maxValue);
-        if (result < 0) {
-          currentNode = currentNode.lesser;
-        } else if (result > 0) {
-          currentNode = currentNode.greater;
-        } else {
-          if (!edgeIterator.matches(currentNode.edge)) {
-            return false;
-          }
-          currentNode = currentNode.overlaps;
-        }
-      }
-      return true;
-    }
   }
   
   /** An interface describing a tree.
    */
-  private static interface Tree {
+  private static abstract class Tree {
+    private Node rootNode = null;
     
-    public void add(final Edge edge);
+    protected static final int CONTAINED = 0;
+    protected static final int WITHIN = 1;
+    protected static final int OVERLAPS_MINIMUM = 2;
+    protected static final int OVERLAPS_MAXIMUM = 3;
+    protected static final int LESS = 4;
+    protected static final int GREATER = 5;
     
-    public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue);
+    /** Add a new edge to the tree.
+     * @param edge is the edge to add.
+     */
+    public void add(final Edge edge) {
+      rootNode = addEdge(rootNode, edge, getMinimum(edge), getMaximum(edge));
+    }
 
+    /** Get the minimum value from the edge.
+     * @param edge is the edge.
+     * @return the minimum value.
+     */
+    protected abstract double getMinimum(final Edge edge);
+    
+    /** Get the maximum value from the edge.
+     * @param edge is the edge.
+     * @return the maximum value.
+     */
+    protected abstract double getMaximum(final Edge edge);
+    
+    /** Worker method for adding an edge.
+     * @param node is the node to add into.
+     * @param newEdge is the new edge to add.
+     * @param minimumValue is the minimum limit of the subrange of the edge we'll be adding.
+     * @param maximumValue is the maximum limit of the subrange of the edge we'll be adding.
+     * @return the updated node reference.
+     */
+    protected Node addEdge(final Node node, final Edge newEdge, final double minimumValue, final double maximumValue) {
+      if (node == null) {
+        // Create and return a new node
+        return new Node(newEdge, minimumValue, maximumValue);
+      }
+      // Compare with what's here
+      int result = compareForAdd(node.minimumValue, node.maximumValue, minimumValue, maximumValue);
+      switch (result) {
+      case CONTAINED:
+        // The node is contained in the range provided.  We need to create a new node and insert
+        // it into the "within" chain.
+        final Node rval = new Node(newEdge, minimumValue, maximumValue);
+        rval.within = node.within;
+        return rval;
+      case WITHIN:
+        // The new edge is within the node provided
+        node.within = addEdge(node.within, newEdge, minimumValue, maximumValue);
+        return node;
+      case OVERLAPS_MINIMUM:
+        // The new edge overlaps the minimum value, but not the maximum value.
+        // Here we need to create TWO entries: one for the lesser side, and one for the within chain.
+        final double lesserMaximum = Math.nextDown(node.minimumValue);
+        node.lesser = addEdge(node.lesser, newEdge, minimumValue, lesserMaximum);
+        return addEdge(node, newEdge, node.minimumValue, maximumValue);
+      case OVERLAPS_MAXIMUM:
+        // The new edge overlaps the maximum value, but not the minimum value.
+        // Need to create two entries, one on the greater side, and one back into the current node.
+        final double greaterMinimum = Math.nextUp(node.maximumValue);
+        node.greater = addEdge(node.greater, newEdge, greaterMinimum, maximumValue);
+        return addEdge(node, newEdge, minimumValue, node.maximumValue);
+      case LESS:
+        // The new edge is clearly less than the current node.
+        node.lesser = addEdge(node.lesser, newEdge, minimumValue, maximumValue);
+        return node;
+      case GREATER:
+        // The new edge is clearly greater than the current node.
+        node.greater = addEdge(node.greater, newEdge, minimumValue, maximumValue);
+        return node;
+      default:
+        throw new RuntimeException("Unexpected comparison result: "+result);
+      }
+      
+    }
+    
+    /** Traverse the tree, finding all edges that intersect the provided value.
+     * @param edgeIterator provides the method to call for any encountered matching edge.
+     * @param value is the value to match.
+     * @return false if the traversal was aborted before completion.
+     */
+    public boolean traverse(final EdgeIterator edgeIterator, final double value) {
+      // Since there is one distinct value we are looking for, we can just do a straight descent through the nodes.
+      Node currentNode = rootNode;
+      while (currentNode != null) {
+        if (value < currentNode.minimumValue) {
+          currentNode = currentNode.lesser;
+        } else if (value > currentNode.maximumValue) {
+          currentNode = currentNode.greater;
+        } else {
+          // We're within the bounds of the node.  Call the iterator, and descend
+          if (!edgeIterator.matches(currentNode.edge)) {
+            return false;
+          }
+          currentNode = currentNode.within;
+        }
+      }
+      return true;
+    }
+    
+    /** Traverse the tree, finding all edges that intersect the provided value range.
+     * @param edgeIterator provides the method to call for any encountered matching edge.
+     *   Edges will not be invoked more than once.
+     * @param minValue is the minimum value.
+     * @param maxValue is the maximum value.
+     * @return false if the traversal was aborted before completion.
+     */
+    public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue) {
+      // This is tricky because edges are duplicated in the tree (where they got split).
+      // We need to eliminate those duplicate edges as we traverse.  This requires us to keep a set of edges we've seen.
+      // Luckily, the number of edges we're likely to encounter in a real-world situation is small, so we can get away with it.
+      return traverseEdges(rootNode, edgeIterator, minValue, maxValue, new HashSet<>());
+    }
+
+    protected boolean traverseEdges(final Node node, final EdgeIterator edgeIterator, final double minValue, final double maxValue, final Set<Edge> edgeSet) {
+      if (node == null) {
+        return true;
+      }
+      if (maxValue < node.minimumValue) {
+        return traverseEdges(node.lesser, edgeIterator, minValue, maxValue, edgeSet);
+      } else if (minValue > node.maximumValue) {
+        return traverseEdges(node.greater, edgeIterator, minValue, maxValue, edgeSet);
+      } else {
+        // There's overlap with the current node, and there may also be overlap with the lesser side and greater side
+        if (minValue < node.minimumValue) {
+          if (!traverseEdges(node.lesser, edgeIterator, minValue, maxValue, edgeSet)) {
+            return false;
+          }
+        }
+        if (!edgeSet.contains(node.edge)) {
+          if (!edgeIterator.matches(node.edge)) {
+            return false;
+          }
+          edgeSet.add(node.edge);
+        }
+        if (maxValue > node.maximumValue) {
+          if (!traverseEdges(node.greater, edgeIterator, minValue, maxValue, edgeSet)) {
+            return false;
+          }
+        }
+        return traverseEdges(node.within, edgeIterator, minValue, maxValue, edgeSet);
+      }
+    }
+    
+    /** Compare a node against a subrange of a new edge.
+     * @param node is the node to compare.
+     * @param newEdge is the edge being added.
+     * @param minimumValue is the minimum value for the edge being added.
+     * @param maximumValue is the maximum value for the edge being added.
+     * @return the comparison result.
+     */
+    protected int compareForAdd(final double nodeMinimumValue, final double nodeMaximumValue, final double minimumValue, final double maximumValue) {
+      if (minimumValue <= nodeMinimumValue && maximumValue >= nodeMaximumValue) {
+        return CONTAINED;
+      } else if (nodeMinimumValue <= minimumValue && nodeMaximumValue >= maximumValue) {
+        return WITHIN;
+      } else if (maximumValue < nodeMinimumValue) {
+        return LESS;
+      } else if (minimumValue > nodeMaximumValue) {
+        return GREATER;
+      } else if (minimumValue < nodeMinimumValue) {
+        return OVERLAPS_MINIMUM;
+      } else {
+        return OVERLAPS_MAXIMUM;
+      }
+    }
   }
   
   /** This is the z-tree.
    */
-  private static class ZTree implements Tree, TraverseComparator, AddComparator {
+  private static class ZTree extends Tree {
     public Node rootNode = null;
     
     public ZTree() {
     }
     
     @Override
-    public void add(final Edge edge) {
-      if (rootNode == null) {
-        rootNode = new Node(edge);
-      } else {
-        rootNode.add(edge, this);
-      }
+    protected double getMinimum(final Edge edge) {
+      return edge.planeBounds.getMinimumZ();
     }
     
     @Override
-    public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue) {
-      if (rootNode == null) {
-        return true;
-      }
-      return rootNode.traverse(edgeIterator, this, minValue, maxValue);
+    protected double getMaximum(final Edge edge) {
+      return edge.planeBounds.getMaximumZ();
     }
-    
-    @Override
-    public int compare(final Edge edge, final Edge addEdge) {
-      if (edge.planeBounds.getMaximumZ() < addEdge.planeBounds.getMinimumZ()) {
-        return 1;
-      } else if (edge.planeBounds.getMinimumZ() > addEdge.planeBounds.getMaximumZ()) {
-        return -1;
-      }
-      return 0;
-    }
-    
-    @Override
-    public int compare(final Edge edge, final double minValue, final double maxValue) {
-      if (edge.planeBounds.getMinimumZ() > maxValue) {
-        return -1;
-      } else if (edge.planeBounds.getMaximumZ() < minValue) {
-        return 1;
-      }
-      return 0;
-    }
-    
+
   }
   
   /** This is the y-tree.
    */
-  private static class YTree implements Tree, TraverseComparator, AddComparator {
-    public Node rootNode = null;
+  private static class YTree extends Tree {
     
     public YTree() {
     }
     
     @Override
-    public void add(final Edge edge) {
-      if (rootNode == null) {
-        rootNode = new Node(edge);
-      } else {
-        rootNode.add(edge, this);
-      }
+    protected double getMinimum(final Edge edge) {
+      return edge.planeBounds.getMinimumY();
     }
     
     @Override
-    public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue) {
-      if (rootNode == null) {
-        return true;
-      }
-      return rootNode.traverse(edgeIterator, this, minValue, maxValue);
-    }
-    
-    @Override
-    public int compare(final Edge edge, final Edge addEdge) {
-      if (edge.planeBounds.getMaximumY() < addEdge.planeBounds.getMinimumY()) {
-        return 1;
-      } else if (edge.planeBounds.getMinimumY() > addEdge.planeBounds.getMaximumY()) {
-        return -1;
-      }
-      return 0;
-    }
-    
-    @Override
-    public int compare(final Edge edge, final double minValue, final double maxValue) {
-      if (edge.planeBounds.getMinimumY() > maxValue) {
-        return -1;
-      } else if (edge.planeBounds.getMaximumY() < minValue) {
-        return 1;
-      }
-      return 0;
+    protected double getMaximum(final Edge edge) {
+      return edge.planeBounds.getMaximumY();
     }
     
   }
 
   /** This is the x-tree.
    */
-  private static class XTree implements Tree, TraverseComparator, AddComparator {
-    public Node rootNode = null;
+  private static class XTree extends Tree {
     
     public XTree() {
     }
     
     @Override
-    public void add(final Edge edge) {
-      if (rootNode == null) {
-        rootNode = new Node(edge);
-      } else {
-        rootNode.add(edge, this);
-      }
+    protected double getMinimum(final Edge edge) {
+      return edge.planeBounds.getMinimumX();
     }
     
     @Override
-    public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue) {
-      if (rootNode == null) {
-        return true;
-      }
-      return rootNode.traverse(edgeIterator, this, minValue, maxValue);
-    }
-    
-    @Override
-    public int compare(final Edge edge, final Edge addEdge) {
-      if (edge.planeBounds.getMaximumX() < addEdge.planeBounds.getMinimumX()) {
-        return 1;
-      } else if (edge.planeBounds.getMinimumX() > addEdge.planeBounds.getMaximumX()) {
-        return -1;
-      }
-      return 0;
-    }
-    
-    @Override
-    public int compare(final Edge edge, final double minValue, final double maxValue) {
-      if (edge.planeBounds.getMinimumX() > maxValue) {
-        return -1;
-      } else if (edge.planeBounds.getMaximumX() < minValue) {
-        return 1;
-      }
-      return 0;
+    protected double getMaximum(final Edge edge) {
+      return edge.planeBounds.getMaximumX();
     }
     
   }
@@ -924,8 +935,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
     
     @Override
     public boolean matches(final Edge edge) {
+      System.err.println("Processing edge "+edge);
       // Early exit if the point is on the edge.
       if (thePoint != null && edge.plane.evaluateIsZero(thePoint) && edge.startPlane.isWithin(thePoint) && edge.endPlane.isWithin(thePoint)) {
+        System.err.println(" Check point is on edge: isWithin = true");
         return false;
       }
       // If the intersection point lies on this edge, we should still be able to consider crossing points only.
@@ -942,11 +955,15 @@ class GeoComplexPolygon extends GeoBasePolygon {
         for (final GeoPoint crossingPoint : crossingPoints) {
           countCrossingPoint(crossingPoint, edge);
         }
+        System.err.println(" All crossing points processed");
+      } else {
+        System.err.println(" No crossing points!");
       }
       return true;
     }
 
     private void countCrossingPoint(final GeoPoint crossingPoint, final Edge edge) {
+      System.err.println(" Crossing point "+crossingPoint);
       // We consider crossing points only in this method.
       // Unlike the linear case, there are additional cases when:
       // (1) The crossing point and the intersection point are the same, but are not the endpoint of an edge;
@@ -960,12 +977,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // In either case, we have to be sure to count each edge only once, since it might appear in both the
       // first leg and the second.  If the first leg can process it, it should, and the second should skip it.
       if (crossingPoint.isNumericallyIdentical(intersectionPoint)) {
+        System.err.println(" Crosses intersection point.");
         if (isSecondLeg) {
           // See whether this edge would have been processed in the first leg; if so, we skip it.
           final GeoPoint[] firstLegCrossings = testPointPlane.findCrossings(planetModel, edge.plane, testPointCutoffPlane, testPointOtherCutoffPlane, edge.startPlane, edge.endPlane);
           for (final GeoPoint firstLegCrossing : firstLegCrossings) {
             if (firstLegCrossing.isNumericallyIdentical(intersectionPoint)) {
               // We already processed it, so we're done here.
+              System.err.println("  Already processed on previous leg: exit");
               return;
             }
           }
@@ -994,6 +1013,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
         
       if (crossingPoint.isNumericallyIdentical(edge.startPoint)) {
+        System.err.println(" Crossing point = edge.startPoint");
         // We have to figure out if this crossing should be counted.
           
         // Does the crossing for this edge go up, or down?  Or can't we tell?
@@ -1062,6 +1082,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         }
           
       } else if (crossingPoint.isNumericallyIdentical(edge.endPoint)) {
+        System.err.println(" Crossing point = edge.endPoint");
         // Figure out if the crossing should be counted.
           
         // Does the crossing for this edge go up, or down?  Or can't we tell?
@@ -1115,6 +1136,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
           crossingCount++;
         }
       } else {
+        System.err.println(" Not a special case: incrementing crossing count");
         // Not a special case, so we can safely count a crossing.
         crossingCount++;
       }
