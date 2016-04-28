@@ -1,14 +1,3 @@
-package org.apache.solr.handler.sql;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.calcite.plan.Convention;
-import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.rel.RelNode;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -25,6 +14,16 @@ import org.apache.calcite.rel.RelNode;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.handler.sql;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.rel.RelNode;
 
 /**
  * Relational expression that uses Solr calling convention.
@@ -32,8 +31,8 @@ import org.apache.calcite.rel.RelNode;
 public interface SolrRel extends RelNode {
   void implement(Implementor implementor);
 
-  /** Calling convention for relational operations that occur in Cassandra. */
-  Convention CONVENTION = new Convention.Impl("SOLR", SolrRel.class);
+  /** Calling convention for relational operations that occur in Solr. */
+  Convention CONVENTION = new Convention.Impl("Solr", SolrRel.class);
 
   /** Callback for the implementation process that converts a tree of {@link SolrRel} nodes into a Solr query. */
   class Implementor {

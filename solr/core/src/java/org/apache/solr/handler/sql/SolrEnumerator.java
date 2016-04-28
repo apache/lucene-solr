@@ -1,12 +1,3 @@
-package org.apache.solr.handler.sql;
-
-import java.io.IOException;
-import java.util.List;
-
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.stream.TupleStream;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -23,6 +14,14 @@ import org.apache.solr.client.solrj.io.stream.TupleStream;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.handler.sql;
+
+import java.io.IOException;
+import java.util.List;
+
+import org.apache.calcite.linq4j.Enumerator;
+import org.apache.solr.client.solrj.io.Tuple;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
 
 /** Enumerator that reads from a Solr collection. */
 class SolrEnumerator implements Enumerator<Object> {

@@ -1,11 +1,3 @@
-package org.apache.solr.handler.sql;
-
-import java.util.Map;
-
-import org.apache.calcite.schema.Schema;
-import org.apache.calcite.schema.SchemaFactory;
-import org.apache.calcite.schema.SchemaPlus;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,6 +14,13 @@ import org.apache.calcite.schema.SchemaPlus;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.handler.sql;
+
+import java.util.Map;
+
+import org.apache.calcite.schema.Schema;
+import org.apache.calcite.schema.SchemaFactory;
+import org.apache.calcite.schema.SchemaPlus;
 
 @SuppressWarnings("UnusedDeclaration")
 public class SolrSchemaFactory implements SchemaFactory {

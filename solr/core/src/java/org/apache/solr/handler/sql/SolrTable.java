@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.handler.sql;
 
 import java.io.IOException;
@@ -26,23 +42,6 @@ import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.common.params.CommonParams;
 
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 /**
  * Table based on a Solr collection
  */
@@ -70,18 +69,18 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
     return protoRowType.apply(typeFactory);
   }
   
-  public Enumerable<Object> query(final CloudSolrClient cloudSolrClient) {
-    return query(cloudSolrClient, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null);
+  public Enumerable<Object> query(final String zk) {
+    return query(zk, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null);
   }
 
   /** Executes a Solr query on the underlying table.
    *
-   * @param cloudSolrClient Solr CloudSolrClient
+   * @param zk Solr ZooKeeper connection string
    * @param fields List of fields to project
    * @param filterQueries A list of filterQueries which should be used in the query
    * @return Enumerator of results
    */
-  public Enumerable<Object> query(final CloudSolrClient cloudSolrClient, List<String> fields,
+  public Enumerable<Object> query(final String zk, List<String> fields,
                                   List<String> filterQueries, List<String> order, String limit) {
     Map<String, String> solrParams = new HashMap<>();
     solrParams.put(CommonParams.Q, "*:*");
@@ -117,7 +116,7 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
       public Enumerator<Object> enumerator() {
         TupleStream cloudSolrStream;
         try {
-          cloudSolrStream = new CloudSolrStream(cloudSolrClient.getZkHost(), collection, solrParams);
+          cloudSolrStream = new CloudSolrStream(zk, collection, solrParams);
           cloudSolrStream.open();
         } catch (IOException e) {
           throw new RuntimeException(e);
@@ -144,7 +143,7 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
 
     public Enumerator<T> enumerator() {
       //noinspection unchecked
-      final Enumerable<T> enumerable = (Enumerable<T>) getTable().query(getCloudSolrClient());
+      final Enumerable<T> enumerable = (Enumerable<T>) getTable().query(getZK());
       return enumerable.enumerator();
     }
 
@@ -152,8 +151,8 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
       return (SolrTable) table;
     }
 
-    private CloudSolrClient getCloudSolrClient() {
-      return schema.unwrap(SolrSchema.class).cloudSolrClient;
+    private String getZK() {
+      return schema.unwrap(SolrSchema.class).zk;
     }
 
     /** Called via code-generation.
@@ -162,7 +161,7 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
      */
     @SuppressWarnings("UnusedDeclaration")
     public Enumerable<Object> query(List<String> fields, List<String> filterQueries, List<String> order, String limit) {
-      return getTable().query(getCloudSolrClient(), fields, filterQueries, order, limit);
+      return getTable().query(getZK(), fields, filterQueries, order, limit);
     }
   }
 }

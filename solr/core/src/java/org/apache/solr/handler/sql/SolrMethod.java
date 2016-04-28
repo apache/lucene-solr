@@ -1,11 +1,3 @@
-package org.apache.solr.handler.sql;
-
-import java.lang.reflect.Method;
-import java.util.List;
-
-import com.google.common.collect.ImmutableMap;
-import org.apache.calcite.linq4j.tree.Types;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,6 +14,13 @@ import org.apache.calcite.linq4j.tree.Types;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.handler.sql;
+
+import java.lang.reflect.Method;
+import java.util.List;
+
+import com.google.common.collect.ImmutableMap;
+import org.apache.calcite.linq4j.tree.Types;
 
 /**
  * Builtin methods in the Solr adapter.

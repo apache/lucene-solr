@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.solr.handler.sql;
 
 import java.io.IOException;
@@ -20,53 +36,40 @@ import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.luke.FieldFlag;
 
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 class SolrSchema extends AbstractSchema {
-  final CloudSolrClient cloudSolrClient;
+  final String zk;
 
   SolrSchema(String zk) {
     super();
-    this.cloudSolrClient = new CloudSolrClient(zk);
-    this.cloudSolrClient.connect();
+    this.zk = zk;
   }
 
   @Override
   protected Map<String, Table> getTableMap() {
-    this.cloudSolrClient.connect();
-    Set<String> collections = this.cloudSolrClient.getZkStateReader().getClusterState().getCollections();
-    final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
-    for (String collection : collections) {
-      builder.put(collection, new SolrTable(this, collection));
+    try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zk).build()) {
+      cloudSolrClient.connect();
+      Set<String> collections = cloudSolrClient.getZkStateReader().getClusterState().getCollections();
+
+      final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
+      for (String collection : collections) {
+        builder.put(collection, new SolrTable(this, collection));
+      }
+      return builder.build();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
-    return builder.build();
   }
 
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(String collection) {
-    LukeRequest lukeRequest = new LukeRequest();
-    lukeRequest.setNumTerms(0);
-    LukeResponse lukeResponse;
-    try {
-      lukeResponse = lukeRequest.process(cloudSolrClient, collection);
+    try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zk).build()) {
+      cloudSolrClient.connect();
+      LukeRequest lukeRequest = new LukeRequest();
+      lukeRequest.setNumTerms(0);
+      LukeResponse lukeResponse = lukeRequest.process(cloudSolrClient, collection);
+      return lukeResponse.getFieldInfo();
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
     }
-    return lukeResponse.getFieldInfo();
   }
 
   RelProtoDataType getRelDataType(String collection) {
