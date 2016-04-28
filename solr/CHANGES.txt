@@ -159,6 +159,9 @@ Bug Fixes
 * SOLR-9046: Fix solr.cmd that wrongly assumes Jetty will always listen on 0.0.0.0.
   (Bram Van Dam, Uwe Schindler)
 
+* SOLR-9034: Atomic updates failed to work when there were copyField targets that had docValues
+  enabled. (Karthik Ramachandran, Ishan Chattopadhyaya, yonik)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
