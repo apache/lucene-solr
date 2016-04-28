@@ -20,6 +20,7 @@ import java.io.IOException;
 
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * A builder of {@link DocIdSet}s.  At first it uses a sparse structure to gather
@@ -174,7 +175,7 @@ public final class DocIdSetBuilder {
         return new BitDocIdSet(bitSet);
       } else {
         LSBRadixSorter sorter = new LSBRadixSorter();
-        sorter.sort(buffer, 0, bufferSize);
+        sorter.sort(PackedInts.bitsRequired(maxDoc - 1), buffer, bufferSize);
         final int l = dedup(buffer, bufferSize);
         assert l <= bufferSize;
         buffer = ArrayUtil.grow(buffer, l + 1);
