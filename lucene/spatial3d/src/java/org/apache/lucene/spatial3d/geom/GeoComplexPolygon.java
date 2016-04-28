@@ -40,15 +40,15 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private final boolean testPointInSet;
   private final GeoPoint testPoint;
   
-  private final Plane testPointXZPlane;
-  private final Plane testPointXZAbovePlane;
-  private final Plane testPointXZBelowPlane;
-  private final Plane testPointYZPlane;
-  private final Plane testPointYZAbovePlane;
-  private final Plane testPointYZBelowPlane;
-  private final Plane testPointXYPlane;
-  private final Plane testPointXYAbovePlane;
-  private final Plane testPointXYBelowPlane;
+  private final Plane testPointFixedYPlane;
+  private final Plane testPointFixedYAbovePlane;
+  private final Plane testPointFixedYBelowPlane;
+  private final Plane testPointFixedXPlane;
+  private final Plane testPointFixedXAbovePlane;
+  private final Plane testPointFixedXBelowPlane;
+  private final Plane testPointFixedZPlane;
+  private final Plane testPointFixedZAbovePlane;
+  private final Plane testPointFixedZBelowPlane;
   
   private final GeoPoint[] edgePoints;
   private final Edge[] shapeStartEdges;
@@ -69,16 +69,16 @@ class GeoComplexPolygon extends GeoBasePolygon {
     this.testPointInSet = testPointInSet;
     this.testPoint = testPoint;
     
-    this.testPointXZPlane = new Plane(0.0, 1.0, 0.0, -testPoint.y);
-    this.testPointYZPlane = new Plane(1.0, 0.0, 0.0, -testPoint.x);
-    this.testPointXYPlane = new Plane(0.0, 0.0, 1.0, -testPoint.z);
+    this.testPointFixedYPlane = new Plane(0.0, 1.0, 0.0, -testPoint.y);
+    this.testPointFixedXPlane = new Plane(1.0, 0.0, 0.0, -testPoint.x);
+    this.testPointFixedZPlane = new Plane(0.0, 0.0, 1.0, -testPoint.z);
     
-    this.testPointXZAbovePlane = new Plane(testPointXZPlane, true);
-    this.testPointXZBelowPlane = new Plane(testPointXZPlane, false);
-    this.testPointYZAbovePlane = new Plane(testPointYZPlane, true);
-    this.testPointYZBelowPlane = new Plane(testPointYZPlane, false);
-    this.testPointXYAbovePlane = new Plane(testPointXYPlane, true);
-    this.testPointXYBelowPlane = new Plane(testPointXYPlane, false);
+    this.testPointFixedYAbovePlane = new Plane(testPointFixedYPlane, true);
+    this.testPointFixedYBelowPlane = new Plane(testPointFixedYPlane, false);
+    this.testPointFixedXAbovePlane = new Plane(testPointFixedXPlane, true);
+    this.testPointFixedXBelowPlane = new Plane(testPointFixedXPlane, false);
+    this.testPointFixedZAbovePlane = new Plane(testPointFixedZPlane, true);
+    this.testPointFixedZBelowPlane = new Plane(testPointFixedZPlane, false);
 
     this.edgePoints = new GeoPoint[pointsList.size()];
     this.shapeStartEdges = new Edge[pointsList.size()];
@@ -124,27 +124,27 @@ class GeoComplexPolygon extends GeoBasePolygon {
     }
     
     // If we're right on top of any of the test planes, we navigate solely on that plane.
-    if (testPointXZPlane.evaluateIsZero(thePoint)) {
+    if (testPointFixedYPlane.evaluateIsZero(thePoint)) {
       // Use the XZ plane exclusively.
-      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointXZPlane, testPointXZAbovePlane, testPointXZBelowPlane, testPoint, thePoint);
+      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointFixedYPlane, testPointFixedYAbovePlane, testPointFixedYBelowPlane, testPoint, thePoint);
       // Traverse our way from the test point to the check point.  Use the y tree because that's fixed.
       if (!yTree.traverse(crossingEdgeIterator, testPoint.y)) {
         // Endpoint is on edge
         return true;
       }
       return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
-    } else if (testPointYZPlane.evaluateIsZero(thePoint)) {
+    } else if (testPointFixedXPlane.evaluateIsZero(thePoint)) {
       // Use the YZ plane exclusively.
-      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointYZPlane, testPointYZAbovePlane, testPointYZBelowPlane, testPoint, thePoint);
+      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointFixedXPlane, testPointFixedXAbovePlane, testPointFixedXBelowPlane, testPoint, thePoint);
       // Traverse our way from the test point to the check point.  Use the x tree because that's fixed.
       if (!xTree.traverse(crossingEdgeIterator, testPoint.x)) {
         // Endpoint is on edge
         return true;
       }
       return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
-    } else if (testPointXYPlane.evaluateIsZero(thePoint)) {
+    } else if (testPointFixedZPlane.evaluateIsZero(thePoint)) {
       // Use the XY plane exclusively.
-      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointXYPlane, testPointXYAbovePlane, testPointXYBelowPlane, testPoint, thePoint);
+      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointFixedZPlane, testPointFixedZAbovePlane, testPointFixedZBelowPlane, testPoint, thePoint);
       // Traverse our way from the test point to the check point.  Use the z tree because that's fixed.
       if (!zTree.traverse(crossingEdgeIterator, testPoint.z)) {
         // Endpoint is on edge
@@ -153,20 +153,18 @@ class GeoComplexPolygon extends GeoBasePolygon {
       return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
     } else {
       
-      System.err.println("isWithin() for check point "+thePoint+", test point "+testPoint);
-      
       // We need to use two planes to get there.  We don't know which two planes will do it but we can figure it out.
       final Plane travelPlaneFixedX = new Plane(1.0, 0.0, 0.0, -thePoint.x);
       final Plane travelPlaneFixedY = new Plane(0.0, 1.0, 0.0, -thePoint.y);
       final Plane travelPlaneFixedZ = new Plane(0.0, 0.0, 1.0, -thePoint.z);
 
       // Find the intersection points for each one of these and the complementary test point planes.
-      final GeoPoint[] XZIntersectionsYZ = travelPlaneFixedX.findIntersections(planetModel, testPointYZPlane);
-      final GeoPoint[] XZIntersectionsXY = travelPlaneFixedX.findIntersections(planetModel, testPointXYPlane);
-      final GeoPoint[] YZIntersectionsXZ = travelPlaneFixedY.findIntersections(planetModel, testPointXZPlane);
-      final GeoPoint[] YZIntersectionsXY = travelPlaneFixedY.findIntersections(planetModel, testPointXYPlane);
-      final GeoPoint[] XYIntersectionsYZ = travelPlaneFixedZ.findIntersections(planetModel, testPointYZPlane);
-      final GeoPoint[] XYIntersectionsXZ = travelPlaneFixedZ.findIntersections(planetModel, testPointXZPlane);
+      final GeoPoint[] XIntersectionsY = travelPlaneFixedX.findIntersections(planetModel, testPointFixedYPlane);
+      final GeoPoint[] XIntersectionsZ = travelPlaneFixedX.findIntersections(planetModel, testPointFixedZPlane);
+      final GeoPoint[] YIntersectionsX = travelPlaneFixedY.findIntersections(planetModel, testPointFixedXPlane);
+      final GeoPoint[] YIntersectionsZ = travelPlaneFixedY.findIntersections(planetModel, testPointFixedZPlane);
+      final GeoPoint[] ZIntersectionsX = travelPlaneFixedZ.findIntersections(planetModel, testPointFixedXPlane);
+      final GeoPoint[] ZIntersectionsY = travelPlaneFixedZ.findIntersections(planetModel, testPointFixedYPlane);
 
       // There will be multiple intersection points found.  We choose the one that has the lowest total distance, as measured in delta X, delta Y, and delta Z.
       double bestDistance = Double.MAX_VALUE;
@@ -180,106 +178,105 @@ class GeoComplexPolygon extends GeoBasePolygon {
       Tree secondLegTree = null;
       GeoPoint intersectionPoint = null;
       
-      for (final GeoPoint p : XZIntersectionsYZ) {
-        // Travel would be in XZ plane (fixed y) then in YZ (fixed x)
-        final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.x - p.x);
-        if (newDistance < bestDistance) {
-          bestDistance = newDistance;
-          firstLegValue = testPoint.y;
-          secondLegValue = thePoint.x;
-          firstLegPlane = testPointXZPlane;
-          firstLegAbovePlane = testPointXZAbovePlane;
-          firstLegBelowPlane = testPointXZBelowPlane;
-          secondLegPlane = travelPlaneFixedX;
-          firstLegTree = yTree;
-          secondLegTree = xTree;
-          intersectionPoint = p;
-        }
-      }
-      for (final GeoPoint p : XZIntersectionsXY) {
-        // Travel would be in XZ plane (fixed y) then in XY (fixed z)
-        final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.z - p.z);
-        if (newDistance < bestDistance) {
-          bestDistance = newDistance;
-          firstLegValue = testPoint.y;
-          secondLegValue = thePoint.z;
-          firstLegPlane = testPointXZPlane;
-          firstLegAbovePlane = testPointXZAbovePlane;
-          firstLegBelowPlane = testPointXZBelowPlane;
-          secondLegPlane = travelPlaneFixedZ;
-          firstLegTree = yTree;
-          secondLegTree = zTree;
-          intersectionPoint = p;
-        }
-      }
-      for (final GeoPoint p : YZIntersectionsXZ) {
+      for (final GeoPoint p : XIntersectionsY) {
         // Travel would be in YZ plane (fixed x) then in XZ (fixed y)
         final double newDistance = Math.abs(testPoint.x - p.x) + Math.abs(thePoint.y - p.y);
         if (newDistance < bestDistance) {
           bestDistance = newDistance;
-          firstLegValue = testPoint.x;
-          secondLegValue = thePoint.y;
-          firstLegPlane = testPointYZPlane;
-          firstLegAbovePlane = testPointYZAbovePlane;
-          firstLegBelowPlane = testPointYZBelowPlane;
-          secondLegPlane = travelPlaneFixedY;
-          firstLegTree = xTree;
-          secondLegTree = yTree;
+          firstLegValue = testPoint.y;
+          secondLegValue = thePoint.x;
+          firstLegPlane = testPointFixedYPlane;
+          firstLegAbovePlane = testPointFixedYAbovePlane;
+          firstLegBelowPlane = testPointFixedYBelowPlane;
+          secondLegPlane = travelPlaneFixedX;
+          firstLegTree = yTree;
+          secondLegTree = xTree;
           intersectionPoint = p;
         }
       }
-      for (final GeoPoint p : YZIntersectionsXY) {
+      for (final GeoPoint p : XIntersectionsZ) {
         // Travel would be in YZ plane (fixed x) then in XY (fixed z)
         final double newDistance = Math.abs(testPoint.x - p.x) + Math.abs(thePoint.z - p.z);
         if (newDistance < bestDistance) {
           bestDistance = newDistance;
-          firstLegValue = testPoint.x;
-          secondLegValue = thePoint.z;
-          firstLegPlane = testPointYZPlane;
-          firstLegAbovePlane = testPointYZAbovePlane;
-          firstLegBelowPlane = testPointYZBelowPlane;
-          secondLegPlane = travelPlaneFixedZ;
-          firstLegTree = xTree;
-          secondLegTree = zTree;
-          intersectionPoint = p;
-        }
-      }
-      for (final GeoPoint p : XYIntersectionsYZ) {
-        // Travel would be in XY plane (fixed z) then in YZ (fixed x)
-        final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.x - p.x);
-        if (newDistance < bestDistance) {
-          bestDistance = newDistance;
           firstLegValue = testPoint.z;
           secondLegValue = thePoint.x;
-          firstLegPlane = testPointXYPlane;
-          firstLegAbovePlane = testPointXYAbovePlane;
-          firstLegBelowPlane = testPointXYBelowPlane;
+          firstLegPlane = testPointFixedZPlane;
+          firstLegAbovePlane = testPointFixedZAbovePlane;
+          firstLegBelowPlane = testPointFixedZBelowPlane;
           secondLegPlane = travelPlaneFixedX;
           firstLegTree = zTree;
           secondLegTree = xTree;
           intersectionPoint = p;
         }
       }
-      for (final GeoPoint p : XYIntersectionsXZ) {
-        // Travel would be in XY plane (fixed z) then in XZ (fixed y)
-        final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.y - p.y);
+      for (final GeoPoint p : YIntersectionsX) {
+        // Travel would be in XZ plane (fixed y) then in YZ (fixed x)
+        final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.x - p.x);
+        if (newDistance < bestDistance) {
+          bestDistance = newDistance;
+          firstLegValue = testPoint.x;
+          secondLegValue = thePoint.y;
+          firstLegPlane = testPointFixedXPlane;
+          firstLegAbovePlane = testPointFixedXAbovePlane;
+          firstLegBelowPlane = testPointFixedXBelowPlane;
+          secondLegPlane = travelPlaneFixedY;
+          firstLegTree = xTree;
+          secondLegTree = yTree;
+          intersectionPoint = p;
+        }
+      }
+      for (final GeoPoint p : YIntersectionsZ) {
+        // Travel would be in XZ plane (fixed y) then in XY (fixed z)
+        final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.z - p.z);
         if (newDistance < bestDistance) {
           bestDistance = newDistance;
           firstLegValue = testPoint.z;
           secondLegValue = thePoint.y;
-          firstLegPlane = testPointXYPlane;
-          firstLegAbovePlane = testPointXYAbovePlane;
-          firstLegBelowPlane = testPointXYBelowPlane;
+          firstLegPlane = testPointFixedZPlane;
+          firstLegAbovePlane = testPointFixedZAbovePlane;
+          firstLegBelowPlane = testPointFixedZBelowPlane;
           secondLegPlane = travelPlaneFixedY;
           firstLegTree = zTree;
           secondLegTree = yTree;
           intersectionPoint = p;
         }
       }
+      for (final GeoPoint p : ZIntersectionsX) {
+        // Travel would be in XY plane (fixed z) then in YZ (fixed x)
+        final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.x - p.x);
+        if (newDistance < bestDistance) {
+          bestDistance = newDistance;
+          firstLegValue = testPoint.x;
+          secondLegValue = thePoint.z;
+          firstLegPlane = testPointFixedXPlane;
+          firstLegAbovePlane = testPointFixedXAbovePlane;
+          firstLegBelowPlane = testPointFixedXBelowPlane;
+          secondLegPlane = travelPlaneFixedZ;
+          firstLegTree = xTree;
+          secondLegTree = zTree;
+          intersectionPoint = p;
+        }
+      }
+      for (final GeoPoint p : ZIntersectionsY) {
+        // Travel would be in XY plane (fixed z) then in XZ (fixed y)
+        final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.y - p.y);
+        if (newDistance < bestDistance) {
+          bestDistance = newDistance;
+          firstLegValue = testPoint.y;
+          secondLegValue = thePoint.z;
+          firstLegPlane = testPointFixedYPlane;
+          firstLegAbovePlane = testPointFixedYAbovePlane;
+          firstLegBelowPlane = testPointFixedYBelowPlane;
+          secondLegPlane = travelPlaneFixedZ;
+          firstLegTree = yTree;
+          secondLegTree = zTree;
+          intersectionPoint = p;
+        }
+      }
 
+      assert bestDistance > 0.0 : "Best distance should not be zero unless on single plane";
       assert bestDistance < Double.MAX_VALUE : "Couldn't find an intersection point of any kind";
-      
-      System.err.println("Best distance: "+bestDistance);
       
       final DualCrossingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(firstLegPlane, firstLegAbovePlane, firstLegBelowPlane, secondLegPlane, testPoint, thePoint, intersectionPoint);
       if (!firstLegTree.traverse(edgeIterator, firstLegValue)) {
@@ -392,7 +389,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       this.planeBounds.addPoint(startPoint);
       this.planeBounds.addPoint(endPoint);
       this.plane.recordBounds(pm, this.planeBounds, this.startPlane, this.endPlane);
-      System.err.println("Recording edge "+this+" from "+startPoint+" to "+endPoint+"; bounds = "+planeBounds);
+      //System.err.println("Recording edge "+this+" from "+startPoint+" to "+endPoint+"; bounds = "+planeBounds);
     }
   }
   
@@ -632,12 +629,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
     public ZTree() {
     }
     
+    /*
     @Override
     public boolean traverse(final EdgeIterator edgeIterator, final double value) {
       System.err.println("Traversing in Z, value= "+value+"...");
       return super.traverse(edgeIterator, value);
     }
-
+    */
+    
     @Override
     protected double getMinimum(final Edge edge) {
       return edge.planeBounds.getMinimumZ();
@@ -657,11 +656,13 @@ class GeoComplexPolygon extends GeoBasePolygon {
     public YTree() {
     }
 
+    /*
     @Override
     public boolean traverse(final EdgeIterator edgeIterator, final double value) {
       System.err.println("Traversing in Y, value= "+value+"...");
       return super.traverse(edgeIterator, value);
     }
+    */
     
     @Override
     protected double getMinimum(final Edge edge) {
@@ -682,11 +683,13 @@ class GeoComplexPolygon extends GeoBasePolygon {
     public XTree() {
     }
     
+    /*
     @Override
     public boolean traverse(final EdgeIterator edgeIterator, final double value) {
       System.err.println("Traversing in X, value= "+value+"...");
       return super.traverse(edgeIterator, value);
     }
+    */
     
     @Override
     protected double getMinimum(final Edge edge) {
@@ -909,6 +912,11 @@ class GeoComplexPolygon extends GeoBasePolygon {
       this.thePoint = thePoint;
       this.intersectionPoint = intersectionPoint;
       
+      //System.err.println("Intersection point = "+intersectionPoint);
+        
+      assert travelPlane.evaluateIsZero(intersectionPoint) : "intersection point must be on travel plane";
+      assert testPointPlane.evaluateIsZero(intersectionPoint) : "intersection point must be on test point plane";
+        
       assert !testPoint.isNumericallyIdentical(intersectionPoint) : "test point is the same as intersection point";
       assert !thePoint.isNumericallyIdentical(intersectionPoint) : "check point is same is intersection point";
 
@@ -981,10 +989,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
     
     @Override
     public boolean matches(final Edge edge) {
-      System.err.println("Processing edge "+edge+", startpoint="+edge.startPoint+" endpoint="+edge.endPoint);
+      //System.err.println("Processing edge "+edge+", startpoint="+edge.startPoint+" endpoint="+edge.endPoint);
       // Early exit if the point is on the edge.
       if (thePoint != null && edge.plane.evaluateIsZero(thePoint) && edge.startPlane.isWithin(thePoint) && edge.endPlane.isWithin(thePoint)) {
-        System.err.println(" Check point is on edge: isWithin = true");
+        //System.err.println(" Check point is on edge: isWithin = true");
         return false;
       }
       // If the intersection point lies on this edge, we should still be able to consider crossing points only.
@@ -992,10 +1000,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // for at least one of the two planes in order to be a legitimate crossing of the combined path.
       final GeoPoint[] crossingPoints;
       if (isSecondLeg) {
-        System.err.println(" check point plane = "+travelPlane);
+        //System.err.println(" check point plane = "+travelPlane);
         crossingPoints = travelPlane.findCrossings(planetModel, edge.plane, checkPointCutoffPlane, checkPointOtherCutoffPlane, edge.startPlane, edge.endPlane);
       } else {
-        System.err.println(" test point plane = "+testPointPlane);
+        //System.err.println(" test point plane = "+testPointPlane);
         crossingPoints = testPointPlane.findCrossings(planetModel, edge.plane, testPointCutoffPlane, testPointOtherCutoffPlane, edge.startPlane, edge.endPlane);
       }
       if (crossingPoints != null) {
@@ -1003,15 +1011,15 @@ class GeoComplexPolygon extends GeoBasePolygon {
         for (final GeoPoint crossingPoint : crossingPoints) {
           countCrossingPoint(crossingPoint, edge);
         }
-        System.err.println(" All crossing points processed");
+        //System.err.println(" All crossing points processed");
       } else {
-        System.err.println(" No crossing points!");
+        //System.err.println(" No crossing points!");
       }
       return true;
     }
 
     private void countCrossingPoint(final GeoPoint crossingPoint, final Edge edge) {
-      System.err.println(" Crossing point "+crossingPoint);
+      //System.err.println(" Crossing point "+crossingPoint);
       // We consider crossing points only in this method.
       // Unlike the linear case, there are additional cases when:
       // (1) The crossing point and the intersection point are the same, but are not the endpoint of an edge;
@@ -1025,14 +1033,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // In either case, we have to be sure to count each edge only once, since it might appear in both the
       // first leg and the second.  If the first leg can process it, it should, and the second should skip it.
       if (crossingPoint.isNumericallyIdentical(intersectionPoint)) {
-        System.err.println(" Crosses intersection point.");
+        //System.err.println(" Crosses intersection point.");
         if (isSecondLeg) {
           // See whether this edge would have been processed in the first leg; if so, we skip it.
           final GeoPoint[] firstLegCrossings = testPointPlane.findCrossings(planetModel, edge.plane, testPointCutoffPlane, testPointOtherCutoffPlane, edge.startPlane, edge.endPlane);
           for (final GeoPoint firstLegCrossing : firstLegCrossings) {
             if (firstLegCrossing.isNumericallyIdentical(intersectionPoint)) {
               // We already processed it, so we're done here.
-              System.err.println("  Already processed on previous leg: exit");
+              //System.err.println("  Already processed on previous leg: exit");
               return;
             }
           }
@@ -1061,7 +1069,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
         
       if (crossingPoint.isNumericallyIdentical(edge.startPoint)) {
-        System.err.println(" Crossing point = edge.startPoint");
+        //System.err.println(" Crossing point = edge.startPoint");
         // We have to figure out if this crossing should be counted.
           
         // Does the crossing for this edge go up, or down?  Or can't we tell?
@@ -1073,6 +1081,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         assert !(insideTestPointPlaneIntersections.length + insideTravelPlaneIntersections.length > 0 && outsideTestPointPlaneIntersections.length + outsideTravelPlaneIntersections.length > 0) : "edge that ends in a crossing can't both up and down";
           
         if (insideTestPointPlaneIntersections.length + insideTravelPlaneIntersections.length == 0 && outsideTestPointPlaneIntersections.length + outsideTravelPlaneIntersections.length == 0) {
+          //System.err.println(" No inside or outside crossings found");
           return;
         }
 
@@ -1117,6 +1126,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
             // Found it!
             // Both edges will try to contribute to the crossing count.  By convention, we'll only include the earlier one.
             // Since we're the latter point, we exit here in that case.
+            //System.err.println(" Earlier point fired, so this one shouldn't");
             return;
           }
         }
@@ -1127,11 +1137,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
           
         final boolean assessEdgeInside = assessInsideTestPointIntersections.length + assessInsideTravelIntersections.length > 0;
         if (assessEdgeInside != edgeCrossesInside) {
+          //System.err.println(" Incrementing crossing count");
           crossingCount++;
+        } else {
+          //System.err.println(" Entered and exited on same side");
         }
           
       } else if (crossingPoint.isNumericallyIdentical(edge.endPoint)) {
-        System.err.println(" Crossing point = edge.endPoint");
+        //System.err.println(" Crossing point = edge.endPoint");
         // Figure out if the crossing should be counted.
           
         // Does the crossing for this edge go up, or down?  Or can't we tell?
@@ -1144,6 +1157,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
         //assert !(insideTestPointPlaneIntersections.length + insideTravelPlaneIntersections.length > 0 && outsideTestPointPlaneIntersections.length + outsideTravelPlaneIntersections.length > 0) : "edge that ends in a crossing can't go both up and down: insideTestPointPlaneIntersections: "+insideTestPointPlaneIntersections.length+" insideTravelPlaneIntersections: "+insideTravelPlaneIntersections.length+" outsideTestPointPlaneIntersections: "+outsideTestPointPlaneIntersections.length+" outsideTravelPlaneIntersections: "+outsideTravelPlaneIntersections.length;
           
         if (insideTestPointPlaneIntersections.length + insideTravelPlaneIntersections.length == 0 && outsideTestPointPlaneIntersections.length + outsideTravelPlaneIntersections.length == 0) {
+          //System.err.println(" No inside or outside crossings found");
           return;
         }
 
@@ -1183,10 +1197,13 @@ class GeoComplexPolygon extends GeoBasePolygon {
 
         final boolean assessEdgeInside = assessInsideTestPointIntersections.length + assessInsideTravelIntersections.length > 0;
         if (assessEdgeInside != edgeCrossesInside) {
+          //System.err.println(" Incrementing crossing count");
           crossingCount++;
+        } else {
+          //System.err.println(" Entered and exited on same side");
         }
       } else {
-        System.err.println(" Not a special case: incrementing crossing count");
+        //System.err.println(" Not a special case: incrementing crossing count");
         // Not a special case, so we can safely count a crossing.
         crossingCount++;
       }
