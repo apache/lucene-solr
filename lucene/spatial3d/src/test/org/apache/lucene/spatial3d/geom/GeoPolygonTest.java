@@ -264,6 +264,39 @@ public class GeoPolygonTest {
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
     assertFalse(c.isWithin(gp));
 
+    // Now, same thing for large polygon
+    shapes = new ArrayList<>();
+    shapes.add(new GeoPolygonFactory.PolygonDescription(points));
+    
+    c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
+    // Sample some points within
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.55);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.45);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.05, -0.5);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.05, -0.5);
+    assertTrue(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.7);
+    assertTrue(c.isWithin(gp));
+    // Sample some nearby points outside
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.35);
+    assertFalse(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, -0.15, -0.5);
+    assertFalse(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.15, -0.5);
+    assertFalse(c.isWithin(gp));
+    // Random points outside
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
+    assertFalse(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, Math.PI * 0.5, 0.0);
+    assertFalse(c.isWithin(gp));
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, Math.PI);
+    assertFalse(c.isWithin(gp));
+
   }
 
   @Test
