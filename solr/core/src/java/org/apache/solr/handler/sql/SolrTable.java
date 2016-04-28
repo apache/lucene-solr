@@ -47,6 +47,8 @@ import org.apache.solr.common.params.CommonParams;
  * Table based on a Solr collection
  */
 public class SolrTable extends AbstractQueryableTable implements TranslatableTable {
+  private static final String DEFAULT_SORT_FIELD = "_version_";
+
   private final String collection;
   private final SolrSchema schema;
   private RelProtoDataType protoRowType;
@@ -100,7 +102,6 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
 
     // Build and issue the query and return an Enumerator over the results
     if (order.isEmpty()) {
-      String DEFAULT_SORT_FIELD = "_version_";
       solrParams.put(CommonParams.SORT, DEFAULT_SORT_FIELD + " desc");
 
       // Make sure the default sort field is in the field list
@@ -111,10 +112,6 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
     } else {
       solrParams.put(CommonParams.SORT, String.join(",", order));
     }
-
-//    if (limit != null) {
-//      queryBuilder.append(" LIMIT ").append(limit);
-//    }
 
     return new AbstractEnumerable<Object>() {
       public Enumerator<Object> enumerator() {
