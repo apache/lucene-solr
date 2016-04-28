@@ -135,6 +135,7 @@
     <!-- SQL Parser -->
     <dependency org="org.apache.calcite" name="calcite-core" rev="1.6.0"/>
     <dependency org="org.apache.calcite" name="calcite-linq4j" rev="1.6.0"/>
+    <dependency org="org.apache.calcite" name="calcite-avatica" rev="1.6.0"/>
     <dependency org="net.hydromatic" name="eigenbase-properties" rev="1.1.5"/>
     <dependency org="org.codehaus.janino" name="janino" rev="2.7.6"/>
     <dependency org="org.codehaus.janino" name="commons-compiler" rev="2.7.6"/>

@@ -47,7 +47,7 @@ public interface SolrRel extends RelNode {
 
     /** Adds newly projected fields and restricted filterQueries.
      *
-     * @param fields New fields to be projected from a query
+     * @param fieldMappings New fields to be projected from a query
      * @param filterQueries New filterQueries to be applied to the query
      */
     public void add(Map<String, String> fieldMappings, List<String> filterQueries) {

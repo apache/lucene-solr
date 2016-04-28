@@ -519,7 +519,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       commit();
       Map params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select str_s, 'count(*)', sum('field_i'), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by 'str_s' order by 'sum(field_i)' asc limit 2");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s order by sum(field_i) asc limit 2");
 
       SolrStream solrStream = new SolrStream(jetty.url, params);
       List<Tuple> tuples = getTuples(solrStream);
@@ -547,7 +547,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
 
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select str_s as myString, 'count(*)', sum('field_i') as sum, min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by 'str_s' order by sum asc limit 2");
+      params.put("stmt", "select str_s as myString, count(*), sum(field_i) as sum, min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s order by sum asc limit 2");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
