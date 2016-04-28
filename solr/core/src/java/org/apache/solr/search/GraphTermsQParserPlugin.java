@@ -39,6 +39,7 @@ import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.DocIdSetBuilder;
@@ -77,7 +78,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
 
         final String[] splitVals = qstr.split(",");
 
-        BytesRef[] bytesRefs = new BytesRef[splitVals.length];
+        Term[] terms = new Term[splitVals.length];
         BytesRefBuilder term = new BytesRefBuilder();
         for (int i = 0; i < splitVals.length; i++) {
           String stringVal = splitVals[i].trim();
@@ -86,15 +87,17 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           } else {
             term.copyChars(stringVal);
           }
-          bytesRefs[i] = term.toBytesRef();
+          BytesRef ref = term.toBytesRef();
+          terms[i] = new Term(fname, ref);
         }
 
-        return new ConstantScoreQuery(new GraphTermsQuery(fname, bytesRefs, maxDocFreq));
+        ArrayUtil.timSort(terms);
+        return new ConstantScoreQuery(new GraphTermsQuery(fname, terms, maxDocFreq));
       }
     };
   }
 
-  private class GraphTermsQuery extends Query {
+  private class GraphTermsQuery extends Query implements ExtendedQuery {
 
     private Term[] queryTerms;
     private List<TermContext> finalContexts;
@@ -103,14 +106,11 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     private int maxDocFreq;
     private Object id;
 
-    public GraphTermsQuery(String field, BytesRef[] terms, int maxDocFreq) {
+    public GraphTermsQuery(String field, Term[] terms, int maxDocFreq) {
       this.maxDocFreq = maxDocFreq;
       this.field = field;
-      this.queryTerms = new Term[terms.length];
+      this.queryTerms = terms;
       this.id = new Object();
-      for(int i=0; i<terms.length; i++) {
-        this.queryTerms[i] = new Term(field, terms[i]);
-      }
     }
 
     //Just for cloning
@@ -121,22 +121,42 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
       this.id = id;
     }
 
+    public boolean getCache() {
+      return false;
+    }
+
+    public boolean getCacheSep() {
+      return false;
+    }
+
+    public void setCacheSep(boolean sep) {
+
+    }
+
+    public void setCache(boolean cache) {
+
+    }
+
+    public int getCost() {
+      return 1; // Not a post filter. The GraphTermsQuery will typically be used as the main query.
+    }
+
+    public void setCost(int cost) {
+
+    }
+
     @Override
     public Query rewrite(IndexReader reader) throws IOException {
-      if(this.finalContexts == null) {
-        //This query has not been re-written yet.
-        //Rewriting the query does not effect the cache key as this query is not designed to be cached.
-        this.finalContexts = new ArrayList();
-        this.finalTerms = new ArrayList();
-        List<LeafReaderContext> contexts = reader.leaves();
-        TermContext[] termContexts = new TermContext[this.queryTerms.length];
-        collectTermContext(reader, contexts, termContexts, this.queryTerms);
-        for(int i=0; i<termContexts.length; i++) {
-          TermContext termContext = termContexts[i];
-          if(termContext != null && termContext.docFreq() <= this.maxDocFreq) {
-            this.finalContexts.add(termContext);
-            this.finalTerms.add(queryTerms[i]);
-          }
+      this.finalContexts = new ArrayList();
+      this.finalTerms = new ArrayList();
+      List<LeafReaderContext> contexts = reader.leaves();
+      TermContext[] termContexts = new TermContext[this.queryTerms.length];
+      collectTermContext(reader, contexts, termContexts, this.queryTerms);
+      for(int i=0; i<termContexts.length; i++) {
+        TermContext termContext = termContexts[i];
+        if(termContext != null && termContext.docFreq() <= this.maxDocFreq) {
+          this.finalContexts.add(termContext);
+          this.finalTerms.add(queryTerms[i]);
         }
       }
 
@@ -157,7 +177,10 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     }
 
     public GraphTermsQuery clone() {
-      GraphTermsQuery clone = new GraphTermsQuery(this.field, this.queryTerms, this.maxDocFreq, this.id);
+      GraphTermsQuery clone = new GraphTermsQuery(this.field,
+                                                  this.queryTerms,
+                                                  this.maxDocFreq,
+                                                  this.id);
       return clone;
     }
 
