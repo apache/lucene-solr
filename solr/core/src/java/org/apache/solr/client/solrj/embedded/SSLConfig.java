@@ -18,6 +18,11 @@ package org.apache.solr.client.solrj.embedded;
 
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+/** 
+ * Encapsulates settings related to SSL Configuration for an embedded Jetty Server.
+ * NOTE: all other settings are ignogred if {@link #isSSLMode} is false.
+ * @see #setUseSSL
+ */
 public class SSLConfig {
   
   private boolean useSsl;
@@ -26,7 +31,8 @@ public class SSLConfig {
   private String keyStorePassword;
   private String trustStore;
   private String trustStorePassword;
-  
+
+  /** NOTE: all other settings are ignored if useSSL is false; trustStore settings are ignored if clientAuth is false */
   public SSLConfig(boolean useSSL, boolean clientAuth, String keyStore, String keyStorePassword, String trustStore, String trustStorePassword) {
     this.useSsl = useSSL;
     this.clientAuth = clientAuth;
@@ -44,6 +50,7 @@ public class SSLConfig {
     this.clientAuth = clientAuth;
   }
   
+  /** All other settings on this object are ignored unless this is true */
   public boolean isSSLMode() {
     return useSsl;
   }
@@ -68,28 +75,41 @@ public class SSLConfig {
     return trustStorePassword;
   }
 
+  /**
+   * Returns an SslContextFactory that should be used by a jetty server based on the specified 
+   * configuration, or null if no SSL should be used.
+   *
+   * The specified sslConfig will be completely ignored if the "tests.jettySsl" system property is 
+   * true - in which case standard "javax.net.ssl.*" system properties will be used instead, along 
+   * with "tests.jettySsl.clientAuth"
+   * 
+   * @see #isSSLMode
+   */
   public static SslContextFactory createContextFactory(SSLConfig sslConfig) {
 
     if (sslConfig == null) {
-      if (Boolean.getBoolean(System.getProperty("tests.jettySsl"))) {
+      if (Boolean.getBoolean("tests.jettySsl")) {
         return configureSslFromSysProps();
       }
       return null;
     }
 
-    if (!sslConfig.useSsl)
-      return null;
+    if (!sslConfig.isSSLMode()) 
+       return null;
 
     SslContextFactory factory = new SslContextFactory(false);
     if (sslConfig.getKeyStore() != null)
       factory.setKeyStorePath(sslConfig.getKeyStore());
     if (sslConfig.getKeyStorePassword() != null)
       factory.setKeyStorePassword(sslConfig.getKeyStorePassword());
-    if (sslConfig.getTrustStore() != null)
-      factory.setTrustStorePath(sslConfig.getTrustStore());
-    if (sslConfig.getTrustStorePassword() != null)
-      factory.setTrustStorePassword(sslConfig.getTrustStorePassword());
-
+    factory.setNeedClientAuth(sslConfig.isClientAuthMode());
+    
+    if (sslConfig.isClientAuthMode()) {
+      if (sslConfig.getTrustStore() != null)
+        factory.setTrustStorePath(sslConfig.getTrustStore());
+      if (sslConfig.getTrustStorePassword() != null)
+        factory.setTrustStorePassword(sslConfig.getTrustStorePassword());
+    }
     return factory;
 
   }

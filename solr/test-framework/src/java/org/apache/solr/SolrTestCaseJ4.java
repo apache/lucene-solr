@@ -233,7 +233,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     newRandomConfig();
     
     sslConfig = buildSSLConfig();
-    //will use ssl specific or default depending on sslConfig
+    // based on randomized SSL config, set HttpClientConfigurer appropriately
     HttpClientUtil.setConfigurer(sslConfig.getHttpClientConfigurer());
     if(isSSLMode()) {
       // SolrCloud tests should usually clear this
@@ -327,13 +327,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     
     // we don't choose ssl that often because of SOLR-5776
     final boolean trySsl = random().nextInt(10) < 2;
+    // NOTE: clientAuth is useless unless trySsl==true, but we randomize it independently
+    // just in case it might find bugs in our test/ssl client code (ie: attempting to use
+    // SSL w/client cert to non-ssl servers)
     boolean trySslClientAuth = random().nextInt(10) < 2;
     if (Constants.MAC_OS_X) {
-      trySslClientAuth = false;
+      // see SOLR-9039
+      // If a solution is found to remove this, please make sure to also update
+      // TestMiniSolrCloudClusterSSL.testSslAndClientAuth as well.
+      trySslClientAuth = false; 
     }
     
-    log.info("Randomized ssl ({}) and clientAuth ({})", trySsl,
-        trySslClientAuth);
+    log.info("Randomized ssl ({}) and clientAuth ({})", trySsl, trySslClientAuth);
     
     return new SSLTestConfig(trySsl, trySslClientAuth);
   }
