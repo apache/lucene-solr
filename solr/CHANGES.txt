@@ -57,6 +57,8 @@ Bug Fixes
 * SOLR-9034: Atomic updates failed to work when there were copyField targets that had docValues
   enabled. (Karthik Ramachandran, Ishan Chattopadhyaya, yonik)
 
+* SOLR-9028: Fixed some test related bugs preventing SSL + ClientAuth from ever being tested (hossman)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
