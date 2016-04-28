@@ -153,6 +153,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
       return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
     } else {
       
+      System.err.println("isWithin() for check point "+thePoint+", test point "+testPoint);
+      
       // We need to use two planes to get there.  We don't know which two planes will do it but we can figure it out.
       final Plane travelPlaneFixedX = new Plane(1.0, 0.0, 0.0, -thePoint.x);
       final Plane travelPlaneFixedY = new Plane(0.0, 1.0, 0.0, -thePoint.y);
@@ -185,12 +187,12 @@ class GeoComplexPolygon extends GeoBasePolygon {
           bestDistance = newDistance;
           firstLegValue = testPoint.y;
           secondLegValue = thePoint.x;
-          firstLegPlane = testPointYZPlane;
-          firstLegAbovePlane = testPointYZAbovePlane;
-          firstLegBelowPlane = testPointYZBelowPlane;
+          firstLegPlane = testPointXZPlane;
+          firstLegAbovePlane = testPointXZAbovePlane;
+          firstLegBelowPlane = testPointXZBelowPlane;
           secondLegPlane = travelPlaneFixedX;
-          firstLegTree = xTree;
-          secondLegTree = yTree;
+          firstLegTree = yTree;
+          secondLegTree = xTree;
           intersectionPoint = p;
         }
       }
@@ -201,10 +203,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
           bestDistance = newDistance;
           firstLegValue = testPoint.y;
           secondLegValue = thePoint.z;
-          firstLegPlane = testPointXYPlane;
-          firstLegAbovePlane = testPointXYAbovePlane;
-          firstLegBelowPlane = testPointXYBelowPlane;
-          secondLegPlane = travelPlaneFixedX;
+          firstLegPlane = testPointXZPlane;
+          firstLegAbovePlane = testPointXZAbovePlane;
+          firstLegBelowPlane = testPointXZBelowPlane;
+          secondLegPlane = travelPlaneFixedZ;
           firstLegTree = yTree;
           secondLegTree = zTree;
           intersectionPoint = p;
@@ -217,9 +219,9 @@ class GeoComplexPolygon extends GeoBasePolygon {
           bestDistance = newDistance;
           firstLegValue = testPoint.x;
           secondLegValue = thePoint.y;
-          firstLegPlane = testPointXZPlane;
-          firstLegAbovePlane = testPointXZAbovePlane;
-          firstLegBelowPlane = testPointXZBelowPlane;
+          firstLegPlane = testPointYZPlane;
+          firstLegAbovePlane = testPointYZAbovePlane;
+          firstLegBelowPlane = testPointYZBelowPlane;
           secondLegPlane = travelPlaneFixedY;
           firstLegTree = xTree;
           secondLegTree = yTree;
@@ -233,10 +235,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
           bestDistance = newDistance;
           firstLegValue = testPoint.x;
           secondLegValue = thePoint.z;
-          firstLegPlane = testPointXYPlane;
-          firstLegAbovePlane = testPointXYAbovePlane;
-          firstLegBelowPlane = testPointXYBelowPlane;
-          secondLegPlane = travelPlaneFixedX;
+          firstLegPlane = testPointYZPlane;
+          firstLegAbovePlane = testPointYZAbovePlane;
+          firstLegBelowPlane = testPointYZBelowPlane;
+          secondLegPlane = travelPlaneFixedZ;
           firstLegTree = xTree;
           secondLegTree = zTree;
           intersectionPoint = p;
@@ -249,10 +251,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
           bestDistance = newDistance;
           firstLegValue = testPoint.z;
           secondLegValue = thePoint.x;
-          firstLegPlane = testPointYZPlane;
-          firstLegAbovePlane = testPointYZAbovePlane;
-          firstLegBelowPlane = testPointYZBelowPlane;
-          secondLegPlane = travelPlaneFixedZ;
+          firstLegPlane = testPointXYPlane;
+          firstLegAbovePlane = testPointXYAbovePlane;
+          firstLegBelowPlane = testPointXYBelowPlane;
+          secondLegPlane = travelPlaneFixedX;
           firstLegTree = zTree;
           secondLegTree = xTree;
           intersectionPoint = p;
@@ -265,10 +267,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
           bestDistance = newDistance;
           firstLegValue = testPoint.z;
           secondLegValue = thePoint.y;
-          firstLegPlane = testPointXZPlane;
-          firstLegAbovePlane = testPointXZAbovePlane;
-          firstLegBelowPlane = testPointXZBelowPlane;
-          secondLegPlane = travelPlaneFixedZ;
+          firstLegPlane = testPointXYPlane;
+          firstLegAbovePlane = testPointXYAbovePlane;
+          firstLegBelowPlane = testPointXYBelowPlane;
+          secondLegPlane = travelPlaneFixedY;
           firstLegTree = zTree;
           secondLegTree = yTree;
           intersectionPoint = p;
@@ -388,7 +390,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       this.planeBounds.addPoint(startPoint);
       this.planeBounds.addPoint(endPoint);
       this.plane.recordBounds(pm, this.planeBounds, this.startPlane, this.endPlane);
-      System.err.println("Recording edge from "+startPoint+" to "+endPoint+"; bounds = "+planeBounds);
+      System.err.println("Recording edge "+this+" from "+startPoint+" to "+endPoint+"; bounds = "+planeBounds);
     }
   }
   
@@ -473,8 +475,11 @@ class GeoComplexPolygon extends GeoBasePolygon {
     protected Node addEdge(final Node node, final Edge newEdge, final double minimumValue, final double maximumValue) {
       if (node == null) {
         // Create and return a new node
-        return new Node(newEdge, minimumValue, maximumValue);
+        final Node rval = new Node(newEdge, minimumValue, maximumValue);
+        //System.err.println("Creating new node "+rval+" for edge "+newEdge+" in tree "+this);
+        return rval;
       }
+      //System.err.println("Adding edge "+newEdge+" into node "+node+" in tree "+this);
       // Compare with what's here
       int result = compareForAdd(node.minimumValue, node.maximumValue, minimumValue, maximumValue);
       switch (result) {
@@ -482,30 +487,36 @@ class GeoComplexPolygon extends GeoBasePolygon {
         // The node is contained in the range provided.  We need to create a new node and insert
         // it into the "within" chain.
         final Node rval = new Node(newEdge, minimumValue, maximumValue);
-        rval.within = node.within;
+        //System.err.println(" Inserting new node "+rval+" at head of current 'within' chain in tree "+this);
+        rval.within = node;
         return rval;
       case WITHIN:
         // The new edge is within the node provided
+        //System.err.println(" Adding edge into 'within' chain in tree "+this);
         node.within = addEdge(node.within, newEdge, minimumValue, maximumValue);
         return node;
       case OVERLAPS_MINIMUM:
         // The new edge overlaps the minimum value, but not the maximum value.
         // Here we need to create TWO entries: one for the lesser side, and one for the within chain.
+        //System.err.println(" Inserting edge into BOTH lesser chain and within chain in tree "+this);
         final double lesserMaximum = Math.nextDown(node.minimumValue);
         node.lesser = addEdge(node.lesser, newEdge, minimumValue, lesserMaximum);
         return addEdge(node, newEdge, node.minimumValue, maximumValue);
       case OVERLAPS_MAXIMUM:
         // The new edge overlaps the maximum value, but not the minimum value.
         // Need to create two entries, one on the greater side, and one back into the current node.
+        //System.err.println(" Inserting edge into BOTH greater chain and within chain in tree "+this);
         final double greaterMinimum = Math.nextUp(node.maximumValue);
         node.greater = addEdge(node.greater, newEdge, greaterMinimum, maximumValue);
         return addEdge(node, newEdge, minimumValue, node.maximumValue);
       case LESS:
         // The new edge is clearly less than the current node.
+        //System.err.println(" Edge goes into the lesser chain in tree "+this);
         node.lesser = addEdge(node.lesser, newEdge, minimumValue, maximumValue);
         return node;
       case GREATER:
         // The new edge is clearly greater than the current node.
+        //System.err.println(" Edge goes into the greater chain in tree "+this);
         node.greater = addEdge(node.greater, newEdge, minimumValue, maximumValue);
         return node;
       default:
@@ -520,14 +531,18 @@ class GeoComplexPolygon extends GeoBasePolygon {
      * @return false if the traversal was aborted before completion.
      */
     public boolean traverse(final EdgeIterator edgeIterator, final double value) {
+      //System.err.println("Traversing tree, value = "+value);
       // Since there is one distinct value we are looking for, we can just do a straight descent through the nodes.
       Node currentNode = rootNode;
       while (currentNode != null) {
         if (value < currentNode.minimumValue) {
+          //System.err.println(" value is less than "+currentNode.minimumValue);
           currentNode = currentNode.lesser;
         } else if (value > currentNode.maximumValue) {
+          //System.err.println(" value is greater than "+currentNode.maximumValue);
           currentNode = currentNode.greater;
         } else {
+          //System.err.println(" value within "+currentNode.minimumValue+" to "+currentNode.maximumValue);
           // We're within the bounds of the node.  Call the iterator, and descend
           if (!edgeIterator.matches(currentNode.edge)) {
             return false;
@@ -535,6 +550,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
           currentNode = currentNode.within;
         }
       }
+      //System.err.println("Done with tree");
       return true;
     }
     
@@ -615,6 +631,12 @@ class GeoComplexPolygon extends GeoBasePolygon {
     }
     
     @Override
+    public boolean traverse(final EdgeIterator edgeIterator, final double value) {
+      System.err.println("Traversing in Z, value= "+value+"...");
+      return super.traverse(edgeIterator, value);
+    }
+
+    @Override
     protected double getMinimum(final Edge edge) {
       return edge.planeBounds.getMinimumZ();
     }
@@ -631,6 +653,12 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private static class YTree extends Tree {
     
     public YTree() {
+    }
+
+    @Override
+    public boolean traverse(final EdgeIterator edgeIterator, final double value) {
+      System.err.println("Traversing in Y, value= "+value+"...");
+      return super.traverse(edgeIterator, value);
     }
     
     @Override
@@ -650,6 +678,12 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private static class XTree extends Tree {
     
     public XTree() {
+    }
+    
+    @Override
+    public boolean traverse(final EdgeIterator edgeIterator, final double value) {
+      System.err.println("Traversing in X, value= "+value+"...");
+      return super.traverse(edgeIterator, value);
     }
     
     @Override
@@ -935,7 +969,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
     
     @Override
     public boolean matches(final Edge edge) {
-      System.err.println("Processing edge "+edge);
+      System.err.println("Processing edge "+edge+", startpoint="+edge.startPoint+" endpoint="+edge.endPoint);
       // Early exit if the point is on the edge.
       if (thePoint != null && edge.plane.evaluateIsZero(thePoint) && edge.startPlane.isWithin(thePoint) && edge.endPlane.isWithin(thePoint)) {
         System.err.println(" Check point is on edge: isWithin = true");
@@ -946,8 +980,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // for at least one of the two planes in order to be a legitimate crossing of the combined path.
       final GeoPoint[] crossingPoints;
       if (isSecondLeg) {
+        System.err.println(" check point plane = "+travelPlane);
         crossingPoints = travelPlane.findCrossings(planetModel, edge.plane, checkPointCutoffPlane, checkPointOtherCutoffPlane, edge.startPlane, edge.endPlane);
       } else {
+        System.err.println(" test point plane = "+testPointPlane);
         crossingPoints = testPointPlane.findCrossings(planetModel, edge.plane, testPointCutoffPlane, testPointOtherCutoffPlane, edge.startPlane, edge.endPlane);
       }
       if (crossingPoints != null) {

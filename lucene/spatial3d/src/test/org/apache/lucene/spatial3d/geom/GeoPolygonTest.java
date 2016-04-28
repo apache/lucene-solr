@@ -189,8 +189,8 @@ public class GeoPolygonTest {
     shapes.add(new GeoPolygonFactory.PolygonDescription(points));
     
     c = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.SPHERE, shapes);
-    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.65);
-    assertFalse(c.isWithin(gp)); //??? fails
+    gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.35);
+    assertFalse(c.isWithin(gp));
 
     // Sample some points within
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.45);
@@ -205,7 +205,7 @@ public class GeoPolygonTest {
     assertTrue(c.isWithin(gp));
     // Sample some nearby points outside
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.65);
-    assertFalse(c.isWithin(gp)); //??? fails
+    assertFalse(c.isWithin(gp));
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.35);
     assertFalse(c.isWithin(gp));
     gp = new GeoPoint(PlanetModel.SPHERE, -0.15, -0.5);
