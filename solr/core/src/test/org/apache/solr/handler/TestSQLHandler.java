@@ -261,7 +261,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select id as myId, field_i as myInt, str_s as myString from collection1 where text='XXXX' AND id='(1 2 3)' order by myInt desc");
+      params.put("stmt", "select id as myId, field_i as myInt, str_s as myString from collection1 where text='XXXX' " +
+          "AND id='(1 2 3)' order by myInt desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -286,7 +287,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select id as myId, field_i as myInt, str_s as myString from collection1 where text='XXXX' AND id='(1 2 3)' order by field_i desc");
+      params.put("stmt", "select id as myId, field_i as myInt, str_s as myString from collection1 where text='XXXX' " +
+          "AND id='(1 2 3)' order by field_i desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -383,7 +385,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select Str_s, sum(Field_i) as `sum(Field_i)` from collection1 where id='(1 8)' group by Str_s having (sum(Field_i) = 7 OR sum(Field_i) = 60) order by sum(Field_i) desc");
+      params.put("stmt", "select Str_s, sum(Field_i) as `sum(Field_i)` from collection1 where id='(1 8)' group by Str_s " +
+          "having (sum(Field_i) = 7 OR sum(Field_i) = 60) order by sum(Field_i) desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -400,7 +403,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select Str_s, sum(Field_i) as `sum(Field_i)` from collection1 where id='(1 8)' group by Str_s having (sum(Field_i) = 7 OR sum(Field_i) = 60) order by sum(Field_i) desc");
+      params.put("stmt", "select Str_s, sum(Field_i) as `sum(Field_i)` from collection1 where id='(1 8)' group by Str_s " +
+          "having (sum(Field_i) = 7 OR sum(Field_i) = 60) order by sum(Field_i) desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -464,7 +468,9 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select str_s, count(*), sum(field_iff), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_iff) = 19) AND (min(field_i) = 8))");
+      params.put("stmt", "select str_s, count(*), sum(field_iff), min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s " +
+          "having ((sum(field_iff) = 19) AND (min(field_i) = 8))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuple = getTuple(new ExceptionStream(solrStream));
@@ -475,7 +481,9 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select str_s, count(*), blah(field_iff), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_iff) = 19) AND (min(field_i) = 8))");
+      params.put("stmt", "select str_s, count(*), blah(field_iff), min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s " +
+          "having ((sum(field_iff) = 19) AND (min(field_i) = 8))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuple = getTuple(new ExceptionStream(solrStream));
@@ -519,7 +527,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       commit();
       Map params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s order by sum(field_i) asc limit 2");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), cast(avg(1.0 * field_i) as float)" +
+          " from collection1 where text='XXXX' group by str_s order by sum(field_i) asc limit 2");
 
       SolrStream solrStream = new SolrStream(jetty.url, params);
       List<Tuple> tuples = getTuples(solrStream);
@@ -535,8 +544,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-      //nocommit - why is this getting returned as a long and not as a double? - avg() returns same type as input
-      //assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       tuple = tuples.get(1);
       assert(tuple.get("str_s").equals("a"));
@@ -544,11 +552,12 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 27); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 7); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
-      //assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
 
 
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select str_s as myString, count(*), sum(field_i) as mySum, min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s order by mySum asc limit 2");
+      params.put("stmt", "select str_s as myString, count(*), sum(field_i) as mySum, min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s order by mySum asc limit 2");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -562,7 +571,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("mySum") == 19);
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-      //assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       tuple = tuples.get(1);
       assert(tuple.get("myString").equals("a"));
@@ -570,13 +579,15 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("mySum") == 27);
       assert(tuple.getDouble("EXPR$3") == 7); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
-      //assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
 
       // TODO fix test - Cannot apply 'NOT' to arguments of type 'NOT<JAVATYPE(CLASS JAVA.LANG.STRING)>'. Supported form(s): 'NOT<BOOLEAN>'
       /*
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where (text='XXXX' AND NOT text='XXXX XXX') group by str_s order by str_s desc");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), "
+          + "cast(avg(1.0 * field_i) as float) from collection1 where (text='XXXX' AND NOT text='XXXX XXX') "
+          + "group by str_s order by str_s desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -592,7 +603,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 180); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 30); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 60); //max(field_i)
-      //assert(tuple.getDouble("EXPR$5") == 45); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 45); //avg(field_i)
 
       tuple = tuples.get(1);
       assert(tuple.get("str_s").equals("b"));
@@ -600,7 +611,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-      //assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       tuple = tuples.get(2);
       assert(tuple.get("str_s").equals("a"));
@@ -608,14 +619,16 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 27); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 7); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
-      //assert(tuple.getDouble("avg(field_i)") == 13.5D); //avg(field_i)
+      assert(tuple.getDouble("avg(field_i)") == 13.5D); //avg(field_i)
       */
 
       // TODO fix test - Cannot apply 'NOT' to arguments of type 'NOT<JAVATYPE(CLASS JAVA.LANG.STRING)>'. Supported form(s): 'NOT<BOOLEAN>'
       /*
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select str_s as myString, count(*) as myCount, sum(field_i) as mySum, min(field_i) as myMin, max(field_i) as myMax, avg(field_i) as myAvg from collection1 where (text='XXXX' AND NOT text='XXXX XXX') group by str_s order by str_s desc");
+      params.put("stmt", "select str_s as myString, count(*) as myCount, sum(field_i) as mySum, min(field_i) as myMin, "
+          + "max(field_i) as myMax, cast(avg(1.0 * field_i) as float) as myAvg from collection1 "
+          + "where (text='XXXX' AND NOT text='XXXX XXX') group by str_s order by str_s desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -631,7 +644,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("mySum") == 180);
       assert(tuple.getDouble("myMin") == 30);
       assert(tuple.getDouble("myMax") == 60);
-      //assert(tuple.getDouble("myAvg") == 45);
+      assert(tuple.getDouble("myAvg") == 45);
 
       tuple = tuples.get(1);
       assert(tuple.get("myString").equals("b"));
@@ -639,7 +652,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("mySum") == 19);
       assert(tuple.getDouble("myMin") == 8);
       assert(tuple.getDouble("myMax") == 11);
-      //assert(tuple.getDouble("myAvg") == 9.5D);
+      assert(tuple.getDouble("myAvg") == 9.5D);
 
       tuple = tuples.get(2);
       assert(tuple.get("myString").equals("a"));
@@ -647,12 +660,13 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("mySum") == 27);
       assert(tuple.getDouble("myMin") == 7);
       assert(tuple.getDouble("myMax") == 20);
-      //assert(tuple.getDouble("myAvg") == 13.5D);
+      assert(tuple.getDouble("myAvg") == 13.5D);
       */
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having sum(field_i) = 19");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), cast(avg(1.0 * field_i) as float) " +
+          "from collection1 where text='XXXX' group by str_s having sum(field_i) = 19");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -665,11 +679,12 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-      //assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 8))");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), cast(avg(1.0 * field_i) as float) " +
+          "from collection1 where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 8))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -682,11 +697,13 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-      //assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select str_s, count(*), sum(field_i) as mySum, min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 8))");
+      params.put("stmt", "select str_s, count(*), sum(field_i) as mySum, min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s " +
+          "having ((sum(field_i) = 19) AND (min(field_i) = 8))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -699,28 +716,26 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("mySum") == 19);
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-      //assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 100))");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s " +
+          "having ((sum(field_i) = 19) AND (min(field_i) = 100))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
 
       assert(tuples.size() == 0);
-
-
     } finally {
       delete();
     }
   }
 
-
   private void testSelectDistinctFacets() throws Exception {
     try {
-
       CloudJettyRunner jetty = this.cloudJettys.get(0);
 
       del("*:*");
@@ -1376,7 +1391,9 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       Map params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("aggregationMode", "facet");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s order by sum(field_i) asc limit 2");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s " +
+          "order by sum(field_i) asc limit 2");
 
       SolrStream solrStream = new SolrStream(jetty.url, params);
       List<Tuple> tuples = getTuples(solrStream);
@@ -1392,7 +1409,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       tuple = tuples.get(1);
       assert(tuple.get("str_s").equals("a"));
@@ -1400,14 +1417,16 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 27); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 7); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
 
       // TODO fix test - Cannot apply 'NOT' to arguments of type 'NOT<JAVATYPE(CLASS JAVA.LANG.STRING)>'. Supported form(s): 'NOT<BOOLEAN>'
       /*
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("aggregationMode", "facet");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where (text='XXXX' AND NOT text='XXXX XXX') group by str_s order by str_s desc");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), "
+          + "cast(avg(1.0 * field_i) as float) from collection1 where (text='XXXX' AND NOT text='XXXX XXX') "
+          + "group by str_s order by str_s desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -1423,7 +1442,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 180); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 30); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 60); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 45); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 45); //avg(field_i)
 
       tuple = tuples.get(1);
       assert(tuple.get("str_s").equals("b"));
@@ -1431,7 +1450,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       tuple = tuples.get(2);
       assert(tuple.get("str_s").equals("a"));
@@ -1439,7 +1458,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 27); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 7); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
       */
 
       // TODO fix test - Cannot apply 'NOT' to arguments of type 'NOT<JAVATYPE(CLASS JAVA.LANG.STRING)>'. Supported form(s): 'NOT<BOOLEAN>'
@@ -1447,7 +1466,9 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("aggregationMode", "facet");
-      params.put("stmt", "select str_s as myString, count(*), sum(field_i) as mySum, min(field_i), max(field_i), avg(field_i) from collection1 where (text='XXXX' AND NOT text='XXXX XXX') group by str_s order by myString desc");
+      params.put("stmt", "select str_s as myString, count(*), sum(field_i) as mySum, min(field_i), max(field_i), "
+          + "cast(avg(1.0 * field_i) as float) from collection1 where (text='XXXX' AND NOT text='XXXX XXX') "
+          + "group by str_s order by myString desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -1463,7 +1484,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("mySum") == 180);
       assert(tuple.getDouble("EXPR$3") == 30); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 60); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 45); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 45); //avg(field_i)
 
       tuple = tuples.get(1);
       assert(tuple.get("myString").equals("b"));
@@ -1471,7 +1492,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("mySum") == 19);
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       tuple = tuples.get(2);
       assert(tuple.get("myString").equals("a"));
@@ -1479,13 +1500,14 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("mySum") == 27);
       assert(tuple.getDouble("EXPR$3") == 7); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
       */
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("aggregationMode", "facet");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having sum(field_i) = 19");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s having sum(field_i) = 19");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -1498,12 +1520,14 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("aggregationMode", "facet");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 8))");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s " +
+          "having ((sum(field_i) = 19) AND (min(field_i) = 8))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -1516,13 +1540,15 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("aggregationMode", "facet");
-      params.put("stmt", "select str_s, count(*), sum(field_i) as mySum, min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 8))");
+      params.put("stmt", "select str_s, count(*), sum(field_i) as mySum, min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s " +
+          "having ((sum(field_i) = 19) AND (min(field_i) = 8))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -1535,19 +1561,19 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("mySum") == 19);
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("aggregationMode", "facet");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 100))");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s " +
+          "having ((sum(field_i) = 19) AND (min(field_i) = 100))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
 
       assert(tuples.size() == 0);
-
-
     } finally {
       delete();
     }
@@ -1555,7 +1581,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
   private void testParallelBasicGrouping() throws Exception {
     try {
-
       CloudJettyRunner jetty = this.cloudJettys.get(0);
 
       del("*:*");
@@ -1574,7 +1599,9 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       Map params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s order by sum(field_i) asc limit 2");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s " +
+          "order by sum(field_i) asc limit 2");
 
       SolrStream solrStream = new SolrStream(jetty.url, params);
       List<Tuple> tuples = getTuples(solrStream);
@@ -1590,7 +1617,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       tuple = tuples.get(1);
       assert(tuple.get("str_s").equals("a"));
@@ -1598,13 +1625,14 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 27); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 7);  //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
 
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
-      params.put("stmt", "select str_s, count(*), sum(field_i) as mySum, min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s order by mySum asc limit 2");
+      params.put("stmt", "select str_s, count(*), sum(field_i) as mySum, min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s order by mySum asc limit 2");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -1618,7 +1646,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("mySum") == 19);
       assert(tuple.getDouble("EXPR$3") == 8);  //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-      //assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       tuple = tuples.get(1);
       assert(tuple.get("str_s").equals("a"));
@@ -1626,13 +1654,14 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("mySum") == 27);
       assert(tuple.getDouble("EXPR$3") == 7); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
 
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s order by str_s desc");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s order by str_s desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -1648,7 +1677,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 180); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 30); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 60); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 45); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 45); //avg(field_i)
 
       tuple = tuples.get(1);
       assert(tuple.get("str_s").equals("b"));
@@ -1656,7 +1685,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       tuple = tuples.get(2);
       assert(tuple.get("str_s").equals("a"));
@@ -1664,13 +1693,14 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 27); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 7); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
 
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
-      params.put("stmt", "select str_s as myString, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s order by myString desc");
+      params.put("stmt", "select str_s as myString, count(*), sum(field_i), min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s order by myString desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -1686,7 +1716,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 180); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 30); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 60); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 45); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 45); //avg(field_i)
 
       tuple = tuples.get(1);
       assert(tuple.get("myString").equals("b"));
@@ -1694,7 +1724,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       tuple = tuples.get(2);
       assert(tuple.get("myString").equals("a"));
@@ -1702,13 +1732,14 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 27); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 7); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
 
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having sum(field_i) = 19");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s having sum(field_i) = 19");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -1721,12 +1752,14 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 8))");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s " +
+          "having ((sum(field_i) = 19) AND (min(field_i) = 8))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -1739,12 +1772,14 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$2") == 19); //sum(field_i)
       assert(tuple.getDouble("EXPR$3") == 8); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 11); //max(field_i)
-//      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
+      assert(tuple.getDouble("EXPR$5") == 9.5D); //avg(field_i)
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
-      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), avg(field_i) from collection1 where text='XXXX' group by str_s having ((sum(field_i) = 19) AND (min(field_i) = 100))");
+      params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), " +
+          "cast(avg(1.0 * field_i) as float) from collection1 where text='XXXX' group by str_s " +
+          "having ((sum(field_i) = 19) AND (min(field_i) = 100))");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -1780,7 +1815,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
     Map params = new HashMap();
     params.put(CommonParams.QT, "/sql");
-    params.put("stmt", "select count(*), sum(a_i), min(a_i), max(a_i), avg(a_i), sum(a_f), min(a_f), max(a_f), avg(a_f) from collection1");
+    params.put("stmt", "select count(*), sum(a_i), min(a_i), max(a_i), cast(avg(1.0 * a_i) as float), sum(a_f), " +
+        "min(a_f), max(a_f), avg(a_f) from collection1");
 
     SolrStream solrStream = new SolrStream(jetty.url, params);
 
@@ -1814,7 +1850,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
     params = new HashMap();
     params.put(CommonParams.QT, "/sql");
-    params.put("stmt", "select count(*) as myCount, sum(a_i) as mySum, min(a_i) as myMin, max(a_i) as myMax, avg(a_i) as myAvg, sum(a_f), min(a_f), max(a_f), avg(a_f) from collection1");
+    params.put("stmt", "select count(*) as myCount, sum(a_i) as mySum, min(a_i) as myMin, max(a_i) as myMax, " +
+        "cast(avg(1.0 * a_i) as float) as myAvg, sum(a_f), min(a_f), max(a_f), avg(a_f) from collection1");
 
     solrStream = new SolrStream(jetty.url, params);
 
@@ -1850,7 +1887,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     // Test where clause hits
     params = new HashMap();
     params.put(CommonParams.QT, "/sql");
-    params.put("stmt", "select count(*), sum(a_i), min(a_i), max(a_i), avg(a_i), sum(a_f), min(a_f), max(a_f), avg(a_f) from collection1 where id = 2");
+    params.put("stmt", "select count(*), sum(a_i), min(a_i), max(a_i), cast(avg(1.0 * a_i) as float), sum(a_f), " +
+        "min(a_f), max(a_f), avg(a_f) from collection1 where id = 2");
 
     solrStream = new SolrStream(jetty.url, params);
 
@@ -1884,7 +1922,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     // Test zero hits
     params = new HashMap();
     params.put(CommonParams.QT, "/sql");
-    params.put("stmt", "select count(*), sum(a_i), min(a_i), max(a_i), avg(a_i), sum(a_f), min(a_f), max(a_f), avg(a_f) from collection1 where a_s = 'blah'");
+    params.put("stmt", "select count(*), sum(a_i), min(a_i), max(a_i), cast(avg(1.0 * a_i) as float), sum(a_f), " +
+        "min(a_f), max(a_f), avg(a_f) from collection1 where a_s = 'blah'");
 
     solrStream = new SolrStream(jetty.url, params);
 
@@ -1957,7 +1996,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getLong("year_i") == 2014);
       assert(tuple.getDouble("EXPR$1") == 7); //sum(item_i)
 
-      params.put("stmt", "select year_i, month_i, sum(item_i) from collection1 group by year_i, month_i order by year_i desc, month_i desc");
+      params.put("stmt", "select year_i, month_i, sum(item_i) from collection1 group by year_i, month_i " +
+          "order by year_i desc, month_i desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -1983,7 +2023,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
-      params.put("stmt", "select year_i, month_i, day_i, sum(item_i) from collection1 group by year_i, month_i, day_i order by year_i desc, month_i desc, day_i desc");
+      params.put("stmt", "select year_i, month_i, day_i, sum(item_i) from collection1 group by year_i, month_i, day_i " +
+          "order by year_i desc, month_i desc, day_i desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -2077,7 +2118,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("aggregationMode", "facet");
-      params.put("stmt", "select year_i, month_i, sum(item_i) from collection1 group by year_i, month_i order by year_i desc, month_i desc");
+      params.put("stmt", "select year_i, month_i, sum(item_i) from collection1 group by year_i, month_i " +
+          "order by year_i desc, month_i desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -2103,7 +2145,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("aggregationMode", "facet");
-      params.put("stmt", "select year_i, month_i, day_i, sum(item_i) from collection1 group by year_i, month_i, day_i order by year_i desc, month_i desc, day_i desc");
+      params.put("stmt", "select year_i, month_i, day_i, sum(item_i) from collection1 group by year_i, month_i, day_i " +
+          "order by year_i desc, month_i desc, day_i desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -2193,7 +2236,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", 2);
-      params.put("stmt", "select year_i, month_i, sum(item_i) from collection1 group by year_i, month_i order by year_i desc, month_i desc");
+      params.put("stmt", "select year_i, month_i, sum(item_i) from collection1 group by year_i, month_i " +
+          "order by year_i desc, month_i desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -2223,7 +2267,8 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", 2);
-      params.put("stmt", "select year_i, month_i, day_i, sum(item_i) from collection1 group by year_i, month_i, day_i order by year_i desc, month_i desc, day_i desc");
+      params.put("stmt", "select year_i, month_i, day_i, sum(item_i) from collection1 group by year_i, month_i, day_i " +
+          "order by year_i desc, month_i desc, day_i desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
