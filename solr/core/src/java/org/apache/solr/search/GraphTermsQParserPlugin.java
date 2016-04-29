@@ -283,19 +283,21 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
                                     Term[] queryTerms) throws IOException {
       TermsEnum termsEnum = null;
       for (LeafReaderContext context : leaves) {
-        final Fields fields = context.reader().fields();
+
+        Terms terms = context.reader().terms(this.field);
+        if (terms == null) {
+          // field does not exist
+          continue;
+        }
+
+        termsEnum = terms.iterator();
+
+        if (termsEnum == TermsEnum.EMPTY) continue;
+
         for (int i = 0; i < queryTerms.length; i++) {
           Term term = queryTerms[i];
           TermContext termContext = contextArray[i];
-          final Terms terms = fields.terms(term.field());
-          if (terms == null) {
-            // field does not exist
-            continue;
-          }
-          termsEnum = terms.iterator();
-          assert termsEnum != null;
 
-          if (termsEnum == TermsEnum.EMPTY) continue;
           if (termsEnum.seekExact(term.bytes())) {
             if (termContext == null) {
               contextArray[i] = new TermContext(reader.getContext(),
@@ -305,7 +307,6 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
               termContext.register(termsEnum.termState(), context.ord,
                   termsEnum.docFreq(), termsEnum.totalTermFreq());
             }
-
           }
         }
       }
