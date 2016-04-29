@@ -319,20 +319,14 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
     String nodeName = zkController.getNodeName();
     for (Slice slice : zkController.getClusterState().getActiveSlices(fromIndex)) {
-      if (fromReplica != null)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "SolrCloud join: multiple shards not yet supported " + fromIndex);
-
       for (Replica replica : slice.getReplicas()) {
-        if (replica.getNodeName().equals(nodeName)) {
-          fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-          // found local replica, but is it Active?
-          if (replica.getState() != Replica.State.ACTIVE)
+        if (replica.getNodeName().equals(nodeName) && replica.getState() == Replica.State.ACTIVE) {
+          if (fromReplica == null) {
+            fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+          } else {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "SolrCloud join: "+fromIndex+" has a local replica ("+fromReplica+
-                    ") on "+nodeName+", but it is "+replica.getState());
-
-          break;
+                "SolrCloud join: multiple shards not yet supported " + fromIndex);
+          }
         }
       }
     }
