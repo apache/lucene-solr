@@ -108,6 +108,8 @@ Other Changes
 
 * SOLR-9037: Replace multiple "/replication" strings with one static constant. (Christine Poerschke)
 
+* SOLR-9047: zkcli should allow alternative locations for log4j configuration (Gregory Chanan)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes
