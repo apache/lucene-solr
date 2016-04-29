@@ -9,5 +9,11 @@ JVM="java"
 
 sdir="`dirname \"$0\"`"
 
-PATH=$JAVA_HOME/bin:$PATH $JVM -Dlog4j.configuration=file:$sdir/log4j.properties -classpath "$sdir/../../solr-webapp/webapp/WEB-INF/lib/*:$sdir/../../lib/ext/*" org.apache.solr.cloud.ZkCLI ${1+"$@"}
+if [ -n "$LOG4J_PROPS" ]; then
+  log4j_config="file:$LOG4J_PROPS"
+else
+  log4j_config="file:$sdir/log4j.properties"
+fi
+
+PATH=$JAVA_HOME/bin:$PATH $JVM -Dlog4j.configuration=$log4j_config -classpath "$sdir/../../solr-webapp/webapp/WEB-INF/lib/*:$sdir/../../lib/ext/*" org.apache.solr.cloud.ZkCLI ${1+"$@"}
 
