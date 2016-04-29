@@ -31,6 +31,7 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
   private final DocIdSetBuilder hits;
   private final GeoShape shape;
   private final XYZBounds shapeBounds;
+  private DocIdSetBuilder.BulkAdder adder;
   
   public PointInShapeIntersectVisitor(DocIdSetBuilder hits, GeoShape shape, XYZBounds shapeBounds) {
     this.hits = hits;
@@ -40,12 +41,12 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
 
   @Override
   public void grow(int count) {
-    hits.grow(count);
+    adder = hits.grow(count);
   }
 
   @Override
   public void visit(int docID) {
-    hits.add(docID);
+    adder.add(docID);
   }
 
   @Override
@@ -58,7 +59,7 @@ class PointInShapeIntersectVisitor implements IntersectVisitor {
       y >= shapeBounds.getMinimumY() && y <= shapeBounds.getMaximumY() &&
       z >= shapeBounds.getMinimumZ() && z <= shapeBounds.getMaximumZ()) {
       if (shape.isWithin(x, y, z)) {
-        hits.add(docID);
+        adder.add(docID);
       }
     }
   }
