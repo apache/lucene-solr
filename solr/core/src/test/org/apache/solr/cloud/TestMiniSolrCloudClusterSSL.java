@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLHandshakeException;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -280,7 +279,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
           if (sslConfig.isClientAuthMode()) {
             // w/o a valid client cert, SSL connection should fail
 
-            expectThrows(SSLHandshakeException.class, () -> {
+            expectThrows(IOException.class, () -> {
                 doHeadRequest(client, url);
               });
           } else {
