@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.linq4j.AbstractEnumerable;
@@ -37,7 +38,6 @@ import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTableQueryable;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.common.params.CommonParams;
@@ -69,20 +69,21 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
     return protoRowType.apply(typeFactory);
   }
   
-  public Enumerable<Object> query(final String zk) {
-    return query(zk, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null);
+  public Enumerable<Object> query(final Properties properties) {
+    return query(properties, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null);
   }
 
   /** Executes a Solr query on the underlying table.
    *
-   * @param zk Solr ZooKeeper connection string
+   * @param properties Connections properties
    * @param fields List of fields to project
    * @param filterQueries A list of filterQueries which should be used in the query
    * @return Enumerator of results
    */
-  public Enumerable<Object> query(final String zk, List<String> fields,
+  public Enumerable<Object> query(final Properties properties, List<String> fields,
                                   List<String> filterQueries, List<String> order, String limit) {
     Map<String, String> solrParams = new HashMap<>();
+    //solrParams.put(CommonParams.OMIT_HEADER, "true");
     solrParams.put(CommonParams.Q, "*:*");
     //solrParams.put(CommonParams.QT, "/export");
 
@@ -114,15 +115,15 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
 
     return new AbstractEnumerable<Object>() {
       public Enumerator<Object> enumerator() {
-        TupleStream cloudSolrStream;
+        TupleStream tupleStream;
         try {
-          cloudSolrStream = new CloudSolrStream(zk, collection, solrParams);
-          cloudSolrStream.open();
+          String zk = properties.getProperty("zk");
+          tupleStream = new CloudSolrStream(zk, collection, solrParams);
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
 
-        return new SolrEnumerator(cloudSolrStream, fields);
+        return new SolrEnumerator(tupleStream, fields);
       }
     };
   }
@@ -143,7 +144,7 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
 
     public Enumerator<T> enumerator() {
       //noinspection unchecked
-      final Enumerable<T> enumerable = (Enumerable<T>) getTable().query(getZK());
+      final Enumerable<T> enumerable = (Enumerable<T>) getTable().query(getProperties());
       return enumerable.enumerator();
     }
 
@@ -151,8 +152,8 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
       return (SolrTable) table;
     }
 
-    private String getZK() {
-      return schema.unwrap(SolrSchema.class).zk;
+    private Properties getProperties() {
+      return schema.unwrap(SolrSchema.class).properties;
     }
 
     /** Called via code-generation.
@@ -160,8 +161,9 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
      * @see SolrMethod#SOLR_QUERYABLE_QUERY
      */
     @SuppressWarnings("UnusedDeclaration")
-    public Enumerable<Object> query(List<String> fields, List<String> filterQueries, List<String> order, String limit) {
-      return getTable().query(getZK(), fields, filterQueries, order, limit);
+    public Enumerable<Object> query(List<String> fields, List<String> filterQueries,
+                                    List<String> order, String limit) {
+      return getTable().query(getProperties(), fields, filterQueries, order, limit);
     }
   }
 }

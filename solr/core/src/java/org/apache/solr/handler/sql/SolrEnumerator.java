@@ -36,6 +36,11 @@ class SolrEnumerator implements Enumerator<Object> {
    */
   SolrEnumerator(TupleStream tupleStream, List<String> fields) {
     this.tupleStream = tupleStream;
+    try {
+      this.tupleStream.open();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     this.fields = fields;
     this.current = null;
   }
@@ -82,7 +87,7 @@ class SolrEnumerator implements Enumerator<Object> {
       try {
         this.tupleStream.close();
       } catch (IOException e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
     }
   }

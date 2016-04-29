@@ -19,6 +19,7 @@ package org.apache.solr.handler.sql;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableMap;
@@ -37,15 +38,16 @@ import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.luke.FieldFlag;
 
 class SolrSchema extends AbstractSchema {
-  final String zk;
+  final Properties properties;
 
-  SolrSchema(String zk) {
+  SolrSchema(Properties properties) {
     super();
-    this.zk = zk;
+    this.properties = properties;
   }
 
   @Override
   protected Map<String, Table> getTableMap() {
+    String zk = this.properties.getProperty("zk");
     try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zk).build()) {
       cloudSolrClient.connect();
       Set<String> collections = cloudSolrClient.getZkStateReader().getClusterState().getCollections();
@@ -61,6 +63,7 @@ class SolrSchema extends AbstractSchema {
   }
 
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(String collection) {
+    String zk = this.properties.getProperty("zk");
     try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zk).build()) {
       cloudSolrClient.connect();
       LukeRequest lukeRequest = new LukeRequest();
