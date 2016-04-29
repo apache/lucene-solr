@@ -36,23 +36,12 @@ import org.junit.Test;
 
 public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
-
   static {
     schemaString = "schema-sql.xml";
   }
 
   public TestSQLHandler() {
     sliceCount = 2;
-  }
-
-  //@BeforeClass
-  //public static void beforeSuperClass() {
-    //AbstractZkTestCase.SOLRHOME = new File(SOLR_HOME());
- // }
-
-  @AfterClass
-  public static void afterSuperClass() {
-
   }
 
   protected String getCloudSolrConfig() {
@@ -63,8 +52,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    // we expect this time of exception as shards go up and down...
-    //ignoreException(".*");
 
     System.setProperty("numShards", Integer.toString(sliceCount));
   }
@@ -100,7 +87,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
   private void testBasicSelect() throws Exception {
     try {
-
       CloudJettyRunner jetty = this.cloudJettys.get(0);
 
       del("*:*");
@@ -586,7 +572,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), "
-          + "cast(avg(1.0 * field_i) as float) from collection1 where (text='XXXX' AND NOT text='XXXX XXX') "
+          + "cast(avg(1.0 * field_i) as float) from collection1 where (text='XXXX' AND NOT (text='XXXX XXX')) "
           + "group by str_s order by str_s desc");
 
       solrStream = new SolrStream(jetty.url, params);
@@ -620,7 +606,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$3") == 7); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
       assert(tuple.getDouble("avg(field_i)") == 13.5D); //avg(field_i)
-      */
 
       // TODO fix test - Cannot apply 'NOT' to arguments of type 'NOT<JAVATYPE(CLASS JAVA.LANG.STRING)>'. Supported form(s): 'NOT<BOOLEAN>'
       /*
@@ -628,7 +613,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       params.put(CommonParams.QT, "/sql");
       params.put("stmt", "select str_s as myString, count(*) as myCount, sum(field_i) as mySum, min(field_i) as myMin, "
           + "max(field_i) as myMax, cast(avg(1.0 * field_i) as float) as myAvg from collection1 "
-          + "where (text='XXXX' AND NOT text='XXXX XXX') group by str_s order by str_s desc");
+          + "where (text='XXXX' AND NOT (text='XXXX XXX')) group by str_s order by str_s desc");
 
       solrStream = new SolrStream(jetty.url, params);
       tuples = getTuples(solrStream);
@@ -922,7 +907,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       */
 
       // Test with a predicate.
-
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("aggregationMode", "facet");
@@ -1132,7 +1116,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       */
 
       // Test with a predicate.
-
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("stmt", "select distinct str_s, field_i from collection1 where str_s = 'a'");
@@ -1344,7 +1327,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       */
 
       // Test with a predicate.
-
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
@@ -1425,7 +1407,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       params.put(CommonParams.QT, "/sql");
       params.put("aggregationMode", "facet");
       params.put("stmt", "select str_s, count(*), sum(field_i), min(field_i), max(field_i), "
-          + "cast(avg(1.0 * field_i) as float) from collection1 where (text='XXXX' AND NOT text='XXXX XXX') "
+          + "cast(avg(1.0 * field_i) as float) from collection1 where (text='XXXX' AND NOT (text='XXXX XXX')) "
           + "group by str_s order by str_s desc");
 
       solrStream = new SolrStream(jetty.url, params);
@@ -1459,15 +1441,13 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getDouble("EXPR$3") == 7); //min(field_i)
       assert(tuple.getDouble("EXPR$4") == 20); //max(field_i)
       assert(tuple.getDouble("EXPR$5") == 13.5D); //avg(field_i)
-      */
 
       // TODO fix test - Cannot apply 'NOT' to arguments of type 'NOT<JAVATYPE(CLASS JAVA.LANG.STRING)>'. Supported form(s): 'NOT<BOOLEAN>'
-      /*
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("aggregationMode", "facet");
       params.put("stmt", "select str_s as myString, count(*), sum(field_i) as mySum, min(field_i), max(field_i), "
-          + "cast(avg(1.0 * field_i) as float) from collection1 where (text='XXXX' AND NOT text='XXXX XXX') "
+          + "cast(avg(1.0 * field_i) as float) from collection1 where (text='XXXX' AND NOT (text='XXXX XXX')) "
           + "group by str_s order by myString desc");
 
       solrStream = new SolrStream(jetty.url, params);
