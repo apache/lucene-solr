@@ -25,8 +25,10 @@ import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
+import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.type.RelDataType;
@@ -129,117 +131,34 @@ public class SolrRules {
     public RelNode convert(RelNode rel) {
       final LogicalProject project = (LogicalProject) rel;
       final RelTraitSet traitSet = project.getTraitSet().replace(out);
-      return new SolrProject(project.getCluster(), traitSet,
-          convert(project.getInput(), out), project.getProjects(), project.getRowType());
+      return new SolrProject(
+          rel.getCluster(),
+          traitSet,
+          convert(project.getInput(), out),
+          project.getProjects(),
+          project.getRowType());
     }
   }
 
   /**
    * Rule to convert a {@link org.apache.calcite.rel.core.Sort} to a {@link SolrSort}.
    */
-//  private static class SolrSortRule extends RelOptRule {
-//    private static final com.google.common.base.Predicate<Sort> SORT_PREDICATE =
-//            input -> {
-//              // CQL has no support for offsets
-//              return input.offset == null;
-//            };
-//    private static final com.google.common.base.Predicate<SolrFilter> FILTER_PREDICATE =
-//            input -> {
-//              // We can only use implicit sorting within a single partition
-//              return input.isSinglePartition();
-//            };
-//    private static final RelOptRuleOperand SOLR_OP =
-//        operand(SolrToEnumerableConverter.class,
-//        operand(SolrFilter.class, null, FILTER_PREDICATE, any()));
-//
-//    private static final SolrSortRule INSTANCE = new SolrSortRule();
-//
-//    private SolrSortRule() {
-//      super(operand(Sort.class, null, SORT_PREDICATE, SOLR_OP), "SolrSortRule");
-//    }
-//
-//    public RelNode convert(Sort sort, SolrFilter filter) {
-//      final RelTraitSet traitSet =
-//          sort.getTraitSet().replace(SolrRel.CONVENTION)
-//              .replace(sort.getCollation());
-//      return new SolrSort(sort.getCluster(), traitSet,
-//          convert(sort.getInput(), traitSet.replace(RelCollations.EMPTY)),
-//          sort.getCollation(), filter.getImplicitCollation(), sort.fetch);
-//    }
-//
-//    public boolean matches(RelOptRuleCall call) {
-//      final Sort sort = call.rel(0);
-//      final SolrFilter filter = call.rel(2);
-//      return collationsCompatible(sort.getCollation(), filter.getImplicitCollation());
-//    }
-//
-//    /** Check if it is possible to exploit native CQL sorting for a given collation.
-//     *
-//     * @return True if it is possible to achieve this sort in Solr
-//     */
-//    private boolean collationsCompatible(RelCollation sortCollation, RelCollation implicitCollation) {
-//      List<RelFieldCollation> sortFieldCollations = sortCollation.getFieldCollations();
-//      List<RelFieldCollation> implicitFieldCollations = implicitCollation.getFieldCollations();
-//
-//      if (sortFieldCollations.size() > implicitFieldCollations.size()) {
-//        return false;
-//      }
-//      if (sortFieldCollations.size() == 0) {
-//        return true;
-//      }
-//
-//      // Check if we need to reverse the order of the implicit collation
-//      boolean reversed = reverseDirection(sortFieldCollations.get(0).getDirection())
-//          == implicitFieldCollations.get(0).getDirection();
-//
-//      for (int i = 0; i < sortFieldCollations.size(); i++) {
-//        RelFieldCollation sorted = sortFieldCollations.get(i);
-//        RelFieldCollation implied = implicitFieldCollations.get(i);
-//
-//        // Check that the fields being sorted match
-//        if (sorted.getFieldIndex() != implied.getFieldIndex()) {
-//          return false;
-//        }
-//
-//        // Either all fields must be sorted in the same direction
-//        // or the opposite direction based on whether we decided
-//        // if the sort direction should be reversed above
-//        RelFieldCollation.Direction sortDirection = sorted.getDirection();
-//        RelFieldCollation.Direction implicitDirection = implied.getDirection();
-//        if ((!reversed && sortDirection != implicitDirection)
-//                || (reversed && reverseDirection(sortDirection) != implicitDirection)) {
-//          return false;
-//        }
-//      }
-//
-//      return true;
-//    }
-//
-//    /** Find the reverse of a given collation direction.
-//     *
-//     * @return Reverse of the input direction
-//     */
-//    private RelFieldCollation.Direction reverseDirection(RelFieldCollation.Direction direction) {
-//      switch(direction) {
-//      case ASCENDING:
-//      case STRICTLY_ASCENDING:
-//        return RelFieldCollation.Direction.DESCENDING;
-//      case DESCENDING:
-//      case STRICTLY_DESCENDING:
-//        return RelFieldCollation.Direction.ASCENDING;
-//      default:
-//        return null;
-//      }
-//    }
-//
-//    /** @see org.apache.calcite.rel.convert.ConverterRule */
-//    public void onMatch(RelOptRuleCall call) {
-//      final Sort sort = call.rel(0);
-//      SolrFilter filter = call.rel(2);
-//      final RelNode converted = convert(sort, filter);
-//      if (converted != null) {
-//        call.transformTo(converted);
-//      }
-//    }
-//  }
+  private static class SolrSortRule extends SolrConverterRule {
+    public static final SolrSortRule INSTANCE = new SolrSortRule();
+
+    private SolrSortRule() {
+      super(Sort.class, "SolrSortRule");
+    }
+
+    public RelNode convert(RelNode rel) {
+      final Sort sort = (Sort) rel;
+      final RelTraitSet traitSet = sort.getTraitSet().replace(out).replace(sort.getCollation());
+      return new SolrSort(
+          rel.getCluster(),
+          traitSet,
+          convert(sort.getInput(), traitSet.replace(RelCollations.EMPTY)),
+          sort.getCollation(),
+          sort.fetch);
+    }
+  }
 }

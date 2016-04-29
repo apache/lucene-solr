@@ -57,11 +57,11 @@ public class SolrFilter extends Filter implements SolrRel {
   public void implement(Implementor implementor) {
     implementor.visitChild(0, getInput());
     Translator translator = new Translator(SolrRules.solrFieldNames(getRowType()));
-    List<String> fqs = translator.translateMatch(condition);
-    implementor.add(null, fqs);
+    String query = translator.translateMatch(condition);
+    implementor.addQuery(query);
   }
 
-  /** Translates {@link RexNode} expressions into Solr fq strings. */
+  /** Translates {@link RexNode} expressions into Solr query strings. */
   private static class Translator {
     private final List<String> fieldNames;
 
@@ -69,20 +69,18 @@ public class SolrFilter extends Filter implements SolrRel {
       this.fieldNames = fieldNames;
     }
 
-    private List<String> translateMatch(RexNode condition) {
+    private String translateMatch(RexNode condition) {
       return translateOr(condition);
     }
 
-    private List<String> translateOr(RexNode condition) {
-      List<String> list = new ArrayList<>();
+    private String translateOr(RexNode condition) {
+      List<String> ors = new ArrayList<>();
       for (RexNode node : RelOptUtil.disjunctions(condition)) {
-        list.add(translateAnd(node));
+        ors.add(translateAnd(node));
       }
-      return list;
+      return String.join(" OR ", ors);
     }
 
-    /** Translates a condition that may be an AND of other conditions. Gathers
-     * together conditions that apply to the same field. */
     private String translateAnd(RexNode node0) {
       List<String> ands = new ArrayList<>();
       for (RexNode node : RelOptUtil.conjunctions(node0)) {
@@ -95,13 +93,15 @@ public class SolrFilter extends Filter implements SolrRel {
     private String translateMatch2(RexNode node) {
       switch (node.getKind()) {
         case EQUALS:
-          return translateBinary(null, null, (RexCall) node);
+          return translateBinary("", "", (RexCall) node);
+//        case NOT_EQUALS:
+//          return null;
 //        case LESS_THAN:
 //          return translateBinary("$lt", "$gt", (RexCall) node);
 //        case LESS_THAN_OR_EQUAL:
 //          return translateBinary("$lte", "$gte", (RexCall) node);
-//        case NOT_EQUALS:
-//          return translateBinary("$ne", "$ne", (RexCall) node);
+        case NOT:
+          return translateBinary("-", "-", (RexCall) node);
 //        case GREATER_THAN:
 //          return translateBinary("$gt", "$lt", (RexCall) node);
 //        case GREATER_THAN_OR_EQUAL:
@@ -113,6 +113,9 @@ public class SolrFilter extends Filter implements SolrRel {
 
     /** Translates a call to a binary operator, reversing arguments if necessary. */
     private String translateBinary(String op, String rop, RexCall call) {
+      if(call.operands.size() != 2) {
+        throw new AssertionError("hello");
+      }
       final RexNode left = call.operands.get(0);
       final RexNode right = call.operands.get(1);
       String b = translateBinary2(op, left, right);
@@ -142,12 +145,11 @@ public class SolrFilter extends Filter implements SolrRel {
           return translateOp2(op, name, rightLiteral);
         case CAST:
           return translateBinary2(op, ((RexCall) left).operands.get(0), right);
-        case OTHER_FUNCTION:
+//        case OTHER_FUNCTION:
 //          String itemName = SolrRules.isItem((RexCall) left);
 //          if (itemName != null) {
 //            return translateOp2(op, itemName, rightLiteral);
 //          }
-          // fall through
         default:
           return null;
       }
@@ -155,15 +157,9 @@ public class SolrFilter extends Filter implements SolrRel {
 
     private String translateOp2(String op, String name, RexLiteral right) {
       if (op == null) {
-        // E.g.: {deptno: 100}
-        return name + ":" + right.getValue2();
-      } else {
-//        // E.g. {deptno: {$lt: 100}}
-//        // which may later be combined with other conditions:
-//        // E.g. {deptno: [$lt: 100, $gt: 50]}
-//        multimap.put(name, Pair.of(op, right));
-        return null;
+        op = "";
       }
-    }
+      return op + name + ":" + right.getValue2();
+      }
   }
 }

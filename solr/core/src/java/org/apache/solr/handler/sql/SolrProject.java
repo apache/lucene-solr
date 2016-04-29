@@ -63,6 +63,6 @@ public class SolrProject extends Project implements SolrRel {
       final String expr = pair.left.accept(translator);
       fieldMappings.put(name, expr);
     }
-    implementor.add(fieldMappings, null);
+    implementor.addFieldMappings(fieldMappings);
   }
 }

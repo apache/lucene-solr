@@ -36,13 +36,9 @@ import org.apache.calcite.rex.RexNode;
  * Implementation of {@link org.apache.calcite.rel.core.Sort} relational expression in Solr.
  */
 public class SolrSort extends Sort implements SolrRel {
-  private final RelCollation implicitCollation;
 
-  public SolrSort(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation,
-                  RelCollation implicitCollation, RexNode fetch) {
+  public SolrSort(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode fetch) {
     super(cluster, traitSet, child, collation, null, fetch);
-
-    this.implicitCollation = implicitCollation;
 
     assert getConvention() == SolrRel.CONVENTION;
     assert getConvention() == child.getConvention();
@@ -55,7 +51,7 @@ public class SolrSort extends Sort implements SolrRel {
 
   @Override
   public Sort copy(RelTraitSet traitSet, RelNode input, RelCollation newCollation, RexNode offset, RexNode fetch) {
-    return new SolrSort(getCluster(), traitSet, input, collation, implicitCollation, fetch);
+    return new SolrSort(getCluster(), traitSet, input, collation, fetch);
   }
 
   public void implement(Implementor implementor) {
@@ -68,16 +64,17 @@ public class SolrSort extends Sort implements SolrRel {
       final List<RelDataTypeField> fields = getRowType().getFieldList();
       for (RelFieldCollation fieldCollation : sortCollations) {
         final String name = fields.get(fieldCollation.getFieldIndex()).getName();
-        String direction = "ASC";
+        String direction = "asc";
         if (fieldCollation.getDirection().equals(RelFieldCollation.Direction.DESCENDING)) {
-          direction = "DESC";
+          direction = "desc";
         }
         fieldOrder.add(name + " " + direction);
       }
 
       implementor.addOrder(fieldOrder);
     }
-    if (fetch != null) {
+
+    if(fetch != null) {
       implementor.setLimit(((RexLiteral) fetch).getValue().toString());
     }
   }

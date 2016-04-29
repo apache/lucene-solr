@@ -37,25 +37,21 @@ public interface SolrRel extends RelNode {
   /** Callback for the implementation process that converts a tree of {@link SolrRel} nodes into a Solr query. */
   class Implementor {
     final Map<String, String> fieldMappings = new HashMap<>();
-    final List<String> filterQueries = new ArrayList<>();
+    String query = null;
     String limitValue = null;
     final List<String> order = new ArrayList<>();
 
     RelOptTable table;
     SolrTable solrTable;
 
-    /** Adds newly projected fields and restricted filterQueries.
-     *
-     * @param fieldMappings New fields to be projected from a query
-     * @param filterQueries New filterQueries to be applied to the query
-     */
-    public void add(Map<String, String> fieldMappings, List<String> filterQueries) {
+    public void addFieldMappings(Map<String, String> fieldMappings) {
       if (fieldMappings != null) {
         this.fieldMappings.putAll(fieldMappings);
       }
-      if (filterQueries != null) {
-        this.filterQueries.addAll(filterQueries);
-      }
+    }
+
+    public void addQuery(String query) {
+      this.query = query;
     }
 
     public void addOrder(List<String> newOrder) {

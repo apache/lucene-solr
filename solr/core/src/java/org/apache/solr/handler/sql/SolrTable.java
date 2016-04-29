@@ -70,18 +70,18 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
   }
   
   public Enumerable<Object> query(final Properties properties) {
-    return query(properties, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), null);
+    return query(properties, Collections.emptyList(), null, Collections.emptyList(), null);
   }
 
   /** Executes a Solr query on the underlying table.
    *
    * @param properties Connections properties
    * @param fields List of fields to project
-   * @param filterQueries A list of filterQueries which should be used in the query
+   * @param query A string for the query
    * @return Enumerator of results
    */
   public Enumerable<Object> query(final Properties properties, List<String> fields,
-                                  List<String> filterQueries, List<String> order, String limit) {
+                                  String query, List<String> order, String limit) {
     Map<String, String> solrParams = new HashMap<>();
     //solrParams.put(CommonParams.OMIT_HEADER, "true");
     solrParams.put(CommonParams.Q, "*:*");
@@ -93,11 +93,11 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
       solrParams.put(CommonParams.FL, String.join(",", fields));
     }
 
-    if (filterQueries.isEmpty()) {
+    if (query == null) {
       solrParams.put(CommonParams.FQ, "*:*");
     } else {
       // SolrParams should be a ModifiableParams instead of a map so we could add multiple FQs
-      solrParams.put(CommonParams.FQ, String.join(" OR ", filterQueries));
+      solrParams.put(CommonParams.FQ, query);
     }
 
     // Build and issue the query and return an Enumerator over the results
@@ -113,17 +113,23 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
       solrParams.put(CommonParams.SORT, String.join(",", order));
     }
 
+    TupleStream tupleStream;
+    try {
+      String zk = properties.getProperty("zk");
+      tupleStream = new CloudSolrStream(zk, collection, solrParams);
+      if(limit != null) {
+        tupleStream = new LimitStream(tupleStream, Integer.parseInt(limit));
+      }
+
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    final TupleStream finalStream = tupleStream;
+
     return new AbstractEnumerable<Object>() {
       public Enumerator<Object> enumerator() {
-        TupleStream tupleStream;
-        try {
-          String zk = properties.getProperty("zk");
-          tupleStream = new CloudSolrStream(zk, collection, solrParams);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-
-        return new SolrEnumerator(tupleStream, fields);
+        return new SolrEnumerator(finalStream, fields);
       }
     };
   }
@@ -161,9 +167,8 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
      * @see SolrMethod#SOLR_QUERYABLE_QUERY
      */
     @SuppressWarnings("UnusedDeclaration")
-    public Enumerable<Object> query(List<String> fields, List<String> filterQueries,
-                                    List<String> order, String limit) {
-      return getTable().query(getProperties(), fields, filterQueries, order, limit);
+    public Enumerable<Object> query(List<String> fields, String query, List<String> order, String limit) {
+      return getTable().query(getProperties(), fields, query, order, limit);
     }
   }
 }

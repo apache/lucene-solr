@@ -71,7 +71,7 @@ public class SolrToEnumerableConverter extends ConverterImpl implements Enumerab
     final Expression table = list.append("table", solrImplementor.table.getExpression(SolrTable.SolrQueryable.class));
     final Expression fields = list.append("fields",
         constantArrayList(generateFields(SolrRules.solrFieldNames(rowType), solrImplementor.fieldMappings), String.class));
-    final Expression filterQueries = list.append("filterQueries", constantArrayList(solrImplementor.filterQueries, String.class));
+    final Expression filterQueries = list.append("query", Expressions.constant(solrImplementor.query, String.class));
     final Expression order = list.append("order", constantArrayList(solrImplementor.order, String.class));
     final Expression limit = list.append("limit", Expressions.constant(solrImplementor.limitValue));
     Expression enumerable = list.append("enumerable", Expressions.call(table, SolrMethod.SOLR_QUERYABLE_QUERY.method,
