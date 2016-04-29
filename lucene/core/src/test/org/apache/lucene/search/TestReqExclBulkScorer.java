@@ -44,7 +44,7 @@ public class TestReqExclBulkScorer extends LuceneTestCase {
     for (int i = 0; i < numIncludedDocs; ++i) {
       reqAdder.add(random().nextInt(maxDoc));
     }
-    DocIdSetBuilder.BulkAdder exclAdder = exclBuilder.grow(numIncludedDocs);
+    DocIdSetBuilder.BulkAdder exclAdder = exclBuilder.grow(numExcludedDocs);
     for (int i = 0; i < numExcludedDocs; ++i) {
       exclAdder.add(random().nextInt(maxDoc));
     }
