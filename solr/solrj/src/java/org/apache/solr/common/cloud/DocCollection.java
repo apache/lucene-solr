@@ -231,15 +231,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return true;
   }
 
-  /**
-   * Returns true if the passed in DocCollection is null
-   *
-   * @see CollectionStatePredicate
-   */
-  public static boolean isDeleted(Set<String> liveNodes, DocCollection collectionState) {
-    return collectionState == null;
-  }
-
   @Override
   public Iterator<Slice> iterator() {
     return slices.values().iterator();
