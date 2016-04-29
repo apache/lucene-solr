@@ -25,6 +25,9 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -466,11 +469,19 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 //      assertEquals(0, databaseMetaData.getDriverMajorVersion());
 //      assertEquals(0, databaseMetaData.getDriverMinorVersion());
 
-      // TODO fix getCatalogs, getSchemas, and getTables
-      /*
+      try(ResultSet rs = databaseMetaData.getSchemas()) {
+        assertTrue(rs.next());
+        assertEquals(zkServer.getZkAddress(), rs.getString("tableSchem"));
+        assertNull(rs.getString("tableCat"));
+        assertTrue(rs.next());
+        assertEquals("metadata", rs.getString("tableSchem"));
+        assertNull(rs.getString("tableCat"));
+        assertFalse(rs.next());
+      }
+
       try(ResultSet rs = databaseMetaData.getCatalogs()) {
         assertTrue(rs.next());
-        assertEquals(zkServer.getZkAddress(), rs.getString("TABLE_CAT"));
+        assertNull(rs.getString("tableCat"));
         assertFalse(rs.next());
       }
 
@@ -478,22 +489,17 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
       collections.addAll(cloudClient.getZkStateReader().getClusterState().getCollections());
       Collections.sort(collections);
 
-      try(ResultSet rs = databaseMetaData.getSchemas()) {
-        assertFalse(rs.next());
-      }
-
-      try(ResultSet rs = databaseMetaData.getTables(zkServer.getZkAddress(), null, "%", null)) {
+      try(ResultSet rs = databaseMetaData.getTables(null, zkServer.getZkAddress(), "%", null)) {
         for(String acollection : collections) {
           assertTrue(rs.next());
-          assertEquals(zkServer.getZkAddress(), rs.getString("TABLE_CAT"));
-          assertNull(rs.getString("TABLE_SCHEM"));
-          assertEquals(acollection, rs.getString("TABLE_NAME"));
-          assertEquals("TABLE", rs.getString("TABLE_TYPE"));
-          assertNull(rs.getString("REMARKS"));
+          assertNull(rs.getString("tableCat"));
+          assertEquals(zkServer.getZkAddress(), rs.getString("tableSchem"));
+          assertEquals(acollection, rs.getString("tableName"));
+          assertEquals("TABLE", rs.getString("tableType"));
+          assertNull(rs.getString("remarks"));
         }
         assertFalse(rs.next());
       }
-      */
 
       assertTrue(con.isReadOnly());
       con.setReadOnly(true);
