@@ -128,7 +128,8 @@ public final class Geo3DPoint extends Field {
   }
 
   /** 
-   * Create a query for matching a polygon.
+   * Create a query for matching a polygon.  The polygon should have a limited number of edges (less than 100) and be well-defined,
+   * with well-separated vertices.
    * <p>
    * The supplied {@code polygons} must be clockwise on the outside level, counterclockwise on the next level in, etc.
    * @param field field name. must not be null.
@@ -164,6 +165,23 @@ public final class Geo3DPoint extends Field {
   }
 
   /** 
+   * Create a query for matching a large polygon.  This differs from the related newPolygonQuery in that it
+   * does little or no legality checking and is optimized for very large numbers of polygon edges.
+   * <p>
+   * The supplied {@code polygons} must be clockwise on the outside level, counterclockwise on the next level in, etc.
+   * @param field field name. must not be null.
+   * @param polygons is the list of polygons to use to construct the query; must be at least one.
+   * @return query matching points within this polygon
+   */
+  public static Query newLargePolygonQuery(final String field, final Polygon... polygons) {
+    if (polygons.length < 1) {
+      throw new IllegalArgumentException("need at least one polygon");
+    }
+    final GeoShape shape = fromLargePolygon(polygons);
+    return newShapeQuery(field, shape);
+  }
+
+  /** 
    * Create a query for matching a path.
    * <p>
    * @param field field name. must not be null.
@@ -186,6 +204,43 @@ public final class Geo3DPoint extends Field {
     }
     final GeoShape shape = GeoPathFactory.makeGeoPath(PlanetModel.WGS84, fromMeters(pathWidthMeters), points);
     return newShapeQuery(field, shape);
+  }
+  
+  /**
+   * Convert a Polygon object to a large GeoPolygon.
+   * @param polygons is the list of polygons to convert.
+   * @return the large GeoPolygon.
+   */
+  private static GeoPolygon fromLargePolygon(final Polygon... polygons) {
+    return GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.WGS84, convertToDescription(polygons));
+  }
+  
+  /**
+   * Convert a list of polygons to a list of polygon descriptions.
+   * @param polygons is the list of polygons to convert.
+   * @return the list of polygon descriptions.
+   */
+  private static List<GeoPolygonFactory.PolygonDescription> convertToDescription(final Polygon... polygons) {
+    final List<GeoPolygonFactory.PolygonDescription> descriptions = new ArrayList<>(polygons.length);
+    for (final Polygon polygon : polygons) {
+      final Polygon[] theHoles = polygon.getHoles();
+      final List<GeoPolygonFactory.PolygonDescription> holes = convertToDescription(theHoles);
+      
+      // Now do the polygon itself
+      final double[] polyLats = polygon.getPolyLats();
+      final double[] polyLons = polygon.getPolyLons();
+      
+      // I presume the arguments have already been checked
+      final List<GeoPoint> points = new ArrayList<>(polyLats.length-1);
+      // We skip the last point anyway because the API requires it to be repeated, and geo3d doesn't repeat it.
+      for (int i = 0; i < polyLats.length - 1; i++) {
+        final int index = polyLats.length - 2 - i;
+        points.add(new GeoPoint(PlanetModel.WGS84, fromDegrees(polyLats[index]), fromDegrees(polyLons[index])));
+      }
+      
+      descriptions.add(new GeoPolygonFactory.PolygonDescription(points, holes));
+    }
+    return descriptions;
   }
   
   /**
