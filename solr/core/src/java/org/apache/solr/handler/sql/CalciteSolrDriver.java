@@ -49,6 +49,9 @@ public class CalciteSolrDriver extends org.apache.calcite.jdbc.Driver {
     final SchemaPlus rootSchema = calciteConnection.getRootSchema();
 
     String schemaName = info.getProperty("zk");
+    if(schemaName == null) {
+      throw new SQLException("zk must be set");
+    }
     rootSchema.add(schemaName, new SolrSchema(info));
 
     // Set the default schema

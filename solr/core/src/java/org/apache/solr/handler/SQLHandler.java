@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import org.apache.calcite.config.Lex;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
@@ -147,7 +148,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
       }
 
       // Set these last to ensure that they are set properly
-      properties.setProperty("lex", "MYSQL");
+      properties.setProperty("lex", Lex.MYSQL.toString());
       properties.setProperty("zk", defaultZkhost);
 
       try {
