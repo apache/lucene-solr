@@ -111,14 +111,16 @@ public abstract class PointRangeQuery extends Query {
         values.intersect(field,
             new IntersectVisitor() {
 
+              DocIdSetBuilder.BulkAdder adder;
+
               @Override
               public void grow(int count) {
-                result.grow(count);
+                adder = result.grow(count);
               }
 
               @Override
               public void visit(int docID) {
-                result.add(docID);
+                adder.add(docID);
               }
 
               @Override
@@ -136,7 +138,7 @@ public abstract class PointRangeQuery extends Query {
                 }
 
                 // Doc is in-bounds
-                result.add(docID);
+                adder.add(docID);
               }
 
               @Override

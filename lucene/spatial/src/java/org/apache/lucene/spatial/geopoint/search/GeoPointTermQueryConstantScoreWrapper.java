@@ -110,9 +110,11 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointMultiTermQu
           if (termsEnum.boundaryTerm()) {
             builder.add(docs);
           } else {
-            int docId;
-            while ((docId = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-              builder.add(docId);
+            int numDocs = termsEnum.docFreq();
+            DocIdSetBuilder.BulkAdder adder = builder.grow(numDocs);
+            for (int i = 0; i < numDocs; ++i) {
+              int docId = docs.nextDoc();
+              adder.add(docId);
               preApproved.set(docId);
             }
           }

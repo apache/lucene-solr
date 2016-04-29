@@ -122,11 +122,14 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
       DocIdSetBuilder builder = new DocIdSetBuilder(maxDoc);
       for (j = 0; j < array.length; ) {
         final int l = TestUtil.nextInt(random(), 1, array.length - j);
-        if (rarely()) {
-          builder.grow(l);
-        }
-        for (int k = 0; k < l; ++k) {
-          builder.add(array[j++]);
+        DocIdSetBuilder.BulkAdder adder = null;
+        for (int k = 0, budget = 0; k < l; ++k) {
+          if (budget == 0 || rarely()) {
+            budget = TestUtil.nextInt(random(), 1, l - k + 5);
+            adder = builder.grow(budget);
+          }
+          adder.add(array[j++]);
+          budget--;
         }
       }
 
