@@ -36,6 +36,7 @@ import org.apache.calcite.config.Lex;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.ExceptionStream;
+import org.apache.solr.client.solrj.io.stream.JDBCStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -63,7 +64,6 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void inform(SolrCore core) {
-
     CoreContainer coreContainer = core.getCoreDescriptor().getCoreContainer();
 
     if(coreContainer.isZooKeeperAware()) {
@@ -85,8 +85,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     params.set("workerCollection", params.get("workerCollection", defaultWorkerCollection));
     params.set("workerZkhost", params.get("workerZkhost", defaultZkhost));
     params.set("aggregationMode", params.get("aggregationMode", "map_reduce"));
-    // JDBC driver requires metadata from the SQLHandler. Default to false since this adds a new Metadata stream.
-    params.set("includeMetadata", params.getBool("includeMetadata", false));
+
 
     TupleStream tupleStream = null;
     try {
@@ -94,11 +93,35 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
         throw new Exception("stmt parameter cannot be null");
       }
 
-      /*
-       * Would be great to replace this with the JDBCStream. Can't do that currently since need to have metadata
-       * added to the stream for the JDBC driver. This could be fixed by using the Calcite Avatica server and client.
-       */
-      tupleStream = new StreamHandler.TimerStream(new ExceptionStream(new SqlHandlerStream(sql, params)));
+      String url = "jdbc:calcitesolr:";
+
+      Properties properties = new Properties();
+      // Add all query parameters
+      Iterator<String> parameterNamesIterator = params.getParameterNamesIterator();
+      while(parameterNamesIterator.hasNext()) {
+        String param = parameterNamesIterator.next();
+        properties.setProperty(param, params.get(param));
+      }
+
+      // Set these last to ensure that they are set properly
+      properties.setProperty("lex", Lex.MYSQL.toString());
+      properties.setProperty("zk", defaultZkhost);
+
+      String driverClass = CalciteSolrDriver.class.getCanonicalName();
+
+      // JDBC driver requires metadata from the SQLHandler. Default to false since this adds a new Metadata stream.
+      if(params.getBool("includeMetadata", false)) {
+        /*
+         * Would be great to replace this with the JDBCStream. Can't do that currently since need to have metadata
+         * added to the stream for the JDBC driver. This could be fixed by using the Calcite Avatica server and client.
+         */
+        tupleStream = new SqlHandlerStream(url, sql, properties, driverClass);
+      } else {
+        tupleStream = new JDBCStream(url, sql, null, properties, driverClass);
+      }
+
+      tupleStream = new StreamHandler.TimerStream(new ExceptionStream(tupleStream));
+
 
       rsp.add("result-set", tupleStream);
     } catch(Exception e) {
@@ -119,9 +142,14 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     return null;
   }
 
+  /*
+   * Only necessary for SolrJ JDBC driver since metadata has to be passed back
+   */
   private class SqlHandlerStream extends TupleStream {
+    private final String url;
     private final String sql;
-    private final SolrParams params;
+    private final Properties properties;
+    private final String driverClass;
     private boolean firstTuple = true;
     private Connection connection;
     private Statement statement;
@@ -129,9 +157,11 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     private ResultSetMetaData resultSetMetaData;
     private int numColumns;
 
-    SqlHandlerStream(String sql, SolrParams params) {
+    SqlHandlerStream(String url, String sql, Properties properties, String driverClass) {
+      this.url = url;
       this.sql = sql;
-      this.params = params;
+      this.properties = properties;
+      this.driverClass = driverClass;
     }
 
     public List<TupleStream> children() {
@@ -139,26 +169,14 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     }
 
     public void open() throws IOException {
-      Properties properties = new Properties();
-      // Add all query parameters
-      Iterator<String> parameterNamesIterator = params.getParameterNamesIterator();
-      while(parameterNamesIterator.hasNext()) {
-        String param = parameterNamesIterator.next();
-        properties.setProperty(param, params.get(param));
-      }
-
-      // Set these last to ensure that they are set properly
-      properties.setProperty("lex", Lex.MYSQL.toString());
-      properties.setProperty("zk", defaultZkhost);
-
       try {
-        Class.forName(CalciteSolrDriver.class.getCanonicalName());
+        Class.forName(driverClass);
       } catch (ClassNotFoundException e) {
         throw new IOException(e);
       }
 
       try {
-        connection = DriverManager.getConnection("jdbc:calcitesolr:", properties);
+        connection = DriverManager.getConnection(url, properties);
         statement = connection.createStatement();
         resultSet = statement.executeQuery(sql);
         resultSetMetaData = this.resultSet.getMetaData();
@@ -183,7 +201,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     public Tuple read() throws IOException {
       try {
         Map<String, Object> fields = new HashMap<>();
-        if(firstTuple && params.getBool("includeMetadata")) {
+        if(firstTuple) {
           firstTuple = false;
 
           List<String> metadataFields = new ArrayList<>();
@@ -223,8 +241,6 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
         try {
           closeable.close();
         } catch (Exception ignore) {
-        } finally {
-          closeable = null;
         }
       }
     }
