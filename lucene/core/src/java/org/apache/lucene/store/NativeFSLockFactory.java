@@ -176,7 +176,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
       // if it differs, someone deleted our lock file (and we are ineffective)
       FileTime ctime = Files.readAttributes(path, BasicFileAttributes.class).creationTime(); 
       if (!creationTime.equals(ctime)) {
-        throw new AlreadyClosedException("Underlying file changed by an external force at " + creationTime + ", (lock=" + this + ")");
+        throw new AlreadyClosedException("Underlying file changed by an external force at " + ctime + ", (lock=" + this + ")");
       }
     }
 
@@ -199,7 +199,7 @@ public final class NativeFSLockFactory extends FSLockFactory {
 
     @Override
     public String toString() {
-      return "NativeFSLock(path=" + path + ",impl=" + lock + ",ctime=" + creationTime + ")"; 
+      return "NativeFSLock(path=" + path + ",impl=" + lock + ",creationTime=" + creationTime + ")"; 
     }
   }
 }
