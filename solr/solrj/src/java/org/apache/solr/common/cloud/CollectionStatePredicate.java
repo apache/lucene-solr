@@ -30,12 +30,13 @@ public interface CollectionStatePredicate {
   /**
    * Check the collection state matches a required state
    *
+   * Note that both liveNodes and collectionState should be consulted to determine
+   * the overall state.
+   *
    * @param liveNodes the current set of live nodes
    * @param collectionState the latest collection state, or null if the collection
    *                        does not exist
    *
-   * Note that both liveNodes and collectionState should be consulted to determine
-   * the overall state.
    */
   boolean matches(Set<String> liveNodes, DocCollection collectionState);
 

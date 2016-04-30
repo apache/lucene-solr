@@ -139,6 +139,9 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     expectThrows(TimeoutException.class, () -> {
       client.waitForState("nosuchcollection", 1, TimeUnit.SECONDS, ((liveNodes, collectionState) -> false));
     });
+    long count = client.getZkStateReader().getStateWatchCount("nosuchcollection");
+    assertTrue("Watchers for collection should be removed after timeout", count == 0);
+
   }
 
   @Test
