@@ -215,7 +215,7 @@ public class SolrStream extends TupleStream {
       throw new IOException("--> "+this.baseUrl+":"+e.getMessage());
     } catch (Exception e) {
       //The Stream source did not provide an exception in a format that the SolrStream could propagate.
-      throw new IOException("--> "+this.baseUrl+": An exception has occurred on the server, refer to server log for details.");
+      throw new IOException("--> "+this.baseUrl+": An exception has occurred on the server, refer to server log for details.", e);
     }
   }
 
