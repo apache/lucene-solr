@@ -224,6 +224,8 @@ Other Changes
 
 * SOLR-9037: Replace multiple "/replication" strings with one static constant. (Christine Poerschke)
 
+* SOLR-9047: zkcli should allow alternative locations for log4j configuration (Gregory Chanan)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
