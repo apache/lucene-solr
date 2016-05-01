@@ -269,9 +269,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       System.clearProperty("useCompoundFile");
       System.clearProperty("urlScheme");
       
-      if (isSSLMode()) {
-        HttpClientUtil.setConfigurer(new HttpClientConfigurer());
-      }
+      HttpClientUtil.setConfigurer(new HttpClientConfigurer());
 
       // clean up static
       sslConfig = null;
