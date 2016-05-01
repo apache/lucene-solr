@@ -331,6 +331,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
     for (final Edge startEdge : shapeStartEdges) {
       Edge currentEdge = startEdge;
       while (true) {
+        bounds.addPoint(currentEdge.startPoint);
         bounds.addPlane(this.planetModel, currentEdge.plane, currentEdge.startPlane, currentEdge.endPlane);
         currentEdge = currentEdge.next;
         if (currentEdge == startEdge) {
