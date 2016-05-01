@@ -642,4 +642,28 @@ shape:
     
   }
   
+  @Test
+  public void testPolygonFactoryCase4() {
+    // [[lat=0.897812132711355, lon=0.0025364171887532795([X=0.6227358672251874, Y=0.0015795213449218714, Z=0.7812318690127594])],
+    // [lat=0.897812132711355, lon=0.0025363997354607595([X=0.6227358672527552, Y=0.001579510476130618, Z=0.7812318690127594])],
+    // [lat=0.8978120628981849, lon=0.0025362601091206([X=0.6227359221556139, Y=0.0015794236644894651, Z=0.7812318257158789])]]
+    
+    final GeoPoint p1 = new GeoPoint(PlanetModel.WGS84, 0.897812132711355, 0.0025364171887532795);
+    final GeoPoint p2 = new GeoPoint(PlanetModel.WGS84, 0.897812132711355, 0.0025363997354607595);
+    final GeoPoint p3 = new GeoPoint(PlanetModel.WGS84, 0.8978120628981849, 0.0025362601091206);
+    
+    final List<GeoPoint> points = new ArrayList<>();
+    points.add(p1);
+    points.add(p2);
+    points.add(p3);
+    
+    final List<GeoPolygonFactory.PolygonDescription> shapeList = new ArrayList<>();
+    final GeoPolygonFactory.PolygonDescription desc = new GeoPolygonFactory.PolygonDescription(points, new ArrayList<GeoPolygonFactory.PolygonDescription>());
+    
+    shapeList.add(desc);
+    
+    GeoPolygon p = GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.WGS84, shapeList);
+    
+  }
+  
 }
