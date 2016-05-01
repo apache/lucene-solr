@@ -502,7 +502,11 @@ public class GeoPolygonFactory {
     final GeoPoint closePoint = points.get(pointIndex);
     // We pick a random angle and random arc distance, then generate a point based on closePoint
     final double angle = generator.nextDouble() * Math.PI * 2.0 - Math.PI;
-    final double maxArcDistance = points.get(0).arcDistance(points.get(1));
+    double maxArcDistance = points.get(0).arcDistance(points.get(1));
+    double trialArcDistance = points.get(0).arcDistance(points.get(2));
+    if (trialArcDistance > maxArcDistance) {
+      maxArcDistance = trialArcDistance;
+    }
     final double arcDistance = maxArcDistance - generator.nextDouble() * maxArcDistance;
     // We come up with a unit circle (x,y,z) coordinate given the random angle and arc distance.  The point is centered around the positive x axis.
     final double x = Math.cos(arcDistance);

@@ -1225,7 +1225,33 @@ class GeoComplexPolygon extends GeoBasePolygon {
 
   @Override
   public String toString() {
-    return "GeoComplexPolygon: {planetmodel=" + planetModel + ", number of shapes="+shapeStartEdges.length+", address="+ Integer.toHexString(hashCode())+"}";
+    final StringBuilder edgeDescription = new StringBuilder();
+    for (final Edge shapeStartEdge : shapeStartEdges) {
+      fillInEdgeDescription(edgeDescription, shapeStartEdge);
+    }
+    return "GeoComplexPolygon: {planetmodel=" + planetModel + ", number of shapes="+shapeStartEdges.length+", address="+ Integer.toHexString(hashCode())+", testPoint="+testPoint+", testPointInSet="+testPointInSet+", shapes={"+edgeDescription+"}}";
   }
+  
+  private static void fillInEdgeDescription(final StringBuilder description, final Edge startEdge) {
+    description.append(" {");
+    Edge currentEdge = startEdge;
+    int edgeCounter = 0;
+    while (true) {
+      if (edgeCounter > 0) {
+        description.append(", ");
+      }
+      if (edgeCounter >= 20) {
+        description.append("...");
+        break;
+      }
+      description.append(currentEdge.startPoint);
+      currentEdge = currentEdge.next;
+      if (currentEdge == startEdge) {
+        break;
+      }
+      edgeCounter++;
+    }
+  }
+  
 }
   
