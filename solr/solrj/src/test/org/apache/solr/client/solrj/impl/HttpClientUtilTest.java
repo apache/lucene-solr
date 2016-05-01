@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.util.LuceneTestCase;
+
 import org.apache.http.auth.AuthScope;
 import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.HttpClient;
@@ -40,8 +42,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.util.SSLTestConfig;
 import org.junit.Test;
+import org.junit.Assume;
 
-public class HttpClientUtilTest {
+public class HttpClientUtilTest extends LuceneTestCase {
 
   @Test
   public void testNoParamsSucceeds() throws IOException {
@@ -121,11 +124,14 @@ public class HttpClientUtilTest {
   @Test
   @SuppressWarnings("deprecation")
   public void testSSLSystemProperties() throws IOException {
+    HttpClientUtil.setConfigurer(new HttpClientConfigurer());
     CloseableHttpClient client = HttpClientUtil.createClient(null);
     try {
-      SSLTestConfig.setSSLSystemProperties();
-      assertNotNull("HTTPS scheme could not be created using the javax.net.ssl.* system properties.", 
-          client.getConnectionManager().getSchemeRegistry().get("https"));
+      // We could use SSLContext.setDefault to *ensure* that SSL is supported by default,
+      // but if the platform default doesn't already support it, something is seriously wonky
+      // with the JVM, so let's not push our luck
+      Assume.assumeNotNull("HTTPS scheme could not be created using JVM/Configurer defaults", 
+                           client.getConnectionManager().getSchemeRegistry().get("https"));
       
       System.clearProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
       client.close();
@@ -147,7 +153,6 @@ public class HttpClientUtilTest {
       client = HttpClientUtil.createClient(null);
       assertEquals(AllowAllHostnameVerifier.class, getHostnameVerifier(client).getClass());
     } finally {
-      SSLTestConfig.clearSSLSystemProperties();
       System.clearProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
       client.close();
     }
