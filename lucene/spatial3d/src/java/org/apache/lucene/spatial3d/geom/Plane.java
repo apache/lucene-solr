@@ -885,7 +885,7 @@ public class Plane extends Vector {
       GeoPoint point2 = new GeoPoint(lineVector.x * t2 + x0, lineVector.y * t2 + y0, lineVector.z * t2 + z0);
       //verifyPoint(planetModel, point1, q);
       //verifyPoint(planetModel, point2, q);
-      //System.err.println("  "+point1+" and "+point2);
+      //System.err.println("   Considering points "+point1+" and "+point2);
       if (point1.isWithin(bounds, moreBounds)) {
         if (point2.isWithin(bounds, moreBounds))
           return new GeoPoint[]{point1, point2};
