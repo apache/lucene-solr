@@ -106,7 +106,7 @@ public abstract class PointRangeQuery extends Query {
     return new ConstantScoreWeight(this) {
 
       private DocIdSet buildMatchingDocIdSet(LeafReader reader, PointValues values) throws IOException {
-        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
+        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
         values.intersect(field,
             new IntersectVisitor() {

@@ -97,7 +97,7 @@ final class PointInGeo3DShapeQuery extends Query {
         assert xyzSolid.getRelationship(shape) == GeoArea.WITHIN || xyzSolid.getRelationship(shape) == GeoArea.OVERLAPS: "expected WITHIN (1) or OVERLAPS (2) but got " + xyzSolid.getRelationship(shape) + "; shape="+shape+"; XYZSolid="+xyzSolid;
         */
 
-        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
+        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
         values.intersect(field, new PointInShapeIntersectVisitor(result, shape, shapeBounds));
 

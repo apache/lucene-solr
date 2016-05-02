@@ -433,7 +433,7 @@ public final class SolrRangeQuery extends ExtendedQueryBase implements DocSetPro
       termsVisited += builder.add(termsEnum, base, liveDocs);
      */
 
-      DocIdSetBuilder builder = new DocIdSetBuilder(context.reader().maxDoc());
+      DocIdSetBuilder builder = new DocIdSetBuilder(context.reader().maxDoc(), terms);
       builder.grow((int)Math.min(Integer.MAX_VALUE,count));
       if (collectedTerms.isEmpty() == false) {
         TermsEnum termsEnum2 = terms.iterator();

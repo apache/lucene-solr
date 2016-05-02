@@ -54,6 +54,9 @@ public class BitSetIterator extends DocIdSetIterator {
 
   /** Sole constructor. */
   public BitSetIterator(BitSet bits, long cost) {
+    if (cost < 0) {
+      throw new IllegalArgumentException("cost must be >= 0, got " + cost);
+    }
     this.bits = bits;
     this.length = bits.length();
     this.cost = cost;
