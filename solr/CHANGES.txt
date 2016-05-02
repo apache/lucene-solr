@@ -117,8 +117,7 @@ New Features
 
 * SOLR-8925: Add gatherNodes Streaming Expression to support breadth first traversals (Joel Bernstein)
 
-* SOLR-9027: Add GraphTermsQuery to limit traversal on high frequency nodes	(Joel Bernstein, David Smiley)
-
+* SOLR-9027: Add GraphTermsQuery to limit traversal on high frequency nodes (Joel Bernstein, David Smiley)
 
 Bug Fixes
 ----------------------
