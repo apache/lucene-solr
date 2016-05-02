@@ -133,7 +133,7 @@ public class ZkStateReader implements Closeable {
 
   private final Runnable securityNodeListener;
 
-  private final ConcurrentHashMap<String, CollectionWatch> collectionWatches = new ConcurrentHashMap<>();
+  private ConcurrentHashMap<String, CollectionWatch> collectionWatches = new ConcurrentHashMap<>();
 
   private class CollectionWatch {
 
@@ -1181,7 +1181,14 @@ public class ZkStateReader implements Closeable {
     }
   }
 
-  private void registerCollectionStateWatcher(String collection, CollectionStateWatcher stateWatcher) {
+  /**
+   * Register a CollectionStateWatcher to be called when the state of a collection changes
+   *
+   * A given CollectionStateWatcher will be only called once.  If you want to have a persistent watcher,
+   * it should register itself again in its {@link CollectionStateWatcher#onStateChanged(Set, DocCollection)}
+   * method.
+   */
+  public void registerCollectionStateWatcher(String collection, CollectionStateWatcher stateWatcher) {
     AtomicBoolean watchSet = new AtomicBoolean(false);
     collectionWatches.compute(collection, (k, v) -> {
       if (v == null) {
@@ -1280,11 +1287,11 @@ public class ZkStateReader implements Closeable {
   }
 
   /* package-private for testing */
-  int getStateWatchCount(String collection) {
+  Set<CollectionStateWatcher> getStateWatchers(String collection) {
     CollectionWatch watch = collectionWatches.get(collection);
     if (watch == null)
-      return 0;
-    return watch.stateWatchers.size();
+      return null;
+    return new HashSet<>(watch.stateWatchers);
   }
 
   // returns true if the state has changed
@@ -1326,7 +1333,7 @@ public class ZkStateReader implements Closeable {
     // Resolve race with removeZKWatch.
     if (!collectionWatches.containsKey(coll)) {
       watchedCollectionStates.remove(coll);
-      LOG.info("Unwatching collection [{}]", coll);
+      LOG.info("Removing uninteresting collection [{}]", coll);
     }
 
     return changed;
@@ -1345,11 +1352,5 @@ public class ZkStateReader implements Closeable {
       this.version = version;
 
     }
-  }
-
-  private interface CollectionStateWatcher {
-
-    void onStateChanged(Set<String> liveNodes, DocCollection collectionState);
-
   }
 }

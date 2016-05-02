@@ -15,28 +15,28 @@ package org.apache.solr.common.cloud;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+*/
 
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
- * Interface to determine if a collection state matches a required state
- *
- * @see ZkStateReader#waitForState(String, long, TimeUnit, CollectionStatePredicate)
+ * Callback registered with {@link ZkStateReader#registerCollectionStateWatcher(String, CollectionStateWatcher)}
+ * and called whenever the collection state changes.
  */
-public interface CollectionStatePredicate {
+public interface CollectionStateWatcher {
 
   /**
-   * Check the collection state matches a required state
+   * Called when the collection we are registered against has a change of state
    *
-   * Note that both liveNodes and collectionState should be consulted to determine
-   * the overall state.
+   * Note that, due to the way Zookeeper watchers are implemented, a single call may be
+   * the result of several state changes
    *
-   * @param liveNodes the current set of live nodes
-   * @param collectionState the latest collection state, or null if the collection
-   *                        does not exist
+   * A watcher is unregistered after it has been called once.  To make a watcher persistent,
+   * implementors should re-register during this call.
+   *
+   * @param liveNodes       the set of live nodes
+   * @param collectionState the new collection state
    */
-  boolean matches(Set<String> liveNodes, DocCollection collectionState);
+  void onStateChanged(Set<String> liveNodes, DocCollection collectionState);
 
 }

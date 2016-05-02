@@ -18,11 +18,13 @@ package org.apache.solr.common.cloud;
  */
 
 import java.util.HashMap;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -34,6 +36,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.core.Is.is;
 
 public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
@@ -88,19 +92,25 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     client.waitForState("testcollection", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, DocCollection::isFullyActive);
 
     // shutdown a node and check that we get notified about the change
-    Future<Boolean> future = waitInBackground("testcollection", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> {
-      int nodecount = 0;
-      for (Slice slice : c) {
+    final AtomicInteger nodeCount = new AtomicInteger(0);
+    final CountDownLatch latch = new CountDownLatch(1);
+    client.registerCollectionStateWatcher("testcollection", (liveNodes, collectionState) -> {
+      // we can't just count liveNodes here, because that's updated by a separate watcher,
+      // and it may be the case that we're triggered by a node setting itself to DOWN before
+      // the liveNodes watcher is called
+      for (Slice slice : collectionState) {
         for (Replica replica : slice) {
-          if (replica.isActive(n))
-            nodecount++;
+          if (replica.isActive(liveNodes))
+            nodeCount.incrementAndGet();
         }
       }
-      return nodecount == 3;
+      latch.countDown();
     });
-    cluster.stopJettySolrRunner(random().nextInt(cluster.getJettySolrRunners().size()));
-    assertTrue("CollectionStateWatcher was never notified of cluster change", future.get());
 
+    cluster.stopJettySolrRunner(random().nextInt(cluster.getJettySolrRunners().size()));
+    assertTrue("CollectionStateWatcher was never notified of cluster change", latch.await(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS));
+
+    assertThat(nodeCount.intValue(), is(3));
 
   }
 
@@ -178,21 +188,22 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   public void testWatcherIsRemovedAfterTimeout() {
     CloudSolrClient client = cluster.getSolrClient();
     assertTrue("There should be no watchers for a non-existent collection!",
-        client.getZkStateReader().getStateWatchCount("no-such-collection") == 0);
+        client.getZkStateReader().getStateWatchers("no-such-collection") == null);
 
     expectThrows(TimeoutException.class, () -> {
       client.waitForState("no-such-collection", 10, TimeUnit.MILLISECONDS, DocCollection::isFullyActive);
     });
 
-    long count = client.getZkStateReader().getStateWatchCount("no-such-collection");
-    assertTrue("Watchers for collection should be removed after timeout", count == 0);
+    Set<CollectionStateWatcher> watchers = client.getZkStateReader().getStateWatchers("no-such-collection");
+    assertTrue("Watchers for collection should be removed after timeout",
+        watchers == null || watchers.size() == 0);
 
   }
 
   @Test
   public void testDeletionsTriggerWatches() throws Exception {
     cluster.createCollection("tobedeleted", 1, 1, "config", new HashMap<>());
-    Future<Boolean> future = waitInBackground("tobedeleted", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, (n, c) -> c == null);
+    Future<Boolean> future = waitInBackground("tobedeleted", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, DocCollection::isDeleted);
 
     CollectionAdminRequest.deleteCollection("tobedeleted").process(cluster.getSolrClient());
 
