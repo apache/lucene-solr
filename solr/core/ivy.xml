@@ -133,9 +133,9 @@
     <dependency org="com.tdunning" name="t-digest" rev="${/com.tdunning/t-digest}" conf="compile->*"/>
 
     <!-- SQL Parser -->
-    <dependency org="org.apache.calcite" name="calcite-core" rev="1.7.0"/>
-    <dependency org="org.apache.calcite" name="calcite-linq4j" rev="1.7.0"/>
-    <dependency org="org.apache.calcite.avatica" name="avatica" rev="1.7.1"/>
+    <dependency org="org.apache.calcite" name="calcite-core" rev="${/org.apache.calcite/calcite-core}"/>
+    <dependency org="org.apache.calcite" name="calcite-linq4j" rev="${/org.apache.calcite/calcite-linq4j}"/>
+    <dependency org="org.apache.calcite" name="calcite-avatica" rev="${/org.apache.calcite/calcite-avatica}"/>
     <dependency org="net.hydromatic" name="eigenbase-properties" rev="1.1.5"/>
     <dependency org="org.codehaus.janino" name="janino" rev="2.7.6"/>
     <dependency org="org.codehaus.janino" name="commons-compiler" rev="2.7.6"/>

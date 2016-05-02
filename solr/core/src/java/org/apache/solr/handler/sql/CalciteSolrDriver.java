@@ -21,6 +21,7 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 import org.apache.calcite.jdbc.CalciteConnection;
+import org.apache.calcite.jdbc.Driver;
 import org.apache.calcite.schema.SchemaPlus;
 
 /**
@@ -28,7 +29,7 @@ import org.apache.calcite.schema.SchemaPlus;
  *
  * <p>It accepts connect strings that start with "jdbc:calcitesolr:".</p>
  */
-public class CalciteSolrDriver extends org.apache.calcite.jdbc.Driver {
+public class CalciteSolrDriver extends Driver {
   protected CalciteSolrDriver() {
     super();
   }
