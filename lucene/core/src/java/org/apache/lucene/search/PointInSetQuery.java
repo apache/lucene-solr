@@ -130,7 +130,7 @@ public abstract class PointInSetQuery extends Query {
           throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + " but this query has bytesPerDim=" + bytesPerDim);
         }
 
-        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
+        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
         if (numDims == 1) {
 

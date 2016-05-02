@@ -163,8 +163,8 @@ public class IntersectsRPTVerifyQuery extends Query {
     // TODO consider if IntersectsPrefixTreeQuery should simply do this and provide both sets
 
     class IntersectsDifferentiatingVisitor extends VisitorTemplate {
-      DocIdSetBuilder approxBuilder = new DocIdSetBuilder(maxDoc);
-      DocIdSetBuilder exactBuilder = new DocIdSetBuilder(maxDoc);
+      DocIdSetBuilder approxBuilder = new DocIdSetBuilder(maxDoc, terms);
+      DocIdSetBuilder exactBuilder = new DocIdSetBuilder(maxDoc, terms);
       boolean approxIsEmpty = true;
       boolean exactIsEmpty = true;
       DocIdSet exactDocIdSet;

@@ -93,7 +93,7 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointMultiTermQu
 
         LeafReader reader = context.reader();
         // approximation (postfiltering has not yet been applied)
-        DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc());
+        DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);
         // subset of documents that need no postfiltering, this is purely an optimization
         final BitSet preApproved;
         // dumb heuristic: if the field is really sparse, use a sparse impl
