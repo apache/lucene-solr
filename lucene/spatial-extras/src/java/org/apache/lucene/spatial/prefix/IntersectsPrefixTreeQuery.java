@@ -55,8 +55,8 @@ public class IntersectsPrefixTreeQuery extends AbstractVisitingPrefixTreeQuery {
       private DocIdSetBuilder results;
 
       @Override
-      protected void start() {
-        results = new DocIdSetBuilder(maxDoc);
+      protected void start() throws IOException {
+        results = new DocIdSetBuilder(maxDoc, terms);
       }
 
       @Override

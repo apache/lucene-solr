@@ -166,7 +166,7 @@ final class MultiTermQueryConstantScoreWrapper<Q extends MultiTermQuery> extends
         }
 
         // Too many terms: go back to the terms we already collected and start building the bit set
-        DocIdSetBuilder builder = new DocIdSetBuilder(context.reader().maxDoc());
+        DocIdSetBuilder builder = new DocIdSetBuilder(context.reader().maxDoc(), terms);
         if (collectedTerms.isEmpty() == false) {
           TermsEnum termsEnum2 = terms.iterator();
           for (TermAndState t : collectedTerms) {

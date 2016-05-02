@@ -105,16 +105,20 @@ public abstract class AbstractPrefixTreeQuery extends Query {
     protected final LeafReaderContext context;
     protected final int maxDoc;
 
-    protected TermsEnum termsEnum;//remember to check for null!
+    protected final Terms terms;
+    protected final TermsEnum termsEnum;//remember to check for null!
     protected PostingsEnum postingsEnum;
 
     public BaseTermsEnumTraverser(LeafReaderContext context) throws IOException {
       this.context = context;
       LeafReader reader = context.reader();
       this.maxDoc = reader.maxDoc();
-      Terms terms = reader.terms(fieldName);
-      if (terms != null)
+      terms = reader.terms(fieldName);
+      if (terms != null) {
         this.termsEnum = terms.iterator();
+      } else {
+        this.termsEnum = null;
+      }
     }
 
     protected void collectDocs(BitSet bitSet) throws IOException {

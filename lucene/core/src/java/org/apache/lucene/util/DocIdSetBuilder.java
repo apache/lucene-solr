@@ -19,6 +19,8 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.packed.PackedInts;
@@ -65,18 +67,48 @@ public final class DocIdSetBuilder {
 
   private final int maxDoc;
   private final int threshold;
+  // pkg-private for testing
+  final boolean multivalued;
+  final double numValuesPerDoc;
 
   private int[] buffer;
   private int bufferSize;
 
   private FixedBitSet bitSet;
+
+  private long counter = -1;
   private BulkAdder adder = new BufferAdder();
 
   /**
    * Create a builder that can contain doc IDs between {@code 0} and {@code maxDoc}.
    */
   public DocIdSetBuilder(int maxDoc) {
+    this(maxDoc, -1, -1);
+  }
+
+  /** Create a {@link DocIdSetBuilder} instance that is optimized for
+   *  accumulating docs that match the given {@link Terms}. */
+  public DocIdSetBuilder(int maxDoc, Terms terms) throws IOException {
+    this(maxDoc, terms.getDocCount(), terms.getSumDocFreq());
+  }
+
+  /** Create a {@link DocIdSetBuilder} instance that is optimized for
+   *  accumulating docs that match the given {@link PointValues}. */
+  public DocIdSetBuilder(int maxDoc, PointValues values, String field) throws IOException {
+    this(maxDoc, values.getDocCount(field), values.size(field));
+  }
+
+  DocIdSetBuilder(int maxDoc, int docCount, long valueCount) {
     this.maxDoc = maxDoc;
+    this.multivalued = docCount < 0 || docCount != valueCount;
+    this.numValuesPerDoc = (docCount < 0 || valueCount < 0)
+        // assume one value per doc, this means the cost will be overestimated
+        // if the docs are actually multi-valued
+        ? 1
+        // otherwise compute from index stats
+        : (double) valueCount / docCount;
+    assert numValuesPerDoc >= 1;
+
     // For ridiculously small sets, we'll just use a sorted int[]
     // maxDoc >>> 7 is a good value if you want to save memory, lower values
     // such as maxDoc >>> 11 should provide faster building but at the expense
@@ -94,6 +126,7 @@ public final class DocIdSetBuilder {
     for (int i = 0; i < bufferSize; ++i) {
       bitSet.set(buffer[i]);
     }
+    counter = this.bufferSize;
     this.buffer = null;
     this.bufferSize = 0;
     this.adder = new FixedBitSetAdder(bitSet);
@@ -157,7 +190,10 @@ public final class DocIdSetBuilder {
         growBuffer((int) newLength);
       } else {
         upgradeToBitSet();
+        counter += numDocs;
       }
+    } else {
+      counter += numDocs;
     }
     return adder;
   }
@@ -179,17 +215,32 @@ public final class DocIdSetBuilder {
     return l;
   }
 
+  private static boolean noDups(int[] a, int len) {
+    for (int i = 1; i < len; ++i) {
+      assert a[i-1] < a[i];
+    }
+    return true;
+  }
+
   /**
    * Build a {@link DocIdSet} from the accumulated doc IDs.
    */
   public DocIdSet build() {
     try {
       if (bitSet != null) {
-        return new BitDocIdSet(bitSet);
+        assert counter >= 0;
+        final long cost = Math.round(counter / numValuesPerDoc);
+        return new BitDocIdSet(bitSet, cost);
       } else {
         LSBRadixSorter sorter = new LSBRadixSorter();
         sorter.sort(PackedInts.bitsRequired(maxDoc - 1), buffer, bufferSize);
-        final int l = dedup(buffer, bufferSize);
+        final int l;
+        if (multivalued) {
+          l = dedup(buffer, bufferSize);
+        } else {
+          assert noDups(buffer, bufferSize);
+          l = bufferSize;
+        }
         assert l <= bufferSize;
         buffer = ArrayUtil.grow(buffer, l + 1);
         buffer[l] = DocIdSetIterator.NO_MORE_DOCS;

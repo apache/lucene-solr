@@ -226,7 +226,7 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
           Terms terms = fields.terms(field);
           TermsEnum  termsEnum = terms.iterator();
           PostingsEnum docs = null;
-          DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc());
+          DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);
           for (int i=0; i<finalContexts.size(); i++) {
             TermContext termContext = finalContexts.get(i);
             TermState termState = termContext.get(context.ord);
