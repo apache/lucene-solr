@@ -113,6 +113,13 @@ New Features
 
 * SOLR-9041: 'core-admin-read' and 'core-admin-edit' are well known permissions (noble)
 
+* SOLR-8986: Add Random Streaming Expression (Joel Bernstein)
+
+* SOLR-8925: Add gatherNodes Streaming Expression to support breadth first traversals (Joel Bernstein)
+
+* SOLR-9027: Add GraphTermsQuery to limit traversal on high frequency nodes	(Joel Bernstein, David Smiley)
+
+
 Bug Fixes
 ----------------------
 
