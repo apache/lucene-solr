@@ -175,6 +175,8 @@ Bug Fixes
 
 * SOLR-9028: Fixed some test related bugs preventing SSL + ClientAuth from ever being tested (hossman)
 
+* SOLR-9059: NPE in SolrClientCache following collection reload (Joel Bernstein, Ryan Yacyshyn)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
