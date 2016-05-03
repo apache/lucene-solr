@@ -27,6 +27,14 @@ public class Pair<K, V> implements Serializable {
 
   private V value;
 
+  public K _1() {
+    return key;
+  }
+
+  public V _2() {
+    return value;
+  }
+
   public V getValue() {
     return value;
   }
