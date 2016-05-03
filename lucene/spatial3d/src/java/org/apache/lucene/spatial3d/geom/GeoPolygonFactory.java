@@ -171,12 +171,12 @@ public class GeoPolygonFactory {
     
     final List<List<GeoPoint>> pointsList = new ArrayList<>();
     
-    List<GeoPoint> testPointShape = null;
+    BestShape testPointShape = null;
     for (final PolygonDescription shape : shapesList) {
       // Convert this shape and its holes to a general list of shapes.  We also need to identify exactly one
       // legal, non-degenerate shape with no children that we can use to find a test point.  We also optimize
       // to choose as small as possible a polygon for determining the in-set-ness of the test point.
-      testPointShape = convertPolygon(pointsList, shape, testPointShape);
+      testPointShape = convertPolygon(pointsList, shape, testPointShape, true);
     }
     
     // If there's no polygon we can use to determine a test point, we throw up.
@@ -189,12 +189,16 @@ public class GeoPolygonFactory {
     final Random generator = new Random(1234);
     for (int counter = 0; counter < 1000000; counter++) {
       // Pick the next random pole
-      final GeoPoint pole = pickPole(generator, planetModel, testPointShape);
+      final GeoPoint pole = pickPole(generator, planetModel, testPointShape.points);
       // Is it inside or outside?
-      final Boolean isPoleInside = isInsidePolygon(pole, testPointShape);
+      final Boolean isPoleInside = isInsidePolygon(pole, testPointShape.points);
       if (isPoleInside != null) {
         // Legal pole
-        return new GeoComplexPolygon(planetModel, pointsList, pole, isPoleInside);
+        if (isPoleInside == testPointShape.poleMustBeInside) {
+          return new GeoComplexPolygon(planetModel, pointsList, pole, isPoleInside);
+        } else {
+          return new GeoComplexPolygon(planetModel, pointsList, new GeoPoint(-pole.x, -pole.y, -pole.z), !isPoleInside);
+        }
       }
       // If pole choice was illegal, try another one
     }
@@ -208,7 +212,7 @@ public class GeoPolygonFactory {
    * @param testPointShape is the current best choice for a low-level polygon to evaluate.
    * @return an updated best-choice for a test point polygon, and update the points list.
    */
-  private static List<GeoPoint> convertPolygon(final List<List<GeoPoint>> pointsList, final PolygonDescription shape, List<GeoPoint> testPointShape) {
+  private static BestShape convertPolygon(final List<List<GeoPoint>> pointsList, final PolygonDescription shape, BestShape testPointShape, final boolean mustBeInside) {
     // First, remove duplicate points.  If degenerate, just ignore the shape.
     final List<GeoPoint> filteredPoints = filterPoints(shape.points);
     if (filteredPoints == null) {
@@ -218,8 +222,8 @@ public class GeoPolygonFactory {
     // Non-degenerate.  Check if this is a candidate for in-set determination.
     if (shape.holes.size() == 0) {
       // This shape is a candidate for a test point.
-      if (testPointShape == null || testPointShape.size() > filteredPoints.size()) {
-        testPointShape = filteredPoints;
+      if (testPointShape == null || testPointShape.points.size() > filteredPoints.size()) {
+        testPointShape = new BestShape(filteredPoints, mustBeInside);
       }
     }
     
@@ -227,11 +231,25 @@ public class GeoPolygonFactory {
     
     // Now, do all holes too
     for (final PolygonDescription hole : shape.holes) {
-      testPointShape = convertPolygon(pointsList, hole, testPointShape);
+      testPointShape = convertPolygon(pointsList, hole, testPointShape, !mustBeInside);
     }
     
     // Done; return the updated test point shape.
     return testPointShape;
+  }
+  
+  /**
+   * Class for tracking the best shape for finding a pole, and whether or not the pole
+   * must be inside or outside of the shape.
+   */
+  private static class BestShape {
+    public final List<GeoPoint> points;
+    public boolean poleMustBeInside;
+    
+    public BestShape(final List<GeoPoint> points, final boolean poleMustBeInside) {
+      this.points = points;
+      this.poleMustBeInside = poleMustBeInside;
+    }
   }
   
   /**
