@@ -127,6 +127,9 @@ Other
 * LUCENE-7210: Make TestCore*Parser's analyzer choice override-able
   (Christine Poerschke, Daniel Collins)
 
+* LUCENE-7263: Make queryparser/xml/CoreParser's SpanQueryBuilderFactory
+  accessible to deriving classes. (Daniel Collins via Christine Poerschke)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
