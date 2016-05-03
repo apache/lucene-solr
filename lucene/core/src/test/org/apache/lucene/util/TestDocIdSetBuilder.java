@@ -161,6 +161,12 @@ public class TestDocIdSetBuilder extends LuceneTestCase {
     assertEquals(new BitDocIdSet(expected), builder.build());
   }
 
+  public void testEmptyPoints() throws IOException {
+    PointValues values = new DummyPointValues(0, 0);
+    DocIdSetBuilder builder = new DocIdSetBuilder(1, values, "foo");
+    assertEquals(1d, builder.numValuesPerDoc, 0d);
+  }
+
   public void testLeverageStats() throws IOException {
     // single-valued points
     PointValues values = new DummyPointValues(42, 42);
