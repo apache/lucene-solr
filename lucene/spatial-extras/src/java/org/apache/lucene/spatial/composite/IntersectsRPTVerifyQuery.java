@@ -19,9 +19,6 @@ package org.apache.lucene.spatial.composite;
 import java.io.IOException;
 import java.util.Map;
 
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.SpatialRelation;
-
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -38,6 +35,8 @@ import org.apache.lucene.spatial.prefix.AbstractVisitingPrefixTreeQuery;
 import org.apache.lucene.spatial.prefix.tree.Cell;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.SpatialRelation;
 
 /**
  * A spatial Intersects predicate that distinguishes an approximated match from an exact match based on which cells
@@ -163,8 +162,8 @@ public class IntersectsRPTVerifyQuery extends Query {
     // TODO consider if IntersectsPrefixTreeQuery should simply do this and provide both sets
 
     class IntersectsDifferentiatingVisitor extends VisitorTemplate {
-      DocIdSetBuilder approxBuilder = new DocIdSetBuilder(maxDoc, terms);
-      DocIdSetBuilder exactBuilder = new DocIdSetBuilder(maxDoc, terms);
+      DocIdSetBuilder approxBuilder;
+      DocIdSetBuilder exactBuilder;
       boolean approxIsEmpty = true;
       boolean exactIsEmpty = true;
       DocIdSet exactDocIdSet;
@@ -176,6 +175,8 @@ public class IntersectsRPTVerifyQuery extends Query {
 
       @Override
       protected void start() throws IOException {
+        approxBuilder = new DocIdSetBuilder(maxDoc, terms);
+        exactBuilder = new DocIdSetBuilder(maxDoc, terms);
       }
 
       @Override
