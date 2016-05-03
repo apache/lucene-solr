@@ -122,6 +122,8 @@ New Features
 * SOLR-5750: Add /admin/collections?action=BACKUP and RESTORE assuming access to a shared file system.
   (Varun Thacker, David Smiley)
 
+* SOLR-9049: RuleBasedAuthorizationPlugin supports regex in param values eg: "command" : "REGEX:(i?)create" (noble)
+
 Bug Fixes
 ----------------------
 
