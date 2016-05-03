@@ -36,6 +36,7 @@ public class CoreParser implements QueryBuilder {
   protected Analyzer analyzer;
   protected QueryParser parser;
   protected QueryBuilderFactory queryFactory;
+  final protected SpanQueryBuilderFactory spanFactory;
 
 
   /**
@@ -62,6 +63,8 @@ public class CoreParser implements QueryBuilder {
     this.parser = parser;
 
     queryFactory = new QueryBuilderFactory();
+    spanFactory = new SpanQueryBuilderFactory();
+
     queryFactory.addBuilder("TermQuery", new TermQueryBuilder());
     queryFactory.addBuilder("TermsQuery", new TermsQueryBuilder(analyzer));
     queryFactory.addBuilder("MatchAllDocsQuery", new MatchAllDocsQueryBuilder());
@@ -77,34 +80,32 @@ public class CoreParser implements QueryBuilder {
     }
     queryFactory.addBuilder("ConstantScoreQuery", new ConstantScoreQueryBuilder(queryFactory));
 
-    SpanQueryBuilderFactory sqof = new SpanQueryBuilderFactory();
-
-    SpanNearBuilder snb = new SpanNearBuilder(sqof);
-    sqof.addBuilder("SpanNear", snb);
+    SpanNearBuilder snb = new SpanNearBuilder(spanFactory);
+    spanFactory.addBuilder("SpanNear", snb);
     queryFactory.addBuilder("SpanNear", snb);
 
     BoostingTermBuilder btb = new BoostingTermBuilder();
-    sqof.addBuilder("BoostingTermQuery", btb);
+    spanFactory.addBuilder("BoostingTermQuery", btb);
     queryFactory.addBuilder("BoostingTermQuery", btb);
 
     SpanTermBuilder snt = new SpanTermBuilder();
-    sqof.addBuilder("SpanTerm", snt);
+    spanFactory.addBuilder("SpanTerm", snt);
     queryFactory.addBuilder("SpanTerm", snt);
 
-    SpanOrBuilder sot = new SpanOrBuilder(sqof);
-    sqof.addBuilder("SpanOr", sot);
+    SpanOrBuilder sot = new SpanOrBuilder(spanFactory);
+    spanFactory.addBuilder("SpanOr", sot);
     queryFactory.addBuilder("SpanOr", sot);
 
     SpanOrTermsBuilder sots = new SpanOrTermsBuilder(analyzer);
-    sqof.addBuilder("SpanOrTerms", sots);
+    spanFactory.addBuilder("SpanOrTerms", sots);
     queryFactory.addBuilder("SpanOrTerms", sots);
 
-    SpanFirstBuilder sft = new SpanFirstBuilder(sqof);
-    sqof.addBuilder("SpanFirst", sft);
+    SpanFirstBuilder sft = new SpanFirstBuilder(spanFactory);
+    spanFactory.addBuilder("SpanFirst", sft);
     queryFactory.addBuilder("SpanFirst", sft);
 
-    SpanNotBuilder snot = new SpanNotBuilder(sqof);
-    sqof.addBuilder("SpanNot", snot);
+    SpanNotBuilder snot = new SpanNotBuilder(spanFactory);
+    spanFactory.addBuilder("SpanNot", snot);
     queryFactory.addBuilder("SpanNot", snot);
   }
 
@@ -114,6 +115,10 @@ public class CoreParser implements QueryBuilder {
 
   public void addQueryBuilder(String nodeName, QueryBuilder builder) {
     queryFactory.addBuilder(nodeName, builder);
+  }
+
+  public void addSpanBuilder(String nodeName, SpanQueryBuilder builder) {
+    spanFactory.addBuilder(nodeName, builder);
   }
 
   static Document parseXML(InputStream pXmlFile) throws ParserException {
