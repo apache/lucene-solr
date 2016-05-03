@@ -119,6 +119,9 @@ New Features
 
 * SOLR-9027: Add GraphTermsQuery to limit traversal on high frequency nodes (Joel Bernstein, David Smiley)
 
+* SOLR-5750: Add /admin/collections?action=BACKUP and RESTORE assuming access to a shared file system.
+  (Varun Thacker, David Smiley)
+
 Bug Fixes
 ----------------------
 
