@@ -16,7 +16,9 @@
  */
 package org.apache.lucene.spatial3d.geom;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -33,9 +35,9 @@ import java.util.HashSet;
  */
 class GeoComplexPolygon extends GeoBasePolygon {
   
-  private final Tree xTree = new XTree();
-  private final Tree yTree = new YTree();
-  private final Tree zTree = new ZTree();
+  private final Tree xTree;
+  private final Tree yTree;
+  private final Tree zTree;
   
   private final boolean testPointInSet;
   private final GeoPoint testPoint;
@@ -82,17 +84,17 @@ class GeoComplexPolygon extends GeoBasePolygon {
 
     this.edgePoints = new GeoPoint[pointsList.size()];
     this.shapeStartEdges = new Edge[pointsList.size()];
+    final ArrayList<Edge> allEdges = new ArrayList<>();
     int edgePointIndex = 0;
     for (final List<GeoPoint> shapePoints : pointsList) {
+      allEdges.ensureCapacity(allEdges.size() + shapePoints.size());
       GeoPoint lastGeoPoint = shapePoints.get(shapePoints.size()-1);
       edgePoints[edgePointIndex] = lastGeoPoint;
       Edge lastEdge = null;
       Edge firstEdge = null;
       for (final GeoPoint thisGeoPoint : shapePoints) {
         final Edge edge = new Edge(planetModel, lastGeoPoint, thisGeoPoint);
-        xTree.add(edge);
-        yTree.add(edge);
-        zTree.add(edge);
+        allEdges.add(edge);
         // Now, link
         if (firstEdge == null) {
           firstEdge = edge;
@@ -109,6 +111,10 @@ class GeoComplexPolygon extends GeoBasePolygon {
       shapeStartEdges[edgePointIndex] = firstEdge;
       edgePointIndex++;
     }
+
+    xTree = new XTree(allEdges);
+    yTree = new YTree(allEdges);
+    zTree = new ZTree(allEdges);
   }
 
   @Override
@@ -447,10 +453,31 @@ class GeoComplexPolygon extends GeoBasePolygon {
     protected static final int GREATER = 5;
     protected static final int EXACT = 6;
     
+    private final static Edge[] NO_EDGES = new Edge[0];
+    
+    /** Create a tree.
+     * @param edges is the list of edges.
+     */
+    public Tree(final List<Edge> allEdges) {
+      final Edge[] edges = allEdges.toArray(NO_EDGES);
+      // Sort by edge length, and then by minimum value
+      Arrays.sort(edges, (left, right) -> {
+        int ret = Double.compare(getMaximum(left) - getMinimum(left), getMaximum(right) - getMinimum(right));
+        if (ret == 0) {
+          ret = Double.compare(getMinimum(left), getMinimum(right));
+        }
+        return ret;
+      });
+
+      for (final Edge edge : edges) {
+        add(edge);
+      }
+    }
+    
     /** Add a new edge to the tree.
      * @param edge is the edge to add.
      */
-    public void add(final Edge edge) {
+    private void add(final Edge edge) {
       rootNode = addEdge(rootNode, edge, getMinimum(edge), getMaximum(edge));
     }
 
@@ -646,7 +673,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
   private static class ZTree extends Tree {
     public Node rootNode = null;
     
-    public ZTree() {
+    public ZTree(final List<Edge> allEdges) {
+      super(allEdges);
     }
     
     /*
@@ -673,7 +701,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
    */
   private static class YTree extends Tree {
     
-    public YTree() {
+    public YTree(final List<Edge> allEdges) {
+      super(allEdges);
     }
 
     /*
@@ -700,7 +729,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
    */
   private static class XTree extends Tree {
     
-    public XTree() {
+    public XTree(final List<Edge> allEdges) {
+      super(allEdges);
     }
     
     /*
