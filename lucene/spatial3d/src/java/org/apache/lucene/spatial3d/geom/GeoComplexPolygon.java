@@ -456,7 +456,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
     private final static Edge[] NO_EDGES = new Edge[0];
     
     /** Create a tree.
-     * @param edges is the list of edges.
+     * @param allEdges is the list of edges.
      */
     public Tree(final List<Edge> allEdges) {
       final Edge[] edges = allEdges.toArray(NO_EDGES);
