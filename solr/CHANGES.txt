@@ -54,6 +54,8 @@ Bug Fixes
 
 * SOLR-8971: Preserve root cause when wrapping exceptions (hossman)
 
+* SOLR-8792: ZooKeeper ACL support fixed. (Esther Quansah, Ishan Chattopadhyaya, Steve Rowe)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes
