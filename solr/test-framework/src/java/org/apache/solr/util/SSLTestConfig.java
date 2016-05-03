@@ -21,6 +21,8 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.SecureRandomSpi;
 import java.security.UnrecoverableKeyException;
 
 import javax.net.ssl.SSLContext;
@@ -41,6 +43,7 @@ import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.common.params.SolrParams;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SSLTestConfig extends SSLConfig {
   public static File TEST_KEYSTORE = ExternalPaths.SERVER_HOME == null ? null
@@ -79,7 +82,10 @@ public class SSLTestConfig extends SSLConfig {
   
   /**
    * Builds a new SSLContext for HTTP <b>clients</b> to use when communicating with servers which have 
-   * been configured based on the settings of this object.  Also explicitly allows the use of self-signed 
+   * been configured based on the settings of this object.  
+   *
+   * NOTE: Uses a completely insecure {@link SecureRandom} instance to prevent tests from blocking 
+   * due to lack of entropy, also explicitly allows the use of self-signed 
    * certificates (since that's what is almost always used during testing).
    */
   public SSLContext buildClientSSLContext() throws KeyManagementException, 
@@ -88,7 +94,8 @@ public class SSLTestConfig extends SSLConfig {
     assert isSSLMode();
     
     SSLContextBuilder builder = SSLContexts.custom();
-
+    builder.setSecureRandom(NullSecureRandom.INSTANCE);
+    
     // NOTE: KeyStore & TrustStore are swapped because they are from configured from server perspective...
     // we are a client - our keystore contains the keys the server trusts, and vice versa
     builder.loadTrustMaterial(buildKeyStore(getKeyStore(), getKeyStorePassword()), new TrustSelfSignedStrategy()).build();
@@ -99,6 +106,54 @@ public class SSLTestConfig extends SSLConfig {
     }
 
     return builder.build();
+  }
+  
+  /**
+   * Builds a new SSLContext for jetty servers which have been configured based on the settings of 
+   * this object.
+   *
+   * NOTE: Uses a completely insecure {@link SecureRandom} instance to prevent tests from blocking 
+   * due to lack of entropy, also explicitly allows the use of self-signed 
+   * certificates (since that's what is almost always used during testing).
+   * almost always used during testing). 
+   */
+  public SSLContext buildServerSSLContext() throws KeyManagementException, 
+    UnrecoverableKeyException, NoSuchAlgorithmException, KeyStoreException {
+
+    assert isSSLMode();
+    
+    SSLContextBuilder builder = SSLContexts.custom();
+    builder.setSecureRandom(NullSecureRandom.INSTANCE);
+    
+    builder.loadKeyMaterial(buildKeyStore(getKeyStore(), getKeyStorePassword()), getKeyStorePassword().toCharArray());
+
+    if (isClientAuthMode()) {
+      builder.loadTrustMaterial(buildKeyStore(getTrustStore(), getTrustStorePassword()), new TrustSelfSignedStrategy()).build();
+      
+    }
+
+    return builder.build();
+  }
+
+  /**
+   * Returns an SslContextFactory using {@link buildServerSSLContext} if SSL should be used, else returns null.
+   */
+  @Override
+  public SslContextFactory createContextFactory() {
+    if (!isSSLMode()) {
+      return null;
+    }
+    // else...
+
+    
+    SslContextFactory factory = new SslContextFactory(false);
+    try {
+      factory.setSslContext(buildServerSSLContext());
+    } catch (Exception e) { 
+      throw new RuntimeException("ssl context init failure: " + e.getMessage(), e); 
+    }
+    factory.setNeedClientAuth(isClientAuthMode());
+    return factory;
   }
   
   /**
@@ -202,5 +257,42 @@ public class SSLTestConfig extends SSLConfig {
     System.clearProperty("javax.net.ssl.trustStore");
     System.clearProperty("javax.net.ssl.trustStorePassword");
   }
-  
+
+  /**
+   * A mocked up instance of SecureRandom that always does the minimal amount of work to generate 
+   * "random" numbers.  This is to prevent blocking issues that arise in platform default 
+   * SecureRandom instances due to too many instances / not enough random entropy.  
+   * Tests do not need secure SSL.
+   */
+  private static class NullSecureRandom extends SecureRandom {
+    public static final SecureRandom INSTANCE = new NullSecureRandom();
+    
+    /** SPI Used to init all instances */
+    private static final SecureRandomSpi NULL_SPI = new SecureRandomSpi() {
+      /** NOOP: returns new uninitialized byte[] */
+      public byte[] engineGenerateSeed(int numBytes) {
+        return new byte[numBytes];
+      }
+      /** NOOP */
+      public void engineNextBytes(byte[] bytes) { /* NOOP */ }
+      /** NOOP */
+      public void engineSetSeed(byte[] seed) { /* NOOP */ }
+    };
+    
+    private NullSecureRandom() {
+      super(NULL_SPI, null) ;
+    }
+    
+    /** NOOP: returns new uninitialized byte[] */
+    public byte[] generateSeed(int numBytes) {
+      return new byte[numBytes];
+    }
+    /** NOOP */
+    synchronized public void nextBytes(byte[] bytes) { /* NOOP */ }
+    /** NOOP */
+    synchronized public void setSeed(byte[] seed) { /* NOOP */ }
+    /** NOOP */
+    synchronized public void setSeed(long seed) { /* NOOP */ }
+    
+  }
 }
