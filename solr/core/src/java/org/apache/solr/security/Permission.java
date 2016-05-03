@@ -3,15 +3,23 @@ package org.apache.solr.security;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.Pair;
 
 import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /*
@@ -35,7 +43,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 class Permission {
   String name;
   Set<String> path, role, collections, method;
-  Map<String, Object> params;
+  Map<String, Function<String[], Boolean>> params;
   PermissionNameProvider.Name wellknownName;
 
   private Permission() {
@@ -63,7 +71,37 @@ class Permission {
     p.path = readSetSmart(name, m, "path");
     p.collections = readSetSmart(name, m, "collection");
     p.method = readSetSmart(name, m, "method");
-    p.params = (Map<String, Object>) m.get("params");
+    Map<String, Object> paramRules = (Map<String, Object>) m.get("params");
+    if (paramRules != null) {
+      p.params = new LinkedHashMap<>();
+      for (Map.Entry<String, Object> e : paramRules.entrySet()) {
+        if (e.getValue() == null) {
+          p.params.put(e.getKey(), (String[] val) -> val == null);
+        } else {
+          List<String> patternStrs = e.getValue() instanceof List ?
+              (List) e.getValue() :
+              singletonList(e.getValue().toString());
+          List patterns = patternStrs.stream()
+              .map(it -> it.startsWith("REGEX:") ?
+                  Pattern.compile(String.valueOf(it.substring("REGEX:".length())))
+                  : it)
+              .collect(Collectors.toList());
+          p.params.put(e.getKey(), val -> {
+            if (val == null) return false;
+            for (Object pattern : patterns) {
+              for (String s : val) {
+                if (pattern instanceof String) {
+                  if (pattern.equals(s)) return true;
+                } else if (pattern instanceof Pattern) {
+                  if (((Pattern) pattern).matcher(s).find()) return true;
+                }
+              }
+            }
+            return false;
+          });
+        }
+      }
+    }
     return p;
   }
 
