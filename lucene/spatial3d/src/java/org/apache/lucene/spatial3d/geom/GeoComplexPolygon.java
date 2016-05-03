@@ -445,6 +445,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
     protected static final int OVERLAPS_MAXIMUM = 3;
     protected static final int LESS = 4;
     protected static final int GREATER = 5;
+    protected static final int EXACT = 6;
     
     /** Add a new edge to the tree.
      * @param edge is the edge to add.
@@ -484,11 +485,23 @@ class GeoComplexPolygon extends GeoBasePolygon {
       int result = compareForAdd(node.minimumValue, node.maximumValue, minimumValue, maximumValue);
       switch (result) {
       case CONTAINED:
-        // The node is contained in the range provided.  We need to create a new node and insert
+       {
+          final double lesserMaximum = Math.nextDown(node.minimumValue);
+          final double greaterMinimum = Math.nextUp(node.maximumValue);
+          node.lesser = addEdge(node.lesser, newEdge, minimumValue, lesserMaximum);
+          node.greater = addEdge(node.greater, newEdge, greaterMinimum, maximumValue);
+          return addEdge(node, newEdge, node.minimumValue, node.maximumValue);
+       }
+      case EXACT:
+        // The node is exactly equal to the range provided.  We need to create a new node and insert
         // it into the "within" chain.
         final Node rval = new Node(newEdge, minimumValue, maximumValue);
         //System.err.println(" Inserting new node "+rval+" at head of current 'within' chain in tree "+this);
         rval.within = node;
+        rval.lesser = node.lesser;
+        rval.greater = node.greater;
+        node.lesser = null;
+        node.greater = null;
         return rval;
       case WITHIN:
         // The new edge is within the node provided
@@ -496,19 +509,23 @@ class GeoComplexPolygon extends GeoBasePolygon {
         node.within = addEdge(node.within, newEdge, minimumValue, maximumValue);
         return node;
       case OVERLAPS_MINIMUM:
-        // The new edge overlaps the minimum value, but not the maximum value.
-        // Here we need to create TWO entries: one for the lesser side, and one for the within chain.
-        //System.err.println(" Inserting edge into BOTH lesser chain and within chain in tree "+this);
-        final double lesserMaximum = Math.nextDown(node.minimumValue);
-        node.lesser = addEdge(node.lesser, newEdge, minimumValue, lesserMaximum);
-        return addEdge(node, newEdge, node.minimumValue, maximumValue);
+        {
+          // The new edge overlaps the minimum value, but not the maximum value.
+          // Here we need to create TWO entries: one for the lesser side, and one for the within chain.
+          //System.err.println(" Inserting edge into BOTH lesser chain and within chain in tree "+this);
+          final double lesserMaximum = Math.nextDown(node.minimumValue);
+          node.lesser = addEdge(node.lesser, newEdge, minimumValue, lesserMaximum);
+          return addEdge(node, newEdge, node.minimumValue, maximumValue);
+        }
       case OVERLAPS_MAXIMUM:
-        // The new edge overlaps the maximum value, but not the minimum value.
-        // Need to create two entries, one on the greater side, and one back into the current node.
-        //System.err.println(" Inserting edge into BOTH greater chain and within chain in tree "+this);
-        final double greaterMinimum = Math.nextUp(node.maximumValue);
-        node.greater = addEdge(node.greater, newEdge, greaterMinimum, maximumValue);
-        return addEdge(node, newEdge, minimumValue, node.maximumValue);
+        {
+          // The new edge overlaps the maximum value, but not the minimum value.
+          // Need to create two entries, one on the greater side, and one back into the current node.
+          //System.err.println(" Inserting edge into BOTH greater chain and within chain in tree "+this);
+          final double greaterMinimum = Math.nextUp(node.maximumValue);
+          node.greater = addEdge(node.greater, newEdge, greaterMinimum, maximumValue);
+          return addEdge(node, newEdge, minimumValue, node.maximumValue);
+        }
       case LESS:
         // The new edge is clearly less than the current node.
         //System.err.println(" Edge goes into the lesser chain in tree "+this);
@@ -606,7 +623,9 @@ class GeoComplexPolygon extends GeoBasePolygon {
      * @return the comparison result.
      */
     protected int compareForAdd(final double nodeMinimumValue, final double nodeMaximumValue, final double minimumValue, final double maximumValue) {
-      if (minimumValue <= nodeMinimumValue && maximumValue >= nodeMaximumValue) {
+      if (minimumValue == nodeMinimumValue && maximumValue == nodeMaximumValue) {
+        return EXACT;
+      } else if (minimumValue <= nodeMinimumValue && maximumValue >= nodeMaximumValue) {
         return CONTAINED;
       } else if (nodeMinimumValue <= minimumValue && nodeMaximumValue >= maximumValue) {
         return WITHIN;
