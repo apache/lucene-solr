@@ -59,6 +59,8 @@ Bug Fixes
 
 * SOLR-9028: Fixed some test related bugs preventing SSL + ClientAuth from ever being tested (hossman)
 
+* SOLR-9059: NPE in SolrClientCache following collection reload (Joel Bernstein, Ryan Yacyshyn)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
