@@ -177,6 +177,8 @@ Bug Fixes
 
 * SOLR-9059: NPE in SolrClientCache following collection reload (Joel Bernstein, Ryan Yacyshyn)
 
+* SOLR-8792: ZooKeeper ACL support fixed. (Esther Quansah, Ishan Chattopadhyaya, Steve Rowe)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
