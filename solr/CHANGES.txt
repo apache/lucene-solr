@@ -237,6 +237,8 @@ Other Changes
 
 * SOLR-9047: zkcli should allow alternative locations for log4j configuration (Gregory Chanan)
 
+* SOLR-9053: Upgrade commons-fileupload to 1.3.1, fixing a potential vulnerability (Jeff Field, janhoy)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
