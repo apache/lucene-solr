@@ -105,6 +105,9 @@ public class DistribJoinFromCollectionTest extends AbstractFullDistribZkTestBase
     //with score
     testJoins(toColl, fromColl, toDocId, true);
 
+    //Distributed join
+    testDistributedJoin();
+
     log.info("DistribJoinFromCollectionTest logic complete ... deleting the " + toColl + " and " + fromColl + " collections");
 
     // try to clean up
@@ -175,6 +178,51 @@ public class DistribJoinFromCollectionTest extends AbstractFullDistribZkTestBase
       final SolrDocumentList hits = rsp.getResults();
       assertTrue("Expected no hits", hits.getNumFound() == 0);
     }
+  }
+
+  /**
+   * Test distributed join. This method tests join query on multiple shards and gets result from all shards.
+   * It specifically tests scenario of secondary collection being equally sharded same as primary collection
+   * 
+   * It is a join query between two collections both of which have 2 shards and 2 replica
+   *        to_2x2
+   *        from_2x2
+   *
+   * Query:  {!join from =join_s fromIndex =from_2x2 to =join_s}
+   * FQ:     *:*
+   * Params: distrib=true
+   * @throws Exception the exception
+   */
+  private void testDistributedJoin() throws Exception{
+    log.info("Testing distributed join across cluster!");
+    final String fromQ = "*:*";
+    
+    String toJoinColl = "toJoin_2x2";
+    createCollection(toJoinColl, 2, 2, 2);
+    ensureAllReplicasAreActive(toJoinColl, "shard1", 2, 2, 30);
+    ensureAllReplicasAreActive(toJoinColl, "shard2", 2, 2, 30);
+    indexDoc(toJoinColl, 1001, "a", null, "b");
+    //Using Integer.MAX ensures that document is on shard2
+    indexDoc(toJoinColl, Integer.MAX_VALUE,  "a", null, "b");
+    
+    String fromJoinColl = "from_2x2";
+    createCollection(fromJoinColl, 2, 2, 2);
+    ensureAllReplicasAreActive(fromJoinColl, "shard1", 2, 2, 30);
+    ensureAllReplicasAreActive(fromJoinColl, "shard2", 2, 2, 30);
+    //Using Integer.MAX ensures that document is on shard2
+    indexDoc(fromJoinColl, Integer.MAX_VALUE,"a", null, "b");
+    indexDoc(fromJoinColl, 2001, "a", null, "b");
+    final String joinQ = "{!join " + anyScoreMode(false)+ "from=join_s fromIndex=" + fromJoinColl + " to=join_s}" + fromQ;
+    // so the commits fire
+    Thread.sleep(2000); 
+    
+    //Join query with distrib=true so the query goes on all shards
+    QueryRequest qr = new QueryRequest(params("collection", toJoinColl, "q", joinQ, "distrib", "true"));
+    QueryResponse rsp = new QueryResponse(cloudClient.request(qr), cloudClient);
+    
+    SolrDocumentList hits = rsp.getResults();
+    
+    assertTrue("Expected 2 doc from 2 different shards, got "+hits, hits.getNumFound() == 2);
   }
 
   private void assertScore(boolean isScoresTest, SolrDocument doc) {
