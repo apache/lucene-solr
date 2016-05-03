@@ -425,17 +425,39 @@ class GeoComplexPolygon extends GeoBasePolygon {
    *
    */
   private static class Node {
-    public final double minimumValue;
-    public final double maximumValue;
     public final Edge edge;
-    public Node lesser = null;
-    public Node greater = null;
-    public Node within = null;
+    public final double low;
+    public final double high;
+    public Node left = null;
+    public Node right = null;
+    public double max;
+
     
     public Node(final Edge edge, final double minimumValue, final double maximumValue) {
       this.edge = edge;
-      this.minimumValue = minimumValue;
-      this.maximumValue = maximumValue;
+      this.low = minimumValue;
+      this.high = maximumValue;
+      this.max = maximumValue;
+    }
+
+    public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue) {
+      if (minValue <= max) {
+        
+        // Does this node overlap?
+        if (minValue <= high && maxValue >= low) {
+          if (edgeIterator.matches(edge) == false) {
+            return false;
+          }
+        }
+        
+        if (left != null && left.traverse(edgeIterator, minValue, maxValue) == false) {
+          return false;
+        }
+        if (right != null && minValue >= low && right.traverse(edgeIterator, minValue, maxValue) == false) {
+          return false;
+        }
+      }
+      return true;
     }
     
   }
@@ -443,42 +465,48 @@ class GeoComplexPolygon extends GeoBasePolygon {
   /** An interface describing a tree.
    */
   private static abstract class Tree {
-    private Node rootNode = null;
+    private final Node rootNode;
     
-    protected static final int CONTAINED = 0;
-    protected static final int WITHIN = 1;
-    protected static final int OVERLAPS_MINIMUM = 2;
-    protected static final int OVERLAPS_MAXIMUM = 3;
-    protected static final int LESS = 4;
-    protected static final int GREATER = 5;
-    protected static final int EXACT = 6;
+    protected static final Edge[] EMPTY_ARRAY = new Edge[0];
     
-    private final static Edge[] NO_EDGES = new Edge[0];
-    
-    /** Create a tree.
-     * @param allEdges is the list of edges.
+    /** Constructor.
+     * @param allEdges is the list of all edges for the tree.
      */
     public Tree(final List<Edge> allEdges) {
-      final Edge[] edges = allEdges.toArray(NO_EDGES);
-      // Sort by edge length, and then by minimum value
+      // Dump edges into an array and then sort it
+      final Node[] edges = new Node[allEdges.size()];
+      int i = 0;
+      for (final Edge edge : allEdges) {
+        edges[i++] = new Node(edge, getMinimum(edge), getMaximum(edge));
+      }
       Arrays.sort(edges, (left, right) -> {
-        int ret = Double.compare(getMaximum(left) - getMinimum(left), getMaximum(right) - getMinimum(right));
+        int ret = Double.compare(left.low, right.low);
         if (ret == 0) {
-          ret = Double.compare(getMinimum(left), getMinimum(right));
+          ret = Double.compare(left.max, right.max);
         }
         return ret;
       });
-
-      for (final Edge edge : edges) {
-        add(edge);
-      }
+      rootNode = createTree(edges, 0, edges.length - 1);
     }
     
-    /** Add a new edge to the tree.
-     * @param edge is the edge to add.
-     */
-    private void add(final Edge edge) {
-      rootNode = addEdge(rootNode, edge, getMinimum(edge), getMaximum(edge));
+    private static Node createTree(final Node[] edges, final int low, final int high) {
+      if (low > high) {
+        return null;
+      }
+      // add midpoint
+      int mid = (low + high) >>> 1;
+      final Node newNode = edges[mid];
+      // add children
+      newNode.left = createTree(edges, low, mid - 1);
+      newNode.right = createTree(edges, mid + 1, high);
+      // pull up max values to this node
+      if (newNode.left != null) {
+        newNode.max = Math.max(newNode.max, newNode.left.max);
+      }
+      if (newNode.right != null) {
+        newNode.max = Math.max(newNode.max, newNode.right.max);
+      }
+      return newNode;
     }
 
     /** Get the minimum value from the edge.
@@ -493,109 +521,13 @@ class GeoComplexPolygon extends GeoBasePolygon {
      */
     protected abstract double getMaximum(final Edge edge);
     
-    /** Worker method for adding an edge.
-     * @param node is the node to add into.
-     * @param newEdge is the new edge to add.
-     * @param minimumValue is the minimum limit of the subrange of the edge we'll be adding.
-     * @param maximumValue is the maximum limit of the subrange of the edge we'll be adding.
-     * @return the updated node reference.
-     */
-    protected Node addEdge(final Node node, final Edge newEdge, final double minimumValue, final double maximumValue) {
-      if (node == null) {
-        // Create and return a new node
-        final Node rval = new Node(newEdge, minimumValue, maximumValue);
-        //System.err.println("Creating new node "+rval+" for edge "+newEdge+" in tree "+this);
-        return rval;
-      }
-      //System.err.println("Adding edge "+newEdge+" into node "+node+" in tree "+this);
-      // Compare with what's here
-      int result = compareForAdd(node.minimumValue, node.maximumValue, minimumValue, maximumValue);
-      switch (result) {
-      case CONTAINED:
-       {
-          final double lesserMaximum = Math.nextDown(node.minimumValue);
-          final double greaterMinimum = Math.nextUp(node.maximumValue);
-          node.lesser = addEdge(node.lesser, newEdge, minimumValue, lesserMaximum);
-          node.greater = addEdge(node.greater, newEdge, greaterMinimum, maximumValue);
-          return addEdge(node, newEdge, node.minimumValue, node.maximumValue);
-       }
-      case EXACT:
-        // The node is exactly equal to the range provided.  We need to create a new node and insert
-        // it into the "within" chain.
-        final Node rval = new Node(newEdge, minimumValue, maximumValue);
-        //System.err.println(" Inserting new node "+rval+" at head of current 'within' chain in tree "+this);
-        rval.within = node;
-        rval.lesser = node.lesser;
-        rval.greater = node.greater;
-        node.lesser = null;
-        node.greater = null;
-        return rval;
-      case WITHIN:
-        // The new edge is within the node provided
-        //System.err.println(" Adding edge into 'within' chain in tree "+this);
-        node.within = addEdge(node.within, newEdge, minimumValue, maximumValue);
-        return node;
-      case OVERLAPS_MINIMUM:
-        {
-          // The new edge overlaps the minimum value, but not the maximum value.
-          // Here we need to create TWO entries: one for the lesser side, and one for the within chain.
-          //System.err.println(" Inserting edge into BOTH lesser chain and within chain in tree "+this);
-          final double lesserMaximum = Math.nextDown(node.minimumValue);
-          node.lesser = addEdge(node.lesser, newEdge, minimumValue, lesserMaximum);
-          return addEdge(node, newEdge, node.minimumValue, maximumValue);
-        }
-      case OVERLAPS_MAXIMUM:
-        {
-          // The new edge overlaps the maximum value, but not the minimum value.
-          // Need to create two entries, one on the greater side, and one back into the current node.
-          //System.err.println(" Inserting edge into BOTH greater chain and within chain in tree "+this);
-          final double greaterMinimum = Math.nextUp(node.maximumValue);
-          node.greater = addEdge(node.greater, newEdge, greaterMinimum, maximumValue);
-          return addEdge(node, newEdge, minimumValue, node.maximumValue);
-        }
-      case LESS:
-        // The new edge is clearly less than the current node.
-        //System.err.println(" Edge goes into the lesser chain in tree "+this);
-        node.lesser = addEdge(node.lesser, newEdge, minimumValue, maximumValue);
-        return node;
-      case GREATER:
-        // The new edge is clearly greater than the current node.
-        //System.err.println(" Edge goes into the greater chain in tree "+this);
-        node.greater = addEdge(node.greater, newEdge, minimumValue, maximumValue);
-        return node;
-      default:
-        throw new RuntimeException("Unexpected comparison result: "+result);
-      }
-      
-    }
-    
     /** Traverse the tree, finding all edges that intersect the provided value.
      * @param edgeIterator provides the method to call for any encountered matching edge.
      * @param value is the value to match.
      * @return false if the traversal was aborted before completion.
      */
     public boolean traverse(final EdgeIterator edgeIterator, final double value) {
-      //System.err.println("Traversing tree, value = "+value);
-      // Since there is one distinct value we are looking for, we can just do a straight descent through the nodes.
-      Node currentNode = rootNode;
-      while (currentNode != null) {
-        if (value < currentNode.minimumValue) {
-          //System.err.println(" value is less than "+currentNode.minimumValue);
-          currentNode = currentNode.lesser;
-        } else if (value > currentNode.maximumValue) {
-          //System.err.println(" value is greater than "+currentNode.maximumValue);
-          currentNode = currentNode.greater;
-        } else {
-          //System.err.println(" value within "+currentNode.minimumValue+" to "+currentNode.maximumValue);
-          // We're within the bounds of the node.  Call the iterator, and descend
-          if (!edgeIterator.matches(currentNode.edge)) {
-            return false;
-          }
-          currentNode = currentNode.within;
-        }
-      }
-      //System.err.println("Done with tree");
-      return true;
+      return traverse(edgeIterator, value, value);
     }
     
     /** Traverse the tree, finding all edges that intersect the provided value range.
@@ -606,66 +538,13 @@ class GeoComplexPolygon extends GeoBasePolygon {
      * @return false if the traversal was aborted before completion.
      */
     public boolean traverse(final EdgeIterator edgeIterator, final double minValue, final double maxValue) {
-      // This is tricky because edges are duplicated in the tree (where they got split).
-      // We need to eliminate those duplicate edges as we traverse.  This requires us to keep a set of edges we've seen.
-      // Luckily, the number of edges we're likely to encounter in a real-world situation is small, so we can get away with it.
-      return traverseEdges(rootNode, edgeIterator, minValue, maxValue, new HashSet<>());
-    }
-
-    protected boolean traverseEdges(final Node node, final EdgeIterator edgeIterator, final double minValue, final double maxValue, final Set<Edge> edgeSet) {
-      if (node == null) {
+      if (rootNode == null) {
         return true;
       }
-      if (maxValue < node.minimumValue) {
-        return traverseEdges(node.lesser, edgeIterator, minValue, maxValue, edgeSet);
-      } else if (minValue > node.maximumValue) {
-        return traverseEdges(node.greater, edgeIterator, minValue, maxValue, edgeSet);
-      } else {
-        // There's overlap with the current node, and there may also be overlap with the lesser side and greater side
-        if (minValue < node.minimumValue) {
-          if (!traverseEdges(node.lesser, edgeIterator, minValue, maxValue, edgeSet)) {
-            return false;
-          }
-        }
-        if (!edgeSet.contains(node.edge)) {
-          if (!edgeIterator.matches(node.edge)) {
-            return false;
-          }
-          edgeSet.add(node.edge);
-        }
-        if (maxValue > node.maximumValue) {
-          if (!traverseEdges(node.greater, edgeIterator, minValue, maxValue, edgeSet)) {
-            return false;
-          }
-        }
-        return traverseEdges(node.within, edgeIterator, minValue, maxValue, edgeSet);
-      }
+      return rootNode.traverse(edgeIterator, minValue, maxValue);
     }
     
-    /** Compare a node against a subrange of a new edge.
-     * @param nodeMinimumValue is the node's minimum value.
-     * @param nodeMaximumValue is the node's maximum value.
-     * @param minimumValue is the minimum value for the edge being added.
-     * @param maximumValue is the maximum value for the edge being added.
-     * @return the comparison result.
-     */
-    protected int compareForAdd(final double nodeMinimumValue, final double nodeMaximumValue, final double minimumValue, final double maximumValue) {
-      if (minimumValue == nodeMinimumValue && maximumValue == nodeMaximumValue) {
-        return EXACT;
-      } else if (minimumValue <= nodeMinimumValue && maximumValue >= nodeMaximumValue) {
-        return CONTAINED;
-      } else if (nodeMinimumValue <= minimumValue && nodeMaximumValue >= maximumValue) {
-        return WITHIN;
-      } else if (maximumValue < nodeMinimumValue) {
-        return LESS;
-      } else if (minimumValue > nodeMaximumValue) {
-        return GREATER;
-      } else if (minimumValue < nodeMinimumValue) {
-        return OVERLAPS_MINIMUM;
-      } else {
-        return OVERLAPS_MAXIMUM;
-      }
-    }
+
   }
   
   /** This is the z-tree.
