@@ -53,7 +53,9 @@ public interface CollectionParams
     BALANCESHARDUNIQUE(true),
     REBALANCELEADERS(true),
     MODIFYCOLLECTION(true),
-    MIGRATESTATEFORMAT(true);
+    MIGRATESTATEFORMAT(true),
+    BACKUP(true),
+    RESTORE(true);
     
     public final boolean isWrite;
 
