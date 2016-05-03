@@ -87,7 +87,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CdcrUpdateLog;
 import org.apache.solr.update.SolrIndexWriter;
-import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.NumberUtils;
@@ -195,7 +194,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   volatile IndexCommit indexCommitPoint;
 
-  volatile NamedList<Object> snapShootDetails;
+  volatile NamedList<?> snapShootDetails;
 
   private AtomicBoolean replicationEnabled = new AtomicBoolean(true);
 
@@ -502,7 +501,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       // small race here before the commit point is saved
       SnapShooter snapShooter = new SnapShooter(core, params.get("location"), params.get(NAME));
       snapShooter.validateCreateSnapshot();
-      snapShooter.createSnapAsync(indexCommit, numberToKeep, this);
+      snapShooter.createSnapAsync(indexCommit, numberToKeep, (nl) -> snapShootDetails = nl);
 
     } catch (Exception e) {
       LOG.warn("Exception during creating a snapshot", e);
@@ -1318,7 +1317,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
             }
             SnapShooter snapShooter = new SnapShooter(core, null, null);
             snapShooter.validateCreateSnapshot();
-            snapShooter.createSnapAsync(currentCommitPoint, numberToKeep, ReplicationHandler.this);
+            snapShooter.createSnapAsync(currentCommitPoint, numberToKeep, (nl) -> snapShootDetails = nl);
           } catch (Exception e) {
             LOG.error("Exception while snapshooting", e);
           }

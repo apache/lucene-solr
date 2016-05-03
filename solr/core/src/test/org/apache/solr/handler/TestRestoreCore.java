@@ -113,7 +113,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
   @Test
   public void testSimpleRestore() throws Exception {
 
-    int nDocs = TestReplicationHandlerBackup.indexDocs(masterClient);
+    int nDocs = usually() ? TestReplicationHandlerBackup.indexDocs(masterClient) : 0;
 
     String snapshotName;
     String location;
@@ -141,29 +141,31 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
 
 
-    int numRestoreTests = TestUtil.nextInt(random(), 1, 5);
+    int numRestoreTests = nDocs > 0 ? TestUtil.nextInt(random(), 1, 5) : 1;
 
     for (int attempts=0; attempts<numRestoreTests; attempts++) {
       //Modify existing index before we call restore.
 
-      //Delete a few docs
-      int numDeletes = TestUtil.nextInt(random(), 1, nDocs);
-      for(int i=0; i<numDeletes; i++) {
-        masterClient.deleteByQuery("id:" + i);
-      }
-      masterClient.commit();
-
-      //Add a few more
-      int moreAdds = TestUtil.nextInt(random(), 1, 100);
-      for (int i=0; i<moreAdds; i++) {
-        SolrInputDocument doc = new SolrInputDocument();
-        doc.addField("id", i + nDocs);
-        doc.addField("name", "name = " + (i + nDocs));
-        masterClient.add(doc);
-      }
-      //Purposely not calling commit once in a while. There can be some docs which are not committed
-      if (usually()) {
+      if (nDocs > 0) {
+        //Delete a few docs
+        int numDeletes = TestUtil.nextInt(random(), 1, nDocs);
+        for(int i=0; i<numDeletes; i++) {
+          masterClient.deleteByQuery("id:" + i);
+        }
         masterClient.commit();
+
+        //Add a few more
+        int moreAdds = TestUtil.nextInt(random(), 1, 100);
+        for (int i=0; i<moreAdds; i++) {
+          SolrInputDocument doc = new SolrInputDocument();
+          doc.addField("id", i + nDocs);
+          doc.addField("name", "name = " + (i + nDocs));
+          masterClient.add(doc);
+        }
+        //Purposely not calling commit once in a while. There can be some docs which are not committed
+        if (usually()) {
+          masterClient.commit();
+        }
       }
 
       TestReplicationHandlerBackup.runBackupCommand(masterJetty, ReplicationHandler.CMD_RESTORE, params);
