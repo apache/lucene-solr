@@ -733,4 +733,97 @@ shape:
 
   }
   
+  @Test
+  public void testLargePolygonFailureCase2() {
+    /*
+   [junit4]    > Throwable #1: java.lang.AssertionError: FAIL: id=2 should have matched but did not
+   [junit4]    >   shape=GeoComplexPolygon: {planetmodel=PlanetModel.WGS84, number of shapes=1, address=6eccd33b, 
+   testPoint=[lat=0.03170690566178683, lon=1.0862414976732029([X=0.46609969117964495, Y=0.8854242006628827, Z=0.0317369552646047])], 
+   testPointInSet=false, 
+   shapes={ {
+   [lat=1.0774842300167298, lon=-0.11534121538553185([X=0.46969930266058374, Y=-0.054417217622152375, Z=0.8794587218580684])], 
+   [lat=0.05101544777239065, lon=1.031558236908661([X=0.5133835679471972, Y=0.8579350866926241, Z=0.051049928818862174])], 
+   [lat=-0.011222928649880962, lon=1.5851249038356199([X=-0.01434320835886277, Y=1.0009526216234983, Z=-0.011235244842183226])], 
+   [lat=-0.02571365137215876, lon=0.5627875521419741([X=0.8464356149277266, Y=0.5339650936800929, Z=-0.025739527171261035])], 
+   [lat=0.03833766792865358, lon=1.0082901344798614([X=0.5335096521470836, Y=0.8462411929752105, Z=0.03837097111317845])], 
+   [lat=0.1719054969347345, lon=0.9024290407832926([X=0.6111941952395734, Y=0.7740553755547761, Z=0.17123457719021212])], 
+   [lat=0.08180947807010808, lon=1.0107147265848113([X=0.5300590148023426, Y=0.8453039531721928, Z=0.08180784289673602])]}}
+   [junit4]    >   bounds=XYZBounds: [xmin=-1.0011188544924792 xmax=1.0011188544924792 
+    ymin=-1.0011188544924792 ymax=1.0011188544924792 
+    zmin=-0.025739527671261034 zmax=0.9977622925221051]
+   [junit4]    >   world bounds=( minX=-1.0011188539924791 maxX=1.0011188539924791 minY=-1.0011188539924791 maxY=1.0011188539924791 minZ=-0.9977622920221051 maxZ=0.9977622920221051
+   [junit4]    >   quantized point=[X=-0.477874179571219, Y=0.5908091335156603, Z=-0.6495967142221521] within shape? true within bounds? false
+   [junit4]    >   unquantized point=[lat=-0.7073124559987376, lon=2.2509085326629887([X=-0.47787417938801546, Y=0.5908091336704123, Z=-0.6495967140640758])] within shape? true within bounds? false
+   [junit4]    >   docID=2 deleted?=false
+   [junit4]    >   query=PointInGeo3DShapeQuery: field=point: Shape: GeoComplexPolygon: {planetmodel=PlanetModel.WGS84, number of shapes=1, address=6eccd33b, testPoint=[lat=0.03170690566178683, lon=1.0862414976732029([X=0.46609969117964495, Y=0.8854242006628827, Z=0.0317369552646047])], testPointInSet=false, shapes={ {[lat=1.0774842300167298, lon=-0.11534121538553185([X=0.46969930266058374, Y=-0.054417217622152375, Z=0.8794587218580684])], [lat=0.05101544777239065, lon=1.031558236908661([X=0.5133835679471972, Y=0.8579350866926241, Z=0.051049928818862174])], [lat=-0.011222928649880962, lon=1.5851249038356199([X=-0.01434320835886277, Y=1.0009526216234983, Z=-0.011235244842183226])], [lat=-0.02571365137215876, lon=0.5627875521419741([X=0.8464356149277266, Y=0.5339650936800929, Z=-0.025739527171261035])], [lat=0.03833766792865358, lon=1.0082901344798614([X=0.5335096521470836, Y=0.8462411929752105, Z=0.03837097111317845])], [lat=0.1719054969347345, lon=0.9024290407832926([X=0.6111941952395734, Y=0.7740553755547761, Z=0.17123457719021212])], [lat=0.08180947807010808, lon=1.0107147265848113([X=0.5300590148023426, Y=0.8453039531721928, Z=0.08180784289673602])]}}
+   [junit4]    >   explanation:
+   [junit4]    >     target is in leaf _0(7.0.0):C11 of full reader StandardDirectoryReader(segments:3:nrt _0(7.0.0):C11)
+   [junit4]    >     full BKD path to target doc:
+   [junit4]    >       Cell(x=-0.8906255176936849 TO 1.0005089994430834 y=-0.6808995306272861 TO 0.9675171153117977 z=-0.997762292058209 TO 0.9939318087373729); Shape relationship = OVERLAPS; Quantized point within cell = true; Unquantized point within cell = true
+   [junit4]    >     on cell Cell(x=-0.8906255176936849 TO 1.0005089994430834 y=-0.6808995306272861 TO 0.9675171153117977 z=-0.997762292058209 TO 0.9939318087373729); Shape relationship = OVERLAPS; Quantized point within cell = true; Unquantized point within cell = true, wrapped visitor returned CELL_CROSSES_QUERY
+   [junit4]    >   leaf visit docID=2 x=-0.477874179571219 y=0.5908091335156603 z=-0.6495967142221521
+    */
+    final GeoPoint testPoint = new GeoPoint(PlanetModel.WGS84, 0.03170690566178683, 1.0862414976732029);
+    final boolean testPointInSet = false;
+    final List<GeoPoint> pointList = new ArrayList<>();
+    // If the 1.07748... line is at the top, the bounds are correct and the test succeeds. 
+    // If this line is at the bottom, though, the bounds are wrong and the test fails.
+    //pointList.add(new GeoPoint(PlanetModel.WGS84, 1.0774842300167298, -0.11534121538553185));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, 0.05101544777239065, 1.031558236908661));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, -0.011222928649880962, 1.5851249038356199));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, -0.02571365137215876, 0.5627875521419741));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, 0.03833766792865358, 1.0082901344798614));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, 0.1719054969347345, 0.9024290407832926));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, 0.08180947807010808, 1.0107147265848113));
+    pointList.add(new GeoPoint(PlanetModel.WGS84, 1.0774842300167298, -0.11534121538553185));
+    
+    final GeoPolygon pSanity = GeoPolygonFactory.makeGeoPolygon(PlanetModel.WGS84, pointList);
+    
+    assertTrue(pSanity.isWithin(testPoint) == testPointInSet);
+    
+    final List<List<GeoPoint>> shapeList = new ArrayList<>();
+    shapeList.add(pointList);
+    final GeoPolygon p = new GeoComplexPolygon(PlanetModel.WGS84, shapeList, testPoint, testPointInSet);
+    
+    //System.err.println(p);
+    /*
+   [junit4]   2> GeoComplexPolygon: {planetmodel=PlanetModel.WGS84, number of shapes=1, address=dcf3e99, 
+   testPoint=[lat=0.03170690566178683, lon=1.0862414976732029([X=0.46609969117964506, Y=0.8854242006628825, Z=0.0317369552646047])], 
+   testPointInSet=false, 
+   shapes={ {
+   [lat=1.0774842300167298, lon=-0.11534121538553185([X=0.46969930266058374, Y=-0.054417217622152375, Z=0.8794587218580684])], 
+   [lat=0.05101544777239065, lon=1.031558236908661([X=0.5133835679471972, Y=0.8579350866926241, Z=0.051049928818862174])], 
+   [lat=-0.011222928649880962, lon=1.5851249038356199([X=-0.01434320835886277, Y=1.0009526216234983, Z=-0.011235244842183226])], 
+   [lat=-0.02571365137215876, lon=0.5627875521419741([X=0.8464356149277266, Y=0.5339650936800929, Z=-0.025739527171261035])], 
+   [lat=0.03833766792865358, lon=1.0082901344798614([X=0.5335096521470836, Y=0.8462411929752105, Z=0.03837097111317845])], 
+   [lat=0.1719054969347345, lon=0.9024290407832926([X=0.6111941952395734, Y=0.7740553755547761, Z=0.17123457719021212])]}}
+   [lat=0.08180947807010808, lon=1.0107147265848113([X=0.5300590148023426, Y=0.8453039531721928, Z=0.08180784289673602])], 
+    */
+    final XYZBounds referenceBounds = new XYZBounds();
+    pSanity.getBounds(referenceBounds);
+    
+    final XYZBounds actualBounds = new XYZBounds();
+    p.getBounds(actualBounds);
+    
+    assertEquals(referenceBounds.getMinimumX(), actualBounds.getMinimumX(), 0.0000001);
+    assertEquals(referenceBounds.getMaximumX(), actualBounds.getMaximumX(), 0.0000001);
+    assertEquals(referenceBounds.getMinimumY(), actualBounds.getMinimumY(), 0.0000001);
+    assertEquals(referenceBounds.getMaximumY(), actualBounds.getMaximumY(), 0.0000001);
+    assertEquals(referenceBounds.getMinimumZ(), actualBounds.getMinimumZ(), 0.0000001);
+    assertEquals(referenceBounds.getMaximumZ(), actualBounds.getMaximumZ(), 0.0000001);
+
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84,
+      actualBounds.getMinimumX(), actualBounds.getMaximumX(),
+      actualBounds.getMinimumY(), actualBounds.getMaximumY(),
+      actualBounds.getMinimumZ(), actualBounds.getMaximumZ());
+
+    final GeoPoint checkPoint = new GeoPoint(PlanetModel.WGS84, -0.7073124559987376, 2.2509085326629887);
+    
+    // Given the choice of test point, does this all make sense?
+    assertTrue(pSanity.isWithin(checkPoint) == p.isWithin(checkPoint));
+    assertTrue(p.isWithin(checkPoint));
+    assertTrue(solid.isWithin(checkPoint));
+    
+  }
+  
 }
