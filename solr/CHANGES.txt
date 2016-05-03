@@ -26,6 +26,8 @@ Bug Fixes
 
 * SOLR-9016: Fix SolrIdentifierValidator to not allow empty identifiers. (Shai Erera)
 
+* SOLR-8992: Restore Schema API GET method functionality removed in 6.0 (noble, Steve Rowe)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

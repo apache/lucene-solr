@@ -71,7 +71,13 @@ public class TestFieldResource extends SolrRestletTestBase {
              "/field/required==false",
              "/field/tokenized==true");
   }
-  
+  @Test
+  public void testGetFieldIncludeDynamic() throws Exception {
+    assertQ("/schema/fields/some_crazy_name_i?indent=on&wt=xml&includeDynamic=true",
+        "/response/lst[@name='field']/str[@name='name'] = 'some_crazy_name_i'",
+        "/response/lst[@name='field']/str[@name='dynamicBase'] = '*_i'");
+  }
+
 
   @Test
   public void testGetFieldDontShowDefaults() throws Exception {
