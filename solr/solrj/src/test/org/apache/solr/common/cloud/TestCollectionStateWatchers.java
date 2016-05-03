@@ -149,8 +149,9 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     expectThrows(TimeoutException.class, () -> {
       client.waitForState("nosuchcollection", 1, TimeUnit.SECONDS, ((liveNodes, collectionState) -> false));
     });
-    long count = client.getZkStateReader().getStateWatchCount("nosuchcollection");
-    assertTrue("Watchers for collection should be removed after timeout", count == 0);
+    Set<CollectionStateWatcher> watchers = client.getZkStateReader().getStateWatchers("nosuchcollection");
+    assertTrue("Watchers for collection should be removed after timeout",
+        watchers == null || watchers.size() == 0);
 
   }
 
@@ -203,7 +204,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   @Test
   public void testDeletionsTriggerWatches() throws Exception {
     cluster.createCollection("tobedeleted", 1, 1, "config", new HashMap<>());
-    Future<Boolean> future = waitInBackground("tobedeleted", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, DocCollection::isDeleted);
+    Future<Boolean> future = waitInBackground("tobedeleted", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, (l, c) -> c == null);
 
     CollectionAdminRequest.deleteCollection("tobedeleted").process(cluster.getSolrClient());
 
