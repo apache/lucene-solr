@@ -101,13 +101,16 @@ public final class DocIdSetBuilder {
   DocIdSetBuilder(int maxDoc, int docCount, long valueCount) {
     this.maxDoc = maxDoc;
     this.multivalued = docCount < 0 || docCount != valueCount;
-    this.numValuesPerDoc = (docCount < 0 || valueCount < 0)
-        // assume one value per doc, this means the cost will be overestimated
-        // if the docs are actually multi-valued
-        ? 1
-        // otherwise compute from index stats
-        : (double) valueCount / docCount;
-    assert numValuesPerDoc >= 1;
+    if (docCount <= 0 || valueCount < 0) {
+      // assume one value per doc, this means the cost will be overestimated
+      // if the docs are actually multi-valued
+      this.numValuesPerDoc = 1;
+    } else {
+      // otherwise compute from index stats
+      this.numValuesPerDoc = (double) valueCount / docCount;
+    }
+
+    assert numValuesPerDoc >= 1: "valueCount=" + valueCount + " docCount=" + docCount;
 
     // For ridiculously small sets, we'll just use a sorted int[]
     // maxDoc >>> 7 is a good value if you want to save memory, lower values
