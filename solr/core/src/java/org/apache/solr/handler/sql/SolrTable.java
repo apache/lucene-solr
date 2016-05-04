@@ -94,26 +94,33 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
 
     // List<String> doesn't have add so must make a new ArrayList
     List<String> fieldsList = new ArrayList<>(fields);
+    List<String> orderList = new ArrayList<>(order);
 
-    if (order.isEmpty()) {
-      if(limit != null && Integer.parseInt(limit) > -1) {
-        solrParams.put(CommonParams.SORT, DEFAULT_SCORE_FIELD + " desc");
+    if (!metrics.isEmpty()) {
+      for(String bucket : buckets) {
+        orderList.add(bucket + " desc");
+      }
+    }
+
+    if (orderList.isEmpty()) {
+      if (limit != null && Integer.parseInt(limit) > -1) {
+        orderList.add(DEFAULT_SCORE_FIELD + " desc");
 
         // Make sure the default score field is in the field list
         if (!fieldsList.contains(DEFAULT_SCORE_FIELD)) {
           fieldsList.add(DEFAULT_SCORE_FIELD);
         }
       } else {
-        solrParams.put(CommonParams.SORT, DEFAULT_VERSION_FIELD + " desc");
+        orderList.add(DEFAULT_VERSION_FIELD + " desc");
 
         // Make sure the default sort field is in the field list
         if (!fieldsList.contains(DEFAULT_VERSION_FIELD)) {
           fieldsList.add(DEFAULT_VERSION_FIELD);
         }
       }
-    } else {
-      solrParams.put(CommonParams.SORT, String.join(",", order));
     }
+
+    solrParams.put(CommonParams.SORT, String.join(",", orderList));
 
     if (fieldsList.isEmpty()) {
       solrParams.put(CommonParams.FL, "*");
@@ -124,7 +131,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     TupleStream tupleStream;
     String zk = properties.getProperty("zk");
     try {
-      if(metrics.isEmpty()) {
+      if (metrics.isEmpty()) {
         if (limit == null) {
           solrParams.put(CommonParams.QT, "/export");
           tupleStream = new CloudSolrStream(zk, collection, solrParams);
