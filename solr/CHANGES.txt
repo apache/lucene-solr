@@ -56,6 +56,9 @@ Bug Fixes
 
 * SOLR-8792: ZooKeeper ACL support fixed. (Esther Quansah, Ishan Chattopadhyaya, Steve Rowe)
 
+* SOLR-9030: The 'downnode' overseer command can trip asserts in ZkStateWriter.
+  (Scott Blum, Mark Miller, shalin)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes
