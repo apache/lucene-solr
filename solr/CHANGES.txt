@@ -179,6 +179,8 @@ Bug Fixes
 
 * SOLR-8792: ZooKeeper ACL support fixed. (Esther Quansah, Ishan Chattopadhyaya, Steve Rowe)
 
+* SOLR-9064: Adds an explanation of the incoming stream to an UpdateStream's explanation (Dennis Gove)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
