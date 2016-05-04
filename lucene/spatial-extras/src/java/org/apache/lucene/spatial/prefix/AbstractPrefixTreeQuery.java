@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.prefix;
 
 import java.io.IOException;
 
-import org.locationtech.spatial4j.shape.Shape;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
@@ -35,6 +34,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.locationtech.spatial4j.shape.Shape;
 
 /**
  * Base class for Lucene Queries on SpatialPrefixTree fields.
@@ -105,16 +105,20 @@ public abstract class AbstractPrefixTreeQuery extends Query {
     protected final LeafReaderContext context;
     protected final int maxDoc;
 
-    protected TermsEnum termsEnum;//remember to check for null!
+    protected final Terms terms; // maybe null
+    protected final TermsEnum termsEnum;//remember to check for null!
     protected PostingsEnum postingsEnum;
 
     public BaseTermsEnumTraverser(LeafReaderContext context) throws IOException {
       this.context = context;
       LeafReader reader = context.reader();
       this.maxDoc = reader.maxDoc();
-      Terms terms = reader.terms(fieldName);
-      if (terms != null)
+      terms = reader.terms(fieldName);
+      if (terms != null) {
         this.termsEnum = terms.iterator();
+      } else {
+        this.termsEnum = null;
+      }
     }
 
     protected void collectDocs(BitSet bitSet) throws IOException {

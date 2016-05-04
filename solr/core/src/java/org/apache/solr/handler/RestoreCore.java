@@ -55,7 +55,7 @@ public class RestoreCore implements Callable<Boolean> {
     return doRestore();
   }
 
-  private boolean doRestore() throws Exception {
+  public boolean doRestore() throws Exception {
 
     Path backupPath = Paths.get(backupLocation).resolve(backupName);
     SimpleDateFormat dateFormat = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT);
@@ -86,8 +86,8 @@ public class RestoreCore implements Callable<Boolean> {
           }
           long length = indexInput.length();
           IndexFetcher.CompareResult compareResult = IndexFetcher.compareFile(indexDir, filename, length, checksum);
-          if (!compareResult.equal || (!compareResult.checkSummed && (filename.endsWith(".si")
-              || filename.endsWith(".liv") || filename.startsWith("segments_")))) {
+          if (!compareResult.equal ||
+              (IndexFetcher.filesToAlwaysDownloadIfNoChecksums(filename, length, compareResult))) {
             restoreIndexDir.copyFrom(backupDir, filename, filename, IOContext.READONCE);
           } else {
             //prefer local copy

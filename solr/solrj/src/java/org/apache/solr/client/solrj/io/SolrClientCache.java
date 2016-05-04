@@ -66,7 +66,7 @@ public class SolrClientCache implements Serializable {
     return client;
   }
 
-  public void close() {
+  public synchronized void close() {
     for(Map.Entry<String, SolrClient> entry : solrClients.entrySet()) {
       try {
         entry.getValue().close();
@@ -74,5 +74,6 @@ public class SolrClientCache implements Serializable {
         log.error("Error closing SolrClient for " + entry.getKey(), e);
       }
     }
+    solrClients.clear();
   }
 }

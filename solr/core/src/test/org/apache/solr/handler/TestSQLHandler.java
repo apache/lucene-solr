@@ -27,6 +27,8 @@ import org.apache.solr.client.solrj.io.stream.ExceptionStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -295,6 +297,38 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       assert(tuple.getLong("myId") == 1);
       assert(tuple.getLong("myInt") == 7);
       assert(tuple.get("myString").equals("a"));
+
+      //Test after reload SOLR-9059//
+      Replica leader = getShardLeader("collection1", "shard1", 30 /* timeout secs */);
+
+      // reload collection and wait to see the core report it has been reloaded
+      boolean wasReloaded = reloadCollection(leader, "collection1");
+      assertTrue(wasReloaded);
+
+      params = new HashMap();
+      params.put(CommonParams.QT, "/sql");
+      params.put("stmt", "select id as myId, field_i as myInt, str_s as myString from collection1 where text='XXXX' AND id='(1 2 3)' order by field_i desc");
+
+      solrStream = new SolrStream(jetty.url, params);
+      tuples = getTuples(solrStream);
+
+      assert(tuples.size() == 3);
+
+      tuple = tuples.get(0);
+      assert(tuple.getLong("myId") == 3);
+      assert(tuple.getLong("myInt") == 20);
+      assert(tuple.get("myString").equals("a"));
+
+      tuple = tuples.get(1);
+      assert(tuple.getLong("myId") == 2);
+      assert(tuple.getLong("myInt") == 8);
+      assert(tuple.get("myString").equals("b"));
+
+      tuple = tuples.get(2);
+      assert(tuple.getLong("myId") == 1);
+      assert(tuple.getLong("myInt") == 7);
+      assert(tuple.get("myString").equals("a"));
+
     } finally {
       delete();
     }

@@ -73,6 +73,7 @@ grant {
 
   // SSL related properties for Solr tests
   permission java.security.SecurityPermission "getProperty.ssl.*";
+  permission javax.net.ssl.SSLPermission "setDefaultSSLContext";
 
   // SASL/Kerberos related properties for Solr tests
   permission javax.security.auth.PrivateCredentialPermission "javax.security.auth.kerberos.KerberosTicket * \"*\"", "read";

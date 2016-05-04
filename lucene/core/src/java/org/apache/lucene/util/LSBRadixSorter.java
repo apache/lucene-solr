@@ -31,9 +31,9 @@ public final class LSBRadixSorter {
   private final int[] histogram = new int[HISTOGRAM_SIZE];
   private int[] buffer = new int[0];
 
-  private static void buildHistogram(int[] array, int off, int len, int[] histogram, int shift) {
+  private static void buildHistogram(int[] array, int len, int[] histogram, int shift) {
     for (int i = 0; i < len; ++i) {
-      final int b = (array[off + i] >>> shift) & 0xFF;
+      final int b = (array[i] >>> shift) & 0xFF;
       histogram[b] += 1;
     }
   }
@@ -47,22 +47,22 @@ public final class LSBRadixSorter {
     }
   }
 
-  private static void reorder(int[] array, int off, int len, int[] histogram, int shift, int[] dest, int destOff) {
+  private static void reorder(int[] array, int len, int[] histogram, int shift, int[] dest) {
     for (int i = 0; i < len; ++i) {
-      final int v = array[off + i];
+      final int v = array[i];
       final int b = (v >>> shift) & 0xFF;
-      dest[destOff + histogram[b]++] = v;
+      dest[histogram[b]++] = v;
     }
   }
 
-  private static boolean sort(int[] array, int off, int len, int[] histogram, int shift, int[] dest, int destOff) {
+  private static boolean sort(int[] array, int len, int[] histogram, int shift, int[] dest) {
     Arrays.fill(histogram, 0);
-    buildHistogram(array, off, len, histogram, shift);
+    buildHistogram(array, len, histogram, shift);
     if (histogram[0] == len) {
       return false;
     }
     sumHistogram(histogram);
-    reorder(array, off, len, histogram, shift, dest, destOff);
+    reorder(array, len, histogram, shift, dest);
     return true;
   }
 
@@ -80,34 +80,32 @@ public final class LSBRadixSorter {
     }
   }
 
-  public void sort(final int[] array, int off, int len) {
+  /** Sort {@code array[0:len]} in place.
+   * @param numBits how many bits are required to store any of the values in
+   *                {@code array[0:len]}. Pass {@code 32} if unknown. */
+  public void sort(int numBits, final int[] array, int len) {
     if (len < INSERTION_SORT_THRESHOLD) {
-      insertionSort(array, off, len);
+      insertionSort(array, 0, len);
       return;
     }
 
     buffer = ArrayUtil.grow(buffer, len);
 
     int[] arr = array;
-    int arrOff = off;
 
     int[] buf = buffer;
-    int bufOff = 0;
-    
-    for (int shift = 0; shift <= 24; shift += 8) {
-      if (sort(arr, arrOff, len, histogram, shift, buf, bufOff)) {
+
+    for (int shift = 0; shift < numBits; shift += 8) {
+      if (sort(arr, len, histogram, shift, buf)) {
         // swap arrays
         int[] tmp = arr;
-        int tmpOff = arrOff;
         arr = buf;
-        arrOff = bufOff;
         buf = tmp;
-        bufOff = tmpOff;
       }
     }
 
     if (array == buf) {
-      System.arraycopy(arr, arrOff, array, off, len);
+      System.arraycopy(arr, 0, array, 0, len);
     }
   }
 

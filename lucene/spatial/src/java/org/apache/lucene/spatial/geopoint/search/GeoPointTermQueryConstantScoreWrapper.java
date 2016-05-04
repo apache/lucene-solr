@@ -93,7 +93,7 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointMultiTermQu
 
         LeafReader reader = context.reader();
         // approximation (postfiltering has not yet been applied)
-        DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc());
+        DocIdSetBuilder builder = new DocIdSetBuilder(reader.maxDoc(), terms);
         // subset of documents that need no postfiltering, this is purely an optimization
         final BitSet preApproved;
         // dumb heuristic: if the field is really sparse, use a sparse impl
@@ -110,9 +110,11 @@ final class GeoPointTermQueryConstantScoreWrapper <Q extends GeoPointMultiTermQu
           if (termsEnum.boundaryTerm()) {
             builder.add(docs);
           } else {
-            int docId;
-            while ((docId = docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-              builder.add(docId);
+            int numDocs = termsEnum.docFreq();
+            DocIdSetBuilder.BulkAdder adder = builder.grow(numDocs);
+            for (int i = 0; i < numDocs; ++i) {
+              int docId = docs.nextDoc();
+              adder.add(docId);
               preApproved.set(docId);
             }
           }

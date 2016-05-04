@@ -161,7 +161,7 @@ public class HttpClientUtil {
     httpClientBuilder = newHttpClientBuilder;
   }
 
-  public static void setSchemeRegistryProvider(SchemaRegistryProvider newRegistryProvider) {
+  public static void setSchemaRegistryProvider(SchemaRegistryProvider newRegistryProvider) {
     schemaRegistryProvider = newRegistryProvider;
   }
   
