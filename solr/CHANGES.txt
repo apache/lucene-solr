@@ -241,7 +241,7 @@ Other Changes
 
 * SOLR-9047: zkcli should allow alternative locations for log4j configuration (Gregory Chanan)
 
-* SOLR-9053: Upgrade commons-fileupload to 1.3.1, fixing a potential vulnerability (Jeff Field, janhoy)
+* SOLR-9053: Upgrade commons-fileupload to 1.3.1, fixing a potential vulnerability (Jeff Field, Mike Drob via janhoy)
 
 * SOLR-9066 Make CountMetric return long instead of double (Kevin Risden)
 
