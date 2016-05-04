@@ -646,7 +646,8 @@ public class ZkStateReader implements Closeable {
 
   public Replica getLeader(String collection, String shard) {
     if (clusterState != null) {
-      Replica replica = clusterState.getLeader(collection, shard);
+      DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+      Replica replica = docCollection != null ? docCollection.getLeader(shard) : null;
       if (replica != null && getClusterState().liveNodesContain(replica.getNodeName())) {
         return replica;
       }

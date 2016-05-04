@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -687,7 +688,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       while (version == getClusterStateVersion(zkClient));
       Thread.sleep(500);
       assertTrue(collection+" should remain after removal of the last core", // as of SOLR-5209 core removal does not cascade to remove the slice and collection
-          reader.getClusterState().getCollections().contains(collection));
+          reader.getClusterState().hasCollection(collection));
       assertTrue(core_node+" should be gone after publishing the null state",
           null == reader.getClusterState().getCollection(collection).getReplica(core_node));
     } finally {

@@ -34,6 +34,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
+import org.apache.solr.common.cloud.DocCollection;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
