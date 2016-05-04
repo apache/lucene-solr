@@ -171,7 +171,6 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                                 singleValuePerDoc)) {
             List<BKDReader> bkdReaders = new ArrayList<>();
             List<MergeState.DocMap> docMaps = new ArrayList<>();
-            List<Integer> docIDBases = new ArrayList<>();
             for(int i=0;i<mergeState.pointsReaders.length;i++) {
               PointsReader reader = mergeState.pointsReaders[i];
 
@@ -191,7 +190,6 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                 if (readerFieldInfo != null) {
                   BKDReader bkdReader = reader60.readers.get(readerFieldInfo.number);
                   if (bkdReader != null) {
-                    docIDBases.add(mergeState.docBase[i]);
                     bkdReaders.add(bkdReader);
                     docMaps.add(mergeState.docMaps[i]);
                   }
@@ -199,7 +197,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
               }
             }
 
-            long fp = writer.merge(dataOut, docMaps, bkdReaders, docIDBases);
+            long fp = writer.merge(dataOut, docMaps, bkdReaders);
             if (fp != -1) {
               indexFPs.put(fieldInfo.name, fp);
             }

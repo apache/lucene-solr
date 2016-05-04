@@ -2498,6 +2498,9 @@ public final class CheckIndex implements Closeable {
     }
   }
 
+  // nocommit must check index is sorted, if it claims to be
+  // nocommit must check that all segments have the same sort, if any segment is sorted
+
   /**
    * Parse command line args into fields
    * @param args The command line arguments

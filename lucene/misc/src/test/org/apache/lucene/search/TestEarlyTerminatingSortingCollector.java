@@ -25,23 +25,23 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.ExitableDirectoryReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MockRandomMergePolicy;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
-import org.apache.lucene.index.SortingMergePolicy;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TestSortingMergePolicy;
-import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -50,8 +50,8 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.uninverting.UninvertingReader.Type;
+import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -62,17 +62,10 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
   private int numDocs;
   private List<String> terms;
   private Directory dir;
-  private Sort sort;
+  private final Sort sort = new Sort(new SortField("ndv1", SortField.Type.LONG));
   private RandomIndexWriter iw;
   private IndexReader reader;
-  private SortingMergePolicy mergePolicy;
   private final int forceMergeMaxSegmentCount = 5;
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    sort = new Sort(new SortField("ndv1", SortField.Type.LONG));
-  }
 
   private Document randomDocument() {
     final Document doc = new Document();
@@ -93,9 +86,14 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
     terms = new ArrayList<>(randomTerms);
     final long seed = random().nextLong();
     final IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(new Random(seed)));
+    if (iwc.getMergePolicy() instanceof MockRandomMergePolicy) {
+      // MockRandomMP randomly wraps the leaf readers which makes merging angry
+      iwc.setMergePolicy(newTieredMergePolicy());
+    }
     iwc.setMergeScheduler(new SerialMergeScheduler()); // for reproducible tests
-    mergePolicy = TestSortingMergePolicy.newSortingMergePolicy(sort);
-    iwc.setMergePolicy(mergePolicy);
+    iwc.setIndexSort(sort);
+    // nocommit:
+    iwc.setCodec(Codec.forName("SimpleText"));
     iw = new RandomIndexWriter(new Random(seed), dir, iwc);
     iw.setDoRandomForceMerge(false); // don't do this, it may happen anyway with MockRandomMP
     for (int i = 0; i < numDocs; ++i) {
@@ -151,7 +149,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
           query = new MatchAllDocsQuery();
         }
         searcher.search(query, collector1);
-        searcher.search(query, new EarlyTerminatingSortingCollector(collector2, sort, numHits, mergePolicy.getSort()));
+        searcher.search(query, new EarlyTerminatingSortingCollector(collector2, sort, numHits));
         assertTrue(collector1.getTotalHits() >= collector2.getTotalHits());
         assertTopDocsEquals(collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
       }
@@ -190,40 +188,16 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
   }
 
   public void testEarlyTerminationDifferentSorter() throws IOException {
-    createRandomIndex(false);
-    final int iters = atLeast(3);
-    for (int i = 0; i < iters; ++i) {
-      final IndexSearcher searcher = newSearcher(reader);
-      // test that the collector works correctly when the index was sorted by a
-      // different sorter than the one specified in the ctor.
-      final int numHits = TestUtil.nextInt(random(), 1, numDocs);
-      final Sort sort = new Sort(new SortField("ndv2", SortField.Type.LONG, false));
-      final boolean fillFields = random().nextBoolean();
-      final boolean trackDocScores = random().nextBoolean();
-      final boolean trackMaxScore = random().nextBoolean();
-      final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, fillFields, trackDocScores, trackMaxScore);
-      final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, fillFields, trackDocScores, trackMaxScore);
-      
-      final Query query;
-      if (random().nextBoolean()) {
-        query = new TermQuery(new Term("s", RandomPicks.randomFrom(random(), terms)));
-      } else {
-        query = new MatchAllDocsQuery();
-      }
-      searcher.search(query, collector1);
-      Sort different = new Sort(new SortField("ndv2", SortField.Type.LONG));
+    createRandomIndex(true);
 
-      searcher.search(query, new EarlyTerminatingSortingCollector(collector2, different, numHits, different) {
-        @Override
-        public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-          final LeafCollector ret = super.getLeafCollector(context);
-          assertTrue("segment should not be recognized as sorted as different sorter was used", ret.getClass() == in.getLeafCollector(context).getClass());
-          return ret;
-        }
-      });
-      assertTrue(collector1.getTotalHits() >= collector2.getTotalHits());
-      assertTopDocsEquals(collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
-    }
+    Sort sort = new Sort(new SortField("ndv2", SortField.Type.LONG, false));
+    Collector c = new EarlyTerminatingSortingCollector(TopFieldCollector.create(sort, 10, true, true, true), sort, 10);
+    IndexSearcher searcher = newSearcher(reader);
+    Exception e = expectThrows(IllegalStateException.class,
+                               () -> {
+                                 searcher.search(new MatchAllDocsQuery(), c);
+                               });
+    assertEquals("Cannot early terminate with sort order <long: \"ndv2\"> if segments are sorted with <long: \"ndv1\">", e.getMessage());
     closeIndex();
   }
 
@@ -289,7 +263,7 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
       searcher.search(query, collector1);
 
       final TestTerminatedEarlySimpleCollector collector2 = new TestTerminatedEarlySimpleCollector();
-      final EarlyTerminatingSortingCollector etsCollector = new EarlyTerminatingSortingCollector(collector2, sort, 1, mergePolicy.getSort());
+      final EarlyTerminatingSortingCollector etsCollector = new EarlyTerminatingSortingCollector(collector2, sort, 1);
       searcher.search(query, etsCollector);
 
       assertTrue("collector1="+collector1.collectedSomething()+" vs. collector2="+collector2.collectedSomething(), collector1.collectedSomething() == collector2.collectedSomething());

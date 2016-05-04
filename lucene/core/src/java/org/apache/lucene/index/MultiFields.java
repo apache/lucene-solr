@@ -51,6 +51,8 @@ public final class MultiFields extends Fields {
   private final ReaderSlice[] subSlices;
   private final Map<String,Terms> terms = new ConcurrentHashMap<>();
 
+  // nocommit should we somehow throw exc if you try to pass in "sorted" Fields?
+
   /** Returns a single {@link Fields} instance for this
    *  reader, merging fields/terms/docs/positions on the
    *  fly.  This method will return null if the reader 

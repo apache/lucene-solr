@@ -20,13 +20,14 @@ import java.io.IOException;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
-import org.apache.lucene.index.SortingMergePolicy;
 import org.apache.lucene.util.BitSet;
+
+// nocommit what to do here?
 
 /**
  * Helper class to sort readers that contain blocks of documents.
  * <p>
- * Note that this class is intended to used with {@link SortingMergePolicy},
+ * Note that this class is intended to used with index sorting,
  * and for other purposes has some limitations:
  * <ul>
  *    <li>Cannot yet be used with {@link IndexSearcher#searchAfter(ScoreDoc, Query, int, Sort) IndexSearcher.searchAfter}

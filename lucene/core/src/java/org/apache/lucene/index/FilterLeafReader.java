@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Objects;
 
 import org.apache.lucene.search.QueryCache;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -469,6 +470,12 @@ public abstract class FilterLeafReader extends LeafReader {
   public Bits getDocsWithField(String field) throws IOException {
     ensureOpen();
     return in.getDocsWithField(field);
+  }
+
+  @Override
+  public Sort getIndexSort() {
+    ensureOpen();
+    return in.getIndexSort();
   }
 
   @Override

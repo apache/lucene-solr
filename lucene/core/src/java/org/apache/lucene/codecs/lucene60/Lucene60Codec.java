@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.codecs.lucene60;
 
+// nocommit if index time sorting is in use, don't try to bulk merge ... later we can make crazy bulk merger that looks for long runs from
+// one sub?
 
 import java.util.Objects;
 

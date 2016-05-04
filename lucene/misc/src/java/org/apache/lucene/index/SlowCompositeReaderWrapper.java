@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
 import org.apache.lucene.index.MultiDocValues.MultiSortedSetDocValues;
 import org.apache.lucene.index.MultiDocValues.OrdinalMap;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 
 /**
@@ -69,6 +70,11 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     in = reader;
     if (getFieldInfos().hasPointValues()) {
       throw new IllegalArgumentException("cannot wrap points");
+    }
+    for(LeafReaderContext context : reader.leaves()) {
+      if (context.reader().getIndexSort() != null) {
+        throw new IllegalArgumentException("cannot use index sort");
+      }
     }
     fields = MultiFields.getFields(in);
     in.registerParentReader(this);
@@ -274,5 +280,10 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     for (LeafReaderContext ctx : in.leaves()) {
       ctx.reader().checkIntegrity();
     }
+  }
+
+  @Override
+  public Sort getIndexSort() {
+    return null;
   }
 }

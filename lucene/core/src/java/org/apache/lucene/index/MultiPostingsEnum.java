@@ -57,7 +57,9 @@ public final class MultiPostingsEnum extends PostingsEnum {
     return this.parent == parent;
   }
 
-  /** Rre-use and reset this instance on the provided slices. */
+  // nocommit is this class supposed to be aware of index sorting too???
+
+  /** Re-use and reset this instance on the provided slices. */
   public MultiPostingsEnum reset(final EnumWithSlice[] subs, final int numSubs) {
     this.numSubs = numSubs;
     for(int i=0;i<numSubs;i++) {
@@ -165,9 +167,6 @@ public final class MultiPostingsEnum extends PostingsEnum {
   /** Holds a {@link PostingsEnum} along with the
    *  corresponding {@link ReaderSlice}. */
   public final static class EnumWithSlice {
-    EnumWithSlice() {
-    }
-
     /** {@link PostingsEnum} for this sub-reader. */
     public PostingsEnum postingsEnum;
 

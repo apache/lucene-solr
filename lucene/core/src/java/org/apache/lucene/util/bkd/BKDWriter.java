@@ -299,9 +299,6 @@ public class BKDWriter implements Closeable {
     final BKDReader.IntersectState state;
     final MergeState.DocMap docMap;
 
-    /** Base offset for all our docIDs */
-    final int docIDBase;
-
     /** Current doc ID */
     public int docID;
 
@@ -314,7 +311,7 @@ public class BKDWriter implements Closeable {
     /** Which leaf block we are up to */
     private int blockID;
 
-    public MergeReader(BKDReader bkd, MergeState.DocMap docMap, int docIDBase) throws IOException {
+    public MergeReader(BKDReader bkd, MergeState.DocMap docMap) throws IOException {
       this.bkd = bkd;
       state = new BKDReader.IntersectState(bkd.in.clone(),
                                            bkd.numDims,
@@ -322,7 +319,6 @@ public class BKDWriter implements Closeable {
                                            bkd.maxPointsInLeafNode,
                                            null);
       this.docMap = docMap;
-      this.docIDBase = docIDBase;
       long minFP = Long.MAX_VALUE;
       //System.out.println("MR.init " + this + " bkdreader=" + bkd + " leafBlockFPs.length=" + bkd.leafBlockFPs.length);
       for(long fp : bkd.leafBlockFPs) {
@@ -396,22 +392,20 @@ public class BKDWriter implements Closeable {
       }
 
       // Tie break by sorting smaller docIDs earlier:
-      return a.docIDBase < b.docIDBase;
+      return a.docID < b.docID;
     }
   }
 
   /** More efficient bulk-add for incoming {@link BKDReader}s.  This does a merge sort of the already
    *  sorted values and currently only works when numDims==1.  This returns -1 if all documents containing
    *  dimensional values were deleted. */
-  public long merge(IndexOutput out, List<MergeState.DocMap> docMaps, List<BKDReader> readers, List<Integer> docIDBases) throws IOException {
+  public long merge(IndexOutput out, List<MergeState.DocMap> docMaps, List<BKDReader> readers) throws IOException {
     if (numDims != 1) {
       throw new UnsupportedOperationException("numDims must be 1 but got " + numDims);
     }
     if (pointCount != 0) {
       throw new IllegalStateException("cannot mix add and merge");
     }
-
-    //System.out.println("BKDW.merge segs=" + readers.size());
 
     // Catch user silliness:
     if (heapPointWriter == null && tempInput == null) {
@@ -433,7 +427,7 @@ public class BKDWriter implements Closeable {
       } else {
         docMap = docMaps.get(i);
       }
-      MergeReader reader = new MergeReader(bkd, docMap, docIDBases.get(i));
+      MergeReader reader = new MergeReader(bkd, docMap);
       if (reader.next()) {
         queue.add(reader);
       }
@@ -468,7 +462,7 @@ public class BKDWriter implements Closeable {
       // System.out.println("iter reader=" + reader);
 
       // NOTE: doesn't work with subclasses (e.g. SimpleText!)
-      int docID = reader.docIDBase + reader.docID;
+      int docID = reader.docID;
       leafBlockDocIDs[leafCount] = docID;
       System.arraycopy(reader.state.scratchPackedValue, 0, leafBlockPackedValues[leafCount], 0, packedBytesLength);
       docsSeen.set(docID);
