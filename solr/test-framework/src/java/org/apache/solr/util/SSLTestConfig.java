@@ -136,7 +136,7 @@ public class SSLTestConfig extends SSLConfig {
   }
 
   /**
-   * Returns an SslContextFactory using {@link buildServerSSLContext} if SSL should be used, else returns null.
+   * Returns an SslContextFactory using {@link #buildServerSSLContext} if SSL should be used, else returns null.
    */
   @Override
   public SslContextFactory createContextFactory() {
