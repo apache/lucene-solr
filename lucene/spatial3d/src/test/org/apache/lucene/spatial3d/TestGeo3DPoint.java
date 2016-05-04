@@ -538,8 +538,24 @@ public class TestGeo3DPoint extends LuceneTestCase {
   
   private static Query random3DQuery(final String field) {
     while (true) {
-      final int shapeType = random().nextInt(4);
+      final int shapeType = random().nextInt(5);
       switch (shapeType) {
+      case 4: {
+        // Large polygons
+        final boolean isClockwise = random().nextDouble() < 0.5;
+        try {
+          final Query q = Geo3DPoint.newLargePolygonQuery(field, makePoly(PlanetModel.WGS84,
+            new GeoPoint(PlanetModel.WGS84, toRadians(GeoTestUtil.nextLatitude()), toRadians(GeoTestUtil.nextLongitude())),
+            isClockwise,
+            true));
+          //System.err.println("Generated: "+q);
+          //assertTrue(false);
+          return q;
+        } catch (IllegalArgumentException e) {
+          continue;
+        }
+      }
+      
       case 0: {
         // Polygons
         final boolean isClockwise = random().nextDouble() < 0.5;
@@ -925,8 +941,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
           angles[i] = angle;
           accumulatedAngle += angle;
         }
-        // Pick the arc distance randomly
-        arcDistance[i] = random().nextDouble() * (Math.PI - MINIMUM_ARC_ANGLE) + MINIMUM_ARC_ANGLE;
+        // Pick the arc distance randomly; not quite the full range though
+        arcDistance[i] = random().nextDouble() * (Math.PI * 0.5 - MINIMUM_ARC_ANGLE) + MINIMUM_ARC_ANGLE;
       }
       if (clockwiseDesired) {
         // Reverse the signs
@@ -938,6 +954,15 @@ public class TestGeo3DPoint extends LuceneTestCase {
       // Now, use the pole's information plus angles and arcs to create GeoPoints in the right order.
       final List<GeoPoint> polyPoints = convertToPoints(pm, pole, angles, arcDistance);
       
+      // Next, do some holes.  No more than 2 of these.  The poles for holes must always be within the polygon, so we're
+      // going to use Geo3D to help us select those given the points we just made.
+      
+      final int holeCount = createHoles?TestUtil.nextInt(random(), 0, 2):0;
+      
+      final List<Polygon> holeList = new ArrayList<>();
+      
+      /* Hole logic is broken and needs rethinking
+      
       // Create the geo3d polygon, so we can test out our poles.
       final GeoPolygon poly;
       try {
@@ -946,14 +971,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
         // This is what happens when three adjacent points are colinear, so try again.
         continue;
       }
-      
-      // Next, do some holes.  No more than 2 of these.  The poles for holes must always be within the polygon, so we're
-      // going to use Geo3D to help us select those given the points we just made.
-      
-      final int holeCount = createHoles?TestUtil.nextInt(random(), 0, 2):0;
-      
-      final List<Polygon> holeList = new ArrayList<>();
-      
+            
       for (int i = 0; i < holeCount; i++) {
         // Choose a pole.  The poly has to be within the polygon, but it also cannot be on the polygon edge.
         // If we can't find a good pole we have to give it up and not do the hole.
@@ -979,7 +997,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
           }
         }
       }
-
+      */
+      
       final Polygon[] holes = holeList.toArray(new Polygon[0]);
       
       // Finally, build the polygon and return it

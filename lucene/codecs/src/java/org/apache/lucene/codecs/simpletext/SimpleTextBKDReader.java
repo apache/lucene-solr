@@ -44,6 +44,7 @@ class SimpleTextBKDReader extends BKDReader {
     in.seek(blockFP);
     readLine(in, scratch);
     int count = parseInt(scratch, BLOCK_COUNT);
+    visitor.grow(count);
     for(int i=0;i<count;i++) {
       readLine(in, scratch);
       visitor.visit(parseInt(scratch, BLOCK_DOC_ID));
@@ -65,6 +66,7 @@ class SimpleTextBKDReader extends BKDReader {
 
   @Override
   protected void visitDocValues(int[] commonPrefixLengths, byte[] scratchPackedValue, IndexInput in, int[] docIDs, int count, IntersectVisitor visitor) throws IOException {
+    visitor.grow(count);
     // NOTE: we don't do prefix coding, so we ignore commonPrefixLengths
     assert scratchPackedValue.length == packedBytesLength;
     BytesRefBuilder scratch = new BytesRefBuilder();

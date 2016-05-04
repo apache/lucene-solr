@@ -20,6 +20,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
@@ -140,7 +141,7 @@ public class DistribDocExpirationUpdateProcessorTest extends AbstractFullDistrib
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("command","indexversion");
         params.set("_trace","getIndexVersion");
-        params.set("qt","/replication");
+        params.set("qt",ReplicationHandler.PATH);
         QueryRequest req = new QueryRequest(params);
     
         NamedList<Object> res = replicaRunner.client.solrClient.request(req);

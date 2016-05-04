@@ -47,6 +47,7 @@ import org.apache.http.config.RegistryBuilder;
 import org.apache.http.conn.ConnectionKeepAliveStrategy;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.socket.PlainConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.HttpEntityWrapper;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -122,8 +123,9 @@ public class HttpClientUtil {
   static {
     resetHttpClientBuilder();
   }
-  
+
   public static abstract class SchemaRegistryProvider {
+    /** Must be non-null */
     public abstract Registry<ConnectionSocketFactory> getSchemaRegistry();
   }
   
@@ -159,7 +161,7 @@ public class HttpClientUtil {
     httpClientBuilder = newHttpClientBuilder;
   }
 
-  public static void setSchemeRegistryProvider(SchemaRegistryProvider newRegistryProvider) {
+  public static void setSchemaRegistryProvider(SchemaRegistryProvider newRegistryProvider) {
     schemaRegistryProvider = newRegistryProvider;
   }
   
@@ -172,16 +174,22 @@ public class HttpClientUtil {
   }
   
   public static void resetHttpClientBuilder() {
-    schemaRegistryProvider = new SchemaRegistryProvider() {
-
-      @Override
-      public Registry<ConnectionSocketFactory> getSchemaRegistry() {
-        return RegistryBuilder.<ConnectionSocketFactory> create()
-            .register("http", PlainConnectionSocketFactory.getSocketFactory()).build();
-      }
-    };
+    schemaRegistryProvider = new DefaultSchemaRegistryProvider();
     httpClientBuilder = SolrHttpClientBuilder.create();
+  }
 
+  private static final class DefaultSchemaRegistryProvider extends SchemaRegistryProvider {
+    @Override
+    public Registry<ConnectionSocketFactory> getSchemaRegistry() {
+      // this mimics PoolingHttpClientConnectionManager's default behavior,
+      // except that we explicitly use SSLConnectionSocketFactory.getSystemSocketFactory()
+      // to pick up the system level default SSLContext (where javax.net.ssl.* properties
+      // related to keystore & truststore are specified)
+      RegistryBuilder<ConnectionSocketFactory> builder = RegistryBuilder.<ConnectionSocketFactory>create();
+      builder.register("http", PlainConnectionSocketFactory.getSocketFactory());
+      builder.register("https", SSLConnectionSocketFactory.getSystemSocketFactory());
+      return builder.build();
+    }
   }
   
   /**
@@ -192,9 +200,7 @@ public class HttpClientUtil {
    *          configuration (no additional configuration) is created. 
    */
   public static CloseableHttpClient createClient(SolrParams params) {
-    PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager(schemaRegistryProvider.getSchemaRegistry());
-
-    return createClient(params, cm);
+    return createClient(params, new PoolingHttpClientConnectionManager(schemaRegistryProvider.getSchemaRegistry()));
   }
   
   public static CloseableHttpClient createClient(SolrParams params, PoolingHttpClientConnectionManager cm) {

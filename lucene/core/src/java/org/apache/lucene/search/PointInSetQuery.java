@@ -130,7 +130,7 @@ public abstract class PointInSetQuery extends Query {
           throw new IllegalArgumentException("field=\"" + field + "\" was indexed with bytesPerDim=" + fieldInfo.getPointNumBytes() + " but this query has bytesPerDim=" + bytesPerDim);
         }
 
-        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc());
+        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
         if (numDims == 1) {
 
@@ -163,6 +163,7 @@ public abstract class PointInSetQuery extends Query {
     private BytesRef nextQueryPoint;
     private final BytesRef scratch = new BytesRef();
     private final PrefixCodedTerms sortedPackedPoints;
+    private DocIdSetBuilder.BulkAdder adder;
 
     public MergePointVisitor(PrefixCodedTerms sortedPackedPoints, DocIdSetBuilder result) throws IOException {
       this.result = result;
@@ -174,12 +175,12 @@ public abstract class PointInSetQuery extends Query {
 
     @Override
     public void grow(int count) {
-      result.grow(count);
+      adder = result.grow(count);
     }
 
     @Override
     public void visit(int docID) {
-      result.add(docID);
+      adder.add(docID);
     }
 
     @Override
@@ -189,7 +190,7 @@ public abstract class PointInSetQuery extends Query {
         int cmp = nextQueryPoint.compareTo(scratch);
         if (cmp == 0) {
           // Query point equals index point, so collect and return
-          result.add(docID);
+          adder.add(docID);
           break;
         } else if (cmp < 0) {
           // Query point is before index point, so we move to next query point
@@ -237,6 +238,7 @@ public abstract class PointInSetQuery extends Query {
 
     private final DocIdSetBuilder result;
     private final byte[] pointBytes;
+    private DocIdSetBuilder.BulkAdder adder;
 
     public SinglePointVisitor(DocIdSetBuilder result) {
       this.result = result;
@@ -251,12 +253,12 @@ public abstract class PointInSetQuery extends Query {
 
     @Override
     public void grow(int count) {
-      result.grow(count);
+      adder = result.grow(count);
     }
 
     @Override
     public void visit(int docID) {
-      result.add(docID);
+      adder.add(docID);
     }
 
     @Override
@@ -264,7 +266,7 @@ public abstract class PointInSetQuery extends Query {
       assert packedValue.length == pointBytes.length;
       if (Arrays.equals(packedValue, pointBytes)) {
         // The point for this doc matches the point we are querying on
-        result.add(docID);
+        adder.add(docID);
       }
     }
 

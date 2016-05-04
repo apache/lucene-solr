@@ -66,6 +66,12 @@ set ENABLE_REMOTE_JMX_OPTS=false
 REM The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
 REM set RMI_PORT=18983
 
+REM Set the host interface to listen on. Jetty will listen on all interfaces (0.0.0.0) by default.
+REM This must be an IPv4 ("a.b.c.d") or bracketed IPv6 ("[x::y]") address, not a hostname!
+set SOLR_JETTY_HOST=0.0.0.0
+
+set SOLR_OPTS=%SOLR_OPTS% -Djetty.host=%SOLR_JETTY_HOST%
+
 REM Set the thread stack size
 set SOLR_OPTS=%SOLR_OPTS% -Xss256k
 
@@ -98,3 +104,10 @@ REM set SOLR_SSL_CLIENT_KEY_STORE=
 REM set SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=
 REM set SOLR_SSL_CLIENT_TRUST_STORE=
 REM setSOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=
+
+REM Settings for ZK ACL
+REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider ^
+REM  -DzkCredentialsProvider=org.apache.solr.common.cloud.VMParamsSingleSetCredentialsDigestZkCredentialsProvider ^
+REM  -DzkDigestUsername=admin-user -DzkDigestPassword=CHANGEME-ADMIN-PASSWORD ^
+REM  -DzkDigestReadonlyUsername=readonly-user -DzkDigestReadonlyPassword=CHANGEME-READONLY-PASSWORD
+REM set SOLR_OPTS=%SOLR_OPTS% %SOLR_ZK_CREDS_AND_ACLS%

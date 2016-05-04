@@ -17,31 +17,101 @@
 package org.apache.lucene.util;
 
 import java.io.IOException;
+import java.util.Arrays;
 
+import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * A builder of {@link DocIdSet}s.  At first it uses a sparse structure to gather
  * documents, and then upgrades to a non-sparse bit set once enough hits match.
  *
+ * To add documents, you first need to call {@link #grow} in order to reserve
+ * space, and then call {@link BulkAdder#add(int)} on the returned
+ * {@link BulkAdder}.
+ *
  * @lucene.internal
  */
 public final class DocIdSetBuilder {
 
+  /** Utility class to efficiently add many docs in one go.
+   *  @see DocIdSetBuilder#grow */
+  public static abstract class BulkAdder {
+    public abstract void add(int doc);
+  }
+
+  private static class FixedBitSetAdder extends BulkAdder {
+    final FixedBitSet bitSet;
+
+    FixedBitSetAdder(FixedBitSet bitSet) {
+      this.bitSet = bitSet;
+    }
+
+    @Override
+    public void add(int doc) {
+      bitSet.set(doc);
+    }
+  }
+
+  private class BufferAdder extends BulkAdder {
+
+    @Override
+    public void add(int doc) {
+      buffer[bufferSize++] = doc;
+    }
+
+  }
+
   private final int maxDoc;
   private final int threshold;
+  // pkg-private for testing
+  final boolean multivalued;
+  final double numValuesPerDoc;
 
   private int[] buffer;
   private int bufferSize;
 
-  private BitSet bitSet;
+  private FixedBitSet bitSet;
+
+  private long counter = -1;
+  private BulkAdder adder = new BufferAdder();
 
   /**
    * Create a builder that can contain doc IDs between {@code 0} and {@code maxDoc}.
    */
   public DocIdSetBuilder(int maxDoc) {
+    this(maxDoc, -1, -1);
+  }
+
+  /** Create a {@link DocIdSetBuilder} instance that is optimized for
+   *  accumulating docs that match the given {@link Terms}. */
+  public DocIdSetBuilder(int maxDoc, Terms terms) throws IOException {
+    this(maxDoc, terms.getDocCount(), terms.getSumDocFreq());
+  }
+
+  /** Create a {@link DocIdSetBuilder} instance that is optimized for
+   *  accumulating docs that match the given {@link PointValues}. */
+  public DocIdSetBuilder(int maxDoc, PointValues values, String field) throws IOException {
+    this(maxDoc, values.getDocCount(field), values.size(field));
+  }
+
+  DocIdSetBuilder(int maxDoc, int docCount, long valueCount) {
     this.maxDoc = maxDoc;
+    this.multivalued = docCount < 0 || docCount != valueCount;
+    if (docCount <= 0 || valueCount < 0) {
+      // assume one value per doc, this means the cost will be overestimated
+      // if the docs are actually multi-valued
+      this.numValuesPerDoc = 1;
+    } else {
+      // otherwise compute from index stats
+      this.numValuesPerDoc = (double) valueCount / docCount;
+    }
+
+    assert numValuesPerDoc >= 1: "valueCount=" + valueCount + " docCount=" + docCount;
+
     // For ridiculously small sets, we'll just use a sorted int[]
     // maxDoc >>> 7 is a good value if you want to save memory, lower values
     // such as maxDoc >>> 11 should provide faster building but at the expense
@@ -59,8 +129,10 @@ public final class DocIdSetBuilder {
     for (int i = 0; i < bufferSize; ++i) {
       bitSet.set(buffer[i]);
     }
+    counter = this.bufferSize;
     this.buffer = null;
     this.bufferSize = 0;
+    this.adder = new FixedBitSetAdder(bitSet);
   }
 
   /** Grows the buffer to at least minSize, but never larger than threshold. */
@@ -68,9 +140,7 @@ public final class DocIdSetBuilder {
     assert minSize < threshold;
     if (buffer.length < minSize) {
       int nextSize = Math.min(threshold, ArrayUtil.oversize(minSize, Integer.BYTES));
-      int[] newBuffer = new int[nextSize];
-      System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
-      buffer = newBuffer;
+      buffer = Arrays.copyOf(buffer, nextSize);
     }
   }
 
@@ -85,7 +155,7 @@ public final class DocIdSetBuilder {
     if (bitSet != null) {
       bitSet.or(iter);
     } else {
-      while (true) {  
+      while (true) {
         assert buffer.length <= threshold;
         final int end = buffer.length;
         for (int i = bufferSize; i < end; ++i) {
@@ -113,39 +183,22 @@ public final class DocIdSetBuilder {
   }
 
   /**
-   * Reserve space so that this builder can hold {@code numDocs} MORE documents.
+   * Reserve space and return a {@link BulkAdder} object that can be used to
+   * add up to {@code numDocs} documents.
    */
-  public void grow(int numDocs) {
+  public BulkAdder grow(int numDocs) {
     if (bitSet == null) {
-      final long newLength = bufferSize + numDocs;
+      final long newLength = (long) bufferSize + numDocs;
       if (newLength < threshold) {
         growBuffer((int) newLength);
       } else {
         upgradeToBitSet();
+        counter += numDocs;
       }
-    }
-  }
-
-  /**
-   * Add a document to this builder.
-   * NOTE: doc IDs do not need to be provided in order.
-   * NOTE: if you plan on adding several docs at once, look into using
-   * {@link #grow(int)} to reserve space.
-   */
-  public void add(int doc) {
-    if (bitSet != null) {
-      bitSet.set(doc);
     } else {
-      if (bufferSize + 1 > buffer.length) {
-        if (bufferSize + 1 >= threshold) {
-          upgradeToBitSet();
-          bitSet.set(doc);
-          return;
-        }
-        growBuffer(bufferSize+1);
-      }
-      buffer[bufferSize++] = doc;
+      counter += numDocs;
     }
+    return adder;
   }
 
   private static int dedup(int[] arr, int length) {
@@ -165,17 +218,32 @@ public final class DocIdSetBuilder {
     return l;
   }
 
+  private static boolean noDups(int[] a, int len) {
+    for (int i = 1; i < len; ++i) {
+      assert a[i-1] < a[i];
+    }
+    return true;
+  }
+
   /**
    * Build a {@link DocIdSet} from the accumulated doc IDs.
    */
   public DocIdSet build() {
     try {
       if (bitSet != null) {
-        return new BitDocIdSet(bitSet);
+        assert counter >= 0;
+        final long cost = Math.round(counter / numValuesPerDoc);
+        return new BitDocIdSet(bitSet, cost);
       } else {
         LSBRadixSorter sorter = new LSBRadixSorter();
-        sorter.sort(buffer, 0, bufferSize);
-        final int l = dedup(buffer, bufferSize);
+        sorter.sort(PackedInts.bitsRequired(maxDoc - 1), buffer, bufferSize);
+        final int l;
+        if (multivalued) {
+          l = dedup(buffer, bufferSize);
+        } else {
+          assert noDups(buffer, bufferSize);
+          l = bufferSize;
+        }
         assert l <= bufferSize;
         buffer = ArrayUtil.grow(buffer, l + 1);
         buffer[l] = DocIdSetIterator.NO_MORE_DOCS;

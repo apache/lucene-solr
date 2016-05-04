@@ -17,6 +17,7 @@
 package org.apache.solr.common.cloud;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -36,14 +37,30 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     return replicas.values().iterator();
   }
 
+  /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */
+  public static Map<String,Slice> loadAllFromMap(Map<String, Object> genericSlices) {
+    if (genericSlices == null) return Collections.emptyMap();
+    Map<String,Slice> result = new LinkedHashMap<>(genericSlices.size());
+    for (Map.Entry<String,Object> entry : genericSlices.entrySet()) {
+      String name = entry.getKey();
+      Object val = entry.getValue();
+      if (val instanceof Slice) {
+        result.put(name, (Slice)val);
+      } else if (val instanceof Map) {
+        result.put(name, new Slice(name, null, (Map<String,Object>)val));
+      }
+    }
+    return result;
+  }
+
   /** The slice's state. */
   public enum State {
     
-    /** The default state of a slice. */
+    /** The normal/default state of a shard. */
     ACTIVE,
     
     /**
-     * A slice is put in that state after it has been successfully split. See
+     * A shard is put in that state after it has been successfully split. See
      * <a href="https://cwiki.apache.org/confluence/display/solr/Collections+API#CollectionsAPI-api3">
      * the reference guide</a> for more details.
      */
@@ -51,7 +68,8 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     
     /**
      * When a shard is split, the new sub-shards are put in that state while the
-     * split operation is in progress. A shard in that state still receives
+     * split operation is in progress. It's also used when the shard is undergoing data restoration.
+     * A shard in this state still receives
      * update requests from the parent shard leader, however does not participate
      * in distributed search.
      */

@@ -19,6 +19,7 @@ package org.apache.solr.security;
 import java.io.IOException;
 import java.io.StringReader;
 import java.security.Principal;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.handler.DumpRequestHandler;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.UpdateRequestHandler;
@@ -190,14 +192,14 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
     ((Map)rules.get("user-role")).put("cio","su");
     ((List)rules.get("permissions")).add( makeMap("name", "all", "role", "su"));
 
-    checkRules(makeMap("resource", "/replication",
+    checkRules(makeMap("resource", ReplicationHandler.PATH,
         "httpMethod", "POST",
         "userPrincipal", "tim",
         "handler", new ReplicationHandler(),
         "collectionRequests", singletonList(new CollectionRequest("mycoll")) )
         , FORBIDDEN, rules);
 
-    checkRules(makeMap("resource", "/replication",
+    checkRules(makeMap("resource", ReplicationHandler.PATH,
         "httpMethod", "POST",
         "userPrincipal", "cio",
         "handler", new ReplicationHandler(),
@@ -251,6 +253,58 @@ public class TestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
         "params", new MapSolrParams(singletonMap("action", "CREATE")))
         ,STATUS_OK );
 
+    rules = (Map) Utils.fromJSONString(permissions);
+    List permissions = (List) rules.get("permissions");
+    permissions.remove(permissions.size() -1);//remove the 'all' permission
+    permissions.add(makeMap("name", "test-params", "role", "admin", "path", "/x", "params",
+        makeMap("key", Arrays.asList("REGEX:(?i)val1", "VAL2"))));
+    this.permissions = Utils.toJSONString(rules);
+
+    checkRules(makeMap("resource", "/x",
+        "userPrincipal", null,
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", new DumpRequestHandler(),
+        "params", new MapSolrParams(singletonMap("key", "VAL1")))
+        , PROMPT_FOR_CREDENTIALS);
+
+    checkRules(makeMap("resource", "/x",
+        "userPrincipal", null,
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", new DumpRequestHandler(),
+        "params", new MapSolrParams(singletonMap("key", "Val1")))
+        , PROMPT_FOR_CREDENTIALS);
+
+    checkRules(makeMap("resource", "/x",
+        "userPrincipal", null,
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", new DumpRequestHandler(),
+        "params", new MapSolrParams(singletonMap("key", "Val1")))
+        , PROMPT_FOR_CREDENTIALS);
+    checkRules(makeMap("resource", "/x",
+        "userPrincipal", "joe",
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", new DumpRequestHandler(),
+        "params", new MapSolrParams(singletonMap("key", "Val1")))
+        , FORBIDDEN);
+
+    checkRules(makeMap("resource", "/x",
+        "userPrincipal", "joe",
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", new DumpRequestHandler(),
+        "params", new MapSolrParams(singletonMap("key", "Val2")))
+        , STATUS_OK);
+    checkRules(makeMap("resource", "/x",
+        "userPrincipal", "joe",
+        "requestType", RequestType.UNKNOWN,
+        "collectionRequests", "go",
+        "handler", new DumpRequestHandler(),
+        "params", new MapSolrParams(singletonMap("key", "VAL2")))
+        , FORBIDDEN);
   }
 
   public void testEditRules() throws IOException {

@@ -36,6 +36,9 @@ public class BitDocIdSet extends DocIdSet {
    * {@link BitSet} must not be modified afterwards.
    */
   public BitDocIdSet(BitSet set, long cost) {
+    if (cost < 0) {
+      throw new IllegalArgumentException("cost must be >= 0, got " + cost);
+    }
     this.set = set;
     this.cost = cost;
   }

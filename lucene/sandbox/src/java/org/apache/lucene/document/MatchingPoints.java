@@ -30,6 +30,9 @@ import org.apache.lucene.util.SparseFixedBitSet;
  * Add matches with ({@link #add(int)}) and call {@link #iterator()} for
  * an iterator over the results. 
  * <p>
+ * <b>NOTE:</b> it is required that you implement the optional {@code grow()}
+ * method in your IntersectVisitor, this is used for cost computation.
+ * <p>
  * This implementation currently optimizes bitset structure (sparse vs dense)
  * and {@link DocIdSetIterator#cost()} (cardinality) based on index statistics.
  * This API may change as point values evolves.
@@ -76,15 +79,24 @@ final class MatchingPoints {
    */
   public void add(int doc) {
     bits.set(doc);
-    counter++;
+  }
+
+  /**
+   * Grows cardinality counter by the given amount.
+   */
+  public void grow(int amount) {
+    counter += amount;
   }
   
   /**
    * Returns an iterator over the recorded matches.
    */
   public DocIdSetIterator iterator() {
-    // if single-valued (docCount == numPoints), then this is exact
-    // otherwise its approximate based on field stats
+    // ensure caller implements the grow() api
+    assert counter > 0 || bits.cardinality() == 0 : "the IntersectVisitor is missing grow()";
+
+    // if single-valued (docCount == numPoints), then we know 1 point == 1 doc
+    // otherwise we approximate based on field stats
     return new BitSetIterator(bits, (long) (counter * (docCount / (double) numPoints)));
   }
 }
