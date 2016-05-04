@@ -16,10 +16,6 @@
  */
 package org.apache.solr.handler.sql;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
@@ -32,12 +28,16 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.util.Pair;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Implementation of {@link org.apache.calcite.rel.core.Project} relational expression in Solr.
  */
-public class SolrProject extends Project implements SolrRel {
-  public SolrProject(RelOptCluster cluster, RelTraitSet traitSet,
-                     RelNode input, List<? extends RexNode> projects, RelDataType rowType) {
+class SolrProject extends Project implements SolrRel {
+  SolrProject(RelOptCluster cluster, RelTraitSet traitSet,
+              RelNode input, List<? extends RexNode> projects, RelDataType rowType) {
     super(cluster, traitSet, input, projects, rowType);
     assert getConvention() == SolrRel.CONVENTION;
     assert getConvention() == input.getConvention();

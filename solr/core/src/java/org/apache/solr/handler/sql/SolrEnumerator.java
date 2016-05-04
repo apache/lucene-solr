@@ -16,12 +16,12 @@
  */
 package org.apache.solr.handler.sql;
 
-import java.io.IOException;
-import java.util.List;
-
 import org.apache.calcite.linq4j.Enumerator;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
+
+import java.io.IOException;
+import java.util.List;
 
 /** Enumerator that reads from a Solr collection. */
 class SolrEnumerator implements Enumerator<Object> {

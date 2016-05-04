@@ -16,14 +16,7 @@
  */
 package org.apache.solr.handler.sql;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptCost;
-import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptUtil;
-import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
@@ -31,12 +24,16 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.util.Pair;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implementation of a {@link org.apache.calcite.rel.core.Filter} relational expression in Solr.
  */
-public class SolrFilter extends Filter implements SolrRel {
-  public SolrFilter(
+class SolrFilter extends Filter implements SolrRel {
+  SolrFilter(
       RelOptCluster cluster,
       RelTraitSet traitSet,
       RelNode child,
@@ -91,46 +88,49 @@ public class SolrFilter extends Filter implements SolrRel {
     }
 
     private String translateMatch2(RexNode node) {
+      Pair<String, RexLiteral> binaryTranslated = translateBinary((RexCall) node);
+
       switch (node.getKind()) {
+//        case NOT:
+//          return translateBinary("-", "-", (RexCall) node);
         case EQUALS:
-          return translateBinary("", "", (RexCall) node);
-//        case NOT_EQUALS:
-//          return null;
-//        case LESS_THAN:
-//          return translateBinary("$lt", "$gt", (RexCall) node);
-//        case LESS_THAN_OR_EQUAL:
-//          return translateBinary("$lte", "$gte", (RexCall) node);
-        case NOT:
-          return translateBinary("-", "-", (RexCall) node);
-//        case GREATER_THAN:
-//          return translateBinary("$gt", "$lt", (RexCall) node);
-//        case GREATER_THAN_OR_EQUAL:
-//          return translateBinary("$gte", "$lte", (RexCall) node);
+          return binaryTranslated.getKey() + ":" + binaryTranslated.getValue().getValue2();
+        case NOT_EQUALS:
+          return "-" + binaryTranslated.getKey() + ":" + binaryTranslated.getValue().getValue2();
+        case LESS_THAN:
+          return binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue().getValue2() + " }";
+        case LESS_THAN_OR_EQUAL:
+          return binaryTranslated.getKey() + ": [ * TO " + binaryTranslated.getValue().getValue2() + " ]";
+        case GREATER_THAN:
+          return binaryTranslated.getKey() + ": { " + binaryTranslated.getValue().getValue2() + " TO * ]";
+        case GREATER_THAN_OR_EQUAL:
+          return binaryTranslated.getKey() + ": [ " + binaryTranslated.getValue().getValue2() + " TO * ]";
         default:
           throw new AssertionError("cannot translate " + node);
       }
     }
 
     /** Translates a call to a binary operator, reversing arguments if necessary. */
-    private String translateBinary(String op, String rop, RexCall call) {
-      if(call.operands.size() != 2) {
-        throw new AssertionError("hello");
+    private Pair<String, RexLiteral> translateBinary(RexCall call) {
+      List<RexNode> operands = call.getOperands();
+      if(operands.size() != 2) {
+        throw new AssertionError("Invalid number of arguments - " + operands.size());
       }
-      final RexNode left = call.operands.get(0);
-      final RexNode right = call.operands.get(1);
-      String b = translateBinary2(op, left, right);
+      final RexNode left = operands.get(0);
+      final RexNode right = operands.get(1);
+      final Pair<String, RexLiteral> a = translateBinary2(left, right);
+      if (a != null) {
+        return a;
+      }
+      final Pair<String, RexLiteral> b = translateBinary2(right, left);
       if (b != null) {
         return b;
       }
-      b = translateBinary2(rop, right, left);
-      if (b != null) {
-        return b;
-      }
-      throw new AssertionError("cannot translate op " + op + " call " + call);
+      throw new AssertionError("cannot translate call " + call);
     }
 
     /** Translates a call to a binary operator. Returns whether successful. */
-    private String translateBinary2(String op, RexNode left, RexNode right) {
+    private Pair<String, RexLiteral> translateBinary2(RexNode left, RexNode right) {
       switch (right.getKind()) {
         case LITERAL:
           break;
@@ -142,9 +142,9 @@ public class SolrFilter extends Filter implements SolrRel {
         case INPUT_REF:
           final RexInputRef left1 = (RexInputRef) left;
           String name = fieldNames.get(left1.getIndex());
-          return translateOp2(op, name, rightLiteral);
+          return new Pair<>(name, rightLiteral);
         case CAST:
-          return translateBinary2(op, ((RexCall) left).operands.get(0), right);
+          return translateBinary2(((RexCall) left).operands.get(0), right);
 //        case OTHER_FUNCTION:
 //          String itemName = SolrRules.isItem((RexCall) left);
 //          if (itemName != null) {
@@ -154,12 +154,5 @@ public class SolrFilter extends Filter implements SolrRel {
           return null;
       }
     }
-
-    private String translateOp2(String op, String name, RexLiteral right) {
-      if (op == null) {
-        op = "";
-      }
-      return op + name + ":" + right.getValue2();
-      }
   }
 }

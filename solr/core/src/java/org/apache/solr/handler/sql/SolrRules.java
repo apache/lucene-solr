@@ -16,11 +16,6 @@
  */
 package org.apache.solr.handler.sql;
 
-import java.util.AbstractList;
-import java.util.List;
-
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptRule;
@@ -28,7 +23,9 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterRule;
+import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Sort;
+import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.type.RelDataType;
@@ -37,18 +34,21 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 
+import java.util.AbstractList;
+import java.util.List;
+import java.util.function.Predicate;
+
 /**
  * Rules and relational operators for
  * {@link SolrRel#CONVENTION}
  * calling convention.
  */
-public class SolrRules {
-  private SolrRules() {}
-
+class SolrRules {
   static final RelOptRule[] RULES = {
     SolrFilterRule.INSTANCE,
     SolrProjectRule.INSTANCE,
-//    SolrSortRule.INSTANCE
+    SolrSortRule.INSTANCE,
+    SolrAggregateRule.INSTANCE,
   };
 
   static List<String> solrFieldNames(final RelDataType rowType) {
@@ -87,12 +87,12 @@ public class SolrRules {
   abstract static class SolrConverterRule extends ConverterRule {
     final Convention out;
 
-    public SolrConverterRule(Class<? extends RelNode> clazz, String description) {
-      this(clazz, Predicates.<RelNode>alwaysTrue(), description);
+    SolrConverterRule(Class<? extends RelNode> clazz, String description) {
+      this(clazz, relNode -> true, description);
     }
 
-    public <R extends RelNode> SolrConverterRule(Class<R> clazz, Predicate<? super R> predicate, String description) {
-      super(clazz, predicate, Convention.NONE, SolrRel.CONVENTION, description);
+    <R extends RelNode> SolrConverterRule(Class<R> clazz, Predicate<RelNode> predicate, String description) {
+      super(clazz, predicate::test, Convention.NONE, SolrRel.CONVENTION, description);
       this.out = SolrRel.CONVENTION;
     }
   }
@@ -119,7 +119,7 @@ public class SolrRules {
   }
 
   /**
-   * Rule to convert a {@link org.apache.calcite.rel.logical.LogicalProject} to a {@link SolrProject}.
+   * Rule to convert a {@link LogicalProject} to a {@link SolrProject}.
    */
   private static class SolrProjectRule extends SolrConverterRule {
     private static final SolrProjectRule INSTANCE = new SolrProjectRule();
@@ -141,10 +141,10 @@ public class SolrRules {
   }
 
   /**
-   * Rule to convert a {@link org.apache.calcite.rel.core.Sort} to a {@link SolrSort}.
+   * Rule to convert a {@link Sort} to a {@link SolrSort}.
    */
   private static class SolrSortRule extends SolrConverterRule {
-    public static final SolrSortRule INSTANCE = new SolrSortRule();
+    static final SolrSortRule INSTANCE = new SolrSortRule();
 
     private SolrSortRule() {
       super(Sort.class, "SolrSortRule");
@@ -159,6 +159,30 @@ public class SolrRules {
           convert(sort.getInput(), traitSet.replace(RelCollations.EMPTY)),
           sort.getCollation(),
           sort.fetch);
+    }
+  }
+
+  /**
+   * Rule to convert an {@link org.apache.calcite.rel.logical.LogicalAggregate} to an {@link SolrAggregate}.
+   */
+  private static class SolrAggregateRule extends SolrConverterRule {
+    private static final RelOptRule INSTANCE = new SolrAggregateRule();
+
+    private SolrAggregateRule() {
+      super(LogicalAggregate.class, relNode -> Aggregate.IS_SIMPLE.apply(((LogicalAggregate)relNode)), "SolrAggregateRule");
+    }
+
+    public RelNode convert(RelNode rel) {
+      final LogicalAggregate agg = (LogicalAggregate) rel;
+      final RelTraitSet traitSet = agg.getTraitSet().replace(out);
+      return new SolrAggregate(
+          rel.getCluster(),
+          traitSet,
+          convert(agg.getInput(), traitSet.simplify()),
+          agg.indicator,
+          agg.getGroupSet(),
+          agg.getGroupSets(),
+          agg.getAggCallList());
     }
   }
 }

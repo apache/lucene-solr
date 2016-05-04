@@ -1079,8 +1079,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
 
       // Test without a sort. Sort should be asc by default.
-      /*
-      // TODO figure out what should be sort asc by default (version?)
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("stmt", "select distinct str_s, field_i from collection1");
@@ -1113,7 +1111,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       tuple = tuples.get(5);
       assert(tuple.get("str_s").equals("c"));
       assert(tuple.getLong("field_i") == 60);
-      */
 
       // Test with a predicate.
       params = new HashMap();
@@ -1289,8 +1286,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
 
 
       // Test without a sort. Sort should be asc by default.
-      /*
-      // TODO figure out what should be sort asc by default (version?)
       params = new HashMap();
       params.put(CommonParams.QT, "/sql");
       params.put("numWorkers", "2");
@@ -1324,7 +1319,6 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
       tuple = tuples.get(5);
       assert(tuple.get("str_s").equals("c"));
       assert(tuple.getLong("field_i") == 60);
-      */
 
       // Test with a predicate.
       params = new HashMap();

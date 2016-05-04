@@ -16,23 +16,19 @@
  */
 package org.apache.solr.handler.sql;
 
-import java.util.List;
-
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptRule;
-import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.*;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.type.RelDataType;
+
+import java.util.List;
 
 /**
  * Relational expression representing a scan of a Solr collection.
  */
 class SolrTableScan extends TableScan implements SolrRel {
-  final SolrTable solrTable;
-  final RelDataType projectRowType;
+  private final SolrTable solrTable;
+  private final RelDataType projectRowType;
 
   /**
    * Creates a SolrTableScan.

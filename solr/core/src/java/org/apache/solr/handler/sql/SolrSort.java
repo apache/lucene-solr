@@ -16,9 +16,6 @@
  */
 package org.apache.solr.handler.sql;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptPlanner;
@@ -32,12 +29,15 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Implementation of {@link org.apache.calcite.rel.core.Sort} relational expression in Solr.
  */
-public class SolrSort extends Sort implements SolrRel {
+class SolrSort extends Sort implements SolrRel {
 
-  public SolrSort(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode fetch) {
+  SolrSort(RelOptCluster cluster, RelTraitSet traitSet, RelNode child, RelCollation collation, RexNode fetch) {
     super(cluster, traitSet, child, collation, null, fetch);
 
     assert getConvention() == SolrRel.CONVENTION;

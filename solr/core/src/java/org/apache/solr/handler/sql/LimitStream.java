@@ -16,12 +16,6 @@
  */
 package org.apache.solr.handler.sql;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
@@ -30,10 +24,16 @@ import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 class LimitStream extends TupleStream {
 
-  private TupleStream stream;
-  private int limit;
+  private final TupleStream stream;
+  private final int limit;
   private int count;
 
   LimitStream(TupleStream stream, int limit) {

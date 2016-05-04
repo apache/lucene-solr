@@ -16,29 +16,19 @@
  */
 package org.apache.solr.handler.sql;
 
+import org.apache.calcite.linq4j.tree.Types;
+
 import java.lang.reflect.Method;
 import java.util.List;
-
-import com.google.common.collect.ImmutableMap;
-import org.apache.calcite.linq4j.tree.Types;
 
 /**
  * Builtin methods in the Solr adapter.
  */
-public enum SolrMethod {
-  SOLR_QUERYABLE_QUERY(SolrTable.SolrQueryable.class, "query", List.class, String.class, List.class, String.class);
+enum SolrMethod {
+  SOLR_QUERYABLE_QUERY(SolrTable.SolrQueryable.class, "query", List.class, String.class, List.class, List.class,
+      List.class, String.class);
 
   public final Method method;
-
-  public static final ImmutableMap<Method, SolrMethod> MAP;
-
-  static {
-    final ImmutableMap.Builder<Method, SolrMethod> builder = ImmutableMap.builder();
-    for (SolrMethod value : SolrMethod.values()) {
-      builder.put(value.method, value);
-    }
-    MAP = builder.build();
-  }
 
   SolrMethod(Class clazz, String methodName, Class... argumentTypes) {
     this.method = Types.lookupMethod(clazz, methodName, argumentTypes);

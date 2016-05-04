@@ -16,18 +16,8 @@
  */
 package org.apache.solr.handler.sql;
 
-import java.io.IOException;
-import java.util.EnumSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-
 import com.google.common.collect.ImmutableMap;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
-import org.apache.calcite.rel.type.RelDataTypeImpl;
-import org.apache.calcite.rel.type.RelDataTypeSystem;
-import org.apache.calcite.rel.type.RelProtoDataType;
+import org.apache.calcite.rel.type.*;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
@@ -36,6 +26,12 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.luke.FieldFlag;
+
+import java.io.IOException;
+import java.util.EnumSet;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 class SolrSchema extends AbstractSchema {
   final Properties properties;
@@ -48,7 +44,7 @@ class SolrSchema extends AbstractSchema {
   @Override
   protected Map<String, Table> getTableMap() {
     String zk = this.properties.getProperty("zk");
-    try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zk).build()) {
+    try(CloudSolrClient cloudSolrClient = new CloudSolrClient(zk)) {
       cloudSolrClient.connect();
       Set<String> collections = cloudSolrClient.getZkStateReader().getClusterState().getCollections();
 
@@ -64,7 +60,7 @@ class SolrSchema extends AbstractSchema {
 
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(String collection) {
     String zk = this.properties.getProperty("zk");
-    try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zk).build()) {
+    try(CloudSolrClient cloudSolrClient = new CloudSolrClient(zk)) {
       cloudSolrClient.connect();
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setNumTerms(0);

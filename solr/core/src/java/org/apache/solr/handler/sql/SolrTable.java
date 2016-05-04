@@ -16,19 +16,8 @@
  */
 package org.apache.solr.handler.sql;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
-import org.apache.calcite.linq4j.AbstractEnumerable;
-import org.apache.calcite.linq4j.Enumerable;
-import org.apache.calcite.linq4j.Enumerator;
-import org.apache.calcite.linq4j.QueryProvider;
-import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.linq4j.*;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
@@ -39,20 +28,29 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTableQueryable;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
+import org.apache.solr.client.solrj.io.stream.RollupStream;
+import org.apache.solr.client.solrj.io.stream.StatsStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
+import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.common.params.CommonParams;
+
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Table based on a Solr collection
  */
-public class SolrTable extends AbstractQueryableTable implements TranslatableTable {
-  private static final String DEFAULT_SORT_FIELD = "_version_";
+class SolrTable extends AbstractQueryableTable implements TranslatableTable {
+  private static final String DEFAULT_QUERY = "*:*";
+  private static final String DEFAULT_VERSION_FIELD = "_version_";
+  private static final String DEFAULT_SCORE_FIELD = "score";
 
   private final String collection;
   private final SolrSchema schema;
   private RelProtoDataType protoRowType;
 
-  public SolrTable(SolrSchema schema, String collection) {
+  SolrTable(SolrSchema schema, String collection) {
     super(Object[].class);
     this.schema = schema;
     this.collection = collection;
@@ -69,8 +67,9 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
     return protoRowType.apply(typeFactory);
   }
   
-  public Enumerable<Object> query(final Properties properties) {
-    return query(properties, Collections.emptyList(), null, Collections.emptyList(), null);
+  private Enumerable<Object> query(final Properties properties) {
+    return query(properties, Collections.emptyList(), null, Collections.emptyList(), Collections.emptyList(),
+        Collections.emptyList(), null);
   }
 
   /** Executes a Solr query on the underlying table.
@@ -80,47 +79,80 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
    * @param query A string for the query
    * @return Enumerator of results
    */
-  public Enumerable<Object> query(final Properties properties, List<String> fields,
-                                  String query, List<String> order, String limit) {
+  private Enumerable<Object> query(final Properties properties, final List<String> fields,
+                                   final String query, final List<String> order, final List<String> buckets,
+                                   final List<Metric> metrics, final String limit) {
+    // SolrParams should be a ModifiableParams instead of a map
     Map<String, String> solrParams = new HashMap<>();
-    //solrParams.put(CommonParams.OMIT_HEADER, "true");
-    solrParams.put(CommonParams.Q, "*:*");
-    //solrParams.put(CommonParams.QT, "/export");
-
-    if (fields.isEmpty()) {
-      solrParams.put(CommonParams.FL, "*");
-    } else {
-      solrParams.put(CommonParams.FL, String.join(",", fields));
-    }
+    solrParams.put(CommonParams.OMIT_HEADER, "true");
 
     if (query == null) {
-      solrParams.put(CommonParams.FQ, "*:*");
+      solrParams.put(CommonParams.Q, DEFAULT_QUERY);
     } else {
-      // SolrParams should be a ModifiableParams instead of a map so we could add multiple FQs
-      solrParams.put(CommonParams.FQ, query);
+      solrParams.put(CommonParams.Q, DEFAULT_QUERY + " AND " + query);
     }
 
-    // Build and issue the query and return an Enumerator over the results
-    if (order.isEmpty()) {
-      solrParams.put(CommonParams.SORT, DEFAULT_SORT_FIELD + " desc");
+    // List<String> doesn't have add so must make a new ArrayList
+    List<String> fieldsList = new ArrayList<>(fields);
 
-      // Make sure the default sort field is in the field list
-      String fl = solrParams.get(CommonParams.FL);
-      if(!fl.contains(DEFAULT_SORT_FIELD)) {
-        solrParams.put(CommonParams.FL, String.join(",", fl, DEFAULT_SORT_FIELD));
+    if (order.isEmpty()) {
+      if(limit != null && Integer.parseInt(limit) > -1) {
+        solrParams.put(CommonParams.SORT, DEFAULT_SCORE_FIELD + " desc");
+
+        // Make sure the default score field is in the field list
+        if (!fieldsList.contains(DEFAULT_SCORE_FIELD)) {
+          fieldsList.add(DEFAULT_SCORE_FIELD);
+        }
+      } else {
+        solrParams.put(CommonParams.SORT, DEFAULT_VERSION_FIELD + " desc");
+
+        // Make sure the default sort field is in the field list
+        if (!fieldsList.contains(DEFAULT_VERSION_FIELD)) {
+          fieldsList.add(DEFAULT_VERSION_FIELD);
+        }
       }
     } else {
       solrParams.put(CommonParams.SORT, String.join(",", order));
     }
 
-    TupleStream tupleStream;
-    try {
-      String zk = properties.getProperty("zk");
-      tupleStream = new CloudSolrStream(zk, collection, solrParams);
-      if(limit != null) {
-        tupleStream = new LimitStream(tupleStream, Integer.parseInt(limit));
-      }
+    if (fieldsList.isEmpty()) {
+      solrParams.put(CommonParams.FL, "*");
+    } else {
+      solrParams.put(CommonParams.FL, String.join(",", fieldsList));
+    }
 
+    TupleStream tupleStream;
+    String zk = properties.getProperty("zk");
+    try {
+      if(metrics.isEmpty()) {
+        if (limit == null) {
+          solrParams.put(CommonParams.QT, "/export");
+          tupleStream = new CloudSolrStream(zk, collection, solrParams);
+        } else {
+          solrParams.put(CommonParams.ROWS, limit);
+          tupleStream = new LimitStream(new CloudSolrStream(zk, collection, solrParams), Integer.parseInt(limit));
+        }
+      } else {
+        Metric[] metricsArray = metrics.toArray(new Metric[metrics.size()]);
+        if(buckets.isEmpty()) {
+          solrParams.remove(CommonParams.FL);
+          solrParams.remove(CommonParams.SORT);
+          tupleStream = new StatsStream(zk, collection, solrParams, metricsArray);
+        } else {
+          List<Bucket> bucketsList = new ArrayList<>();
+          for(String bucket : buckets) {
+            bucketsList.add(new Bucket(bucket));
+          }
+
+          solrParams.put(CommonParams.QT, "/export");
+          for(Metric metric : metrics) {
+            fieldsList.remove(metric.getIdentifier());
+          }
+          solrParams.put(CommonParams.FL, String.join(",", fieldsList));
+          tupleStream = new CloudSolrStream(zk, collection, solrParams);
+          tupleStream = new RollupStream(tupleStream, bucketsList.toArray(new Bucket[bucketsList.size()]), metricsArray);
+        }
+      }
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -128,6 +160,7 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
     final TupleStream finalStream = tupleStream;
 
     return new AbstractEnumerable<Object>() {
+      // Use original fields list to make sure only the fields specified are enumerated
       public Enumerator<Object> enumerator() {
         return new SolrEnumerator(finalStream, fields);
       }
@@ -143,6 +176,7 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
     return new SolrTableScan(cluster, cluster.traitSetOf(SolrRel.CONVENTION), relOptTable, this, null);
   }
 
+  @SuppressWarnings("WeakerAccess")
   public static class SolrQueryable<T> extends AbstractTableQueryable<T> {
     SolrQueryable(QueryProvider queryProvider, SchemaPlus schema, SolrTable table, String tableName) {
       super(queryProvider, schema, table, tableName);
@@ -167,8 +201,9 @@ public class SolrTable extends AbstractQueryableTable implements TranslatableTab
      * @see SolrMethod#SOLR_QUERYABLE_QUERY
      */
     @SuppressWarnings("UnusedDeclaration")
-    public Enumerable<Object> query(List<String> fields, String query, List<String> order, String limit) {
-      return getTable().query(getProperties(), fields, query, order, limit);
+    public Enumerable<Object> query(List<String> fields, String query, List<String> order, List<String> buckets,
+                                    List<Metric> metrics, String limit) {
+      return getTable().query(getProperties(), fields, query, order, buckets, metrics, limit);
     }
   }
 }
