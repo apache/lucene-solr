@@ -68,8 +68,8 @@ interface SolrRel extends RelNode {
       this.buckets.addAll(buckets);
     }
 
-    void addMetrics(List<Pair<String, String>> metrics) {
-      this.metricPairs.addAll(metrics);
+    void addMetric(Pair<String, String> metricPair) {
+      this.metricPairs.add(metricPair);
     }
 
     void setLimit(String limit) {

@@ -67,36 +67,40 @@ class SolrAggregate extends Aggregate implements SolrRel {
     final List<String> inNames = SolrRules.solrFieldNames(getInput().getRowType());
     final List<String> outNames = SolrRules.solrFieldNames(getRowType());
 
-    List<Pair<String, String>> metrics = new ArrayList<>();
     Map<String, String> fieldMappings = new HashMap<>();
     for(AggregateCall aggCall : aggCalls) {
-      Pair<String, String> metric = toSolrMetric(aggCall.getAggregation(), inNames, aggCall.getArgList());
-      metrics.add(metric);
+      Pair<String, String> metric = toSolrMetric(implementor, aggCall, inNames);
+      implementor.addMetric(metric);
       fieldMappings.put(aggCall.getName(), metric.getKey().toLowerCase(Locale.ROOT) + "(" + metric.getValue() + ")");
     }
 
     List<String> buckets = new ArrayList<>();
     for(int group : groupSet) {
-      final String inName = inNames.get(group);
-      buckets.add(inName);
-      fieldMappings.put(inName, inName);
+      String inName = inNames.get(group);
+      String name = implementor.fieldMappings.getOrDefault(inName, inName);
+      buckets.add(name);
+      if(!fieldMappings.containsKey(name)) {
+        fieldMappings.put(name, name);
+      }
     }
 
     implementor.addBuckets(buckets);
-    implementor.addMetrics(metrics);
     implementor.addFieldMappings(fieldMappings);
   }
 
-  private Pair<String, String> toSolrMetric(SqlAggFunction aggregation, List<String> inNames, List<Integer> args) {
+  private Pair<String, String> toSolrMetric(Implementor implementor, AggregateCall aggCall, List<String> inNames) {
+    SqlAggFunction aggregation = aggCall.getAggregation();
+    List<Integer> args = aggCall.getArgList();
     switch (args.size()) {
       case 0:
         if (aggregation.equals(SqlStdOperatorTable.COUNT)) {
           return new Pair<>(aggregation.getName(), "*");
         }
       case 1:
-        final String inName = inNames.get(args.get(0));
+        String inName = inNames.get(args.get(0));
+        String name = implementor.fieldMappings.getOrDefault(inName, inName);
         if(SUPPORTED_AGGREGATIONS.contains(aggregation)) {
-          return new Pair<>(aggregation.getName(), inName);
+          return new Pair<>(aggregation.getName(), name);
         }
       default:
         throw new AssertionError("Invalid aggregation " + aggregation + " with args " + args + " with names" + inNames);

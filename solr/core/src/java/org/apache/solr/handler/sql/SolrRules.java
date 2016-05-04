@@ -29,12 +29,15 @@ import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalFilter;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexVisitorImpl;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 
 import java.util.AbstractList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -80,6 +83,24 @@ class SolrRules {
     @Override
     public String visitInputRef(RexInputRef inputRef) {
       return inFields.get(inputRef.getIndex());
+    }
+
+    @Override
+    public String visitCall(RexCall call) {
+      final List<String> strings = visitList(call.operands);
+      if (call.getKind() == SqlKind.CAST) {
+        return strings.get(0);
+      }
+
+      return super.visitCall(call);
+    }
+
+    private List<String> visitList(List<RexNode> list) {
+      final List<String> strings = new ArrayList<>();
+      for (RexNode node : list) {
+        strings.add(node.accept(this));
+      }
+      return strings;
     }
   }
 
