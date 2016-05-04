@@ -815,15 +815,15 @@ public class HttpSolrCall {
   private void getSlicesForCollections(ClusterState clusterState,
                                        Collection<Slice> slices, boolean activeSlices) {
     if (activeSlices) {
-      for (String collection : clusterState.getCollections()) {
-        final Collection<Slice> activeCollectionSlices = clusterState.getActiveSlices(collection);
+      for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
+        final Collection<Slice> activeCollectionSlices = entry.getValue().getActiveSlices();
         if (activeCollectionSlices != null) {
           slices.addAll(activeCollectionSlices);
         }
       }
     } else {
-      for (String collection : clusterState.getCollections()) {
-        final Collection<Slice> collectionSlices = clusterState.getSlices(collection);
+      for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
+        final Collection<Slice> collectionSlices = entry.getValue().getSlices();
         if (collectionSlices != null) {
           slices.addAll(collectionSlices);
         }

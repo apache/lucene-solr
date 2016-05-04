@@ -478,7 +478,7 @@ public class JdbcTest extends SolrCloudTestCase {
       }
 
       List<String> collections = new ArrayList<>();
-      collections.addAll(cluster.getSolrClient().getZkStateReader().getClusterState().getCollections());
+      collections.addAll(cluster.getSolrClient().getZkStateReader().getClusterState().getCollectionsMap().keySet());
       Collections.sort(collections);
 
       try(ResultSet rs = databaseMetaData.getSchemas()) {
