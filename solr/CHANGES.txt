@@ -245,6 +245,8 @@ Other Changes
 
 * SOLR-9066 Make CountMetric return long instead of double (Kevin Risden)
 
+* SOLR-9065: Migrate SolrJ distributed tests to SolrCloudTestCase. (Alan Woodward)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
