@@ -1353,7 +1353,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     if (slices == null) {
       throw new RuntimeException("Could not find collection "
-          + DEFAULT_COLLECTION + " in " + clusterState.getCollections());
+          + DEFAULT_COLLECTION + " in " + clusterState.getCollectionsMap().keySet());
     }
 
     for (CloudJettyRunner cjetty : cloudJettys) {
@@ -1920,9 +1920,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     if (collection != null) {
       cs = clusterState.getCollection(collection).toString();
     } else {
-      Map<String,DocCollection> map = new HashMap<>();
-      for (String coll : clusterState.getCollections())
-        map.put(coll, clusterState.getCollection(coll));
+      Map<String,DocCollection> map = clusterState.getCollectionsMap();
       CharArr out = new CharArr();
       new JSONWriter(out, 2).write(map);
       cs = out.toString();

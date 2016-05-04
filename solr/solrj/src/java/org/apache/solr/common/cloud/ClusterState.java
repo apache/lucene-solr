@@ -218,12 +218,36 @@ public class ClusterState implements JSONWriter.Writable {
    * {@link CollectionRef#get()} which can make a call to ZooKeeper. This is necessary
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
    * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
+   *
+   * @deprecated use {@link #getCollectionsMap()} to avoid a second lookup for lazy collections
    */
+  @Deprecated
   public Set<String> getCollections() {
     Set<String> result = new HashSet<>();
     for (Entry<String, CollectionRef> entry : collectionStates.entrySet()) {
       if (entry.getValue().get() != null) {
         result.add(entry.getKey());
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Get a map of collection name vs DocCollection objects
+   *
+   * Implementation note: This method resolves the collection reference by calling
+   * {@link CollectionRef#get()} which can make a call to ZooKeeper. This is necessary
+   * because the semantics of how collection list is loaded have changed in SOLR-6629.
+   * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
+   *
+   * @return
+   */
+  public Map<String, DocCollection> getCollectionsMap()  {
+    Map<String, DocCollection> result = new HashMap<>(collectionStates.size());
+    for (Entry<String, CollectionRef> entry : collectionStates.entrySet()) {
+      DocCollection collection = entry.getValue().get();
+      if (collection != null) {
+        result.put(entry.getKey(), collection);
       }
     }
     return result;

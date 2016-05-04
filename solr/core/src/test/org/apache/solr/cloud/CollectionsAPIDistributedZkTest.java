@@ -1087,7 +1087,7 @@ public class CollectionsAPIDistributedZkTest extends AbstractFullDistribZkTestBa
       }
     } else {
       throw new IllegalArgumentException("Could not find collection in :"
-          + clusterState.getCollections());
+          + clusterState.getCollectionsMap());
     }
   }
 

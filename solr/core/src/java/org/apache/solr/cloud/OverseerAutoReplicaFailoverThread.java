@@ -162,10 +162,10 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
 
       liveNodes = clusterState.getLiveNodes();
       lastClusterStateVersion = clusterState.getZkClusterStateVersion();
-      Set<String> collections = clusterState.getCollections();
-      for (final String collection : collections) {
-        log.debug("look at collection={}", collection);
-        DocCollection docCollection = clusterState.getCollection(collection);
+      Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+      for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+        log.debug("look at collection={}", entry.getKey());
+        DocCollection docCollection = entry.getValue();
         if (!docCollection.getAutoAddReplicas()) {
           log.debug("Collection {} is not setup to use autoAddReplicas, skipping..", docCollection.getName());
           continue;
@@ -174,7 +174,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
           log.debug("Skipping collection because it has no defined replicationFactor, name={}", docCollection.getName());
           continue;
         }
-        log.debug("Found collection, name={} replicationFactor={}", collection, docCollection.getReplicationFactor());
+        log.debug("Found collection, name={} replicationFactor={}", entry.getKey(), docCollection.getReplicationFactor());
         
         Collection<Slice> slices = docCollection.getSlices();
         for (Slice slice : slices) {
@@ -188,7 +188,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
             
             if (downReplicas.size() > 0 && goodReplicas < docCollection.getReplicationFactor()) {
               // badReplicaMap.put(collection, badReplicas);
-              processBadReplicas(collection, downReplicas);
+              processBadReplicas(entry.getKey(), downReplicas);
             } else if (goodReplicas > docCollection.getReplicationFactor()) {
               log.debug("There are too many replicas");
             }
@@ -313,10 +313,11 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
     
     ClusterState clusterState = zkStateReader.getClusterState();
     if (clusterState != null) {
-      Set<String> collections = clusterState.getCollections();
-      for (String collection : collections) {
-        log.debug("look at collection {} as possible create candidate", collection); 
-        DocCollection docCollection = clusterState.getCollection(collection);
+      Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+      for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+        String collection = entry.getKey();
+        log.debug("look at collection {} as possible create candidate", collection);
+        DocCollection docCollection = entry.getValue();
         // TODO - only operate on collections with sharedfs failover = true ??
         Collection<Slice> slices = docCollection.getSlices();
         for (Slice slice : slices) {
