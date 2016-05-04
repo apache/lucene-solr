@@ -55,7 +55,6 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
-import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RTimerTree;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
@@ -561,21 +560,18 @@ public class SolrRequestParsers
       upload.setSizeMax( ((long) uploadLimitKB) * 1024L );
 
       // Parse the request
-      List items = upload.parseRequest(req);
-      Iterator iter = items.iterator();
-      while (iter.hasNext()) {
-          FileItem item = (FileItem) iter.next();
-
-          // If it's a form field, put it in our parameter map
-          if (item.isFormField()) {
-            MultiMapSolrParams.addParam( 
-              item.getFieldName().trim(),
-              item.getString(), params.getMap() );
-          }
-          // Add the stream
-          else { 
-            streams.add( new FileItemContentStream( item ) );
-          }
+      List<FileItem> items = upload.parseRequest(req);
+      for (FileItem item : items) {
+        // If it's a form field, put it in our parameter map
+        if (item.isFormField()) {
+          MultiMapSolrParams.addParam(
+            item.getFieldName().trim(),
+            item.getString(), params.getMap() );
+        }
+        // Add the stream
+        else {
+          streams.add( new FileItemContentStream( item ) );
+        }
       }
       return params;
     }
