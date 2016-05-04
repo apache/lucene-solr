@@ -18,16 +18,19 @@ package org.apache.lucene.index;
 
 
 import java.io.PrintStream;
+import java.util.EnumSet;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.PrintStreamInfoStream;
-import org.apache.lucene.util.SetOnce;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
+import org.apache.lucene.util.SetOnce;
 
 /**
  * Holds all the configuration that is used to create an {@link IndexWriter}.
@@ -436,6 +439,27 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    */
   public IndexWriterConfig setCommitOnClose(boolean commitOnClose) {
     this.commitOnClose = commitOnClose;
+    return this;
+  }
+
+  /** We only allow sorting on these types */
+  private static final EnumSet<SortField.Type> ALLOWED_INDEX_SORT_TYPES = EnumSet.of(SortField.Type.STRING,
+                                                                                     SortField.Type.INT,
+                                                                                     SortField.Type.FLOAT,
+                                                                                     SortField.Type.LONG,
+                                                                                     SortField.Type.DOUBLE,
+                                                                                     SortField.Type.BYTES);
+
+  /**
+   * Set the {@link Sort} order to use when merging segments.  Note that newly flushed segments will remain unsorted.
+   */
+  public IndexWriterConfig setIndexSort(Sort sort) {
+    for(SortField sortField : sort.getSort()) {
+      if (ALLOWED_INDEX_SORT_TYPES.contains(sortField.getType()) == false) {
+        throw new IllegalArgumentException("invalid SortField type: must be one of " + ALLOWED_INDEX_SORT_TYPES + " but got: " + sortField);
+      }
+    }
+    this.indexSort = sort;
     return this;
   }
 
