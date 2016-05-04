@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.stream.metrics;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.UUID;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -26,19 +25,16 @@ import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public abstract class Metric implements Serializable, Expressible {
-  
-  private static final long serialVersionUID = 1L;
+public abstract class Metric implements Expressible {
+
   private UUID metricNodeId = UUID.randomUUID();
   private String functionName;
   private String identifier;
-  
-//  @Override
+
   public String getFunctionName(){
     return functionName;
   }
-  
-//  @Override
+
   public void setFunctionName(String functionName){
     this.functionName = functionName;
   }
@@ -59,7 +55,7 @@ public abstract class Metric implements Serializable, Expressible {
   
   @Override
   public Explanation toExplanation(StreamFactory factory) throws IOException {
-    return new Explanation(metricNodeId.toString())
+    return new Explanation(getMetricNodeId().toString())
       .withFunctionName(functionName)
       .withImplementingClass(getClass().getName())
       .withExpression(toExpression(factory).toString())
@@ -70,7 +66,7 @@ public abstract class Metric implements Serializable, Expressible {
     return metricNodeId;
   }
   
-  public abstract double getValue();
+  public abstract Number getValue();
   public abstract void update(Tuple tuple);
   public abstract Metric newInstance();
   public abstract String[] getColumns();
