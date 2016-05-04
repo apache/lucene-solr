@@ -181,6 +181,9 @@ Bug Fixes
 
 * SOLR-9064: Adds an explanation of the incoming stream to an UpdateStream's explanation (Dennis Gove)
 
+* SOLR-9030: The 'downnode' overseer command can trip asserts in ZkStateWriter.
+  (Scott Blum, Mark Miller, shalin)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
