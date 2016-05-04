@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.io.stream.metrics;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Locale;
 
 import org.apache.solr.client.solrj.io.Tuple;
@@ -25,10 +24,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
-public class SumMetric extends Metric implements Serializable {
-
-  private static final long serialVersionUID = 1;
-
+public class SumMetric extends Metric {
   private String columnName;
   private double doubleSum;
   private long longSum;
@@ -36,6 +32,7 @@ public class SumMetric extends Metric implements Serializable {
   public SumMetric(String columnName){
     init("sum", columnName);
   }
+
   public SumMetric(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String functionName = expression.getFunctionName();
@@ -59,18 +56,17 @@ public class SumMetric extends Metric implements Serializable {
   }
 
   public String[] getColumns() {
-    String[] cols =  {columnName};
-    return cols;
+    return new String[]{columnName};
   }
 
   public void update(Tuple tuple) {
     Object o = tuple.get(columnName);
     if(o instanceof Double) {
       Double d = (Double)o;
-      doubleSum += d.doubleValue();
+      doubleSum += d;
     } else {
       Long l = (Long)o;
-      longSum += l.longValue();
+      longSum += l;
     }
   }
 
@@ -78,11 +74,11 @@ public class SumMetric extends Metric implements Serializable {
     return new SumMetric(columnName);
   }
 
-  public double getValue() {
+  public Number getValue() {
     if(longSum == 0) {
       return doubleSum;
     } else {
-      return (double)longSum;
+      return longSum;
     }
   }
   
