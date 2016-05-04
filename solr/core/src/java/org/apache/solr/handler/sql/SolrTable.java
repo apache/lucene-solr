@@ -27,13 +27,14 @@ import org.apache.calcite.rel.type.RelProtoDataType;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.schema.impl.AbstractTableQueryable;
+import org.apache.calcite.util.Pair;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.RollupStream;
 import org.apache.solr.client.solrj.io.stream.StatsStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
-import org.apache.solr.client.solrj.io.stream.metrics.Metric;
+import org.apache.solr.client.solrj.io.stream.metrics.*;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.update.VersionInfo;
 
 import java.io.IOException;
 import java.util.*;
@@ -43,7 +44,7 @@ import java.util.*;
  */
 class SolrTable extends AbstractQueryableTable implements TranslatableTable {
   private static final String DEFAULT_QUERY = "*:*";
-  private static final String DEFAULT_VERSION_FIELD = "_version_";
+  private static final String DEFAULT_VERSION_FIELD = VersionInfo.VERSION_FIELD;
   private static final String DEFAULT_SCORE_FIELD = "score";
 
   private final String collection;
@@ -81,7 +82,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
    */
   private Enumerable<Object> query(final Properties properties, final List<String> fields,
                                    final String query, final List<String> order, final List<String> buckets,
-                                   final List<Metric> metrics, final String limit) {
+                                   final List<Pair<String, String>> metricPairs, final String limit) {
     // SolrParams should be a ModifiableParams instead of a map
     Map<String, String> solrParams = new HashMap<>();
     solrParams.put(CommonParams.OMIT_HEADER, "true");
@@ -96,9 +97,19 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     List<String> fieldsList = new ArrayList<>(fields);
     List<String> orderList = new ArrayList<>(order);
 
+    List<Metric> metrics = buildMetrics(metricPairs);
+
     if (!metrics.isEmpty()) {
       for(String bucket : buckets) {
         orderList.add(bucket + " desc");
+      }
+
+      for(Metric metric : metrics) {
+        for(String column : metric.getColumns()) {
+          if (!fieldsList.contains(column)) {
+            fieldsList.add(column);
+          }
+        }
       }
     }
 
@@ -174,6 +185,32 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     };
   }
 
+  private List<Metric> buildMetrics(List<Pair<String, String>> metricPairs) {
+    List<Metric> metrics = new ArrayList<>(metricPairs.size());
+    for(Pair<String, String> metricPair : metricPairs) {
+      metrics.add(getMetric(metricPair));
+    }
+    return metrics;
+  }
+
+  private Metric getMetric(Pair<String, String> metricPair) {
+    switch (metricPair.getKey()) {
+      case "COUNT":
+        return new CountMetric(metricPair.getValue());
+      case "SUM":
+      case "$SUM0":
+        return new SumMetric(metricPair.getValue());
+      case "MIN":
+        return new MinMetric(metricPair.getValue());
+      case "MAX":
+        return new MaxMetric(metricPair.getValue());
+      case "AVG":
+        return new MeanMetric(metricPair.getValue());
+      default:
+        throw new IllegalArgumentException(metricPair.getKey());
+    }
+  }
+
   public <T> Queryable<T> asQueryable(QueryProvider queryProvider, SchemaPlus schema, String tableName) {
     return new SolrQueryable<>(queryProvider, schema, this, tableName);
   }
@@ -190,7 +227,7 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     }
 
     public Enumerator<T> enumerator() {
-      //noinspection unchecked
+      @SuppressWarnings("unchecked")
       final Enumerable<T> enumerable = (Enumerable<T>) getTable().query(getProperties());
       return enumerable.enumerator();
     }
@@ -209,8 +246,8 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
      */
     @SuppressWarnings("UnusedDeclaration")
     public Enumerable<Object> query(List<String> fields, String query, List<String> order, List<String> buckets,
-                                    List<Metric> metrics, String limit) {
-      return getTable().query(getProperties(), fields, query, order, buckets, metrics, limit);
+                                    List<Pair<String, String>> metricPairs, String limit) {
+      return getTable().query(getProperties(), fields, query, order, buckets, metricPairs, limit);
     }
   }
 }

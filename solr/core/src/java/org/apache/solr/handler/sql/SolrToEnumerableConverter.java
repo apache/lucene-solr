@@ -23,14 +23,13 @@ import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.linq4j.tree.MethodCallExpression;
 import org.apache.calcite.plan.*;
-import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.convert.ConverterImpl;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.util.BuiltInMethod;
-import org.apache.solr.client.solrj.io.stream.metrics.Metric;
+import org.apache.calcite.util.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +54,7 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
   }
 
   public Result implement(EnumerableRelImplementor implementor, Prefer pref) {
-    // Generates a call to "query" with the appropriate fields and filterQueries
+    // Generates a call to "query" with the appropriate fields
     final BlockBuilder list = new BlockBuilder();
     final SolrRel.Implementor solrImplementor = new SolrRel.Implementor();
     solrImplementor.visitChild(0, getInput());
@@ -64,17 +63,14 @@ class SolrToEnumerableConverter extends ConverterImpl implements EnumerableRel {
     final Expression table = list.append("table", solrImplementor.table.getExpression(SolrTable.SolrQueryable.class));
     final Expression fields = list.append("fields",
         constantArrayList(generateFields(SolrRules.solrFieldNames(rowType), solrImplementor.fieldMappings), String.class));
-    final Expression filterQueries = list.append("query", Expressions.constant(solrImplementor.query, String.class));
+    final Expression query = list.append("query", Expressions.constant(solrImplementor.query, String.class));
     final Expression order = list.append("order", constantArrayList(solrImplementor.order, String.class));
     final Expression buckets = list.append("buckets", constantArrayList(solrImplementor.buckets, String.class));
-    final Expression metrics = list.append("metrics", constantArrayList(solrImplementor.metrics, Metric.class));
+    final Expression metricPairs = list.append("metricPairs", constantArrayList(solrImplementor.metricPairs, Pair.class));
     final Expression limit = list.append("limit", Expressions.constant(solrImplementor.limitValue));
     Expression enumerable = list.append("enumerable", Expressions.call(table, SolrMethod.SOLR_QUERYABLE_QUERY.method,
-        fields, filterQueries, order, buckets, metrics, limit));
-    if (CalcitePrepareImpl.DEBUG) {
-      System.out.println("Solr: " + filterQueries);
-    }
-    Hook.QUERY_PLAN.run(filterQueries);
+        fields, query, order, buckets, metricPairs, limit));
+    Hook.QUERY_PLAN.run(query);
     list.add(Expressions.return_(null, enumerable));
     return implementor.result(physType, list.toBlock());
   }

@@ -30,7 +30,9 @@ import java.util.Properties;
  * <p>It accepts connect strings that start with "jdbc:calcitesolr:".</p>
  */
 public class CalciteSolrDriver extends Driver {
-  protected CalciteSolrDriver() {
+  public final static String CONNECT_STRING_PREFIX = "jdbc:calcitesolr:";
+
+  private CalciteSolrDriver() {
     super();
   }
 
@@ -38,10 +40,10 @@ public class CalciteSolrDriver extends Driver {
     new CalciteSolrDriver().register();
   }
 
+  @Override
   protected String getConnectStringPrefix() {
-    return "jdbc:calcitesolr:";
+    return CONNECT_STRING_PREFIX;
   }
-
 
   @Override
   public Connection connect(String url, Properties info) throws SQLException {

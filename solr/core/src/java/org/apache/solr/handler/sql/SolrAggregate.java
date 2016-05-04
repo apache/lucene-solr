@@ -24,7 +24,7 @@ import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.ImmutableBitSet;
-import org.apache.solr.client.solrj.io.stream.metrics.*;
+import org.apache.calcite.util.Pair;
 
 import java.util.*;
 
@@ -32,6 +32,15 @@ import java.util.*;
  * Implementation of {@link org.apache.calcite.rel.core.Aggregate} relational expression in Solr.
  */
 class SolrAggregate extends Aggregate implements SolrRel {
+  private static final List<SqlAggFunction> SUPPORTED_AGGREGATIONS = Arrays.asList(
+      SqlStdOperatorTable.COUNT,
+      SqlStdOperatorTable.SUM,
+      SqlStdOperatorTable.SUM0,
+      SqlStdOperatorTable.MIN,
+      SqlStdOperatorTable.MAX,
+      SqlStdOperatorTable.AVG
+  );
+
   SolrAggregate(
       RelOptCluster cluster,
       RelTraitSet traitSet,
@@ -58,12 +67,12 @@ class SolrAggregate extends Aggregate implements SolrRel {
     final List<String> inNames = SolrRules.solrFieldNames(getInput().getRowType());
     final List<String> outNames = SolrRules.solrFieldNames(getRowType());
 
-    List<Metric> metrics = new ArrayList<>();
+    List<Pair<String, String>> metrics = new ArrayList<>();
     Map<String, String> fieldMappings = new HashMap<>();
     for(AggregateCall aggCall : aggCalls) {
-      Metric metric = toSolrMetric(aggCall.getAggregation(), inNames, aggCall.getArgList());
+      Pair<String, String> metric = toSolrMetric(aggCall.getAggregation(), inNames, aggCall.getArgList());
       metrics.add(metric);
-      fieldMappings.put(aggCall.getName(), metric.getIdentifier());
+      fieldMappings.put(aggCall.getName(), metric.getKey().toLowerCase(Locale.ROOT) + "(" + metric.getValue() + ")");
     }
 
     List<String> buckets = new ArrayList<>();
@@ -78,22 +87,16 @@ class SolrAggregate extends Aggregate implements SolrRel {
     implementor.addFieldMappings(fieldMappings);
   }
 
-  private Metric toSolrMetric(SqlAggFunction aggregation, List<String> inNames, List<Integer> args) {
+  private Pair<String, String> toSolrMetric(SqlAggFunction aggregation, List<String> inNames, List<Integer> args) {
     switch (args.size()) {
       case 0:
-        if(aggregation.equals(SqlStdOperatorTable.COUNT)) {
-          return new CountMetric();
+        if (aggregation.equals(SqlStdOperatorTable.COUNT)) {
+          return new Pair<>(aggregation.getName(), "*");
         }
       case 1:
         final String inName = inNames.get(args.get(0));
-        if (aggregation.equals(SqlStdOperatorTable.SUM) || aggregation.equals(SqlStdOperatorTable.SUM0)) {
-          return new SumMetric(inName);
-        } else if (aggregation.equals(SqlStdOperatorTable.MIN)) {
-          return new MinMetric(inName);
-        } else if (aggregation.equals(SqlStdOperatorTable.MAX)) {
-          return new MaxMetric(inName);
-        } else if (aggregation.equals(SqlStdOperatorTable.AVG)) {
-          return new MeanMetric(inName);
+        if(SUPPORTED_AGGREGATIONS.contains(aggregation)) {
+          return new Pair<>(aggregation.getName(), inName);
         }
       default:
         throw new AssertionError("Invalid aggregation " + aggregation + " with args " + args + " with names" + inNames);

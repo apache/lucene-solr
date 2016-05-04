@@ -19,7 +19,7 @@ package org.apache.solr.handler.sql;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
-import org.apache.solr.client.solrj.io.stream.metrics.Metric;
+import org.apache.calcite.util.Pair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,7 +42,7 @@ interface SolrRel extends RelNode {
     String limitValue = null;
     final List<String> order = new ArrayList<>();
     final List<String> buckets = new ArrayList<>();
-    final List<Metric> metrics = new ArrayList<>();
+    final List<Pair<String, String>> metricPairs = new ArrayList<>();
 
     RelOptTable table;
     SolrTable solrTable;
@@ -68,8 +68,8 @@ interface SolrRel extends RelNode {
       this.buckets.addAll(buckets);
     }
 
-    void addMetrics(List<Metric> metrics) {
-      this.metrics.addAll(metrics);
+    void addMetrics(List<Pair<String, String>> metrics) {
+      this.metricPairs.addAll(metrics);
     }
 
     void setLimit(String limit) {
