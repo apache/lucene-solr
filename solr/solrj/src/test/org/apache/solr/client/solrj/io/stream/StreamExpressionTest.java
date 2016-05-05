@@ -482,13 +482,12 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   @Test
   public void testRandomStream() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
-        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
-        .commit(cluster.getSolrClient(), COLLECTION);
+    UpdateRequest update = new UpdateRequest();
+    for(int idx = 0; idx < 1000; ++idx){
+      String idxString = new Integer(idx).toString();
+      update.add(id,idxString, "a_s", "hello" + idxString, "a_i", idxString, "a_f", idxString);
+    }
+    update.commit(cluster.getSolrClient(), COLLECTION);
 
     StreamExpression expression;
     TupleStream stream;
@@ -503,17 +502,17 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     try {
       context.setSolrClientCache(cache);
 
-      expression = StreamExpressionParser.parse("random(" + COLLECTION + ", q=\"*:*\", rows=\"10\", fl=\"id, a_i\")");
+      expression = StreamExpressionParser.parse("random(" + COLLECTION + ", q=\"*:*\", rows=\"1000\", fl=\"id, a_i\")");
       stream = factory.constructStream(expression);
       stream.setStreamContext(context);
       List<Tuple> tuples1 = getTuples(stream);
-      assert (tuples1.size() == 5);
+      assert (tuples1.size() == 1000);
 
-      expression = StreamExpressionParser.parse("random(" + COLLECTION + ", q=\"*:*\", rows=\"10\", fl=\"id, a_i\")");
+      expression = StreamExpressionParser.parse("random(" + COLLECTION + ", q=\"*:*\", rows=\"1000\", fl=\"id, a_i\")");
       stream = factory.constructStream(expression);
       stream.setStreamContext(context);
       List<Tuple> tuples2 = getTuples(stream);
-      assert (tuples2.size() == 5);
+      assert (tuples2.size() == 1000);
 
       boolean different = false;
       for (int i = 0; i < tuples1.size(); i++) {
