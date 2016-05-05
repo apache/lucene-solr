@@ -815,11 +815,9 @@ class GeoComplexPolygon extends GeoBasePolygon {
     private boolean isSecondLeg = false;
     
     private final Plane testPointPlane;
-    private final Plane testPointInsidePlane;
-    private final Plane testPointOutsidePlane;
+    private final Plane testPointAbovePlane;
+    private final Plane testPointBelowPlane;
     private final Plane travelPlane;
-    private final Plane travelInsidePlane;
-    private final Plane travelOutsidePlane;
     private final Vector thePoint;
     
     private final GeoPoint intersectionPoint;
@@ -829,14 +827,25 @@ class GeoComplexPolygon extends GeoBasePolygon {
     private final SidedPlane testPointOtherCutoffPlane;
     private final SidedPlane checkPointOtherCutoffPlane;
 
-    private final SidedPlane insideTestPointCutoffPlane;
-    private final SidedPlane insideTravelCutoffPlane;
+    // These are computed on an as-needed basis
+    
+    private boolean computedInsideOutside = false;
+    private Plane testPointInsidePlane;
+    private Plane testPointOutsidePlane;
+    private Plane travelInsidePlane;
+    private Plane travelOutsidePlane;
+    private SidedPlane insideTestPointCutoffPlane;
+    private SidedPlane insideTravelCutoffPlane;
+    
+    // The counter
     
     public int crossingCount = 0;
 
     public DualCrossingEdgeIterator(final Plane testPointPlane, final Plane testPointAbovePlane, final Plane testPointBelowPlane,
       final Plane travelPlane, final Vector testPoint, final Vector thePoint, final GeoPoint intersectionPoint) {
       this.testPointPlane = testPointPlane;
+      this.testPointAbovePlane = testPointAbovePlane;
+      this.testPointBelowPlane = testPointBelowPlane;
       this.travelPlane = travelPlane;
       this.thePoint = thePoint;
       this.intersectionPoint = intersectionPoint;
@@ -854,66 +863,67 @@ class GeoComplexPolygon extends GeoBasePolygon {
       this.testPointOtherCutoffPlane = new SidedPlane(testPoint, testPointPlane, intersectionPoint);
       this.checkPointOtherCutoffPlane = new SidedPlane(thePoint, travelPlane, intersectionPoint);
 
-      // Convert travel plane to a sided plane
-      final Membership intersectionBound1 = new SidedPlane(testPoint, travelPlane, travelPlane.D);
-      // Convert testPoint plane to a sided plane
-      final Membership intersectionBound2 = new SidedPlane(thePoint, testPointPlane, testPointPlane.D);
-
       // Sanity check
       assert testPointCutoffPlane.isWithin(intersectionPoint) : "intersection must be within testPointCutoffPlane";
       assert testPointOtherCutoffPlane.isWithin(intersectionPoint) : "intersection must be within testPointOtherCutoffPlane";
       assert checkPointCutoffPlane.isWithin(intersectionPoint) : "intersection must be within checkPointCutoffPlane";
       assert checkPointOtherCutoffPlane.isWithin(intersectionPoint) : "intersection must be within checkPointOtherCutoffPlane";
-      assert intersectionBound1.isWithin(intersectionPoint) : "intersection must be within intersectionBound1";
-      assert intersectionBound2.isWithin(intersectionPoint) : "intersection must be within intersectionBound2";
-
-      // Figure out which of the above/below planes are inside vs. outside.  To do this,
-      // we look for the point that is within the bounds of the testPointPlane and travelPlane.  The two sides that intersected there are the inside
-      // borders.
-      final Plane travelAbovePlane = new Plane(travelPlane, true);
-      final Plane travelBelowPlane = new Plane(travelPlane, false);
       
-      final GeoPoint[] aboveAbove = travelAbovePlane.findIntersections(planetModel, testPointAbovePlane, intersectionBound1, intersectionBound2);
-      assert aboveAbove != null : "Above + above should not be coplanar";
-      final GeoPoint[] aboveBelow = travelAbovePlane.findIntersections(planetModel, testPointBelowPlane, intersectionBound1, intersectionBound2);
-      assert aboveBelow != null : "Above + below should not be coplanar";
-      final GeoPoint[] belowBelow = travelBelowPlane.findIntersections(planetModel, testPointBelowPlane, intersectionBound1, intersectionBound2);
-      assert belowBelow != null : "Below + below should not be coplanar";
-      final GeoPoint[] belowAbove = travelBelowPlane.findIntersections(planetModel, testPointAbovePlane, intersectionBound1, intersectionBound2);
-      assert belowAbove != null : "Below + above should not be coplanar";
+    }
+    
+    protected void computeInsideOutside() {
+      if (!computedInsideOutside) {
+        // Convert travel plane to a sided plane
+        final Membership intersectionBound1 = new SidedPlane(testPoint, travelPlane, travelPlane.D);
+        // Convert testPoint plane to a sided plane
+        final Membership intersectionBound2 = new SidedPlane(thePoint, testPointPlane, testPointPlane.D);
 
-      assert ((aboveAbove.length > 0)?1:0) + ((aboveBelow.length > 0)?1:0) + ((belowBelow.length > 0)?1:0) + ((belowAbove.length > 0)?1:0) == 1 : "Can be exactly one inside point, instead was: aa="+aboveAbove.length+" ab=" + aboveBelow.length+" bb="+ belowBelow.length+" ba=" + belowAbove.length;
-      
-      final GeoPoint insideIntersection;
-      if (aboveAbove.length > 0) {
-        travelInsidePlane = travelAbovePlane;
-        testPointInsidePlane = testPointAbovePlane;
-        travelOutsidePlane = travelBelowPlane;
-        testPointOutsidePlane = testPointBelowPlane;
-        insideIntersection = aboveAbove[0];
-      } else if (aboveBelow.length > 0) {
-        travelInsidePlane = travelAbovePlane;
-        testPointInsidePlane = testPointBelowPlane;
-        travelOutsidePlane = travelBelowPlane;
-        testPointOutsidePlane = testPointAbovePlane;
-        insideIntersection = aboveBelow[0];
-      } else if (belowBelow.length > 0) {
-        travelInsidePlane = travelBelowPlane;
-        testPointInsidePlane = testPointBelowPlane;
-        travelOutsidePlane = travelAbovePlane;
-        testPointOutsidePlane = testPointAbovePlane;
-        insideIntersection = belowBelow[0];
-      } else {
-        travelInsidePlane = travelBelowPlane;
-        testPointInsidePlane = testPointAbovePlane;
-        travelOutsidePlane = travelAbovePlane;
-        testPointOutsidePlane = testPointBelowPlane;
-        insideIntersection = belowAbove[0];
+        assert intersectionBound1.isWithin(intersectionPoint) : "intersection must be within intersectionBound1";
+        assert intersectionBound2.isWithin(intersectionPoint) : "intersection must be within intersectionBound2";
+
+        // Figure out which of the above/below planes are inside vs. outside.  To do this,
+        // we look for the point that is within the bounds of the testPointPlane and travelPlane.  The two sides that intersected there are the inside
+        // borders.
+        final Plane travelAbovePlane = new Plane(travelPlane, true);
+        final Plane travelBelowPlane = new Plane(travelPlane, false);
+        
+        final GeoPoint[] aboveAbove = travelAbovePlane.findIntersections(planetModel, testPointAbovePlane, intersectionBound1, intersectionBound2);
+        assert aboveAbove != null : "Above + above should not be coplanar";
+        final GeoPoint[] aboveBelow = travelAbovePlane.findIntersections(planetModel, testPointBelowPlane, intersectionBound1, intersectionBound2);
+        assert aboveBelow != null : "Above + below should not be coplanar";
+        final GeoPoint[] belowBelow = travelBelowPlane.findIntersections(planetModel, testPointBelowPlane, intersectionBound1, intersectionBound2);
+        assert belowBelow != null : "Below + below should not be coplanar";
+        final GeoPoint[] belowAbove = travelBelowPlane.findIntersections(planetModel, testPointAbovePlane, intersectionBound1, intersectionBound2);
+        assert belowAbove != null : "Below + above should not be coplanar";
+
+        assert ((aboveAbove.length > 0)?1:0) + ((aboveBelow.length > 0)?1:0) + ((belowBelow.length > 0)?1:0) + ((belowAbove.length > 0)?1:0) == 1 : "Can be exactly one inside point, instead was: aa="+aboveAbove.length+" ab=" + aboveBelow.length+" bb="+ belowBelow.length+" ba=" + belowAbove.length;
+        
+        if (aboveAbove.length > 0) {
+          travelInsidePlane = travelAbovePlane;
+          testPointInsidePlane = testPointAbovePlane;
+          travelOutsidePlane = travelBelowPlane;
+          testPointOutsidePlane = testPointBelowPlane;
+        } else if (aboveBelow.length > 0) {
+          travelInsidePlane = travelAbovePlane;
+          testPointInsidePlane = testPointBelowPlane;
+          travelOutsidePlane = travelBelowPlane;
+          testPointOutsidePlane = testPointAbovePlane;
+        } else if (belowBelow.length > 0) {
+          travelInsidePlane = travelBelowPlane;
+          testPointInsidePlane = testPointBelowPlane;
+          travelOutsidePlane = travelAbovePlane;
+          testPointOutsidePlane = testPointAbovePlane;
+        } else {
+          travelInsidePlane = travelBelowPlane;
+          testPointInsidePlane = testPointAbovePlane;
+          travelOutsidePlane = travelAbovePlane;
+          testPointOutsidePlane = testPointBelowPlane;
+        }
+        
+        insideTravelCutoffPlane = new SidedPlane(thePoint, testPointInsidePlane, testPointInsidePlane.D);
+        insideTestPointCutoffPlane = new SidedPlane(testPoint, travelInsidePlane, travelInsidePlane.D);
+        computedInsideOutside = true;
       }
-      
-      insideTravelCutoffPlane = new SidedPlane(thePoint, testPointInsidePlane, testPointInsidePlane.D);
-      insideTestPointCutoffPlane = new SidedPlane(testPoint, travelInsidePlane, travelInsidePlane.D);
-
     }
 
     public void setSecondLeg() {
@@ -983,20 +993,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
       // Plane crossing, either first leg or second leg
       
       final Plane plane;
-      final Plane insidePlane;
-      final Plane outsidePlane;
       final SidedPlane bound1;
       final SidedPlane bound2;
       if (isSecondLeg) {
         plane = travelPlane;
-        insidePlane = travelInsidePlane;
-        outsidePlane = travelOutsidePlane;
         bound1 = checkPointCutoffPlane;
         bound2 = checkPointOtherCutoffPlane;
       } else {
         plane = testPointPlane;
-        insidePlane = testPointInsidePlane;
-        outsidePlane = testPointOutsidePlane;
         bound1 = testPointCutoffPlane;
         bound2 = testPointOtherCutoffPlane;
       }
@@ -1004,7 +1008,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
       if (crossingPoint.isNumericallyIdentical(edge.startPoint)) {
         //System.err.println(" Crossing point = edge.startPoint");
         // We have to figure out if this crossing should be counted.
-          
+        computeInsideOutside();
+        
         // Does the crossing for this edge go up, or down?  Or can't we tell?
         final GeoPoint[] insideTestPointPlaneIntersections = testPointInsidePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane, insideTestPointCutoffPlane);
         final GeoPoint[] insideTravelPlaneIntersections = travelInsidePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane, insideTravelCutoffPlane);
@@ -1079,7 +1084,8 @@ class GeoComplexPolygon extends GeoBasePolygon {
       } else if (crossingPoint.isNumericallyIdentical(edge.endPoint)) {
         //System.err.println(" Crossing point = edge.endPoint");
         // Figure out if the crossing should be counted.
-          
+        computeInsideOutside();
+        
         // Does the crossing for this edge go up, or down?  Or can't we tell?
         final GeoPoint[] insideTestPointPlaneIntersections = testPointInsidePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane, insideTestPointCutoffPlane);
         final GeoPoint[] insideTravelPlaneIntersections = travelInsidePlane.findIntersections(planetModel, edge.plane, edge.startPlane, edge.endPlane, insideTravelCutoffPlane);
