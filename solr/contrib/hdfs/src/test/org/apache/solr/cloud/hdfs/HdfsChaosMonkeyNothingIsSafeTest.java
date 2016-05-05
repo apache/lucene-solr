@@ -18,20 +18,23 @@ package org.apache.solr.cloud.hdfs;
 
 import java.io.IOException;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.solr.cloud.ChaosMonkeyTestBase;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
+import org.apache.solr.cloud.ChaosMonkeyNothingIsSafeTest;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
-import com.carrotsearch.randomizedtesting.annotations.Nightly;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
+@Slow
 @Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsChaosMonkeyNothingIsSafeTest extends ChaosMonkeyTestBase {
+@SuppressObjectReleaseTracker(bugUrl="Testing purposes")
+public class HdfsChaosMonkeyNothingIsSafeTest extends ChaosMonkeyNothingIsSafeTest {
   private static MiniDFSCluster dfsCluster;
   
   @BeforeClass
@@ -52,15 +55,12 @@ public class HdfsChaosMonkeyNothingIsSafeTest extends ChaosMonkeyTestBase {
     // super class may hard code directory
     useFactory("org.apache.solr.core.HdfsDirectoryFactory");
   }
+
   
   @Override
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
 
-  @Override
-  public void test() throws Exception {
-    super.test();
-  }
 
 }

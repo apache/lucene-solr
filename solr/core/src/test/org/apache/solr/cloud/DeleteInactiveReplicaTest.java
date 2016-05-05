@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.CollectionsAPIDistributedZkTestBase.*;
+import static org.apache.solr.cloud.CollectionsAPIDistributedZkTest.*;
 
 import java.lang.invoke.MethodHandles;
 import java.net.URL;

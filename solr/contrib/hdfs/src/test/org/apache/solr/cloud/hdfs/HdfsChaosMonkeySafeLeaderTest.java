@@ -19,20 +19,21 @@ package org.apache.solr.cloud.hdfs;
 import java.io.IOException;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.solr.cloud.ChaosMonkeySafeLeaderTestBase;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.cloud.ChaosMonkeySafeLeaderTest;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
+@Slow
 @Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsChaosMonkeySafeLeaderTest extends ChaosMonkeySafeLeaderTestBase {
+public class HdfsChaosMonkeySafeLeaderTest extends ChaosMonkeySafeLeaderTest {
   private static MiniDFSCluster dfsCluster;
   
   @BeforeClass
@@ -60,10 +61,5 @@ public class HdfsChaosMonkeySafeLeaderTest extends ChaosMonkeySafeLeaderTestBase
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
   }
 
-  
-  @Test
-  public void test() throws Exception {
-    super.test();
-  }
 
 }

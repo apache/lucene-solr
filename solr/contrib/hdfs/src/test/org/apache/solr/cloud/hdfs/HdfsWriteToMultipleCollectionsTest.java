@@ -31,7 +31,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.cloud.BasicDistributedZkTestBase;
+import org.apache.solr.cloud.BasicDistributedZkTest;
 import org.apache.solr.cloud.StoppableIndexingThread;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.HdfsDirectoryFactory;
@@ -46,11 +46,12 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+@Slow
 @Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTestBase {
+public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
   private static final String SOLR_HDFS_HOME = "solr.hdfs.home";
   private static final String SOLR_HDFS_BLOCKCACHE_GLOBAL = "solr.hdfs.blockcache.global";
   private static final String ACOLLECTION = "acollection";

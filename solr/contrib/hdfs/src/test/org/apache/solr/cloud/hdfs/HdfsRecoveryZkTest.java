@@ -19,20 +19,21 @@ package org.apache.solr.cloud.hdfs;
 import java.io.IOException;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.solr.cloud.RecoveryZkTestBase;
+import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.cloud.RecoveryZkTest;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
+@Slow
 @Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsRecoveryZkTest extends RecoveryZkTestBase {
+public class HdfsRecoveryZkTest extends RecoveryZkTest {
   private static MiniDFSCluster dfsCluster;
   
   @BeforeClass
@@ -51,12 +52,6 @@ public class HdfsRecoveryZkTest extends RecoveryZkTestBase {
   @Override
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
-  }
-  
-  @Test
-  @Override
-  public void test() throws Exception {
-    super.test();
   }
 
 }

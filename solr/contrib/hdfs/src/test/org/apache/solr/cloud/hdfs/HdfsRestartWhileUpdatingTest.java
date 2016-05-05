@@ -19,7 +19,7 @@ package org.apache.solr.cloud.hdfs;
 import java.io.IOException;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.solr.cloud.RestartWhileUpdatingTestBase;
+import org.apache.solr.cloud.RestartWhileUpdatingTest;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -32,7 +32,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class HdfsRestartWhileUpdatingTest extends RestartWhileUpdatingTestBase {
+public class HdfsRestartWhileUpdatingTest extends RestartWhileUpdatingTest {
   
   public HdfsRestartWhileUpdatingTest() throws Exception {
     super();

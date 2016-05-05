@@ -23,7 +23,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.junit.Test;
 
-public class OverseerStatusTest extends BasicDistributedZkTestBase {
+public class OverseerStatusTest extends BasicDistributedZkTest {
 
   public OverseerStatusTest() {
     schemaString = "schema15.xml";      // we need a string id

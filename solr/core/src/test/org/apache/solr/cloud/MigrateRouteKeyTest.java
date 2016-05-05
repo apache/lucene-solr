@@ -47,7 +47,7 @@ import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
-public class MigrateRouteKeyTest extends BasicDistributedZkTestBase {
+public class MigrateRouteKeyTest extends BasicDistributedZkTest {
 
   public MigrateRouteKeyTest() {
     schemaString = "schema15.xml";      // we need a string id
@@ -61,7 +61,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTestBase {
 
     if (usually()) {
       log.info("Using legacyCloud=false for cluster");
-      CollectionsAPIDistributedZkTestBase.setClusterProp(cloudClient, "legacyCloud", "false");
+      CollectionsAPIDistributedZkTest.setClusterProp(cloudClient, "legacyCloud", "false");
     }
     multipleShardMigrateTest();
     printLayout();

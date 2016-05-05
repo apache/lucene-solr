@@ -30,7 +30,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.cloud.BasicDistributedZkTestBase;
+import org.apache.solr.cloud.BasicDistributedZkTest;
 import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
@@ -55,10 +55,11 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
+@Slow
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
-public class StressHdfsTest extends BasicDistributedZkTestBase {
+public class StressHdfsTest extends BasicDistributedZkTest {
 
   private static final String DELETE_DATA_DIR_COLLECTION = "delete_data_dir";
   private static MiniDFSCluster dfsCluster;

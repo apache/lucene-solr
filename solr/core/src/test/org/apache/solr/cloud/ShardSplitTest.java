@@ -57,7 +57,7 @@ import static org.apache.solr.cloud.OverseerCollectionMessageHandler.NUM_SLICES;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
-public class ShardSplitTest extends BasicDistributedZkTestBase {
+public class ShardSplitTest extends BasicDistributedZkTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -75,7 +75,7 @@ public class ShardSplitTest extends BasicDistributedZkTestBase {
 
     if (usually()) {
       log.info("Using legacyCloud=false for cluster");
-      CollectionsAPIDistributedZkTestBase.setClusterProp(cloudClient, "legacyCloud", "false");
+      CollectionsAPIDistributedZkTest.setClusterProp(cloudClient, "legacyCloud", "false");
     }
     incompleteOrOverlappingCustomRangeTest();
     splitByUniqueKeyTest();
@@ -94,7 +94,7 @@ public class ShardSplitTest extends BasicDistributedZkTestBase {
 
     if (usually()) {
       log.info("Using legacyCloud=false for cluster");
-      CollectionsAPIDistributedZkTestBase.setClusterProp(cloudClient, "legacyCloud", "false");
+      CollectionsAPIDistributedZkTest.setClusterProp(cloudClient, "legacyCloud", "false");
     }
 
     log.info("Starting testSplitShardWithRule");

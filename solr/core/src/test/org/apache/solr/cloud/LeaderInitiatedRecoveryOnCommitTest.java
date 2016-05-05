@@ -31,7 +31,7 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 
-public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTestBase {
+public class LeaderInitiatedRecoveryOnCommitTest extends BasicDistributedZkTest {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

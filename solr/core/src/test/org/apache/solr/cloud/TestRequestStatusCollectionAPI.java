@@ -29,7 +29,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestRequestStatusCollectionAPI extends BasicDistributedZkTestBase {
+public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
 
   public static final int MAX_WAIT_TIMEOUT_SECONDS = 90;
 
