@@ -666,8 +666,10 @@ public class Plane extends Vector {
   protected GeoPoint[] findIntersections(final PlanetModel planetModel, final Plane q, final Membership[] bounds, final Membership[] moreBounds) {
     //System.err.println("Looking for intersection between plane "+this+" and plane "+q+" within bounds");
     // Unnormalized, unchecked...
-    final Vector lineVector = new Vector(y * q.z - z * q.y, z * q.x - x * q.z, x * q.y - y * q.x);
-    if (Math.abs(lineVector.x) < MINIMUM_RESOLUTION && Math.abs(lineVector.y) < MINIMUM_RESOLUTION && Math.abs(lineVector.z) < MINIMUM_RESOLUTION) {
+    final double lineVectorX = y * q.z - z * q.y;
+    final double lineVectorY = z * q.x - x * q.z;
+    final double lineVectorZ = x * q.y - y * q.x;
+    if (Math.abs(lineVectorX) < MINIMUM_RESOLUTION && Math.abs(lineVectorY) < MINIMUM_RESOLUTION && Math.abs(lineVectorZ) < MINIMUM_RESOLUTION) {
       // Degenerate case: parallel planes
       //System.err.println(" planes are parallel - no intersection");
       return NO_POINTS;
@@ -738,10 +740,10 @@ public class Plane extends Vector {
     // A^2 t^2 / a^2 + 2AA0t / a^2 + A0^2 / a^2 + B^2 t^2 / b^2 + 2BB0t / b^2 + B0^2 / b^2 + C^2 t^2 / c^2 + 2CC0t / c^2 + C0^2 / c^2  - 1,0 = 0.0
     // [A^2 / a^2 + B^2 / b^2 + C^2 / c^2] t^2 + [2AA0 / a^2 + 2BB0 / b^2 + 2CC0 / c^2] t + [A0^2 / a^2 + B0^2 / b^2 + C0^2 / c^2 - 1,0] = 0.0
     // Use the quadratic formula to determine t values and candidate point(s)
-    final double A = lineVector.x * lineVector.x * planetModel.inverseAbSquared +
-      lineVector.y * lineVector.y * planetModel.inverseAbSquared +
-      lineVector.z * lineVector.z * planetModel.inverseCSquared;
-    final double B = 2.0 * (lineVector.x * x0 * planetModel.inverseAbSquared + lineVector.y * y0 * planetModel.inverseAbSquared + lineVector.z * z0 * planetModel.inverseCSquared);
+    final double A = lineVectorX * lineVectorX * planetModel.inverseAbSquared +
+      lineVectorY * lineVectorY * planetModel.inverseAbSquared +
+      lineVectorZ * lineVectorZ * planetModel.inverseCSquared;
+    final double B = 2.0 * (lineVectorX * x0 * planetModel.inverseAbSquared + lineVectorY * y0 * planetModel.inverseAbSquared + lineVectorZ * z0 * planetModel.inverseCSquared);
     final double C = x0 * x0 * planetModel.inverseAbSquared + y0 * y0 * planetModel.inverseAbSquared + z0 * z0 * planetModel.inverseCSquared - 1.0;
 
     final double BsquaredMinus = B * B - 4.0 * A * C;
@@ -751,9 +753,9 @@ public class Plane extends Vector {
       // One solution only
       final double t = -B * inverse2A;
       // Maybe we can save ourselves the cost of construction of a point?
-      final double pointX = lineVector.x * t + x0;
-      final double pointY = lineVector.y * t + y0;
-      final double pointZ = lineVector.z * t + z0;
+      final double pointX = lineVectorX * t + x0;
+      final double pointY = lineVectorY * t + y0;
+      final double pointZ = lineVectorZ * t + z0;
       for (final Membership bound : bounds) {
         if (!bound.isWithin(pointX, pointY, pointZ)) {
           return NO_POINTS;
@@ -773,12 +775,12 @@ public class Plane extends Vector {
       final double t1 = (-B + sqrtTerm) * inverse2A;
       final double t2 = (-B - sqrtTerm) * inverse2A;
       // Up to two points being returned.  Do what we can to save on object creation though.
-      final double point1X = lineVector.x * t1 + x0;
-      final double point1Y = lineVector.y * t1 + y0;
-      final double point1Z = lineVector.z * t1 + z0;
-      final double point2X = lineVector.x * t2 + x0;
-      final double point2Y = lineVector.y * t2 + y0;
-      final double point2Z = lineVector.z * t2 + z0;
+      final double point1X = lineVectorX * t1 + x0;
+      final double point1Y = lineVectorY * t1 + y0;
+      final double point1Z = lineVectorZ * t1 + z0;
+      final double point2X = lineVectorX * t2 + x0;
+      final double point2Y = lineVectorY * t2 + y0;
+      final double point2Z = lineVectorZ * t2 + z0;
       boolean point1Valid = true;
       boolean point2Valid = true;
       for (final Membership bound : bounds) {
@@ -841,8 +843,10 @@ public class Plane extends Vector {
     // This code in this method is very similar to findIntersections(), but eliminates the cases where
     // crossings are detected.
     // Unnormalized, unchecked...
-    final Vector lineVector = new Vector(y * q.z - z * q.y, z * q.x - x * q.z, x * q.y - y * q.x);
-    if (Math.abs(lineVector.x) < MINIMUM_RESOLUTION && Math.abs(lineVector.y) < MINIMUM_RESOLUTION && Math.abs(lineVector.z) < MINIMUM_RESOLUTION) {
+    final double lineVectorX = y * q.z - z * q.y;
+    final double lineVectorY = z * q.x - x * q.z;
+    final double lineVectorZ = x * q.y - y * q.x;
+    if (Math.abs(lineVectorX) < MINIMUM_RESOLUTION && Math.abs(lineVectorY) < MINIMUM_RESOLUTION && Math.abs(lineVectorZ) < MINIMUM_RESOLUTION) {
       // Degenerate case: parallel planes
       return NO_POINTS;
     }
@@ -909,10 +913,10 @@ public class Plane extends Vector {
     // A^2 t^2 / a^2 + 2AA0t / a^2 + A0^2 / a^2 + B^2 t^2 / b^2 + 2BB0t / b^2 + B0^2 / b^2 + C^2 t^2 / c^2 + 2CC0t / c^2 + C0^2 / c^2  - 1,0 = 0.0
     // [A^2 / a^2 + B^2 / b^2 + C^2 / c^2] t^2 + [2AA0 / a^2 + 2BB0 / b^2 + 2CC0 / c^2] t + [A0^2 / a^2 + B0^2 / b^2 + C0^2 / c^2 - 1,0] = 0.0
     // Use the quadratic formula to determine t values and candidate point(s)
-    final double A = lineVector.x * lineVector.x * planetModel.inverseAbSquared +
-      lineVector.y * lineVector.y * planetModel.inverseAbSquared +
-      lineVector.z * lineVector.z * planetModel.inverseCSquared;
-    final double B = 2.0 * (lineVector.x * x0 * planetModel.inverseAbSquared + lineVector.y * y0 * planetModel.inverseAbSquared + lineVector.z * z0 * planetModel.inverseCSquared);
+    final double A = lineVectorX * lineVectorX * planetModel.inverseAbSquared +
+      lineVectorY * lineVectorY * planetModel.inverseAbSquared +
+      lineVectorZ * lineVectorZ * planetModel.inverseCSquared;
+    final double B = 2.0 * (lineVectorX * x0 * planetModel.inverseAbSquared + lineVectorY * y0 * planetModel.inverseAbSquared + lineVectorZ * z0 * planetModel.inverseCSquared);
     final double C = x0 * x0 * planetModel.inverseAbSquared + y0 * y0 * planetModel.inverseAbSquared + z0 * z0 * planetModel.inverseCSquared - 1.0;
 
     final double BsquaredMinus = B * B - 4.0 * A * C;
@@ -926,12 +930,12 @@ public class Plane extends Vector {
       final double t1 = (-B + sqrtTerm) * inverse2A;
       final double t2 = (-B - sqrtTerm) * inverse2A;
       // Up to two points being returned.  Do what we can to save on object creation though.
-      final double point1X = lineVector.x * t1 + x0;
-      final double point1Y = lineVector.y * t1 + y0;
-      final double point1Z = lineVector.z * t1 + z0;
-      final double point2X = lineVector.x * t2 + x0;
-      final double point2Y = lineVector.y * t2 + y0;
-      final double point2Z = lineVector.z * t2 + z0;
+      final double point1X = lineVectorX * t1 + x0;
+      final double point1Y = lineVectorY * t1 + y0;
+      final double point1Z = lineVectorZ * t1 + z0;
+      final double point2X = lineVectorX * t2 + x0;
+      final double point2Y = lineVectorY * t2 + y0;
+      final double point2Z = lineVectorZ * t2 + z0;
       boolean point1Valid = true;
       boolean point2Valid = true;
       for (final Membership bound : bounds) {
@@ -1750,8 +1754,11 @@ public class Plane extends Vector {
     // Save on allocations; do inline instead of calling findIntersections
     //System.err.println("Looking for intersection between plane "+this+" and plane "+q+" within bounds");
     // Unnormalized, unchecked...
-    final Vector lineVector = new Vector(y * q.z - z * q.y, z * q.x - x * q.z, x * q.y - y * q.x);
-    if (Math.abs(lineVector.x) < MINIMUM_RESOLUTION && Math.abs(lineVector.y) < MINIMUM_RESOLUTION && Math.abs(lineVector.z) < MINIMUM_RESOLUTION) {
+    final double lineVectorX = y * q.z - z * q.y;
+    final double lineVectorY = z * q.x - x * q.z;
+    final double lineVectorZ = x * q.y - y * q.x;
+
+    if (Math.abs(lineVectorX) < MINIMUM_RESOLUTION && Math.abs(lineVectorY) < MINIMUM_RESOLUTION && Math.abs(lineVectorZ) < MINIMUM_RESOLUTION) {
       // Degenerate case: parallel planes
       //System.err.println(" planes are parallel - no intersection");
       return false;
@@ -1822,10 +1829,10 @@ public class Plane extends Vector {
     // A^2 t^2 / a^2 + 2AA0t / a^2 + A0^2 / a^2 + B^2 t^2 / b^2 + 2BB0t / b^2 + B0^2 / b^2 + C^2 t^2 / c^2 + 2CC0t / c^2 + C0^2 / c^2  - 1,0 = 0.0
     // [A^2 / a^2 + B^2 / b^2 + C^2 / c^2] t^2 + [2AA0 / a^2 + 2BB0 / b^2 + 2CC0 / c^2] t + [A0^2 / a^2 + B0^2 / b^2 + C0^2 / c^2 - 1,0] = 0.0
     // Use the quadratic formula to determine t values and candidate point(s)
-    final double A = lineVector.x * lineVector.x * planetModel.inverseAbSquared +
-      lineVector.y * lineVector.y * planetModel.inverseAbSquared +
-      lineVector.z * lineVector.z * planetModel.inverseCSquared;
-    final double B = 2.0 * (lineVector.x * x0 * planetModel.inverseAbSquared + lineVector.y * y0 * planetModel.inverseAbSquared + lineVector.z * z0 * planetModel.inverseCSquared);
+    final double A = lineVectorX * lineVectorX * planetModel.inverseAbSquared +
+      lineVectorY * lineVectorY * planetModel.inverseAbSquared +
+      lineVectorZ * lineVectorZ * planetModel.inverseCSquared;
+    final double B = 2.0 * (lineVectorX * x0 * planetModel.inverseAbSquared + lineVectorY * y0 * planetModel.inverseAbSquared + lineVectorZ * z0 * planetModel.inverseCSquared);
     final double C = x0 * x0 * planetModel.inverseAbSquared + y0 * y0 * planetModel.inverseAbSquared + z0 * z0 * planetModel.inverseCSquared - 1.0;
 
     final double BsquaredMinus = B * B - 4.0 * A * C;
@@ -1835,9 +1842,9 @@ public class Plane extends Vector {
       // One solution only
       final double t = -B * inverse2A;
       // Maybe we can save ourselves the cost of construction of a point?
-      final double pointX = lineVector.x * t + x0;
-      final double pointY = lineVector.y * t + y0;
-      final double pointZ = lineVector.z * t + z0;
+      final double pointX = lineVectorX * t + x0;
+      final double pointY = lineVectorY * t + y0;
+      final double pointZ = lineVectorZ * t + z0;
       for (final Membership bound : bounds) {
         if (!bound.isWithin(pointX, pointY, pointZ)) {
           return false;
@@ -1857,9 +1864,9 @@ public class Plane extends Vector {
       final double t1 = (-B + sqrtTerm) * inverse2A;
       final double t2 = (-B - sqrtTerm) * inverse2A;
       // Up to two points being returned.  Do what we can to save on object creation though.
-      final double point1X = lineVector.x * t1 + x0;
-      final double point1Y = lineVector.y * t1 + y0;
-      final double point1Z = lineVector.z * t1 + z0;
+      final double point1X = lineVectorX * t1 + x0;
+      final double point1Y = lineVectorY * t1 + y0;
+      final double point1Z = lineVectorZ * t1 + z0;
       boolean point1Valid = true;
       for (final Membership bound : bounds) {
         if (!bound.isWithin(point1X, point1Y, point1Z)) {
@@ -1878,9 +1885,9 @@ public class Plane extends Vector {
       if (point1Valid) {
         return true;
       }
-      final double point2X = lineVector.x * t2 + x0;
-      final double point2Y = lineVector.y * t2 + y0;
-      final double point2Z = lineVector.z * t2 + z0;
+      final double point2X = lineVectorX * t2 + x0;
+      final double point2Y = lineVectorY * t2 + y0;
+      final double point2Z = lineVectorZ * t2 + z0;
       for (final Membership bound : bounds) {
         if (!bound.isWithin(point2X, point2Y, point2Z)) {
           return false;
