@@ -750,12 +750,21 @@ public class Plane extends Vector {
       final double inverse2A = 1.0 / (2.0 * A);
       // One solution only
       final double t = -B * inverse2A;
-      GeoPoint point = new GeoPoint(lineVector.x * t + x0, lineVector.y * t + y0, lineVector.z * t + z0);
-      //System.err.println("  point: "+point);
-      //verifyPoint(planetModel, point, q);
-      if (point.isWithin(bounds, moreBounds))
-        return new GeoPoint[]{point};
-      return NO_POINTS;
+      // Maybe we can save ourselves the cost of construction of a point?
+      final double pointX = lineVector.x * t + x0;
+      final double pointY = lineVector.y * t + y0;
+      final double pointZ = lineVector.z * t + z0;
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(pointX, pointY, pointZ)) {
+          return NO_POINTS;
+        }
+      }
+      for (final Membership bound : moreBounds) {
+        if (!bound.isWithin(pointX, pointY, pointZ)) {
+          return NO_POINTS;
+        }
+      }
+      return new GeoPoint[]{new GeoPoint(pointX, pointY, pointZ)};
     } else if (BsquaredMinus > 0.0) {
       //System.err.println(" Two points of intersection");
       final double inverse2A = 1.0 / (2.0 * A);
@@ -763,18 +772,53 @@ public class Plane extends Vector {
       final double sqrtTerm = Math.sqrt(BsquaredMinus);
       final double t1 = (-B + sqrtTerm) * inverse2A;
       final double t2 = (-B - sqrtTerm) * inverse2A;
-      GeoPoint point1 = new GeoPoint(lineVector.x * t1 + x0, lineVector.y * t1 + y0, lineVector.z * t1 + z0);
-      GeoPoint point2 = new GeoPoint(lineVector.x * t2 + x0, lineVector.y * t2 + y0, lineVector.z * t2 + z0);
-      //verifyPoint(planetModel, point1, q);
-      //verifyPoint(planetModel, point2, q);
-      //System.err.println("  "+point1+" and "+point2);
-      if (point1.isWithin(bounds, moreBounds)) {
-        if (point2.isWithin(bounds, moreBounds))
-          return new GeoPoint[]{point1, point2};
-        return new GeoPoint[]{point1};
+      // Up to two points being returned.  Do what we can to save on object creation though.
+      final double point1X = lineVector.x * t1 + x0;
+      final double point1Y = lineVector.y * t1 + y0;
+      final double point1Z = lineVector.z * t1 + z0;
+      final double point2X = lineVector.x * t2 + x0;
+      final double point2Y = lineVector.y * t2 + y0;
+      final double point2Z = lineVector.z * t2 + z0;
+      boolean point1Valid = true;
+      boolean point2Valid = true;
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(point1X, point1Y, point1Z)) {
+          point1Valid = false;
+          break;
+        }
       }
-      if (point2.isWithin(bounds, moreBounds))
-        return new GeoPoint[]{point2};
+      if (point1Valid) {
+        for (final Membership bound : moreBounds) {
+          if (!bound.isWithin(point1X, point1Y, point1Z)) {
+            point1Valid = false;
+            break;
+          }
+        }
+      }
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(point2X, point2Y, point2Z)) {
+          point2Valid = false;
+          break;
+        }
+      }
+      if (point2Valid) {
+        for (final Membership bound : moreBounds) {
+          if (!bound.isWithin(point2X, point2Y, point2Z)) {
+            point2Valid = false;
+            break;
+          }
+        }
+      }
+
+      if (point1Valid && point2Valid) {
+        return new GeoPoint[]{new GeoPoint(point1X, point1Y, point1Z), new GeoPoint(point2X, point2Y, point2Z)};
+      }
+      if (point1Valid) {
+        return new GeoPoint[]{new GeoPoint(point1X, point1Y, point1Z)};
+      }
+      if (point2Valid) {
+        return new GeoPoint[]{new GeoPoint(point2X, point2Y, point2Z)};
+      }
       return NO_POINTS;
     } else {
       //System.err.println(" no solutions - no intersection");
@@ -881,18 +925,53 @@ public class Plane extends Vector {
       final double sqrtTerm = Math.sqrt(BsquaredMinus);
       final double t1 = (-B + sqrtTerm) * inverse2A;
       final double t2 = (-B - sqrtTerm) * inverse2A;
-      GeoPoint point1 = new GeoPoint(lineVector.x * t1 + x0, lineVector.y * t1 + y0, lineVector.z * t1 + z0);
-      GeoPoint point2 = new GeoPoint(lineVector.x * t2 + x0, lineVector.y * t2 + y0, lineVector.z * t2 + z0);
-      //verifyPoint(planetModel, point1, q);
-      //verifyPoint(planetModel, point2, q);
-      //System.err.println("   Considering points "+point1+" and "+point2);
-      if (point1.isWithin(bounds, moreBounds)) {
-        if (point2.isWithin(bounds, moreBounds))
-          return new GeoPoint[]{point1, point2};
-        return new GeoPoint[]{point1};
+      // Up to two points being returned.  Do what we can to save on object creation though.
+      final double point1X = lineVector.x * t1 + x0;
+      final double point1Y = lineVector.y * t1 + y0;
+      final double point1Z = lineVector.z * t1 + z0;
+      final double point2X = lineVector.x * t2 + x0;
+      final double point2Y = lineVector.y * t2 + y0;
+      final double point2Z = lineVector.z * t2 + z0;
+      boolean point1Valid = true;
+      boolean point2Valid = true;
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(point1X, point1Y, point1Z)) {
+          point1Valid = false;
+          break;
+        }
       }
-      if (point2.isWithin(bounds, moreBounds))
-        return new GeoPoint[]{point2};
+      if (point1Valid) {
+        for (final Membership bound : moreBounds) {
+          if (!bound.isWithin(point1X, point1Y, point1Z)) {
+            point1Valid = false;
+            break;
+          }
+        }
+      }
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(point2X, point2Y, point2Z)) {
+          point2Valid = false;
+          break;
+        }
+      }
+      if (point2Valid) {
+        for (final Membership bound : moreBounds) {
+          if (!bound.isWithin(point2X, point2Y, point2Z)) {
+            point2Valid = false;
+            break;
+          }
+        }
+      }
+
+      if (point1Valid && point2Valid) {
+        return new GeoPoint[]{new GeoPoint(point1X, point1Y, point1Z), new GeoPoint(point2X, point2Y, point2Z)};
+      }
+      if (point1Valid) {
+        return new GeoPoint[]{new GeoPoint(point1X, point1Y, point1Z)};
+      }
+      if (point2Valid) {
+        return new GeoPoint[]{new GeoPoint(point2X, point2Y, point2Z)};
+      }
       return NO_POINTS;
     } else {
       // No solutions.

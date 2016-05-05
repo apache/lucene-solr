@@ -133,16 +133,16 @@ public class Vector {
    * @param moreBounds is the second part of the set of planes.
    * @return true if the point is within the bounds.
    */
-  public boolean isWithin(final Membership[] bounds, final Membership[] moreBounds) {
+  public boolean isWithin(final Membership[] bounds, final Membership... moreBounds) {
     // Return true if the point described is within all provided bounds
     //System.err.println("  checking if "+this+" is within bounds");
-    for (Membership bound : bounds) {
+    for (final Membership bound : bounds) {
       if (bound != null && !bound.isWithin(this)) {
         //System.err.println("    NOT within "+bound);
         return false;
       }
     }
-    for (Membership bound : moreBounds) {
+    for (final Membership bound : moreBounds) {
       if (bound != null && !bound.isWithin(this)) {
         //System.err.println("    NOT within "+bound);
         return false;
