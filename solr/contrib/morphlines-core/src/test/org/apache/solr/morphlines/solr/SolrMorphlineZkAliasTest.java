@@ -17,25 +17,20 @@
 package org.apache.solr.morphlines.solr;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Iterator;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.params.CollectionParams.CollectionAction;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.Test;
 import org.kitesdk.morphline.api.Record;
 import org.kitesdk.morphline.base.Fields;
 import org.kitesdk.morphline.base.Notifications;
-
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
@@ -43,13 +38,11 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 @Slow
 public class SolrMorphlineZkAliasTest extends AbstractSolrMorphlineZkTestBase {
 
-
   @Test
   public void test() throws Exception {
-    
-    waitForRecoveriesToFinish(false);
-    
-    createAlias("aliascollection", "collection1");
+
+    CollectionAdminRequest.createAlias("aliascollection", "collection1")
+        .process(cluster.getSolrClient());
     
     morphline = parse("test-morphlines" + File.separator + "loadSolrBasic", "aliascollection");
     Record record = new Record();
@@ -84,9 +77,11 @@ public class SolrMorphlineZkAliasTest extends AbstractSolrMorphlineZkTestBase {
     
     assertFalse(citer.hasNext());
     
-    commit();
+    Notifications.notifyCommitTransaction(morphline);
+    new UpdateRequest().commit(cluster.getSolrClient(), COLLECTION);
     
-    QueryResponse rsp = cloudClient.query(new SolrQuery("*:*").setRows(100000).addSort(Fields.ID, SolrQuery.ORDER.asc));
+    QueryResponse rsp = cluster.getSolrClient()
+        .query(COLLECTION, new SolrQuery("*:*").setRows(100000).addSort(Fields.ID, SolrQuery.ORDER.asc));
     //System.out.println(rsp);
     Iterator<SolrDocument> iter = rsp.getResults().iterator();
     assertEquals(expected.getFields(), next(iter));
@@ -95,26 +90,14 @@ public class SolrMorphlineZkAliasTest extends AbstractSolrMorphlineZkTestBase {
     
     Notifications.notifyRollbackTransaction(morphline);
     Notifications.notifyShutdown(morphline);
-    
-    
-    createAlias("aliascollection", "collection1,collection2");
-    
-    try {
+
+    CollectionAdminRequest.createAlias("aliascollection", "collection1,collection2")
+        .processAndWait(cluster.getSolrClient(), TIMEOUT);
+
+    expectThrows(IllegalArgumentException.class, () -> {
       parse("test-morphlines" + File.separator + "loadSolrBasic", "aliascollection");
-      fail("Expected IAE because update alias maps to multiple collections");
-    } catch (IllegalArgumentException e) {
-      
-    }
-  }
-  
-  private NamedList<Object> createAlias(String alias, String collections) throws SolrServerException, IOException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("collections", collections);
-    params.set("name", alias);
-    params.set("action", CollectionAction.CREATEALIAS.toString());
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    return cloudClient.request(request);
+    });
+
   }
 
 }
