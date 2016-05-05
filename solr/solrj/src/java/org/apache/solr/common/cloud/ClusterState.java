@@ -240,7 +240,7 @@ public class ClusterState implements JSONWriter.Writable {
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
    * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
    *
-   * @return
+   * @return a map of collection name vs DocCollection object
    */
   public Map<String, DocCollection> getCollectionsMap()  {
     Map<String, DocCollection> result = new HashMap<>(collectionStates.size());
