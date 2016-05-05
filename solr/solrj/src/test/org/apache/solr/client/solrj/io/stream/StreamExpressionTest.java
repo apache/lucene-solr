@@ -175,7 +175,6 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assert(tuples.size() == 3);
     assertOrder(tuples, 0, 3, 4);
     assertLong(tuples.get(1), "a_i", 3);
-
   }
 
   @Test

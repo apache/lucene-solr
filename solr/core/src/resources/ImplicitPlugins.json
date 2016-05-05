@@ -84,6 +84,13 @@
         "distrib": false
       }
     },
+    "/graph": {
+      "class": "solr.GraphHandler",
+      "invariants": {
+        "wt": "graphml",
+        "distrib": false
+      }
+    },
     "/stream": {
       "class": "solr.StreamHandler",
       "invariants": {
