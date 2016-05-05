@@ -124,6 +124,8 @@ New Features
 
 * SOLR-9049: RuleBasedAuthorizationPlugin supports regex in param values eg: "command" : "REGEX:(i?)create" (noble)
 
+* SOLR-8972: Add GraphHandler and GraphMLResponseWriter to support graph visualizations (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
