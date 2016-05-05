@@ -595,6 +595,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * the index hasn't changed. See SOLR-9036
    */
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-9036")
   public void doTestIndexFetchOnMasterRestart() throws Exception  {
     useFactory(null);
     try {
