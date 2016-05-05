@@ -44,7 +44,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.sql.CalciteSolrDriver;
@@ -252,7 +251,6 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     }
 
     public void setStreamContext(StreamContext context) {
-
     }
   }
 }

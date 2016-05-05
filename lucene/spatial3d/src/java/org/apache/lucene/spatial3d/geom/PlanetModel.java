@@ -242,7 +242,7 @@ public class PlanetModel {
    * @param pt1 is the first point.
    * @param pt2 is the second point.
    * @return the adjusted angle, when multiplied by the mean earth radius, yields a surface distance.  This will differ
-   * from GeoPoint.arcDistance() only when the planet model is not a sphere. @see {@link GeoPoint#arcDistance(GeoPoint)}
+   * from GeoPoint.arcDistance() only when the planet model is not a sphere. @see {@link GeoPoint#arcDistance(Vector)}
    */
   public double surfaceDistance(final GeoPoint pt1, final GeoPoint pt2) {
     final double L = pt2.getLongitude() - pt1.getLongitude();

@@ -463,16 +463,17 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
       Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
 
-      if(slices == null) {
+      if (slices == null) {
         //Try case insensitive match
-        for(String col : clusterState.getCollections()) {
-          if(col.equalsIgnoreCase(collection)) {
-            slices = clusterState.getActiveSlices(col);
+        Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
+        for (Map.Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
+          if (entry.getKey().equalsIgnoreCase(collection)) {
+            slices = entry.getValue().getActiveSlices();
             break;
           }
         }
 
-        if(slices == null) {
+        if (slices == null) {
           throw new Exception("Collection not found:" + this.collection);
         }
       }
