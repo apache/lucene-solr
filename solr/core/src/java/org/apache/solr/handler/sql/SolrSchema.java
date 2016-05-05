@@ -44,7 +44,7 @@ class SolrSchema extends AbstractSchema {
   @Override
   protected Map<String, Table> getTableMap() {
     String zk = this.properties.getProperty("zk");
-    try(CloudSolrClient cloudSolrClient = new CloudSolrClient(zk)) {
+    try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zk).build()) {
       cloudSolrClient.connect();
       Set<String> collections = cloudSolrClient.getZkStateReader().getClusterState().getCollections();
 
@@ -60,7 +60,7 @@ class SolrSchema extends AbstractSchema {
 
   private Map<String, LukeResponse.FieldInfo> getFieldInfo(String collection) {
     String zk = this.properties.getProperty("zk");
-    try(CloudSolrClient cloudSolrClient = new CloudSolrClient(zk)) {
+    try(CloudSolrClient cloudSolrClient = new CloudSolrClient.Builder().withZkHost(zk).build()) {
       cloudSolrClient.connect();
       LukeRequest lukeRequest = new LukeRequest();
       lukeRequest.setNumTerms(0);
