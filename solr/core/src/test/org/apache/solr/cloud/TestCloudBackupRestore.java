@@ -121,7 +121,6 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
       log.info("Indexing ZERO test docs");
       return;
     }
-    CloudSolrClient client = cluster.getSolrClient();
     List<SolrInputDocument> docs = new ArrayList<>(numDocs);
     for (int i=0; i<numDocs; i++) {
       SolrInputDocument doc = new SolrInputDocument();
@@ -129,7 +128,8 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
       doc.addField("shard_s", "shard" + (1 + random.nextInt(NUM_SHARDS))); // for implicit router
       docs.add(doc);
     }
-    client.add(docs);// batch
+    CloudSolrClient client = cluster.getSolrClient();
+    client.add(collectionName, docs);// batch
     client.commit(collectionName);
   }
 
