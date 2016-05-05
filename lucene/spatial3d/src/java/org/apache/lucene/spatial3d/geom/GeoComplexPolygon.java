@@ -284,7 +284,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       assert bestDistance > 0.0 : "Best distance should not be zero unless on single plane";
       assert bestDistance < Double.MAX_VALUE : "Couldn't find an intersection point of any kind";
       
-      final DualCrossingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(firstLegPlane, firstLegAbovePlane, firstLegBelowPlane, secondLegPlane, testPoint, thePoint, intersectionPoint);
+      final DualCrossingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(firstLegPlane, firstLegAbovePlane, firstLegBelowPlane, secondLegPlane, thePoint, intersectionPoint);
       if (!firstLegTree.traverse(edgeIterator, firstLegValue)) {
         return true;
       }
@@ -842,7 +842,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
     public int crossingCount = 0;
 
     public DualCrossingEdgeIterator(final Plane testPointPlane, final Plane testPointAbovePlane, final Plane testPointBelowPlane,
-      final Plane travelPlane, final Vector testPoint, final Vector thePoint, final GeoPoint intersectionPoint) {
+      final Plane travelPlane, final Vector thePoint, final GeoPoint intersectionPoint) {
       this.testPointPlane = testPointPlane;
       this.testPointAbovePlane = testPointAbovePlane;
       this.testPointBelowPlane = testPointBelowPlane;
@@ -992,19 +992,6 @@ class GeoComplexPolygon extends GeoBasePolygon {
         
       // Plane crossing, either first leg or second leg
       
-      final Plane plane;
-      final SidedPlane bound1;
-      final SidedPlane bound2;
-      if (isSecondLeg) {
-        plane = travelPlane;
-        bound1 = checkPointCutoffPlane;
-        bound2 = checkPointOtherCutoffPlane;
-      } else {
-        plane = testPointPlane;
-        bound1 = testPointCutoffPlane;
-        bound2 = testPointOtherCutoffPlane;
-      }
-        
       if (crossingPoint.isNumericallyIdentical(edge.startPoint)) {
         //System.err.println(" Crossing point = edge.startPoint");
         // We have to figure out if this crossing should be counted.
@@ -1055,7 +1042,12 @@ class GeoComplexPolygon extends GeoBasePolygon {
         // a decision whether to count or not based on that.
           
         // Compute the crossing points of this other edge.
-        final GeoPoint[] otherCrossingPoints = plane.findCrossings(planetModel, assessEdge.plane, bound1, bound2, assessEdge.startPlane, assessEdge.endPlane);
+        final GeoPoint[] otherCrossingPoints;
+        if (isSecondLeg) {
+          otherCrossingPoints = travelPlane.findCrossings(planetModel, assessEdge.plane, checkPointCutoffPlane, checkPointOtherCutoffPlane, assessEdge.startPlane, assessEdge.endPlane);
+        } else {
+          otherCrossingPoints = testPointPlane.findCrossings(planetModel, assessEdge.plane, testPointCutoffPlane, testPointOtherCutoffPlane, assessEdge.startPlane, assessEdge.endPlane);
+        }        
           
         // Look for a matching endpoint.  If the other endpoint doesn't show up, it is either out of bounds (in which case the
         // transition won't be counted for that edge), or it is not a crossing for that edge (so, same conclusion).
