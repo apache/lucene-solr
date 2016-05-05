@@ -177,6 +177,13 @@ Bug Fixes
 
 * SOLR-9059: NPE in SolrClientCache following collection reload (Joel Bernstein, Ryan Yacyshyn)
 
+* SOLR-8792: ZooKeeper ACL support fixed. (Esther Quansah, Ishan Chattopadhyaya, Steve Rowe)
+
+* SOLR-9064: Adds an explanation of the incoming stream to an UpdateStream's explanation (Dennis Gove)
+
+* SOLR-9030: The 'downnode' overseer command can trip asserts in ZkStateWriter.
+  (Scott Blum, Mark Miller, shalin)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
@@ -239,7 +246,11 @@ Other Changes
 
 * SOLR-9047: zkcli should allow alternative locations for log4j configuration (Gregory Chanan)
 
-* SOLR-9053: Upgrade commons-fileupload to 1.3.1, fixing a potential vulnerability (Jeff Field, janhoy)
+* SOLR-9053: Upgrade commons-fileupload to 1.3.1, fixing a potential vulnerability (Jeff Field, Mike Drob via janhoy)
+
+* SOLR-9066 Make CountMetric return long instead of double (Kevin Risden)
+
+* SOLR-9065: Migrate SolrJ distributed tests to SolrCloudTestCase. (Alan Woodward)
 
 ==================  6.0.0 ==================
 

@@ -38,8 +38,12 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   private float _documentBoost = 1.0f;
   private List<SolrInputDocument> _childDocuments;
   
-  public SolrInputDocument() {
+  public SolrInputDocument(String... fields) {
     _fields = new LinkedHashMap<>();
+    assert fields.length % 2 == 0;
+    for (int i = 0; i < fields.length; i += 2) {
+      addField(fields[i], fields[i + 1]);
+    }
   }
   
   public SolrInputDocument(Map<String,SolrInputField> fields) {

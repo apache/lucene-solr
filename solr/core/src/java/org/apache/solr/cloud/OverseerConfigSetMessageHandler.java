@@ -350,10 +350,10 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
       throw new SolrException(ErrorCode.BAD_REQUEST, "ConfigSet does not exist to delete: " + configSetName);
     }
 
-    for (String s : zkStateReader.getClusterState().getCollections()) {
-      if (configSetName.equals(zkStateReader.readConfigName(s)))
+    for (Map.Entry<String, DocCollection> entry : zkStateReader.getClusterState().getCollectionsMap().entrySet()) {
+      if (configSetName.equals(zkStateReader.readConfigName(entry.getKey())))
         throw new SolrException(ErrorCode.BAD_REQUEST,
-            "Can not delete ConfigSet as it is currently being used by collection [" + s + "]");
+            "Can not delete ConfigSet as it is currently being used by collection [" + entry.getKey() + "]");
     }
 
     String propertyPath = ConfigSetProperties.DEFAULT_FILENAME;

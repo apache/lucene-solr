@@ -233,8 +233,9 @@ public class Assign {
     }
     DocCollection coll = clusterState.getCollection(collectionName);
     Integer maxShardsPerNode = coll.getInt(MAX_SHARDS_PER_NODE, 1);
-    for (String s : clusterState.getCollections()) {
-      DocCollection c = clusterState.getCollection(s);
+    Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+    for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+      DocCollection c = entry.getValue();
       //identify suitable nodes  by checking the no:of cores in each of them
       for (Slice slice : c.getSlices()) {
         Collection<Replica> replicas = slice.getReplicas();
@@ -242,7 +243,7 @@ public class Assign {
           ReplicaCount count = nodeNameVsShardCount.get(replica.getNodeName());
           if (count != null) {
             count.totalNodes++; // Used ot "weigh" whether this node should be used later.
-            if (s.equals(collectionName)) {
+            if (entry.getKey().equals(collectionName)) {
               count.thisCollectionNodes++;
               if (count.thisCollectionNodes >= maxShardsPerNode) nodeNameVsShardCount.remove(replica.getNodeName());
             }

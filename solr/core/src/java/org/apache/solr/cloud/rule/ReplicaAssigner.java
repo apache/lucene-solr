@@ -104,8 +104,9 @@ public class ReplicaAssigner {
     validateTags(nodeVsTags);
 
     if (clusterState != null) {
-      for (String s : clusterState.getCollections()) {
-        DocCollection coll = clusterState.getCollection(s);
+      Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+      for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+        DocCollection coll = entry.getValue();
         for (Slice slice : coll.getSlices()) {
           for (Replica replica : slice.getReplicas()) {
             AtomicInteger count = nodeVsCores.get(replica.getNodeName());

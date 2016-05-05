@@ -520,7 +520,8 @@ public class ZkStateReader implements Closeable {
    * In fact this is a clever way to avoid doing a ZK exists check on
    * the /collections/collection_name/state.json znode
    * Such an exists check is done in {@link ClusterState#hasCollection(String)} and
-   * {@link ClusterState#getCollections()} method as a safeguard against exposing wrong collection names to the users
+   * {@link ClusterState#getCollections()} and {@link ClusterState#getCollectionsMap()} methods
+   * have a safeguard against exposing wrong collection names to the users
    */
   private void refreshCollectionList(Watcher watcher) throws KeeperException, InterruptedException {
     synchronized (refreshCollectionListLock) {
@@ -715,8 +716,7 @@ public class ZkStateReader implements Closeable {
     Map<String,Slice> slices = clusterState.getSlicesMap(collection);
     if (slices == null) {
       throw new ZooKeeperException(ErrorCode.BAD_REQUEST,
-          "Could not find collection in zk: " + collection + " "
-              + clusterState.getCollections());
+          "Could not find collection in zk: " + collection);
     }
     
     Slice replicas = slices.get(shardId);

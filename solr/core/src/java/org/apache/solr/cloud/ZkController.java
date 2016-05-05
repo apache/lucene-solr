@@ -689,14 +689,12 @@ public final class ZkController {
     long now = System.nanoTime();
     long timeout = now + TimeUnit.NANOSECONDS.convert(WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     boolean foundStates = true;
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> collections = clusterState.getCollections();
-    
+
     while (System.nanoTime() < timeout) {
-      clusterState = zkStateReader.getClusterState();
-      collections = clusterState.getCollections();
-      for (String collectionName : collections) {
-        DocCollection collection = clusterState.getCollection(collectionName);
+      ClusterState clusterState = zkStateReader.getClusterState();
+      Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+      for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+        DocCollection collection = entry.getValue();
         Collection<Slice> slices = collection.getSlices();
         for (Slice slice : slices) {
           Collection<Replica> replicas = slice.getReplicas();

@@ -85,7 +85,7 @@ public class TermsQuery extends Query implements Accountable {
   // Same threshold as MultiTermQueryConstantScoreWrapper
   static final int BOOLEAN_REWRITE_TERM_COUNT_THRESHOLD = 16;
 
-  private final Set<String> fields;
+  private final boolean singleField; // whether all terms are from the same field
   private final PrefixCodedTerms termData;
   private final int termDataHashCode; // cached hashcode of termData
 
@@ -110,7 +110,7 @@ public class TermsQuery extends Query implements Accountable {
       }
       previous = term;
     }
-    this.fields = Collections.unmodifiableSet(fields);
+    singleField = fields.size() == 1;
     termData = builder.finish();
     termDataHashCode = termData.hashCode();
   }
@@ -137,7 +137,7 @@ public class TermsQuery extends Query implements Accountable {
       builder.add(field, term);
       previous.copyBytes(term);
     }
-    fields = Collections.singleton(field);
+    singleField = true;
     termData = builder.finish();
     termDataHashCode = termData.hashCode();
   }
@@ -307,7 +307,7 @@ public class TermsQuery extends Query implements Accountable {
               matchingTerms.add(new TermAndState(field, termsEnum));
             } else {
               assert matchingTerms.size() == threshold;
-              if (TermsQuery.this.fields.size() == 1) {
+              if (singleField) {
                 // common case: all terms are in the same field
                 // use an optimized builder that leverages terms stats to be more efficient
                 builder = new DocIdSetBuilder(reader.maxDoc(), terms);
