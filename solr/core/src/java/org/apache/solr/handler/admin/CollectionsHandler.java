@@ -679,11 +679,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       @Override
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler handler) throws Exception {
         NamedList<Object> results = new NamedList<>();
-        Set<String> collections = handler.coreContainer.getZkController().getZkStateReader().getClusterState().getCollections();
-        List<String> collectionList = new ArrayList<>();
-        for (String collection : collections) {
-          collectionList.add(collection);
-        }
+        Map<String, DocCollection> collections = handler.coreContainer.getZkController().getZkStateReader().getClusterState().getCollectionsMap();
+        List<String> collectionList = new ArrayList<>(collections.keySet());
         results.add("collections", collectionList);
         SolrResponse response = new OverseerSolrResponse(results);
         rsp.getValues().addAll(response.getResponse());

@@ -1884,7 +1884,7 @@ public class SolrCLI {
           log.warn("Skipping safety checks, configuration directory "+configName+" will be deleted with impunity.");
         } else {
           // need to scan all Collections to see if any are using the config
-          Set<String> collections = zkStateReader.getClusterState().getCollections();
+          Set<String> collections = zkStateReader.getClusterState().getCollectionsMap().keySet();
 
           // give a little note to the user if there are many collections in case it takes a while
           if (collections.size() > 50)
