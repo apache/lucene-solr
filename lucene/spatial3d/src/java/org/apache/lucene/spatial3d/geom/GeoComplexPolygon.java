@@ -132,7 +132,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
     // If we're right on top of any of the test planes, we navigate solely on that plane.
     if (testPointFixedYPlane.evaluateIsZero(thePoint)) {
       // Use the XZ plane exclusively.
-      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointFixedYPlane, testPointFixedYAbovePlane, testPointFixedYBelowPlane, testPoint, thePoint);
+      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointFixedYPlane, testPointFixedYAbovePlane, testPointFixedYBelowPlane, thePoint);
       // Traverse our way from the test point to the check point.  Use the y tree because that's fixed.
       if (!yTree.traverse(crossingEdgeIterator, testPoint.y)) {
         // Endpoint is on edge
@@ -141,7 +141,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
     } else if (testPointFixedXPlane.evaluateIsZero(thePoint)) {
       // Use the YZ plane exclusively.
-      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointFixedXPlane, testPointFixedXAbovePlane, testPointFixedXBelowPlane, testPoint, thePoint);
+      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointFixedXPlane, testPointFixedXAbovePlane, testPointFixedXBelowPlane, thePoint);
       // Traverse our way from the test point to the check point.  Use the x tree because that's fixed.
       if (!xTree.traverse(crossingEdgeIterator, testPoint.x)) {
         // Endpoint is on edge
@@ -150,7 +150,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
     } else if (testPointFixedZPlane.evaluateIsZero(thePoint)) {
       // Use the XY plane exclusively.
-      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointFixedZPlane, testPointFixedZAbovePlane, testPointFixedZBelowPlane, testPoint, thePoint);
+      final LinearCrossingEdgeIterator crossingEdgeIterator = new LinearCrossingEdgeIterator(testPointFixedZPlane, testPointFixedZAbovePlane, testPointFixedZBelowPlane, thePoint);
       // Traverse our way from the test point to the check point.  Use the z tree because that's fixed.
       if (!zTree.traverse(crossingEdgeIterator, testPoint.z)) {
         // Endpoint is on edge
@@ -158,6 +158,9 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
       return ((crossingEdgeIterator.crossingCount & 1) == 0)?testPointInSet:!testPointInSet;
     } else {
+      
+      // This is the expensive part!!
+      // Changing the code below has an enormous impact on the queries per second we see with the benchmark.
       
       // We need to use two planes to get there.  We don't know which two planes will do it but we can figure it out.
       final Plane travelPlaneFixedX = new Plane(1.0, 0.0, 0.0, -thePoint.x);
@@ -186,7 +189,15 @@ class GeoComplexPolygon extends GeoBasePolygon {
       
       for (final GeoPoint p : XIntersectionsY) {
         // Travel would be in YZ plane (fixed x) then in XZ (fixed y)
-        final double newDistance = Math.abs(testPoint.x - p.x) + Math.abs(thePoint.y - p.y);
+        // We compute distance we need to travel as a placeholder for the number of intersections we might encounter.
+        //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
+        final double tpDelta1 = testPoint.x - p.x;
+        final double tpDelta2 = testPoint.z - p.z;
+        final double cpDelta1 = thePoint.y - p.y;
+        final double cpDelta2 = thePoint.z - p.z;
+        final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
+        //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.z - p.z) * (thePoint.z - p.z);
+        //final double newDistance = Math.abs(testPoint.x - p.x) + Math.abs(thePoint.y - p.y);
         if (newDistance < bestDistance) {
           bestDistance = newDistance;
           firstLegValue = testPoint.y;
@@ -202,7 +213,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
       for (final GeoPoint p : XIntersectionsZ) {
         // Travel would be in YZ plane (fixed x) then in XY (fixed z)
-        final double newDistance = Math.abs(testPoint.x - p.x) + Math.abs(thePoint.z - p.z);
+        //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
+        final double tpDelta1 = testPoint.x - p.x;
+        final double tpDelta2 = testPoint.y - p.y;
+        final double cpDelta1 = thePoint.y - p.y;
+        final double cpDelta2 = thePoint.z - p.z;
+        final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
+        //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.y - p.y) * (testPoint.y - p.y)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.z - p.z) * (thePoint.z - p.z);
+        //final double newDistance = Math.abs(testPoint.x - p.x) + Math.abs(thePoint.z - p.z);
         if (newDistance < bestDistance) {
           bestDistance = newDistance;
           firstLegValue = testPoint.z;
@@ -218,7 +236,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
       for (final GeoPoint p : YIntersectionsX) {
         // Travel would be in XZ plane (fixed y) then in YZ (fixed x)
-        final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.x - p.x);
+        //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
+        final double tpDelta1 = testPoint.y - p.y;
+        final double tpDelta2 = testPoint.z - p.z;
+        final double cpDelta1 = thePoint.x - p.x;
+        final double cpDelta2 = thePoint.z - p.z;
+        final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
+        //final double newDistance = (testPoint.y - p.y) * (testPoint.y - p.y) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.x - p.x) * (thePoint.x - p.x) + (thePoint.z - p.z) * (thePoint.z - p.z);
+        //final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.x - p.x);
         if (newDistance < bestDistance) {
           bestDistance = newDistance;
           firstLegValue = testPoint.x;
@@ -234,7 +259,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
       for (final GeoPoint p : YIntersectionsZ) {
         // Travel would be in XZ plane (fixed y) then in XY (fixed z)
-        final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.z - p.z);
+        //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
+        final double tpDelta1 = testPoint.x - p.x;
+        final double tpDelta2 = testPoint.y - p.y;
+        final double cpDelta1 = thePoint.x - p.x;
+        final double cpDelta2 = thePoint.z - p.z;
+        final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
+        //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.y - p.y) * (testPoint.y - p.y)  + (thePoint.x - p.x) * (thePoint.x - p.x) + (thePoint.z - p.z) * (thePoint.z - p.z);
+        //final double newDistance = Math.abs(testPoint.y - p.y) + Math.abs(thePoint.z - p.z);
         if (newDistance < bestDistance) {
           bestDistance = newDistance;
           firstLegValue = testPoint.z;
@@ -250,7 +282,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
       for (final GeoPoint p : ZIntersectionsX) {
         // Travel would be in XY plane (fixed z) then in YZ (fixed x)
-        final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.x - p.x);
+        //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
+        final double tpDelta1 = testPoint.y - p.y;
+        final double tpDelta2 = testPoint.z - p.z;
+        final double cpDelta1 = thePoint.y - p.y;
+        final double cpDelta2 = thePoint.x - p.x;
+        final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
+        //final double newDistance = (testPoint.y - p.y) * (testPoint.y - p.y) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.x - p.x) * (thePoint.x - p.x);
+        //final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.x - p.x);
         if (newDistance < bestDistance) {
           bestDistance = newDistance;
           firstLegValue = testPoint.x;
@@ -266,7 +305,14 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
       for (final GeoPoint p : ZIntersectionsY) {
         // Travel would be in XY plane (fixed z) then in XZ (fixed y)
-        final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.y - p.y);
+        //final double newDistance = p.arcDistance(testPoint) + p.arcDistance(thePoint);
+        final double tpDelta1 = testPoint.x - p.x;
+        final double tpDelta2 = testPoint.z - p.z;
+        final double cpDelta1 = thePoint.y - p.y;
+        final double cpDelta2 = thePoint.x - p.x;
+        final double newDistance = tpDelta1 * tpDelta1 + tpDelta2 * tpDelta2 + cpDelta1 * cpDelta1 + cpDelta2 * cpDelta2;
+        //final double newDistance = (testPoint.x - p.x) * (testPoint.x - p.x) + (testPoint.z - p.z) * (testPoint.z - p.z)  + (thePoint.y - p.y) * (thePoint.y - p.y) + (thePoint.x - p.x) * (thePoint.x - p.x);
+        //final double newDistance = Math.abs(testPoint.z - p.z) + Math.abs(thePoint.y - p.y);
         if (newDistance < bestDistance) {
           bestDistance = newDistance;
           firstLegValue = testPoint.y;
@@ -666,7 +712,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
     
     public int crossingCount = 0;
     
-    public LinearCrossingEdgeIterator(final Plane plane, final Plane abovePlane, final Plane belowPlane, final Vector testPoint, final Vector thePoint) {
+    public LinearCrossingEdgeIterator(final Plane plane, final Plane abovePlane, final Plane belowPlane, final Vector thePoint) {
       this.plane = plane;
       this.abovePlane = abovePlane;
       this.belowPlane = belowPlane;
