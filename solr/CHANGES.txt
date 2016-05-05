@@ -184,6 +184,9 @@ Bug Fixes
 * SOLR-9030: The 'downnode' overseer command can trip asserts in ZkStateWriter.
   (Scott Blum, Mark Miller, shalin)
 
+* SOLR-9036: Solr slave is doing full replication (entire index) of index after master restart.
+  (Lior Sapir, Mark Miller, shalin)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
