@@ -538,7 +538,10 @@ public class IndexFetcher {
         }
       }
 
-      core.getUpdateHandler().getSolrCoreState().setLastReplicateIndexSuccess(successfulInstall);
+      if (core.getCoreDescriptor().getCoreContainer().isZooKeeperAware()) {
+        // we only track replication success in SolrCloud mode
+        core.getUpdateHandler().getSolrCoreState().setLastReplicateIndexSuccess(successfulInstall);
+      }
 
       filesToDownload = filesDownloaded = confFilesDownloaded = confFilesToDownload = null;
       markReplicationStop();
