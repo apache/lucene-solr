@@ -124,24 +124,17 @@ class SolrTable extends AbstractQueryableTable implements TranslatableTable {
     }
 
     if (orderList.isEmpty()) {
-      if (limit != null && Integer.parseInt(limit) > -1) {
-        orderList.add(DEFAULT_SCORE_FIELD + " desc");
+      orderList.add(DEFAULT_VERSION_FIELD + " desc");
 
-        // Make sure the default score field is in the field list
-        if (!fieldsList.contains(DEFAULT_SCORE_FIELD)) {
-          fieldsList.add(DEFAULT_SCORE_FIELD);
-        }
-      } else {
-        orderList.add(DEFAULT_VERSION_FIELD + " desc");
-
-        // Make sure the default sort field is in the field list
-        if (!fieldsList.contains(DEFAULT_VERSION_FIELD)) {
-          fieldsList.add(DEFAULT_VERSION_FIELD);
-        }
+      // Make sure the default sort field is in the field list
+      if (!fieldsList.contains(DEFAULT_VERSION_FIELD)) {
+        fieldsList.add(DEFAULT_VERSION_FIELD);
       }
     }
 
-    solrParams.put(CommonParams.SORT, String.join(",", orderList));
+    if(!orderList.isEmpty()) {
+      solrParams.put(CommonParams.SORT, String.join(",", orderList));
+    }
 
     if (fieldsList.isEmpty()) {
       solrParams.put(CommonParams.FL, "*");
