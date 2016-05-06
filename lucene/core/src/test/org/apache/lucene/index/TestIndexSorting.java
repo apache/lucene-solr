@@ -137,7 +137,7 @@ public class TestIndexSorting extends LuceneTestCase {
         assertEquals(0, topDocs.totalHits);
       } else {
         assertEquals(1, topDocs.totalHits);
-        assertEquals(i, MultiDocValues.getNumericValues(reader, "id").get(topDocs.scoreDocs[0].doc));
+        assertEquals(i, getNumericDocValue(reader, "id", topDocs.scoreDocs[0].doc));
         Document document = reader.document(topDocs.scoreDocs[0].doc);
         assertEquals(Integer.toString(i), document.get("id"));
       }
@@ -146,6 +146,14 @@ public class TestIndexSorting extends LuceneTestCase {
     reader.close();
     w.close();
     dir.close();
+  }
+
+  private static long getNumericDocValue(IndexReader reader, String field, int docID) throws IOException {
+    // We can't use MultiDocValues because it gets angry about the sorting:
+    List<LeafReaderContext> leaves = reader.leaves();
+    int sub = ReaderUtil.subIndex(docID, leaves);
+    LeafReaderContext leaf = leaves.get(sub);
+    return leaf.reader().getNumericDocValues(field).get(docID - leaf.docBase);
   }
 
   public void testSortOnMerge() throws IOException {
@@ -241,7 +249,7 @@ public class TestIndexSorting extends LuceneTestCase {
         assertEquals(0, topDocs.totalHits);
       } else {
         assertEquals(1, topDocs.totalHits);
-        assertEquals(values.get(i).longValue(), MultiDocValues.getNumericValues(reader, "foo").get(topDocs.scoreDocs[0].doc));
+        assertEquals(values.get(i).longValue(), getNumericDocValue(reader, "foo", topDocs.scoreDocs[0].doc));
       }
     }
     reader.close();
@@ -335,7 +343,7 @@ public class TestIndexSorting extends LuceneTestCase {
     for (int i = 0; i < numDocs; ++i) {
       final TopDocs topDocs = searcher.search(new TermQuery(new Term("id", Integer.toString(i))), 1);
       assertEquals(1, topDocs.totalHits);
-      assertEquals(values.get(i).longValue(), MultiDocValues.getNumericValues(reader, "foo").get(topDocs.scoreDocs[0].doc));
+      assertEquals(values.get(i).longValue(), getNumericDocValue(reader, "foo", topDocs.scoreDocs[0].doc));
     }
     reader.close();
     w.close();
@@ -380,8 +388,8 @@ public class TestIndexSorting extends LuceneTestCase {
       assertEquals(topDocs.totalHits, topDocs2.totalHits);
       if (topDocs.totalHits == 1) {
         assertEquals(
-            MultiDocValues.getNumericValues(reader, "foo").get(topDocs.scoreDocs[0].doc),
-            MultiDocValues.getNumericValues(reader2, "foo").get(topDocs2.scoreDocs[0].doc));
+                     getNumericDocValue(reader, "foo", topDocs.scoreDocs[0].doc),
+                     getNumericDocValue(reader2, "foo", topDocs2.scoreDocs[0].doc));
       }
     }
 

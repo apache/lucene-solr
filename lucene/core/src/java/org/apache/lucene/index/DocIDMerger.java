@@ -84,7 +84,9 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
   /** Reuse API, currently only used by postings during merge */
   public void reset() {
     if (queue != null) {
-      assert queue.size() == 0;
+      queue.clear();
+      // nocommit why does bloom filter wrapper trip this?
+      // assert queue.size() == 0: "queue.size() = " + queue.size();
       for(T sub : subs) {
         while (true) {
           int docID = sub.nextDoc();

@@ -26,6 +26,8 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -410,6 +412,61 @@ public class TestMultiDocValues extends LuceneTestCase {
     }
     ir.close();
     ir2.close();
+    dir.close();
+  }
+
+  public void testNoIndexSort() throws Exception {
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setIndexSort(new Sort(new SortField("foo", SortField.Type.INT)));
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, iwc);
+    w.addDocument(new Document());
+    DirectoryReader.open(w).close();
+    w.addDocument(new Document());
+    // this makes a sorted segment:
+    w.forceMerge(1);
+    // this makes another segment, so that MultiDocValues isn't just a no-op:
+    w.addDocument(new Document());
+    IndexReader r = DirectoryReader.open(w);
+    
+    String message = expectThrows(IllegalArgumentException.class, () -> {
+        MultiDocValues.getDocsWithField(r, "foo");
+      }).getMessage();
+    assertTrue(message.contains("cannot handle index sort"));
+    assertTrue(message.contains("indexSort=<int: \"foo\">"));
+
+    message = expectThrows(IllegalArgumentException.class, () -> {
+        MultiDocValues.getNumericValues(r, "foo");
+      }).getMessage();
+    assertTrue(message.contains("cannot handle index sort"));
+    assertTrue(message.contains("indexSort=<int: \"foo\">"));
+
+    message = expectThrows(IllegalArgumentException.class, () -> {
+        MultiDocValues.getBinaryValues(r, "foo");
+      }).getMessage();
+    assertTrue(message.contains("cannot handle index sort"));
+    assertTrue(message.contains("indexSort=<int: \"foo\">"));
+
+    message = expectThrows(IllegalArgumentException.class, () -> {
+        MultiDocValues.getSortedValues(r, "foo");
+      }).getMessage();
+    assertTrue(message.contains("cannot handle index sort"));
+    assertTrue(message.contains("indexSort=<int: \"foo\">"));
+
+    message = expectThrows(IllegalArgumentException.class, () -> {
+        MultiDocValues.getSortedSetValues(r, "foo");
+      }).getMessage();
+    assertTrue(message.contains("cannot handle index sort"));
+    assertTrue(message.contains("indexSort=<int: \"foo\">"));
+
+    message = expectThrows(IllegalArgumentException.class, () -> {
+        MultiDocValues.getSortedNumericValues(r, "foo");
+      }).getMessage();
+    assertTrue(message.contains("cannot handle index sort"));
+    assertTrue(message.contains("indexSort=<int: \"foo\">"));
+
+    r.close();
+    w.close();
     dir.close();
   }
 }

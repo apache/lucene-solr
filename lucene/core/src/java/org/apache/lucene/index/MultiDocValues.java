@@ -78,6 +78,9 @@ public class MultiDocValues {
     final int[] starts = new int[size+1];
     for (int i = 0; i < size; i++) {
       LeafReaderContext context = leaves.get(i);
+      if (context.reader().getIndexSort() != null) {
+        throw new IllegalArgumentException("cannot handle index sort: reader=" + context.reader());
+      }
       NumericDocValues v = context.reader().getNormValues(field);
       if (v == null) {
         v = DocValues.emptyNumeric();
@@ -120,6 +123,9 @@ public class MultiDocValues {
     final int[] starts = new int[size+1];
     for (int i = 0; i < size; i++) {
       LeafReaderContext context = leaves.get(i);
+      if (context.reader().getIndexSort() != null) {
+        throw new IllegalArgumentException("cannot handle index sort: reader=" + context.reader());
+      }
       NumericDocValues v = context.reader().getNumericDocValues(field);
       if (v == null) {
         v = DocValues.emptyNumeric();
@@ -165,6 +171,9 @@ public class MultiDocValues {
     final int[] starts = new int[size+1];
     for (int i = 0; i < size; i++) {
       LeafReaderContext context = leaves.get(i);
+      if (context.reader().getIndexSort() != null) {
+        throw new IllegalArgumentException("cannot handle index sort: reader=" + context.reader());
+      }
       Bits v = context.reader().getDocsWithField(field);
       if (v == null) {
         v = new Bits.MatchNoBits(context.reader().maxDoc());
@@ -210,6 +219,9 @@ public class MultiDocValues {
     final int[] starts = new int[size+1];
     for (int i = 0; i < size; i++) {
       LeafReaderContext context = leaves.get(i);
+      if (context.reader().getIndexSort() != null) {
+        throw new IllegalArgumentException("cannot handle index sort: reader=" + context.reader());
+      }
       BinaryDocValues v = context.reader().getBinaryDocValues(field);
       if (v == null) {
         v = DocValues.emptyBinary();
@@ -254,6 +266,9 @@ public class MultiDocValues {
     final int[] starts = new int[size+1];
     for (int i = 0; i < size; i++) {
       LeafReaderContext context = leaves.get(i);
+      if (context.reader().getIndexSort() != null) {
+        throw new IllegalArgumentException("cannot handle index sort: reader=" + context.reader());
+      }
       SortedNumericDocValues v = context.reader().getSortedNumericDocValues(field);
       if (v == null) {
         v = DocValues.emptySortedNumeric(context.reader().maxDoc());
@@ -312,6 +327,9 @@ public class MultiDocValues {
     final int[] starts = new int[size+1];
     for (int i = 0; i < size; i++) {
       LeafReaderContext context = leaves.get(i);
+      if (context.reader().getIndexSort() != null) {
+        throw new IllegalArgumentException("cannot handle index sort: reader=" + context.reader());
+      }
       SortedDocValues v = context.reader().getSortedDocValues(field);
       if (v == null) {
         v = DocValues.emptySorted();
@@ -352,6 +370,9 @@ public class MultiDocValues {
     final int[] starts = new int[size+1];
     for (int i = 0; i < size; i++) {
       LeafReaderContext context = leaves.get(i);
+      if (context.reader().getIndexSort() != null) {
+        throw new IllegalArgumentException("cannot handle index sort: reader=" + context.reader());
+      }
       SortedSetDocValues v = context.reader().getSortedSetDocValues(field);
       if (v == null) {
         v = DocValues.emptySortedSet();

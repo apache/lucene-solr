@@ -51,7 +51,7 @@ public final class MultiFields extends Fields {
   private final ReaderSlice[] subSlices;
   private final Map<String,Terms> terms = new ConcurrentHashMap<>();
 
-  // nocommit should we somehow throw exc if you try to pass in "sorted" Fields?
+  // nocommit make test for sorted fields
 
   /** Returns a single {@link Fields} instance for this
    *  reader, merging fields/terms/docs/positions on the
@@ -72,6 +72,9 @@ public final class MultiFields extends Fields {
         final List<ReaderSlice> slices = new ArrayList<>(leaves.size());
         for (final LeafReaderContext ctx : leaves) {
           final LeafReader r = ctx.reader();
+          if (r.getIndexSort() != null) {
+            throw new IllegalArgumentException("cannot handle index sort: reader=" + r);
+          }
           final Fields f = r.fields();
           fields.add(f);
           slices.add(new ReaderSlice(ctx.docBase, r.maxDoc(), fields.size()-1));
@@ -107,6 +110,10 @@ public final class MultiFields extends Fields {
       for (int i = 0; i < size; i++) {
         // record all liveDocs, even if they are null
         final LeafReaderContext ctx = leaves.get(i);
+        if (ctx.reader().getIndexSort() != null) {
+          throw new IllegalArgumentException("cannot handle index sort: reader=" + ctx.reader());
+        }
+
         liveDocs[i] = ctx.reader().getLiveDocs();
         starts[i] = ctx.docBase;
       }

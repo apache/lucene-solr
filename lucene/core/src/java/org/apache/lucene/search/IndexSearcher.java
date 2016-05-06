@@ -37,7 +37,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.IndexWriter; // javadocs
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
@@ -803,21 +802,34 @@ public class IndexSearcher {
    * @lucene.experimental
    */
   public CollectionStatistics collectionStatistics(String field) throws IOException {
-    final int docCount;
-    final long sumTotalTermFreq;
-    final long sumDocFreq;
+    int docCount = 0;
+    long sumTotalTermFreq = 0;
+    long sumDocFreq = 0;
 
     assert field != null;
-    
-    Terms terms = MultiFields.getTerms(reader, field);
-    if (terms == null) {
-      docCount = 0;
-      sumTotalTermFreq = 0;
-      sumDocFreq = 0;
-    } else {
-      docCount = terms.getDocCount();
-      sumTotalTermFreq = terms.getSumTotalTermFreq();
-      sumDocFreq = terms.getSumDocFreq();
+
+    for(LeafReaderContext ctx : reader.leaves()) {
+      Terms terms = ctx.reader().fields().terms(field);
+      if (terms != null) {
+        int subDocCount = terms.getDocCount();
+        if (subDocCount == -1) {
+          docCount = -1;
+        } else if (docCount != -1) {
+          docCount += subDocCount;
+        }
+        long subSumDocFreq = terms.getSumDocFreq();
+        if (subSumDocFreq == -1) {
+          sumDocFreq = -1;
+        } else if (sumDocFreq != -1) {
+          sumDocFreq += subSumDocFreq;
+        }
+        long subSumTotalTermFreq = terms.getSumTotalTermFreq();
+        if (subSumTotalTermFreq == -1) {
+          sumTotalTermFreq = -1;
+        } else if (sumTotalTermFreq != -1) {
+          sumTotalTermFreq += subSumTotalTermFreq;
+        }
+      }
     }
     return new CollectionStatistics(field, reader.maxDoc(), docCount, sumTotalTermFreq, sumDocFreq);
   }
