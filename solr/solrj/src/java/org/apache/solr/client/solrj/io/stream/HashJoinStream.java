@@ -44,7 +44,8 @@ public class HashJoinStream extends TupleStream implements Expressible {
 
   protected TupleStream hashStream;
   protected TupleStream fullStream;
-  protected List<String> hashOn;
+  protected List<String> leftHashOn;
+  protected List<String> rightHashOn;
   protected HashMap<Integer, List<Tuple>> hashedTuples;
   
   protected Tuple workingFullTuple = null;
@@ -94,8 +95,25 @@ public class HashJoinStream extends TupleStream implements Expressible {
   private void init(TupleStream fullStream, TupleStream hashStream, List<String> hashOn) throws IOException {
     this.fullStream = fullStream;
     this.hashStream = hashStream;
-    this.hashOn = hashOn;
     this.hashedTuples = new HashMap<>();
+    this.leftHashOn = new ArrayList<>();
+    this.rightHashOn = new ArrayList<>();
+    
+    for(String hasher : hashOn){
+      String[] parts = hasher.split("=");
+      if(1 == parts.length){
+        String field = parts[0].trim();
+        leftHashOn.add(field);
+        rightHashOn.add(field);
+      }
+      else if(2 == parts.length){
+        leftHashOn.add(parts[0].trim());
+        rightHashOn.add(parts[1].trim());
+      }
+      else{
+        throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - invalid 'on' parameter - expecting 1 or more instances if 'field' or 'field=hashedField' but found '%s'",hasher));
+      }
+    }    
   }
   
   @Override
@@ -114,12 +132,24 @@ public class HashJoinStream extends TupleStream implements Expressible {
     
     // on
     StringBuilder sb = new StringBuilder();
-    for(String part : hashOn){
+    for(int idx = 0; idx < leftHashOn.size(); ++idx){
       if(sb.length() > 0){ sb.append(","); }
-      sb.append(part);
+      
+      // we know that left and right hashOns are the same size
+      String left = leftHashOn.get(idx);
+      String right = rightHashOn.get(idx);
+      
+      if(left.equals(right)){ 
+        sb.append(left); 
+      }
+      else{
+        sb.append(left);
+        sb.append("=");
+        sb.append(right);
+      }
     }
-    expression.addParameter(new StreamExpressionNamedParameter("on",sb.toString()));
     
+    expression.addParameter(new StreamExpressionNamedParameter("on",sb.toString()));
     return expression;   
   }
 
@@ -141,7 +171,7 @@ public class HashJoinStream extends TupleStream implements Expressible {
     
     Tuple tuple = hashStream.read();
     while(!tuple.EOF){
-      Integer hash = calculateHash(tuple);
+      Integer hash = calculateHash(tuple, rightHashOn);
       if(null != hash){
         if(hashedTuples.containsKey(hash)){
           hashedTuples.get(hash).add(tuple);
@@ -156,7 +186,7 @@ public class HashJoinStream extends TupleStream implements Expressible {
     }
   }
   
-  protected Integer calculateHash(Tuple tuple){
+  protected Integer calculateHash(Tuple tuple, List<String> hashOn){
     StringBuilder sb = new StringBuilder();
     for(String part : hashOn){
       Object obj = tuple.get(part);
@@ -164,7 +194,7 @@ public class HashJoinStream extends TupleStream implements Expressible {
         return null;
       }
       sb.append(obj.toString());
-      sb.append("::"); // this is here to seperate fields
+      sb.append("::"); // this is here to separate fields
     }
     
     return sb.toString().hashCode();
@@ -188,7 +218,7 @@ public class HashJoinStream extends TupleStream implements Expressible {
       
       // If fullTuple doesn't have a valid hash or if there is no doc to 
       // join with then retry loop - keep going until we find one
-      Integer fullHash = calculateHash(fullTuple);
+      Integer fullHash = calculateHash(fullTuple, leftHashOn);
       if(null == fullHash || !hashedTuples.containsKey(fullHash)){
         continue findNextWorkingFullTuple;
       }
