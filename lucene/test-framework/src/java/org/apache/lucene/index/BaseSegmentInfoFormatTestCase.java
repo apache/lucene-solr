@@ -122,7 +122,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     info.setFiles(Collections.<String>emptySet());
     codec.segmentInfoFormat().write(dir, info, IOContext.DEFAULT);
     SegmentInfo info2 = codec.segmentInfoFormat().read(dir, "_123", id, IOContext.DEFAULT);
-    assertEquals(attributes, info2.getAttributes());
+    assertAttributesEquals(attributes, info2.getAttributes());
     
     // attributes map should be immutable
     expectThrows(UnsupportedOperationException.class, () -> {
@@ -353,7 +353,7 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     assertIDEquals(expected.getId(), actual.getId());
     assertEquals(expected.getUseCompoundFile(), actual.getUseCompoundFile());
     assertEquals(expected.getVersion(), actual.getVersion());
-    assertEquals(expected.getAttributes(), actual.getAttributes());
+    assertAttributesEquals(expected.getAttributes(), actual.getAttributes());
   }
   
   /** Returns the versions this SI should test */
@@ -368,6 +368,15 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     assertArrayEquals(expected, actual);
   }
   
+  /**
+   * assert that attributes map is equal.
+   * @deprecated only exists to be overridden by old codecs that didnt support this
+   */
+  @Deprecated
+  protected void assertAttributesEquals(Map<String,String> expected, Map<String,String> actual) {
+    assertEquals(expected, actual);
+  }
+
   @Override
   protected void addRandomFields(Document doc) {
     doc.add(new StoredField("foobar", TestUtil.randomSimpleString(random())));

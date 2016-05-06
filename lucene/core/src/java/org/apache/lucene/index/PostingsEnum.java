@@ -57,6 +57,14 @@ public abstract class PostingsEnum extends DocIdSetIterator {
   public static final short ALL = OFFSETS | PAYLOADS;
 
   /**
+   * Codec implementations should check for this flag,
+   * and return null when positions are requested but not present.
+   * @deprecated only for internal use.
+   */
+  @Deprecated
+  public static final short OLD_NULL_SEMANTICS = 1 << 14;
+
+  /**
    * Returns true if the given feature is requested in the flags, false otherwise.
    */
   public static boolean featureRequested(int flags, short feature) {

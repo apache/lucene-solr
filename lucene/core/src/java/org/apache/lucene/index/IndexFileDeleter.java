@@ -221,7 +221,7 @@ final class IndexFileDeleter implements Closeable {
       final String fileName = entry.getKey();
       if (0 == rc.count) {
         // A segments_N file should never have ref count 0 on init:
-        if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
+        if (fileName.startsWith(IndexFileNames.SEGMENTS) && fileName.equals(IndexFileNames.OLD_SEGMENTS_GEN) == false) {
           throw new IllegalStateException("file \"" + fileName + "\" has refCount=0, which should never happen on init");
         }
         if (infoStream.isEnabled("IFD")) {
