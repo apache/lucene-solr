@@ -62,7 +62,6 @@ final class MappingMultiPostingsEnum extends PostingsEnum {
     this.field = field;
     allSubs = new MappingPostingsSub[mergeState.fieldsProducers.length];
     for(int i=0;i<allSubs.length;i++) {
-      // nocommit delDocMaps?
       allSubs[i] = new MappingPostingsSub(mergeState.docMaps[i], mergeState.liveDocs[i]);
     }
     this.docIDMerger = new DocIDMerger<MappingPostingsSub>(subs, allSubs.length, mergeState.segmentInfo.getIndexSort() != null);
@@ -89,7 +88,11 @@ final class MappingMultiPostingsEnum extends PostingsEnum {
 
   @Override
   public int docID() {
-    return current.mappedDocID;
+    if (current == null) {
+      return -1;
+    } else {
+      return current.mappedDocID;
+    }
   }
 
   @Override

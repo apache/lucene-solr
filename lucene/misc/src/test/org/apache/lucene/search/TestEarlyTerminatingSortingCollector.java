@@ -50,8 +50,6 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
-import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -236,27 +234,12 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
     }
   }
 
-  private IndexSearcher newSearcherForTestTerminatedEarly(IndexReader r) throws IOException {
-    switch(random().nextInt(2)) {
-    case 0:
-      return new IndexSearcher(r);
-    case 1:
-      assertTrue(r+" is not a DirectoryReader", (r instanceof DirectoryReader));
-      final DirectoryReader directoryReader = ExitableDirectoryReader.wrap(
-          UninvertingReader.wrap((DirectoryReader) r, new HashMap<String,Type>()),
-          new TestEarlyTerminatingSortingcollectorQueryTimeout(false));
-      return new IndexSearcher(directoryReader);
-    }
-    fail("newSearcherForTestTerminatedEarly("+r+") fell through switch");
-    return null;
-  }
-
   public void testTerminatedEarly() throws IOException {
     final int iters = atLeast(8);
     for (int i = 0; i < iters; ++i) {
       createRandomIndex(true);
 
-      final IndexSearcher searcher = newSearcherForTestTerminatedEarly(reader); // future TODO: use newSearcher(reader);
+      final IndexSearcher searcher = new IndexSearcher(reader); // future TODO: use newSearcher(reader);
       final Query query = new MatchAllDocsQuery(); // search for everything/anything
 
       final TestTerminatedEarlySimpleCollector collector1 = new TestTerminatedEarlySimpleCollector();

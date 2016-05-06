@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.Document;
@@ -76,16 +75,17 @@ import org.junit.BeforeClass;
 
 // nocommit test EarlyTerminatingCollector
 
+// nocommit must test all supported SortField.Type
+
 public class TestIndexSorting extends LuceneTestCase {
 
   public void testSortOnMerge(boolean withDeletes) throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec()); // nocommit only simple-text supports sorting so far
     Sort indexSort = new Sort(new SortField("foo", SortField.Type.LONG));
     iwc.setIndexSort(indexSort);
     IndexWriter w = new IndexWriter(dir, iwc);
-    final int numDocs = atLeast(200);
+    final int numDocs = atLeast(1000);
     final FixedBitSet deleted = new FixedBitSet(numDocs);
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
@@ -212,7 +212,6 @@ public class TestIndexSorting extends LuceneTestCase {
   public void testConcurrentUpdates() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec()); // nocommit only simple-text supports sorting so far
     Sort indexSort = new Sort(new SortField("foo", SortField.Type.LONG));
     iwc.setIndexSort(indexSort);
     IndexWriter w = new IndexWriter(dir, iwc);
@@ -303,7 +302,6 @@ public class TestIndexSorting extends LuceneTestCase {
   public void testConcurrentDVUpdates() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec()); // nocommit only simple-text supports sorting so far
     Sort indexSort = new Sort(new SortField("foo", SortField.Type.LONG));
     iwc.setIndexSort(indexSort);
     IndexWriter w = new IndexWriter(dir, iwc);
@@ -314,6 +312,7 @@ public class TestIndexSorting extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new StringField("id", Integer.toString(i), Store.NO));
       doc.add(new NumericDocValuesField("foo", -1));
+      w.addDocument(doc);
       values.put(i, -1L);
     }
     Thread[] threads = new Thread[2];
@@ -321,7 +320,7 @@ public class TestIndexSorting extends LuceneTestCase {
     final CountDownLatch latch = new CountDownLatch(1);
     for (int i = 0; i < threads.length; ++i) {
       Random r = new Random(random().nextLong());
-      threads[i] = new Thread(new UpdateRunnable(numDocs, r, latch, updateCount, w, values));
+      threads[i] = new Thread(new DVUpdateRunnable(numDocs, r, latch, updateCount, w, values));
     }
     for (Thread thread : threads) {
       thread.start();
@@ -362,7 +361,6 @@ public class TestIndexSorting extends LuceneTestCase {
 
     Directory dir2 = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec()); // nocommit only simple-text supports sorting so far
     Sort indexSort = new Sort(new SortField("foo", SortField.Type.LONG));
     iwc.setIndexSort(indexSort);
     IndexWriter w2 = new IndexWriter(dir2, iwc);
@@ -410,7 +408,6 @@ public class TestIndexSorting extends LuceneTestCase {
   public void testIllegalChangeSort() throws Exception {
     final Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc.setCodec(new SimpleTextCodec()); // nocommit only simple-text supports sorting so far
     iwc.setIndexSort(new Sort(new SortField("foo", SortField.Type.LONG)));
     IndexWriter w = new IndexWriter(dir, iwc);
     w.addDocument(new Document());
@@ -420,12 +417,13 @@ public class TestIndexSorting extends LuceneTestCase {
     w.close();
 
     final IndexWriterConfig iwc2 = new IndexWriterConfig(new MockAnalyzer(random()));
-    iwc2.setCodec(new SimpleTextCodec()); // nocommit only simple-text supports sorting so far
     iwc2.setIndexSort(new Sort(new SortField("bar", SortField.Type.LONG)));
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
         new IndexWriter(dir, iwc2);
     });
-    assertEquals("cannot change previous indexSort=<long: \"foo\"> (from segment=_2(7.0.0):c2:[indexSort=<long: \"foo\">]) to new indexSort=<long: \"bar\">", expected.getMessage());
+    String message = e.getMessage();
+    assertTrue(message.contains("cannot change previous indexSort=<long: \"foo\">"));
+    assertTrue(message.contains("to new indexSort=<long: \"bar\">"));
     dir.close();
   }
 
@@ -574,8 +572,6 @@ public class TestIndexSorting extends LuceneTestCase {
     
     PositionsTokenStream positions = new PositionsTokenStream();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    // nocommit:
-    conf.setCodec(new SimpleTextCodec());
     conf.setMaxBufferedDocs(4); // create some segments
     conf.setSimilarity(new NormsSimilarity(conf.getSimilarity())); // for testing norms field
     // nocommit
@@ -633,7 +629,6 @@ public class TestIndexSorting extends LuceneTestCase {
       assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOC_POSITIONS_TERM)));
       PostingsEnum sortedPositions = termsEnum.postings(null, PostingsEnum.ALL);
       int doc;
-      boolean isSorted = reader.getIndexSort() != null;
     
       // test nextDoc()
       while ((doc = sortedPositions.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -687,7 +682,6 @@ public class TestIndexSorting extends LuceneTestCase {
       LeafReader reader = ctx.reader();
       NumericDocValues dv = reader.getNormValues(NORMS_FIELD);
       int maxDoc = reader.maxDoc();
-      boolean isSorted = reader.getIndexSort() != null;
       for (int doc = 0; doc < maxDoc; doc++) {
         int id = Integer.parseInt(reader.document(doc).get(ID_FIELD));
         assertEquals("incorrect norm value for doc " + doc, id, dv.get(doc));

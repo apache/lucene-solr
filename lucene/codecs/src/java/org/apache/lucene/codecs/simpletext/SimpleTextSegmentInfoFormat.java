@@ -216,6 +216,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
                 break;
             }
             break;
+          // nocommit need the rest
           default:
             throw new AssertionError();
         }
@@ -337,6 +338,7 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
           case INT:
             sortType = "int";
             break;
+          // nocommit the rest:
           default:
             throw new IllegalStateException("Unexpected sort type: " + sortField.getType());
         }

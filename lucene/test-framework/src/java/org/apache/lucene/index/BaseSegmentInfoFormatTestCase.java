@@ -163,8 +163,14 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     }
   }
 
+  protected boolean supportsIndexSort() {
+    return true;
+  }
+
   /** Test sort */
   public void testSort() throws IOException {
+    assumeTrue("test requires a codec that can read/write index sort", supportsIndexSort());
+
     final int iters = atLeast(5);
     for (int i = 0; i < iters; ++i) {
       Sort sort;
