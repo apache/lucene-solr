@@ -618,13 +618,13 @@ public class CloudSolrClient extends SolrClient {
       return null;
     }
 
-    NamedList<Throwable> exceptions = new NamedList<>();
-    NamedList<NamedList> shardResponses = new NamedList<>();
-
     Map<String, LBHttpSolrClient.Req> routes = updateRequest.getRoutes(router, col, urlMap, routableParams, this.idField);
     if (routes == null) {
       return null;
     }
+
+    final NamedList<Throwable> exceptions = new NamedList<>();
+    final NamedList<NamedList> shardResponses = new NamedList<>(routes.size()+1); // +1 for deleteQuery
 
     long start = System.nanoTime();
 
