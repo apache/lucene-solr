@@ -178,6 +178,55 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testParameterSubstitution() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTION);
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTION;
+    List<Tuple> tuples;
+    TupleStream stream;
+
+    // Basic test
+    Map<String,String> params = new HashMap<>();
+    params.put("expr","merge("
+        + "${q1},"
+        + "${q2},"
+        + "on=${mySort})");
+    params.put(CommonParams.QT, "/stream");
+    params.put("q1", "search(" + COLLECTION + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+    params.put("q2", "search(" + COLLECTION + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+    params.put("mySort", "a_f asc");
+    stream = new SolrStream(url, params);
+    tuples = getTuples(stream);
+
+    assertEquals(4, tuples.size());
+    assertOrder(tuples, 0,1,3,4);
+
+    // Basic test desc
+    params.put("mySort", "a_f desc");
+    stream = new SolrStream(url, params);
+    tuples = getTuples(stream);
+
+    assertEquals(4, tuples.size());
+    assertOrder(tuples, 4,3,1,0);
+
+    // Basic w/ multi comp
+    params.put("q2", "search(" + COLLECTION + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+    params.put("mySort", "\"a_f asc, a_s asc\"");
+    stream = new SolrStream(url, params);
+    tuples = getTuples(stream);
+
+    assertEquals(5, tuples.size());
+    assertOrder(tuples, 0,2,1,3,4);
+  }
+
+  @Test
   public void testUniqueStream() throws Exception {
 
     new UpdateRequest()
