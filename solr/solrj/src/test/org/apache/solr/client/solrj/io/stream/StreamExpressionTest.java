@@ -482,13 +482,12 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   @Test
   public void testRandomStream() throws Exception {
 
-    new UpdateRequest()
-        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
-        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
-        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
-        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
-        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
-        .commit(cluster.getSolrClient(), COLLECTION);
+    UpdateRequest update = new UpdateRequest();
+    for(int idx = 0; idx < 1000; ++idx){
+      String idxString = new Integer(idx).toString();
+      update.add(id,idxString, "a_s", "hello" + idxString, "a_i", idxString, "a_f", idxString);
+    }
+    update.commit(cluster.getSolrClient(), COLLECTION);
 
     StreamExpression expression;
     TupleStream stream;
@@ -503,17 +502,17 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     try {
       context.setSolrClientCache(cache);
 
-      expression = StreamExpressionParser.parse("random(" + COLLECTION + ", q=\"*:*\", rows=\"10\", fl=\"id, a_i\")");
+      expression = StreamExpressionParser.parse("random(" + COLLECTION + ", q=\"*:*\", rows=\"1000\", fl=\"id, a_i\")");
       stream = factory.constructStream(expression);
       stream.setStreamContext(context);
       List<Tuple> tuples1 = getTuples(stream);
-      assert (tuples1.size() == 5);
+      assert (tuples1.size() == 1000);
 
-      expression = StreamExpressionParser.parse("random(" + COLLECTION + ", q=\"*:*\", rows=\"10\", fl=\"id, a_i\")");
+      expression = StreamExpressionParser.parse("random(" + COLLECTION + ", q=\"*:*\", rows=\"1000\", fl=\"id, a_i\")");
       stream = factory.constructStream(expression);
       stream.setStreamContext(context);
       List<Tuple> tuples2 = getTuples(stream);
-      assert (tuples2.size() == 5);
+      assert (tuples2.size() == 1000);
 
       boolean different = false;
       for (int i = 0; i < tuples1.size(); i++) {
@@ -1453,6 +1452,16 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     stream = new HashJoinStream(expression, factory);
     tuples = getTuples(stream);    
     assert(tuples.size() == 0);
+    
+    // Basic test with "on" mapping
+    expression = StreamExpressionParser.parse("hashJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join3_i,ident_s\", sort=\"join1_i asc, join3_i asc, id asc\"),"
+                                                + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join3_i,ident_s\", sort=\"join1_i asc, join3_i asc\"),"
+                                                + "on=\"join1_i=join3_i\")");
+    stream = new HashJoinStream(expression, factory);
+    tuples = getTuples(stream);
+    assertEquals(17, tuples.size());
+    assertOrder(tuples, 1, 1, 2, 2, 15, 15, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7);
 
   }
 
@@ -1517,6 +1526,15 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assert(tuples.size() == 8);
     assertOrder(tuples, 1,15,2,3,4,5,6,7);
 
+    // Basic test
+    expression = StreamExpressionParser.parse("outerHashJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                                                + "hashed=search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join2_s asc\"),"
+                                                + "on=\"join1_i=join3_i, join2_s\")");
+    stream = new OuterHashJoinStream(expression, factory);
+    tuples = getTuples(stream);
+    assert(tuples.size() == 10);
+    assertOrder(tuples, 1,1,15,15,2,3,4,5,6,7);
   }
 
   @Test

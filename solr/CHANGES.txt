@@ -124,6 +124,8 @@ New Features
 
 * SOLR-9049: RuleBasedAuthorizationPlugin supports regex in param values eg: "command" : "REGEX:(i?)create" (noble)
 
+* SOLR-8972: Add GraphHandler and GraphMLResponseWriter to support graph visualizations (Joel Bernstein)
+
 Bug Fixes
 ----------------------
 
@@ -186,6 +188,9 @@ Bug Fixes
 
 * SOLR-9036: Solr slave is doing full replication (entire index) of index after master restart.
   (Lior Sapir, Mark Miller, shalin)
+
+* SOLR-9058: Makes HashJoinStream and OuterHashJoinStream support different field names in the 
+  incoming streams, eg. fieldA=fieldB. (Dennis Gove, Stephan Osthold)
 
 Optimizations
 ----------------------

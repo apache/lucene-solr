@@ -65,9 +65,21 @@ public class OuterHashJoinStream extends HashJoinStream implements Expressible {
     
     // on
     StringBuilder sb = new StringBuilder();
-    for(String part : hashOn){
+    for(int idx = 0; idx < leftHashOn.size(); ++idx){
       if(sb.length() > 0){ sb.append(","); }
-      sb.append(part);
+      
+      // we know that left and right hashOns are the same size
+      String left = leftHashOn.get(idx);
+      String right = rightHashOn.get(idx);
+      
+      if(left.equals(right)){ 
+        sb.append(left); 
+      }
+      else{
+        sb.append(left);
+        sb.append("=");
+        sb.append(right);
+      }
     }
     expression.addParameter(new StreamExpressionNamedParameter("on",sb.toString()));
     
@@ -87,7 +99,7 @@ public class OuterHashJoinStream extends HashJoinStream implements Expressible {
       // If fullTuple doesn't have a valid hash or the hash cannot be found in the hashedTuples then
       // return the tuple from fullStream.
       // This is an outer join so there is no requirement there be a matching value in the hashed stream
-      Integer fullHash = calculateHash(fullTuple);
+      Integer fullHash = calculateHash(fullTuple, leftHashOn);
       if(null == fullHash || !hashedTuples.containsKey(fullHash)){
         return fullTuple.clone();
       }
