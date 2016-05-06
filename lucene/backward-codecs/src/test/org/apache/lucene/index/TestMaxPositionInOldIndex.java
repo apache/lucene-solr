@@ -98,7 +98,7 @@ public class BuildMaxPositionIndex {
     assertEquals(expectedCorruption.getMessage(), new CorruptIndexException(expectedCorruption.getOriginalMessage(), expectedCorruption.getResourceDescription()).getMessage());
     // SerialMergeScheduler
     assertTrue("got message " + expectedCorruption.getMessage(),
-        expectedCorruption.getMessage().contains("position=2147483647 is too large (> IndexWriter.MAX_POSITION=2147483519), field=\"foo\" doc=0 (resource=PerFieldPostings(segment=_0 formats=1)"));
+        expectedCorruption.getMessage().contains("position=2147483647 is too large (> IndexWriter.MAX_POSITION=2147483519), field=\"foo\" doc=0"));
 
     w.close();
     dir.close();

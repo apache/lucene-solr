@@ -293,4 +293,9 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
       ctx.reader().checkIntegrity();
     }
   }
+
+  @Override
+  public Sort getIndexSort() {
+    return null;
+  }
 }

@@ -94,10 +94,8 @@ public class Lucene50RWSegmentInfoFormat extends Lucene50SegmentInfoFormat {
   @Override
   public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene50SegmentInfoFormat.SI_EXTENSION);
-    // nocommit indexSort
-    if (si.getIndexSort() != null) {
-      throw new IllegalArgumentException("teach me to write indexSort");
-    }
+
+    assert si.getIndexSort() == null;
 
     try (IndexOutput output = dir.createOutput(fileName, ioContext)) {
       // Only add the file once we've successfully created it, else IFD assert can trip:

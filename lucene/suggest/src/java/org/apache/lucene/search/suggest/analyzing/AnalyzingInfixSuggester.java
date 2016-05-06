@@ -586,8 +586,8 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     // We sorted postings by weight during indexing, so we
     // only retrieve the first num hits now:
     Collector c2 = new EarlyTerminatingSortingCollector(c, SORT, num);
-    IndexSearcher searcher = searcherMgr.acquire();
     List<LookupResult> results = null;
+    IndexSearcher searcher = searcherMgr.acquire();
     try {
       //System.out.println("got searcher=" + searcher);
       searcher.search(finalQuery, c2);
