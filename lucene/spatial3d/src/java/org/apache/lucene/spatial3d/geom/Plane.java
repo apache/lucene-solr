@@ -53,6 +53,19 @@ public class Plane extends Vector {
    * Construct a plane through two points and origin.
    *
    * @param A is the first point (origin based).
+   * @param BX is the second point X (origin based).
+   * @param BY is the second point Y (origin based).
+   * @param BZ is the second point Z (origin based).
+   */
+  public Plane(final Vector A, final double BX, final double BY, final double BZ) {
+    super(A, BX, BY, BZ);
+    D = 0.0;
+  }
+
+  /**
+   * Construct a plane through two points and origin.
+   *
+   * @param A is the first point (origin based).
    * @param B is the second point (origin based).
    */
   public Plane(final Vector A, final Vector B) {
