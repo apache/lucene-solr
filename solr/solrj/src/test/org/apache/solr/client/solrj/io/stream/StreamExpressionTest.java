@@ -1452,6 +1452,16 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     stream = new HashJoinStream(expression, factory);
     tuples = getTuples(stream);    
     assert(tuples.size() == 0);
+    
+    // Basic test with "on" mapping
+    expression = StreamExpressionParser.parse("hashJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join3_i,ident_s\", sort=\"join1_i asc, join3_i asc, id asc\"),"
+                                                + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join3_i,ident_s\", sort=\"join1_i asc, join3_i asc\"),"
+                                                + "on=\"join1_i=join3_i\")");
+    stream = new HashJoinStream(expression, factory);
+    tuples = getTuples(stream);
+    assertEquals(17, tuples.size());
+    assertOrder(tuples, 1, 1, 2, 2, 15, 15, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7);
 
   }
 
@@ -1516,6 +1526,15 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assert(tuples.size() == 8);
     assertOrder(tuples, 1,15,2,3,4,5,6,7);
 
+    // Basic test
+    expression = StreamExpressionParser.parse("outerHashJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                                                + "hashed=search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join2_s asc\"),"
+                                                + "on=\"join1_i=join3_i, join2_s\")");
+    stream = new OuterHashJoinStream(expression, factory);
+    tuples = getTuples(stream);
+    assert(tuples.size() == 10);
+    assertOrder(tuples, 1,1,15,15,2,3,4,5,6,7);
   }
 
   @Test
