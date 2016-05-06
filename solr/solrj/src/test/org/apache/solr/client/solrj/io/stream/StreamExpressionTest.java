@@ -16,41 +16,37 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Collections;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
-import org.apache.solr.client.solrj.io.ops.ConcatOperation;
-import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
+import org.apache.solr.client.solrj.io.ops.ConcatOperation;
+import org.apache.solr.client.solrj.io.ops.GroupOperation;
 import org.apache.solr.client.solrj.io.ops.ReplaceOperation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.apache.solr.client.solrj.io.stream.metrics.Bucket;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
-import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.CommonParams;
-import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -63,122 +59,50 @@ import org.junit.Test;
 
 @Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
+public class StreamExpressionTest extends SolrCloudTestCase {
 
-  private static final String SOLR_HOME = getFile("solrj" + File.separator + "solr").getAbsolutePath();
+  private static final String COLLECTION = "collection1";
 
-  static {
-    schemaString = "schema-streaming.xml";
-  }
+  private static final int TIMEOUT = 30;
+
+  private static final String id = "id";
 
   @BeforeClass
-  public static void beforeSuperClass() {
-    AbstractZkTestCase.SOLRHOME = new File(SOLR_HOME());
-  }
+  public static void setupCluster() throws Exception {
+    configureCluster(4)
+        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .configure();
 
-  @AfterClass
-  public static void afterSuperClass() {
-
-  }
-
-  protected String getCloudSolrConfig() {
-    return "solrconfig-streaming.xml";
-  }
-
-
-  @Override
-  public String getSolrHome() {
-    return SOLR_HOME;
-  }
-
-  public static String SOLR_HOME() {
-    return SOLR_HOME;
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
   }
 
   @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    // we expect this time of exception as shards go up and down...
-    //ignoreException(".*");
-
-    System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-    resetExceptionIgnores();
-  }
-
-  public StreamExpressionTest() {
-    super();
-    sliceCount = 2;
+  public void cleanIndex() throws Exception {
+    new UpdateRequest()
+        .deleteByQuery("*:*")
+        .commit(cluster.getSolrClient(), COLLECTION);
   }
 
   @Test
-  public void testAll() throws Exception{
-    assertNotNull(cloudClient);
+  public void testCloudSolrStream() throws Exception {
 
-    handle.clear();
-    handle.put("timestamp", SKIPVAL);
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
-    waitForRecoveriesToFinish(false);
-
-    del("*:*");
-    commit();
-    
-    testCloudSolrStream();
-    testCloudSolrStreamWithZkHost();
-    testMergeStream();
-    testRankStream();
-    testReducerStream();
-    testUniqueStream();
-    testSortStream();
-    testRollupStream();
-    testStatsStream();
-    testNulls();
-    testTopicStream();
-    testDaemonStream();
-    testRandomStream();
-    testParallelUniqueStream();
-    testParallelReducerStream();
-    testParallelRankStream();
-    testParallelMergeStream();
-    testParallelRollupStream();
-    testInnerJoinStream();
-    testLeftOuterJoinStream();
-    testHashJoinStream();
-    testOuterHashJoinStream();
-    testSelectStream();
-    testFacetStream();
-    testSubFacetStream();
-    testUpdateStream();
-    testParallelUpdateStream();
-    testParallelDaemonUpdateStream();
-    testIntersectStream();
-    testParallelIntersectStream();
-    testComplementStream();
-    testParallelComplementStream();
-  }
-
-  private void testCloudSolrStream() throws Exception {
-
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
-    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1");
-    commit();
-
-    StreamFactory factory = new StreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress());
+    StreamFactory factory = new StreamFactory().withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress());
     StreamExpression expression;
     CloudSolrStream stream;
     List<Tuple> tuples;
     
     // Basic test
-    expression = StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
+    expression = StreamExpressionParser.parse("search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
     stream = new CloudSolrStream(expression, factory);
     tuples = getTuples(stream);
 
@@ -187,7 +111,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertLong(tuples.get(0), "a_i", 0);
 
     // Basic w/aliases
-    expression = StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"a_i=alias.a_i, a_s=name\")");
+    expression = StreamExpressionParser.parse("search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"a_i=alias.a_i, a_s=name\")");
     stream = new CloudSolrStream(expression, factory);
     tuples = getTuples(stream);
 
@@ -197,26 +121,26 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertString(tuples.get(0), "name", "hello0");
 
     // Basic filtered test
-    expression = StreamExpressionParser.parse("search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
+    expression = StreamExpressionParser.parse("search(" + COLLECTION + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
     stream = new CloudSolrStream(expression, factory);
     tuples = getTuples(stream);
 
     assert(tuples.size() == 3);
     assertOrder(tuples, 0, 3, 4);
     assertLong(tuples.get(1), "a_i", 3);
-    
-    del("*:*");
-    commit();
+
   }
 
-  private void testCloudSolrStreamWithZkHost() throws Exception {
+  @Test
+  public void testCloudSolrStreamWithZkHost() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
-    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1");
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamFactory factory = new StreamFactory();
     StreamExpression expression;
@@ -224,7 +148,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     List<Tuple> tuples;
     
     // Basic test
-    expression = StreamExpressionParser.parse("search(collection1, zkHost=" + zkServer.getZkAddress() + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
+    expression = StreamExpressionParser.parse("search(" + COLLECTION + ", zkHost=" + cluster.getZkServer().getZkAddress() + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
     stream = new CloudSolrStream(expression, factory);
     tuples = getTuples(stream);
 
@@ -233,7 +157,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertLong(tuples.get(0), "a_i", 0);
 
     // Basic w/aliases
-    expression = StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"a_i=alias.a_i, a_s=name\", zkHost=" + zkServer.getZkAddress() + ")");
+    expression = StreamExpressionParser.parse("search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"a_i=alias.a_i, a_s=name\", zkHost=" + cluster.getZkServer().getZkAddress() + ")");
     stream = new CloudSolrStream(expression, factory);
     tuples = getTuples(stream);
 
@@ -243,39 +167,87 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertString(tuples.get(0), "name", "hello0");
 
     // Basic filtered test
-    expression = StreamExpressionParser.parse("search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", zkHost=" + zkServer.getZkAddress() + ", sort=\"a_f asc, a_i asc\")");
+    expression = StreamExpressionParser.parse("search(" + COLLECTION + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", zkHost="
+        + cluster.getZkServer().getZkAddress() + ", sort=\"a_f asc, a_i asc\")");
     stream = new CloudSolrStream(expression, factory);
     tuples = getTuples(stream);
 
     assert(tuples.size() == 3);
     assertOrder(tuples, 0, 3, 4);
     assertLong(tuples.get(1), "a_i", 3);
-    
-    del("*:*");
-    commit();
   }
 
-  
-  private void testUniqueStream() throws Exception {
+  @Test
+  public void testParameterSubstitution() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
-    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1");
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTION);
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTION;
+    List<Tuple> tuples;
+    TupleStream stream;
+
+    // Basic test
+    Map<String,String> params = new HashMap<>();
+    params.put("expr","merge("
+        + "${q1},"
+        + "${q2},"
+        + "on=${mySort})");
+    params.put(CommonParams.QT, "/stream");
+    params.put("q1", "search(" + COLLECTION + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+    params.put("q2", "search(" + COLLECTION + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+    params.put("mySort", "a_f asc");
+    stream = new SolrStream(url, params);
+    tuples = getTuples(stream);
+
+    assertEquals(4, tuples.size());
+    assertOrder(tuples, 0,1,3,4);
+
+    // Basic test desc
+    params.put("mySort", "a_f desc");
+    stream = new SolrStream(url, params);
+    tuples = getTuples(stream);
+
+    assertEquals(4, tuples.size());
+    assertOrder(tuples, 4,3,1,0);
+
+    // Basic w/ multi comp
+    params.put("q2", "search(" + COLLECTION + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+    params.put("mySort", "\"a_f asc, a_s asc\"");
+    stream = new SolrStream(url, params);
+    tuples = getTuples(stream);
+
+    assertEquals(5, tuples.size());
+    assertOrder(tuples, 0,2,1,3,4);
+  }
+
+  @Test
+  public void testUniqueStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("unique", UniqueStream.class);
     
     // Basic test
-    expression = StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f\")");
+    expression = StreamExpressionParser.parse("unique(search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f\")");
     stream = new UniqueStream(expression, factory);
     tuples = getTuples(stream);
     
@@ -283,7 +255,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertOrder(tuples, 0, 1, 3, 4);
 
     // Basic test desc
-    expression = StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"), over=\"a_f\")");
+    expression = StreamExpressionParser.parse("unique(search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"), over=\"a_f\")");
     stream = new UniqueStream(expression, factory);
     tuples = getTuples(stream);
     
@@ -291,7 +263,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertOrder(tuples, 4,3,1,2);
     
     // Basic w/multi comp
-    expression = StreamExpressionParser.parse("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f, a_i\")");
+    expression = StreamExpressionParser.parse("unique(search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f, a_i\")");
     stream = new UniqueStream(expression, factory);
     tuples = getTuples(stream);
     
@@ -299,76 +271,75 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertOrder(tuples, 0,2,1,3,4);
     
     // full factory w/multi comp
-    stream = factory.constructStream("unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f, a_i\")");
+    stream = factory.constructStream("unique(search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"), over=\"a_f, a_i\")");
     tuples = getTuples(stream);
     
     assert(tuples.size() == 5);
     assertOrder(tuples, 0, 2, 1, 3, 4);
-    
-    del("*:*");
-    commit();
+
   }
 
-  private void testSortStream() throws Exception {
+  @Test
+  public void testSortStream() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
-    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1");
-    indexr(id, "5", "a_s", "hello1", "a_i", "1", "a_f", "2");
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .add(id, "5", "a_s", "hello1", "a_i", "1", "a_f", "2")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("sort", SortStream.class);
     
     // Basic test
-    stream = factory.constructStream("sort(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc\")");
+    stream = factory.constructStream("sort(search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc\")");
     tuples = getTuples(stream);
     assert(tuples.size() == 6);
     assertOrder(tuples, 0,1,5,2,3,4);
 
     // Basic test desc
-    stream = factory.constructStream("sort(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i desc\")");
+    stream = factory.constructStream("sort(search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i desc\")");
     tuples = getTuples(stream);
     assert(tuples.size() == 6);
     assertOrder(tuples, 4,3,2,1,5,0);
     
     // Basic w/multi comp
-    stream = factory.constructStream("sort(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc, a_f desc\")");
+    stream = factory.constructStream("sort(search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"), by=\"a_i asc, a_f desc\")");
     tuples = getTuples(stream);
     assert(tuples.size() == 6);
     assertOrder(tuples, 0,5,1,2,3,4);
-        
-    del("*:*");
-    commit();
+
   }
 
+  @Test
+  public void testNulls() throws Exception {
 
-  private void testNulls() throws Exception {
-
-    indexr(id, "0",                  "a_i", "1", "a_f", "0", "s_multi", "aaa", "s_multi", "bbb", "i_multi", "100", "i_multi", "200");
-    indexr(id, "2", "a_s", "hello2", "a_i", "3", "a_f", "0");
-    indexr(id, "3", "a_s", "hello3", "a_i", "4", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4",             "a_f", "4");
-    indexr(id, "1", "a_s", "hello1", "a_i", "2", "a_f", "1");
-    commit();
+    new UpdateRequest()
+        .add(id, "0",                  "a_i", "1", "a_f", "0", "s_multi", "aaa", "s_multi", "bbb", "i_multi", "100", "i_multi", "200")
+        .add(id, "2", "a_s", "hello2", "a_i", "3", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "4", "a_f", "3")
+        .add(id, "4", "a_s", "hello4",             "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "2", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
     Tuple tuple;
     StreamFactory factory = new StreamFactory()
-        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
         .withFunctionName("search", CloudSolrStream.class);
     // Basic test
-    expression = StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_i asc\")");
+    expression = StreamExpressionParser.parse("search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_i asc\")");
     stream = new CloudSolrStream(expression, factory);
     tuples = getTuples(stream);
 
@@ -392,7 +363,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertNotNull(longs);
 
     //test sort (asc) with null string field. Null should sort to the top.
-    expression = StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_s asc\")");
+    expression = StreamExpressionParser.parse("search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_s asc\")");
     stream = new CloudSolrStream(expression, factory);
     tuples = getTuples(stream);
 
@@ -400,41 +371,40 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertOrder(tuples, 0, 1, 2, 3, 4);
 
     //test sort(desc) with null string field.  Null should sort to the bottom.
-    expression = StreamExpressionParser.parse("search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_s desc\")");
+    expression = StreamExpressionParser.parse("search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f, s_multi, i_multi\", qt=\"/export\", sort=\"a_s desc\")");
     stream = new CloudSolrStream(expression, factory);
     tuples = getTuples(stream);
 
     assert(tuples.size() == 5);
     assertOrder(tuples, 4, 3, 2, 1, 0);
 
-    del("*:*");
-    commit();
   }
 
-  
-  private void testMergeStream() throws Exception {
+  @Test
+  public void testMergeStream() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
-    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1");
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("unique", UniqueStream.class)
       .withFunctionName("merge", MergeStream.class);
     
     // Basic test
     expression = StreamExpressionParser.parse("merge("
-        + "search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"),"
-        + "search(collection1, q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"),"
+        + "search(" + COLLECTION + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"),"
+        + "search(" + COLLECTION + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc\"),"
         + "on=\"a_f asc\")");
     stream = new MergeStream(expression, factory);
     tuples = getTuples(stream);
@@ -444,8 +414,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     // Basic test desc
     expression = StreamExpressionParser.parse("merge("
-        + "search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
-        + "search(collection1, q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
+        + "search(" + COLLECTION + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
+        + "search(" + COLLECTION + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
         + "on=\"a_f desc\")");
     stream = new MergeStream(expression, factory);
     tuples = getTuples(stream);
@@ -455,8 +425,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     // Basic w/multi comp
     expression = StreamExpressionParser.parse("merge("
-        + "search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-        + "search(collection1, q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "search(" + COLLECTION + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "search(" + COLLECTION + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
         + "on=\"a_f asc, a_s asc\")");
     stream = new MergeStream(expression, factory);
     tuples = getTuples(stream);
@@ -466,8 +436,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     // full factory w/multi comp
     stream = factory.constructStream("merge("
-        + "search(collection1, q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-        + "search(collection1, q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "search(" + COLLECTION + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "search(" + COLLECTION + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
         + "on=\"a_f asc, a_s asc\")");
     tuples = getTuples(stream);
     
@@ -476,34 +446,34 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     // full factory w/multi streams
     stream = factory.constructStream("merge("
-        + "search(collection1, q=\"id:(0 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-        + "search(collection1, q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
-        + "search(collection1, q=\"id:(2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "search(" + COLLECTION + ", q=\"id:(0 4)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "search(" + COLLECTION + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
+        + "search(" + COLLECTION + ", q=\"id:(2)\", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_s asc\"),"
         + "on=\"a_f asc\")");
     tuples = getTuples(stream);
     
     assert(tuples.size() == 4);
     assertOrder(tuples, 0, 2, 1, 4);
-    
-    del("*:*");
-    commit();
-  }
-  
-  private void testRankStream() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
-    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1");
-    commit();
+  }
+
+  @Test
+  public void testRankStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("unique", UniqueStream.class)
       .withFunctionName("top", RankStream.class);
@@ -511,7 +481,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     // Basic test
     expression = StreamExpressionParser.parse("top("
                                               + "n=3,"
-                                              + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
+                                              + "search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
                                               + "sort=\"a_f asc, a_i asc\")");
     stream = new RankStream(expression, factory);
     tuples = getTuples(stream);
@@ -523,7 +493,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     expression = StreamExpressionParser.parse("top("
                                               + "n=2,"
                                               + "unique("
-                                              +   "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
+                                              +   "search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc\"),"
                                               +   "over=\"a_f\"),"
                                               + "sort=\"a_f desc\")");
     stream = new RankStream(expression, factory);
@@ -536,7 +506,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     stream = factory.constructStream("top("
                                     + "n=4,"
                                     + "unique("
-                                    +   "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
+                                    +   "search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\"),"
                                     +   "over=\"a_f\"),"
                                     + "sort=\"a_f asc\")");
     tuples = getTuples(stream);
@@ -548,32 +518,31 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     stream = factory.constructStream("top("
             + "n=4,"
             + "unique("
-            +   "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"),"
+            +   "search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f desc, a_i desc\"),"
             +   "over=\"a_f\"),"
             + "sort=\"a_f asc\")");
     tuples = getTuples(stream);
     
     assert(tuples.size() == 4);
     assertOrder(tuples, 2,1,3,4);
-    
-    del("*:*");
-    commit();
+
   }
 
-  private void testRandomStream() throws Exception {
+  @Test
+  public void testRandomStream() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
-    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1");
-    commit();
+    UpdateRequest update = new UpdateRequest();
+    for(int idx = 0; idx < 1000; ++idx){
+      String idxString = new Integer(idx).toString();
+      update.add(id,idxString, "a_s", "hello" + idxString, "a_i", idxString, "a_f", idxString);
+    }
+    update.commit(cluster.getSolrClient(), COLLECTION);
 
     StreamExpression expression;
     TupleStream stream;
 
     StreamFactory factory = new StreamFactory()
-        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
         .withFunctionName("random", RandomStream.class);
 
 
@@ -582,17 +551,17 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     try {
       context.setSolrClientCache(cache);
 
-      expression = StreamExpressionParser.parse("random(collection1, q=\"*:*\", rows=\"10\", fl=\"id, a_i\")");
+      expression = StreamExpressionParser.parse("random(" + COLLECTION + ", q=\"*:*\", rows=\"1000\", fl=\"id, a_i\")");
       stream = factory.constructStream(expression);
       stream.setStreamContext(context);
       List<Tuple> tuples1 = getTuples(stream);
-      assert (tuples1.size() == 5);
+      assert (tuples1.size() == 1000);
 
-      expression = StreamExpressionParser.parse("random(collection1, q=\"*:*\", rows=\"10\", fl=\"id, a_i\")");
+      expression = StreamExpressionParser.parse("random(" + COLLECTION + ", q=\"*:*\", rows=\"1000\", fl=\"id, a_i\")");
       stream = factory.constructStream(expression);
       stream.setStreamContext(context);
       List<Tuple> tuples2 = getTuples(stream);
-      assert (tuples2.size() == 5);
+      assert (tuples2.size() == 1000);
 
       boolean different = false;
       for (int i = 0; i < tuples1.size(); i++) {
@@ -617,7 +586,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
         }
       }
 
-      expression = StreamExpressionParser.parse("random(collection1, q=\"*:*\", rows=\"1\", fl=\"id, a_i\")");
+      expression = StreamExpressionParser.parse("random(" + COLLECTION + ", q=\"*:*\", rows=\"1\", fl=\"id, a_i\")");
       stream = factory.constructStream(expression);
       stream.setStreamContext(context);
       List<Tuple> tuples3 = getTuples(stream);
@@ -625,23 +594,24 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     } finally {
       cache.close();
-      del("*:*");
-      commit();
     }
   }
-  
-  private void testReducerStream() throws Exception{
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
-    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
-    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
-    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
-    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
-    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
-    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
-    commit();
+
+  @Test
+  public void testReducerStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTION);
     
     StreamExpression expression;
     TupleStream stream;
@@ -650,14 +620,14 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     List<Map> maps0, maps1, maps2;
     
     StreamFactory factory = new StreamFactory()
-        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("reduce", ReducerStream.class)
         .withFunctionName("group", GroupOperation.class);
 
     // basic
     expression = StreamExpressionParser.parse("reduce("
-        + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f asc\"),"
+        + "search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f asc\"),"
         + "by=\"a_s\","
         + "group(sort=\"a_f desc\", n=\"4\"))");
 
@@ -681,7 +651,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     // basic w/spaces
     expression = StreamExpressionParser.parse("reduce("
-        + "search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f       asc\"),"
+        + "search(" + COLLECTION + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc, a_f       asc\"),"
         + "by=\"a_s\"," +
         "group(sort=\"a_i asc\", n=\"2\"))");
     stream = factory.constructStream(expression);
@@ -703,27 +673,26 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     maps2 = t2.getMaps("group");
     assertMaps(maps2, 4, 6);
 
-    del("*:*");
-    commit();
   }
 
-  private void testDaemonStream() throws Exception {
+  @Test
+  public void testDaemonStream() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
-    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
-    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
-    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
-    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
-    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
-    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
-
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamFactory factory = new StreamFactory()
-        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("rollup", RollupStream.class)
         .withFunctionName("sum", SumMetric.class)
@@ -737,7 +706,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     DaemonStream daemonStream;
 
     expression = StreamExpressionParser.parse("daemon(rollup("
-        + "search(collection1, q=\"*:*\", fl=\"a_i,a_s\", sort=\"a_s asc\"),"
+        + "search(" + COLLECTION + ", q=\"*:*\", fl=\"a_i,a_s\", sort=\"a_s asc\"),"
         + "over=\"a_s\","
         + "sum(a_i)"
         + "), id=\"test\", runInterval=\"1000\", queueSize=\"9\")");
@@ -785,8 +754,9 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     //OK capacity is full, let's index a new doc
 
-    indexr(id, "10", "a_s", "hello0", "a_i", "1", "a_f", "10");
-    commit();
+    new UpdateRequest()
+        .add(id, "10", "a_s", "hello0", "a_i", "1", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     //Now lets clear the existing docs in the queue 9, plus 3 more to get passed the run that was blocked. The next run should
     //have the tuples with the updated count.
@@ -822,32 +792,26 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     daemonStream.close(); //This should stop the daemon thread
 
-    del("*:*");
-    commit();
   }
 
+  @Test
+  public void testRollupStream() throws Exception {
 
-
-
-
-
-  private void testRollupStream() throws Exception {
-
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
-    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
-    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
-    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
-    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
-    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
-    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
-
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("rollup", RollupStream.class)
       .withFunctionName("sum", SumMetric.class)
@@ -861,7 +825,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     List<Tuple> tuples;
 
     expression = StreamExpressionParser.parse("rollup("
-                                              + "search(collection1, q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\"),"
+                                              + "search(" + COLLECTION + ", q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\"),"
                                               + "over=\"a_s\","
                                               + "sum(a_i),"
                                               + "sum(a_f),"
@@ -949,27 +913,26 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertTrue(avgf.doubleValue() == 5.5D);
     assertTrue(count.doubleValue() == 2);
 
-    del("*:*");
-    commit();
   }
-  
-  private void testStatsStream() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
-    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
-    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
-    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
-    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
-    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
-    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+  @Test
+  public void testStatsStream() throws Exception {
 
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamFactory factory = new StreamFactory()
-    .withCollectionZkHost("collection1", zkServer.getZkAddress())
+    .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
     .withFunctionName("stats", StatsStream.class)
     .withFunctionName("sum", SumMetric.class)
     .withFunctionName("min", MinMetric.class)
@@ -1012,33 +975,32 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertTrue(avgf.doubleValue() == 5.5D);
     assertTrue(count.doubleValue() == 10);
 
-    del("*:*");
-    commit();
   }
-  
-  private void testParallelUniqueStream() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
-    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1");
-    indexr(id, "5", "a_s", "hello1", "a_i", "10", "a_f", "1");
-    indexr(id, "6", "a_s", "hello1", "a_i", "11", "a_f", "5");
-    indexr(id, "7", "a_s", "hello1", "a_i", "12", "a_f", "5");
-    indexr(id, "8", "a_s", "hello1", "a_i", "13", "a_f", "4");
+  @Test
+  public void testParallelUniqueStream() throws Exception {
 
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .add(id, "5", "a_s", "hello1", "a_i", "10", "a_f", "1")
+        .add(id, "6", "a_s", "hello1", "a_i", "11", "a_f", "5")
+        .add(id, "7", "a_s", "hello1", "a_i", "12", "a_f", "5")
+        .add(id, "8", "a_s", "hello1", "a_i", "13", "a_f", "4")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
-    String zkHost = zkServer.getZkAddress();
-    StreamFactory streamFactory = new StreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress())
+    String zkHost = cluster.getZkServer().getZkAddress();
+    StreamFactory streamFactory = new StreamFactory().withCollectionZkHost(COLLECTION, zkHost)
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("unique", UniqueStream.class)
         .withFunctionName("top", RankStream.class)
         .withFunctionName("group", ReducerStream.class)
         .withFunctionName("parallel", ParallelStream.class);
 
-    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\"), over=\"a_f\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_f asc\")");
+    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(" + COLLECTION + ", unique(search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\"), over=\"a_f\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_f asc\")");
 
     List<Tuple> tuples = getTuples(pstream);
     assert(tuples.size() == 5);
@@ -1049,36 +1011,34 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     Map<String,Tuple> eofTuples = pstream.getEofTuples();
     assert(eofTuples.size() == 2); //There should be an EOF tuple for each worker.
 
-    del("*:*");
-    commit();
-
   }
 
-  private void testParallelReducerStream() throws Exception {
+  @Test
+  public void testParallelReducerStream() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
-    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
-    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
-    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
-    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
-    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
-    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
-    commit();
-
-    String zkHost = zkServer.getZkAddress();
-    StreamFactory streamFactory = new StreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress())
+    String zkHost = cluster.getZkServer().getZkAddress();
+    StreamFactory streamFactory = new StreamFactory().withCollectionZkHost(COLLECTION, zkHost)
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("group", GroupOperation.class)
         .withFunctionName("reduce", ReducerStream.class)
         .withFunctionName("parallel", ParallelStream.class);
 
-    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1," +
+    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(" + COLLECTION + ", " +
                                                                                     "reduce(" +
-                                                                                              "search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\"), " +
+                                                                                              "search(" + COLLECTION + ", q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s asc,a_f asc\", partitionKeys=\"a_s\"), " +
                                                                                               "by=\"a_s\"," +
                                                                                               "group(sort=\"a_i asc\", n=\"5\")), " +
                                                                                     "workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s asc\")");
@@ -1100,9 +1060,9 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertMaps(maps2, 4, 6);
 
 
-    pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, " +
+    pstream = (ParallelStream)streamFactory.constructStream("parallel(" + COLLECTION + ", " +
                                                                       "reduce(" +
-                                                                              "search(collection1, q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc,a_f asc\", partitionKeys=\"a_s\"), " +
+                                                                              "search(" + COLLECTION + ", q=\"*:*\", fl=\"id,a_s,a_i,a_f\", sort=\"a_s desc,a_f asc\", partitionKeys=\"a_s\"), " +
                                                                               "by=\"a_s\", " +
                                                                               "group(sort=\"a_i desc\", n=\"5\")),"+
                                                                       "workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_s desc\")");
@@ -1125,27 +1085,26 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     maps2 = t2.getMaps("group");
     assertMaps(maps2, 9, 2, 1, 0);
 
-    del("*:*");
-    commit();
   }
 
-  private void testParallelRankStream() throws Exception {
+  @Test
+  public void testParallelRankStream() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
-    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "5", "a_s", "hello1", "a_i", "5", "a_f", "1");
-    indexr(id, "6", "a_s", "hello1", "a_i", "6", "a_f", "1");
-    indexr(id, "7", "a_s", "hello1", "a_i", "7", "a_f", "1");
-    indexr(id, "8", "a_s", "hello1", "a_i", "8", "a_f", "1");
-    indexr(id, "9", "a_s", "hello1", "a_i", "9", "a_f", "1");
-    indexr(id, "10", "a_s", "hello1", "a_i", "10", "a_f", "1");
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "5", "a_s", "hello1", "a_i", "5", "a_f", "1")
+        .add(id, "6", "a_s", "hello1", "a_i", "6", "a_f", "1")
+        .add(id, "7", "a_s", "hello1", "a_i", "7", "a_f", "1")
+        .add(id, "8", "a_s", "hello1", "a_i", "8", "a_f", "1")
+        .add(id, "9", "a_s", "hello1", "a_i", "9", "a_f", "1")
+        .add(id, "10", "a_s", "hello1", "a_i", "10", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
-    commit();
-
-    String zkHost = zkServer.getZkAddress();
-    StreamFactory streamFactory = new StreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress())
+    String zkHost = cluster.getZkServer().getZkAddress();
+    StreamFactory streamFactory = new StreamFactory().withCollectionZkHost(COLLECTION, zkHost)
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("unique", UniqueStream.class)
         .withFunctionName("top", RankStream.class)
@@ -1153,9 +1112,9 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
         .withFunctionName("parallel", ParallelStream.class);
 
     ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel("
-        + "collection1, "
+        + COLLECTION + ", "
         + "top("
-          + "search(collection1, q=\"*:*\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\"), "
+          + "search(" + COLLECTION + ", q=\"*:*\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\"), "
           + "n=\"11\", "
           + "sort=\"a_i desc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_i desc\")");
 
@@ -1164,27 +1123,26 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assert(tuples.size() == 10);
     assertOrder(tuples, 10,9,8,7,6,5,4,3,2,0);
 
-    del("*:*");
-    commit();
   }
 
-  private void testParallelMergeStream() throws Exception {
+  @Test
+  public void testParallelMergeStream() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0");
-    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1");
-    indexr(id, "5", "a_s", "hello0", "a_i", "10", "a_f", "0");
-    indexr(id, "6", "a_s", "hello2", "a_i", "8", "a_f", "0");
-    indexr(id, "7", "a_s", "hello3", "a_i", "7", "a_f", "3");
-    indexr(id, "8", "a_s", "hello4", "a_i", "11", "a_f", "4");
-    indexr(id, "9", "a_s", "hello1", "a_i", "100", "a_f", "1");
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1")
+        .add(id, "5", "a_s", "hello0", "a_i", "10", "a_f", "0")
+        .add(id, "6", "a_s", "hello2", "a_i", "8", "a_f", "0")
+        .add(id, "7", "a_s", "hello3", "a_i", "7", "a_f", "3")
+        .add(id, "8", "a_s", "hello4", "a_i", "11", "a_f", "4")
+        .add(id, "9", "a_s", "hello1", "a_i", "100", "a_f", "1")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
-    commit();
-
-    String zkHost = zkServer.getZkAddress();
-    StreamFactory streamFactory = new StreamFactory().withCollectionZkHost("collection1", zkServer.getZkAddress())
+    String zkHost = cluster.getZkServer().getZkAddress();
+    StreamFactory streamFactory = new StreamFactory().withCollectionZkHost(COLLECTION, zkHost)
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("unique", UniqueStream.class)
         .withFunctionName("top", RankStream.class)
@@ -1193,7 +1151,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
         .withFunctionName("parallel", ParallelStream.class);
 
     //Test ascending
-    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, merge(search(collection1, q=\"id:(4 1 8 7 9)\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\"), search(collection1, q=\"id:(0 2 3 6)\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\"), on=\"a_i asc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_i asc\")");
+    ParallelStream pstream = (ParallelStream)streamFactory.constructStream("parallel(" + COLLECTION + ", merge(search(" + COLLECTION + ", q=\"id:(4 1 8 7 9)\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\"), search(" + COLLECTION + ", q=\"id:(0 2 3 6)\", fl=\"id,a_s,a_i\", sort=\"a_i asc\", partitionKeys=\"a_i\"), on=\"a_i asc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_i asc\")");
 
     List<Tuple> tuples = getTuples(pstream);
 
@@ -1204,34 +1162,33 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     //Test descending
 
-    pstream = (ParallelStream)streamFactory.constructStream("parallel(collection1, merge(search(collection1, q=\"id:(4 1 8 9)\", fl=\"id,a_s,a_i\", sort=\"a_i desc\", partitionKeys=\"a_i\"), search(collection1, q=\"id:(0 2 3 6)\", fl=\"id,a_s,a_i\", sort=\"a_i desc\", partitionKeys=\"a_i\"), on=\"a_i desc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_i desc\")");
+    pstream = (ParallelStream)streamFactory.constructStream("parallel(" + COLLECTION + ", merge(search(" + COLLECTION + ", q=\"id:(4 1 8 9)\", fl=\"id,a_s,a_i\", sort=\"a_i desc\", partitionKeys=\"a_i\"), search(" + COLLECTION + ", q=\"id:(0 2 3 6)\", fl=\"id,a_s,a_i\", sort=\"a_i desc\", partitionKeys=\"a_i\"), on=\"a_i desc\"), workers=\"2\", zkHost=\""+zkHost+"\", sort=\"a_i desc\")");
 
     tuples = getTuples(pstream);
 
     assert(tuples.size() == 8);
     assertOrder(tuples, 9,8,6,4,3,2,1,0);
 
-    del("*:*");
-    commit();
   }
-  
-  private void testParallelRollupStream() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
-    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
-    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
-    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
-    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
-    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
-    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+  @Test
+  public void testParallelRollupStream() throws Exception {
 
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("parallel", ParallelStream.class)
       .withFunctionName("rollup", RollupStream.class)
@@ -1245,9 +1202,9 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     TupleStream stream;
     List<Tuple> tuples;
 
-    expression = StreamExpressionParser.parse("parallel(collection1,"
+    expression = StreamExpressionParser.parse("parallel(" + COLLECTION + ","
                                               + "rollup("
-                                                + "search(collection1, q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\", partitionKeys=\"a_s\"),"
+                                                + "search(" + COLLECTION + ", q=*:*, fl=\"a_s,a_i,a_f\", sort=\"a_s asc\", partitionKeys=\"a_s\"),"
                                                 + "over=\"a_s\","
                                                 + "sum(a_i),"
                                                 + "sum(a_f),"
@@ -1259,7 +1216,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
                                                 + "avg(a_f),"
                                                 + "count(*)"
                                               + "),"
-                                              + "workers=\"2\", zkHost=\""+zkServer.getZkAddress()+"\", sort=\"a_s asc\")"
+                                              + "workers=\"2\", zkHost=\""+cluster.getZkServer().getZkAddress()+"\", sort=\"a_s asc\")"
                                               );
     stream = factory.constructStream(expression);
     tuples = getTuples(stream);
@@ -1337,43 +1294,43 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertTrue(avgf.doubleValue() == 5.5D);
     assertTrue(count.doubleValue() == 2);
 
-    del("*:*");
-    commit();
   }
 
-  private void testInnerJoinStream() throws Exception {
+  @Test
+  public void testInnerJoinStream() throws Exception {
 
-    indexr(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
-    indexr(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
-    indexr(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2");
-    indexr(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3"); // 10
-    indexr(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4"); // 11
-    indexr(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5"); // 12
-    indexr(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6");
-    indexr(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7"); // 14
+    new UpdateRequest()
+        .add(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1") // 8, 9
+        .add(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1") // 8, 9
+        .add(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2")
+        .add(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3") // 10
+        .add(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4") // 11
+        .add(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5") // 12
+        .add(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6")
+        .add(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7") // 14
 
-    indexr(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0"); // 1,15
-    indexr(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0"); // 1,15
-    indexr(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1"); // 3
-    indexr(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1"); // 4
-    indexr(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1"); // 5
-    indexr(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2"); 
-    indexr(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3"); // 7
-    commit();
+        .add(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0") // 1,15
+        .add(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0") // 1,15
+        .add(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1") // 3
+        .add(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1") // 4
+        .add(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1") // 5
+        .add(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2")
+        .add(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3") // 7
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("innerJoin", InnerJoinStream.class);
     
     // Basic test
     expression = StreamExpressionParser.parse("innerJoin("
-                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
-                                                + "search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
                                                 + "on=\"join1_i=join1_i, join2_s=join2_s\")");
     stream = new InnerJoinStream(expression, factory);
     tuples = getTuples(stream);    
@@ -1382,8 +1339,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     // Basic desc
     expression = StreamExpressionParser.parse("innerJoin("
-                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
-                                                + "search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
                                                 + "on=\"join1_i=join1_i, join2_s=join2_s\")");
     stream = new InnerJoinStream(expression, factory);
     tuples = getTuples(stream);    
@@ -1392,8 +1349,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     // Results in both searches, no join matches
     expression = StreamExpressionParser.parse("innerJoin("
-                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
-                                                + "search(collection1, q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
                                                 + "on=\"ident_s=right.ident_s\")");
     stream = new InnerJoinStream(expression, factory);
     tuples = getTuples(stream);    
@@ -1401,52 +1358,52 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     // Differing field names
     expression = StreamExpressionParser.parse("innerJoin("
-                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
-                                                + "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\", aliases=\"join3_i=aliasesField\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\", aliases=\"join3_i=aliasesField\"),"
                                                 + "on=\"join1_i=aliasesField, join2_s=join2_s\")");
     stream = new InnerJoinStream(expression, factory);
     tuples = getTuples(stream);
     
     assert(tuples.size() == 8);
     assertOrder(tuples, 1,1,15,15,3,4,5,7);
-    
-    del("*:*");
-    commit();
+
   }
-  
-  private void testLeftOuterJoinStream() throws Exception {
 
-    indexr(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
-    indexr(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
-    indexr(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2");
-    indexr(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3"); // 10
-    indexr(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4"); // 11
-    indexr(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5"); // 12
-    indexr(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6");
-    indexr(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7"); // 14
+  @Test
+  public void testLeftOuterJoinStream() throws Exception {
 
-    indexr(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0"); // 1,15
-    indexr(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0"); // 1,15
-    indexr(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1"); // 3
-    indexr(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1"); // 4
-    indexr(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1"); // 5
-    indexr(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2"); 
-    indexr(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3"); // 7
-    commit();
+    new UpdateRequest()
+        .add(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1") // 8, 9
+        .add(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1") // 8, 9
+        .add(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2")
+        .add(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3") // 10
+        .add(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4") // 11
+        .add(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5") // 12
+        .add(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6")
+        .add(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7") // 14
+
+        .add(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0") // 1,15
+        .add(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0") // 1,15
+        .add(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1") // 3
+        .add(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1") // 4
+        .add(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1") // 5
+        .add(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2")
+        .add(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3") // 7
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("leftOuterJoin", LeftOuterJoinStream.class);
     
     // Basic test
     expression = StreamExpressionParser.parse("leftOuterJoin("
-                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
-                                                + "search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc\"),"
                                                 + "on=\"join1_i=join1_i, join2_s=join2_s\")");
     stream = new LeftOuterJoinStream(expression, factory);
     tuples = getTuples(stream);    
@@ -1455,8 +1412,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
 
     // Basic desc
     expression = StreamExpressionParser.parse("leftOuterJoin("
-                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
-                                                + "search(collection1, q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:right\", fl=\"join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
                                                 + "on=\"join1_i=join1_i, join2_s=join2_s\")");
     stream = new LeftOuterJoinStream(expression, factory);
     tuples = getTuples(stream);    
@@ -1465,8 +1422,8 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     // Results in both searches, no join matches
     expression = StreamExpressionParser.parse("leftOuterJoin("
-                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
-                                                + "search(collection1, q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
                                                 + "on=\"ident_s=right.ident_s\")");
     stream = new LeftOuterJoinStream(expression, factory);
     tuples = getTuples(stream);    
@@ -1475,44 +1432,44 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     // Differing field names
     expression = StreamExpressionParser.parse("leftOuterJoin("
-                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
-                                                + "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\", aliases=\"join3_i=aliasesField\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                                                + "search(" + COLLECTION + ", q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\", aliases=\"join3_i=aliasesField\"),"
                                                 + "on=\"join1_i=aliasesField, join2_s=join2_s\")");
     stream = new LeftOuterJoinStream(expression, factory);
     tuples = getTuples(stream);
     assert(tuples.size() == 10);
     assertOrder(tuples, 1,1,15,15,2,3,4,5,6,7);
-    
-    del("*:*");
-    commit();
+
   }
 
-  private void testHashJoinStream() throws Exception {
+  @Test
+  public void testHashJoinStream() throws Exception {
 
-    indexr(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
-    indexr(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
-    indexr(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2");
-    indexr(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3"); // 10
-    indexr(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4"); // 11
-    indexr(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5"); // 12
-    indexr(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6");
-    indexr(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7"); // 14
+    new UpdateRequest()
+        .add(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1") // 8, 9
+        .add(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1") // 8, 9
+        .add(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2")
+        .add(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3") // 10
+        .add(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4") // 11
+        .add(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5") // 12
+        .add(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6")
+        .add(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7") // 14
 
-    indexr(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0"); // 1,15
-    indexr(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0"); // 1,15
-    indexr(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1"); // 3
-    indexr(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1"); // 4
-    indexr(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1"); // 5
-    indexr(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2"); 
-    indexr(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3"); // 7
-    commit();
+        .add(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0") // 1,15
+        .add(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0") // 1,15
+        .add(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1") // 3
+        .add(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1") // 4
+        .add(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1") // 5
+        .add(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2")
+        .add(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3") // 7
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("hashJoin", HashJoinStream.class);
     
@@ -1545,36 +1502,46 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);    
     assert(tuples.size() == 0);
     
-    del("*:*");
-    commit();
+    // Basic test with "on" mapping
+    expression = StreamExpressionParser.parse("hashJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join3_i,ident_s\", sort=\"join1_i asc, join3_i asc, id asc\"),"
+                                                + "hashed=search(collection1, q=\"side_s:right\", fl=\"join1_i,join3_i,ident_s\", sort=\"join1_i asc, join3_i asc\"),"
+                                                + "on=\"join1_i=join3_i\")");
+    stream = new HashJoinStream(expression, factory);
+    tuples = getTuples(stream);
+    assertEquals(17, tuples.size());
+    assertOrder(tuples, 1, 1, 2, 2, 15, 15, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6, 7);
+
   }
-  
-  private void testOuterHashJoinStream() throws Exception {
 
-    indexr(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
-    indexr(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
-    indexr(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2");
-    indexr(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3"); // 10
-    indexr(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4"); // 11
-    indexr(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5"); // 12
-    indexr(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6");
-    indexr(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7"); // 14
+  @Test
+  public void testOuterHashJoinStream() throws Exception {
 
-    indexr(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0"); // 1,15
-    indexr(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0"); // 1,15
-    indexr(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1"); // 3
-    indexr(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1"); // 4
-    indexr(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1"); // 5
-    indexr(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2"); 
-    indexr(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3"); // 7
-    commit();
+    new UpdateRequest()
+        .add(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1") // 8, 9
+        .add(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1") // 8, 9
+        .add(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2")
+        .add(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3") // 10
+        .add(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4") // 11
+        .add(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5") // 12
+        .add(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6")
+        .add(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7") // 14
+
+        .add(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0") // 1,15
+        .add(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0") // 1,15
+        .add(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1") // 3
+        .add(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1") // 4
+        .add(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1") // 5
+        .add(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2")
+        .add(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3") // 7
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("outerHashJoin", OuterHashJoinStream.class);
     
@@ -1607,37 +1574,46 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);    
     assert(tuples.size() == 8);
     assertOrder(tuples, 1,15,2,3,4,5,6,7);
-        
-    del("*:*");
-    commit();
+
+    // Basic test
+    expression = StreamExpressionParser.parse("outerHashJoin("
+                                                + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                                                + "hashed=search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join2_s asc\"),"
+                                                + "on=\"join1_i=join3_i, join2_s\")");
+    stream = new OuterHashJoinStream(expression, factory);
+    tuples = getTuples(stream);
+    assert(tuples.size() == 10);
+    assertOrder(tuples, 1,1,15,15,2,3,4,5,6,7);
   }
-  
-  private void testSelectStream() throws Exception {
 
-    indexr(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
-    indexr(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1"); // 8, 9
-    indexr(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2");
-    indexr(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3"); // 10
-    indexr(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4"); // 11
-    indexr(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5"); // 12
-    indexr(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6");
-    indexr(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7"); // 14
+  @Test
+  public void testSelectStream() throws Exception {
 
-    indexr(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0"); // 1,15
-    indexr(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0"); // 1,15
-    indexr(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1"); // 3
-    indexr(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1"); // 4
-    indexr(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1"); // 5
-    indexr(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2"); 
-    indexr(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3"); // 7
-    commit();
+    new UpdateRequest()
+        .add(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1") // 8, 9
+        .add(id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1") // 8, 9
+        .add(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2")
+        .add(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3") // 10
+        .add(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4") // 11
+        .add(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5") // 12
+        .add(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6")
+        .add(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7") // 14
+
+        .add(id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1", "join3_i", "0") // 1,15
+        .add(id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2", "join3_i", "0") // 1,15
+        .add(id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3", "join3_i", "1") // 3
+        .add(id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4", "join3_i", "1") // 4
+        .add(id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5", "join3_i", "1") // 5
+        .add(id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6", "join3_i", "2")
+        .add(id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7", "join3_i", "3") // 7
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     String clause;
     TupleStream stream;
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("innerJoin", InnerJoinStream.class)
       .withFunctionName("select", SelectStream.class)
@@ -1729,32 +1705,31 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     tuples = getTuples(stream);
     assertFields(tuples, "id", "left.ident", "right.ident");
     assertNotFields(tuples, "left.join1", "left.join2", "right.join1", "right.join2");
-    
-    del("*:*");
-    commit();
+
   }
-  
-  private void testFacetStream() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1");
-    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5");
-    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6");
-    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7");
-    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8");
-    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9");
-    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10");
+  @Test
+  public void testFacetStream() throws Exception {
 
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTION);
     
     String clause;
     TupleStream stream;
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("facet", FacetStream.class)
       .withFunctionName("sum", SumMetric.class)
       .withFunctionName("min", MinMetric.class)
@@ -2136,32 +2111,30 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertTrue(avgf.doubleValue() == 5.5D);
     assertTrue(count.doubleValue() == 2);
 
-    del("*:*");
-    commit();
   }
 
+  @Test
+  public void testSubFacetStream() throws Exception {
 
-  private void testSubFacetStream() throws Exception {
-
-    indexr(id, "0", "level1_s", "hello0", "level2_s", "a", "a_i", "0", "a_f", "1");
-    indexr(id, "2", "level1_s", "hello0", "level2_s", "a", "a_i", "2", "a_f", "2");
-    indexr(id, "3", "level1_s", "hello3", "level2_s", "a", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "level1_s", "hello4", "level2_s", "a", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "level1_s", "hello0", "level2_s", "b", "a_i", "1", "a_f", "5");
-    indexr(id, "5", "level1_s", "hello3", "level2_s", "b", "a_i", "10", "a_f", "6");
-    indexr(id, "6", "level1_s", "hello4", "level2_s", "b", "a_i", "11", "a_f", "7");
-    indexr(id, "7", "level1_s", "hello3", "level2_s", "b", "a_i", "12", "a_f", "8");
-    indexr(id, "8", "level1_s", "hello3", "level2_s", "b", "a_i", "13", "a_f", "9");
-    indexr(id, "9", "level1_s", "hello0", "level2_s", "b", "a_i", "14", "a_f", "10");
-
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "level1_s", "hello0", "level2_s", "a", "a_i", "0", "a_f", "1")
+        .add(id, "2", "level1_s", "hello0", "level2_s", "a", "a_i", "2", "a_f", "2")
+        .add(id, "3", "level1_s", "hello3", "level2_s", "a", "a_i", "3", "a_f", "3")
+        .add(id, "4", "level1_s", "hello4", "level2_s", "a", "a_i", "4", "a_f", "4")
+        .add(id, "1", "level1_s", "hello0", "level2_s", "b", "a_i", "1", "a_f", "5")
+        .add(id, "5", "level1_s", "hello3", "level2_s", "b", "a_i", "10", "a_f", "6")
+        .add(id, "6", "level1_s", "hello4", "level2_s", "b", "a_i", "11", "a_f", "7")
+        .add(id, "7", "level1_s", "hello3", "level2_s", "b", "a_i", "12", "a_f", "8")
+        .add(id, "8", "level1_s", "hello3", "level2_s", "b", "a_i", "13", "a_f", "9")
+        .add(id, "9", "level1_s", "hello0", "level2_s", "b", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     String clause;
     TupleStream stream;
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("facet", FacetStream.class)
       .withFunctionName("sum", SumMetric.class)
       .withFunctionName("min", MinMetric.class)
@@ -2330,26 +2303,26 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertTrue(sumi.longValue() == 2);
     assertTrue(count.doubleValue() == 2);
 
-    del("*:*");
-    commit();
   }
 
-  private void testTopicStream() throws Exception{
-    indexr(id, "0", "a_s", "hello", "a_i", "0", "a_f", "1");
-    indexr(id, "2", "a_s", "hello", "a_i", "2", "a_f", "2");
-    indexr(id, "3", "a_s", "hello", "a_i", "3", "a_f", "3");
-    indexr(id, "4", "a_s", "hello", "a_i", "4", "a_f", "4");
-    indexr(id, "1", "a_s", "hello", "a_i", "1", "a_f", "5");
-    indexr(id, "5", "a_s", "hello", "a_i", "10", "a_f", "6");
-    indexr(id, "6", "a_s", "hello", "a_i", "11", "a_f", "7");
-    indexr(id, "7", "a_s", "hello", "a_i", "12", "a_f", "8");
-    indexr(id, "8", "a_s", "hello", "a_i", "13", "a_f", "9");
-    indexr(id, "9", "a_s", "hello", "a_i", "14", "a_f", "10");
+  @Test
+  public void testTopicStream() throws Exception {
 
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello", "a_i", "0", "a_f", "1")
+        .add(id, "2", "a_s", "hello", "a_i", "2", "a_f", "2")
+        .add(id, "3", "a_s", "hello", "a_i", "3", "a_f", "3")
+        .add(id, "4", "a_s", "hello", "a_i", "4", "a_f", "4")
+        .add(id, "1", "a_s", "hello", "a_i", "1", "a_f", "5")
+        .add(id, "5", "a_s", "hello", "a_i", "10", "a_f", "6")
+        .add(id, "6", "a_s", "hello", "a_i", "11", "a_f", "7")
+        .add(id, "7", "a_s", "hello", "a_i", "12", "a_f", "8")
+        .add(id, "8", "a_s", "hello", "a_i", "13", "a_f", "9")
+        .add(id, "9", "a_s", "hello", "a_i", "14", "a_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     StreamFactory factory = new StreamFactory()
-        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
         .withFunctionName("topic", TopicStream.class)
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("daemon", DaemonStream.class);
@@ -2373,7 +2346,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
       //Should be zero because the checkpoints will be set to the highest vesion on the shards.
       assertEquals(tuples.size(), 0);
 
-      commit();
+      cluster.getSolrClient().commit("collection1");
       //Now check to see if the checkpoints are present
 
               expression = StreamExpressionParser.parse("search(collection1, q=\"id:1000000\", fl=\"id, checkpoint_ss, _version_\", sort=\"id asc\")");
@@ -2388,10 +2361,10 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
               Long version1 = tuples.get(0).getLong("_version_");
 
       //Index a few more documents
-      indexr(id, "10", "a_s", "hello", "a_i", "13", "a_f", "9");
-      indexr(id, "11", "a_s", "hello", "a_i", "14", "a_f", "10");
-
-      commit();
+      new UpdateRequest()
+          .add(id, "10", "a_s", "hello", "a_i", "13", "a_f", "9")
+          .add(id, "11", "a_s", "hello", "a_i", "14", "a_f", "10")
+          .commit(cluster.getSolrClient(), COLLECTION);
 
       expression = StreamExpressionParser.parse("topic(collection1, collection1, fl=\"id\", q=\"a_s:hello\", id=\"1000000\", checkpointEvery=2)");
 
@@ -2404,7 +2377,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
         stream.open();
         Tuple tuple1 = stream.read();
         assertEquals((long) tuple1.getLong("id"), 10l);
-        commit();
+        cluster.getSolrClient().commit("collection1");
 
                 // Checkpoint should not have changed.
                 expression = StreamExpressionParser.parse("search(collection1, q=\"id:1000000\", fl=\"id, checkpoint_ss, _version_\", sort=\"id asc\")");
@@ -2421,7 +2394,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
                 assertEquals(version1, version2);
 
         Tuple tuple2 = stream.read();
-        commit();
+        cluster.getSolrClient().commit("collection1");
         assertEquals((long) tuple2.getLong("id"), 11l);
 
                 //Checkpoint should have changed.
@@ -2455,9 +2428,10 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
         dstream.setStreamContext(context);
 
         //Index a few more documents
-        indexr(id, "12", "a_s", "hello", "a_i", "13", "a_f", "9");
-        indexr(id, "13", "a_s", "hello", "a_i", "14", "a_f", "10");
-        commit();
+        new UpdateRequest()
+            .add(id, "12", "a_s", "hello", "a_i", "13", "a_f", "9")
+            .add(id, "13", "a_s", "hello", "a_i", "14", "a_f", "10")
+            .commit(cluster.getSolrClient(), COLLECTION);
 
         //Start reading from the DaemonStream
         Tuple tuple = null;
@@ -2467,12 +2441,13 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
         assertEquals(12, (long) tuple.getLong(id));
         tuple = dstream.read();
         assertEquals(13, (long) tuple.getLong(id));
-        commit(); // We want to see if the version has been updated after reading two tuples
+        cluster.getSolrClient().commit("collection1"); // We want to see if the version has been updated after reading two tuples
 
         //Index a few more documents
-        indexr(id, "14", "a_s", "hello", "a_i", "13", "a_f", "9");
-        indexr(id, "15", "a_s", "hello", "a_i", "14", "a_f", "10");
-        commit();
+        new UpdateRequest()
+            .add(id, "14", "a_s", "hello", "a_i", "13", "a_f", "9")
+            .add(id, "15", "a_s", "hello", "a_i", "14", "a_f", "10")
+            .commit(cluster.getSolrClient(), COLLECTION);
 
         //Read from the same DaemonStream stream
 
@@ -2488,31 +2463,32 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
         dstream.close();
       }
     } finally {
-      del("*:*");
-      commit();
       cache.close();
     }
   }
 
-  private void testUpdateStream() throws Exception {
-    CloudSolrClient destinationCollectionClient = createCloudClient("destinationCollection");
-    createCollection("destinationCollection", destinationCollectionClient, 2, 2);
-    
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0", "s_multi", "aaaa",  "s_multi", "bbbb",  "i_multi", "4", "i_multi", "7");
-    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0", "s_multi", "aaaa1", "s_multi", "bbbb1", "i_multi", "44", "i_multi", "77");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "s_multi", "aaaa2", "s_multi", "bbbb2", "i_multi", "444", "i_multi", "777");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "s_multi", "aaaa3", "s_multi", "bbbb3", "i_multi", "4444", "i_multi", "7777");
-    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1", "s_multi", "aaaa4", "s_multi", "bbbb4", "i_multi", "44444", "i_multi", "77777");
-    commit();
-    waitForRecoveriesToFinish("destinationCollection", false);
+  @Test
+  public void testUpdateStream() throws Exception {
+
+    CollectionAdminRequest.createCollection("destinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish("destinationCollection", cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0", "s_multi", "aaaa",  "s_multi", "bbbb",  "i_multi", "4", "i_multi", "7")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0", "s_multi", "aaaa1", "s_multi", "bbbb1", "i_multi", "44", "i_multi", "77")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "s_multi", "aaaa2", "s_multi", "bbbb2", "i_multi", "444", "i_multi", "777")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "s_multi", "aaaa3", "s_multi", "bbbb3", "i_multi", "4444", "i_multi", "7777")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1", "s_multi", "aaaa4", "s_multi", "bbbb4", "i_multi", "44444", "i_multi", "77777")
+        .commit(cluster.getSolrClient(), "collection1");
     
     StreamExpression expression;
     TupleStream stream;
     Tuple t;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
-      .withCollectionZkHost("destinationCollection", zkServer.getZkAddress())
+      .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+      .withCollectionZkHost("destinationCollection", cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("update", UpdateStream.class);
     
@@ -2520,7 +2496,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     expression = StreamExpressionParser.parse("update(destinationCollection, batchSize=5, search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_f asc, a_i asc\"))");
     stream = new UpdateStream(expression, factory);
     List<Tuple> tuples = getTuples(stream);
-    destinationCollectionClient.commit();
+    cluster.getSolrClient().commit("destinationCollection");
     
     //Ensure that all UpdateStream tuples indicate the correct number of copied/indexed docs
     assert(tuples.size() == 1);
@@ -2573,34 +2549,31 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assert(tuple.getDouble("a_f") == 4.0);
     assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
     assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
-
-    destinationCollectionClient.deleteByQuery("*:*");
-    destinationCollectionClient.commit();
-    destinationCollectionClient.close();
-    del("*:*");
-    commit();
   }
-  
-  private void testParallelUpdateStream() throws Exception {
-    CloudSolrClient destinationCollectionClient = createCloudClient("parallelDestinationCollection");
-    createCollection("parallelDestinationCollection", destinationCollectionClient, 2, 2);
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0", "s_multi", "aaaa",  "s_multi", "bbbb",  "i_multi", "4", "i_multi", "7");
-    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0", "s_multi", "aaaa1", "s_multi", "bbbb1", "i_multi", "44", "i_multi", "77");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "s_multi", "aaaa2", "s_multi", "bbbb2", "i_multi", "444", "i_multi", "777");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "s_multi", "aaaa3", "s_multi", "bbbb3", "i_multi", "4444", "i_multi", "7777");
-    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1", "s_multi", "aaaa4", "s_multi", "bbbb4", "i_multi", "44444", "i_multi", "77777");
-    commit();
-    waitForRecoveriesToFinish("parallelDestinationCollection", false);
+  @Test
+  public void testParallelUpdateStream() throws Exception {
+
+    CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish("parallelDestinationCollection", cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0", "s_multi", "aaaa",  "s_multi", "bbbb",  "i_multi", "4", "i_multi", "7")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0", "s_multi", "aaaa1", "s_multi", "bbbb1", "i_multi", "44", "i_multi", "77")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "s_multi", "aaaa2", "s_multi", "bbbb2", "i_multi", "444", "i_multi", "777")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "s_multi", "aaaa3", "s_multi", "bbbb3", "i_multi", "4444", "i_multi", "7777")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1", "s_multi", "aaaa4", "s_multi", "bbbb4", "i_multi", "44444", "i_multi", "77777")
+        .commit(cluster.getSolrClient(), "collection1");
     
     StreamExpression expression;
     TupleStream stream;
     Tuple t;
     
-    String zkHost = zkServer.getZkAddress();
+    String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
-      .withCollectionZkHost("parallelDestinationCollection", zkServer.getZkAddress())
+      .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+      .withCollectionZkHost("parallelDestinationCollection", cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("update", UpdateStream.class)
       .withFunctionName("parallel", ParallelStream.class);
@@ -2609,7 +2582,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     String updateExpression = "update(parallelDestinationCollection, batchSize=2, search(collection1, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_f asc, a_i asc\", partitionKeys=\"a_f\"))";
     TupleStream parallelUpdateStream = factory.constructStream("parallel(collection1, " + updateExpression + ", workers=\"2\", zkHost=\""+zkHost+"\", sort=\"batchNumber asc\")");
     List<Tuple> tuples = getTuples(parallelUpdateStream);
-    destinationCollectionClient.commit();
+    cluster.getSolrClient().commit("parallelDestinationCollection");
     
     //Ensure that all UpdateStream tuples indicate the correct number of copied/indexed docs
     long count = 0;
@@ -2666,33 +2639,31 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
     assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
 
-    destinationCollectionClient.deleteByQuery("*:*");
-    destinationCollectionClient.commit();
-    destinationCollectionClient.close();
-    del("*:*");
-    commit();
   }
 
-  private void testParallelDaemonUpdateStream() throws Exception {
-    CloudSolrClient destinationCollectionClient = createCloudClient("parallelDestinationCollection1");
-    createCollection("parallelDestinationCollection1", destinationCollectionClient, 2, 2);
+  @Test
+  public void testParallelDaemonUpdateStream() throws Exception {
 
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0", "s_multi", "aaaa",  "s_multi", "bbbb",  "i_multi", "4", "i_multi", "7");
-    indexr(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0", "s_multi", "aaaa1", "s_multi", "bbbb1", "i_multi", "44", "i_multi", "77");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "s_multi", "aaaa2", "s_multi", "bbbb2", "i_multi", "444", "i_multi", "777");
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "s_multi", "aaaa3", "s_multi", "bbbb3", "i_multi", "4444", "i_multi", "7777");
-    indexr(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1", "s_multi", "aaaa4", "s_multi", "bbbb4", "i_multi", "44444", "i_multi", "77777");
-    commit();
-    waitForRecoveriesToFinish("parallelDestinationCollection1", false);
+    CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish("parallelDestinationCollection1", cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0", "s_multi", "aaaa",  "s_multi", "bbbb",  "i_multi", "4", "i_multi", "7")
+        .add(id, "2", "a_s", "hello2", "a_i", "2", "a_f", "0", "s_multi", "aaaa1", "s_multi", "bbbb1", "i_multi", "44", "i_multi", "77")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "s_multi", "aaaa2", "s_multi", "bbbb2", "i_multi", "444", "i_multi", "777")
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "s_multi", "aaaa3", "s_multi", "bbbb3", "i_multi", "4444", "i_multi", "7777")
+        .add(id, "1", "a_s", "hello1", "a_i", "1", "a_f", "1", "s_multi", "aaaa4", "s_multi", "bbbb4", "i_multi", "44444", "i_multi", "77777")
+        .commit(cluster.getSolrClient(), "collection1");
 
     StreamExpression expression;
     TupleStream stream;
     Tuple t;
 
-    String zkHost = zkServer.getZkAddress();
+    String zkHost = cluster.getZkServer().getZkAddress();
     StreamFactory factory = new StreamFactory()
-        .withCollectionZkHost("collection1", zkServer.getZkAddress())
-        .withCollectionZkHost("parallelDestinationCollection1", zkServer.getZkAddress())
+        .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
+        .withCollectionZkHost("parallelDestinationCollection1", cluster.getZkServer().getZkAddress())
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("update", UpdateStream.class)
         .withFunctionName("parallel", ParallelStream.class)
@@ -2711,11 +2682,11 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     params.put("action","list");
 
     int workersComplete = 0;
-    for(CloudJettyRunner jetty : this.cloudJettys) {
+    for(JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       int iterations = 0;
       INNER:
       while(iterations == 0) {
-        SolrStream solrStream = new SolrStream(jetty.url, params);
+        SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", params);
         solrStream.open();
         Tuple tupleResponse = solrStream.read();
         if (tupleResponse.EOF) {
@@ -2738,17 +2709,17 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
       }
     }
 
-    assert(workersComplete == 2);
+    assertEquals(cluster.getJettySolrRunners().size(), workersComplete);
 
-    destinationCollectionClient.commit();
+    cluster.getSolrClient().commit("parallelDestinationCollection1");
 
     //Lets stop the daemons
     params = new HashMap();
     params.put(CommonParams.QT,"/stream");
     params.put("action", "stop");
     params.put("id", "test");
-    for(CloudJettyRunner jetty : this.cloudJettys) {
-      SolrStream solrStream = new SolrStream(jetty.url, params);
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      SolrStream solrStream = new SolrStream(jetty.getBaseUrl() + "/collection1", params);
       solrStream.open();
       Tuple tupleResponse = solrStream.read();
       solrStream.close();
@@ -2759,11 +2730,11 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     params.put("action","list");
 
     workersComplete = 0;
-    for(CloudJettyRunner jetty : this.cloudJettys) {
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       long stopTime = 0;
       INNER:
       while(stopTime == 0) {
-        SolrStream solrStream = new SolrStream(jetty.url, params);
+        SolrStream solrStream = new SolrStream(jetty.getBaseUrl() + "/collection1", params);
         solrStream.open();
         Tuple tupleResponse = solrStream.read();
         if (tupleResponse.EOF) {
@@ -2785,7 +2756,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
       }
     }
 
-    assertTrue(workersComplete == 2);
+    assertEquals(cluster.getJettySolrRunners().size(), workersComplete);
     //Ensure that destinationCollection actually has the new docs.
     expression = StreamExpressionParser.parse("search(parallelDestinationCollection1, q=*:*, fl=\"id,a_s,a_i,a_f,s_multi,i_multi\", sort=\"a_i asc\")");
     stream = new CloudSolrStream(expression, factory);
@@ -2832,34 +2803,30 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     assertList(tuple.getStrings("s_multi"), "aaaa3", "bbbb3");
     assertList(tuple.getLongs("i_multi"), Long.parseLong("4444"), Long.parseLong("7777"));
 
-    destinationCollectionClient.deleteByQuery("*:*");
-    destinationCollectionClient.commit();
-    destinationCollectionClient.close();
-    del("*:*");
-    commit();
   }
 
+  @Test
+  public void testIntersectStream() throws Exception {
 
-  
-  private void testIntersectStream() throws Exception{
-    indexr(id, "0", "a_s", "setA", "a_i", "0");
-    indexr(id, "2", "a_s", "setA", "a_i", "1");
-    indexr(id, "3", "a_s", "setA", "a_i", "2");
-    indexr(id, "4", "a_s", "setA", "a_i", "3");
-    
-    indexr(id, "5", "a_s", "setB", "a_i", "2");
-    indexr(id, "6", "a_s", "setB", "a_i", "3");
-    
-    indexr(id, "7", "a_s", "setAB", "a_i", "0");
-    indexr(id, "8", "a_s", "setAB", "a_i", "6");
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "a_s", "setA", "a_i", "0")
+        .add(id, "2", "a_s", "setA", "a_i", "1")
+        .add(id, "3", "a_s", "setA", "a_i", "2")
+        .add(id, "4", "a_s", "setA", "a_i", "3")
+
+        .add(id, "5", "a_s", "setB", "a_i", "2")
+        .add(id, "6", "a_s", "setB", "a_i", "3")
+
+        .add(id, "7", "a_s", "setAB", "a_i", "0")
+        .add(id, "8", "a_s", "setAB", "a_i", "6")
+        .commit(cluster.getSolrClient(), COLLECTION);
     
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("intersect", IntersectStream.class);
       
@@ -2873,32 +2840,33 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     assert(tuples.size() == 5);
     assertOrder(tuples, 0,7,3,4,8);
-    
-    del("*:*");
-    commit();
+
   }
-  
-  private void testParallelIntersectStream() throws Exception {
-    indexr(id, "0", "a_s", "setA", "a_i", "0");
-    indexr(id, "2", "a_s", "setA", "a_i", "1");
-    indexr(id, "3", "a_s", "setA", "a_i", "2");
-    indexr(id, "4", "a_s", "setA", "a_i", "3");
-    
-    indexr(id, "5", "a_s", "setB", "a_i", "2");
-    indexr(id, "6", "a_s", "setB", "a_i", "3");
-    
-    indexr(id, "7", "a_s", "setAB", "a_i", "0");
-    indexr(id, "8", "a_s", "setAB", "a_i", "6");
-    commit();
+
+  @Test
+  public void testParallelIntersectStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "setA", "a_i", "0")
+        .add(id, "2", "a_s", "setA", "a_i", "1")
+        .add(id, "3", "a_s", "setA", "a_i", "2")
+        .add(id, "4", "a_s", "setA", "a_i", "3")
+
+        .add(id, "5", "a_s", "setB", "a_i", "2")
+        .add(id, "6", "a_s", "setB", "a_i", "3")
+
+        .add(id, "7", "a_s", "setAB", "a_i", "0")
+        .add(id, "8", "a_s", "setAB", "a_i", "6")
+        .commit(cluster.getSolrClient(), COLLECTION);
     
     StreamFactory streamFactory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("intersect", IntersectStream.class)
       .withFunctionName("parallel", ParallelStream.class);
     // basic
     
-    String zkHost = zkServer.getZkAddress();
+    String zkHost = cluster.getZkServer().getZkAddress();
     final TupleStream stream = streamFactory.constructStream("parallel("
         + "collection1, "
         + "intersect("
@@ -2910,31 +2878,32 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     assert(tuples.size() == 5);
     assertOrder(tuples, 0,7,3,4,8);
-    
-    del("*:*");
-    commit();
+
   }
-  
-  private void testComplementStream() throws Exception{
-    indexr(id, "0", "a_s", "setA", "a_i", "0");
-    indexr(id, "2", "a_s", "setA", "a_i", "1");
-    indexr(id, "3", "a_s", "setA", "a_i", "2");
-    indexr(id, "4", "a_s", "setA", "a_i", "3");
-    
-    indexr(id, "5", "a_s", "setB", "a_i", "2");
-    indexr(id, "6", "a_s", "setB", "a_i", "3");
-    indexr(id, "9", "a_s", "setB", "a_i", "5");
-    
-    indexr(id, "7", "a_s", "setAB", "a_i", "0");
-    indexr(id, "8", "a_s", "setAB", "a_i", "6");
-    commit();
+
+  @Test
+  public void testComplementStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "setA", "a_i", "0")
+        .add(id, "2", "a_s", "setA", "a_i", "1")
+        .add(id, "3", "a_s", "setA", "a_i", "2")
+        .add(id, "4", "a_s", "setA", "a_i", "3")
+
+        .add(id, "5", "a_s", "setB", "a_i", "2")
+        .add(id, "6", "a_s", "setB", "a_i", "3")
+        .add(id, "9", "a_s", "setB", "a_i", "5")
+
+        .add(id, "7", "a_s", "setAB", "a_i", "0")
+        .add(id, "8", "a_s", "setAB", "a_i", "6")
+        .commit(cluster.getSolrClient(), COLLECTION);
     
     StreamExpression expression;
     TupleStream stream;
     List<Tuple> tuples;
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("complement", ComplementStream.class);
       
@@ -2948,32 +2917,33 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
    
     assert(tuples.size() == 1);
     assertOrder(tuples, 2);
-    
-    del("*:*");
-    commit();
+
   }
-  
-  private void testParallelComplementStream() throws Exception {
-    indexr(id, "0", "a_s", "setA", "a_i", "0");
-    indexr(id, "2", "a_s", "setA", "a_i", "1");
-    indexr(id, "3", "a_s", "setA", "a_i", "2");
-    indexr(id, "4", "a_s", "setA", "a_i", "3");
-    
-    indexr(id, "5", "a_s", "setB", "a_i", "2");
-    indexr(id, "6", "a_s", "setB", "a_i", "3");
-    indexr(id, "9", "a_s", "setB", "a_i", "5");
-    
-    indexr(id, "7", "a_s", "setAB", "a_i", "0");
-    indexr(id, "8", "a_s", "setAB", "a_i", "6");
-    commit();
+
+  @Test
+  public void testParallelComplementStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "a_s", "setA", "a_i", "0")
+        .add(id, "2", "a_s", "setA", "a_i", "1")
+        .add(id, "3", "a_s", "setA", "a_i", "2")
+        .add(id, "4", "a_s", "setA", "a_i", "3")
+
+        .add(id, "5", "a_s", "setB", "a_i", "2")
+        .add(id, "6", "a_s", "setB", "a_i", "3")
+        .add(id, "9", "a_s", "setB", "a_i", "5")
+
+        .add(id, "7", "a_s", "setAB", "a_i", "0")
+        .add(id, "8", "a_s", "setAB", "a_i", "6")
+        .commit(cluster.getSolrClient(), COLLECTION);
     
     StreamFactory streamFactory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("complement", ComplementStream.class)
       .withFunctionName("parallel", ParallelStream.class);
     
-    final String zkHost = zkServer.getZkAddress();
+    final String zkHost = cluster.getZkServer().getZkAddress();
     final TupleStream stream = streamFactory.constructStream("parallel("
       + "collection1, "
       + "complement("
@@ -2985,9 +2955,7 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     
     assert(tuples.size() == 1);
     assertOrder(tuples, 2);
-    
-    del("*:*");
-    commit();
+
   }
   
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
@@ -3120,10 +3088,4 @@ public class StreamExpressionTest extends AbstractFullDistribZkTestBase {
     return true;
   }
 
-
-  @Override
-  protected void indexr(Object... fields) throws Exception {
-    SolrInputDocument doc = getDoc(fields);
-    indexDoc(doc);
-  }
 }

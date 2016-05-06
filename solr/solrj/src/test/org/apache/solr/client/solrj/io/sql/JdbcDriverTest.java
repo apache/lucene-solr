@@ -54,6 +54,12 @@ public class JdbcDriverTest extends SolrTestCaseJ4 {
     Connection con = DriverManager.getConnection("jdbc:solr://", new Properties());
   }
 
+  @Test(expected = SQLException.class)
+  public void testConnectionStringJumbled() throws Exception {
+    final String sampleZkHost="zoo1:9983/foo";
+    DriverManager.getConnection("solr:jdbc://" + sampleZkHost + "?collection=collection1", new Properties());
+  }
+
   @Test
   public void testProcessUrl() throws Exception {
     DriverImpl driver = new DriverImpl();

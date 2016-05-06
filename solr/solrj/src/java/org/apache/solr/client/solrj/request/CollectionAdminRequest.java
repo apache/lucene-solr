@@ -1042,6 +1042,10 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     return new RequestStatus(requestId);
   }
 
+  public static void waitForAsyncRequest(String requestId, SolrClient client, long timeout) throws SolrServerException, InterruptedException, IOException {
+    requestStatus(requestId).waitFor(client, timeout);
+  }
+
   // REQUESTSTATUS request
   public static class RequestStatus extends CollectionAdminRequest<RequestStatusResponse> {
 

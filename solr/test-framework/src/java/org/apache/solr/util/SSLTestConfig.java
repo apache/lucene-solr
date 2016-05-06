@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import java.io.File;
+import java.util.Random;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -42,6 +43,8 @@ import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpClientUtil.SchemaRegistryProvider;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
+
+import org.apache.lucene.util.Constants;
 
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
@@ -266,33 +269,87 @@ public class SSLTestConfig extends SSLConfig {
    * Tests do not need secure SSL.
    */
   private static class NullSecureRandom extends SecureRandom {
-    public static final SecureRandom INSTANCE = new NullSecureRandom();
+
+    /** 
+     * The one and only instance that should be used, specific impl may vary based on platform 
+     * @see Constants#SUN_OS
+     * @see <a href="https://issues.apache.org/jira/browse/SOLR-9068">SOLR-9068</a>
+     */
+    public static final SecureRandom INSTANCE = Constants.SUN_OS
+      ? new NullSecureRandom(NullSecureRandomSpi.PSUEDO_RAND_INSTANCE)
+      : new NullSecureRandom(NullSecureRandomSpi.NULL_INSTANCE);
+
+    /** A source of psuedo random data if needed */
+    private static final Random RAND = new Random(42);
     
-    /** SPI Used to init all instances */
-    private static final SecureRandomSpi NULL_SPI = new SecureRandomSpi() {
-      /** NOOP: returns new uninitialized byte[] */
+    /** SPI base class for all NullSecureRandom instances */
+    private static class NullSecureRandomSpi extends SecureRandomSpi {
+      private NullSecureRandomSpi() {
+        /* NOOP */
+      }
+      /** 
+       * Helper method that can be used to fill an array with non-zero data.
+       * Default impl is No-Op
+       */
+      public byte[] fillData(byte[] data) {
+        return data; /* NOOP */
+      }
+      /** returns a new byte[] filled with static data */
+      @Override
       public byte[] engineGenerateSeed(int numBytes) {
-        return new byte[numBytes];
+        return fillData(new byte[numBytes]);
+      }
+      /** fills the byte[] with static data */
+      @Override
+      public void engineNextBytes(byte[] bytes) {
+        fillData(bytes);
       }
       /** NOOP */
-      public void engineNextBytes(byte[] bytes) { /* NOOP */ }
-      /** NOOP */
+      @Override
       public void engineSetSeed(byte[] seed) { /* NOOP */ }
-    };
-    
-    private NullSecureRandom() {
-      super(NULL_SPI, null) ;
+      
+      /** Instance to use on platforms w/SSLEngines that work fine when SecureRandom returns constant bytes */
+      public static final NullSecureRandomSpi NULL_INSTANCE = new NullSecureRandomSpi();
+
+      /** 
+       * Instance to use on platforms that need at least psuedo-random data for the SSLEngine to not break
+       * (Attempted workarround of Solaris SSL Padding bug: SOLR-9068)
+       */
+      public static final NullSecureRandomSpi PSUEDO_RAND_INSTANCE = new NullSecureRandomSpi() {
+        /** 
+         * Fill with Psuedo-Random data.
+         * (Attempted workarround of Solaris SSL Padding bug: SOLR-9068)
+         */
+        @Override
+        public byte[] fillData(byte[] data) {
+          RAND.nextBytes(data);
+          return data;
+        }
+      };
     }
     
-    /** NOOP: returns new uninitialized byte[] */
+    private NullSecureRandom(NullSecureRandomSpi spi) {
+      super(spi, null);
+      this.spi = spi;
+    }
+    
+    private NullSecureRandomSpi spi;
+    
+    /** fills a new byte[] with data from SPI */
+    @Override
     public byte[] generateSeed(int numBytes) {
-      return new byte[numBytes];
+      return spi.fillData(new byte[numBytes]);
+    }
+    /** fills the byte[] with data from SPI */
+    @Override
+    synchronized public void nextBytes(byte[] bytes) {
+      spi.fillData(bytes);
     }
     /** NOOP */
-    synchronized public void nextBytes(byte[] bytes) { /* NOOP */ }
-    /** NOOP */
+    @Override
     synchronized public void setSeed(byte[] seed) { /* NOOP */ }
     /** NOOP */
+    @Override
     synchronized public void setSeed(long seed) { /* NOOP */ }
     
   }

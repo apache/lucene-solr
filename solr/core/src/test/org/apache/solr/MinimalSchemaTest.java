@@ -112,6 +112,7 @@ public class MinimalSchemaTest extends SolrTestCaseJ4 {
             handler.startsWith("/config") ||
             handler.startsWith("/mlt") ||
             handler.startsWith("/export") ||
+            handler.startsWith("/graph") ||
             handler.startsWith("/sql") ||
             handler.startsWith("/stream")
             ) {

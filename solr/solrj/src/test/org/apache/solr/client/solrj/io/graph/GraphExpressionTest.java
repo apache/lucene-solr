@@ -17,35 +17,44 @@ package org.apache.solr.client.solrj.io.graph;
  * limitations under the License.
  */
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
-import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
+import org.apache.solr.client.solrj.io.stream.HashJoinStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.common.SolrInputDocument;
-import org.junit.After;
-import org.junit.AfterClass;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,96 +67,52 @@ import org.junit.Test;
 
 @Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
+public class GraphExpressionTest extends SolrCloudTestCase {
 
-  private static final String SOLR_HOME = getFile("solrj" + File.separator + "solr").getAbsolutePath();
+  private static final String COLLECTION = "collection1";
 
-  static {
-    schemaString = "schema-streaming.xml";
-  }
+  private static final String id = "id";
+
+  private static final int TIMEOUT = 30;
 
   @BeforeClass
-  public static void beforeSuperClass() {
-    AbstractZkTestCase.SOLRHOME = new File(SOLR_HOME());
-  }
+  public static void setupCluster() throws Exception {
+    configureCluster(2)
+        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .configure();
 
-  @AfterClass
-  public static void afterSuperClass() {
-
-  }
-
-  protected String getCloudSolrConfig() {
-    return "solrconfig-streaming.xml";
-  }
-
-
-  @Override
-  public String getSolrHome() {
-    return SOLR_HOME;
-  }
-
-  public static String SOLR_HOME() {
-    return SOLR_HOME;
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
   }
 
   @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    // we expect this time of exception as shards go up and down...
-    //ignoreException(".*");
-
-    System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-    resetExceptionIgnores();
-  }
-
-  public GraphExpressionTest() {
-    super();
-    sliceCount = 2;
+  public void cleanIndex() throws Exception {
+    new UpdateRequest()
+        .deleteByQuery("*:*")
+        .commit(cluster.getSolrClient(), COLLECTION);
   }
 
   @Test
-  public void testAll() throws Exception{
-    assertNotNull(cloudClient);
+  public void testShortestPathStream() throws Exception {
 
-    handle.clear();
-    handle.put("timestamp", SKIPVAL);
-
-    waitForRecoveriesToFinish(false);
-
-    del("*:*");
-    commit();
-
-    testShortestPathStream();
-    testGatherNodesStream();
-    testGatherNodesFriendsStream();
-  }
-
-  private void testShortestPathStream() throws Exception {
-
-    indexr(id, "0", "from_s", "jim", "to_s", "mike", "predicate_s", "knows");
-    indexr(id, "1", "from_s", "jim", "to_s", "dave", "predicate_s", "knows");
-    indexr(id, "2", "from_s", "jim", "to_s", "stan", "predicate_s", "knows");
-    indexr(id, "3", "from_s", "dave", "to_s", "stan", "predicate_s", "knows");
-    indexr(id, "4", "from_s", "dave", "to_s", "bill", "predicate_s", "knows");
-    indexr(id, "5", "from_s", "dave", "to_s", "mike", "predicate_s", "knows");
-    indexr(id, "20", "from_s", "dave", "to_s", "alex", "predicate_s", "knows");
-    indexr(id, "21", "from_s", "alex", "to_s", "steve", "predicate_s", "knows");
-    indexr(id, "6", "from_s", "stan", "to_s", "alice", "predicate_s", "knows");
-    indexr(id, "7", "from_s", "stan", "to_s", "mary", "predicate_s", "knows");
-    indexr(id, "8", "from_s", "stan", "to_s", "dave", "predicate_s", "knows");
-    indexr(id, "10", "from_s", "mary", "to_s", "mike", "predicate_s", "knows");
-    indexr(id, "11", "from_s", "mary", "to_s", "max", "predicate_s", "knows");
-    indexr(id, "12", "from_s", "mary", "to_s", "jim", "predicate_s", "knows");
-    indexr(id, "13", "from_s", "mary", "to_s", "steve", "predicate_s", "knows");
-
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "from_s", "jim", "to_s", "mike", "predicate_s", "knows")
+        .add(id, "1", "from_s", "jim", "to_s", "dave", "predicate_s", "knows")
+        .add(id, "2", "from_s", "jim", "to_s", "stan", "predicate_s", "knows")
+        .add(id, "3", "from_s", "dave", "to_s", "stan", "predicate_s", "knows")
+        .add(id, "4", "from_s", "dave", "to_s", "bill", "predicate_s", "knows")
+        .add(id, "5", "from_s", "dave", "to_s", "mike", "predicate_s", "knows")
+        .add(id, "20", "from_s", "dave", "to_s", "alex", "predicate_s", "knows")
+        .add(id, "21", "from_s", "alex", "to_s", "steve", "predicate_s", "knows")
+        .add(id, "6", "from_s", "stan", "to_s", "alice", "predicate_s", "knows")
+        .add(id, "7", "from_s", "stan", "to_s", "mary", "predicate_s", "knows")
+        .add(id, "8", "from_s", "stan", "to_s", "dave", "predicate_s", "knows")
+        .add(id, "10", "from_s", "mary", "to_s", "mike", "predicate_s", "knows")
+        .add(id, "11", "from_s", "mary", "to_s", "max", "predicate_s", "knows")
+        .add(id, "12", "from_s", "mary", "to_s", "jim", "predicate_s", "knows")
+        .add(id, "13", "from_s", "mary", "to_s", "steve", "predicate_s", "knows")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     List<Tuple> tuples = null;
     Set<String> paths = null;
@@ -157,7 +122,7 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     context.setSolrClientCache(cache);
 
     StreamFactory factory = new StreamFactory()
-        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
         .withFunctionName("shortestPath", ShortestPathStream.class);
 
     Map params = new HashMap();
@@ -271,27 +236,26 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     assertTrue(paths.contains("[jim, stan, mary, steve]"));
 
     cache.close();
-    del("*:*");
-    commit();
+
   }
 
+  @Test
+  public void testGatherNodesStream() throws Exception {
 
-  private void testGatherNodesStream() throws Exception {
-
-    indexr(id, "0", "basket_s", "basket1", "product_s", "product1", "price_f", "20");
-    indexr(id, "1", "basket_s", "basket1", "product_s", "product3", "price_f", "30");
-    indexr(id, "2", "basket_s", "basket1", "product_s", "product5", "price_f", "1");
-    indexr(id, "3", "basket_s", "basket2", "product_s", "product1", "price_f", "2");
-    indexr(id, "4", "basket_s", "basket2", "product_s", "product6", "price_f", "5");
-    indexr(id, "5", "basket_s", "basket2", "product_s", "product7", "price_f", "10");
-    indexr(id, "6", "basket_s", "basket3", "product_s", "product4", "price_f", "20");
-    indexr(id, "7", "basket_s", "basket3", "product_s", "product3", "price_f", "10");
-    indexr(id, "8", "basket_s", "basket3", "product_s", "product1", "price_f", "10");
-    indexr(id, "9", "basket_s", "basket4", "product_s", "product4", "price_f", "40");
-    indexr(id, "10", "basket_s", "basket4", "product_s", "product3", "price_f", "10");
-    indexr(id, "11", "basket_s", "basket4", "product_s", "product1", "price_f", "10");
-
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "basket_s", "basket1", "product_s", "product1", "price_f", "20")
+        .add(id, "1", "basket_s", "basket1", "product_s", "product3", "price_f", "30")
+        .add(id, "2", "basket_s", "basket1", "product_s", "product5", "price_f", "1")
+        .add(id, "3", "basket_s", "basket2", "product_s", "product1", "price_f", "2")
+        .add(id, "4", "basket_s", "basket2", "product_s", "product6", "price_f", "5")
+        .add(id, "5", "basket_s", "basket2", "product_s", "product7", "price_f", "10")
+        .add(id, "6", "basket_s", "basket3", "product_s", "product4", "price_f", "20")
+        .add(id, "7", "basket_s", "basket3", "product_s", "product3", "price_f", "10")
+        .add(id, "8", "basket_s", "basket3", "product_s", "product1", "price_f", "10")
+        .add(id, "9", "basket_s", "basket4", "product_s", "product4", "price_f", "40")
+        .add(id, "10", "basket_s", "basket4", "product_s", "product3", "price_f", "10")
+        .add(id, "11", "basket_s", "basket4", "product_s", "product1", "price_f", "10")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     List<Tuple> tuples = null;
     Set<String> paths = null;
@@ -301,7 +265,7 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     context.setSolrClientCache(cache);
 
     StreamFactory factory = new StreamFactory()
-        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
         .withFunctionName("gatherNodes", GatherNodesStream.class)
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("count", CountMetric.class)
@@ -311,8 +275,8 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
         .withFunctionName("max", MaxMetric.class);
 
     String expr = "gatherNodes(collection1, " +
-                               "walk=\"product1->product_s\"," +
-                               "gather=\"basket_s\")";
+        "walk=\"product1->product_s\"," +
+        "gather=\"basket_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
     stream.setStreamContext(context);
@@ -329,9 +293,9 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
 
     //Test maxDocFreq param
     String docFreqExpr = "gatherNodes(collection1, " +
-                         "walk=\"product1, product7->product_s\"," +
-                         "maxDocFreq=\"2\","+
-                         "gather=\"basket_s\")";
+        "walk=\"product1, product7->product_s\"," +
+        "maxDocFreq=\"2\","+
+        "gather=\"basket_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(docFreqExpr);
     stream.setStreamContext(context);
@@ -344,9 +308,9 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
 
 
     String expr2 = "gatherNodes(collection1, " +
-                                 expr+","+
-                                "walk=\"node->basket_s\"," +
-                                "gather=\"product_s\", count(*), avg(price_f), sum(price_f), min(price_f), max(price_f))";
+        expr+","+
+        "walk=\"node->basket_s\"," +
+        "gather=\"product_s\", count(*), avg(price_f), sum(price_f), min(price_f), max(price_f))";
 
     stream = (GatherNodesStream)factory.constructStream(expr2);
 
@@ -383,8 +347,8 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
 
     //Test list of root nodes
     expr = "gatherNodes(collection1, " +
-           "walk=\"product4, product7->product_s\"," +
-           "gather=\"basket_s\")";
+        "walk=\"product4, product7->product_s\"," +
+        "gather=\"basket_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
 
@@ -401,8 +365,8 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     //Test with negative filter query
 
     expr = "gatherNodes(collection1, " +
-                        "walk=\"product4, product7->product_s\"," +
-                        "gather=\"basket_s\", fq=\"-basket_s:basket4\")";
+        "walk=\"product4, product7->product_s\"," +
+        "gather=\"basket_s\", fq=\"-basket_s:basket4\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
 
@@ -417,20 +381,20 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     assertTrue(tuples.get(1).getString("node").equals("basket3"));
 
     cache.close();
-    del("*:*");
-    commit();
+
   }
 
-  private void testGatherNodesFriendsStream() throws Exception {
+  @Test
+  public void testGatherNodesFriendsStream() throws Exception {
 
-    indexr(id, "0", "from_s", "bill", "to_s", "jim", "message_t", "Hello jim");
-    indexr(id, "1", "from_s", "bill", "to_s", "sam", "message_t", "Hello sam");
-    indexr(id, "2", "from_s", "bill", "to_s", "max", "message_t", "Hello max");
-    indexr(id, "3", "from_s", "max",  "to_s", "kip", "message_t", "Hello kip");
-    indexr(id, "4", "from_s", "sam",  "to_s", "steve", "message_t", "Hello steve");
-    indexr(id, "5", "from_s", "jim",  "to_s", "ann", "message_t", "Hello steve");
-
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "from_s", "bill", "to_s", "jim", "message_t", "Hello jim")
+        .add(id, "1", "from_s", "bill", "to_s", "sam", "message_t", "Hello sam")
+        .add(id, "2", "from_s", "bill", "to_s", "max", "message_t", "Hello max")
+        .add(id, "3", "from_s", "max",  "to_s", "kip", "message_t", "Hello kip")
+        .add(id, "4", "from_s", "sam",  "to_s", "steve", "message_t", "Hello steve")
+        .add(id, "5", "from_s", "jim",  "to_s", "ann", "message_t", "Hello steve")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     List<Tuple> tuples = null;
     Set<String> paths = null;
@@ -440,7 +404,7 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     context.setSolrClientCache(cache);
 
     StreamFactory factory = new StreamFactory()
-        .withCollectionZkHost("collection1", zkServer.getZkAddress())
+        .withCollectionZkHost("collection1", cluster.getZkServer().getZkAddress())
         .withFunctionName("gatherNodes", GatherNodesStream.class)
         .withFunctionName("search", CloudSolrStream.class)
         .withFunctionName("count", CountMetric.class)
@@ -451,8 +415,8 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
         .withFunctionName("max", MaxMetric.class);
 
     String expr = "gatherNodes(collection1, " +
-                               "walk=\"bill->from_s\"," +
-                               "gather=\"to_s\")";
+        "walk=\"bill->from_s\"," +
+        "gather=\"to_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
     stream.setStreamContext(context);
@@ -468,9 +432,9 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     //Test scatter branches, leaves and trackTraversal
 
     expr = "gatherNodes(collection1, " +
-           "walk=\"bill->from_s\"," +
-           "gather=\"to_s\","+
-           "scatter=\"branches, leaves\", trackTraversal=\"true\")";
+        "walk=\"bill->from_s\"," +
+        "gather=\"to_s\","+
+        "scatter=\"branches, leaves\", trackTraversal=\"true\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
     context = new StreamContext();
@@ -506,9 +470,9 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     // Test query root
 
     expr = "gatherNodes(collection1, " +
-           "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
-           "walk=\"from_s->from_s\"," +
-           "gather=\"to_s\")";
+        "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
+        "walk=\"from_s->from_s\"," +
+        "gather=\"to_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
     context = new StreamContext();
@@ -527,9 +491,9 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     // Test query root scatter branches
 
     expr = "gatherNodes(collection1, " +
-           "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
-           "walk=\"from_s->from_s\"," +
-           "gather=\"to_s\", scatter=\"branches, leaves\")";
+        "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
+        "walk=\"from_s->from_s\"," +
+        "gather=\"to_s\", scatter=\"branches, leaves\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
     context = new StreamContext();
@@ -550,14 +514,14 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     assertTrue(tuples.get(3).getLong("level").equals(new Long(1)));
 
     expr = "gatherNodes(collection1, " +
-           "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
-           "walk=\"from_s->from_s\"," +
-           "gather=\"to_s\")";
+        "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
+        "walk=\"from_s->from_s\"," +
+        "gather=\"to_s\")";
 
     String expr2 = "gatherNodes(collection1, " +
-                    expr+","+
-                   "walk=\"node->from_s\"," +
-                   "gather=\"to_s\")";
+        expr+","+
+        "walk=\"node->from_s\"," +
+        "gather=\"to_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr2);
     context = new StreamContext();
@@ -593,14 +557,14 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
 
 
     expr = "gatherNodes(collection1, " +
-           "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
-           "walk=\"from_s->from_s\"," +
-           "gather=\"to_s\")";
+        "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
+        "walk=\"from_s->from_s\"," +
+        "gather=\"to_s\")";
 
     expr2 = "gatherNodes(collection1, " +
-            expr+","+
-            "walk=\"node->from_s\"," +
-            "gather=\"to_s\", scatter=\"branches, leaves\")";
+        expr+","+
+        "walk=\"node->from_s\"," +
+        "gather=\"to_s\", scatter=\"branches, leaves\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr2);
     context = new StreamContext();
@@ -628,20 +592,20 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     assertTrue(tuples.get(6).getLong("level").equals(new Long(2)));
 
     //Add a cycle from jim to bill
-    indexr(id, "6", "from_s", "jim", "to_s", "bill", "message_t", "Hello steve");
-    indexr(id, "7", "from_s", "sam", "to_s", "bill", "message_t", "Hello steve");
-
-    commit();
+    new UpdateRequest()
+        .add(id, "6", "from_s", "jim", "to_s", "bill", "message_t", "Hello steve")
+        .add(id, "7", "from_s", "sam", "to_s", "bill", "message_t", "Hello steve")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     expr = "gatherNodes(collection1, " +
-           "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
-           "walk=\"from_s->from_s\"," +
-           "gather=\"to_s\", trackTraversal=\"true\")";
+        "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
+        "walk=\"from_s->from_s\"," +
+        "gather=\"to_s\", trackTraversal=\"true\")";
 
     expr2 = "gatherNodes(collection1, " +
-             expr+","+
-            "walk=\"node->from_s\"," +
-            "gather=\"to_s\", scatter=\"branches, leaves\", trackTraversal=\"true\")";
+        expr+","+
+        "walk=\"node->from_s\"," +
+        "gather=\"to_s\", scatter=\"branches, leaves\", trackTraversal=\"true\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr2);
     context = new StreamContext();
@@ -676,9 +640,84 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     assertTrue(tuples.get(6).getLong("level").equals(new Long(2)));
 
     cache.close();
-    del("*:*");
-    commit();
+
   }
+
+  @Test
+  public void testGraphHandler() throws Exception {
+
+
+    new UpdateRequest()
+        .add(id, "0", "from_s", "bill", "to_s", "jim", "message_t", "Hello jim")
+        .add(id, "1", "from_s", "bill", "to_s", "sam", "message_t", "Hello sam")
+        .add(id, "2", "from_s", "bill", "to_s", "max", "message_t", "Hello max")
+        .add(id, "3", "from_s", "max",  "to_s", "kip", "message_t", "Hello kip")
+        .add(id, "4", "from_s", "sam",  "to_s", "steve", "message_t", "Hello steve")
+        .add(id, "5", "from_s", "jim",  "to_s", "ann", "message_t", "Hello steve")
+        .commit(cluster.getSolrClient(), COLLECTION);
+
+    commit();
+
+    List<JettySolrRunner> runners = cluster.getJettySolrRunners();
+    JettySolrRunner runner = runners.get(0);
+    String url = runner.getBaseUrl().toString();
+
+    HttpSolrClient client = new HttpSolrClient(url);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+
+
+    String expr = "sort(by=\"node asc\", gatherNodes(collection1, " +
+        "walk=\"bill->from_s\"," +
+        "trackTraversal=\"true\"," +
+        "gather=\"to_s\"))";
+
+    params.add("expr", expr);
+    QueryRequest query = new QueryRequest(params);
+    query.setPath("/collection1/graph");
+
+    query.setResponseParser(new InputStreamResponseParser("xml"));
+    query.setMethod(SolrRequest.METHOD.POST);
+
+    NamedList<Object> genericResponse = client.request(query);
+
+
+    InputStream stream = (InputStream)genericResponse.get("stream");
+    InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+    String xml = readString(reader);
+    //Validate the nodes
+    String error = h.validateXPath(xml,
+        "//graph/node[1][@id ='jim']",
+        "//graph/node[2][@id ='max']",
+        "//graph/node[3][@id ='sam']");
+    if(error != null) {
+      throw new Exception(error);
+    }
+    //Validate the edges
+    error = h.validateXPath(xml,
+        "//graph/edge[1][@source ='bill']",
+        "//graph/edge[1][@target ='jim']",
+        "//graph/edge[2][@source ='bill']",
+        "//graph/edge[2][@target ='max']",
+        "//graph/edge[3][@source ='bill']",
+        "//graph/edge[3][@target ='sam']");
+
+    if(error != null) {
+      throw new Exception(error);
+    }
+
+    client.close();
+  }
+
+  private String readString(InputStreamReader reader) throws Exception{
+    StringBuilder builder = new StringBuilder();
+    int c = 0;
+    while((c = reader.read()) != -1) {
+      builder.append(((char)c));
+    }
+
+    return builder.toString();
+  }
+
 
 
 
@@ -691,64 +730,12 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
     tupleStream.close();
     return tuples;
   }
-  protected boolean assertOrder(List<Tuple> tuples, int... ids) throws Exception {
-    return assertOrderOf(tuples, "id", ids);
-  }
+
   protected boolean assertOrderOf(List<Tuple> tuples, String fieldName, int... ids) throws Exception {
     int i = 0;
     for(int val : ids) {
       Tuple t = tuples.get(i);
       Long tip = (Long)t.get(fieldName);
-      if(tip.intValue() != val) {
-        throw new Exception("Found value:"+tip.intValue()+" expecting:"+val);
-      }
-      ++i;
-    }
-    return true;
-  }
-
-  protected boolean assertMapOrder(List<Tuple> tuples, int... ids) throws Exception {
-    int i = 0;
-    for(int val : ids) {
-      Tuple t = tuples.get(i);
-      List<Map> tip = t.getMaps("group");
-      int id = (int)tip.get(0).get("id");
-      if(id != val) {
-        throw new Exception("Found value:"+id+" expecting:"+val);
-      }
-      ++i;
-    }
-    return true;
-  }
-
-
-  protected boolean assertFields(List<Tuple> tuples, String ... fields) throws Exception{
-    for(Tuple tuple : tuples){
-      for(String field : fields){
-        if(!tuple.fields.containsKey(field)){
-          throw new Exception(String.format(Locale.ROOT, "Expected field '%s' not found", field));
-        }
-      }
-    }
-    return true;
-  }
-  protected boolean assertNotFields(List<Tuple> tuples, String ... fields) throws Exception{
-    for(Tuple tuple : tuples){
-      for(String field : fields){
-        if(tuple.fields.containsKey(field)){
-          throw new Exception(String.format(Locale.ROOT, "Unexpected field '%s' found", field));
-        }
-      }
-    }
-    return true;
-  }
-
-  protected boolean assertGroupOrder(Tuple tuple, int... ids) throws Exception {
-    List<?> group = (List<?>)tuple.get("tuples");
-    int i=0;
-    for(int val : ids) {
-      Map<?,?> t = (Map<?,?>)group.get(i);
-      Long tip = (Long)t.get("id");
       if(tip.intValue() != val) {
         throw new Exception("Found value:"+tip.intValue()+" expecting:"+val);
       }
@@ -775,47 +762,9 @@ public class GraphExpressionTest extends AbstractFullDistribZkTestBase {
       throw new Exception("Longs not equal:"+expected+" : "+actual);
     }
 
-    return true;
-  }
 
-  protected boolean assertMaps(List<Map> maps, int... ids) throws Exception {
-    if(maps.size() != ids.length) {
-      throw new Exception("Expected id count != actual map count:"+ids.length+":"+maps.size());
-    }
-
-    int i=0;
-    for(int val : ids) {
-      Map t = maps.get(i);
-      Long tip = (Long)t.get("id");
-      if(tip.intValue() != val) {
-        throw new Exception("Found value:"+tip.intValue()+" expecting:"+val);
-      }
-      ++i;
-    }
-    return true;
-  }
-
-  private boolean assertList(List list, Object... vals) throws Exception {
-
-    if(list.size() != vals.length) {
-      throw new Exception("Lists are not the same size:"+list.size() +" : "+vals.length);
-    }
-
-    for(int i=0; i<list.size(); i++) {
-      Object a = list.get(i);
-      Object b = vals[i];
-      if(!a.equals(b)) {
-        throw new Exception("List items not equals:"+a+" : "+b);
-      }
-    }
 
     return true;
   }
 
-
-  @Override
-  protected void indexr(Object... fields) throws Exception {
-    SolrInputDocument doc = getDoc(fields);
-    indexDoc(doc);
-  }
 }

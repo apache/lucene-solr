@@ -16,13 +16,13 @@
  */
 package org.apache.solr.client.solrj.io.sql;
 
-import java.io.File;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.ArrayList;
@@ -32,11 +32,10 @@ import java.util.Properties;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.common.cloud.DocCollection;
-import org.junit.After;
-import org.junit.AfterClass;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -47,67 +46,44 @@ import org.junit.Test;
 
 @Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40", "Lucene41", "Lucene42", "Lucene45"})
-public class JdbcTest extends AbstractFullDistribZkTestBase {
+public class JdbcTest extends SolrCloudTestCase {
 
-  private static final String SOLR_HOME = getFile("solrj" + File.separator + "solr").getAbsolutePath();
+  private static final String COLLECTION = "collection1";
 
+  private static final String id = "id";
 
-  static {
-    schemaString = "schema-sql.xml";
-  }
+  private static final int TIMEOUT = 30;
+
+  private static String zkHost;
 
   @BeforeClass
-  public static void beforeSuperClass() {
-    AbstractZkTestCase.SOLRHOME = new File(SOLR_HOME);
-  }
+  public static void setupCluster() throws Exception {
+    configureCluster(2)
+        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .configure();
 
-  @AfterClass
-  public static void afterSuperClass() {
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
 
-  }
+    new UpdateRequest()
+        .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1", "testnull_i", null)
+        .add(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2", "testnull_i", "2")
+        .add(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "testnull_i", null)
+        .add(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "testnull_i", "4")
+        .add(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5", "testnull_i", null)
+        .add(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6", "testnull_i", "6")
+        .add(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7", "testnull_i", null)
+        .add(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8", "testnull_i", "8")
+        .add(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9", "testnull_i", null)
+        .add(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10", "testnull_i", "10")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
-  protected String getCloudSolrConfig() {
-    return "solrconfig-sql.xml";
-  }
-
-  @Override
-  public String getSolrHome() {
-    return SOLR_HOME;
-  }
-
-
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-  }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-    resetExceptionIgnores();
+    zkHost = cluster.getZkServer().getZkAddress();
   }
 
   @Test
-  @ShardsFixed(num = 2)
   public void doTest() throws Exception {
-
-    waitForRecoveriesToFinish(false);
-
-    indexr(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "1", "testnull_i", null);
-    indexr(id, "2", "a_s", "hello0", "a_i", "2", "a_f", "2", "testnull_i", "2");
-    indexr(id, "3", "a_s", "hello3", "a_i", "3", "a_f", "3", "testnull_i", null);
-    indexr(id, "4", "a_s", "hello4", "a_i", "4", "a_f", "4", "testnull_i", "4");
-    indexr(id, "1", "a_s", "hello0", "a_i", "1", "a_f", "5", "testnull_i", null);
-    indexr(id, "5", "a_s", "hello3", "a_i", "10", "a_f", "6", "testnull_i", "6");
-    indexr(id, "6", "a_s", "hello4", "a_i", "11", "a_f", "7", "testnull_i", null);
-    indexr(id, "7", "a_s", "hello3", "a_i", "12", "a_f", "8", "testnull_i", "8");
-    indexr(id, "8", "a_s", "hello3", "a_i", "13", "a_f", "9", "testnull_i", null);
-    indexr(id, "9", "a_s", "hello0", "a_i", "14", "a_f", "10", "testnull_i", "10");
-
-    commit();
-
-    String zkHost = zkServer.getZkAddress();
 
     Properties props = new Properties();
 
@@ -202,8 +178,13 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
       }
     }
 
+  }
+
+  @Test
+  public void testFacetAggregation() throws Exception {
+
     //Test facet aggregation
-    props = new Properties();
+    Properties props = new Properties();
     props.put("aggregationMode", "facet");
     try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1", props)) {
       try (Statement stmt = con.createStatement()) {
@@ -236,8 +217,13 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
       }
     }
 
+  }
+
+  @Test
+  public void testMapReduceAggregation() throws Exception {
+
     //Test map / reduce aggregation
-    props = new Properties();
+    Properties props = new Properties();
     props.put("aggregationMode", "map_reduce");
     props.put("numWorkers", "2");
     try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1", props)) {
@@ -270,15 +256,20 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
         }
       }
     }
-    
+
+  }
+
+  @Test
+  public void testConnectionParams() throws Exception {
+
     //Test params on the url
-    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + 
+    try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost +
         "?collection=collection1&aggregationMode=map_reduce&numWorkers=2")) {
 
       Properties p = ((ConnectionImpl) con).getProperties();
 
-      assert(p.getProperty("aggregationMode").equals("map_reduce"));
-      assert(p.getProperty("numWorkers").equals("2"));
+      assert (p.getProperty("aggregationMode").equals("map_reduce"));
+      assert (p.getProperty("numWorkers").equals("2"));
 
       try (Statement stmt = con.createStatement()) {
         try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s " +
@@ -309,6 +300,11 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
         }
       }
     }
+
+  }
+
+  @Test
+  public void testJDBCUrlParameters() throws Exception {
 
     // Test JDBC paramters in URL
     try (Connection con = DriverManager.getConnection(
@@ -350,6 +346,11 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
       }
     }
 
+  }
+
+  @Test
+  public void testJDBCPropertiesParameters() throws Exception {
+
     // Test JDBC paramters in properties
     Properties providedProperties = new Properties();
     providedProperties.put("collection", "collection1");
@@ -360,10 +361,10 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
     try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost, providedProperties)) {
       Properties p = ((ConnectionImpl) con).getProperties();
-      assert(p.getProperty("username").equals(""));
-      assert(p.getProperty("password").equals(""));
-      assert(p.getProperty("testKey1").equals("testValue"));
-      assert(p.getProperty("testKey2").equals(""));
+      assert (p.getProperty("username").equals(""));
+      assert (p.getProperty("password").equals(""));
+      assert (p.getProperty("testKey1").equals("testValue"));
+      assert (p.getProperty("testKey2").equals(""));
 
       try (Statement stmt = con.createStatement()) {
         try (ResultSet rs = stmt.executeQuery("select a_s, sum(a_f) from collection1 group by a_s " +
@@ -394,10 +395,12 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
         }
       }
     }
+  }
 
-
+  @Test
+  public void testErrorPropagation() throws Exception {
     //Test error propagation
-    props = new Properties();
+    Properties props = new Properties();
     props.put("aggregationMode", "facet");
     try (Connection con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1", props)) {
       try (Statement stmt = con.createStatement()) {
@@ -409,21 +412,38 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
         }
       }
     }
-
-    testDriverMetadata();
   }
 
-  private void testDriverMetadata() throws Exception {
-    String collection = DEFAULT_COLLECTION;
+  @Test
+  public void testSQLExceptionThrownWhenQueryAndConnUseDiffCollections() throws Exception  {
+    String badCollection = COLLECTION + "bad";
+    String connectionString = "jdbc:solr://" + zkHost + "?collection=" + badCollection;
+    String sql = "select id, a_i, a_s, a_f from " + badCollection + " order by a_i desc limit 2";
 
-    String connectionString1 = "jdbc:solr://" + zkServer.getZkAddress() + "?collection=" + collection +
+    //Bad connection string: wrong collection name
+    try(Connection connection = DriverManager.getConnection(connectionString)) {
+      try (Statement statement = connection.createStatement()) {
+        try (ResultSet ignored = statement.executeQuery(sql)) {
+          fail("Expected query against wrong collection to throw a SQLException.");
+        }
+      }
+    } catch (SQLException ignore) {
+      // Expected exception due to miss matched collection
+    }
+  }
+
+  @Test
+  public void testDriverMetadata() throws Exception {
+    String collection = COLLECTION;
+
+    String connectionString1 = "jdbc:solr://" + zkHost + "?collection=" + collection +
         "&username=&password=&testKey1=testValue&testKey2";
     Properties properties1 = new Properties();
 
     String sql = "select id, a_i, a_s, a_f as my_float_col, testnull_i from " + collection +
         " order by a_i desc";
 
-    String connectionString2 = "jdbc:solr://" + zkServer.getZkAddress() + "?collection=" + collection +
+    String connectionString2 = "jdbc:solr://" + zkHost + "?collection=" + collection +
         "&aggregationMode=map_reduce&numWorkers=2&username=&password=&testKey1=testValue&testKey2";
     Properties properties2 = new Properties();
 
@@ -439,9 +459,9 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
     try (Connection con = DriverManager.getConnection(connectionString, properties)) {
       assertTrue(con.isValid(DEFAULT_CONNECTION_TIMEOUT));
 
-      assertEquals(zkServer.getZkAddress(), con.getCatalog());
-      con.setCatalog(zkServer.getZkAddress());
-      assertEquals(zkServer.getZkAddress(), con.getCatalog());
+      assertEquals(zkHost, con.getCatalog());
+      con.setCatalog(zkHost);
+      assertEquals(zkHost, con.getCatalog());
 
       assertEquals(null, con.getSchema());
       con.setSchema("myschema");
@@ -470,22 +490,22 @@ public class JdbcTest extends AbstractFullDistribZkTestBase {
 
       try(ResultSet rs = databaseMetaData.getCatalogs()) {
         assertTrue(rs.next());
-        assertEquals(zkServer.getZkAddress(), rs.getString("TABLE_CAT"));
+        assertEquals(zkHost, rs.getString("TABLE_CAT"));
         assertFalse(rs.next());
       }
 
       List<String> collections = new ArrayList<>();
-      collections.addAll(cloudClient.getZkStateReader().getClusterState().getCollections());
+      collections.addAll(cluster.getSolrClient().getZkStateReader().getClusterState().getCollectionsMap().keySet());
       Collections.sort(collections);
 
       try(ResultSet rs = databaseMetaData.getSchemas()) {
         assertFalse(rs.next());
       }
 
-      try(ResultSet rs = databaseMetaData.getTables(zkServer.getZkAddress(), null, "%", null)) {
+      try(ResultSet rs = databaseMetaData.getTables(zkHost, null, "%", null)) {
         for(String acollection : collections) {
           assertTrue(rs.next());
-          assertEquals(zkServer.getZkAddress(), rs.getString("TABLE_CAT"));
+          assertEquals(zkHost, rs.getString("TABLE_CAT"));
           assertNull(rs.getString("TABLE_SCHEM"));
           assertEquals(acollection, rs.getString("TABLE_NAME"));
           assertEquals("TABLE", rs.getString("TABLE_TYPE"));

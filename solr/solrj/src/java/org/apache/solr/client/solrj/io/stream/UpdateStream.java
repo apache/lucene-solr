@@ -188,6 +188,7 @@ public class UpdateStream extends TupleStream implements Expressible {
     child.setImplementingClass(getClass().getName());
     child.setExpressionType(ExpressionType.STREAM_DECORATOR);
     child.setExpression(toExpression(factory, false).toString());
+    child.addChild(tupleSource.toExplanation(factory));
     
     explanation.addChild(child);
     

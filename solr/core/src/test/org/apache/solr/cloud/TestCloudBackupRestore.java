@@ -87,7 +87,9 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
       }
     }
 
-    create.process(cluster.getSolrClient());
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    create.process(solrClient);
+
     indexDocs(collectionName);
 
     if (!isImplicit && random().nextBoolean()) {
@@ -95,14 +97,14 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
       int prevActiveSliceCount = getActiveSliceCount(collectionName);
       CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName);
       splitShard.setShardName("shard1");
-      splitShard.process(cluster.getSolrClient());
+      splitShard.process(solrClient);
       // wait until we see one more active slice...
       for (int i = 0; getActiveSliceCount(collectionName) != prevActiveSliceCount + 1; i++) {
         assertTrue(i < 30);
         Thread.sleep(500);
       }
       // issue a hard commit.  Split shard does a soft commit which isn't good enough for the backup/snapshooter to see
-      cluster.getSolrClient().commit();
+      solrClient.commit(collectionName);
     }
 
     testBackupAndRestore(collectionName);
@@ -119,8 +121,6 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
       log.info("Indexing ZERO test docs");
       return;
     }
-    CloudSolrClient client = cluster.getSolrClient();
-    client.setDefaultCollection(collectionName);
     List<SolrInputDocument> docs = new ArrayList<>(numDocs);
     for (int i=0; i<numDocs; i++) {
       SolrInputDocument doc = new SolrInputDocument();
@@ -128,8 +128,9 @@ public class TestCloudBackupRestore extends SolrCloudTestCase {
       doc.addField("shard_s", "shard" + (1 + random.nextInt(NUM_SHARDS))); // for implicit router
       docs.add(doc);
     }
-    client.add(docs);// batch
-    client.commit();
+    CloudSolrClient client = cluster.getSolrClient();
+    client.add(collectionName, docs);// batch
+    client.commit(collectionName);
   }
 
   private void testBackupAndRestore(String collectionName) throws Exception {

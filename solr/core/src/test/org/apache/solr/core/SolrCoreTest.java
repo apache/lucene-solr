@@ -101,6 +101,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount; assertEquals(pathToClassMap.get("/schema"), "solr.SchemaHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/sql"), "solr.SQLHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/stream"), "solr.StreamHandler");
+      ++ihCount; assertEquals(pathToClassMap.get("/graph"), "solr.GraphHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/update"), "solr.UpdateRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/update/csv"), "solr.UpdateRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/update/json"), "solr.UpdateRequestHandler");
