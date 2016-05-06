@@ -256,9 +256,11 @@ Other Changes
 
 * SOLR-9053: Upgrade commons-fileupload to 1.3.1, fixing a potential vulnerability (Jeff Field, Mike Drob via janhoy)
 
-* SOLR-9066 Make CountMetric return long instead of double (Kevin Risden)
+* SOLR-9066: Make CountMetric return long instead of double (Kevin Risden)
 
 * SOLR-9065: Migrate SolrJ distributed tests to SolrCloudTestCase. (Alan Woodward)
+
+* SOLR-8184: Negative tests for JDBC Connection String (Susheel Kumar, Jason Gerlowski, Kevin Risden)
 
 ==================  6.0.0 ==================
 
