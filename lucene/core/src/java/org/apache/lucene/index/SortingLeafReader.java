@@ -337,10 +337,7 @@ class SortingLeafReader extends FilterLeafReader {
 
     @Override
     public long nextOrd() {
-      // nocommit
-      long v = in.nextOrd();
-      //System.out.println("  slr.sssdv.nextOrd return " + v + " this=" + this);
-      return v;
+      return in.nextOrd();
     }
 
     @Override

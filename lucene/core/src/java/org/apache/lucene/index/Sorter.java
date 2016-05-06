@@ -33,7 +33,6 @@ import org.apache.lucene.util.packed.PackedLongValues;
  * IDs.
  * @lucene.experimental
  */
-// nocommit rename to IndexSorter?
 final class Sorter {
   final Sort sort;
   

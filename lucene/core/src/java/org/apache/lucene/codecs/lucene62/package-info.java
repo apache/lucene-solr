@@ -14,26 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
-
-
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseSegmentInfoFormatTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
 
 /**
- * Tests Lucene50SegmentInfoFormat
+ * Components from the Lucene 6.2 index format
+ * See {@link org.apache.lucene.codecs.lucene62} for an overview
+ * of the index format.
  */
-public class TestLucene50SegmentInfoFormat extends BaseSegmentInfoFormatTestCase {
 
-  @Override
-  protected Version[] getVersions() {
-    return new Version[] { Version.LATEST };
-  }
-
-  @Override
-  protected Codec getCodec() {
-    return TestUtil.getDefaultCodec();
-  }
-}
+package org.apache.lucene.codecs.lucene62;

@@ -316,16 +316,14 @@ public abstract class DocValuesConsumer implements Closeable {
                           }
 
                           private boolean setNext() {
-                            while (true) {
-                              NumericDocValuesSub sub = docIDMerger.next();
-                              if (sub == null) {
-                                return false;
-                              }
-                              nextIsSet = true;
-                              nextValue = sub.values.get(sub.docID);
-                              nextHasValue = nextValue != 0 || sub.docsWithField.get(sub.docID);
-                              return true;
+                            NumericDocValuesSub sub = docIDMerger.next();
+                            if (sub == null) {
+                              return false;
                             }
+                            nextIsSet = true;
+                            nextValue = sub.values.get(sub.docID);
+                            nextHasValue = nextValue != 0 || sub.docsWithField.get(sub.docID);
+                            return true;
                           }
                         };
                       }

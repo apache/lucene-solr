@@ -40,6 +40,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SimpleCollector;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.*;
@@ -1606,6 +1607,10 @@ public class MemoryIndex {
       return info.getNormDocValues();
     }
 
+    @Override
+    public Sort getIndexSort() {
+      return null;
+    }
   }
 
   /**

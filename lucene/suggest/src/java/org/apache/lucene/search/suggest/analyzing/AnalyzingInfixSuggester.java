@@ -56,7 +56,6 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.index.SortingMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
@@ -232,7 +231,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     // This way all merged segments will be sorted at
     // merge time, allow for per-segment early termination
     // when those segments are searched:
-    iwc.setMergePolicy(new SortingMergePolicy(iwc.getMergePolicy(), SORT));
+    iwc.setIndexSort(SORT);
 
     return iwc;
   }
@@ -586,8 +585,7 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
 
     // We sorted postings by weight during indexing, so we
     // only retrieve the first num hits now:
-    final SortingMergePolicy sortingMergePolicy = (SortingMergePolicy) writer.getConfig().getMergePolicy();
-    Collector c2 = new EarlyTerminatingSortingCollector(c, SORT, num, sortingMergePolicy.getSort());
+    Collector c2 = new EarlyTerminatingSortingCollector(c, SORT, num);
     IndexSearcher searcher = searcherMgr.acquire();
     List<LookupResult> results = null;
     try {

@@ -14,8 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
-
+package org.apache.lucene.codecs.lucene62;
 
 import java.util.Objects;
 
@@ -31,39 +30,48 @@ import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.SegmentInfoFormat;
 import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50CompoundFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50LiveDocsFormat;
 import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat.Mode;
+import org.apache.lucene.codecs.lucene50.Lucene50StoredFieldsFormat;
+import org.apache.lucene.codecs.lucene50.Lucene50TermVectorsFormat;
+import org.apache.lucene.codecs.lucene53.Lucene53NormsFormat;
+import org.apache.lucene.codecs.lucene60.Lucene60FieldInfosFormat;
+import org.apache.lucene.codecs.lucene60.Lucene60PointsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
+// nocommit if somehow this does NOT land in 6.2, rename all this!!
+
 /**
- * Implements the Lucene 5.0 index format, with configurable per-field postings
+ * Implements the Lucene 6.2 index format, with configurable per-field postings
  * and docvalues formats.
  * <p>
  * If you want to reuse functionality of this codec in another codec, extend
  * {@link FilterCodec}.
  *
- * @see org.apache.lucene.codecs.lucene50 package documentation for file format details.
- * @deprecated Only for reading old 5.0-5.2 segments
+ * @see org.apache.lucene.codecs.lucene60 package documentation for file format details.
+ *
+ * @lucene.experimental
  */
-@Deprecated
-public class Lucene50Codec extends Codec {
+public class Lucene62Codec extends Codec {
   private final TermVectorsFormat vectorsFormat = new Lucene50TermVectorsFormat();
-  private final FieldInfosFormat fieldInfosFormat = new Lucene50FieldInfosFormat();
-  private final SegmentInfoFormat segmentInfosFormat = new Lucene50SegmentInfoFormat();
+  private final FieldInfosFormat fieldInfosFormat = new Lucene60FieldInfosFormat();
+  private final SegmentInfoFormat segmentInfosFormat = new Lucene62SegmentInfoFormat();
   private final LiveDocsFormat liveDocsFormat = new Lucene50LiveDocsFormat();
   private final CompoundFormat compoundFormat = new Lucene50CompoundFormat();
   
   private final PostingsFormat postingsFormat = new PerFieldPostingsFormat() {
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
-      return Lucene50Codec.this.getPostingsFormatForField(field);
+      return Lucene62Codec.this.getPostingsFormatForField(field);
     }
   };
   
   private final DocValuesFormat docValuesFormat = new PerFieldDocValuesFormat() {
     @Override
     public DocValuesFormat getDocValuesFormatForField(String field) {
-      return Lucene50Codec.this.getDocValuesFormatForField(field);
+      return Lucene62Codec.this.getDocValuesFormatForField(field);
     }
   };
   
@@ -72,7 +80,7 @@ public class Lucene50Codec extends Codec {
   /** 
    * Instantiates a new codec.
    */
-  public Lucene50Codec() {
+  public Lucene62Codec() {
     this(Mode.BEST_SPEED);
   }
   
@@ -82,8 +90,8 @@ public class Lucene50Codec extends Codec {
    * @param mode stored fields compression mode to use for newly 
    *             flushed/merged segments.
    */
-  public Lucene50Codec(Mode mode) {
-    super("Lucene50");
+  public Lucene62Codec(Mode mode) {
+    super("Lucene62");
     this.storedFieldsFormat = new Lucene50StoredFieldsFormat(Objects.requireNonNull(mode));
   }
   
@@ -108,7 +116,7 @@ public class Lucene50Codec extends Codec {
   }
   
   @Override
-  public SegmentInfoFormat segmentInfoFormat() {
+  public final SegmentInfoFormat segmentInfoFormat() {
     return segmentInfosFormat;
   }
   
@@ -120,6 +128,11 @@ public class Lucene50Codec extends Codec {
   @Override
   public final CompoundFormat compoundFormat() {
     return compoundFormat;
+  }
+
+  @Override
+  public final PointsFormat pointsFormat() {
+    return new Lucene60PointsFormat();
   }
 
   /** Returns the postings format that should be used for writing 
@@ -138,7 +151,7 @@ public class Lucene50Codec extends Codec {
   /** Returns the docvalues format that should be used for writing 
    *  new segments of <code>field</code>.
    *  
-   *  The default implementation always returns "Lucene50".
+   *  The default implementation always returns "Lucene54".
    *  <p>
    *  <b>WARNING:</b> if you subclass, you are responsible for index 
    *  backwards compatibility: future version of Lucene are only 
@@ -153,18 +166,13 @@ public class Lucene50Codec extends Codec {
     return docValuesFormat;
   }
 
-  @Override
-  public final PointsFormat pointsFormat() {
-    return PointsFormat.EMPTY;
-  }
-
   private final PostingsFormat defaultFormat = PostingsFormat.forName("Lucene50");
-  private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene50");
+  private final DocValuesFormat defaultDVFormat = DocValuesFormat.forName("Lucene54");
 
-  private final NormsFormat normsFormat = new Lucene50NormsFormat();
+  private final NormsFormat normsFormat = new Lucene53NormsFormat();
 
   @Override
-  public NormsFormat normsFormat() {
+  public final NormsFormat normsFormat() {
     return normsFormat;
   }
 }
