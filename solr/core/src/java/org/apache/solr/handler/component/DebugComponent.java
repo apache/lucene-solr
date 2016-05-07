@@ -114,6 +114,11 @@ public class DebugComponent extends SearchComponent
       if (fdebug != null) {
         info.add("facet-trace", fdebug.getFacetDebugInfo());
       }
+
+      fdebug = (FacetDebugInfo)(rb.req.getContext().get("FacetDebugInfo-nonJson"));
+      if (fdebug != null) {
+        info.add("facet-debug", fdebug.getFacetDebugInfo());
+      }
       
       if (rb.req.getJSON() != null) {
         info.add(JSON, rb.req.getJSON());
