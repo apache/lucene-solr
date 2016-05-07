@@ -648,6 +648,7 @@ public final class CheckIndex implements Closeable {
       int toLoseDocCount = info.info.maxDoc();
 
       SegmentReader reader = null;
+      Sort previousIndexSort = null;
 
       try {
         msg(infoStream, "    version=" + (version == null ? "3.0" : version));
@@ -661,6 +662,13 @@ public final class CheckIndex implements Closeable {
         Sort indexSort = info.info.getIndexSort();
         if (indexSort != null) {
           msg(infoStream, "    sort=" + indexSort);
+          if (previousIndexSort != null) {
+            if (previousIndexSort.equals(indexSort) == false) {
+              throw new RuntimeException("index sort changed from " + previousIndexSort + " to " + indexSort);
+            }
+          } else {
+            previousIndexSort = indexSort;
+          }
         }
         segInfoStat.numFiles = info.files().size();
         segInfoStat.sizeMB = info.sizeInBytes()/(1024.*1024.);
@@ -835,8 +843,6 @@ public final class CheckIndex implements Closeable {
       for (int i = 0; i < fields.length; i++) {
         reverseMul[i] = fields[i].getReverse() ? -1 : 1;
         comparators[i] = fields[i].getComparator(1, i).getLeafComparator(readerContext);
-        // nocommit we prevent SCORE?
-        //comparators[i].setScorer(FAKESCORER);
       }
 
       int maxDoc = reader.maxDoc();
@@ -2584,9 +2590,6 @@ public final class CheckIndex implements Closeable {
       return checker.doCheck(opts);
     }
   }
-
-  // nocommit must check index is sorted, if it claims to be
-  // nocommit must check that all segments have the same sort, if any segment is sorted
 
   /**
    * Parse command line args into fields

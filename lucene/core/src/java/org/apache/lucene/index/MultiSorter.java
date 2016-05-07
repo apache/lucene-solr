@@ -164,6 +164,51 @@ final class MultiSorter {
         };
       }
 
+    case LONG:
+      {
+        List<NumericDocValues> values = new ArrayList<>();
+        List<Bits> docsWithFields = new ArrayList<>();
+        for(CodecReader reader : readers) {
+          values.add(DocValues.getNumeric(reader, sortField.getField()));
+          docsWithFields.add(DocValues.getDocsWithField(reader, sortField.getField()));
+        }
+
+        final int reverseMul;
+        if (sortField.getReverse()) {
+          reverseMul = -1;
+        } else {
+          reverseMul = 1;
+        }
+
+        final int missingValue;
+
+        if (sortField.getMissingValue() != null) {
+          missingValue = (Integer) sortField.getMissingValue();
+        } else {
+          missingValue = 0;
+        }
+
+        return new CrossReaderComparator() {
+          @Override
+          public int compare(int readerIndexA, int docIDA, int readerIndexB, int docIDB) {
+            long valueA;
+            if (docsWithFields.get(readerIndexA).get(docIDA)) {
+              valueA = (int) values.get(readerIndexA).get(docIDA);
+            } else {
+              valueA = missingValue;
+            }
+
+            long valueB;
+            if (docsWithFields.get(readerIndexB).get(docIDB)) {
+              valueB = (int) values.get(readerIndexB).get(docIDB);
+            } else {
+              valueB = missingValue;
+            }
+            return reverseMul * Long.compare(valueA, valueB);
+          }
+        };
+      }
+
     case INT:
       {
         List<NumericDocValues> values = new ArrayList<>();
@@ -208,8 +253,8 @@ final class MultiSorter {
           }
         };
       }
-    case LONG:
-      // nocommit refactor/share at least numerics here:
+
+    case DOUBLE:
       {
         List<NumericDocValues> values = new ArrayList<>();
         List<Bits> docsWithFields = new ArrayList<>();
@@ -225,34 +270,80 @@ final class MultiSorter {
           reverseMul = 1;
         }
 
-        final int missingValue;
+        final double missingValue;
 
         if (sortField.getMissingValue() != null) {
-          missingValue = (Integer) sortField.getMissingValue();
+          missingValue = (Double) sortField.getMissingValue();
         } else {
-          missingValue = 0;
+          missingValue = 0.0;
         }
 
         return new CrossReaderComparator() {
           @Override
           public int compare(int readerIndexA, int docIDA, int readerIndexB, int docIDB) {
-            long valueA;
+            double valueA;
             if (docsWithFields.get(readerIndexA).get(docIDA)) {
-              valueA = (int) values.get(readerIndexA).get(docIDA);
+              valueA = Double.longBitsToDouble(values.get(readerIndexA).get(docIDA));
             } else {
               valueA = missingValue;
             }
 
-            long valueB;
+            double valueB;
             if (docsWithFields.get(readerIndexB).get(docIDB)) {
-              valueB = (int) values.get(readerIndexB).get(docIDB);
+              valueB = Double.longBitsToDouble(values.get(readerIndexB).get(docIDB));
             } else {
               valueB = missingValue;
             }
-            return reverseMul * Long.compare(valueA, valueB);
+            return reverseMul * Double.compare(valueA, valueB);
           }
         };
       }
+
+    case FLOAT:
+      {
+        List<NumericDocValues> values = new ArrayList<>();
+        List<Bits> docsWithFields = new ArrayList<>();
+        for(CodecReader reader : readers) {
+          values.add(DocValues.getNumeric(reader, sortField.getField()));
+          docsWithFields.add(DocValues.getDocsWithField(reader, sortField.getField()));
+        }
+
+        final int reverseMul;
+        if (sortField.getReverse()) {
+          reverseMul = -1;
+        } else {
+          reverseMul = 1;
+        }
+
+        final float missingValue;
+
+        if (sortField.getMissingValue() != null) {
+          missingValue = (Float) sortField.getMissingValue();
+        } else {
+          missingValue = 0.0f;
+        }
+
+        return new CrossReaderComparator() {
+          @Override
+          public int compare(int readerIndexA, int docIDA, int readerIndexB, int docIDB) {
+            float valueA;
+            if (docsWithFields.get(readerIndexA).get(docIDA)) {
+              valueA = Float.intBitsToFloat((int) values.get(readerIndexA).get(docIDA));
+            } else {
+              valueA = missingValue;
+            }
+
+            float valueB;
+            if (docsWithFields.get(readerIndexB).get(docIDB)) {
+              valueB = Float.intBitsToFloat((int) values.get(readerIndexB).get(docIDB));
+            } else {
+              valueB = missingValue;
+            }
+            return reverseMul * Float.compare(valueA, valueB);
+          }
+        };
+      }
+
     // nocommit do the rest:
     default:
       throw new IllegalArgumentException("unhandled SortField.getType()=" + sortField.getType());

@@ -36,9 +36,11 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.DoubleDocValuesField;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.FloatDocValuesField;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
@@ -72,6 +74,7 @@ import org.junit.BeforeClass;
 // nocommit test tie break
 // nocommit test multiple sorts
 // nocommit test update dvs
+// nocommit test missing value
 
 // nocommit test EarlyTerminatingCollector
 
@@ -108,6 +111,142 @@ public class TestIndexSorting extends LuceneTestCase {
     assertEquals("aaa", values.get(0).utf8ToString());
     assertEquals("mmm", values.get(1).utf8ToString());
     assertEquals("zzz", values.get(2).utf8ToString());
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testBasicLong() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    Sort indexSort = new Sort(new SortField("foo", SortField.Type.LONG));
+    iwc.setIndexSort(indexSort);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("foo", 18));
+    w.addDocument(doc);
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    w.commit();
+
+    doc = new Document();
+    doc.add(new NumericDocValuesField("foo", -1));
+    w.addDocument(doc);
+    w.commit();
+
+    doc = new Document();
+    doc.add(new NumericDocValuesField("foo", 7));
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    DirectoryReader r = DirectoryReader.open(w);
+    LeafReader leaf = getOnlyLeafReader(r);
+    assertEquals(3, leaf.maxDoc());
+    NumericDocValues values = leaf.getNumericDocValues("foo");
+    assertEquals(-1, values.get(0));
+    assertEquals(7, values.get(1));
+    assertEquals(18, values.get(2));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testBasicInt() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    Sort indexSort = new Sort(new SortField("foo", SortField.Type.INT));
+    iwc.setIndexSort(indexSort);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new NumericDocValuesField("foo", 18));
+    w.addDocument(doc);
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    w.commit();
+
+    doc = new Document();
+    doc.add(new NumericDocValuesField("foo", -1));
+    w.addDocument(doc);
+    w.commit();
+
+    doc = new Document();
+    doc.add(new NumericDocValuesField("foo", 7));
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    DirectoryReader r = DirectoryReader.open(w);
+    LeafReader leaf = getOnlyLeafReader(r);
+    assertEquals(3, leaf.maxDoc());
+    NumericDocValues values = leaf.getNumericDocValues("foo");
+    assertEquals(-1, values.get(0));
+    assertEquals(7, values.get(1));
+    assertEquals(18, values.get(2));
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testBasicDouble() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    Sort indexSort = new Sort(new SortField("foo", SortField.Type.DOUBLE));
+    iwc.setIndexSort(indexSort);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new DoubleDocValuesField("foo", 18.0));
+    w.addDocument(doc);
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    w.commit();
+
+    doc = new Document();
+    doc.add(new DoubleDocValuesField("foo", -1.0));
+    w.addDocument(doc);
+    w.commit();
+
+    doc = new Document();
+    doc.add(new DoubleDocValuesField("foo", 7.0));
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    DirectoryReader r = DirectoryReader.open(w);
+    LeafReader leaf = getOnlyLeafReader(r);
+    assertEquals(3, leaf.maxDoc());
+    NumericDocValues values = leaf.getNumericDocValues("foo");
+    assertEquals(-1.0, Double.longBitsToDouble(values.get(0)), 0.0);
+    assertEquals(7.0, Double.longBitsToDouble(values.get(1)), 0.0);
+    assertEquals(18.0, Double.longBitsToDouble(values.get(2)), 0.0);
+    r.close();
+    w.close();
+    dir.close();
+  }
+
+  public void testBasicFloat() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    Sort indexSort = new Sort(new SortField("foo", SortField.Type.FLOAT));
+    iwc.setIndexSort(indexSort);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new FloatDocValuesField("foo", 18.0f));
+    w.addDocument(doc);
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    w.commit();
+
+    doc = new Document();
+    doc.add(new FloatDocValuesField("foo", -1.0f));
+    w.addDocument(doc);
+    w.commit();
+
+    doc = new Document();
+    doc.add(new FloatDocValuesField("foo", 7.0f));
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    DirectoryReader r = DirectoryReader.open(w);
+    LeafReader leaf = getOnlyLeafReader(r);
+    assertEquals(3, leaf.maxDoc());
+    NumericDocValues values = leaf.getNumericDocValues("foo");
+    assertEquals(-1.0f, Float.intBitsToFloat((int) values.get(0)), 0.0f);
+    assertEquals(7.0f, Float.intBitsToFloat((int) values.get(1)), 0.0f);
+    assertEquals(18.0f, Float.intBitsToFloat((int) values.get(2)), 0.0f);
     r.close();
     w.close();
     dir.close();
