@@ -48,7 +48,6 @@ import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexOptions;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
@@ -608,19 +607,6 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
     return results;
   }
   
-  private static BytesRef getBinaryDocValue(IndexReader reader, String field, int docID) throws IOException {
-    // We can't use MultiDocValues because it gets angry about the sorting:
-    List<LeafReaderContext> leaves = reader.leaves();
-    int sub = ReaderUtil.subIndex(docID, leaves);
-    LeafReaderContext leaf = leaves.get(sub);
-    BinaryDocValues bdv = leaf.reader().getBinaryDocValues(field);
-    if (bdv == null) {
-      return null;
-    } else {
-      return bdv.get(docID - leaf.docBase);
-    }
-  }
-
   /**
    * Create the results based on the search hits.
    * Can be overridden by subclass to add particular behavior (e.g. weight transformation).
@@ -635,20 +621,24 @@ public class AnalyzingInfixSuggester extends Lookup implements Closeable {
                                              boolean doHighlight, Set<String> matchedTokens, String prefixToken)
       throws IOException {
 
+    BinaryDocValues textDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), TEXT_FIELD_NAME);
+
     // This will just be null if app didn't pass payloads to build():
     // TODO: maybe just stored fields?  they compress...
+    BinaryDocValues payloadsDV = MultiDocValues.getBinaryValues(searcher.getIndexReader(), "payloads");
     List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
     List<LookupResult> results = new ArrayList<>();
     for (int i=0;i<hits.scoreDocs.length;i++) {
       FieldDoc fd = (FieldDoc) hits.scoreDocs[i];
-
-      BytesRef term = getBinaryDocValue(searcher.getIndexReader(), TEXT_FIELD_NAME, fd.doc);
+      BytesRef term = textDV.get(fd.doc);
       String text = term.utf8ToString();
       long score = (Long) fd.fields[0];
 
-      BytesRef payload = getBinaryDocValue(searcher.getIndexReader(), "payloads", fd.doc);
-      if (payload != null) {
-        payload = BytesRef.deepCopyOf(payload);
+      BytesRef payload;
+      if (payloadsDV != null) {
+        payload = BytesRef.deepCopyOf(payloadsDV.get(fd.doc));
+      } else {
+        payload = null;
       }
 
       // Must look up sorted-set by segment:

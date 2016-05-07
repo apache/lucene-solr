@@ -29,8 +29,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -199,30 +197,6 @@ public class TestMultiFields extends LuceneTestCase {
     assertEquals(1, de.nextDoc());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, de.nextDoc());
     r.close();
-    dir.close();
-  }
-
-  public void testNoIndexSort() throws Exception {
-    IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setIndexSort(new Sort(new SortField("foo", SortField.Type.INT)));
-    Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, iwc);
-    w.addDocument(new Document());
-    DirectoryReader.open(w).close();
-    w.addDocument(new Document());
-    // this makes a sorted segment:
-    w.forceMerge(1);
-    // this makes another segment, so that MultiFields.getFields isn't just a no-op:
-    w.addDocument(new Document());
-    IndexReader r = DirectoryReader.open(w);
-    
-    Exception e = expectThrows(IllegalArgumentException.class, () -> {
-        MultiFields.getFields(r);
-      });
-    assertTrue(e.getMessage().contains("cannot handle index sort"));
-    assertTrue(e.getMessage().contains("indexSort=<int: \"foo\">"));
-    r.close();
-    w.close();
     dir.close();
   }
 }

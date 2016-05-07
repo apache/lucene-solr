@@ -123,7 +123,7 @@ final class MultiSorter {
 
   private static CrossReaderComparator getComparator(List<CodecReader> readers, SortField sortField) throws IOException {
     switch(sortField.getType()) {
-    // TODO: use global ords for string sort
+    // ncommit: use segment-local ords for string sort
     case INT:
       {
         List<NumericDocValues> values = new ArrayList<>();
