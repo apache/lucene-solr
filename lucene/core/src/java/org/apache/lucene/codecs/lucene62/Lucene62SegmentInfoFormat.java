@@ -121,6 +121,12 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
             case 2:
               sortType = SortField.Type.INT;
               break;
+            case 3:
+              sortType = SortField.Type.DOUBLE;
+              break;
+            case 4:
+              sortType = SortField.Type.FLOAT;
+              break;
             default:
               throw new CorruptIndexException("invalid index sort field type ID: " + sortTypeID, input);
             }
@@ -162,6 +168,18 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
                   throw new CorruptIndexException("invalid missing value flag: " + b, input);
                 }
                 missingValue = input.readInt();
+                break;
+              case DOUBLE:
+                if (b != 1) {
+                  throw new CorruptIndexException("invalid missing value flag: " + b, input);
+                }
+                missingValue = Double.longBitsToDouble(input.readLong());
+                break;
+              case FLOAT:
+                if (b != 1) {
+                  throw new CorruptIndexException("invalid missing value flag: " + b, input);
+                }
+                missingValue = Float.intBitsToFloat(input.readInt());
                 break;
               default:
                 throw new AssertionError("unhandled sortType=" + sortType);
@@ -240,6 +258,12 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
           case INT:
             sortTypeID = 2;
             break;
+          case DOUBLE:
+            sortTypeID = 3;
+            break;
+          case FLOAT:
+            sortTypeID = 4;
+            break;
           // nocommit the rest:
           default:
             throw new IllegalStateException("Unexpected sort type: " + sortField.getType());
@@ -269,6 +293,14 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
           case INT:
             output.writeByte((byte) 1);
             output.writeInt(((Integer) missingValue).intValue());
+            break;
+          case DOUBLE:
+            output.writeByte((byte) 1);
+            output.writeLong(Double.doubleToLongBits(((Double) missingValue).doubleValue()));
+            break;
+          case FLOAT:
+            output.writeByte((byte) 1);
+            output.writeLong(Float.floatToIntBits(((Float) missingValue).floatValue()));
             break;
           // nocommit the rest:
           default:

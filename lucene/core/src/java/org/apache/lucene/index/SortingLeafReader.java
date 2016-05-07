@@ -840,7 +840,6 @@ class SortingLeafReader extends FilterLeafReader {
     if (inPointValues == null) {
       return null;
     } else {
-      // nocommit make sure this is tested
       return new SortingPointValues(inPointValues, docMap);
     }
   }

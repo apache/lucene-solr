@@ -168,6 +168,12 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
           case "int":
             type = SortField.Type.INT;
             break;
+          case "double":
+            type = SortField.Type.DOUBLE;
+            break;
+          case "float":
+            type = SortField.Type.FLOAT;
+            break;
           default:
             throw new CorruptIndexException("unable to parse sort type string: " + typeAsString, input);
         }
@@ -213,6 +219,26 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
                 break;
               default:
                 missingValue = Integer.parseInt(missingLastAsString);
+                break;
+            }
+            break;
+          case DOUBLE:
+            switch (missingLastAsString) {
+              case "null":
+                missingValue = null;
+                break;
+              default:
+                missingValue = Double.parseDouble(missingLastAsString);
+                break;
+            }
+            break;
+          case FLOAT:
+            switch (missingLastAsString) {
+              case "null":
+                missingValue = null;
+                break;
+              default:
+                missingValue = Float.parseFloat(missingLastAsString);
                 break;
             }
             break;
@@ -338,6 +364,12 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
           case INT:
             sortType = "int";
             break;
+          case DOUBLE:
+            sortType = "double";
+            break;
+          case FLOAT:
+            sortType = "float";
+            break;
           // nocommit the rest:
           default:
             throw new IllegalStateException("Unexpected sort type: " + sortField.getType());
@@ -358,10 +390,8 @@ public class SimpleTextSegmentInfoFormat extends SegmentInfoFormat {
           missing = "first";
         } else if (missingValue == SortField.STRING_LAST) {
           missing = "last";
-        } else if (missingValue instanceof Long) {
-          missing = Long.toString((Long) missingValue);
         } else {
-          throw new IllegalStateException("Unexpected missing sort value: " + missingValue);
+          missing = missingValue.toString();
         }
         SimpleTextUtil.write(output, missing, scratch);
         SimpleTextUtil.writeNewline(output);
