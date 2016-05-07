@@ -79,6 +79,40 @@ import org.junit.BeforeClass;
 
 public class TestIndexSorting extends LuceneTestCase {
 
+  public void testBasicString() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
+    Sort indexSort = new Sort(new SortField("foo", SortField.Type.STRING));
+    iwc.setIndexSort(indexSort);
+    IndexWriter w = new IndexWriter(dir, iwc);
+    Document doc = new Document();
+    doc.add(new SortedDocValuesField("foo", new BytesRef("zzz")));
+    w.addDocument(doc);
+    // so we get more than one segment, so that forceMerge actually does merge, since we only get a sorted segment by merging:
+    w.commit();
+
+    doc = new Document();
+    doc.add(new SortedDocValuesField("foo", new BytesRef("aaa")));
+    w.addDocument(doc);
+    w.commit();
+
+    doc = new Document();
+    doc.add(new SortedDocValuesField("foo", new BytesRef("mmm")));
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    DirectoryReader r = DirectoryReader.open(w);
+    LeafReader leaf = getOnlyLeafReader(r);
+    assertEquals(3, leaf.maxDoc());
+    SortedDocValues values = leaf.getSortedDocValues("foo");
+    assertEquals("aaa", values.get(0).utf8ToString());
+    assertEquals("mmm", values.get(1).utf8ToString());
+    assertEquals("zzz", values.get(2).utf8ToString());
+    r.close();
+    w.close();
+    dir.close();
+  }
+
   public void testSortOnMerge(boolean withDeletes) throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
