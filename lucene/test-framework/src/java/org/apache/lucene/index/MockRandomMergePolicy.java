@@ -146,6 +146,7 @@ public class MockRandomMergePolicy extends MergePolicy {
 
     @Override
     public CodecReader wrapForMerge(CodecReader reader) throws IOException {
+
       // wrap it (e.g. prevent bulk merge etc)
       // TODO: cut this over to FilterCodecReader api, we can explicitly
       // enable/disable bulk merge for portions of the index we want.

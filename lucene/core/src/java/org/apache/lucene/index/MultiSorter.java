@@ -123,7 +123,47 @@ final class MultiSorter {
 
   private static CrossReaderComparator getComparator(List<CodecReader> readers, SortField sortField) throws IOException {
     switch(sortField.getType()) {
-    // ncommit: use segment-local ords for string sort
+
+    case STRING:
+      {
+        // this uses the efficient segment-local ordinal map:
+        MultiReader multiReader = new MultiReader(readers.toArray(new LeafReader[readers.size()]));
+        final SortedDocValues sorted = MultiDocValues.getSortedValues(multiReader, sortField.getField());
+        final int[] docStarts = new int[readers.size()];
+        List<LeafReaderContext> leaves = multiReader.leaves();
+        for(int i=0;i<readers.size();i++) {
+          docStarts[i] = leaves.get(i).docBase;
+        }
+        final int missingOrd;
+        if (sortField.getMissingValue() == SortField.STRING_LAST) {
+          missingOrd = Integer.MIN_VALUE;
+        } else {
+          missingOrd = Integer.MAX_VALUE;
+        }
+
+        final int reverseMul;
+        if (sortField.getReverse()) {
+          reverseMul = -1;
+        } else {
+          reverseMul = 1;
+        }
+
+        return new CrossReaderComparator() {
+          @Override
+          public int compare(int readerIndexA, int docIDA, int readerIndexB, int docIDB) {
+            int ordA = sorted.getOrd(docStarts[readerIndexA] + docIDA);
+            if (ordA == -1) {
+              ordA = missingOrd;
+            }
+            int ordB = sorted.getOrd(docStarts[readerIndexB] + docIDB);
+            if (ordB == -1) {
+              ordB = missingOrd;
+            }
+            return reverseMul * Integer.compare(ordA, ordB);
+          }
+        };
+      }
+
     case INT:
       {
         List<NumericDocValues> values = new ArrayList<>();

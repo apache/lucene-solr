@@ -213,34 +213,29 @@ public class MergeState {
     //System.out.println("MergeState.maybeSortReaders indexSort=" + indexSort);
 
     for (CodecReader leaf : originalReaders) {
-      if (leaf instanceof SegmentReader) {
-        SegmentReader segmentReader = (SegmentReader) leaf;
-        Sort segmentSort = segmentReader.getSegmentInfo().info.getIndexSort();
-        //System.out.println("  leaf=" + leaf + " sort=" + segmentSort);
+      Sort segmentSort = leaf.getIndexSort();
+      //System.out.println("  leaf=" + leaf + " sort=" + segmentSort);
 
-        if (segmentSort == null) {
-          // TODO: fix IW to also sort when flushing?  It's somewhat tricky because of stored fields and term vectors, which write "live"
-          // to the files on each indexed document:
+      if (segmentSort == null) {
+        // TODO: fix IW to also sort when flushing?  It's somewhat tricky because of stored fields and term vectors, which write "live"
+        // to the files on each indexed document:
 
-          // This segment was written by flush, so documents are not yet sorted, so we sort them now:
-          Sorter.DocMap sortDocMap = sorter.sort(leaf);
-          if (sortDocMap != null) {
-            //System.out.println("    sort!");
-            // nocommit what about MergedReaderWrapper in here?
-            leaf = SlowCodecReaderWrapper.wrap(SortingLeafReader.wrap(leaf, sortDocMap));
-            leafDocMaps[readers.size()] = new DocMap() {
-                @Override
-                public int get(int docID) {
-                  return sortDocMap.oldToNew(docID);
-                }
-              };
-          }
-
-        } else if (segmentSort.equals(indexSort) == false) {
-          throw new IllegalArgumentException("index sort mismatch: merged segment has sort=" + indexSort + " but to-be-merged segment has sort=" + segmentSort);
+        // This segment was written by flush, so documents are not yet sorted, so we sort them now:
+        Sorter.DocMap sortDocMap = sorter.sort(leaf);
+        if (sortDocMap != null) {
+          //System.out.println("    sort!");
+          // nocommit what about MergedReaderWrapper in here?
+          leaf = SlowCodecReaderWrapper.wrap(SortingLeafReader.wrap(leaf, sortDocMap));
+          leafDocMaps[readers.size()] = new DocMap() {
+              @Override
+              public int get(int docID) {
+                return sortDocMap.oldToNew(docID);
+              }
+            };
         }
-      } else {
-        throw new IllegalArgumentException("cannot sort index with foreign readers; leaf=" + leaf);
+
+      } else if (segmentSort.equals(indexSort) == false) {
+        throw new IllegalArgumentException("index sort mismatch: merged segment has sort=" + indexSort + " but to-be-merged segment has sort=" + segmentSort);
       }
 
       readers.add(leaf);
