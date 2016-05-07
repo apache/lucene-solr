@@ -133,6 +133,8 @@ New Features
   Auto Add Replica feature. For this you can set a "maxCoresPerNode" property via the Cluster Property API
   (Varun Thacker, Mark Miller)
 
+* SOLR-8208: [subquery] document transformer executes separate requests per result document. (Cao Manh Dat  via Mikhail Khludnev)
+
 Bug Fixes
 ----------------------
 
