@@ -16,6 +16,9 @@
  */
 package org.apache.solr.request;
 
+import java.io.IOException;
+import java.util.List;
+
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues.MultiSortedDocValues;
@@ -37,10 +40,8 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.util.LongPriorityQueue;
-
-import java.io.IOException;
-import java.util.List;
 
 /**
  * Computes term facets for docvalues field (single or multivalued).
@@ -57,7 +58,7 @@ import java.util.List;
 public class DocValuesFacets {
   private DocValuesFacets() {}
   
-  public static NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix, String contains, boolean ignoreCase) throws IOException {
+  public static NamedList<Integer> getCounts(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort, String prefix, String contains, boolean ignoreCase, FacetDebugInfo fdebug) throws IOException {
     SchemaField schemaField = searcher.getSchema().getField(fieldName);
     FieldType ft = schemaField.getType();
     NamedList<Integer> res = new NamedList<>();
@@ -118,6 +119,9 @@ public class DocValuesFacets {
       // count collection array only needs to be as big as the number of terms we are
       // going to collect counts for.
       final int[] counts = new int[nTerms];
+      if (fdebug != null) {
+        fdebug.putInfoItem("numBuckets", nTerms);
+      }
 
       Filter filter = docs.getTopFilter();
       List<LeafReaderContext> leaves = searcher.getTopReaderContext().leaves();
