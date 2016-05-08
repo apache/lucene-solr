@@ -22,9 +22,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -610,7 +612,7 @@ public class TestIndexSorting extends LuceneTestCase {
     
     @Override
     public long computeNorm(FieldInvertState state) {
-      if (state.getName().equals(NORMS_FIELD)) {
+      if (state.getName().equals("norms")) {
         return Float.floatToIntBits(state.getBoost());
       } else {
         return in.computeNorm(state);
@@ -650,7 +652,7 @@ public class TestIndexSorting extends LuceneTestCase {
       }
       
       clearAttributes();
-      term.append(DOC_POSITIONS_TERM);
+      term.append("#all#");
       payload.setPayload(new BytesRef(Integer.toString(pos)));
       offset.setOffset(off, off);
       --pos;
@@ -664,296 +666,94 @@ public class TestIndexSorting extends LuceneTestCase {
     }
   }
 
-  private static Directory dir;
-  private static IndexReader sortedReader;
+  // nocommit testrandom1 with deletions
 
-  private static final FieldType TERM_VECTORS_TYPE = new FieldType(TextField.TYPE_NOT_STORED);
-  static {
-    TERM_VECTORS_TYPE.setStoreTermVectors(true);
-    TERM_VECTORS_TYPE.freeze();
-  }
-  
-  private static final FieldType POSITIONS_TYPE = new FieldType(TextField.TYPE_NOT_STORED);
-  static {
-    POSITIONS_TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
-    POSITIONS_TYPE.freeze();
-  }
-
-  private static final String ID_FIELD = "id";
-  private static final String DOCS_ENUM_FIELD = "docs";
-  private static final String DOCS_ENUM_TERM = "$all$";
-  private static final String DOC_POSITIONS_FIELD = "positions";
-  private static final String DOC_POSITIONS_TERM = "$all$";
-  private static final String NUMERIC_DV_FIELD = "numeric";
-  private static final String SORTED_NUMERIC_DV_FIELD = "sorted_numeric";
-  private static final String NORMS_FIELD = "norm";
-  private static final String BINARY_DV_FIELD = "binary";
-  private static final String SORTED_DV_FIELD = "sorted";
-  private static final String SORTED_SET_DV_FIELD = "sorted_set";
-  private static final String TERM_VECTORS_FIELD = "term_vectors";
-  private static final String DIMENSIONAL_FIELD = "numeric1d";
-
-  private static Document doc(final int id, PositionsTokenStream positions) {
-    final Document doc = new Document();
-    doc.add(new StringField(ID_FIELD, Integer.toString(id), Store.YES));
-    doc.add(new StringField(DOCS_ENUM_FIELD, DOCS_ENUM_TERM, Store.NO));
-    positions.setId(id);
-    doc.add(new Field(DOC_POSITIONS_FIELD, positions, POSITIONS_TYPE));
-    doc.add(new NumericDocValuesField(NUMERIC_DV_FIELD, id));
-    TextField norms = new TextField(NORMS_FIELD, Integer.toString(id), Store.NO);
-    norms.setBoost(Float.intBitsToFloat(id));
-    doc.add(norms);
-    doc.add(new BinaryDocValuesField(BINARY_DV_FIELD, new BytesRef(Integer.toString(id))));
-    doc.add(new SortedDocValuesField(SORTED_DV_FIELD, new BytesRef(Integer.toString(id))));
-    doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id))));
-    doc.add(new SortedSetDocValuesField(SORTED_SET_DV_FIELD, new BytesRef(Integer.toString(id + 1))));
-    doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id));
-    doc.add(new SortedNumericDocValuesField(SORTED_NUMERIC_DV_FIELD, id + 1));
-    doc.add(new Field(TERM_VECTORS_FIELD, Integer.toString(id), TERM_VECTORS_TYPE));
-    byte[] bytes = new byte[4];
-    NumericUtils.intToSortableBytes(id, bytes, 0);
-    doc.add(new BinaryPoint(DIMENSIONAL_FIELD, bytes));
-    return doc;
-  }
-
-  @AfterClass
-  public static void afterClass() throws Exception {
-    if (sortedReader != null) {
-      sortedReader.close();
-      sortedReader = null;
-    }
-    if (dir != null) {
-      dir.close();
-      dir = null;
-    }
-  }
-
-  @BeforeClass
-  public static void createIndex() throws Exception {
-    dir = newFSDirectory(createTempDir());
+  public void testRandom1() throws Exception {
     int numDocs = atLeast(100);
 
-    List<Integer> ids = new ArrayList<>();
-    for (int i = 0; i < numDocs; i++) {
-      ids.add(Integer.valueOf(i * 10));
+    FieldType POSITIONS_TYPE = new FieldType(TextField.TYPE_NOT_STORED);
+    POSITIONS_TYPE.setIndexOptions(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS);
+    POSITIONS_TYPE.freeze();
+
+    FieldType TERM_VECTORS_TYPE = new FieldType(TextField.TYPE_NOT_STORED);
+    TERM_VECTORS_TYPE.setStoreTermVectors(true);
+    TERM_VECTORS_TYPE.freeze();
+
+    List<Document> docs = new ArrayList<>();
+    for (int i=0;i<numDocs;i++) {
+      int id = i * 10;
+      Document doc = new Document();
+      doc.add(new StringField("id", Integer.toString(id), Store.YES));
+      doc.add(new StringField("docs", "#all#", Store.NO));
+      PositionsTokenStream positions = new PositionsTokenStream();
+      positions.setId(id);
+      doc.add(new Field("positions", positions, POSITIONS_TYPE));
+      doc.add(new NumericDocValuesField("numeric", id));
+      TextField norms = new TextField("norms", Integer.toString(id), Store.NO);
+      norms.setBoost(Float.intBitsToFloat(id));
+      doc.add(norms);
+      doc.add(new BinaryDocValuesField("binary", new BytesRef(Integer.toString(id))));
+      doc.add(new SortedDocValuesField("sorted", new BytesRef(Integer.toString(id))));
+      doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef(Integer.toString(id))));
+      doc.add(new SortedSetDocValuesField("sorted_set", new BytesRef(Integer.toString(id + 1))));
+      doc.add(new SortedNumericDocValuesField("sorted_numeric", id));
+      doc.add(new SortedNumericDocValuesField("sorted_numeric", id + 1));
+      doc.add(new Field("term_vectors", Integer.toString(id), TERM_VECTORS_TYPE));
+      byte[] bytes = new byte[4];
+      NumericUtils.intToSortableBytes(id, bytes, 0);
+      doc.add(new BinaryPoint("points", bytes));
+      docs.add(doc);
     }
-    // shuffle them for indexing
-    Collections.shuffle(ids, random());
+
+    // Must use the same seed for both RandomIndexWriters so they behave identically
+    long seed = random().nextLong();
+
+    // We add document alread in ID order for the first writer:
+    Directory dir1 = newFSDirectory(createTempDir());
+    
+    IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc1.setSimilarity(new NormsSimilarity(iwc1.getSimilarity())); // for testing norms field
+    // preserve docIDs
+    iwc1.setMergePolicy(newLogMergePolicy());
     if (VERBOSE) {
-      System.out.println("Shuffled IDs for indexing: " + Arrays.toString(ids.toArray()));
+      System.out.println("TEST: now index pre-sorted");
     }
+    RandomIndexWriter w1 = new RandomIndexWriter(new Random(seed), dir1, iwc1);
+    for(Document doc : docs) {
+      ((PositionsTokenStream) ((Field) doc.getField("positions")).tokenStreamValue()).setId(Integer.parseInt(doc.get("id")));
+      w1.addDocument(doc);
+    }
+
+    // We shuffle documents, but set index sort, for the second writer:
+    Directory dir2 = newFSDirectory(createTempDir());
     
-    PositionsTokenStream positions = new PositionsTokenStream();
-    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
-    conf.setMaxBufferedDocs(4); // create some segments
-    conf.setSimilarity(new NormsSimilarity(conf.getSimilarity())); // for testing norms field
-    // nocommit
-    conf.setMergeScheduler(new SerialMergeScheduler());
-    // sort the index by id (as integer, in NUMERIC_DV_FIELD)
-    conf.setIndexSort(new Sort(new SortField(NUMERIC_DV_FIELD, SortField.Type.INT)));
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, conf);
-    writer.setDoRandomForceMerge(false);
-    for (int id : ids) {
-      writer.addDocument(doc(id, positions));
-    }
-    // delete some documents
-    writer.commit();
-    // nocommit need thread safety test too
-    for (Integer id : ids) {
-      if (random().nextDouble() < 0.2) {
-        if (VERBOSE) {
-          System.out.println("delete doc_id " + id);
-        }
-        writer.deleteDocuments(new Term(ID_FIELD, id.toString()));
-      }
-    }
-    
-    sortedReader = writer.getReader();
-    writer.close();
-    
-    TestUtil.checkReader(sortedReader);
-  }
+    IndexWriterConfig iwc2 = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc2.setSimilarity(new NormsSimilarity(iwc2.getSimilarity())); // for testing norms field
 
-  // nocommit just do assertReaderEquals, don't use @BeforeClass, etc.?
+    Sort sort = new Sort(new SortField("numeric", SortField.Type.INT));
+    iwc2.setIndexSort(sort);
 
-  public void testBinaryDocValuesField() throws Exception {
-    for(LeafReaderContext ctx : sortedReader.leaves()) {
-      LeafReader reader = ctx.reader();
-      BinaryDocValues dv = reader.getBinaryDocValues(BINARY_DV_FIELD);
-      boolean isSorted = reader.getIndexSort() != null;
-      int lastID = Integer.MIN_VALUE;
-      for (int docID = 0; docID < reader.maxDoc(); docID++) {
-        BytesRef bytes = dv.get(docID);
-        String idString = reader.document(docID).get(ID_FIELD);
-        assertEquals("incorrect binary DocValues for doc " + docID, idString, bytes.utf8ToString());
-        if (isSorted) {
-          int id = Integer.parseInt(idString);
-          assertTrue("lastID=" + lastID + " vs id=" + id, lastID < id);
-          lastID = id;
-        }
-      }
+    Collections.shuffle(docs, random());
+    if (VERBOSE) {
+      System.out.println("TEST: now index with index-time sorting");
     }
-  }
+    RandomIndexWriter w2 = new RandomIndexWriter(new Random(seed), dir2, iwc2);
+    int count = 0;
+    int commitAtCount = TestUtil.nextInt(random(), 1, numDocs-1);
+    for(Document doc : docs) {
+      ((PositionsTokenStream) ((Field) doc.getField("positions")).tokenStreamValue()).setId(Integer.parseInt(doc.get("id")));
+      if (count++ == commitAtCount) {
+        // Ensure forceMerge really does merge
+        w2.commit();
+      }
+      w2.addDocument(doc);
+    }
+    w2.forceMerge(1);
 
-  public void testPostings() throws Exception {
-    for(LeafReaderContext ctx : sortedReader.leaves()) {
-      LeafReader reader = ctx.reader();
-      TermsEnum termsEnum = reader.terms(DOC_POSITIONS_FIELD).iterator();
-      assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef(DOC_POSITIONS_TERM)));
-      PostingsEnum sortedPositions = termsEnum.postings(null, PostingsEnum.ALL);
-      int doc;
-    
-      // test nextDoc()
-      while ((doc = sortedPositions.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        int freq = sortedPositions.freq();
-        int id = Integer.parseInt(reader.document(doc).get(ID_FIELD));
-        assertEquals("incorrect freq for doc=" + doc, id / 10 + 1, freq);
-        for (int i = 0; i < freq; i++) {
-          assertEquals("incorrect position for doc=" + doc, i, sortedPositions.nextPosition());
-          assertEquals("incorrect startOffset for doc=" + doc, i, sortedPositions.startOffset());
-          assertEquals("incorrect endOffset for doc=" + doc, i, sortedPositions.endOffset());
-          assertEquals("incorrect payload for doc=" + doc, freq - i, Integer.parseInt(sortedPositions.getPayload().utf8ToString()));
-        }
-      }
-    
-      // test advance()
-      final PostingsEnum reuse = sortedPositions;
-      sortedPositions = termsEnum.postings(reuse, PostingsEnum.ALL);
-
-      doc = 0;
-      while ((doc = sortedPositions.advance(doc + TestUtil.nextInt(random(), 1, 5))) != DocIdSetIterator.NO_MORE_DOCS) {
-        int freq = sortedPositions.freq();
-        int id = Integer.parseInt(reader.document(doc).get(ID_FIELD));
-        assertEquals("incorrect freq for doc=" + doc, id / 10 + 1, freq);
-        for (int i = 0; i < freq; i++) {
-          assertEquals("incorrect position for doc=" + doc, i, sortedPositions.nextPosition());
-          assertEquals("incorrect startOffset for doc=" + doc, i, sortedPositions.startOffset());
-          assertEquals("incorrect endOffset for doc=" + doc, i, sortedPositions.endOffset());
-          assertEquals("incorrect payload for doc=" + doc, freq - i, Integer.parseInt(sortedPositions.getPayload().utf8ToString()));
-        }
-      }
-    }
-  }
-
-  public void testDocsAreSortedByID() throws Exception {
-    for(LeafReaderContext ctx : sortedReader.leaves()) {
-      LeafReader reader = ctx.reader();
-      if (reader.getIndexSort() != null) {
-        int maxDoc = reader.maxDoc();
-        int lastID = Integer.MIN_VALUE;
-        for(int doc=0;doc<maxDoc;doc++) {
-          int id = Integer.parseInt(reader.document(doc).get(ID_FIELD));
-          assertTrue(id > lastID);
-          lastID = id;
-        }
-      }
-    }
-  }
-
-  public void testNormValues() throws Exception {
-    for(LeafReaderContext ctx : sortedReader.leaves()) {
-      LeafReader reader = ctx.reader();
-      NumericDocValues dv = reader.getNormValues(NORMS_FIELD);
-      int maxDoc = reader.maxDoc();
-      for (int doc = 0; doc < maxDoc; doc++) {
-        int id = Integer.parseInt(reader.document(doc).get(ID_FIELD));
-        assertEquals("incorrect norm value for doc " + doc, id, dv.get(doc));
-      }
-    }
-  }
-  
-  public void testNumericDocValuesField() throws Exception {
-    for(LeafReaderContext ctx : sortedReader.leaves()) {
-      LeafReader reader = ctx.reader();
-      NumericDocValues dv = reader.getNumericDocValues(NUMERIC_DV_FIELD);
-      int maxDoc = reader.maxDoc();
-      for (int doc = 0; doc < maxDoc; doc++) {
-        int id = Integer.parseInt(reader.document(doc).get(ID_FIELD));
-        assertEquals("incorrect numeric DocValues for doc " + doc, id, dv.get(doc));
-      }
-    }
-  }
-  
-  public void testSortedDocValuesField() throws Exception {
-    for(LeafReaderContext ctx : sortedReader.leaves()) {
-      LeafReader reader = ctx.reader();
-      SortedDocValues dv = reader.getSortedDocValues(SORTED_DV_FIELD);
-      int maxDoc = reader.maxDoc();
-      for (int doc = 0; doc < maxDoc; doc++) {
-        final BytesRef bytes = dv.get(doc);
-        String id = reader.document(doc).get(ID_FIELD);
-        assertEquals("incorrect sorted DocValues for doc " + doc, id, bytes.utf8ToString());
-      }
-    }
-  }
-  
-  public void testSortedSetDocValuesField() throws Exception {
-    for(LeafReaderContext ctx : sortedReader.leaves()) {
-      LeafReader reader = ctx.reader();
-      SortedSetDocValues dv = reader.getSortedSetDocValues(SORTED_SET_DV_FIELD);
-      int maxDoc = reader.maxDoc();
-      for (int doc = 0; doc < maxDoc; doc++) {
-        dv.setDocument(doc);
-        BytesRef bytes = dv.lookupOrd(dv.nextOrd());
-        String id = reader.document(doc).get(ID_FIELD);
-        assertEquals("incorrect sorted-set DocValues for doc " + doc, id, bytes.utf8ToString());
-        bytes = dv.lookupOrd(dv.nextOrd());
-        assertEquals("incorrect sorted-set DocValues for doc " + doc, Integer.valueOf(Integer.parseInt(id) + 1).toString(), bytes.utf8ToString());
-        assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
-      }
-    }
-  }
-
-  public void testSortedNumericDocValuesField() throws Exception {
-    for(LeafReaderContext ctx : sortedReader.leaves()) {
-      LeafReader reader = ctx.reader();
-      SortedNumericDocValues dv = reader.getSortedNumericDocValues(SORTED_NUMERIC_DV_FIELD);
-      int maxDoc = reader.maxDoc();
-      for (int doc = 0; doc < maxDoc; doc++) {
-        dv.setDocument(doc);
-        assertEquals(2, dv.count());
-        int id = Integer.parseInt(reader.document(doc).get(ID_FIELD));
-        assertEquals("incorrect sorted-numeric DocValues for doc " + doc, id, dv.valueAt(0));
-        assertEquals("incorrect sorted-numeric DocValues for doc " + doc, id + 1, dv.valueAt(1));
-      }
-    }
-  }
-  
-  public void testTermVectors() throws Exception {
-    for(LeafReaderContext ctx : sortedReader.leaves()) {
-      LeafReader reader = ctx.reader();
-      int maxDoc = reader.maxDoc();
-      for (int doc = 0; doc < maxDoc; doc++) {
-        Terms terms = reader.getTermVector(doc, TERM_VECTORS_FIELD);
-        assertNotNull("term vectors not found for doc " + doc + " field [" + TERM_VECTORS_FIELD + "]", terms);
-        String id = reader.document(doc).get(ID_FIELD);
-        assertEquals("incorrect term vector for doc " + doc, id, terms.iterator().next().utf8ToString());
-      }
-    }
-  }
-
-  public void testPoints() throws Exception {
-    for(LeafReaderContext ctx : sortedReader.leaves()) {
-      final LeafReader reader = ctx.reader();
-      PointValues values = reader.getPointValues();
-      values.intersect(DIMENSIONAL_FIELD,
-                       new IntersectVisitor() {
-                         @Override
-                         public void visit(int docID) {
-                           throw new IllegalStateException();
-                         }
-
-                         @Override
-                         public void visit(int docID, byte[] packedValues) throws IOException {
-                           int id = Integer.parseInt(reader.document(docID).get(ID_FIELD));
-                           assertEquals(id, NumericUtils.sortableBytesToInt(packedValues, 0));
-                         }
-
-                         @Override
-                         public Relation compare(byte[] minPackedValue, byte[] maxPackedValue) {
-                           return Relation.CELL_CROSSES_QUERY;
-                         }
-                       });
-    }
+    DirectoryReader r1 = w1.getReader();
+    DirectoryReader r2 = w2.getReader();
+    assertEquals(sort, getOnlyLeafReader(r2).getIndexSort());
+    assertReaderEquals("left: sorted by hand; right: sorted by Lucene", r1, r2);
+    IOUtils.close(w1, w2, r1, r2, dir1, dir2);
   }
 }
