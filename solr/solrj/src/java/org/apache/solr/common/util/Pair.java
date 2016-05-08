@@ -17,30 +17,36 @@
 package org.apache.solr.common.util;
 
 import java.io.Serializable;
+import java.util.Objects;
 
-public class Pair<K, V> implements Serializable {
-  private K key;
+public class Pair<T1, T2> implements Serializable {
+  private final T1 first;
+  private final T2 second;
 
-  public K getKey() {
-    return key;
+  public T1 first() {
+    return first;
   }
 
-  private V value;
-
-  public K _1() {
-    return key;
+  public T2 second() {
+    return second;
   }
 
-  public V _2() {
-    return value;
+  public Pair(T1 key, T2 value) {
+    this.first = key;
+    this.second = value;
   }
 
-  public V getValue() {
-    return value;
+  @Override
+  public boolean equals(Object obj) {
+    if (obj instanceof Pair) {
+      Pair that = (Pair) obj;
+      return Objects.equals(this.first, that.first) && Objects.equals(this.second, that.second);
+    }
+    return false;
   }
 
-  public Pair(K key, V value) {
-    this.key = key;
-    this.value = value;
+  @Override
+  public int hashCode() {
+    return (this.first == null ? 0 : this.first.hashCode()) ^ (this.second == null ? 0 : this.second.hashCode());
   }
 }
