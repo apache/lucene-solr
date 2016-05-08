@@ -229,7 +229,8 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   private boolean addReplica(final String collection, DownReplica badReplica) {
     // first find best home - first strategy, sort by number of cores
     // hosted where maxCoresPerNode is not violated
-    final String createUrl = getBestCreateUrl(zkStateReader, badReplica);
+    final Integer maxCoreCount = (Integer) zkStateReader.getClusterProps().get(ZkStateReader.MAX_CORES_PER_NODE);
+    final String createUrl = getBestCreateUrl(zkStateReader, badReplica, maxCoreCount);
     if (createUrl == null) {
       log.warn("Could not find a node to create new replica on.");
       return false;
@@ -301,15 +302,16 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
    * @return the best node to replace the badReplica on or null if there is no
    *         such node
    */
-  static String getBestCreateUrl(ZkStateReader zkStateReader, DownReplica badReplica) {
+  static String getBestCreateUrl(ZkStateReader zkStateReader, DownReplica badReplica, Integer maxCoreCount) {
     assert badReplica != null;
     assert badReplica.collection != null;
     assert badReplica.slice != null;
     log.debug("getBestCreateUrl for " + badReplica.replica);
-    Map<String,Counts> counts = new HashMap<String, Counts>();
-    Set<String> unsuitableHosts = new HashSet<String>();
+    Map<String,Counts> counts = new HashMap<>();
+    Set<String> unsuitableHosts = new HashSet<>();
     
     Set<String> liveNodes = new HashSet<>(zkStateReader.getClusterState().getLiveNodes());
+    Map<String, Integer> coresPerNode = new HashMap<>();
     
     ClusterState clusterState = zkStateReader.getClusterState();
     if (clusterState != null) {
@@ -329,8 +331,13 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
             for (Replica replica : replicas) {
               liveNodes.remove(replica.getNodeName());
               String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
-              if (baseUrl.equals(
-                  badReplica.replica.getStr(ZkStateReader.BASE_URL_PROP))) {
+              if (coresPerNode.containsKey(baseUrl)) {
+                Integer nodeCount = coresPerNode.get(baseUrl);
+                coresPerNode.put(baseUrl, nodeCount++);
+              } else {
+                coresPerNode.put(baseUrl, 1);
+              }
+              if (baseUrl.equals(badReplica.replica.getStr(ZkStateReader.BASE_URL_PROP))) {
                 continue;
               }
               // on a live node?
@@ -351,16 +358,15 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
                 if (badReplica.collection.getName().equals(collection) && badReplica.slice.getName().equals(slice.getName())) {
                   cnt.ourReplicas++;
                 }
-                
-                // TODO: this is collection wide and we want to take into
-                // account cluster wide - use new cluster sys prop
+
                 Integer maxShardsPerNode = badReplica.collection.getMaxShardsPerNode();
                 if (maxShardsPerNode == null) {
                   log.warn("maxShardsPerNode is not defined for collection, name=" + badReplica.collection.getName());
                   maxShardsPerNode = Integer.MAX_VALUE;
                 }
-                log.debug("collection={} node={} max shards per node={} potential hosts={}", collection, baseUrl, maxShardsPerNode, cnt);
-                
+                log.debug("collection={} node={} maxShardsPerNode={} maxCoresPerNode={} potential hosts={}",
+                    collection, baseUrl, maxShardsPerNode, maxCoreCount, cnt);
+
                 Collection<Replica> badSliceReplicas = null;
                 DocCollection c = clusterState.getCollection(badReplica.collection.getName());
                 if (c != null) {
@@ -370,7 +376,8 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
                   }
                 }
                 boolean alreadyExistsOnNode = replicaAlreadyExistsOnNode(zkStateReader.getClusterState(), badSliceReplicas, badReplica, baseUrl);
-                if (unsuitableHosts.contains(baseUrl) || alreadyExistsOnNode || cnt.collectionShardsOnNode >= maxShardsPerNode) {
+                if (unsuitableHosts.contains(baseUrl) || alreadyExistsOnNode || cnt.collectionShardsOnNode >= maxShardsPerNode
+                    || (maxCoreCount != null && coresPerNode.get(baseUrl) >= maxCoreCount) ) {
                   counts.remove(baseUrl);
                   unsuitableHosts.add(baseUrl);
                   log.debug("not a candidate node, collection={} node={} max shards per node={} good replicas={}", collection, baseUrl, maxShardsPerNode, cnt);
