@@ -45,12 +45,9 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
   public static abstract class Sub {
     public int mappedDocID;
     final MergeState.DocMap docMap;
-    final Bits liveDocs;
 
-    // nocommit isn't liveDocs redundant?  docMap returns -1 for us?
-    public Sub(MergeState.DocMap docMap, Bits liveDocs) {
+    public Sub(MergeState.DocMap docMap) {
       this.docMap = docMap;
-      this.liveDocs = liveDocs;
     }
 
     /** Returns the next document ID from this sub reader, and {@link DocIdSetIterator#NO_MORE_DOCS} when done */
@@ -91,12 +88,14 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
           if (docID == NO_MORE_DOCS) {
             // all docs in this sub were deleted; do not add it to the queue!
             break;
-          } else if (sub.liveDocs != null && sub.liveDocs.get(docID) == false) {
-            // nocommit is it sub's job to skip deleted docs?
+          }
+
+          int mappedDocID = sub.docMap.get(docID);
+          if (mappedDocID == -1) {
+            // doc was deleted
             continue;
           } else {
-            sub.mappedDocID = sub.docMap.get(docID);
-            assert sub.mappedDocID != -1;
+            sub.mappedDocID = mappedDocID;
             queue.add(sub);
             break;
           }
@@ -131,10 +130,13 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
             queue.pop();
             top = queue.top();
             break;
-          } else if (top.liveDocs != null && top.liveDocs.get(docID) == false) {
+          }
+          int mappedDocID = top.docMap.get(docID);
+          if (mappedDocID == -1) {
+            // doc was deleted
             continue;
           } else {
-            top.mappedDocID = top.docMap.get(docID);
+            top.mappedDocID = mappedDocID;
             top = queue.updateTop();
             break;
           }
@@ -160,12 +162,14 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
           current = subs.get(nextIndex);
           nextIndex++;
           continue;
-        } else if (current.liveDocs != null && current.liveDocs.get(docID) == false) {
-          // Document is deleted
+        }
+        int mappedDocID = current.docMap.get(docID);
+        if (mappedDocID == -1) {
+          // doc is deleted
           continue;
         }
 
-        current.mappedDocID = current.docMap.get(docID);
+        current.mappedDocID = mappedDocID;
         return current;
       }
     }

@@ -33,8 +33,8 @@ public class TestDocIDMerger extends LuceneTestCase {
     final int valueStart;
     final int maxDoc;
 
-    public TestSubUnsorted(MergeState.DocMap docMap, Bits liveDocs, int maxDoc, int valueStart) {
-      super(docMap, liveDocs);
+    public TestSubUnsorted(MergeState.DocMap docMap, int maxDoc, int valueStart) {
+      super(docMap);
       this.maxDoc = maxDoc;
       this.valueStart = valueStart;
     }
@@ -67,7 +67,7 @@ public class TestDocIDMerger extends LuceneTestCase {
           public int get(int docID) {
             return docBase + docID;
           }
-        }, null, maxDoc, valueStart));
+        }, maxDoc, valueStart));
       valueStart += maxDoc;
     }
 
@@ -92,8 +92,8 @@ public class TestDocIDMerger extends LuceneTestCase {
     final int maxDoc;
     final int index;
 
-    public TestSubSorted(MergeState.DocMap docMap, Bits liveDocs, int maxDoc, int index) {
-      super(docMap, liveDocs);
+    public TestSubSorted(MergeState.DocMap docMap, int maxDoc, int index) {
+      super(docMap);
       this.maxDoc = maxDoc;
       this.index = index;
     }
@@ -155,7 +155,7 @@ public class TestDocIDMerger extends LuceneTestCase {
           public int get(int docID) {
             return docMap[docID];
           }
-        }, null, docMap.length, i));
+        }, docMap.length, i));
     }
 
     // nocommit test w/ deletions too

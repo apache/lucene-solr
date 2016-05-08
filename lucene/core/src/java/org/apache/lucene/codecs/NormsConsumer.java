@@ -107,8 +107,8 @@ public abstract class NormsConsumer implements Closeable {
     private int docID = -1;
     private final int maxDoc;
 
-    public NumericDocValuesSub(MergeState.DocMap docMap, Bits liveDocs, NumericDocValues values, int maxDoc) {
-      super(docMap, liveDocs);
+    public NumericDocValuesSub(MergeState.DocMap docMap, NumericDocValues values, int maxDoc) {
+      super(docMap);
       this.values = values;
       this.maxDoc = maxDoc;
     }
@@ -142,7 +142,7 @@ public abstract class NormsConsumer implements Closeable {
                         List<NumericDocValuesSub> subs = new ArrayList<>();
                         assert mergeState.docMaps.length == toMerge.size();
                         for(int i=0;i<toMerge.size();i++) {
-                          subs.add(new NumericDocValuesSub(mergeState.docMaps[i], mergeState.liveDocs[i], toMerge.get(i), mergeState.maxDocs[i]));
+                          subs.add(new NumericDocValuesSub(mergeState.docMaps[i], toMerge.get(i), mergeState.maxDocs[i]));
                         }
 
                         final DocIDMerger<NumericDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);

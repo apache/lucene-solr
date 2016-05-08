@@ -29,14 +29,14 @@ import org.apache.lucene.util.Bits;
 
 /** This is a hack to make index sorting fast, with a {@link LeafReader} that always returns merge instances when you ask for the codec readers. */
 class MergeReaderWrapper extends LeafReader {
-  final SegmentReader in;
+  final CodecReader in;
   final FieldsProducer fields;
   final NormsProducer norms;
   final DocValuesProducer docValues;
   final StoredFieldsReader store;
   final TermVectorsReader vectors;
   
-  MergeReaderWrapper(SegmentReader in) throws IOException {
+  MergeReaderWrapper(CodecReader in) throws IOException {
     this.in = in;
     
     FieldsProducer fields = in.getPostingsReader();

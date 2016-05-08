@@ -85,8 +85,8 @@ public abstract class StoredFieldsWriter implements Closeable {
     private final MergeVisitor visitor;
     int docID = -1;
 
-    public StoredFieldsMergeSub(MergeVisitor visitor, MergeState.DocMap docMap, Bits liveDocs, StoredFieldsReader reader, int maxDoc) {
-      super(docMap, liveDocs);
+    public StoredFieldsMergeSub(MergeVisitor visitor, MergeState.DocMap docMap, StoredFieldsReader reader, int maxDoc) {
+      super(docMap);
       this.maxDoc = maxDoc;
       this.reader = reader;
       this.visitor = visitor;
@@ -115,7 +115,7 @@ public abstract class StoredFieldsWriter implements Closeable {
     for(int i=0;i<mergeState.storedFieldsReaders.length;i++) {
       StoredFieldsReader storedFieldsReader = mergeState.storedFieldsReaders[i];
       storedFieldsReader.checkIntegrity();
-      subs.add(new StoredFieldsMergeSub(new MergeVisitor(mergeState, i), mergeState.docMaps[i], mergeState.liveDocs[i], storedFieldsReader, mergeState.maxDocs[i]));
+      subs.add(new StoredFieldsMergeSub(new MergeVisitor(mergeState, i), mergeState.docMaps[i], storedFieldsReader, mergeState.maxDocs[i]));
     }
 
     final DocIDMerger<StoredFieldsMergeSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
