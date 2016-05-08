@@ -136,9 +136,9 @@ final class MultiSorter {
         }
         final int missingOrd;
         if (sortField.getMissingValue() == SortField.STRING_LAST) {
-          missingOrd = Integer.MIN_VALUE;
-        } else {
           missingOrd = Integer.MAX_VALUE;
+        } else {
+          missingOrd = Integer.MIN_VALUE;
         }
 
         final int reverseMul;
@@ -180,10 +180,10 @@ final class MultiSorter {
           reverseMul = 1;
         }
 
-        final int missingValue;
+        final long missingValue;
 
         if (sortField.getMissingValue() != null) {
-          missingValue = (Integer) sortField.getMissingValue();
+          missingValue = (Long) sortField.getMissingValue();
         } else {
           missingValue = 0;
         }
@@ -193,14 +193,14 @@ final class MultiSorter {
           public int compare(int readerIndexA, int docIDA, int readerIndexB, int docIDB) {
             long valueA;
             if (docsWithFields.get(readerIndexA).get(docIDA)) {
-              valueA = (int) values.get(readerIndexA).get(docIDA);
+              valueA = values.get(readerIndexA).get(docIDA);
             } else {
               valueA = missingValue;
             }
 
             long valueB;
             if (docsWithFields.get(readerIndexB).get(docIDB)) {
-              valueB = (int) values.get(readerIndexB).get(docIDB);
+              valueB = values.get(readerIndexB).get(docIDB);
             } else {
               valueB = missingValue;
             }
