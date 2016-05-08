@@ -1004,8 +1004,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
   }
 
-  // nocommit can we improve this from just best effort?
-
   /** Confirms that the incoming index sort (if any) matches the existing index sort (if any).  This is unfortunately just best effort,
    *  because it could be the old index only has flushed segments. */
   private void validateIndexSort() {

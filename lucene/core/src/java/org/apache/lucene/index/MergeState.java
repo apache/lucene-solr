@@ -40,7 +40,6 @@ import org.apache.lucene.util.packed.PackedLongValues;
 public class MergeState {
 
   /** Maps document IDs from old segments to document IDs in the new segment */
-  // nocommit in the unsorted case, this should map correctly, e.g. apply per segment docBase
   public final DocMap[] docMaps;
 
   // nocommit can we somehow not need to expose this?  should IW's reader pool always sort on load...?
@@ -224,8 +223,7 @@ public class MergeState {
         Sorter.DocMap sortDocMap = sorter.sort(leaf);
         if (sortDocMap != null) {
           //System.out.println("    sort!");
-          // nocommit what about MergedReaderWrapper in here?
-          leaf = SlowCodecReaderWrapper.wrap(SortingLeafReader.wrap(leaf, sortDocMap));
+          leaf = SlowCodecReaderWrapper.wrap(SortingLeafReader.wrap(new MergeReaderWrapper(leaf), sortDocMap));
           leafDocMaps[readers.size()] = new DocMap() {
               @Override
               public int get(int docID) {

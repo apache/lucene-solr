@@ -169,8 +169,8 @@ public abstract class TermVectorsWriter implements Closeable {
     private final int maxDoc;
     int docID = -1;
 
-    public TermVectorsMergeSub(MergeState.DocMap docMap, Bits liveDocs, TermVectorsReader reader, int maxDoc) {
-      super(docMap, liveDocs);
+    public TermVectorsMergeSub(MergeState.DocMap docMap, TermVectorsReader reader, int maxDoc) {
+      super(docMap);
       this.maxDoc = maxDoc;
       this.reader = reader;
     }
@@ -204,7 +204,7 @@ public abstract class TermVectorsWriter implements Closeable {
         reader.checkIntegrity();
       }
       // nocommit make sure the else case tested here
-      subs.add(new TermVectorsMergeSub(mergeState.docMaps[i], mergeState.liveDocs[i], reader, mergeState.maxDocs[i]));
+      subs.add(new TermVectorsMergeSub(mergeState.docMaps[i], reader, mergeState.maxDocs[i]));
     }
 
     final DocIDMerger<TermVectorsMergeSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);

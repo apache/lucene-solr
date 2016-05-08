@@ -251,8 +251,8 @@ public abstract class DocValuesConsumer implements Closeable {
     private int docID = -1;
     private final int maxDoc;
 
-    public NumericDocValuesSub(MergeState.DocMap docMap, Bits liveDocs, NumericDocValues values, Bits docsWithField, int maxDoc) {
-      super(docMap, liveDocs);
+    public NumericDocValuesSub(MergeState.DocMap docMap, NumericDocValues values, Bits docsWithField, int maxDoc) {
+      super(docMap);
       this.values = values;
       this.docsWithField = docsWithField;
       this.maxDoc = maxDoc;
@@ -285,7 +285,7 @@ public abstract class DocValuesConsumer implements Closeable {
                         List<NumericDocValuesSub> subs = new ArrayList<>();
                         assert mergeState.docMaps.length == toMerge.size();
                         for(int i=0;i<toMerge.size();i++) {
-                          subs.add(new NumericDocValuesSub(mergeState.docMaps[i], mergeState.liveDocs[i], toMerge.get(i), docsWithField.get(i), mergeState.maxDocs[i]));
+                          subs.add(new NumericDocValuesSub(mergeState.docMaps[i], toMerge.get(i), docsWithField.get(i), mergeState.maxDocs[i]));
                         }
 
                         final DocIDMerger<NumericDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
@@ -338,8 +338,8 @@ public abstract class DocValuesConsumer implements Closeable {
     private int docID = -1;
     private final int maxDoc;
 
-    public BinaryDocValuesSub(MergeState.DocMap docMap, Bits liveDocs, BinaryDocValues values, Bits docsWithField, int maxDoc) {
-      super(docMap, liveDocs);
+    public BinaryDocValuesSub(MergeState.DocMap docMap, BinaryDocValues values, Bits docsWithField, int maxDoc) {
+      super(docMap);
       this.values = values;
       this.docsWithField = docsWithField;
       this.maxDoc = maxDoc;
@@ -372,7 +372,7 @@ public abstract class DocValuesConsumer implements Closeable {
                        List<BinaryDocValuesSub> subs = new ArrayList<>();
                        assert mergeState.docMaps.length == toMerge.size();
                        for(int i=0;i<toMerge.size();i++) {
-                         subs.add(new BinaryDocValuesSub(mergeState.docMaps[i], mergeState.liveDocs[i], toMerge.get(i), docsWithField.get(i), mergeState.maxDocs[i]));
+                         subs.add(new BinaryDocValuesSub(mergeState.docMaps[i], toMerge.get(i), docsWithField.get(i), mergeState.maxDocs[i]));
                        }
 
                        final DocIDMerger<BinaryDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
@@ -429,8 +429,8 @@ public abstract class DocValuesConsumer implements Closeable {
     private int docID = -1;
     private final int maxDoc;
 
-    public SortedNumericDocValuesSub(MergeState.DocMap docMap, Bits liveDocs, SortedNumericDocValues values, int maxDoc) {
-      super(docMap, liveDocs);
+    public SortedNumericDocValuesSub(MergeState.DocMap docMap, SortedNumericDocValues values, int maxDoc) {
+      super(docMap);
       this.values = values;
       this.maxDoc = maxDoc;
     }
@@ -465,7 +465,7 @@ public abstract class DocValuesConsumer implements Closeable {
             List<SortedNumericDocValuesSub> subs = new ArrayList<>();
             assert mergeState.docMaps.length == toMerge.size();
             for(int i=0;i<toMerge.size();i++) {
-              subs.add(new SortedNumericDocValuesSub(mergeState.docMaps[i], mergeState.liveDocs[i], toMerge.get(i), mergeState.maxDocs[i]));
+              subs.add(new SortedNumericDocValuesSub(mergeState.docMaps[i], toMerge.get(i), mergeState.maxDocs[i]));
             }
 
             final DocIDMerger<SortedNumericDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
@@ -516,7 +516,7 @@ public abstract class DocValuesConsumer implements Closeable {
             List<SortedNumericDocValuesSub> subs = new ArrayList<>();
             assert mergeState.docMaps.length == toMerge.size();
             for(int i=0;i<toMerge.size();i++) {
-              subs.add(new SortedNumericDocValuesSub(mergeState.docMaps[i], mergeState.liveDocs[i], toMerge.get(i), mergeState.maxDocs[i]));
+              subs.add(new SortedNumericDocValuesSub(mergeState.docMaps[i], toMerge.get(i), mergeState.maxDocs[i]));
             }
 
             final DocIDMerger<SortedNumericDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
@@ -581,8 +581,8 @@ public abstract class DocValuesConsumer implements Closeable {
     private final int maxDoc;
     private final LongValues map;
 
-    public SortedDocValuesSub(MergeState.DocMap docMap, Bits liveDocs, SortedDocValues values, int maxDoc, LongValues map) {
-      super(docMap, liveDocs);
+    public SortedDocValuesSub(MergeState.DocMap docMap, SortedDocValues values, int maxDoc, LongValues map) {
+      super(docMap);
       this.values = values;
       this.maxDoc = maxDoc;
       this.map = map;
@@ -678,7 +678,7 @@ public abstract class DocValuesConsumer implements Closeable {
             List<SortedDocValuesSub> subs = new ArrayList<>();
             assert mergeState.docMaps.length == toMerge.size();
             for(int i=0;i<toMerge.size();i++) {
-              subs.add(new SortedDocValuesSub(mergeState.docMaps[i], mergeState.liveDocs[i], toMerge.get(i), mergeState.maxDocs[i], map.getGlobalOrds(i)));
+              subs.add(new SortedDocValuesSub(mergeState.docMaps[i], toMerge.get(i), mergeState.maxDocs[i], map.getGlobalOrds(i)));
             }
 
             final DocIDMerger<SortedDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
@@ -735,8 +735,8 @@ public abstract class DocValuesConsumer implements Closeable {
     private final int maxDoc;
     private final LongValues map;
 
-    public SortedSetDocValuesSub(MergeState.DocMap docMap, Bits liveDocs, SortedSetDocValues values, int maxDoc, LongValues map) {
-      super(docMap, liveDocs);
+    public SortedSetDocValuesSub(MergeState.DocMap docMap, SortedSetDocValues values, int maxDoc, LongValues map) {
+      super(docMap);
       this.values = values;
       this.maxDoc = maxDoc;
       this.map = map;
@@ -837,7 +837,7 @@ public abstract class DocValuesConsumer implements Closeable {
             List<SortedSetDocValuesSub> subs = new ArrayList<>();
             assert mergeState.docMaps.length == toMerge.size();
             for(int i=0;i<toMerge.size();i++) {
-              subs.add(new SortedSetDocValuesSub(mergeState.docMaps[i], mergeState.liveDocs[i], toMerge.get(i), mergeState.maxDocs[i], map.getGlobalOrds(i)));
+              subs.add(new SortedSetDocValuesSub(mergeState.docMaps[i], toMerge.get(i), mergeState.maxDocs[i], map.getGlobalOrds(i)));
             }
 
             final DocIDMerger<SortedSetDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);
@@ -895,7 +895,7 @@ public abstract class DocValuesConsumer implements Closeable {
             List<SortedSetDocValuesSub> subs = new ArrayList<>();
             assert mergeState.docMaps.length == toMerge.size();
             for(int i=0;i<toMerge.size();i++) {
-              subs.add(new SortedSetDocValuesSub(mergeState.docMaps[i], mergeState.liveDocs[i], toMerge.get(i), mergeState.maxDocs[i], map.getGlobalOrds(i)));
+              subs.add(new SortedSetDocValuesSub(mergeState.docMaps[i], toMerge.get(i), mergeState.maxDocs[i], map.getGlobalOrds(i)));
             }
 
             final DocIDMerger<SortedSetDocValuesSub> docIDMerger = new DocIDMerger<>(subs, mergeState.segmentInfo.getIndexSort() != null);

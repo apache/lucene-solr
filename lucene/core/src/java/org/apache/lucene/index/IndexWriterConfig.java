@@ -444,11 +444,10 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
 
   /** We only allow sorting on these types */
   private static final EnumSet<SortField.Type> ALLOWED_INDEX_SORT_TYPES = EnumSet.of(SortField.Type.STRING,
-                                                                                     SortField.Type.INT,
-                                                                                     SortField.Type.FLOAT,
                                                                                      SortField.Type.LONG,
+                                                                                     SortField.Type.INT,
                                                                                      SortField.Type.DOUBLE,
-                                                                                     SortField.Type.BYTES);
+                                                                                     SortField.Type.FLOAT);
 
   /**
    * Set the {@link Sort} order to use when merging segments.  Note that newly flushed segments will remain unsorted.

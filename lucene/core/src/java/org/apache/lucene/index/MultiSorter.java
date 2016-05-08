@@ -344,7 +344,6 @@ final class MultiSorter {
         };
       }
 
-    // nocommit do the rest:
     default:
       throw new IllegalArgumentException("unhandled SortField.getType()=" + sortField.getType());
     }

@@ -43,8 +43,8 @@ final class MappingMultiPostingsEnum extends PostingsEnum {
   private static class MappingPostingsSub extends DocIDMerger.Sub {
     public PostingsEnum postings;
 
-    public MappingPostingsSub(MergeState.DocMap docMap, Bits liveDocs) {
-      super(docMap, liveDocs);
+    public MappingPostingsSub(MergeState.DocMap docMap) {
+      super(docMap);
     }
 
     @Override
@@ -62,7 +62,7 @@ final class MappingMultiPostingsEnum extends PostingsEnum {
     this.field = field;
     allSubs = new MappingPostingsSub[mergeState.fieldsProducers.length];
     for(int i=0;i<allSubs.length;i++) {
-      allSubs[i] = new MappingPostingsSub(mergeState.docMaps[i], mergeState.liveDocs[i]);
+      allSubs[i] = new MappingPostingsSub(mergeState.docMaps[i]);
     }
     this.docIDMerger = new DocIDMerger<MappingPostingsSub>(subs, allSubs.length, mergeState.segmentInfo.getIndexSort() != null);
   }

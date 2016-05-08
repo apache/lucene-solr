@@ -77,9 +77,6 @@ public class SortField {
      * uses ordinals to do the sorting. */
     STRING_VAL,
 
-    /** Sort use byte[] index values. */
-    BYTES,
-
     /** Force rewriting of SortField using {@link SortField#rewrite(IndexSearcher)}
      * before it can be used for sorting */
     REWRITEABLE

@@ -574,7 +574,7 @@ public class TestIndexSorting extends LuceneTestCase {
     IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
       iwc.setIndexSort(Sort.RELEVANCE);
     });
-    assertEquals("invalid SortField type: must be one of [STRING, INT, FLOAT, LONG, DOUBLE, BYTES] but got: <score>", expected.getMessage());
+    assertEquals("invalid SortField type: must be one of [STRING, INT, FLOAT, LONG, DOUBLE] but got: <score>", expected.getMessage());
   }
 
   // you can't change the index sort on an existing index:

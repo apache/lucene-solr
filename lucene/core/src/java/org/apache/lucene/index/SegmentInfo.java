@@ -198,10 +198,6 @@ public final class SegmentInfo {
       s.append('/').append(delCount);
     }
 
-    // nocommit does search time "do the right thing" automatically when segment is sorted?
-
-    // nocommit remove sorter_key from diagnostics
-
     if (indexSort != null) {
       s.append(":[indexSort=");
       s.append(indexSort);
