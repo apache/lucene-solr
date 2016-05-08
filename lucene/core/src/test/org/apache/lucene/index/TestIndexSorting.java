@@ -1214,6 +1214,10 @@ public class TestIndexSorting extends LuceneTestCase {
     iwc2.setIndexSort(sort);
     IndexWriter w2 = new IndexWriter(dir2, iwc2);
 
+    Set<Integer> toDelete = new HashSet<>();
+
+    double deleteChance = random().nextDouble();
+
     for(int id=0;id<numDocs;id++) {
       RandomDoc docValues = new RandomDoc(id);
       docs.add(docValues);
@@ -1236,7 +1240,13 @@ public class TestIndexSorting extends LuceneTestCase {
       doc.add(new SortedDocValuesField("bytes", new BytesRef(docValues.bytesValue)));
       w1.addDocument(doc);
       w2.addDocument(doc);
-      // nocommit do some deletions
+      if (random().nextDouble() < deleteChance) {
+        toDelete.add(id);
+      }
+    }
+    for(int id : toDelete) {
+      w1.deleteDocuments(new Term("id", Integer.toString(id)));
+      w2.deleteDocuments(new Term("id", Integer.toString(id)));
     }
     DirectoryReader r1 = DirectoryReader.open(w1);
     IndexSearcher s1 = newSearcher(r1);
