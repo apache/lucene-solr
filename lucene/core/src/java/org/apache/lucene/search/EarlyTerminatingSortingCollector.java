@@ -53,8 +53,6 @@ import org.apache.lucene.search.TotalHitCountCollector;
  * @lucene.experimental
  */
 
-// nocommit move to core too
-
 public class EarlyTerminatingSortingCollector extends FilterCollector {
 
   /** Returns whether collection can be early-terminated if it sorts with the

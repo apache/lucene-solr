@@ -58,6 +58,7 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
     this.subs = subs;
 
     if (indexIsSorted) {
+      // nocommit: we could optimize the (silly) single-sub case and pretend it's a concatenation instead
       queue = new PriorityQueue<T>(maxCount) {
         @Override
         protected boolean lessThan(Sub a, Sub b) {

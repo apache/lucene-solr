@@ -54,13 +54,18 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.EarlyTerminatingSortingCollector;
+import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -1112,5 +1117,186 @@ public class TestIndexSorting extends LuceneTestCase {
     assertEquals(sort, getOnlyLeafReader(r2).getIndexSort());
     assertReaderEquals("left: sorted by hand; right: sorted by Lucene", r1, r2);
     IOUtils.close(w1, w2, r1, r2, dir1, dir2);
+  }
+
+  private static final class RandomDoc {
+    public final int id;
+    public final int intValue;
+    public final long longValue;
+    public final float floatValue;
+    public final double doubleValue;
+    public final byte[] bytesValue;
+    // nocommit postings, points, term vectors
+
+    public RandomDoc(int id) {
+      this.id = id;
+      intValue = random().nextInt();
+      longValue = random().nextLong();
+      floatValue = random().nextFloat();
+      doubleValue = random().nextDouble();
+      bytesValue = new byte[TestUtil.nextInt(random(), 1, 50)];
+      random().nextBytes(bytesValue);
+    }
+  }
+
+  private static Sort randomSort() {
+    int numFields = TestUtil.nextInt(random(), 1, 3);
+    SortField[] sortFields = new SortField[numFields];
+    for(int i=0;i<numFields-1;i++) {
+      boolean reversed = random().nextBoolean();
+      SortField sortField;
+      switch(random().nextInt(5)) {
+      case 0:
+        sortField = new SortField("int", SortField.Type.INT, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(random().nextInt());
+        }
+        break;
+      case 1:
+        sortField = new SortField("long", SortField.Type.LONG, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(random().nextLong());
+        }
+        break;
+      case 2:
+        sortField = new SortField("float", SortField.Type.FLOAT, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(random().nextFloat());
+        }
+        break;
+      case 3:
+        sortField = new SortField("double", SortField.Type.DOUBLE, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(random().nextDouble());
+        }
+        break;
+      case 4:
+        sortField = new SortField("bytes", SortField.Type.STRING, reversed);
+        if (random().nextBoolean()) {
+          sortField.setMissingValue(SortField.STRING_LAST);
+        }
+        break;
+      default:
+        throw new AssertionError();
+      }
+      sortFields[i] = sortField;
+    }
+
+    // tie-break by id:
+    sortFields[numFields-1] = new SortField("id", SortField.Type.INT);
+
+    return new Sort(sortFields);
+  }
+
+  // pits index time sorting against query time sorting
+  public void testRandom3() throws Exception {
+    int numDocs;
+    if (TEST_NIGHTLY) {
+      numDocs = atLeast(100000);
+    } else {
+      numDocs = atLeast(1000);
+    }
+    List<RandomDoc> docs = new ArrayList<>();
+
+    Sort sort = randomSort();
+    if (VERBOSE) {
+      System.out.println("TEST: numDocs=" + numDocs + " use sort=" + sort);
+    }
+
+    // no index sorting, all search-time sorting:
+    Directory dir1 = newFSDirectory(createTempDir());
+    IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriter w1 = new IndexWriter(dir1, iwc1);
+
+    // use index sorting:
+    Directory dir2 = newFSDirectory(createTempDir());
+    IndexWriterConfig iwc2 = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc2.setIndexSort(sort);
+    IndexWriter w2 = new IndexWriter(dir2, iwc2);
+
+    for(int id=0;id<numDocs;id++) {
+      RandomDoc docValues = new RandomDoc(id);
+      docs.add(docValues);
+      if (VERBOSE) {
+        System.out.println("TEST: doc id=" + id);
+        System.out.println("  int=" + docValues.intValue);
+        System.out.println("  long=" + docValues.longValue);
+        System.out.println("  float=" + docValues.floatValue);
+        System.out.println("  double=" + docValues.doubleValue);
+        System.out.println("  bytes=" + new BytesRef(docValues.bytesValue));
+      }
+
+      Document doc = new Document();
+      doc.add(new StringField("id", Integer.toString(id), Field.Store.YES));
+      doc.add(new NumericDocValuesField("id", id));
+      doc.add(new NumericDocValuesField("int", docValues.intValue));
+      doc.add(new NumericDocValuesField("long", docValues.longValue));
+      doc.add(new DoubleDocValuesField("double", docValues.doubleValue));
+      doc.add(new FloatDocValuesField("float", docValues.floatValue));
+      doc.add(new SortedDocValuesField("bytes", new BytesRef(docValues.bytesValue)));
+      w1.addDocument(doc);
+      w2.addDocument(doc);
+      // nocommit do some deletions
+    }
+    DirectoryReader r1 = DirectoryReader.open(w1);
+    IndexSearcher s1 = newSearcher(r1);
+
+    if (random().nextBoolean()) {
+      int maxSegmentCount = TestUtil.nextInt(random(), 1, 5);
+      if (VERBOSE) {
+        System.out.println("TEST: now forceMerge(" + maxSegmentCount + ")");
+      }
+      w2.forceMerge(maxSegmentCount);
+    }
+
+    DirectoryReader r2 = DirectoryReader.open(w2);
+    IndexSearcher s2 = newSearcher(r2);
+
+    /*
+    System.out.println("TEST: full index:");
+    SortedDocValues docValues = MultiDocValues.getSortedValues(r2, "bytes");
+    for(int i=0;i<r2.maxDoc();i++) {
+      System.out.println("  doc " + i + " id=" + r2.document(i).get("id") + " bytes=" + docValues.get(i));
+    }
+    */
+
+    for(int iter=0;iter<100;iter++) {
+      int numHits = TestUtil.nextInt(random(), 1, numDocs);
+      if (VERBOSE) {
+        System.out.println("TEST: iter=" + iter + " numHits=" + numHits);
+      }
+
+      TopFieldCollector c1 = TopFieldCollector.create(sort, numHits, true, true, true);
+      s1.search(new MatchAllDocsQuery(), c1);
+      TopDocs hits1 = c1.topDocs();
+
+      TopFieldCollector c2 = TopFieldCollector.create(sort, numHits, true, true, true);
+      EarlyTerminatingSortingCollector c3 = new EarlyTerminatingSortingCollector(c2, sort, numHits);
+      s2.search(new MatchAllDocsQuery(), c3);
+
+      TopDocs hits2 = c2.topDocs();
+
+      if (VERBOSE) {
+        System.out.println("  topDocs query-time sort: totalHits=" + hits1.totalHits);
+        for(ScoreDoc scoreDoc : hits1.scoreDocs) {
+          System.out.println("    " + scoreDoc.doc);
+        }
+        System.out.println("  topDocs index-time sort: totalHits=" + hits2.totalHits);
+        for(ScoreDoc scoreDoc : hits2.scoreDocs) {
+          System.out.println("    " + scoreDoc.doc);
+        }
+      }
+
+      assertTrue(hits2.totalHits <= hits1.totalHits);
+      assertEquals(hits2.scoreDocs.length, hits1.scoreDocs.length);
+      for(int i=0;i<hits2.scoreDocs.length;i++) {
+        ScoreDoc hit1 = hits1.scoreDocs[i];
+        ScoreDoc hit2 = hits2.scoreDocs[i];
+        assertEquals(r1.document(hit1.doc).get("id"), r2.document(hit2.doc).get("id"));
+        assertEquals(((FieldDoc) hit1).fields, ((FieldDoc) hit2).fields);
+      }
+    }
+
+    IOUtils.close(r1, r2, w1, w2, dir1, dir2);
   }
 }

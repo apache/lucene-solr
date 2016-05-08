@@ -36,6 +36,8 @@ final class MultiSorter {
    *  documents into the merged segment.  The documents for each incoming leaf reader must already be sorted by the same sort! */
   static MergeState.DocMap[] sort(Sort sort, List<CodecReader> readers) throws IOException {
 
+    // nocommit optimize if only 1 reader is incoming
+
     SortField fields[] = sort.getSort();
     final CrossReaderComparator[] comparators = new CrossReaderComparator[fields.length];
     for(int i=0;i<fields.length;i++) {

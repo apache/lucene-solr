@@ -209,20 +209,16 @@ public class MergeState {
     final Sorter sorter = new Sorter(indexSort);
     List<CodecReader> readers = new ArrayList<>(originalReaders.size());
 
-    //System.out.println("MergeState.maybeSortReaders indexSort=" + indexSort);
-
     for (CodecReader leaf : originalReaders) {
       Sort segmentSort = leaf.getIndexSort();
-      //System.out.println("  leaf=" + leaf + " sort=" + segmentSort);
 
       if (segmentSort == null) {
         // TODO: fix IW to also sort when flushing?  It's somewhat tricky because of stored fields and term vectors, which write "live"
-        // to the files on each indexed document:
+        // to their index files on each indexed document:
 
         // This segment was written by flush, so documents are not yet sorted, so we sort them now:
         Sorter.DocMap sortDocMap = sorter.sort(leaf);
         if (sortDocMap != null) {
-          //System.out.println("    sort!");
           leaf = SlowCodecReaderWrapper.wrap(SortingLeafReader.wrap(new MergeReaderWrapper(leaf), sortDocMap));
           leafDocMaps[readers.size()] = new DocMap() {
               @Override
