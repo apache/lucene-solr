@@ -48,6 +48,8 @@ final class SegmentMerger {
   final MergeState mergeState;
   private final FieldInfos.Builder fieldInfosBuilder;
 
+  // nocommit make sure infoStream states per-segment-being-merged if they are already sorted
+
   // note, just like in codec apis Directory 'dir' is NOT the same as segmentInfo.dir!!
   SegmentMerger(List<CodecReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, Directory dir,
                 FieldInfos.FieldNumbers fieldNumbers, IOContext context) throws IOException {
@@ -59,6 +61,11 @@ final class SegmentMerger {
     this.codec = segmentInfo.getCodec();
     this.context = context;
     this.fieldInfosBuilder = new FieldInfos.Builder(fieldNumbers);
+    if (mergeState.infoStream.isEnabled("SM")) {
+      if (segmentInfo.getIndexSort() != null) {
+        mergeState.infoStream.message("SM", "index sort during merge: " + segmentInfo.getIndexSort());
+      }
+    }
   }
   
   /** True if any merging should happen */

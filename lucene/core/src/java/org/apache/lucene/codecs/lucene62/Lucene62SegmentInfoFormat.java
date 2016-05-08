@@ -299,7 +299,7 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
             break;
           case FLOAT:
             output.writeByte((byte) 1);
-            output.writeLong(Float.floatToIntBits(((Float) missingValue).floatValue()));
+            output.writeInt(Float.floatToIntBits(((Float) missingValue).floatValue()));
             break;
           default:
             throw new IllegalStateException("Unexpected sort type: " + sortField.getType());
