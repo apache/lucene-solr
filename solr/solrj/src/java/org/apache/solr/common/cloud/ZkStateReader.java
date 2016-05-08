@@ -385,8 +385,8 @@ public class ZkStateReader implements Closeable {
     if (securityNodeListener != null) {
       addSecuritynodeWatcher(pair -> {
         ConfigData cd = new ConfigData();
-        cd.data = pair.getKey() == null || pair.getKey().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.getKey()), 4, false);
-        cd.version = pair.getValue() == null ? -1 : pair.getValue().getVersion();
+        cd.data = pair.first() == null || pair.first().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
+        cd.version = pair.second() == null ? -1 : pair.second().getVersion();
         securityData = cd;
         securityNodeListener.run();
       });
