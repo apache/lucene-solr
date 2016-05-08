@@ -264,7 +264,6 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
           case FLOAT:
             sortTypeID = 4;
             break;
-          // nocommit the rest:
           default:
             throw new IllegalStateException("Unexpected sort type: " + sortField.getType());
         }
@@ -302,7 +301,6 @@ public class Lucene62SegmentInfoFormat extends SegmentInfoFormat {
             output.writeByte((byte) 1);
             output.writeLong(Float.floatToIntBits(((Float) missingValue).floatValue()));
             break;
-          // nocommit the rest:
           default:
             throw new IllegalStateException("Unexpected sort type: " + sortField.getType());
           }
