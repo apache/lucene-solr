@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,9 +41,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.Callable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -137,10 +134,6 @@ public class ZkStateReader implements Closeable {
   private ConfigData securityData;
 
   private final Runnable securityNodeListener;
-
-  private final ExecutorService collectionWatchExecutor = ExecutorUtil.newMDCAwareCachedThreadPool(
-      new SolrjNamedThreadFactory("collectionStateWatchers")
-  );
 
   private ConcurrentHashMap<String, CollectionWatch> collectionWatches = new ConcurrentHashMap<>();
 
@@ -691,12 +684,6 @@ public class ZkStateReader implements Closeable {
 
   public void close() {
     this.closed  = true;
-    try {
-      ExecutorUtil.shutdownAndAwaitTermination(collectionWatchExecutor);
-    }
-    catch (Exception e) {
-      LOG.error("Error shutting down collection watch executor", e);
-    }
     if (closeClient) {
       zkClient.close();
     }
@@ -1297,11 +1284,9 @@ public class ZkStateReader implements Closeable {
       v.stateWatchers.clear();
       return v;
     });
-    collectionWatchExecutor.submit(() -> {
-      for (CollectionStateWatcher watcher : watchers) {
-        watcher.onStateChanged(liveNodes, collectionState);
-      }
-    });
+    for (CollectionStateWatcher watcher : watchers) {
+      watcher.onStateChanged(liveNodes, collectionState);
+    }
   }
 
   /* package-private for testing */
