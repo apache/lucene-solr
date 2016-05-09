@@ -273,6 +273,9 @@ Other Changes
 
 * SOLR-8458: Add Streaming Expressions tests for parameter substitution (Joel Bernstein, Cao Manh Dat, Dennis Gove, Kevin Risden)
 
+* SOLR-8467: CloudSolrStream and FacetStream should take a SolrParams object rather than a 
+  Map<String, String> to allow more complex Solr queries to be specified. (Erick Erickson)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
