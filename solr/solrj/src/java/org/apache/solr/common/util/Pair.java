@@ -19,6 +19,9 @@ package org.apache.solr.common.util;
 import java.io.Serializable;
 import java.util.Objects;
 
+import static org.apache.solr.common.util.Utils.makeMap;
+import static org.apache.solr.common.util.Utils.toJSONString;
+
 public class Pair<T1, T2> implements Serializable {
   private final T1 first;
   private final T2 second;
@@ -37,16 +40,20 @@ public class Pair<T1, T2> implements Serializable {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (obj instanceof Pair) {
-      Pair that = (Pair) obj;
-      return Objects.equals(this.first, that.first) && Objects.equals(this.second, that.second);
-    }
-    return false;
+  public boolean equals(Object that) {
+    return that instanceof Pair &&
+        Objects.equals(this.first, ((Pair) that).first) &&
+        Objects.equals(this.second, ((Pair) that).second);
+  }
+
+  @Override
+  public String toString() {
+    return toJSONString(makeMap("first", first, "second", second));
   }
 
   @Override
   public int hashCode() {
-    return (this.first == null ? 0 : this.first.hashCode()) ^ (this.second == null ? 0 : this.second.hashCode());
+    return Objects.hash(first, second);
   }
+
 }
