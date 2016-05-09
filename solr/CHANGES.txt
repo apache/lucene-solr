@@ -128,7 +128,10 @@ New Features
 
 * SOLR-9026: Extend facet telemetry support to legacy (non-json) facets under "debug/facet-debug" in
   the response. (Michael Sun, yonik)
-  
+
+* SOLR-7117: Provide an option to limit the maximum number of cores that can be created on a node by the
+  Auto Add Replica feature. For this you can set a "maxCoresPerNode" property via the Cluster Property API
+  (Varun Thacker, Mark Miller)
 
 Bug Fixes
 ----------------------
