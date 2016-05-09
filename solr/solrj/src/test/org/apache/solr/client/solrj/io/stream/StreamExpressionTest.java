@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.io.stream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -47,6 +46,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -175,6 +175,26 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assert(tuples.size() == 3);
     assertOrder(tuples, 0, 3, 4);
     assertLong(tuples.get(1), "a_i", 3);
+
+
+    // Test a couple of multile field lists.
+    expression = StreamExpressionParser.parse("search(collection1, fq=\"a_s:hello0\", fq=\"a_s:hello1\", q=\"id:(*)\", " +
+        "zkHost=" + cluster.getZkServer().getZkAddress()+ ", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
+    stream = new CloudSolrStream(expression, factory);
+    tuples = getTuples(stream);
+
+    assertEquals("fq clauses should have prevented any docs from coming back", tuples.size(), 0);
+
+
+    expression = StreamExpressionParser.parse("search(collection1, fq=\"a_s:(hello0 OR hello1)\", q=\"id:(*)\", " +
+        "zkHost=" + cluster.getZkServer().getZkAddress() + ", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
+    stream = new CloudSolrStream(expression, factory);
+    tuples = getTuples(stream);
+
+    assertEquals("Combining an f1 clause should show us 2 docs", tuples.size(), 2);
+    
+        
+
   }
 
   @Test
@@ -193,33 +213,33 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     TupleStream stream;
 
     // Basic test
-    Map<String,String> params = new HashMap<>();
-    params.put("expr","merge("
+    ModifiableSolrParams sParams = new ModifiableSolrParams();
+    sParams.set("expr", "merge("
         + "${q1},"
         + "${q2},"
         + "on=${mySort})");
-    params.put(CommonParams.QT, "/stream");
-    params.put("q1", "search(" + COLLECTION + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
-    params.put("q2", "search(" + COLLECTION + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
-    params.put("mySort", "a_f asc");
-    stream = new SolrStream(url, params);
+    sParams.set(CommonParams.QT, "/stream");
+    sParams.set("q1", "search(" + COLLECTION + ", q=\"id:(0 3 4)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+    sParams.set("q2", "search(" + COLLECTION + ", q=\"id:(1)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+    sParams.set("mySort", "a_f asc");
+    stream = new SolrStream(url, sParams);
     tuples = getTuples(stream);
 
     assertEquals(4, tuples.size());
     assertOrder(tuples, 0,1,3,4);
 
     // Basic test desc
-    params.put("mySort", "a_f desc");
-    stream = new SolrStream(url, params);
+    sParams.set("mySort", "a_f desc");
+    stream = new SolrStream(url, sParams);
     tuples = getTuples(stream);
 
     assertEquals(4, tuples.size());
     assertOrder(tuples, 4,3,1,0);
 
     // Basic w/ multi comp
-    params.put("q2", "search(" + COLLECTION + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
-    params.put("mySort", "\"a_f asc, a_s asc\"");
-    stream = new SolrStream(url, params);
+    sParams.set("q2", "search(" + COLLECTION + ", q=\"id:(1 2)\", fl=\"id,a_s,a_i,a_f\", sort=${mySort})");
+    sParams.set("mySort", "\"a_f asc, a_s asc\"");
+    stream = new SolrStream(url, sParams);
     tuples = getTuples(stream);
 
     assertEquals(5, tuples.size());
@@ -2677,16 +2697,14 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     //Lets sleep long enough for daemon updates to run.
     //Lets stop the daemons
-    Map params = new HashMap();
-    params.put(CommonParams.QT,"/stream");
-    params.put("action","list");
+    ModifiableSolrParams sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream", "action", "list"));
 
     int workersComplete = 0;
     for(JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       int iterations = 0;
       INNER:
       while(iterations == 0) {
-        SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", params);
+        SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
         solrStream.open();
         Tuple tupleResponse = solrStream.read();
         if (tupleResponse.EOF) {
@@ -2714,27 +2732,27 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     cluster.getSolrClient().commit("parallelDestinationCollection1");
 
     //Lets stop the daemons
-    params = new HashMap();
-    params.put(CommonParams.QT,"/stream");
-    params.put("action", "stop");
-    params.put("id", "test");
+    sParams = new ModifiableSolrParams();
+    sParams.set(CommonParams.QT, "/stream");
+    sParams.set("action", "stop");
+    sParams.set("id", "test");
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      SolrStream solrStream = new SolrStream(jetty.getBaseUrl() + "/collection1", params);
+      SolrStream solrStream = new SolrStream(jetty.getBaseUrl() + "/collection1", sParams);
       solrStream.open();
       Tuple tupleResponse = solrStream.read();
       solrStream.close();
     }
 
-    params = new HashMap();
-    params.put(CommonParams.QT,"/stream");
-    params.put("action","list");
+    sParams = new ModifiableSolrParams();
+    sParams.set(CommonParams.QT, "/stream");
+    sParams.set("action", "list");
 
     workersComplete = 0;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
       long stopTime = 0;
       INNER:
       while(stopTime == 0) {
-        SolrStream solrStream = new SolrStream(jetty.getBaseUrl() + "/collection1", params);
+        SolrStream solrStream = new SolrStream(jetty.getBaseUrl() + "/collection1", sParams);
         solrStream.open();
         Tuple tupleResponse = solrStream.read();
         if (tupleResponse.EOF) {
