@@ -57,7 +57,6 @@ import org.apache.solr.common.ToleratedUpdateError;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
-import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
@@ -591,21 +590,6 @@ public class CloudSolrClient extends SolrClient {
       throws InterruptedException, TimeoutException {
     connect();
     zkStateReader.waitForState(collection, wait, unit, predicate);
-  }
-
-  /**
-   * Register a CollectionStateWatcher to be called when the cluster state for a collection changes
-   *
-   * Note that the watcher is unregistered after it has been called once.  To make a watcher persistent,
-   * it should re-register itself in its {@link CollectionStateWatcher#onStateChanged(Set, DocCollection)}
-   * call
-   *
-   * @param collection the collection to watch
-   * @param watcher    a watcher that will be called when the state changes
-   */
-  public void registerCollectionStateWatcher(String collection, CollectionStateWatcher watcher) {
-    connect();
-    zkStateReader.registerCollectionStateWatcher(collection, watcher);
   }
 
   private NamedList<Object> directUpdate(AbstractUpdateRequest request, String collection, ClusterState clusterState) throws SolrServerException {
