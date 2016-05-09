@@ -51,6 +51,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -329,16 +330,17 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
       Collection<Slice> slices = clusterState.getActiveSlices(this.collection);
 
-      if(slices == null) {
+      if (slices == null) {
         //Try case insensitive match
-        for(String col : clusterState.getCollections()) {
-          if(col.equalsIgnoreCase(collection)) {
-            slices = clusterState.getActiveSlices(col);
+        Map<String, DocCollection> collectionsMap = clusterState.getCollectionsMap();
+        for (Map.Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
+          if (entry.getKey().equalsIgnoreCase(collection)) {
+            slices = entry.getValue().getActiveSlices();
             break;
           }
         }
 
-        if(slices == null) {
+        if (slices == null) {
           throw new Exception("Collection not found:" + this.collection);
         }
       }

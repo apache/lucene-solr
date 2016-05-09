@@ -16,19 +16,13 @@
  */
 package org.apache.solr.client.solrj.io.stream.metrics;
 
-import java.io.Serializable;
 import org.apache.solr.client.solrj.io.Tuple;
 
-public class Bucket implements Serializable {
+public class Bucket {
 
-  private static final long serialVersionUID = 1;
   private static final String NULL_VALUE = "NULL";
 
   private String bucketKey;
-
-  public Bucket() {
-
-  }
 
   public Bucket(String bucketKey) {
     this.bucketKey = bucketKey;

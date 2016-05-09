@@ -2496,7 +2496,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     assertEquals(2, tuples.size());
 
     List<String> collections = new ArrayList<>();
-    collections.addAll(cloudClient.getZkStateReader().getClusterState().getCollections());
+    collections.addAll(cloudClient.getZkStateReader().getClusterState().getCollectionsMap().keySet());
     Collections.sort(collections);
     for (Tuple tuple : tuples) {
       assertEquals(zkServer.getZkAddress(), tuple.getString("TABLE_CAT"));
@@ -2510,7 +2510,7 @@ public class TestSQLHandler extends AbstractFullDistribZkTestBase {
     assertEquals(2, tuples.size());
 
     collections = new ArrayList<>();
-    collections.addAll(cloudClient.getZkStateReader().getClusterState().getCollections());
+    collections.addAll(cloudClient.getZkStateReader().getClusterState().getCollectionsMap().keySet());
     Collections.sort(collections);
     for (Tuple tuple : tuples) {
       assertEquals(zkServer.getZkAddress(), tuple.getString("TABLE_CAT"));

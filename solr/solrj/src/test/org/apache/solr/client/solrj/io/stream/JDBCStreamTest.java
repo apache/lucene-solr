@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.io.stream;
 
-import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -26,10 +25,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Properties;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
 import org.apache.solr.client.solrj.io.comp.FieldComparator;
@@ -38,10 +35,10 @@ import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MaxMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.common.SolrInputDocument;
-import org.junit.After;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -50,19 +47,28 @@ import org.junit.Test;
 /**
 */
 
-@Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
+public class JDBCStreamTest extends SolrCloudTestCase {
 
-  private static final String SOLR_HOME = getFile("solrj" + File.separator + "solr").getAbsolutePath();
+  private static final String COLLECTION = "jdbc";
 
-  static {
-    schemaString = "schema-streaming.xml";
+  private static final int TIMEOUT = 30;
+
+  private static final String id = "id";
+
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(4)
+        .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
+        .configure();
+
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(),
+        false, true, TIMEOUT);
   }
 
   @BeforeClass
-  public static void beforeSuperClass() throws Exception {
-    AbstractZkTestCase.SOLRHOME = new File(SOLR_HOME());
+  public static void setupDatabase() throws Exception {
     
     // Initialize Database
     // Ok, so.....hsqldb is doing something totally weird so I thought I'd take a moment to explain it.
@@ -74,8 +80,7 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     // JDBCStream and is only a carryover from the driver we are testing with.
     Class.forName("org.hsqldb.jdbcDriver").newInstance();
     Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
-    Statement statement = connection.createStatement();
-    statement = connection.createStatement();
+    Statement statement  = connection.createStatement();
     statement.executeUpdate("create table COUNTRIES(CODE varchar(3) not null primary key, COUNTRY_NAME varchar(50), DELETED char(1) default 'N')");
     statement.executeUpdate("create table PEOPLE(ID int not null primary key, NAME varchar(50), COUNTRY_CODE char(2), DELETED char(1) default 'N')");
     statement.executeUpdate("create table PEOPLE_SPORTS(ID int not null primary key, PERSON_ID int, SPORT_NAME varchar(50), DELETED char(1) default 'N')");
@@ -83,107 +88,48 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
   }
 
   @AfterClass
-  public static void afterSuperClass() throws SQLException {
+  public static void teardownDatabase() throws SQLException {
     Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
     Statement statement = connection.createStatement();
     statement.executeUpdate("shutdown");
   }
 
-  protected String getCloudSolrConfig() {
-    return "solrconfig-streaming.xml";
-  }
-
-
-  @Override
-  public String getSolrHome() {
-    return SOLR_HOME;
-  }
-
-  public static String SOLR_HOME() {
-    return SOLR_HOME;
+  @Before
+  public void cleanIndex() throws Exception {
+    new UpdateRequest()
+        .deleteByQuery("*:*")
+        .commit(cluster.getSolrClient(), COLLECTION);
   }
 
   @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    // we expect this time of exception as shards go up and down...
-    //ignoreException(".*");
-
-    System.setProperty("numShards", Integer.toString(sliceCount));
-  }
-
-  @Override
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-    resetExceptionIgnores();
-  }
-
-  public JDBCStreamTest() {
-    super();
-    sliceCount = 2;
+  public void cleanDatabase() throws Exception {
+    // Clear database
+    try (Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
+         Statement statement = connection.createStatement()) {
+      statement.executeUpdate("delete from COUNTRIES WHERE 1=1");
+      statement.executeUpdate("delete from PEOPLE WHERE 1=1");
+      statement.executeUpdate("delete from PEOPLE_SPORTS WHERE 1=1");
+    }
   }
 
   @Test
-  public void testAll() throws Exception{
-    assertNotNull(cloudClient);
+  public void testJDBCSelect() throws Exception {
 
-    handle.clear();
-    handle.put("timestamp", SKIPVAL);
-
-    waitForRecoveriesToFinish(false);
-
-    // Run JDBC Only tests
-    testJDBCSelect();
-    testJDBCJoin();
-    
-    // Run JDBC + Solr tests
-    testJDBCSolrMerge();
-    testJDBCSolrInnerJoinExpression();
-    testJDBCSolrInnerJoinRollupExpression();
-    testJDBCSolrInnerJoinExpressionWithProperties();
-    
-    // Clear all data
-    clearData();
-    
-    // Delete database
-    // done during afterSuperClass(...)
-  }
-  
-  private void clearData() throws Exception {
-    // Clear Solr index
-    del("*:*");
-    commit();
-    
-    // Clear database
-    Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
-    Statement statement = connection.createStatement();
-    statement.executeUpdate("delete from COUNTRIES WHERE 1=1");
-    statement.executeUpdate("delete from PEOPLE WHERE 1=1");
-    statement.executeUpdate("delete from PEOPLE_SPORTS WHERE 1=1");
-    statement.close();
-    connection.close();
-  }
-  
-  private void testJDBCSelect() throws Exception {
-    clearData();
-    
     // Load Database Data
-    Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
-    Statement statement = connection.createStatement();
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('US', 'United States')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NL', 'Netherlands')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NP', 'Nepal')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NO', 'Norway')");
-    statement.close();
-    connection.close();
+    try (Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
+         Statement statement = connection.createStatement()) {
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('US', 'United States')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NL', 'Netherlands')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NP', 'Nepal')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NO', 'Norway')");
+    }
     
     TupleStream stream;
     List<Tuple> tuples;
     
     // Simple 1
-    stream = new JDBCStream("jdbc:hsqldb:mem:.", "select CODE,COUNTRY_NAME from COUNTRIES order by CODE", new FieldComparator("CODE", ComparatorOrder.ASCENDING));
+    stream = new JDBCStream("jdbc:hsqldb:mem:.", "select CODE,COUNTRY_NAME from COUNTRIES order by CODE",
+        new FieldComparator("CODE", ComparatorOrder.ASCENDING));
     tuples = getTuples(stream);
     
     assert(tuples.size() == 4);
@@ -191,7 +137,8 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     assertOrderOf(tuples, "COUNTRY_NAME", "Netherlands", "Norway", "Nepal", "United States");
     
     // Simple 2
-    stream = new JDBCStream("jdbc:hsqldb:mem:.", "select CODE,COUNTRY_NAME from COUNTRIES order by COUNTRY_NAME", new FieldComparator("COUNTRY_NAME", ComparatorOrder.ASCENDING));
+    stream = new JDBCStream("jdbc:hsqldb:mem:.", "select CODE,COUNTRY_NAME from COUNTRIES order by COUNTRY_NAME",
+        new FieldComparator("COUNTRY_NAME", ComparatorOrder.ASCENDING));
     tuples = getTuples(stream);
     
     assertEquals(4, tuples.size());
@@ -199,29 +146,28 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     assertOrderOf(tuples, "COUNTRY_NAME", "Nepal", "Netherlands", "Norway", "United States");
     
   }
-  
-  private void testJDBCJoin() throws Exception {
-    clearData();
+
+  @Test
+  public void testJDBCJoin() throws Exception {
     
     // Load Database Data
-    Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
-    Statement statement = connection.createStatement();
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('US', 'United States')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NL', 'Netherlands')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NP', 'Nepal')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NO', 'Norway')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (11,'Emma','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (12,'Grace','NI')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (13,'Hailey','NG')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (14,'Isabella','NF')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (15,'Lily','NE')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (16,'Madison','NC')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (17,'Mia','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (18,'Natalie','NZ')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (19,'Olivia','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (20,'Samantha','NR')");
-    statement.close();
-    connection.close();
+    try (Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
+          Statement statement = connection.createStatement()) {
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('US', 'United States')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NL', 'Netherlands')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NP', 'Nepal')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NO', 'Norway')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (11,'Emma','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (12,'Grace','NI')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (13,'Hailey','NG')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (14,'Isabella','NF')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (15,'Lily','NE')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (16,'Madison','NC')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (17,'Mia','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (18,'Natalie','NZ')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (19,'Olivia','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (20,'Samantha','NR')");
+    }
     
     TupleStream stream;
     List<Tuple> tuples;
@@ -234,28 +180,28 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     assertOrderOf(tuples, "ID", 11, 17, 19);
     assertOrderOf(tuples, "NAME", "Emma", "Mia", "Olivia");    
   }
-  
-  private void testJDBCSolrMerge() throws Exception {
-    clearData();
+
+  @Test
+  public void testJDBCSolrMerge() throws Exception {
     
     // Load Database Data
-    Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
-    Statement statement = connection.createStatement();
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('US', 'United States')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NL', 'Netherlands')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NP', 'Nepal')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NO', 'Norway')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('AL', 'Algeria')");
-    statement.close();
-    connection.close();
+    try (Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
+         Statement statement = connection.createStatement()) {
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('US', 'United States')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NL', 'Netherlands')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NP', 'Nepal')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NO', 'Norway')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('AL', 'Algeria')");
+    }
     
     // Load Solr
-    indexr(id, "0", "code_s", "GB", "name_s", "Great Britian");
-    indexr(id, "1", "code_s", "CA", "name_s", "Canada");
-    commit();
+    new UpdateRequest()
+        .add(id, "0", "code_s", "GB", "name_s", "Great Britian")
+        .add(id, "1", "code_s", "CA", "name_s", "Canada")
+        .commit(cluster.getSolrClient(), COLLECTION);
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class);
     
     List<Tuple> tuples;
@@ -263,7 +209,7 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     // Simple 1
     TupleStream jdbcStream = new JDBCStream("jdbc:hsqldb:mem:.", "select CODE,COUNTRY_NAME from COUNTRIES order by CODE", new FieldComparator("CODE", ComparatorOrder.ASCENDING));
     TupleStream selectStream = new SelectStream(jdbcStream, new HashMap<String, String>(){{ put("CODE", "code_s"); put("COUNTRY_NAME", "name_s"); }});
-    TupleStream searchStream = factory.constructStream("search(collection1, fl=\"code_s,name_s\",q=\"*:*\",sort=\"code_s asc\")");
+    TupleStream searchStream = factory.constructStream("search(" + COLLECTION + ", fl=\"code_s,name_s\",q=\"*:*\",sort=\"code_s asc\")");
     TupleStream mergeStream = new MergeStream(new FieldComparator("code_s", ComparatorOrder.ASCENDING), new TupleStream[]{selectStream,searchStream});
     
     tuples = getTuples(mergeStream);
@@ -272,49 +218,49 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     assertOrderOf(tuples, "code_s", "AL","CA","GB","NL","NO","NP","US");
     assertOrderOf(tuples, "name_s", "Algeria", "Canada", "Great Britian", "Netherlands", "Norway", "Nepal", "United States");
   }
-  
-  private void testJDBCSolrInnerJoinExpression() throws Exception{
-    clearData();
+
+  @Test
+  public void testJDBCSolrInnerJoinExpression() throws Exception{
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("select", SelectStream.class)
       .withFunctionName("innerJoin", InnerJoinStream.class)
       .withFunctionName("jdbc", JDBCStream.class);
     
     // Load Database Data
-    Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
-    Statement statement = connection.createStatement();
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('US', 'United States')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NL', 'Netherlands')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NP', 'Nepal')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NO', 'Norway')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (11,'Emma','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (12,'Grace','US')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (13,'Hailey','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (14,'Isabella','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (15,'Lily','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (16,'Madison','US')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (17,'Mia','US')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (18,'Natalie','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (19,'Olivia','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (20,'Samantha','US')");
-    statement.close();
-    connection.close();
+    try (Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
+         Statement statement = connection.createStatement()) {
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('US', 'United States')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NL', 'Netherlands')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NP', 'Nepal')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NO', 'Norway')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (11,'Emma','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (12,'Grace','US')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (13,'Hailey','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (14,'Isabella','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (15,'Lily','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (16,'Madison','US')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (17,'Mia','US')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (18,'Natalie','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (19,'Olivia','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (20,'Samantha','US')");
+    }
     
     // Load solr data
-    indexr(id, "1", "rating_f", "3.5", "personId_i", "11");
-    indexr(id, "2", "rating_f", "5", "personId_i", "12");
-    indexr(id, "3", "rating_f", "2.2", "personId_i", "13");
-    indexr(id, "4", "rating_f", "4.3", "personId_i", "14");
-    indexr(id, "5", "rating_f", "3.5", "personId_i", "15");
-    indexr(id, "6", "rating_f", "3", "personId_i", "16");
-    indexr(id, "7", "rating_f", "3", "personId_i", "17");
-    indexr(id, "8", "rating_f", "4", "personId_i", "18");
-    indexr(id, "9", "rating_f", "4.1", "personId_i", "19");
-    indexr(id, "10", "rating_f", "4.8", "personId_i", "20");
-    commit();
+    new UpdateRequest()
+        .add(id, "1", "rating_f", "3.5", "personId_i", "11")
+        .add(id, "2", "rating_f", "5", "personId_i", "12")
+        .add(id, "3", "rating_f", "2.2", "personId_i", "13")
+        .add(id, "4", "rating_f", "4.3", "personId_i", "14")
+        .add(id, "5", "rating_f", "3.5", "personId_i", "15")
+        .add(id, "6", "rating_f", "3", "personId_i", "16")
+        .add(id, "7", "rating_f", "3", "personId_i", "17")
+        .add(id, "8", "rating_f", "4", "personId_i", "18")
+        .add(id, "9", "rating_f", "4.1", "personId_i", "19")
+        .add(id, "10", "rating_f", "4.8", "personId_i", "20")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     String expression;
     TupleStream stream;
@@ -324,7 +270,7 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     expression =   
               "innerJoin("
             + "  select("
-            + "    search(collection1, fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
+            + "    search(" + COLLECTION + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
             + "    personId_i as personId,"
             + "    rating_f as rating"
             + "  ),"
@@ -347,48 +293,48 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     assertOrderOf(tuples, "country", "Netherlands","United States","Netherlands","Netherlands","Netherlands","United States","United States","Netherlands","Netherlands","United States");
   }
 
-  private void testJDBCSolrInnerJoinExpressionWithProperties() throws Exception{
-    clearData();
+  @Test
+  public void testJDBCSolrInnerJoinExpressionWithProperties() throws Exception{
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("select", SelectStream.class)
       .withFunctionName("innerJoin", InnerJoinStream.class)
       .withFunctionName("jdbc", JDBCStream.class);
     
     // Load Database Data
-    Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
-    Statement statement = connection.createStatement();
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('US', 'United States')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NL', 'Netherlands')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NP', 'Nepal')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NO', 'Norway')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (11,'Emma','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (12,'Grace','US')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (13,'Hailey','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (14,'Isabella','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (15,'Lily','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (16,'Madison','US')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (17,'Mia','US')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (18,'Natalie','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (19,'Olivia','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (20,'Samantha','US')");
-    statement.close();
-    connection.close();
+    try (Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
+         Statement statement = connection.createStatement()) {
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('US', 'United States')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NL', 'Netherlands')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NP', 'Nepal')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NO', 'Norway')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (11,'Emma','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (12,'Grace','US')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (13,'Hailey','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (14,'Isabella','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (15,'Lily','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (16,'Madison','US')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (17,'Mia','US')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (18,'Natalie','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (19,'Olivia','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (20,'Samantha','US')");
+    }
     
     // Load solr data
-    indexr(id, "1", "rating_f", "3.5", "personId_i", "11");
-    indexr(id, "2", "rating_f", "5", "personId_i", "12");
-    indexr(id, "3", "rating_f", "2.2", "personId_i", "13");
-    indexr(id, "4", "rating_f", "4.3", "personId_i", "14");
-    indexr(id, "5", "rating_f", "3.5", "personId_i", "15");
-    indexr(id, "6", "rating_f", "3", "personId_i", "16");
-    indexr(id, "7", "rating_f", "3", "personId_i", "17");
-    indexr(id, "8", "rating_f", "4", "personId_i", "18");
-    indexr(id, "9", "rating_f", "4.1", "personId_i", "19");
-    indexr(id, "10", "rating_f", "4.8", "personId_i", "20");
-    commit();
+    new UpdateRequest()
+        .add(id, "1", "rating_f", "3.5", "personId_i", "11")
+        .add(id, "2", "rating_f", "5", "personId_i", "12")
+        .add(id, "3", "rating_f", "2.2", "personId_i", "13")
+        .add(id, "4", "rating_f", "4.3", "personId_i", "14")
+        .add(id, "5", "rating_f", "3.5", "personId_i", "15")
+        .add(id, "6", "rating_f", "3", "personId_i", "16")
+        .add(id, "7", "rating_f", "3", "personId_i", "17")
+        .add(id, "8", "rating_f", "4", "personId_i", "18")
+        .add(id, "9", "rating_f", "4.1", "personId_i", "19")
+        .add(id, "10", "rating_f", "4.8", "personId_i", "20")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     String expression;
     TupleStream stream;
@@ -401,7 +347,7 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     expression =   
               "innerJoin("
             + "  select("
-            + "    search(collection1, fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
+            + "    search(" + COLLECTION + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
             + "    personId_i as personId,"
             + "    rating_f as rating"
             + "  ),"
@@ -430,7 +376,7 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     expression =   
               "innerJoin("
             + "  select("
-            + "    search(collection1, fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
+            + "    search(" + COLLECTION + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
             + "    personId_i as personId,"
             + "    rating_f as rating"
             + "  ),"
@@ -453,12 +399,11 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     assertOrderOf(tuples, "country", "Netherlands","United States","Netherlands","Netherlands","Netherlands","United States","United States","Netherlands","Netherlands","United States");
   }
 
-  
-  private void testJDBCSolrInnerJoinRollupExpression() throws Exception{
-    clearData();
+  @Test
+  public void testJDBCSolrInnerJoinRollupExpression() throws Exception{
     
     StreamFactory factory = new StreamFactory()
-      .withCollectionZkHost("collection1", zkServer.getZkAddress())
+      .withCollectionZkHost(COLLECTION, cluster.getZkServer().getZkAddress())
       .withFunctionName("search", CloudSolrStream.class)
       .withFunctionName("select", SelectStream.class)
       .withFunctionName("hashJoin", HashJoinStream.class)
@@ -471,38 +416,37 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
       ;
     
     // Load Database Data
-    Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
-    Statement statement = connection.createStatement();
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('US', 'United States')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NL', 'Netherlands')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NP', 'Nepal')");
-    statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NO', 'Norway')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (11,'Emma','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (12,'Grace','US')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (13,'Hailey','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (14,'Isabella','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (15,'Lily','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (16,'Madison','US')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (17,'Mia','US')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (18,'Natalie','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (19,'Olivia','NL')");
-    statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (20,'Samantha','US')");
-    statement.close();
-    connection.close();
+    try (Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
+         Statement statement = connection.createStatement()) {
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('US', 'United States')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NL', 'Netherlands')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NP', 'Nepal')");
+      statement.executeUpdate("insert into COUNTRIES (CODE,COUNTRY_NAME) values ('NO', 'Norway')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (11,'Emma','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (12,'Grace','US')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (13,'Hailey','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (14,'Isabella','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (15,'Lily','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (16,'Madison','US')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (17,'Mia','US')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (18,'Natalie','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (19,'Olivia','NL')");
+      statement.executeUpdate("insert into PEOPLE (ID, NAME, COUNTRY_CODE) values (20,'Samantha','US')");
+    }
     
     // Load solr data
-    indexr(id, "1", "rating_f", "3.5", "personId_i", "11");
-    indexr(id, "3", "rating_f", "2.2", "personId_i", "13");
-    indexr(id, "4", "rating_f", "4.3", "personId_i", "14");
-    indexr(id, "5", "rating_f", "3.5", "personId_i", "15");
-    indexr(id, "8", "rating_f", "4", "personId_i", "18");
-    indexr(id, "9", "rating_f", "4.1", "personId_i", "19");
-    
-    indexr(id, "2", "rating_f", "5", "personId_i", "12");
-    indexr(id, "6", "rating_f", "3", "personId_i", "16");
-    indexr(id, "7", "rating_f", "3", "personId_i", "17");
-    indexr(id, "10", "rating_f", "4.8", "personId_i", "20");
-    commit();
+    new UpdateRequest()
+        .add(id, "1", "rating_f", "3.5", "personId_i", "11")
+        .add(id, "3", "rating_f", "2.2", "personId_i", "13")
+        .add(id, "4", "rating_f", "4.3", "personId_i", "14")
+        .add(id, "5", "rating_f", "3.5", "personId_i", "15")
+        .add(id, "8", "rating_f", "4", "personId_i", "18")
+        .add(id, "9", "rating_f", "4.1", "personId_i", "19")
+        .add(id, "2", "rating_f", "5", "personId_i", "12")
+        .add(id, "6", "rating_f", "3", "personId_i", "16")
+        .add(id, "7", "rating_f", "3", "personId_i", "17")
+        .add(id, "10", "rating_f", "4.8", "personId_i", "20")
+        .commit(cluster.getSolrClient(), COLLECTION);
 
     String expression;
     TupleStream stream;
@@ -513,7 +457,7 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
               "rollup("
             + "  hashJoin("
             + "    hashed=select("
-            + "      search(collection1, fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
+            + "      search(" + COLLECTION + ", fl=\"personId_i,rating_f\", q=\"rating_f:*\", sort=\"personId_i asc\"),"
             + "      personId_i as personId,"
             + "      rating_f as rating"
             + "    ),"
@@ -562,6 +506,7 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     tupleStream.close();
     return tuples;
   }
+
   protected boolean assertOrderOf(List<Tuple> tuples, String fieldName, int... values) throws Exception {
     int i = 0;
     for(int val : values) {
@@ -574,6 +519,7 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     }
     return true;
   }
+
   protected boolean assertOrderOf(List<Tuple> tuples, String fieldName, double... values) throws Exception {
     int i = 0;
     for(double val : values) {
@@ -586,6 +532,7 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     }
     return true;
   }
+
   protected boolean assertOrderOf(List<Tuple> tuples, String fieldName, String... values) throws Exception {
     int i = 0;
     for(String val : values) {
@@ -617,6 +564,7 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     }
     return true;
   }
+
   protected boolean assertNotFields(List<Tuple> tuples, String ... fields) throws Exception{
     for(Tuple tuple : tuples){
       for(String field : fields){
@@ -649,9 +597,4 @@ public class JDBCStreamTest extends AbstractFullDistribZkTestBase {
     return true;
   }
 
-  @Override
-  protected void indexr(Object... fields) throws Exception {
-    SolrInputDocument doc = getDoc(fields);
-    indexDoc(doc);
-  }
 }
