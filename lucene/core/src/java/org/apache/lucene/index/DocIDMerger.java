@@ -58,7 +58,6 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
     this.subs = subs;
 
     if (indexIsSorted) {
-      // nocommit: we could optimize the (silly) single-sub case and pretend it's a concatenation instead
       queue = new PriorityQueue<T>(maxCount) {
         @Override
         protected boolean lessThan(Sub a, Sub b) {
@@ -74,7 +73,6 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
     reset();
   }
 
-  // nocommit it's awkward that we must pass in this boolean, when the subs should "know" this based on what docMap they have?
   public DocIDMerger(List<T> subs, boolean indexIsSorted) {
     this(subs, subs.size(), indexIsSorted);
   }
@@ -82,9 +80,8 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
   /** Reuse API, currently only used by postings during merge */
   public void reset() {
     if (queue != null) {
+      // caller may not have fully consumed the queue:
       queue.clear();
-      // nocommit why does bloom filter wrapper trip this?
-      // assert queue.size() == 0: "queue.size() = " + queue.size();
       for(T sub : subs) {
         while (true) {
           int docID = sub.nextDoc();
@@ -105,14 +102,12 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
         }
       }
       first = true;
+    } else if (subs.size() > 0) {
+      current = subs.get(0);
+      nextIndex = 1;
     } else {
-      if (subs.size() > 0) {
-        current = subs.get(0);
-        nextIndex = 1;
-      } else {
-        current = null;
-        nextIndex = 0;
-      }
+      current = null;
+      nextIndex = 0;
     }
   }
 

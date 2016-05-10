@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -147,18 +148,34 @@ public class TestDocIDMerger extends LuceneTestCase {
     }
     assertEquals(0, oldToNew.size());
 
+    // sometimes do some deletions:
+    final FixedBitSet liveDocs;
+    if (random().nextBoolean()) {
+      liveDocs = new FixedBitSet(totDocCount);
+      liveDocs.set(0, totDocCount);
+      int deleteAttemptCount = TestUtil.nextInt(random(), 1, totDocCount);
+      for(int i=0;i<deleteAttemptCount;i++) {
+        liveDocs.clear(random().nextInt(totDocCount));
+      }
+    } else {
+      liveDocs = null;
+    }
+
     List<TestSubSorted> subs = new ArrayList<>();
     for(int i=0;i<subCount;i++) {
       final int[] docMap = completedSubs.get(i);
       subs.add(new TestSubSorted(new MergeState.DocMap() {
           @Override
           public int get(int docID) {
-            return docMap[docID];
+            int mapped = docMap[docID];
+            if (liveDocs == null || liveDocs.get(mapped)) {
+              return mapped;
+            } else {
+              return -1;
+            }
           }
         }, docMap.length, i));
     }
-
-    // nocommit test w/ deletions too
 
     DocIDMerger<TestSubSorted> merger = new DocIDMerger<>(subs, true);
 
@@ -168,12 +185,21 @@ public class TestDocIDMerger extends LuceneTestCase {
       if (sub == null) {
         break;
       }
+      if (liveDocs != null) {
+        count = liveDocs.nextSetBit(count);
+      }
       assertEquals(count, sub.mappedDocID);
       count++;
     }
 
-    assertEquals(totDocCount, count);
+    if (liveDocs != null) {
+      if (count < totDocCount) {
+        assertEquals(NO_MORE_DOCS, liveDocs.nextSetBit(count));
+      } else {
+        assertEquals(totDocCount, count);
+      }
+    } else {
+      assertEquals(totDocCount, count);
+    }
   }
-
-  // nocommit more tests, e.g. deleted docs
 }

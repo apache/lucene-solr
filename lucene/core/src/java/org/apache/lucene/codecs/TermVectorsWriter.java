@@ -203,7 +203,6 @@ public abstract class TermVectorsWriter implements Closeable {
       if (reader != null) {
         reader.checkIntegrity();
       }
-      // nocommit make sure the else case tested here
       subs.add(new TermVectorsMergeSub(mergeState.docMaps[i], reader, mergeState.maxDocs[i]));
     }
 

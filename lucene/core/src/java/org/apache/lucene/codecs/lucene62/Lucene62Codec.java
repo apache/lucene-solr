@@ -41,8 +41,6 @@ import org.apache.lucene.codecs.lucene60.Lucene60PointsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
-// nocommit if somehow this does NOT land in 6.2, rename all this!!
-
 /**
  * Implements the Lucene 6.2 index format, with configurable per-field postings
  * and docvalues formats.

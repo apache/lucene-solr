@@ -65,8 +65,6 @@ public class MultiReader extends BaseCompositeReader<IndexReader> {
     }
   }
 
-  // nocommit what if there is an indexSort?
-
   @Override
   protected synchronized void doClose() throws IOException {
     IOException ioe = null;
