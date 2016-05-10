@@ -210,7 +210,7 @@ public final class DocValues {
                                         (expected.length == 1 
                                         ? "(expected=" + expected[0]
                                         : "(expected one of " + Arrays.toString(expected)) + "). " +
-                                        " Re-index with correct docvalues type.");
+                                        "Re-index with correct docvalues type.");
     }
   }
   
