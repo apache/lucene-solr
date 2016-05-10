@@ -107,10 +107,11 @@ public class ParallelLeafReader extends LeafReader {
 
     // build FieldInfos and fieldToReader map:
     for (final LeafReader reader : this.parallelReaders) {
+      Sort leafIndexSort = reader.getIndexSort();
       if (indexSort == null) {
-        indexSort = reader.getIndexSort();
-      } else if (indexSort.equals(reader.getIndexSort()) == false) {
-        throw new IllegalArgumentException("cannot combine LeafReaders that have different index sorts: saw both sort=" + indexSort + " and " + reader.getIndexSort());
+        indexSort = leafIndexSort;
+      } else if (leafIndexSort != null && indexSort.equals(leafIndexSort) == false) {
+        throw new IllegalArgumentException("cannot combine LeafReaders that have different index sorts: saw both sort=" + indexSort + " and " + leafIndexSort);
       }
 
       final FieldInfos readerFieldInfos = reader.getFieldInfos();
