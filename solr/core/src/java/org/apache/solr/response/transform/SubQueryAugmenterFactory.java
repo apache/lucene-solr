@@ -48,7 +48,7 @@ import org.apache.solr.search.TermsQParserPlugin;
 
 /**
  *
- * This transformer executes subquery per every result document. It must be be given uniq name. 
+ * This transformer executes subquery per every result document. It must be given an unique name. 
  * There might be a few of them, eg <code>fl=*,foo:[subquery],bar:[subquery]</code>. 
  * Every [subquery] occurrence adds a field into a result document with the given name, 
  * the value of this field is a document list, which is a result of executing subquery using 
@@ -59,19 +59,19 @@ import org.apache.solr.search.TermsQParserPlugin;
  * are prefixed with the given name and period. eg <br>
  * <code>q=*:*&amp;fl=*,foo:[subquery]&amp;foo.q=to be continued&amp;foo.rows=10&amp;foo.sort=id desc</code>
  * 
- * <h3>Document field as an input param for subquery</h3>
+ * <h3>Document Field As An Input For Subquery Parameters</h3>
  * 
- * It's necessary to pass some document field value as a parametr for subquery. It's supported via 
- * implicit <code>row.<i>fieldname</i></code> parameter, and can be (but might not only) referred via
+ * It's necessary to pass some document field value as a parameter for subquery. It's supported via 
+ * implicit <code>row.<i>fieldname</i></code> parameters, and can be (but might not only) referred via
  *  Local Parameters syntax.<br>
  * <code>q=namne:john&amp;fl=name,id,depts:[subquery]&amp;depts.q={!terms f=id v=$row.dept_id}&amp;depts.rows=10</code>
- * Here departmens are retrieved per every employee in search result. We can say that it's like SQL
+ * Here departments are retrieved per every employee in search result. We can say that it's like SQL
  * <code> join ON emp.dept_id=dept.id </code><br>
  * Note, when document field has multiple values they are concatenated with comma by default, it can be changed by
  * <code>foo:[subquery separator=' ']</code> local parameter, this mimics {@link TermsQParserPlugin} to work smoothly with.
  * 
- * <h3>Cores and Collections in Cloud</h3>
- * use <code>foo:[subquery fromIndex=departments]</code> invoke subquery on another core on this node, it's like
+ * <h3>Cores And Collections In SolrCloud</h3>
+ * use <code>foo:[subquery fromIndex=departments]</code> invoke subquery on another core on the same node, it's like
  *  {@link JoinQParserPlugin} for non SolrCloud mode. <b>But for SolrCloud</b> just (and only) <b>explicitly specify</b> 
  * its' native parameters like <code>collection, shards</code> for subquery, eg<br>
  *  <code>q=*:*&amp;fl=*,foo:[subquery]&amp;foo.q=cloud&amp;foo.collection=departments</code>
