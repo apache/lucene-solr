@@ -90,8 +90,6 @@ public class TestEarlyTerminatingSortingCollector extends LuceneTestCase {
     }
     iwc.setMergeScheduler(new SerialMergeScheduler()); // for reproducible tests
     iwc.setIndexSort(sort);
-    // nocommit:
-    iwc.setCodec(Codec.forName("SimpleText"));
     iw = new RandomIndexWriter(new Random(seed), dir, iwc);
     iw.setDoRandomForceMerge(false); // don't do this, it may happen anyway with MockRandomMP
     for (int i = 0; i < numDocs; ++i) {

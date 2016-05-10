@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.index;
 
-// nocommit must add sorted indices to back compat tests
-
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -2490,15 +2488,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    * @throws IllegalArgumentException if addIndexes would cause
-   *   the index to exceed {@link #MAX_DOCS}
+   *   the index to exceed {@link #MAX_DOCS}, or if the indoming
+   *   index sort does not match this index's index sort
    */
-  // nocommit doesn't support index sorting?  or sorts must be the same?
   public void addIndexes(Directory... dirs) throws IOException {
     ensureOpen();
 
     noDupDirs(dirs);
 
     List<Lock> locks = acquireWriteLocks(dirs);
+
+    Sort indexSort = config.getIndexSort();
 
     boolean successTop = false;
 
@@ -2531,6 +2531,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         for (SegmentInfos sis : commits) {
           for (SegmentCommitInfo info : sis) {
             assert !infos.contains(info): "dup info dir=" + info.info.dir + " name=" + info.info.name;
+
+            Sort segmentIndexSort = info.info.getIndexSort();
+
+            if (indexSort != null && segmentIndexSort != null && indexSort.equals(segmentIndexSort) == false) {
+              // TODO: we could make this smarter, e.g. if the incoming indexSort is congruent with our sort ("starts with") then it's OK
+              throw new IllegalArgumentException("cannot change index sort from " + segmentIndexSort + " to " + indexSort);
+            }
 
             String newSegName = newSegmentName();
 
@@ -2622,12 +2629,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IllegalArgumentException
    *           if addIndexes would cause the index to exceed {@link #MAX_DOCS}
    */
-  // nocommit make sure if you add "sorted by X" to "sorted by Y" index, we catch it
   public void addIndexes(CodecReader... readers) throws IOException {
     ensureOpen();
 
     // long so we can detect int overflow:
     long numDocs = 0;
+
+    Sort indexSort = config.getIndexSort();
 
     try {
       if (infoStream.isEnabled("IW")) {
@@ -2638,6 +2646,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       String mergedName = newSegmentName();
       for (CodecReader leaf : readers) {
         numDocs += leaf.numDocs();
+        Sort leafIndexSort = leaf.getIndexSort();
+        if (indexSort != null && leafIndexSort != null && indexSort.equals(leafIndexSort) == false) {
+          throw new IllegalArgumentException("cannot change index sort from " + leafIndexSort + " to " + indexSort);
+        }
       }
       
       // Best-effort up front check:

@@ -42,8 +42,8 @@ public class MergeState {
   /** Maps document IDs from old segments to document IDs in the new segment */
   public final DocMap[] docMaps;
 
-  // nocommit can we somehow not need to expose this?  should IW's reader pool always sort on load...?
-  public final DocMap[] leafDocMaps;
+  // Only used by IW when it must remap deletes that arrived against the merging segmetns while a merge was running:
+  final DocMap[] leafDocMaps;
 
   /** {@link SegmentInfo} of the newly merged segment. */
   public final SegmentInfo segmentInfo;
@@ -83,6 +83,8 @@ public class MergeState {
 
   /** Sole constructor. */
   MergeState(List<CodecReader> originalReaders, SegmentInfo segmentInfo, InfoStream infoStream) throws IOException {
+
+    this.infoStream = infoStream;
 
     final Sort indexSort = segmentInfo.getIndexSort();
     int numReaders = originalReaders.size();
@@ -138,7 +140,6 @@ public class MergeState {
     segmentInfo.setMaxDoc(numDocs);
 
     this.segmentInfo = segmentInfo;
-    this.infoStream = infoStream;
     this.docMaps = buildDocMaps(readers, indexSort);
   }
 
@@ -219,6 +220,9 @@ public class MergeState {
         // This segment was written by flush, so documents are not yet sorted, so we sort them now:
         Sorter.DocMap sortDocMap = sorter.sort(leaf);
         if (sortDocMap != null) {
+          if (infoStream.isEnabled("SM")) {
+            infoStream.message("SM", "segment " + leaf + " is not sorted; wrapping for sort " + indexSort + " now");
+          }
           leaf = SlowCodecReaderWrapper.wrap(SortingLeafReader.wrap(new MergeReaderWrapper(leaf), sortDocMap));
           leafDocMaps[readers.size()] = new DocMap() {
               @Override
@@ -226,10 +230,19 @@ public class MergeState {
                 return sortDocMap.oldToNew(docID);
               }
             };
+        } else {
+          if (infoStream.isEnabled("SM")) {
+            infoStream.message("SM", "segment " + leaf + " is not sorted, but is already accidentally in sort " + indexSort + " order");
+          }
         }
 
-      } else if (segmentSort.equals(indexSort) == false) {
-        throw new IllegalArgumentException("index sort mismatch: merged segment has sort=" + indexSort + " but to-be-merged segment has sort=" + segmentSort);
+      } else {
+        if (segmentSort.equals(indexSort) == false) {
+          throw new IllegalArgumentException("index sort mismatch: merged segment has sort=" + indexSort + " but to-be-merged segment has sort=" + segmentSort);
+        }
+        if (infoStream.isEnabled("SM")) {
+          infoStream.message("SM", "segment " + leaf + " already sorted");
+        }
       }
 
       readers.add(leaf);

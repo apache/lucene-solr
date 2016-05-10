@@ -48,8 +48,6 @@ final class SegmentMerger {
   final MergeState mergeState;
   private final FieldInfos.Builder fieldInfosBuilder;
 
-  // nocommit make sure infoStream states per-segment-being-merged if they are already sorted
-
   // note, just like in codec apis Directory 'dir' is NOT the same as segmentInfo.dir!!
   SegmentMerger(List<CodecReader> readers, SegmentInfo segmentInfo, InfoStream infoStream, Directory dir,
                 FieldInfos.FieldNumbers fieldNumbers, IOContext context) throws IOException {

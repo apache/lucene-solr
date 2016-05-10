@@ -47,6 +47,7 @@ import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
@@ -77,15 +78,6 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-// nocommit test tie break
-// nocommit test multiple sorts
-// nocommit test update dvs
-// nocommit test missing value
-
-// nocommit test EarlyTerminatingCollector
-
-// nocommit must test all supported SortField.Type
 
 public class TestIndexSorting extends LuceneTestCase {
 
@@ -881,8 +873,13 @@ public class TestIndexSorting extends LuceneTestCase {
     dir.close();
   }
 
-  public void testAddIndexes(boolean withDeletes) throws Exception {
+  public void testAddIndexes(boolean withDeletes, boolean useReaders) throws Exception {
     Directory dir = newDirectory();
+    Sort indexSort = new Sort(new SortField("foo", SortField.Type.LONG));
+    IndexWriterConfig iwc1 = newIndexWriterConfig();
+    if (random().nextBoolean()) {
+      iwc1.setIndexSort(indexSort);
+    }
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     final int numDocs = atLeast(100);
     for (int i = 0; i < numDocs; ++i) {
@@ -896,19 +893,26 @@ public class TestIndexSorting extends LuceneTestCase {
         w.deleteDocuments(new Term("id", Integer.toString(i)));
       }
     }
+    if (random().nextBoolean()) {
+      w.forceMerge(1);
+    }
     final IndexReader reader = w.getReader();
+    w.close();
 
     Directory dir2 = newDirectory();
     IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
-    Sort indexSort = new Sort(new SortField("foo", SortField.Type.LONG));
     iwc.setIndexSort(indexSort);
     IndexWriter w2 = new IndexWriter(dir2, iwc);
 
-    CodecReader[] codecReaders = new CodecReader[reader.leaves().size()];
-    for (int i = 0; i < codecReaders.length; ++i) {
-      codecReaders[i] = (CodecReader) reader.leaves().get(i).reader();
+    if (useReaders) {
+      CodecReader[] codecReaders = new CodecReader[reader.leaves().size()];
+      for (int i = 0; i < codecReaders.length; ++i) {
+        codecReaders[i] = (CodecReader) reader.leaves().get(i).reader();
+      }
+      w2.addIndexes(codecReaders);
+    } else {
+      w2.addIndexes(dir);
     }
-    w2.addIndexes(codecReaders);
     final IndexReader reader2 = w2.getReader();
     final IndexSearcher searcher = newSearcher(reader);
     final IndexSearcher searcher2 = newSearcher(reader2);
@@ -924,15 +928,23 @@ public class TestIndexSorting extends LuceneTestCase {
       }
     }
 
-    IOUtils.close(reader, reader2, w, w2, dir, dir2);
+    IOUtils.close(reader, reader2, w2, dir, dir2);
   }
 
   public void testAddIndexes() throws Exception {
-    testAddIndexes(false);
+    testAddIndexes(false, true);
   }
 
   public void testAddIndexesWithDeletions() throws Exception {
-    testAddIndexes(true);
+    testAddIndexes(true, true);
+  }
+
+  public void testAddIndexesWithDirectory() throws Exception {
+    testAddIndexes(false, false);
+  }
+
+  public void testAddIndexesWithDeletionsAndDirectory() throws Exception {
+    testAddIndexes(true, false);
   }
 
   public void testBadSort() throws Exception {
@@ -1126,7 +1138,6 @@ public class TestIndexSorting extends LuceneTestCase {
     public final float floatValue;
     public final double doubleValue;
     public final byte[] bytesValue;
-    // nocommit postings, points, term vectors
 
     public RandomDoc(int id) {
       this.id = id;
@@ -1194,7 +1205,7 @@ public class TestIndexSorting extends LuceneTestCase {
     if (TEST_NIGHTLY) {
       numDocs = atLeast(100000);
     } else {
-      numDocs = atLeast(1000);
+      numDocs = atLeast(10000);
     }
     List<RandomDoc> docs = new ArrayList<>();
 
@@ -1308,5 +1319,40 @@ public class TestIndexSorting extends LuceneTestCase {
     }
 
     IOUtils.close(r1, r2, w1, w2, dir1, dir2);
+  }
+
+  public void testTieBreak() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    iwc.setIndexSort(new Sort(new SortField("foo", SortField.Type.STRING)));
+    iwc.setMergePolicy(newLogMergePolicy());
+    IndexWriter w = new IndexWriter(dir, iwc);
+    for(int id=0;id<1000;id++) {
+      Document doc = new Document();
+      doc.add(new StoredField("id", id));
+      String value;
+      if (id < 500) {
+        value = "bar2";
+      } else {
+        value = "bar1";
+      }
+      doc.add(new SortedDocValuesField("foo", new BytesRef(value)));
+      w.addDocument(doc);
+      if (id == 500) {
+        w.commit();
+      }
+    }
+    w.forceMerge(1);
+    DirectoryReader r = DirectoryReader.open(w);
+    for(int docID=0;docID<1000;docID++) {
+      int expectedID;
+      if (docID < 500) {
+        expectedID = 500 + docID;
+      } else {
+        expectedID = docID - 500;
+      }
+      assertEquals(expectedID, r.document(docID).getField("id").numericValue().intValue());
+    }
+    IOUtils.close(r, w, dir);
   }
 }
