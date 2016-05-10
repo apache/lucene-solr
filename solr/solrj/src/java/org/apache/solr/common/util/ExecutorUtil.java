@@ -146,8 +146,18 @@ public class ExecutorUtil {
             threadFactory);
   }
 
+  /**
+   * Create a single thread executor using a named thread factory
+   */
   public static ExecutorService newMDCAwareSingleThreadExecutor(String name) {
     return newMDCAwareSingleThreadExecutor(new SolrjNamedThreadFactory(name));
+  }
+
+  /**
+   * Create a cached thread pool using a named thread factory
+   */
+  public static ExecutorService newMDCAwareCachedThreadPool(String name) {
+    return newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(name));
   }
 
   /**

@@ -31,11 +31,10 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -141,8 +140,7 @@ public class ZkStateReader implements Closeable {
 
   private ConcurrentHashMap<String, CollectionWatch> collectionWatches = new ConcurrentHashMap<>();
 
-  private final ExecutorService notificationsExecutor = ExecutorUtil.newMDCAwareSingleThreadExecutor("watches");
-  private final BlockingQueue<Notification> notifications = new LinkedBlockingQueue<>();
+  private final ExecutorService notifications = ExecutorUtil.newMDCAwareCachedThreadPool("watches");
 
   private class CollectionWatch {
 
@@ -219,7 +217,6 @@ public class ZkStateReader implements Closeable {
     this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = false;
     this.securityNodeListener = securityNodeListener;
-    this.notificationsExecutor.submit(new NotificationsExecutor());
   }
 
 
@@ -245,7 +242,6 @@ public class ZkStateReader implements Closeable {
     this.configManager = new ZkConfigManager(zkClient);
     this.closeClient = true;
     this.securityNodeListener = null;
-    this.notificationsExecutor.submit(new NotificationsExecutor());
   }
 
   public ZkConfigManager getConfigManager() {
@@ -673,8 +669,8 @@ public class ZkStateReader implements Closeable {
 
   public void close() {
     this.closed  = true;
-    notificationsExecutor.shutdownNow();  // interrupt
-    ExecutorUtil.shutdownAndAwaitTermination(notificationsExecutor);
+    notifications.shutdownNow();  // interrupt
+    ExecutorUtil.shutdownAndAwaitTermination(notifications);
     if (closeClient) {
       zkClient.close();
     }
@@ -1326,7 +1322,14 @@ public class ZkStateReader implements Closeable {
   }
 
   private void notifyStateWatchers(Set<String> liveNodes, String collection, DocCollection collectionState) {
-    notifications.add(new Notification(liveNodes, collection, collectionState));
+    try {
+      notifications.submit(new Notification(liveNodes, collection, collectionState));
+    }
+    catch (RejectedExecutionException e) {
+      if (closed == false) {
+        LOG.error("Couldn't run collection notifications for {}", collection, e);
+      }
+    }
   }
 
   private class Notification implements Runnable {
@@ -1358,21 +1361,4 @@ public class ZkStateReader implements Closeable {
 
   }
 
-  private class NotificationsExecutor implements Runnable {
-    @Override
-    public void run() {
-      while (closed == false && Thread.currentThread().isInterrupted() == false) {
-        try {
-          Notification notification = notifications.take();
-          notification.run();
-        }
-        catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-        }
-        catch (RuntimeException e) {
-          LOG.error("Error running collection watch", e);
-        }
-      }
-    }
-  }
 }
