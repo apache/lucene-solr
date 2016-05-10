@@ -16,14 +16,10 @@
  limitations under the License.
 -->
 <schema name="one_field_no_dynamic_field_unique_key" version="1.1">
-  <types>
-    <fieldType name="string" class="solr.StrField"/>
-    <fieldType name="text" class="solr.TextField">
-      <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
-    </fieldType>
-  </types>
-  <fields>
-    <field name="str" type="string" indexed="true" stored="true"/>
-  </fields>
+  <fieldType name="string" class="solr.StrField"/>
+  <fieldType name="text" class="solr.TextField">
+    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+  </fieldType>
+  <field name="str" type="string" indexed="true" stored="true"/>
   <uniqueKey>str</uniqueKey>
 </schema>

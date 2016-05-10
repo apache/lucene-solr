@@ -16,22 +16,18 @@
  limitations under the License.
 -->
 <schema name="example" version="1.6">
-  <fields>
-    <field name="_version_" type="long" indexed="true" stored="true"/>
-    <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
-    <field name="text" type="text_general" indexed="true" stored="false" multiValued="true"/>
-    <field name="signatureField" type="string" indexed="true" stored="false"/>
-    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
-  </fields>
+  <field name="_version_" type="long" indexed="true" stored="true"/>
+  <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
+  <field name="text" type="text_general" indexed="true" stored="false" multiValued="true"/>
+  <field name="signatureField" type="string" indexed="true" stored="false"/>
+  <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
   <uniqueKey>id</uniqueKey>
-  <types>
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
-    <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100">
-      <analyzer>
-        <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-      </analyzer>
-    </fieldType>
-  </types>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
+  <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
 </schema>

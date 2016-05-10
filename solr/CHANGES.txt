@@ -276,6 +276,9 @@ Other Changes
 * SOLR-8467: CloudSolrStream and FacetStream should take a SolrParams object rather than a 
   Map<String, String> to allow more complex Solr queries to be specified. (Erick Erickson)
 
+* SOLR-9083: Remove all <types> and <fields> from schemas. NOTE: as in the JIRA I left a few in to insure the (no cost)
+  back compat. (Erick Erickson)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

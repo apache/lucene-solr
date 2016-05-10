@@ -17,12 +17,8 @@
 -->
 
 <schema name="test" version="1.6">
-  <types>
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-  </types>
-  <fields>
-    <field name="text" type="string" indexed="true" stored="true"/>
-  </fields>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <field name="text" type="string" indexed="true" stored="true"/>
 
   <!-- This should cause an exception, since the copyField dest contains more than one asterisk -->
   <copyField source="text" dest="*too_many_asterisks*"/>

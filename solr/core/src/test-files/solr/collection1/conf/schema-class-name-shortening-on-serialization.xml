@@ -16,29 +16,25 @@
  limitations under the License.
 -->
 <schema name="test-class-name-shortening-on-serialization" version="1.6">
-  <types>
-    <fieldType name="fullClassNames" class="org.apache.solr.schema.TextField">
-      <analyzer>
-        <charFilter class="org.apache.solr.analysis.MockCharFilterFactory" remainder="0"/>
-        <tokenizer class="org.apache.solr.analysis.MockTokenizerFactory"/>
-        <filter class="org.apache.solr.analysis.MockTokenFilterFactory" stopset="empty"/>
-      </analyzer>
-      <similarity class="org.apache.lucene.misc.SweetSpotSimilarity"/>
-    </fieldType>
-    <fieldType name="shortenedClassNames" class="solr.TextField">
-      <analyzer>
-        <charFilter class="solr.MockCharFilterFactory" remainder="0"/>
-        <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter class="solr.MockTokenFilterFactory" stopset="empty"/>
-      </analyzer>
-      <similarity class="solr.SweetSpotSimilarityFactory"/>
-    </fieldType>
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-  </types>
-  <fields>
-    <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
-    <field name="signatureField" type="string" indexed="true" stored="false"/>
-  </fields>
+  <fieldType name="fullClassNames" class="org.apache.solr.schema.TextField">
+    <analyzer>
+      <charFilter class="org.apache.solr.analysis.MockCharFilterFactory" remainder="0"/>
+      <tokenizer class="org.apache.solr.analysis.MockTokenizerFactory"/>
+      <filter class="org.apache.solr.analysis.MockTokenFilterFactory" stopset="empty"/>
+    </analyzer>
+    <similarity class="org.apache.lucene.misc.SweetSpotSimilarity"/>
+  </fieldType>
+  <fieldType name="shortenedClassNames" class="solr.TextField">
+    <analyzer>
+      <charFilter class="solr.MockCharFilterFactory" remainder="0"/>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.MockTokenFilterFactory" stopset="empty"/>
+    </analyzer>
+    <similarity class="solr.SweetSpotSimilarityFactory"/>
+  </fieldType>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
+  <field name="signatureField" type="string" indexed="true" stored="false"/>
 
   <!--
       Even though SchemaSimilarityFactory is the current implicit default in IndexSchema, we

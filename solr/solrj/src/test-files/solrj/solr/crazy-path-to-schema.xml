@@ -21,8 +21,13 @@
 
   -->
 
+<!--
+See comments from Yonik on SOLR-9083. It costs us nothing to leave these in given the parsing pattern for the schema
+that just finds leaf <fieldType> and <field> nodes and there's no reason to break schemas for people who leave
+<fields> and <types> tags in their schema for no good purpose.
+-->
 <schema name="test" version="1.0">
-  <types>
+  <types>  <!-- Intentionally left in. see comment above -->
     <fieldType name="int" class="solr.TrieIntField" precisionStep="0"/>
     <fieldType name="text" class="solr.TextField">
       <analyzer>
@@ -36,7 +41,7 @@
  </types>
 
 
- <fields>
+ <fields>  <!-- Intentionally left in. see comment above -->
    <field name="id" type="int" indexed="true" stored="true" multiValued="false"/>
    <field name="subject" type="text" indexed="true" stored="true"/>
  </fields>
