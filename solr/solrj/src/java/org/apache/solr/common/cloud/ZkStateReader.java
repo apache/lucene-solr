@@ -88,6 +88,7 @@ public class ZkStateReader implements Closeable {
   public static final String REPLICATION_FACTOR = "replicationFactor";
   public static final String MAX_SHARDS_PER_NODE = "maxShardsPerNode";
   public static final String AUTO_ADD_REPLICAS = "autoAddReplicas";
+  public static final String MAX_CORES_PER_NODE = "maxCoresPerNode";
 
   public static final String ROLES = "/roles.json";
 
@@ -137,7 +138,8 @@ public class ZkStateReader implements Closeable {
       LEGACY_CLOUD,
       URL_SCHEME,
       AUTO_ADD_REPLICAS,
-      BACKUP_LOCATION)));
+      BACKUP_LOCATION,
+      MAX_CORES_PER_NODE)));
 
   /**
    * Returns config set name for collection.
@@ -385,8 +387,8 @@ public class ZkStateReader implements Closeable {
     if (securityNodeListener != null) {
       addSecuritynodeWatcher(pair -> {
         ConfigData cd = new ConfigData();
-        cd.data = pair.getKey() == null || pair.getKey().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.getKey()), 4, false);
-        cd.version = pair.getValue() == null ? -1 : pair.getValue().getVersion();
+        cd.data = pair.first() == null || pair.first().length == 0 ? EMPTY_MAP : Utils.getDeepCopy((Map) fromJSON(pair.first()), 4, false);
+        cd.version = pair.second() == null ? -1 : pair.second().getVersion();
         securityData = cd;
         securityNodeListener.run();
       });

@@ -126,6 +126,15 @@ New Features
 
 * SOLR-8972: Add GraphHandler and GraphMLResponseWriter to support graph visualizations (Joel Bernstein)
 
+* SOLR-9026: Extend facet telemetry support to legacy (non-json) facets under "debug/facet-debug" in
+  the response. (Michael Sun, yonik)
+
+* SOLR-7117: Provide an option to limit the maximum number of cores that can be created on a node by the
+  Auto Add Replica feature. For this you can set a "maxCoresPerNode" property via the Cluster Property API
+  (Varun Thacker, Mark Miller)
+
+* SOLR-8208: [subquery] document transformer executes separate requests per result document. (Cao Manh Dat  via Mikhail Khludnev)
+
 Bug Fixes
 ----------------------
 
@@ -263,6 +272,9 @@ Other Changes
 * SOLR-8184: Negative tests for JDBC Connection String (Susheel Kumar, Jason Gerlowski, Kevin Risden)
 
 * SOLR-8458: Add Streaming Expressions tests for parameter substitution (Joel Bernstein, Cao Manh Dat, Dennis Gove, Kevin Risden)
+
+* SOLR-8467: CloudSolrStream and FacetStream should take a SolrParams object rather than a 
+  Map<String, String> to allow more complex Solr queries to be specified. (Erick Erickson)
 
 ==================  6.0.0 ==================
 

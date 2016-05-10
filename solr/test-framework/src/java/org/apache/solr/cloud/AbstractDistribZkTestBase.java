@@ -70,7 +70,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     System.setProperty(ZOOKEEPER_FORCE_SYNC, "false");
     System.setProperty(MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE, "true");
 
-    String schema = getSchemaFile();
+    String schema = getCloudSchemaFile();
     if (schema == null) schema = "schema.xml";
     AbstractZkTestCase.buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(), getCloudSolrConfig(), schema);
 
@@ -81,6 +81,10 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   
   protected String getCloudSolrConfig() {
     return "solrconfig-tlog.xml";
+  }
+  
+  protected String getCloudSchemaFile() {
+    return getSchemaFile();
   }
   
   @Override
