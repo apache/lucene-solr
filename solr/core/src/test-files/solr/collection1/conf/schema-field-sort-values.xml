@@ -17,25 +17,21 @@
 -->
 
 <schema name="test-custom-comparator" version="1.6">
-  <types>
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-    <fieldType name="text" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.StandardTokenizerFactory"/>
-      </analyzer>
-    </fieldType>
-    <fieldType class="org.apache.solr.schema.WrappedIntField" name="wrapped_int"/>
-  </types>
-  <fields>
-    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
-    <field name="text" type="text" indexed="true" stored="false"/>
-    <field name="payload" type="wrapped_int" indexed="false"
-           stored="true"  multiValued="false"    docValues="true" required="true"/>
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <fieldType name="text" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType class="org.apache.solr.schema.WrappedIntField" name="wrapped_int"/>
+  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
+  <field name="text" type="text" indexed="true" stored="false"/>
+  <field name="payload" type="wrapped_int" indexed="false"
+         stored="true" multiValued="false" docValues="true" required="true"/>
 
-  </fields>
   <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 </schema>

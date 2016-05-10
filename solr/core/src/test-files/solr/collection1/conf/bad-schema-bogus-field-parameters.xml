@@ -17,13 +17,9 @@
 -->
 
 <schema name="bad-schema-bogus-field-parameters" version="1.6">
-  <types>
-    <fieldType name="binary" class="solr.BinaryField" />
- </types>
+  <fieldType name="binary" class="solr.BinaryField"/>
 
 
- <fields>
-   <field name="id" type="binary" someBogusParam="true"/>
- </fields>
+  <field name="id" type="binary" someBogusParam="true"/>
 
 </schema>

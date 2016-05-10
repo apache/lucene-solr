@@ -19,43 +19,43 @@
 <!-- Test schema file for CollationField options -->
 
 <schema name="test" version="1.0">
-  <types>
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
-    <!-- basic text field -->
-    <fieldType name="text" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-      </analyzer>
-    </fieldType>
-    
-    <!-- ignores punctuation and whitespace -->
-    <fieldType name="sort_ignore_punctuation_t" class="solr.ICUCollationField" 
-               locale="en" strength="primary" alternate="shifted"/>
-    <!-- ignores only whitespace -->
-    <fieldType name="sort_ignore_space_t" class="solr.ICUCollationField" 
-               locale="en" strength="primary" alternate="shifted" variableTop=" "/>
-    <!-- ignores only accents, but not case -->
-    <fieldType name="sort_ignore_accents_t" class="solr.ICUCollationField"
-               locale="en" strength="primary" caseLevel="true"/>
-    <!-- sorts numerics in numeric order -->
-    <fieldType name="sort_numerics_t" class="solr.ICUCollationField" 
-               locale="en" numeric="true"/>
-    <!-- sorts uppercase before lowercase -->
-    <fieldType name="sort_uppercase_first_t" class="solr.ICUCollationField" 
-               locale="en" strength="tertiary" caseFirst="upper"/>
-  </types>
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
-  <fields>
-    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="text" type="text" indexed="true" stored="false"/>
-    <field name="sort_ignore_punctuation" type="sort_ignore_punctuation_t" indexed="true" stored="false" multiValued="false"/>
-    <field name="sort_ignore_space"       type="sort_ignore_space_t"       indexed="true" stored="false" multiValued="false"/>
-    <field name="sort_ignore_accents"     type="sort_ignore_accents_t"     indexed="true" stored="false" multiValued="false"/>
-    <field name="sort_numerics"           type="sort_numerics_t"           indexed="true" stored="false" multiValued="false"/>
-    <field name="sort_uppercase_first"    type="sort_uppercase_first_t"    indexed="true" stored="false" multiValued="false"/>
-  </fields>
+  <!-- basic text field -->
+  <fieldType name="text" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
+
+  <!-- ignores punctuation and whitespace -->
+  <fieldType name="sort_ignore_punctuation_t" class="solr.ICUCollationField"
+             locale="en" strength="primary" alternate="shifted"/>
+  <!-- ignores only whitespace -->
+  <fieldType name="sort_ignore_space_t" class="solr.ICUCollationField"
+             locale="en" strength="primary" alternate="shifted" variableTop=" "/>
+  <!-- ignores only accents, but not case -->
+  <fieldType name="sort_ignore_accents_t" class="solr.ICUCollationField"
+             locale="en" strength="primary" caseLevel="true"/>
+  <!-- sorts numerics in numeric order -->
+  <fieldType name="sort_numerics_t" class="solr.ICUCollationField"
+             locale="en" numeric="true"/>
+  <!-- sorts uppercase before lowercase -->
+  <fieldType name="sort_uppercase_first_t" class="solr.ICUCollationField"
+             locale="en" strength="tertiary" caseFirst="upper"/>
+
+
+  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="text" type="text" indexed="true" stored="false"/>
+  <field name="sort_ignore_punctuation" type="sort_ignore_punctuation_t" indexed="true" stored="false"
+         multiValued="false"/>
+  <field name="sort_ignore_space" type="sort_ignore_space_t" indexed="true" stored="false" multiValued="false"/>
+  <field name="sort_ignore_accents" type="sort_ignore_accents_t" indexed="true" stored="false" multiValued="false"/>
+  <field name="sort_numerics" type="sort_numerics_t" indexed="true" stored="false" multiValued="false"/>
+  <field name="sort_uppercase_first" type="sort_uppercase_first_t" indexed="true" stored="false" multiValued="false"/>
+
 
   <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>

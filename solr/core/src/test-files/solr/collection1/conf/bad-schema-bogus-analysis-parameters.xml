@@ -17,16 +17,12 @@
 -->
 
 <schema name="bad-schema-bogus-analysis-parameters" version="1.6">
-  <types>
-    <fieldType name="text" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.StandardTokenizerFactory" bogusArg="bogusValue"/>
-      </analyzer>
-    </fieldType>
- </types>
+  <fieldType name="text" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory" bogusArg="bogusValue"/>
+    </analyzer>
+  </fieldType>
 
- <fields>
-   <field name="id" type="text"/>
- </fields>
+  <field name="id" type="text"/>
 
 </schema>
