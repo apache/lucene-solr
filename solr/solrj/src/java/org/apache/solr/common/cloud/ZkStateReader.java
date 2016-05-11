@@ -513,7 +513,7 @@ public class ZkStateReader implements Closeable {
           ClusterState.CollectionRef ref = this.legacyCollectionStates.get(coll);
           if (ref == null)
             continue;
-          // watched collection, so this will always be local
+          // legacy collections are always in-memory
           DocCollection newState = ref.get();
           if (!collWatch.stateWatchers.isEmpty()
               && !Objects.equals(loadedData.getCollectionStates().get(coll).get(), newState)) {
@@ -669,8 +669,7 @@ public class ZkStateReader implements Closeable {
 
   public void close() {
     this.closed  = true;
-    notifications.shutdownNow();  // interrupt
-    ExecutorUtil.shutdownAndAwaitTermination(notifications);
+    notifications.shutdown();
     if (closeClient) {
       zkClient.close();
     }
@@ -1123,7 +1122,7 @@ public class ZkStateReader implements Closeable {
       v.coreRefCount++;
       return v;
     });
-    if (reconstructState.get()) {
+    if (reconstructState.get() && legacyCollectionStates.containsKey(collection) == false) {
       new StateWatcher(collection).refreshAndWatch();
       synchronized (getUpdateLock()) {
         constructState();
@@ -1180,7 +1179,7 @@ public class ZkStateReader implements Closeable {
       v.stateWatchers.add(stateWatcher);
       return v;
     });
-    if (watchSet.get()) {
+    if (watchSet.get() && legacyCollectionStates.containsKey(collection) == false) {
       new StateWatcher(collection).refreshAndWatch();
       synchronized (getUpdateLock()) {
         constructState();

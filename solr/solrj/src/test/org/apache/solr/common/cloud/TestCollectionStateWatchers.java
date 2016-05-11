@@ -135,7 +135,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   }
 
   @Test
-  public void testCanWatchForNonexistantCollection() throws Exception {
+  public void testCanWaitForNonexistantCollection() throws Exception {
 
     Future<Boolean> future = waitInBackground("delayed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, DocCollection::isFullyActive);
     cluster.createCollection("delayed", 1, 1, "config", new HashMap<>());
