@@ -72,6 +72,8 @@ Bug Fixes
 * SOLR-9058: Makes HashJoinStream and OuterHashJoinStream support different field names in the
   incoming streams, eg. fieldA=fieldB. (Dennis Gove, Stephan Osthold)
 
+* SOLR-9093: Fix NullPointerException in TopGroupsShardResponseProcessor. (Christine Poerschke)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.

@@ -99,7 +99,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
 
         if (srsp.getException() != null) {
           Throwable t = srsp.getException();
-          if (t instanceof SolrServerException) {
+          if (t instanceof SolrServerException && ((SolrServerException) t).getCause() != null) {
             t = ((SolrServerException) t).getCause();
           }
           individualShardInfo.add("error", t.toString());
