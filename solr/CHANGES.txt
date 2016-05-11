@@ -62,6 +62,8 @@ Bug Fixes
 * SOLR-9036: Solr slave is doing full replication (entire index) of index after master restart.
   (Lior Sapir, Mark Miller, shalin)
 
+* SOLR-9093: Fix NullPointerException in TopGroupsShardResponseProcessor. (Christine Poerschke)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes
