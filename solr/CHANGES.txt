@@ -201,6 +201,8 @@ Bug Fixes
 * SOLR-9058: Makes HashJoinStream and OuterHashJoinStream support different field names in the 
   incoming streams, eg. fieldA=fieldB. (Dennis Gove, Stephan Osthold)
 
+* SOLR-9093: Fix NullPointerException in TopGroupsShardResponseProcessor. (Christine Poerschke)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
