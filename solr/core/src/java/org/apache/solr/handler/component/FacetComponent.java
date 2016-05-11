@@ -22,7 +22,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -50,6 +49,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.facet.FacetDebugInfo;
+import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -252,7 +253,16 @@ public class FacetComponent extends SearchComponent {
       SolrParams params = rb.req.getParams();
       SimpleFacets f = new SimpleFacets(rb.req, rb.getResults().docSet, params, rb);
 
-      NamedList<Object> counts = FacetComponent.getFacetCounts(f);
+      RTimer timer = null;
+      FacetDebugInfo fdebug = null;
+
+      if (rb.isDebug()) {
+        fdebug = new FacetDebugInfo();
+        rb.req.getContext().put("FacetDebugInfo-nonJson", fdebug);
+        timer = new RTimer();
+      }
+
+      NamedList<Object> counts = FacetComponent.getFacetCounts(f, fdebug);
       String[] pivots = params.getParams(FacetParams.FACET_PIVOT);
       if (!ArrayUtils.isEmpty(pivots)) {
         PivotFacetProcessor pivotProcessor 
@@ -264,8 +274,17 @@ public class FacetComponent extends SearchComponent {
         }
       }
 
+      if (fdebug != null) {
+        long timeElapsed = (long) timer.getTime();
+        fdebug.setElapse(timeElapsed);
+      }
+
       rb.rsp.add("facet_counts", counts);
     }
+  }
+
+  public static NamedList<Object> getFacetCounts(SimpleFacets simpleFacets) {
+    return getFacetCounts(simpleFacets, null);
   }
 
   /**
@@ -279,7 +298,7 @@ public class FacetComponent extends SearchComponent {
    * @see FacetParams#FACET
    * @return a NamedList of Facet Count info or null
    */
-  public static NamedList<Object> getFacetCounts(SimpleFacets simpleFacets) {
+  public static NamedList<Object> getFacetCounts(SimpleFacets simpleFacets, FacetDebugInfo fdebug) {
     // if someone called this method, benefit of the doubt: assume true
     if (!simpleFacets.getGlobalParams().getBool(FacetParams.FACET, true))
       return null;
@@ -288,7 +307,19 @@ public class FacetComponent extends SearchComponent {
     NamedList<Object> counts = new SimpleOrderedMap<>();
     try {
       counts.add(FACET_QUERY_KEY, simpleFacets.getFacetQueryCounts());
-      counts.add(FACET_FIELD_KEY, simpleFacets.getFacetFieldCounts());
+      if (fdebug != null) {
+        FacetDebugInfo fd = new FacetDebugInfo();
+        fd.putInfoItem("action", "field facet");
+        fd.setProcessor(simpleFacets.getClass().getSimpleName());
+        fdebug.addChild(fd);
+        simpleFacets.setFacetDebugInfo(fd);
+        final RTimer timer = new RTimer();
+        counts.add(FACET_FIELD_KEY, simpleFacets.getFacetFieldCounts());
+        long timeElapsed = (long) timer.getTime();
+        fd.setElapse(timeElapsed);
+      } else {
+        counts.add(FACET_FIELD_KEY, simpleFacets.getFacetFieldCounts());
+      }
       counts.add(FACET_RANGES_KEY, rangeFacetProcessor.getFacetRangeCounts());
       counts.add(FACET_INTERVALS_KEY, simpleFacets.getFacetIntervalCounts());
       counts.add(SpatialHeatmapFacets.RESPONSE_KEY, simpleFacets.getHeatmapCounts());

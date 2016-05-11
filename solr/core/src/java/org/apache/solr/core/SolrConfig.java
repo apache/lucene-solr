@@ -97,7 +97,7 @@ public class SolrConfig extends Config implements MapSerializable {
     REQUIRE_NAME_IN_OVERLAY,
     REQUIRE_CLASS,
     LAZY,
-    // EnumSet.of and/or EnumSet.copyOf(Collection) are anoying
+    // EnumSet.of and/or EnumSet.copyOf(Collection) are annoying
     // because of type determination
     NOOP
   }
@@ -204,7 +204,7 @@ public class SolrConfig extends Config implements MapSerializable {
         true
     );
     assertWarnOrFail("Solr no longer supports forceful unlocking via the 'unlockOnStartup' option.  "+
-                     "This is no longer neccessary for the default lockType except in situations where "+
+                     "This is no longer necessary for the default lockType except in situations where "+
                      "it would be dangerous and should not be done.  For other lockTypes and/or "+
                      "directoryFactory options it may also be dangerous and users must resolve "+
                      "problematic locks manually.",
@@ -317,7 +317,7 @@ public class SolrConfig extends Config implements MapSerializable {
       .add(new SolrPluginInfo(SearchComponent.class, "searchComponent", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
       .add(new SolrPluginInfo(UpdateRequestProcessorFactory.class, "updateProcessor", REQUIRE_NAME, REQUIRE_CLASS, MULTI_OK))
           // TODO: WTF is up with queryConverter???
-          // it aparently *only* works as a singleton? - SOLR-4304
+          // it apparently *only* works as a singleton? - SOLR-4304
           // and even then -- only if there is a single SpellCheckComponent
           // because of queryConverter.setIndexAnalyzer
       .add(new SolrPluginInfo(QueryConverter.class, "queryConverter", REQUIRE_NAME, REQUIRE_CLASS))

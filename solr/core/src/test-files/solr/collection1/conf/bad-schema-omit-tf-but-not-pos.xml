@@ -17,25 +17,20 @@
 -->
 
 <schema name="bad-schema-omit-tf-but-not-pos" version="1.0">
-  <types>
-    <fieldType name="string" class="solr.StrField"/>
- </types>
+  <fieldType name="string" class="solr.StrField"/>
 
- <fields>
-   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-   
-   <field name="signatureField" type="string" indexed="true" stored="false"/>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
-   <!-- BEGIN BAD STUFF -->
-   <field name="bad_field" type="string" indexed="true" 
-          omitTermFreqAndPositions="true" omitPositions="false" />
-   <!-- END BAD STUFF -->
+  <field name="signatureField" type="string" indexed="true" stored="false"/>
 
-   <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
+  <!-- BEGIN BAD STUFF -->
+  <field name="bad_field" type="string" indexed="true"
+         omitTermFreqAndPositions="true" omitPositions="false"/>
+  <!-- END BAD STUFF -->
 
- </fields>
+  <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
 
- <defaultSearchField>id</defaultSearchField>
- <uniqueKey>id</uniqueKey>
+  <defaultSearchField>id</defaultSearchField>
+  <uniqueKey>id</uniqueKey>
 
 </schema>

@@ -16,6 +16,24 @@
  */
 package org.apache.solr.request;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.LeafReader;
@@ -49,7 +67,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SpatialHeatmapFacets;
 import org.apache.solr.request.IntervalFacets.FacetInterval;
@@ -69,28 +86,12 @@ import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortedIntDocSet;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.facet.FacetDebugInfo;
 import org.apache.solr.search.facet.FacetProcessor;
 import org.apache.solr.search.grouping.GroupingSpecification;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.DefaultSolrThreadFactory;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RunnableFuture;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.TimeUnit;
+import org.apache.solr.util.RTimer;
 
 /**
  * A class that generates simple Facet information for a request.
@@ -108,6 +109,9 @@ public class SimpleFacets {
   protected final SolrIndexSearcher searcher;
   protected final SolrQueryRequest req;
   protected final ResponseBuilder rb;
+
+  protected FacetDebugInfo fdebugParent;
+  protected FacetDebugInfo fdebug;
 
   // per-facet values
   protected final static class ParsedParams {
@@ -158,6 +162,10 @@ public class SimpleFacets {
     this.docsOrig = docs;
     this.global = params;
     this.rb = rb;
+  }
+
+  public void setFacetDebugInfo(FacetDebugInfo fdebugParent) {
+    this.fdebugParent = fdebugParent;
   }
 
   /**
@@ -450,6 +458,14 @@ public class SimpleFacets {
       method = FacetMethod.FC;
     }
 
+    RTimer timer = null;
+    if (fdebug != null) {
+       fdebug.putInfoItem("method", method.name());
+       fdebug.putInfoItem("inputDocSetSize", docs.size());
+       fdebug.putInfoItem("field", field);
+       timer = new RTimer();
+    }
+
     if (params.getFieldBool(field, GroupParams.GROUP_FACET, false)) {
       counts = getGroupedCounts(searcher, docs, field, multiToken, offset,limit, mincount, missing, sort, prefix, contains, ignoreCase);
     } else {
@@ -535,11 +551,16 @@ public class SimpleFacets {
             }
           break;
         case FC:
-          counts = DocValuesFacets.getCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix, contains, ignoreCase);
+          counts = DocValuesFacets.getCounts(searcher, docs, field, offset,limit, mincount, missing, sort, prefix, contains, ignoreCase, fdebug);
           break;
         default:
           throw new AssertionError();
       }
+    }
+
+    if (fdebug != null) {
+      long timeElapsed = (long) timer.getTime();
+      fdebug.setElapse(timeElapsed);
     }
 
     return counts;
@@ -654,9 +675,17 @@ public class SimpleFacets {
     final Semaphore semaphore = new Semaphore((maxThreads <= 0) ? Integer.MAX_VALUE : maxThreads);
     List<Future<NamedList>> futures = new ArrayList<>(facetFs.length);
 
+    if (fdebugParent != null) {
+      fdebugParent.putInfoItem("maxThreads", maxThreads);
+    }
+
     try {
       //Loop over fields; submit to executor, keeping the future
       for (String f : facetFs) {
+        if (fdebugParent != null) {
+          fdebug = new FacetDebugInfo();
+          fdebugParent.addChild(fdebug);
+        }
         final ParsedParams parsed = parseParams(FacetParams.FACET_FIELD, f);
         final SolrParams localParams = parsed.localParams;
         final String termList = localParams == null ? null : localParams.get(CommonParams.TERMS);

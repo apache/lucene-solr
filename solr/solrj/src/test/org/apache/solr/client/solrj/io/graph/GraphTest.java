@@ -29,11 +29,13 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.StreamingTest;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.params.SolrParams;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -100,8 +102,7 @@ public class GraphTest extends SolrCloudTestCase {
     SolrClientCache cache = new SolrClientCache();
     context.setSolrClientCache(cache);
 
-    Map params = new HashMap();
-    params.put("fq", "predicate_s:knows");
+    SolrParams sParams = StreamingTest.mapParams("fq", "predicate_s:knows");
 
     stream = new ShortestPathStream(zkHost,
                                                        "collection1",
@@ -109,7 +110,7 @@ public class GraphTest extends SolrCloudTestCase {
                                                        "steve",
                                                         "from_s",
                                                         "to_s",
-                                                        params,
+                                                        sParams,
                                                         20,
                                                         3,
                                                         6);
@@ -131,7 +132,7 @@ public class GraphTest extends SolrCloudTestCase {
 
     //Test with batch size of 1
 
-    params.put("fq", "predicate_s:knows");
+    sParams = StreamingTest.mapParams("fq", "predicate_s:knows");
 
     stream = new ShortestPathStream(zkHost,
         "collection1",
@@ -139,7 +140,7 @@ public class GraphTest extends SolrCloudTestCase {
         "steve",
         "from_s",
         "to_s",
-        params,
+        sParams,
         1,
         3,
         6);
@@ -159,7 +160,7 @@ public class GraphTest extends SolrCloudTestCase {
 
     //Test with bad predicate
 
-    params.put("fq", "predicate_s:crap");
+    sParams = StreamingTest.mapParams("fq", "predicate_s:crap");
 
     stream = new ShortestPathStream(zkHost,
         "collection1",
@@ -167,7 +168,7 @@ public class GraphTest extends SolrCloudTestCase {
         "steve",
         "from_s",
         "to_s",
-        params,
+        sParams,
         1,
         3,
         6);
@@ -180,7 +181,7 @@ public class GraphTest extends SolrCloudTestCase {
 
     //Test with depth 2
 
-    params.put("fq", "predicate_s:knows");
+    sParams = StreamingTest.mapParams("fq", "predicate_s:knows");
 
     stream = new ShortestPathStream(zkHost,
         "collection1",
@@ -188,7 +189,7 @@ public class GraphTest extends SolrCloudTestCase {
         "steve",
         "from_s",
         "to_s",
-        params,
+        sParams,
         1,
         3,
         2);
@@ -202,7 +203,7 @@ public class GraphTest extends SolrCloudTestCase {
 
 
     //Take out alex
-    params.put("fq", "predicate_s:knows NOT to_s:alex");
+    sParams = StreamingTest.mapParams("fq", "predicate_s:knows NOT to_s:alex");
 
     stream = new ShortestPathStream(zkHost,
         "collection1",
@@ -210,7 +211,7 @@ public class GraphTest extends SolrCloudTestCase {
         "steve",
         "from_s",
         "to_s",
-        params,
+        sParams,
         10,
         3,
         6);

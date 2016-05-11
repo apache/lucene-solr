@@ -33,18 +33,17 @@
        1.0: multiValued attribute did not exist, all fields are multiValued by nature
        1.1: multiValued attribute introduced, false by default -->
 
-  <types>
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
 
-    <fieldType name="text" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.StandardFilterFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.StopFilterFactory"/>
-        <filter class="solr.PorterStemFilterFactory"/>
-      </analyzer>
-    </fieldType>
+  <fieldType name="text" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.StandardFilterFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.StopFilterFactory"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+    </analyzer>
+  </fieldType>
 
   <fieldType name="spellText" class="solr.TextField" positionIncrementGap="100">
     <analyzer type="index">
@@ -61,27 +60,22 @@
       <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
     </analyzer>
   </fieldType>
-  
- </types>
 
+  <field name="id" type="string" indexed="true" stored="true"/>
+  <field name="spell" type="spellText" indexed="true" stored="true"/>
+  <field name="suggest" type="spellText" indexed="true" stored="true"/>
+  <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
 
- <fields>
-   <field name="id" type="string" indexed="true" stored="true"/>
-   <field name="spell" type="spellText" indexed="true" stored="true" />
-   <field name="suggest" type="spellText" indexed="true" stored="true" />
-   <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
- </fields>
+  <copyField source="text" dest="spell"/>
+  <copyField source="text" dest="suggest"/>
 
- <copyField source="text" dest="spell"/>
- <copyField source="text" dest="suggest"/>
+  <!-- field to use to determine and enforce document uniqueness. -->
+  <uniqueKey>id</uniqueKey>
 
- <!-- field to use to determine and enforce document uniqueness. -->
- <uniqueKey>id</uniqueKey>
+  <!-- field for the QueryParser to use when an explicit fieldname is absent -->
+  <defaultSearchField>text</defaultSearchField>
 
- <!-- field for the QueryParser to use when an explicit fieldname is absent -->
- <defaultSearchField>text</defaultSearchField>
-
- <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
- <solrQueryParser defaultOperator="OR"/>
+  <!-- SolrQueryParser configuration: defaultOperator="AND|OR" -->
+  <solrQueryParser defaultOperator="OR"/>
 
 </schema>

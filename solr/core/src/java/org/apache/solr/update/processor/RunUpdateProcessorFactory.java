@@ -26,7 +26,7 @@ import org.apache.solr.update.*;
 
 /**
  * Executes the update commands using the underlying UpdateHandler.
- * Allmost all processor chains should end with an instance of 
+ * Almost all processor chains should end with an instance of 
  * <code>RunUpdateProcessorFactory</code> unless the user is explicitly 
  * executing the update commands in an alternative custom 
  * <code>UpdateRequestProcessorFactory</code>

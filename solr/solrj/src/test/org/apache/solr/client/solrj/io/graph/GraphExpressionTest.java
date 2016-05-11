@@ -18,6 +18,8 @@ package org.apache.solr.client.solrj.io.graph;
  */
 
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -28,6 +30,10 @@ import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.ComparatorOrder;
@@ -43,9 +49,12 @@ import org.apache.solr.client.solrj.io.stream.metrics.MeanMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -266,8 +275,8 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .withFunctionName("max", MaxMetric.class);
 
     String expr = "gatherNodes(collection1, " +
-                               "walk=\"product1->product_s\"," +
-                               "gather=\"basket_s\")";
+        "walk=\"product1->product_s\"," +
+        "gather=\"basket_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
     stream.setStreamContext(context);
@@ -284,9 +293,9 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     //Test maxDocFreq param
     String docFreqExpr = "gatherNodes(collection1, " +
-                         "walk=\"product1, product7->product_s\"," +
-                         "maxDocFreq=\"2\","+
-                         "gather=\"basket_s\")";
+        "walk=\"product1, product7->product_s\"," +
+        "maxDocFreq=\"2\","+
+        "gather=\"basket_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(docFreqExpr);
     stream.setStreamContext(context);
@@ -299,9 +308,9 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
 
     String expr2 = "gatherNodes(collection1, " +
-                                 expr+","+
-                                "walk=\"node->basket_s\"," +
-                                "gather=\"product_s\", count(*), avg(price_f), sum(price_f), min(price_f), max(price_f))";
+        expr+","+
+        "walk=\"node->basket_s\"," +
+        "gather=\"product_s\", count(*), avg(price_f), sum(price_f), min(price_f), max(price_f))";
 
     stream = (GatherNodesStream)factory.constructStream(expr2);
 
@@ -338,8 +347,8 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
     //Test list of root nodes
     expr = "gatherNodes(collection1, " +
-           "walk=\"product4, product7->product_s\"," +
-           "gather=\"basket_s\")";
+        "walk=\"product4, product7->product_s\"," +
+        "gather=\"basket_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
 
@@ -356,8 +365,8 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     //Test with negative filter query
 
     expr = "gatherNodes(collection1, " +
-                        "walk=\"product4, product7->product_s\"," +
-                        "gather=\"basket_s\", fq=\"-basket_s:basket4\")";
+        "walk=\"product4, product7->product_s\"," +
+        "gather=\"basket_s\", fq=\"-basket_s:basket4\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
 
@@ -388,7 +397,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), COLLECTION);
 
     List<Tuple> tuples = null;
-    Set<String> paths = null;
     GatherNodesStream stream = null;
     StreamContext context = new StreamContext();
     SolrClientCache cache = new SolrClientCache();
@@ -406,8 +414,8 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .withFunctionName("max", MaxMetric.class);
 
     String expr = "gatherNodes(collection1, " +
-                               "walk=\"bill->from_s\"," +
-                               "gather=\"to_s\")";
+        "walk=\"bill->from_s\"," +
+        "gather=\"to_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
     stream.setStreamContext(context);
@@ -423,9 +431,9 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     //Test scatter branches, leaves and trackTraversal
 
     expr = "gatherNodes(collection1, " +
-           "walk=\"bill->from_s\"," +
-           "gather=\"to_s\","+
-           "scatter=\"branches, leaves\", trackTraversal=\"true\")";
+        "walk=\"bill->from_s\"," +
+        "gather=\"to_s\","+
+        "scatter=\"branches, leaves\", trackTraversal=\"true\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
     context = new StreamContext();
@@ -461,9 +469,9 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     // Test query root
 
     expr = "gatherNodes(collection1, " +
-           "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
-           "walk=\"from_s->from_s\"," +
-           "gather=\"to_s\")";
+        "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
+        "walk=\"from_s->from_s\"," +
+        "gather=\"to_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
     context = new StreamContext();
@@ -482,9 +490,9 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     // Test query root scatter branches
 
     expr = "gatherNodes(collection1, " +
-           "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
-           "walk=\"from_s->from_s\"," +
-           "gather=\"to_s\", scatter=\"branches, leaves\")";
+        "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
+        "walk=\"from_s->from_s\"," +
+        "gather=\"to_s\", scatter=\"branches, leaves\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr);
     context = new StreamContext();
@@ -505,14 +513,14 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.get(3).getLong("level").equals(new Long(1)));
 
     expr = "gatherNodes(collection1, " +
-           "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
-           "walk=\"from_s->from_s\"," +
-           "gather=\"to_s\")";
+        "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
+        "walk=\"from_s->from_s\"," +
+        "gather=\"to_s\")";
 
     String expr2 = "gatherNodes(collection1, " +
-                    expr+","+
-                   "walk=\"node->from_s\"," +
-                   "gather=\"to_s\")";
+        expr+","+
+        "walk=\"node->from_s\"," +
+        "gather=\"to_s\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr2);
     context = new StreamContext();
@@ -548,14 +556,14 @@ public class GraphExpressionTest extends SolrCloudTestCase {
 
 
     expr = "gatherNodes(collection1, " +
-           "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
-           "walk=\"from_s->from_s\"," +
-           "gather=\"to_s\")";
+        "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
+        "walk=\"from_s->from_s\"," +
+        "gather=\"to_s\")";
 
     expr2 = "gatherNodes(collection1, " +
-            expr+","+
-            "walk=\"node->from_s\"," +
-            "gather=\"to_s\", scatter=\"branches, leaves\")";
+        expr+","+
+        "walk=\"node->from_s\"," +
+        "gather=\"to_s\", scatter=\"branches, leaves\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr2);
     context = new StreamContext();
@@ -589,14 +597,14 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), COLLECTION);
 
     expr = "gatherNodes(collection1, " +
-           "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
-           "walk=\"from_s->from_s\"," +
-           "gather=\"to_s\", trackTraversal=\"true\")";
+        "search(collection1, q=\"message_t:jim\", fl=\"from_s\", sort=\"from_s asc\"),"+
+        "walk=\"from_s->from_s\"," +
+        "gather=\"to_s\", trackTraversal=\"true\")";
 
     expr2 = "gatherNodes(collection1, " +
-             expr+","+
-            "walk=\"node->from_s\"," +
-            "gather=\"to_s\", scatter=\"branches, leaves\", trackTraversal=\"true\")";
+        expr+","+
+        "walk=\"node->from_s\"," +
+        "gather=\"to_s\", scatter=\"branches, leaves\", trackTraversal=\"true\")";
 
     stream = (GatherNodesStream)factory.constructStream(expr2);
     context = new StreamContext();
@@ -633,6 +641,84 @@ public class GraphExpressionTest extends SolrCloudTestCase {
     cache.close();
 
   }
+
+  @Test
+  public void testGraphHandler() throws Exception {
+
+
+    new UpdateRequest()
+        .add(id, "0", "from_s", "bill", "to_s", "jim", "message_t", "Hello jim")
+        .add(id, "1", "from_s", "bill", "to_s", "sam", "message_t", "Hello sam")
+        .add(id, "2", "from_s", "bill", "to_s", "max", "message_t", "Hello max")
+        .add(id, "3", "from_s", "max",  "to_s", "kip", "message_t", "Hello kip")
+        .add(id, "4", "from_s", "sam",  "to_s", "steve", "message_t", "Hello steve")
+        .add(id, "5", "from_s", "jim",  "to_s", "ann", "message_t", "Hello steve")
+        .commit(cluster.getSolrClient(), COLLECTION);
+
+    commit();
+
+    List<JettySolrRunner> runners = cluster.getJettySolrRunners();
+    JettySolrRunner runner = runners.get(0);
+    String url = runner.getBaseUrl().toString();
+
+    HttpSolrClient client = new HttpSolrClient(url);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+
+
+    String expr = "sort(by=\"node asc\", gatherNodes(collection1, " +
+        "walk=\"bill->from_s\"," +
+        "trackTraversal=\"true\"," +
+        "gather=\"to_s\"))";
+
+    params.add("expr", expr);
+    QueryRequest query = new QueryRequest(params);
+    query.setPath("/collection1/graph");
+
+    query.setResponseParser(new InputStreamResponseParser("xml"));
+    query.setMethod(SolrRequest.METHOD.POST);
+
+    NamedList<Object> genericResponse = client.request(query);
+
+
+    InputStream stream = (InputStream)genericResponse.get("stream");
+    InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+    String xml = readString(reader);
+    //Validate the nodes
+    String error = h.validateXPath(xml,
+        "//graph/node[1][@id ='jim']",
+        "//graph/node[2][@id ='max']",
+        "//graph/node[3][@id ='sam']");
+    if(error != null) {
+      throw new Exception(error);
+    }
+    //Validate the edges
+    error = h.validateXPath(xml,
+        "//graph/edge[1][@source ='bill']",
+        "//graph/edge[1][@target ='jim']",
+        "//graph/edge[2][@source ='bill']",
+        "//graph/edge[2][@target ='max']",
+        "//graph/edge[3][@source ='bill']",
+        "//graph/edge[3][@target ='sam']");
+
+    if(error != null) {
+      throw new Exception(error);
+    }
+
+    client.close();
+  }
+
+  private String readString(InputStreamReader reader) throws Exception{
+    StringBuilder builder = new StringBuilder();
+    int c = 0;
+    while((c = reader.read()) != -1) {
+      builder.append(((char)c));
+    }
+
+    return builder.toString();
+  }
+
+
+
 
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
@@ -674,6 +760,8 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         (null != expected && !expected.equals(actual))){
       throw new Exception("Longs not equal:"+expected+" : "+actual);
     }
+
+
 
     return true;
   }

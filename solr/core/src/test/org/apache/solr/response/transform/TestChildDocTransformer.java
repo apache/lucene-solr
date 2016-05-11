@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.response;
+package org.apache.solr.response.transform;
 
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -47,6 +47,8 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     createIndex(titleVals);
     testParentFilterJSON();
     testParentFilterXML();
+    testSubQueryParentFilterJSON(); 
+    testSubQueryParentFilterXML();
   }
 
   @Test
@@ -54,6 +56,9 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
     createSimpleIndex();
     testChildDoctransformerJSON();
     testChildDoctransformerXML();
+    
+    testSubQueryXML();
+    testSubQueryJSON();
   }
 
   private void testChildDoctransformerXML() {
@@ -87,6 +92,96 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
 
     assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
         "fl", "subject,[child parentFilter=\"subject:parentDocument\" childFilter=\"title:bar\" limit=2]"), test3);
+  }
+  
+  private void testSubQueryXML() {
+    String test1[];
+    {
+    final String subqueryPath = "/result[@name='children'][@numFound='6']"; 
+    test1 = new String[] {
+        "//*[@numFound='1']",
+        "/response/result/doc[1]" + subqueryPath + "/doc[1]/int[@name='id']='2'" ,
+        "/response/result/doc[1]" + subqueryPath + "/doc[2]/int[@name='id']='3'" ,
+        "/response/result/doc[1]" + subqueryPath + "/doc[3]/int[@name='id']='4'" ,
+        "/response/result/doc[1]" + subqueryPath + "/doc[4]/int[@name='id']='5'" ,
+        "/response/result/doc[1]" + subqueryPath + "/doc[5]/int[@name='id']='6'" ,
+        "/response/result/doc[1]" + subqueryPath + "/doc[6]/int[@name='id']='7'"};
+    }
+
+    assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "*,children:[subquery]",
+        "children.q","{!child of=subject:parentDocument}{!terms f=id v=$row.id}",
+        "children.rows","10"), 
+        test1);
+
+    String test2[] = new String[] {
+        "//*[@numFound='1']",
+        "/response/result/doc[1]/result[@name='children'][@numFound='3']/doc[1]/int[@name='id']='2'" ,
+        "/response/result/doc[1]/result[@name='children'][@numFound='3']/doc[2]/int[@name='id']='4'" ,
+        "/response/result/doc[1]/result[@name='children'][@numFound='3']/doc[3]/int[@name='id']='6'" };
+    
+    assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "*,children:[subquery]",
+        "children.q","{!child of=subject:parentDocument}{!terms f=id v=$row.id}",
+        "children.rows","10",
+        "children.fq","title:foo"
+        ), test2);
+    
+
+    String test3[] = new String[] {
+        "//*[@numFound='1']",
+        "/response/result/doc[1]/result[@name='children'][@numFound='3']/doc[1]/int[@name='id']='3'" ,
+        "/response/result/doc[1]/result[@name='children'][@numFound='3']/doc[2]/int[@name='id']='5'" };
+
+    
+    assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "*,children:[subquery]",
+        "children.q","{!child of=subject:parentDocument}{!terms f=id v=$row.id}",
+        "children.rows","2",
+        "children.fq","title:bar",
+        "children.sort","_docid_ asc"
+        ), test3);
+  }
+  
+  private void testSubQueryJSON() throws Exception {
+    String[] test1 = new String[] {
+        "/response/docs/[0]/children/docs/[0]/id==2",
+        "/response/docs/[0]/children/docs/[1]/id==3",
+        "/response/docs/[0]/children/docs/[2]/id==4",
+        "/response/docs/[0]/children/docs/[3]/id==5",
+        "/response/docs/[0]/children/docs/[4]/id==6",
+        "/response/docs/[0]/children/docs/[5]/id==7"
+    };
+
+    String[] test2 = new String[] {
+        "/response/docs/[0]/children/docs/[0]/id==2",
+        "/response/docs/[0]/children/docs/[1]/id==4",
+        "/response/docs/[0]/children/docs/[2]/id==6"
+    };
+
+    String[] test3 = new String[] {
+        "/response/docs/[0]/children/docs/[0]/id==3",
+        "/response/docs/[0]/children/docs/[1]/id==5"
+    };
+
+
+    assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "*,children:[subquery]",
+        "children.q","{!child of=subject:parentDocument}{!terms f=id v=$row.id}",
+        "children.rows","10"), test1);
+
+    assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "*,children:[subquery]",
+        "children.q","{!child of=subject:parentDocument}{!terms f=id v=$row.id}",
+        "children.rows","10",
+        "children.fq","title:foo"), test2);
+
+    assertJQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "*,children:[subquery]",
+        "children.q","{!child of=subject:parentDocument}{!terms f=id v=$row.id}",
+        "children.rows","2",
+        "children.fq","title:bar",
+        "children.sort","_docid_ asc"), test3);
   }
 
   private void testChildDoctransformerJSON() throws Exception {
@@ -214,6 +309,38 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
              tests);
 
   }
+  
+  private void testSubQueryParentFilterJSON() throws Exception {
+
+    String[] tests = new String[] {
+        "/response/docs/[0]/id==1",
+        "/response/docs/[0]/children/docs/[0]/id==2",
+        "/response/docs/[0]/children/docs/[0]/cat/[0]/=='childDocument'",
+        "/response/docs/[0]/children/docs/[0]/title/[0]/=='" + titleVals[0] + "'",
+        "/response/docs/[1]/id==4",
+        "/response/docs/[1]/children/docs/[0]/id==5",
+        "/response/docs/[1]/children/docs/[0]/cat/[0]/=='childDocument'",
+        "/response/docs/[1]/children/docs/[0]/title/[0]/=='" + titleVals[1] + "'"
+    };
+
+
+    assertJQ(req(
+        "q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "*,children:[subquery]",
+        "sort", "id asc",
+        "children.q","{!child of=subject:parentDocument}{!terms f=id v=$row.id}",
+        "children.fq","cat:childDocument",
+        "children.sort","_docid_ asc"),
+             tests);
+    assertJQ(req(
+        "q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "id,children:[subquery]",
+        "sort", "id asc",
+        "children.q","{!child of=subject:parentDocument}{!terms f=id v=$row.id}",
+        "children.fq","cat:childDocument",
+        "children.sort","_docid_ asc"),
+             tests);
+  }
 
   private void testParentFilterXML() {
 
@@ -241,4 +368,36 @@ public class TestChildDocTransformer extends SolrTestCaseJ4 {
             tests);
   }
 
+  private void testSubQueryParentFilterXML() {
+
+    String tests[] = new String[] {
+        "//*[@numFound='2']",
+        "/response/result/doc[1]/int[@name='id']='1'" ,
+        "/response/result/doc[1]/result[@name='children'][@numFound=1]/doc[1]/int[@name='id']='2'" ,
+        "/response/result/doc[1]/result[@name='children'][@numFound=1]/doc[1]/arr[@name='cat']/str[1]='childDocument'" ,
+        "/response/result/doc[1]/result[@name='children'][@numFound=1]/doc[1]/arr[@name='title']/str[1]='" + titleVals[0] + "'" ,
+        "/response/result/doc[2]/int[@name='id']='4'" ,
+        "/response/result/doc[2]/result[@name='children'][@numFound=1]/doc[1]/int[@name='id']='5'",
+        "/response/result/doc[2]/result[@name='children'][@numFound=1]/doc[1]/arr[@name='cat']/str[1]='childDocument'",
+        "/response/result/doc[2]/result[@name='children'][@numFound=1]/doc[1]/arr[@name='title']/str[1]='" + titleVals[1] + "'"};
+
+    assertQ(req(
+        "q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "*,children:[subquery]",
+        "sort", "id asc",
+        "children.q","{!child of=subject:parentDocument}{!terms f=id v=$row.id}",
+        "children.fq","cat:childDocument",
+        "children.sort","_docid_ asc"
+       ), 
+            tests);
+
+    assertQ(req("q", "*:*", "fq", "subject:\"parentDocument\" ",
+        "fl", "id,children:[subquery]",
+        "sort", "id asc",
+        "children.q","{!child of=subject:parentDocument}{!terms f=id v=$row.id}",
+        "children.fq","cat:childDocument",
+        "children.sort","_docid_ asc"), 
+            tests);
+  }
+  
 }

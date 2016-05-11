@@ -53,6 +53,19 @@ public class Plane extends Vector {
    * Construct a plane through two points and origin.
    *
    * @param A is the first point (origin based).
+   * @param BX is the second point X (origin based).
+   * @param BY is the second point Y (origin based).
+   * @param BZ is the second point Z (origin based).
+   */
+  public Plane(final Vector A, final double BX, final double BY, final double BZ) {
+    super(A, BX, BY, BZ);
+    D = 0.0;
+  }
+
+  /**
+   * Construct a plane through two points and origin.
+   *
+   * @param A is the first point (origin based).
    * @param B is the second point (origin based).
    */
   public Plane(final Vector A, final Vector B) {
@@ -666,8 +679,10 @@ public class Plane extends Vector {
   protected GeoPoint[] findIntersections(final PlanetModel planetModel, final Plane q, final Membership[] bounds, final Membership[] moreBounds) {
     //System.err.println("Looking for intersection between plane "+this+" and plane "+q+" within bounds");
     // Unnormalized, unchecked...
-    final Vector lineVector = new Vector(y * q.z - z * q.y, z * q.x - x * q.z, x * q.y - y * q.x);
-    if (Math.abs(lineVector.x) < MINIMUM_RESOLUTION && Math.abs(lineVector.y) < MINIMUM_RESOLUTION && Math.abs(lineVector.z) < MINIMUM_RESOLUTION) {
+    final double lineVectorX = y * q.z - z * q.y;
+    final double lineVectorY = z * q.x - x * q.z;
+    final double lineVectorZ = x * q.y - y * q.x;
+    if (Math.abs(lineVectorX) < MINIMUM_RESOLUTION && Math.abs(lineVectorY) < MINIMUM_RESOLUTION && Math.abs(lineVectorZ) < MINIMUM_RESOLUTION) {
       // Degenerate case: parallel planes
       //System.err.println(" planes are parallel - no intersection");
       return NO_POINTS;
@@ -738,10 +753,10 @@ public class Plane extends Vector {
     // A^2 t^2 / a^2 + 2AA0t / a^2 + A0^2 / a^2 + B^2 t^2 / b^2 + 2BB0t / b^2 + B0^2 / b^2 + C^2 t^2 / c^2 + 2CC0t / c^2 + C0^2 / c^2  - 1,0 = 0.0
     // [A^2 / a^2 + B^2 / b^2 + C^2 / c^2] t^2 + [2AA0 / a^2 + 2BB0 / b^2 + 2CC0 / c^2] t + [A0^2 / a^2 + B0^2 / b^2 + C0^2 / c^2 - 1,0] = 0.0
     // Use the quadratic formula to determine t values and candidate point(s)
-    final double A = lineVector.x * lineVector.x * planetModel.inverseAbSquared +
-      lineVector.y * lineVector.y * planetModel.inverseAbSquared +
-      lineVector.z * lineVector.z * planetModel.inverseCSquared;
-    final double B = 2.0 * (lineVector.x * x0 * planetModel.inverseAbSquared + lineVector.y * y0 * planetModel.inverseAbSquared + lineVector.z * z0 * planetModel.inverseCSquared);
+    final double A = lineVectorX * lineVectorX * planetModel.inverseAbSquared +
+      lineVectorY * lineVectorY * planetModel.inverseAbSquared +
+      lineVectorZ * lineVectorZ * planetModel.inverseCSquared;
+    final double B = 2.0 * (lineVectorX * x0 * planetModel.inverseAbSquared + lineVectorY * y0 * planetModel.inverseAbSquared + lineVectorZ * z0 * planetModel.inverseCSquared);
     final double C = x0 * x0 * planetModel.inverseAbSquared + y0 * y0 * planetModel.inverseAbSquared + z0 * z0 * planetModel.inverseCSquared - 1.0;
 
     final double BsquaredMinus = B * B - 4.0 * A * C;
@@ -750,12 +765,21 @@ public class Plane extends Vector {
       final double inverse2A = 1.0 / (2.0 * A);
       // One solution only
       final double t = -B * inverse2A;
-      GeoPoint point = new GeoPoint(lineVector.x * t + x0, lineVector.y * t + y0, lineVector.z * t + z0);
-      //System.err.println("  point: "+point);
-      //verifyPoint(planetModel, point, q);
-      if (point.isWithin(bounds, moreBounds))
-        return new GeoPoint[]{point};
-      return NO_POINTS;
+      // Maybe we can save ourselves the cost of construction of a point?
+      final double pointX = lineVectorX * t + x0;
+      final double pointY = lineVectorY * t + y0;
+      final double pointZ = lineVectorZ * t + z0;
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(pointX, pointY, pointZ)) {
+          return NO_POINTS;
+        }
+      }
+      for (final Membership bound : moreBounds) {
+        if (!bound.isWithin(pointX, pointY, pointZ)) {
+          return NO_POINTS;
+        }
+      }
+      return new GeoPoint[]{new GeoPoint(pointX, pointY, pointZ)};
     } else if (BsquaredMinus > 0.0) {
       //System.err.println(" Two points of intersection");
       final double inverse2A = 1.0 / (2.0 * A);
@@ -763,18 +787,53 @@ public class Plane extends Vector {
       final double sqrtTerm = Math.sqrt(BsquaredMinus);
       final double t1 = (-B + sqrtTerm) * inverse2A;
       final double t2 = (-B - sqrtTerm) * inverse2A;
-      GeoPoint point1 = new GeoPoint(lineVector.x * t1 + x0, lineVector.y * t1 + y0, lineVector.z * t1 + z0);
-      GeoPoint point2 = new GeoPoint(lineVector.x * t2 + x0, lineVector.y * t2 + y0, lineVector.z * t2 + z0);
-      //verifyPoint(planetModel, point1, q);
-      //verifyPoint(planetModel, point2, q);
-      //System.err.println("  "+point1+" and "+point2);
-      if (point1.isWithin(bounds, moreBounds)) {
-        if (point2.isWithin(bounds, moreBounds))
-          return new GeoPoint[]{point1, point2};
-        return new GeoPoint[]{point1};
+      // Up to two points being returned.  Do what we can to save on object creation though.
+      final double point1X = lineVectorX * t1 + x0;
+      final double point1Y = lineVectorY * t1 + y0;
+      final double point1Z = lineVectorZ * t1 + z0;
+      final double point2X = lineVectorX * t2 + x0;
+      final double point2Y = lineVectorY * t2 + y0;
+      final double point2Z = lineVectorZ * t2 + z0;
+      boolean point1Valid = true;
+      boolean point2Valid = true;
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(point1X, point1Y, point1Z)) {
+          point1Valid = false;
+          break;
+        }
       }
-      if (point2.isWithin(bounds, moreBounds))
-        return new GeoPoint[]{point2};
+      if (point1Valid) {
+        for (final Membership bound : moreBounds) {
+          if (!bound.isWithin(point1X, point1Y, point1Z)) {
+            point1Valid = false;
+            break;
+          }
+        }
+      }
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(point2X, point2Y, point2Z)) {
+          point2Valid = false;
+          break;
+        }
+      }
+      if (point2Valid) {
+        for (final Membership bound : moreBounds) {
+          if (!bound.isWithin(point2X, point2Y, point2Z)) {
+            point2Valid = false;
+            break;
+          }
+        }
+      }
+
+      if (point1Valid && point2Valid) {
+        return new GeoPoint[]{new GeoPoint(point1X, point1Y, point1Z), new GeoPoint(point2X, point2Y, point2Z)};
+      }
+      if (point1Valid) {
+        return new GeoPoint[]{new GeoPoint(point1X, point1Y, point1Z)};
+      }
+      if (point2Valid) {
+        return new GeoPoint[]{new GeoPoint(point2X, point2Y, point2Z)};
+      }
       return NO_POINTS;
     } else {
       //System.err.println(" no solutions - no intersection");
@@ -797,8 +856,10 @@ public class Plane extends Vector {
     // This code in this method is very similar to findIntersections(), but eliminates the cases where
     // crossings are detected.
     // Unnormalized, unchecked...
-    final Vector lineVector = new Vector(y * q.z - z * q.y, z * q.x - x * q.z, x * q.y - y * q.x);
-    if (Math.abs(lineVector.x) < MINIMUM_RESOLUTION && Math.abs(lineVector.y) < MINIMUM_RESOLUTION && Math.abs(lineVector.z) < MINIMUM_RESOLUTION) {
+    final double lineVectorX = y * q.z - z * q.y;
+    final double lineVectorY = z * q.x - x * q.z;
+    final double lineVectorZ = x * q.y - y * q.x;
+    if (Math.abs(lineVectorX) < MINIMUM_RESOLUTION && Math.abs(lineVectorY) < MINIMUM_RESOLUTION && Math.abs(lineVectorZ) < MINIMUM_RESOLUTION) {
       // Degenerate case: parallel planes
       return NO_POINTS;
     }
@@ -865,10 +926,10 @@ public class Plane extends Vector {
     // A^2 t^2 / a^2 + 2AA0t / a^2 + A0^2 / a^2 + B^2 t^2 / b^2 + 2BB0t / b^2 + B0^2 / b^2 + C^2 t^2 / c^2 + 2CC0t / c^2 + C0^2 / c^2  - 1,0 = 0.0
     // [A^2 / a^2 + B^2 / b^2 + C^2 / c^2] t^2 + [2AA0 / a^2 + 2BB0 / b^2 + 2CC0 / c^2] t + [A0^2 / a^2 + B0^2 / b^2 + C0^2 / c^2 - 1,0] = 0.0
     // Use the quadratic formula to determine t values and candidate point(s)
-    final double A = lineVector.x * lineVector.x * planetModel.inverseAbSquared +
-      lineVector.y * lineVector.y * planetModel.inverseAbSquared +
-      lineVector.z * lineVector.z * planetModel.inverseCSquared;
-    final double B = 2.0 * (lineVector.x * x0 * planetModel.inverseAbSquared + lineVector.y * y0 * planetModel.inverseAbSquared + lineVector.z * z0 * planetModel.inverseCSquared);
+    final double A = lineVectorX * lineVectorX * planetModel.inverseAbSquared +
+      lineVectorY * lineVectorY * planetModel.inverseAbSquared +
+      lineVectorZ * lineVectorZ * planetModel.inverseCSquared;
+    final double B = 2.0 * (lineVectorX * x0 * planetModel.inverseAbSquared + lineVectorY * y0 * planetModel.inverseAbSquared + lineVectorZ * z0 * planetModel.inverseCSquared);
     final double C = x0 * x0 * planetModel.inverseAbSquared + y0 * y0 * planetModel.inverseAbSquared + z0 * z0 * planetModel.inverseCSquared - 1.0;
 
     final double BsquaredMinus = B * B - 4.0 * A * C;
@@ -881,18 +942,53 @@ public class Plane extends Vector {
       final double sqrtTerm = Math.sqrt(BsquaredMinus);
       final double t1 = (-B + sqrtTerm) * inverse2A;
       final double t2 = (-B - sqrtTerm) * inverse2A;
-      GeoPoint point1 = new GeoPoint(lineVector.x * t1 + x0, lineVector.y * t1 + y0, lineVector.z * t1 + z0);
-      GeoPoint point2 = new GeoPoint(lineVector.x * t2 + x0, lineVector.y * t2 + y0, lineVector.z * t2 + z0);
-      //verifyPoint(planetModel, point1, q);
-      //verifyPoint(planetModel, point2, q);
-      //System.err.println("   Considering points "+point1+" and "+point2);
-      if (point1.isWithin(bounds, moreBounds)) {
-        if (point2.isWithin(bounds, moreBounds))
-          return new GeoPoint[]{point1, point2};
-        return new GeoPoint[]{point1};
+      // Up to two points being returned.  Do what we can to save on object creation though.
+      final double point1X = lineVectorX * t1 + x0;
+      final double point1Y = lineVectorY * t1 + y0;
+      final double point1Z = lineVectorZ * t1 + z0;
+      final double point2X = lineVectorX * t2 + x0;
+      final double point2Y = lineVectorY * t2 + y0;
+      final double point2Z = lineVectorZ * t2 + z0;
+      boolean point1Valid = true;
+      boolean point2Valid = true;
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(point1X, point1Y, point1Z)) {
+          point1Valid = false;
+          break;
+        }
       }
-      if (point2.isWithin(bounds, moreBounds))
-        return new GeoPoint[]{point2};
+      if (point1Valid) {
+        for (final Membership bound : moreBounds) {
+          if (!bound.isWithin(point1X, point1Y, point1Z)) {
+            point1Valid = false;
+            break;
+          }
+        }
+      }
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(point2X, point2Y, point2Z)) {
+          point2Valid = false;
+          break;
+        }
+      }
+      if (point2Valid) {
+        for (final Membership bound : moreBounds) {
+          if (!bound.isWithin(point2X, point2Y, point2Z)) {
+            point2Valid = false;
+            break;
+          }
+        }
+      }
+
+      if (point1Valid && point2Valid) {
+        return new GeoPoint[]{new GeoPoint(point1X, point1Y, point1Z), new GeoPoint(point2X, point2Y, point2Z)};
+      }
+      if (point1Valid) {
+        return new GeoPoint[]{new GeoPoint(point1X, point1Y, point1Z)};
+      }
+      if (point2Valid) {
+        return new GeoPoint[]{new GeoPoint(point2X, point2Y, point2Z)};
+      }
       return NO_POINTS;
     } else {
       // No solutions.
@@ -1667,7 +1763,159 @@ public class Plane extends Vector {
       //System.err.println("  no notable points inside found; no intersection");
       return false;
     }
-    return findIntersections(planetModel, q, bounds, moreBounds).length > 0;
+    
+    // Save on allocations; do inline instead of calling findIntersections
+    //System.err.println("Looking for intersection between plane "+this+" and plane "+q+" within bounds");
+    // Unnormalized, unchecked...
+    final double lineVectorX = y * q.z - z * q.y;
+    final double lineVectorY = z * q.x - x * q.z;
+    final double lineVectorZ = x * q.y - y * q.x;
+
+    if (Math.abs(lineVectorX) < MINIMUM_RESOLUTION && Math.abs(lineVectorY) < MINIMUM_RESOLUTION && Math.abs(lineVectorZ) < MINIMUM_RESOLUTION) {
+      // Degenerate case: parallel planes
+      //System.err.println(" planes are parallel - no intersection");
+      return false;
+    }
+
+    // The line will have the equation: A t + A0 = x, B t + B0 = y, C t + C0 = z.
+    // We have A, B, and C.  In order to come up with A0, B0, and C0, we need to find a point that is on both planes.
+    // To do this, we find the largest vector value (either x, y, or z), and look for a point that solves both plane equations
+    // simultaneous.  For example, let's say that the vector is (0.5,0.5,1), and the two plane equations are:
+    // 0.7 x + 0.3 y + 0.1 z + 0.0 = 0
+    // and
+    // 0.9 x - 0.1 y + 0.2 z + 4.0 = 0
+    // Then we'd pick z = 0, so the equations to solve for x and y would be:
+    // 0.7 x + 0.3y = 0.0
+    // 0.9 x - 0.1y = -4.0
+    // ... which can readily be solved using standard linear algebra.  Generally:
+    // Q0 x + R0 y = S0
+    // Q1 x + R1 y = S1
+    // ... can be solved by Cramer's rule:
+    // x = det(S0 R0 / S1 R1) / det(Q0 R0 / Q1 R1)
+    // y = det(Q0 S0 / Q1 S1) / det(Q0 R0 / Q1 R1)
+    // ... where det( a b / c d ) = ad - bc, so:
+    // x = (S0 * R1 - R0 * S1) / (Q0 * R1 - R0 * Q1)
+    // y = (Q0 * S1 - S0 * Q1) / (Q0 * R1 - R0 * Q1)
+    double x0;
+    double y0;
+    double z0;
+    // We try to maximize the determinant in the denominator
+    final double denomYZ = this.y * q.z - this.z * q.y;
+    final double denomXZ = this.x * q.z - this.z * q.x;
+    final double denomXY = this.x * q.y - this.y * q.x;
+    if (Math.abs(denomYZ) >= Math.abs(denomXZ) && Math.abs(denomYZ) >= Math.abs(denomXY)) {
+      // X is the biggest, so our point will have x0 = 0.0
+      if (Math.abs(denomYZ) < MINIMUM_RESOLUTION_SQUARED) {
+        //System.err.println(" Denominator is zero: no intersection");
+        return false;
+      }
+      final double denom = 1.0 / denomYZ;
+      x0 = 0.0;
+      y0 = (-this.D * q.z - this.z * -q.D) * denom;
+      z0 = (this.y * -q.D + this.D * q.y) * denom;
+    } else if (Math.abs(denomXZ) >= Math.abs(denomXY) && Math.abs(denomXZ) >= Math.abs(denomYZ)) {
+      // Y is the biggest, so y0 = 0.0
+      if (Math.abs(denomXZ) < MINIMUM_RESOLUTION_SQUARED) {
+        //System.err.println(" Denominator is zero: no intersection");
+        return false;
+      }
+      final double denom = 1.0 / denomXZ;
+      x0 = (-this.D * q.z - this.z * -q.D) * denom;
+      y0 = 0.0;
+      z0 = (this.x * -q.D + this.D * q.x) * denom;
+    } else {
+      // Z is the biggest, so Z0 = 0.0
+      if (Math.abs(denomXY) < MINIMUM_RESOLUTION_SQUARED) {
+        //System.err.println(" Denominator is zero: no intersection");
+        return false;
+      }
+      final double denom = 1.0 / denomXY;
+      x0 = (-this.D * q.y - this.y * -q.D) * denom;
+      y0 = (this.x * -q.D + this.D * q.x) * denom;
+      z0 = 0.0;
+    }
+
+    // Once an intersecting line is determined, the next step is to intersect that line with the ellipsoid, which
+    // will yield zero, one, or two points.
+    // The ellipsoid equation: 1,0 = x^2/a^2 + y^2/b^2 + z^2/c^2
+    // 1.0 = (At+A0)^2/a^2 + (Bt+B0)^2/b^2 + (Ct+C0)^2/c^2
+    // A^2 t^2 / a^2 + 2AA0t / a^2 + A0^2 / a^2 + B^2 t^2 / b^2 + 2BB0t / b^2 + B0^2 / b^2 + C^2 t^2 / c^2 + 2CC0t / c^2 + C0^2 / c^2  - 1,0 = 0.0
+    // [A^2 / a^2 + B^2 / b^2 + C^2 / c^2] t^2 + [2AA0 / a^2 + 2BB0 / b^2 + 2CC0 / c^2] t + [A0^2 / a^2 + B0^2 / b^2 + C0^2 / c^2 - 1,0] = 0.0
+    // Use the quadratic formula to determine t values and candidate point(s)
+    final double A = lineVectorX * lineVectorX * planetModel.inverseAbSquared +
+      lineVectorY * lineVectorY * planetModel.inverseAbSquared +
+      lineVectorZ * lineVectorZ * planetModel.inverseCSquared;
+    final double B = 2.0 * (lineVectorX * x0 * planetModel.inverseAbSquared + lineVectorY * y0 * planetModel.inverseAbSquared + lineVectorZ * z0 * planetModel.inverseCSquared);
+    final double C = x0 * x0 * planetModel.inverseAbSquared + y0 * y0 * planetModel.inverseAbSquared + z0 * z0 * planetModel.inverseCSquared - 1.0;
+
+    final double BsquaredMinus = B * B - 4.0 * A * C;
+    if (Math.abs(BsquaredMinus) < MINIMUM_RESOLUTION_SQUARED) {
+      //System.err.println(" One point of intersection");
+      final double inverse2A = 1.0 / (2.0 * A);
+      // One solution only
+      final double t = -B * inverse2A;
+      // Maybe we can save ourselves the cost of construction of a point?
+      final double pointX = lineVectorX * t + x0;
+      final double pointY = lineVectorY * t + y0;
+      final double pointZ = lineVectorZ * t + z0;
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(pointX, pointY, pointZ)) {
+          return false;
+        }
+      }
+      for (final Membership bound : moreBounds) {
+        if (!bound.isWithin(pointX, pointY, pointZ)) {
+          return false;
+        }
+      }
+      return true;
+    } else if (BsquaredMinus > 0.0) {
+      //System.err.println(" Two points of intersection");
+      final double inverse2A = 1.0 / (2.0 * A);
+      // Two solutions
+      final double sqrtTerm = Math.sqrt(BsquaredMinus);
+      final double t1 = (-B + sqrtTerm) * inverse2A;
+      final double t2 = (-B - sqrtTerm) * inverse2A;
+      // Up to two points being returned.  Do what we can to save on object creation though.
+      final double point1X = lineVectorX * t1 + x0;
+      final double point1Y = lineVectorY * t1 + y0;
+      final double point1Z = lineVectorZ * t1 + z0;
+      boolean point1Valid = true;
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(point1X, point1Y, point1Z)) {
+          point1Valid = false;
+          break;
+        }
+      }
+      if (point1Valid) {
+        for (final Membership bound : moreBounds) {
+          if (!bound.isWithin(point1X, point1Y, point1Z)) {
+            point1Valid = false;
+            break;
+          }
+        }
+      }
+      if (point1Valid) {
+        return true;
+      }
+      final double point2X = lineVectorX * t2 + x0;
+      final double point2Y = lineVectorY * t2 + y0;
+      final double point2Z = lineVectorZ * t2 + z0;
+      for (final Membership bound : bounds) {
+        if (!bound.isWithin(point2X, point2Y, point2Z)) {
+          return false;
+        }
+      }
+      for (final Membership bound : moreBounds) {
+        if (!bound.isWithin(point2X, point2Y, point2Z)) {
+          return false;
+        }
+      }
+      return true;
+    } else {
+      //System.err.println(" no solutions - no intersection");
+      return false;
+    }
   }
 
   /**

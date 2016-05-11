@@ -25,7 +25,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 
 public class FacetDebugInfo {
   String processor;
-  long elapse;
+  long elapse = -1;
   String filter;
   Map<String, Object> info;  // additional information
   final List<FacetDebugInfo> children;
@@ -69,8 +69,8 @@ public class FacetDebugInfo {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
     
     if (filter != null) info.add("filter", filter);
-    info.add("processor", processor);
-    info.add("elapse", elapse);
+    if (processor != null) info.add("processor", processor);
+    if (elapse != -1) info.add("elapse", elapse);
     if (reqDescription != null) {
       info.addAll(reqDescription);
     } 

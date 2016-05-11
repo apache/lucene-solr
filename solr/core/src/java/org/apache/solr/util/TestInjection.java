@@ -101,8 +101,8 @@ public class TestInjection {
   public static boolean injectRandomDelayInCoreCreation() {
     if (randomDelayInCoreCreation != null) {
       Pair<Boolean,Integer> pair = parseValue(randomDelayInCoreCreation);
-      boolean enabled = pair.getKey();
-      int chanceIn100 = pair.getValue();
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
       if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
         int delay = RANDOM.nextInt(randomDelayMaxInCoreCreationInSec);
         log.info("Inject random core creation delay of {}s", delay);
@@ -119,8 +119,8 @@ public class TestInjection {
   public static boolean injectNonGracefullClose(CoreContainer cc) {
     if (cc.isShutDown() && nonGracefullClose != null) {
       Pair<Boolean,Integer> pair = parseValue(nonGracefullClose);
-      boolean enabled = pair.getKey();
-      int chanceIn100 = pair.getValue();
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
       if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
         if (RANDOM.nextBoolean()) {
           throw new TestShutdownFailError("Test exception for non graceful close");
@@ -157,8 +157,8 @@ public class TestInjection {
   public static boolean injectFailReplicaRequests() {
     if (failReplicaRequests != null) {
       Pair<Boolean,Integer> pair = parseValue(failReplicaRequests);
-      boolean enabled = pair.getKey();
-      int chanceIn100 = pair.getValue();
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
       if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Random test update fail");
       }
@@ -170,8 +170,8 @@ public class TestInjection {
   public static boolean injectFailUpdateRequests() {
     if (failUpdateRequests != null) {
       Pair<Boolean,Integer> pair = parseValue(failUpdateRequests);
-      boolean enabled = pair.getKey();
-      int chanceIn100 = pair.getValue();
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
       if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Random test update fail");
       }
@@ -183,8 +183,8 @@ public class TestInjection {
   public static boolean injectNonExistentCoreExceptionAfterUnload(String cname) {
     if (nonExistentCoreExceptionAfterUnload != null) {
       Pair<Boolean,Integer> pair = parseValue(nonExistentCoreExceptionAfterUnload);
-      boolean enabled = pair.getKey();
-      int chanceIn100 = pair.getValue();
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
       if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
         throw new NonExistentCoreException("Core not found to unload: " + cname);
       }
@@ -196,8 +196,8 @@ public class TestInjection {
   public static boolean injectUpdateLogReplayRandomPause() {
     if (updateLogReplayRandomPause != null) {
       Pair<Boolean,Integer> pair = parseValue(updateLogReplayRandomPause);
-      boolean enabled = pair.getKey();
-      int chanceIn100 = pair.getValue();
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
       if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
         long rndTime = RANDOM.nextInt(1000);
         log.info("inject random log replay delay of {}ms", rndTime);
@@ -215,8 +215,8 @@ public class TestInjection {
   public static boolean injectUpdateRandomPause() {
     if (updateRandomPause != null) {
       Pair<Boolean,Integer> pair = parseValue(updateRandomPause);
-      boolean enabled = pair.getKey();
-      int chanceIn100 = pair.getValue();
+      boolean enabled = pair.first();
+      int chanceIn100 = pair.second();
       if (enabled && RANDOM.nextInt(100) >= (100 - chanceIn100)) {
         long rndTime = RANDOM.nextInt(1000);
         log.info("inject random update delay of {}ms", rndTime);

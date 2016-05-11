@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import java.io.File;
+import java.util.Random;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -98,7 +99,7 @@ public class SSLTestConfig extends SSLConfig {
     assert isSSLMode();
     
     SSLContextBuilder builder = SSLContexts.custom();
-    builder.setSecureRandom(NullSecureRandom.INSTANCE);
+    builder.setSecureRandom(NotSecurePsuedoRandom.INSTANCE);
     
     // NOTE: KeyStore & TrustStore are swapped because they are from configured from server perspective...
     // we are a client - our keystore contains the keys the server trusts, and vice versa
@@ -127,7 +128,7 @@ public class SSLTestConfig extends SSLConfig {
     assert isSSLMode();
     
     SSLContextBuilder builder = SSLContexts.custom();
-    builder.setSecureRandom(NullSecureRandom.INSTANCE);
+    builder.setSecureRandom(NotSecurePsuedoRandom.INSTANCE);
     
     builder.loadKeyMaterial(buildKeyStore(getKeyStore(), getKeyStorePassword()), getKeyStorePassword().toCharArray());
 
@@ -260,36 +261,50 @@ public class SSLTestConfig extends SSLConfig {
   }
 
   /**
-   * A mocked up instance of SecureRandom that always does the minimal amount of work to generate 
-   * "random" numbers.  This is to prevent blocking issues that arise in platform default 
+   * A mocked up instance of SecureRandom that just uses {@link Random} under the covers.
+   * This is to prevent blocking issues that arise in platform default 
    * SecureRandom instances due to too many instances / not enough random entropy.  
    * Tests do not need secure SSL.
    */
-  private static class NullSecureRandom extends SecureRandom {
-    public static final SecureRandom INSTANCE = new NullSecureRandom();
+  private static class NotSecurePsuedoRandom extends SecureRandom {
+    public static final SecureRandom INSTANCE = new NotSecurePsuedoRandom();
+    private static final Random RAND = new Random(42);
+    
+    /** 
+     * Helper method that can be used to fill an array with non-zero data.
+     * (Attempted workarround of Solaris SSL Padding bug: SOLR-9068)
+     */
+    private static final byte[] fillData(byte[] data) {
+      RAND.nextBytes(data);
+      return data;
+    }
     
     /** SPI Used to init all instances */
-    private static final SecureRandomSpi NULL_SPI = new SecureRandomSpi() {
-      /** NOOP: returns new uninitialized byte[] */
+    private static final SecureRandomSpi NOT_SECURE_SPI = new SecureRandomSpi() {
+      /** returns a new byte[] filled with static data */
       public byte[] engineGenerateSeed(int numBytes) {
-        return new byte[numBytes];
+        return fillData(new byte[numBytes]);
       }
-      /** NOOP */
-      public void engineNextBytes(byte[] bytes) { /* NOOP */ }
+      /** fills the byte[] with static data */
+      public void engineNextBytes(byte[] bytes) {
+        fillData(bytes);
+      }
       /** NOOP */
       public void engineSetSeed(byte[] seed) { /* NOOP */ }
     };
     
-    private NullSecureRandom() {
-      super(NULL_SPI, null) ;
+    private NotSecurePsuedoRandom() {
+      super(NOT_SECURE_SPI, null) ;
     }
     
-    /** NOOP: returns new uninitialized byte[] */
+    /** returns a new byte[] filled with static data */
     public byte[] generateSeed(int numBytes) {
-      return new byte[numBytes];
+      return fillData(new byte[numBytes]);
     }
-    /** NOOP */
-    synchronized public void nextBytes(byte[] bytes) { /* NOOP */ }
+    /** fills the byte[] with static data */
+    synchronized public void nextBytes(byte[] bytes) {
+      fillData(bytes);
+    }
     /** NOOP */
     synchronized public void setSeed(byte[] seed) { /* NOOP */ }
     /** NOOP */

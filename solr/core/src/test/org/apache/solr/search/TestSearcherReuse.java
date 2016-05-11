@@ -127,7 +127,7 @@ public class TestSearcherReuse extends SolrTestCaseJ4 {
       baseReq.close();
     }
 
-    // now do a variety of things that *should* always garuntee a new searcher
+    // now do a variety of things that *should* always guarantee a new searcher
     SolrQueryRequest beforeReq;
 
     beforeReq = req("q","foo");
