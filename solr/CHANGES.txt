@@ -88,6 +88,9 @@ Other Changes
 
 * SOLR-9053: Upgrade commons-fileupload to 1.3.1, fixing a potential vulnerability (Jeff Field, Mike Drob via janhoy)
 
+* SOLR-8970: Change SSLTestConfig to use a keystore file that is included as a resource in the
+  test-framework jar so users subclassing SolrTestCaseJ4 don't need to preserve magic paths (hossman)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

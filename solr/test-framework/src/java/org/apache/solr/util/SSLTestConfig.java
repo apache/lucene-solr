@@ -17,13 +17,17 @@
 package org.apache.solr.util;
 
 import java.io.File;
+import java.util.Random;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.SecureRandomSpi;
 import java.security.UnrecoverableKeyException;
 
 import javax.net.ssl.SSLContext;
+import java.net.MalformedURLException;
 
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
@@ -39,27 +43,97 @@ import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.common.params.SolrParams;
+
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+/**
+ * An {@link SSLConfig} that supports reading key/trust store information directly from resource
+ * files provided with the Solr test-framework classes
+ */
 public class SSLTestConfig extends SSLConfig {
+
+  /** @deprecated No longer used except by {@link #setSSLSystemProperties} */
   public static File TEST_KEYSTORE = ExternalPaths.SERVER_HOME == null ? null
-      : new File(ExternalPaths.SERVER_HOME, "../etc/test/solrtest.keystore");
+    : new File(ExternalPaths.SERVER_HOME, "../etc/test/solrtest.keystore");
   
+  /** @deprecated No longer used except by {@link #setSSLSystemProperties} */
   private static String TEST_KEYSTORE_PATH = TEST_KEYSTORE != null
-      && TEST_KEYSTORE.exists() ? TEST_KEYSTORE.getAbsolutePath() : null;
-  private static String TEST_KEYSTORE_PASSWORD = "secret";
+    && TEST_KEYSTORE.exists() ? TEST_KEYSTORE.getAbsolutePath() : null;
+
+  private static final String TEST_KEYSTORE_RESOURCE = "SSLTestConfig.testing.keystore";
+  private static final String TEST_KEYSTORE_PASSWORD = "secret";
+
+  private final Resource keyStore;
+  private final Resource trustStore;
   
+  /** Creates an SSLTestConfig that does not use SSL or client authentication */
   public SSLTestConfig() {
     this(false, false);
   }
-  
+
+  /**
+   * Create an SSLTestConfig based on a few caller specified options.  As needed,
+   * keystore/truststore information will be pulled from a hardocded resource file provided
+   * by the solr test-framework.
+   *
+   * @param useSSL - wether SSL should be required.
+   * @param clientAuth - whether client authentication should be required.
+   */
   public SSLTestConfig(boolean useSSL, boolean clientAuth) {
-    this(useSSL, clientAuth, TEST_KEYSTORE_PATH, TEST_KEYSTORE_PASSWORD, TEST_KEYSTORE_PATH, TEST_KEYSTORE_PASSWORD);
+    super(useSSL, clientAuth, null, TEST_KEYSTORE_PASSWORD, null, TEST_KEYSTORE_PASSWORD);
+    trustStore = keyStore = Resource.newClassPathResource(TEST_KEYSTORE_RESOURCE);
+    if (null == keyStore || ! keyStore.exists() ) {
+      throw new IllegalStateException("Unable to locate keystore resource file in classpath: "
+                                      + TEST_KEYSTORE_RESOURCE);
+    }
   }
- 
+
+  /**
+   * Create an SSLTestConfig using explicit paths for files
+   * @deprecated - use {@link SSLConfig} directly
+   */
+  @Deprecated
   public SSLTestConfig(boolean useSSL, boolean clientAuth, String keyStore, String keyStorePassword, String trustStore, String trustStorePassword) {
     super(useSSL, clientAuth, keyStore, keyStorePassword, trustStore, trustStorePassword);
+    this.keyStore = tryNewResource(keyStore, "KeyStore");
+    this.trustStore = tryNewResource(trustStore, "TrustStore");
+  }
+
+  /**
+   * Helper utility for building resources from arbitrary user input paths/urls
+   * if input is null, returns null; otherwise attempts to build Resource and verifies that Resource exists.
+   */
+  private static final Resource tryNewResource(String userInput, String type) {
+    if (null == userInput) {
+      return null;
+    }
+    Resource result;
+    try {
+      result = Resource.newResource(userInput);
+    } catch (MalformedURLException e) {
+      throw new IllegalArgumentException("Can't build " + type + " Resource: " + e.getMessage(), e);
+    }
+    if (! result.exists()) {
+      throw new IllegalArgumentException(type + " Resource does not exist " + result.getName());
+    }
+    return result;
+  }
+
+  /** NOTE: This method is meaningless unless you explicitly provide paths when constructing this instance
+   * @see #SSLTestConfig(boolean,boolean,String,String,String,String)
+   */
+  @Override
+  public String getKeyStore() {
+    return super.getKeyStore();
+  }
+  /** NOTE: This method is meaningless unless you explicitly provide paths when constructing this instance
+   * @see #SSLTestConfig(boolean,boolean,String,String,String,String)
+   */
+  @Override
+  public String getTrustStore() {
+    return super.getTrustStore();
   }
   
   /**
@@ -79,7 +153,7 @@ public class SSLTestConfig extends SSLConfig {
   
   /**
    * Builds a new SSLContext for HTTP <b>clients</b> to use when communicating with servers which have 
-   * been configured based on the settings of this object.  Also explicitly allows the use of self-signed 
+   * been configured based on the settings of this object.  Also explicitly allows the use of self-signed
    * certificates (since that's what is almost always used during testing).
    */
   public SSLContext buildClientSSLContext() throws KeyManagementException, 
@@ -91,24 +165,24 @@ public class SSLTestConfig extends SSLConfig {
 
     // NOTE: KeyStore & TrustStore are swapped because they are from configured from server perspective...
     // we are a client - our keystore contains the keys the server trusts, and vice versa
-    builder.loadTrustMaterial(buildKeyStore(getKeyStore(), getKeyStorePassword()), new TrustSelfSignedStrategy()).build();
+    builder.loadTrustMaterial(buildKeyStore(keyStore, getKeyStorePassword()), new TrustSelfSignedStrategy()).build();
 
     if (isClientAuthMode()) {
-      builder.loadKeyMaterial(buildKeyStore(getTrustStore(), getTrustStorePassword()), getTrustStorePassword().toCharArray());
+      builder.loadKeyMaterial(buildKeyStore(trustStore, getTrustStorePassword()), getTrustStorePassword().toCharArray());
       
     }
 
     return builder.build();
   }
-  
+
   /**
    * Constructs a KeyStore using the specified filename and password
    */
-  protected static KeyStore buildKeyStore(String keyStoreLocation, String password) {
+  protected static KeyStore buildKeyStore(Resource resource, String password) {
     try {
-      return CertificateUtils.getKeyStore(Resource.newResource(keyStoreLocation), "JKS", null, password);
+      return CertificateUtils.getKeyStore(resource, "JKS", null, password);
     } catch (Exception ex) {
-      throw new IllegalStateException("Unable to build KeyStore from file: " + keyStoreLocation, ex);
+      throw new IllegalStateException("Unable to build KeyStore from resource: " + resource.getName(), ex);
     }
   }
   
@@ -202,5 +276,5 @@ public class SSLTestConfig extends SSLConfig {
     System.clearProperty("javax.net.ssl.trustStore");
     System.clearProperty("javax.net.ssl.trustStorePassword");
   }
-  
+
 }
