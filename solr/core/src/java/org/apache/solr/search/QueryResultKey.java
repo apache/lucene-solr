@@ -99,7 +99,7 @@ public final class QueryResultKey {
    * already been found to have equal hashCodes, since the unordered comparison aspects 
    * of the logic are not cheap.
    * 
-   * @return true if the lists of equivilent other then the ordering
+   * @return true if the lists of equivalent other then the ordering
    */
   private static boolean unorderedCompare(List<Query> fqList1, List<Query> fqList2) {
     // Do fast version first, expecting that filters are usually in the same order
@@ -128,7 +128,7 @@ public final class QueryResultKey {
    * This method should only be called on lists which are the same size, and where 
    * all items with an index less then the specified start index are the same.
    *
-   * @return true if the list items after start are equivilent other then the ordering
+   * @return true if the list items after start are equivalent other then the ordering
    */
   private static boolean unorderedCompare(List<Query> fqList1, List<Query> fqList2, int start) {
     assert null != fqList1;
@@ -137,8 +137,8 @@ public final class QueryResultKey {
     final int sz = fqList1.size();
     assert fqList2.size() == sz;
 
-    // SOLR-5618: if we had a garuntee that the lists never contained any duplicates,
-    // this logic could be a lot simplier 
+    // SOLR-5618: if we had a guarantee that the lists never contained any duplicates,
+    // this logic could be a lot simpler 
     //
     // (And of course: if the SolrIndexSearcher / QueryCommmand was ever changed to
     // sort the filter query list, then this whole method could be eliminated).

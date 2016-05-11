@@ -48,7 +48,7 @@ public interface DocSet extends Closeable, Accountable /* extends Collection<Int
    *
    * <p>
    * This method may be faster then <code>add(doc)</code> in some
-   * implementaions provided the caller is certain of the precondition.
+   * implementations provided the caller is certain of the precondition.
    * </p>
    *
    * @see #add

@@ -114,7 +114,7 @@ public class DateMathParser  {
       .parseCaseInsensitive().parseLenient().appendInstant().toFormatter(Locale.ROOT);
 
   /**
-   * A mapping from (uppercased) String labels idenyifying time units,
+   * A mapping from (uppercased) String labels identifying time units,
    * to the corresponding Calendar constant used to set/add/roll that unit
    * of measurement.
    *
@@ -134,7 +134,7 @@ public class DateMathParser  {
 
     // NOTE: consciously choosing not to support WEEK at this time,
     // because of complexity in rounding down to the nearest week
-    // arround a month/year boundry.
+    // around a month/year boundary.
     // (Not to mention: it's not clear what people would *expect*)
     // 
     // If we consider adding some time of "week" support, then

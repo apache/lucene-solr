@@ -278,10 +278,10 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
         Thread.sleep(200);
       }
 
-      // check the index contents against our expecationts
+      // check the index contents against our expectations
       final BitSet actualDocIds = allDocs(CLOUD_CLIENT, maxDocId);
       if ( expectedDocIds.cardinality() != actualDocIds.cardinality() ) {
-        log.error("cardinality missmatch: expected {} BUT actual {}",
+        log.error("cardinality mismatch: expected {} BUT actual {}",
                   expectedDocIds.cardinality(),
                   actualDocIds.cardinality());
       }
@@ -325,7 +325,7 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     
     assertEquals("wrong nextBit at end of all iters", -1,
                  randomUnsetBit(random(), bits, max));
-    assertEquals("wrong nextBit at redundent end of all iters", -1,
+    assertEquals("wrong nextBit at redundant end of all iters", -1,
                  randomUnsetBit(random(), bits, max));
   }
   

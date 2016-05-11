@@ -187,10 +187,10 @@ public class TestReloadDeadlock extends TestRTGBase {
         thread.join(10000); // Normally they'll all return immediately (or close to that).
       }
     } catch (InterruptedException ie) {
-      fail("Sholdn't have sat around here this long waiting for the threads to join.");
+      fail("Shouldn't have sat around here this long waiting for the threads to join.");
     }
     for (Thread thread : threads) { // Probably a silly test, but what the heck.
-      assertFalse("All threads shoul be dead, but at least thread " + thread.getName() + " is not", thread.isAlive());
+      assertFalse("All threads should be dead, but at least thread " + thread.getName() + " is not", thread.isAlive());
     }
   }
 

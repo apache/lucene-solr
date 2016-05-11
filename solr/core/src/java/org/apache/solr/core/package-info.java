@@ -16,7 +16,7 @@
  */
  
 /** 
- * Core classes implementin Solr internals and the management of {@link org.apache.solr.core.SolrCore}s
+ * Core classes implementing Solr internals and the management of {@link org.apache.solr.core.SolrCore}s
  */
 package org.apache.solr.core;
 

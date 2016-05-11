@@ -26,7 +26,7 @@ import org.apache.solr.search.ValueSourceParser;
 
 /**
  * A sample ValueSourceParser for testing. Approximates the oracle NVL function,
- * letting you substitude a value when a "null" is encountered. In this case,
+ * letting you substitute a value when a "null" is encountered. In this case,
  * null is approximated by a float value, since ValueSource always returns a
  * float, even if the field is undefined for a document.
  * 

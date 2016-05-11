@@ -138,7 +138,7 @@ public class StatsField {
      *        order to compute <i>this</i> stat over the entire distributed result set.
      * @param selfDep indicates that when computing this stat across a distributed result 
      *        set, each shard must compute this stat <i>in addition to</i> any other 
-     *        distributed dependences.
+     *        distributed dependencies.
      * @see #getDistribDeps
      */
     Stat(boolean selfDep, Stat... deps) {

@@ -26,7 +26,7 @@ import org.apache.solr.common.SolrException;
  */
 public interface ExchangeRateProvider {
   /**
-   * Get the exchange rate betwen the two given currencies
+   * Get the exchange rate between the two given currencies
    * @return the exchange rate as a double
    * @throws SolrException if the rate is not defined in the provider
    */
