@@ -29,7 +29,7 @@ import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 
-/** A base class that may be usefull for implementing DocSets */
+/** A base class that may be useful for implementing DocSets */
 abstract class DocSetBase implements DocSet {
 
   public static FixedBitSet toBitSet(DocSet set) {

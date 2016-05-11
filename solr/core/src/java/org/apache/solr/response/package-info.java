@@ -16,7 +16,7 @@
  */
  
 /** 
- * API and implementations of {@link org.apache.solr.response.QueryResponseWriter} for formating Solr request responses
+ * API and implementations of {@link org.apache.solr.response.QueryResponseWriter} for formatting Solr request responses
  */
 package org.apache.solr.response;
 

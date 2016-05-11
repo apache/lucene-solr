@@ -659,7 +659,7 @@ public class Overseer implements Closeable {
       }
     }
 
-    // Go through the list of presently-hosted proeprties and remove any that have too many replicas that host the property
+    // Go through the list of presently-hosted properties and remove any that have too many replicas that host the property
     private void removeOverallocatedReplicas() {
       tmpMaxPropPerNode = origMaxPropPerNode; // A bit clumsy, but don't want to duplicate code.
       tmpModulo = origModulo;

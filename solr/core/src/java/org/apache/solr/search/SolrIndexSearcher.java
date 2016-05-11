@@ -185,7 +185,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable,SolrIn
    * Builds the necessary collector chain (via delegate wrapping) and executes the query 
    * against it.  This method takes into consideration both the explicitly provided collector 
    * and postFilter as well as any needed collector wrappers for dealing with options 
-   * specified in the QueryCOmmand.
+   * specified in the QueryCommand.
    */
   private void buildAndRunCollectorChain(QueryResult qr, Query query,
       Collector collector, QueryCommand cmd, DelegatingCollector postFilter) throws IOException {

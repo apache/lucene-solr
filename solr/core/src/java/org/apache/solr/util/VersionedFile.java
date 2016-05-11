@@ -81,7 +81,7 @@ public class VersionedFile
       is = new FileInputStream(f);
     }
 
-    // delete old files only after we have successfuly opened the newest
+    // delete old files only after we have successfully opened the newest
     if (oldFiles != null) {
       delete(oldFiles);
     }
@@ -99,7 +99,7 @@ public class VersionedFile
           try {
             Files.deleteIfExists(df.toPath());
           } catch (IOException cause) {
-            // TODO: should this class care if a file couldnt be deleted?
+            // TODO: should this class care if a file couldn't be deleted?
             // this just emulates previous behavior, where only SecurityException would be handled.
           }
           // deleteList.remove(df);

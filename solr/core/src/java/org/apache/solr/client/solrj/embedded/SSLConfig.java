@@ -26,7 +26,7 @@ public class SSLConfig {
   private String keyStorePassword;
   private String trustStore;
   private String trustStorePassword;
-  
+
   public SSLConfig(boolean useSSL, boolean clientAuth, String keyStore, String keyStorePassword, String trustStore, String trustStorePassword) {
     this.useSsl = useSSL;
     this.clientAuth = clientAuth;
@@ -43,7 +43,7 @@ public class SSLConfig {
   public void setClientAuth(boolean clientAuth) {
     this.clientAuth = clientAuth;
   }
-  
+
   public boolean isSSLMode() {
     return useSsl;
   }

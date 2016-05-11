@@ -79,14 +79,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   /* standard functions */
   public static Map<String, ValueSourceParser> standardValueSourceParsers = new HashMap<>();
 
-  /** Adds a new parser for the name and returns any existing one that was overriden.
+  /** Adds a new parser for the name and returns any existing one that was overridden.
    *  This is not thread safe.
    */
   public static ValueSourceParser addParser(String name, ValueSourceParser p) {
     return standardValueSourceParsers.put(name, p);
   }
 
-  /** Adds a new parser for the name and returns any existing one that was overriden.
+  /** Adds a new parser for the name and returns any existing one that was overridden.
    *  This is not thread safe.
    */
   public static ValueSourceParser addParser(NamedParser p) {
@@ -404,7 +404,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           FieldType.MultiValueSelector selector = FieldType.MultiValueSelector.lookup(s);
           if (null == selector) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                    "Multi-Valued field selector '"+s+"' not spported");
+                                    "Multi-Valued field selector '"+s+"' not supported");
           }
           return f.getType().getSingleValueSource(selector, f, fp);
         }

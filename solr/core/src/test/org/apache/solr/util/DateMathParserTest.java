@@ -38,11 +38,11 @@ public class DateMathParserTest extends LuceneTestCase {
 
   /**
    * A formatter for specifying every last nuance of a Date for easy
-   * refernece in assertion statements
+   * reference in assertion statements
    */
   private DateFormat fmt;
   /**
-   * A parser for reading in explicit dates that are convinient to type
+   * A parser for reading in explicit dates that are convenient to type
    * in a test
    */
   private DateFormat parser;

@@ -180,7 +180,7 @@ public class DistributedFacetPivotLargeTest extends BaseDistributedSearchTestCas
     //   ... but there's no refinement since mincount==0
     // - would it even matter
     //
-    // should we remove the refinement short circut?
+    // should we remove the refinement short circuit?
     //
     // rsp = query( params( "q", "*:*",
     //                      "rows", "0",

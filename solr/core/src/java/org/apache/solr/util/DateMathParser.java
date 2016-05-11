@@ -92,7 +92,7 @@ import java.util.regex.Pattern;
  * @see SolrRequestInfo#getNOW
  */
 public class DateMathParser  {
-  
+
   public static TimeZone UTC = TimeZone.getTimeZone("UTC");
 
   /** Default TimeZone for DateMath rounding (UTC) */
@@ -101,7 +101,7 @@ public class DateMathParser  {
   public static final Locale DEFAULT_MATH_LOCALE = Locale.ROOT;
 
   /**
-   * A mapping from (uppercased) String labels idenyifying time units,
+   * A mapping from (uppercased) String labels identifying time units,
    * to the corresponding Calendar constant used to set/add/roll that unit
    * of measurement.
    *
@@ -120,7 +120,7 @@ public class DateMathParser  {
 
     // NOTE: consciously choosing not to support WEEK at this time,
     // because of complexity in rounding down to the nearest week
-    // arround a month/year boundry.
+    // around a month/year boundary.
     // (Not to mention: it's not clear what people would *expect*)
     // 
     // If we consider adding some time of "week" support, then
@@ -213,7 +213,7 @@ public class DateMathParser  {
 
   }
 
-  
+
   private TimeZone zone;
   private Locale loc;
   private Date now;
@@ -227,7 +227,7 @@ public class DateMathParser  {
    */
   public DateMathParser() {
     this(null, DEFAULT_MATH_LOCALE);
-    
+
   }
 
   /**
