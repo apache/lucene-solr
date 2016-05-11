@@ -44,7 +44,7 @@ import org.apache.commons.lang.StringUtils;
  * For example, in the configuration below, any "single valued" string and 
  * text field which is found to contain multiple values <i>except</i> for 
  * the <code>primary_author</code> field will be concatenated using the 
- * string "<code>; </code>" as a delimeter.  For the 
+ * string "<code>; </code>" as a delimiter.  For the 
  * <code>primary_author</code> field, the multiple values will be left 
  * alone for <code>FirstFieldValueUpdateProcessorFactory</code> to deal with.
  * </p>

@@ -30,7 +30,7 @@ import org.junit.BeforeClass;
 
 /**
  * Sanity tests basic functionality of {@link ScriptEngineManager} and 
- * {@link ScriptEngine} w/o excercising any Lucene specific code.
+ * {@link ScriptEngine} w/o exercising any Lucene specific code.
  */
 public class ScriptEngineTest extends LuceneTestCase {
 

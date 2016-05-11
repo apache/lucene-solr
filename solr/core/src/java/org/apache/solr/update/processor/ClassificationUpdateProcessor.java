@@ -80,7 +80,7 @@ class ClassificationUpdateProcessor
   }
 
   /**
-   * @param cmd the update command in input conaining the Document to classify
+   * @param cmd the update command in input containing the Document to classify
    * @throws IOException If there is a low-level I/O error
    */
   @Override

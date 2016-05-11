@@ -171,7 +171,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     writerBinBase.write(bytes, req(), rsp);
     BinaryResponseParser parser = new BinaryResponseParser();
     NamedList<Object> out = parser.processResponse
-      (new ByteArrayInputStream(bytes.toByteArray()), /* encoding irelevent */ null);
+      (new ByteArrayInputStream(bytes.toByteArray()), /* encoding irrelevant */ null);
     assertEquals(RawResponseWriter.CONTENT, out.getName(0));
     assertEquals("test", out.getVal(0));
     assertEquals("foo", out.getName(1));
@@ -180,8 +180,8 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
   }
 
   /**
-   * Generates a new {@link RawResponseWriter} wraping the specified baseWriter name 
-   * (which much either be an implicitly definied response writer, or one explicitly 
+   * Generates a new {@link RawResponseWriter} wrapping the specified baseWriter name 
+   * (which much either be an implicitly defined response writer, or one explicitly 
    * configured in solrconfig.xml)
    *
    * @param baseWriter null or the name of a valid base writer
