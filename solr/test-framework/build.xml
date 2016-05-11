@@ -38,9 +38,15 @@
   </target>
 
   <target name="compile-core" depends="resolve, compile-solr-core, compile-test-framework">
+    <!-- TODO: why does test-framework override compile-core to use this special classpath? -->
     <compile srcdir="${src.dir}" destdir="${build.dir}/classes/java">
       <classpath refid="test.base.classpath"/>
     </compile>
+    
+    <!-- Copy the resources folder (if existent) -->
+    <copy todir="${build.dir}/classes/java">
+      <fileset dir="${resources.dir}" erroronmissingdir="no"/>
+    </copy>
   </target>
 
   <!-- redefine the clover setup, because we dont want to run clover for the test-framework -->

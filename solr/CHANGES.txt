@@ -101,6 +101,15 @@ Other Changes
 * SOLR-9115: Get rid of javax.xml.bind.DatatypeConverter in SimplePostTool
   for Java 9 compatibility. (Uwe Schindler)
 
+* SOLR-5776,SOLR-9068,SOLR-8970:
+  - Refactor SSLConfig so that SSLTestConfig can provide SSLContexts using a NullSecureRandom
+    to prevent SSL tests from blocking on entropy starved machines.
+  - SSLTestConfig: Alternate (psuedo random) NullSecureRandom for Constants.SUN_OS.
+  - SSLTestConfig: Replace NullSecureRandom w/ NotSecurePsuedoRandom.
+  - Change SSLTestConfig to use a keystore file that is included as a resource in the
+    test-framework jar so users subclassing SolrTestCaseJ4 don't need to preserve magic paths.
+  (hossman)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
