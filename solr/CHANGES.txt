@@ -203,6 +203,9 @@ Bug Fixes
 
 * SOLR-9093: Fix NullPointerException in TopGroupsShardResponseProcessor. (Christine Poerschke)
 
+* SOLR-8970: Change SSLTestConfig to use a keystore file that is included as a resource in the
+  test-framework jar so users subclassing SolrTestCaseJ4 don't need to preserve magic paths (hossman)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
