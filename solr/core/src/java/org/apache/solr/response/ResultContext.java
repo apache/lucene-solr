@@ -41,7 +41,7 @@ public abstract class ResultContext {
 
   public abstract Query getQuery();
 
-  // TODO: any reason to allow for retrievial of any filters as well?
+  // TODO: any reason to allow for retrieval of any filters as well?
 
   /** Note: do not use the request to get the searcher!  A cross-core request may have a different
    *  searcher (for the other core) than the original request.

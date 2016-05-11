@@ -142,7 +142,7 @@ public class DateMathParser  {
 
     // NOTE: consciously choosing not to support WEEK at this time,
     // because of complexity in rounding down to the nearest week
-    // arround a month/year boundry.
+    // around a month/year boundary.
     // (Not to mention: it's not clear what people would *expect*)
     // 
     // If we consider adding some time of "week" support, then

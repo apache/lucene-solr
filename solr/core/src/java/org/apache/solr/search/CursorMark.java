@@ -56,7 +56,7 @@ public final class CursorMark {
    * The raw, unmarshalled, sort values (that corrispond with the SortField's in the 
    * SortSpec) for knowing which docs this cursor should "search after".  If this 
    * list is null, then we have no specific values to "search after" and we 
-   * should start from the very begining of the sorted list of documents matching 
+   * should start from the very beginning of the sorted list of documents matching 
    * the query.
    */
   private List<Object> values = null;

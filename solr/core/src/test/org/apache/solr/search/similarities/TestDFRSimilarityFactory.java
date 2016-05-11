@@ -45,7 +45,7 @@ public class TestDFRSimilarityFactory extends BaseSimilarityTestCase {
     assertEquals(NormalizationH2.class, dfr.getNormalization().getClass());
   }
   
-  /** dfr with parameterized normalization */
+  /** dfr with parametrized normalization */
   public void testParameters() throws Exception {
     Similarity sim = getSimilarity("text_params");
     assertEquals(DFRSimilarity.class, sim.getClass());

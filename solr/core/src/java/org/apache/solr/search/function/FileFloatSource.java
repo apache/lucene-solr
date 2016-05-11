@@ -203,7 +203,7 @@ public class FileFloatSource extends ValueSource {
     
     public void resetCache(){
       synchronized(readerCache){
-        // Map.clear() is optional and can throw UnsipportedOperationException,
+        // Map.clear() is optional and can throw UnsupportedOperationException,
         // but readerCache is WeakHashMap and it supports clear().
         readerCache.clear();
       }

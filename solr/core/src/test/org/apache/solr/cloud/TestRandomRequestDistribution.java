@@ -189,10 +189,11 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
     }
     assertNotNull(leaderCore);
 
-    //All queries should be served by the active replica
-    //To make sure that's true we keep querying the down replica
-    //If queries are getting processed by the down replica then the cluster state hasn't updated for that replica locally
-    //So we keep trying till it has updated and then verify if ALL queries go to the active reploca
+    // All queries should be served by the active replica
+    // To make sure that's true we keep querying the down replica
+    // If queries are getting processed by the down replica then the cluster state hasn't updated for that replica
+    // locally
+    // So we keep trying till it has updated and then verify if ALL queries go to the active reploca
     long count = 0;
     while (true) {
       count++;
@@ -202,7 +203,7 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       long c = (long) select.getStatistics().get("requests");
 
       if (c == 1) {
-        break;  //cluster state has got update locally
+        break; // cluster state has got update locally
       } else {
         Thread.sleep(100);
       }
@@ -212,11 +213,11 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
       }
     }
 
-    //Now we fire a few additional queries and make sure ALL of them
-    //are served by the active replica
+    // Now we fire a few additional queries and make sure ALL of them
+    // are served by the active replica
     int moreQueries = TestUtil.nextInt(random(), 4, 10);
-    count = 1; //Since 1 query has already hit the leader
-    for (int i=0; i<moreQueries; i++) {
+    count = 1; // Since 1 query has already hit the leader
+    for (int i = 0; i < moreQueries; i++) {
       client.query(new SolrQuery("*:*"));
       count++;
 
@@ -225,6 +226,5 @@ public class TestRandomRequestDistribution extends AbstractFullDistribZkTestBase
 
       assertEquals("Query wasn't served by leader", count, c);
     }
-
   }
 }

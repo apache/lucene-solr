@@ -134,7 +134,7 @@ public class SolrReturnFields extends ReturnFields {
       // TODO??? need to fill up the fields with matching field names in the index
       // and add them to okFieldNames?
       // maybe just get all fields?
-      // this would disable field selection optimization... i think thatis OK
+      // this would disable field selection optimization... i think that is OK
       fields.clear(); // this will get all fields, and use wantsField to limit
     }
 

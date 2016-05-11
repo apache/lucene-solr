@@ -260,14 +260,14 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
       reader.updateClusterState();
       try {
         writer.enqueueUpdate(reader.getClusterState(), c2, null);
-        fail("enqueueUpdate after BadVersionException should not have suceeded");
+        fail("enqueueUpdate after BadVersionException should not have succeeded");
       } catch (IllegalStateException e) {
         // expected
       }
 
       try {
         writer.writePendingUpdates();
-        fail("writePendingUpdates after BadVersionException should not have suceeded");
+        fail("writePendingUpdates after BadVersionException should not have succeeded");
       } catch (IllegalStateException e) {
         // expected
       }
@@ -344,14 +344,14 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
 
       try {
         writer.enqueueUpdate(reader.getClusterState(), c2, null);
-        fail("enqueueUpdate after BadVersionException should not have suceeded");
+        fail("enqueueUpdate after BadVersionException should not have succeeded");
       } catch (IllegalStateException e) {
         // expected
       }
 
       try {
         writer.writePendingUpdates();
-        fail("writePendingUpdates after BadVersionException should not have suceeded");
+        fail("writePendingUpdates after BadVersionException should not have succeeded");
       } catch (IllegalStateException e) {
         // expected
       }

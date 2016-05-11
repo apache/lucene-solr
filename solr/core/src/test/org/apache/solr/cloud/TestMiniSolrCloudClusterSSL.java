@@ -238,7 +238,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       }
       
       // sanity check the HttpClient used under the hood by our the cluster's CloudSolrClient
-      // ensure it has the neccessary protocols/credentials for each jetty server
+      // ensure it has the necessary protocols/credentials for each jetty server
       //
       // NOTE: we're not responsible for closing the cloud client
       final HttpClient cloudClient = cluster.getSolrClient().getLbClient().getHttpClient();
@@ -262,7 +262,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
         // verify simple HTTP(S) client can't do HEAD request for URL with wrong protocol
         try (CloseableHttpClient client = getSslAwareClientWithNoClientCerts()) {
           final String wrongUrl = wrongBaseURL + "/admin/cores";
-          // vastly diff exception details betwen plain http vs https, not worried about details here
+          // vastly diff exception details between plain http vs https, not worried about details here
           expectThrows(IOException.class, () -> {
               doHeadRequest(client, wrongUrl);
             });

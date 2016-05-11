@@ -146,7 +146,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           try {
             version = Long.parseLong(commitTime);
           } catch (NumberFormatException e) {
-            LOG.warn("Version in commitData was not formated correctly: " + commitTime, e);
+            LOG.warn("Version in commitData was not formatted correctly: " + commitTime, e);
           }
         }
       } catch (IOException e) {

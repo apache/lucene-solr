@@ -61,7 +61,7 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
     assertQ( req(
         "q", "*:*", 
         "fl", "id,out:[custom extra=subject,title]"), 
-        // Check that the concatinated fields make it in the results
+        // Check that the concatenated fields make it in the results
         "//*[@numFound='" + max + "']",
         "//str[.='xx#title_0#']",
         "//str[.='xx#title_1#']",
@@ -102,7 +102,7 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
     }
 
     /**
-     * This transformer simply concatinates the values of multipe fields
+     * This transformer simply concatenates the values of multiple fields
      */
     @Override
     public void transform(SolrDocument doc, int docid, float score) throws IOException {
