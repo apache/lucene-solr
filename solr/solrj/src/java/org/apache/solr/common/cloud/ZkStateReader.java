@@ -1122,7 +1122,7 @@ public class ZkStateReader implements Closeable {
       v.coreRefCount++;
       return v;
     });
-    if (reconstructState.get() && legacyCollectionStates.containsKey(collection) == false) {
+    if (reconstructState.get()) {
       new StateWatcher(collection).refreshAndWatch();
       synchronized (getUpdateLock()) {
         constructState();
@@ -1179,7 +1179,7 @@ public class ZkStateReader implements Closeable {
       v.stateWatchers.add(stateWatcher);
       return v;
     });
-    if (watchSet.get() && legacyCollectionStates.containsKey(collection) == false) {
+    if (watchSet.get()) {
       new StateWatcher(collection).refreshAndWatch();
       synchronized (getUpdateLock()) {
         constructState();
