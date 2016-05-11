@@ -50,7 +50,7 @@ public interface QueryResponseWriter extends NamedListInitializedPlugin {
    * Write a SolrQueryResponse, this method must be thread save.
    *
    * <p>
-   * Information about the request (in particular: formating options) may be 
+   * Information about the request (in particular: formatting options) may be 
    * obtained from <code>req</code> but the dominant source of information 
    * should be <code>rsp</code>.
    * <p>

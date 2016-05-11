@@ -77,7 +77,7 @@ public class UpdateRequestProcessorFactoryTest extends AbstractSolrTestCase {
   public void testUpdateDistribChainSkipping() throws Exception {
 
     // a key part of this test is verifying that LogUpdateProcessor is found in all chains because it
-    // is a @RunAllways processor -- but in order for that to work, we have to sanity check that the log
+    // is a @RunAlways processor -- but in order for that to work, we have to sanity check that the log
     // level is at least "INFO" otherwise the factory won't even produce a processor and all our assertions
     // are for nought.  (see LogUpdateProcessorFactory.getInstance)
     //

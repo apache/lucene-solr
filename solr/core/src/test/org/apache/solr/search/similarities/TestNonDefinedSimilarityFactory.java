@@ -22,7 +22,7 @@ import org.junit.After;
 
 /**
  * Verifies that the default behavior of the implicit {@link ClassicSimilarityFactory} 
- * (ie: no similarity configured in schema.xml at all) is consistnent with 
+ * (ie: no similarity configured in schema.xml at all) is consistent with 
  * expectations based on the luceneMatchVersion
  * @see <a href="https://issues.apache.org/jira/browse/SOLR-5561">SOLR-5561</a>
  */

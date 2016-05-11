@@ -517,7 +517,7 @@ public class TestCloudPivotFacet extends AbstractFullDistribZkTestBase {
     // randomly decide which stat tag to use
 
     // if this is 0, or stats aren't enabled, we'll be asking for a tag that doesn't exist
-    // ...which should be fine (just like excluding a taged fq that doesn't exist)
+    // ...which should be fine (just like excluding a tagged fq that doesn't exist)
     final int statTag = TestUtil.nextInt(random(), -1, 4);
       
     if (0 <= statTag) {

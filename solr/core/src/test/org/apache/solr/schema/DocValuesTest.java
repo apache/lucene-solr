@@ -104,7 +104,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         assertEquals(4L, values.longVal(0));
         assertEquals(4L, values.objectVal(0));
 
-        // check reversability of created fields
+        // check reversibility of created fields
         tstToObj(schema.getField("floatdv"), -1.5f);
         tstToObj(schema.getField("floatdvs"), -1.5f);
         tstToObj(schema.getField("doubledv"), -1.5d);

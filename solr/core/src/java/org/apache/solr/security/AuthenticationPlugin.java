@@ -68,8 +68,7 @@ public abstract class AuthenticationPlugin implements Closeable {
    * @param request the http request
    * @param response the http response
    * @param filterChain the servlet filter chain
-   * @throws Exception any exception thrown during the authentication, e.g. 
-   * PriviledgedAccessException
+   * @throws Exception any exception thrown during the authentication, e.g. PrivilegedActionException
    */
   public abstract void doAuthenticate(ServletRequest request, ServletResponse response,
       FilterChain filterChain) throws Exception;

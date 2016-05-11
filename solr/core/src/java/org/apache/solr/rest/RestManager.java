@@ -128,7 +128,7 @@ public class RestManager {
     }
 
     /**
-     * Returns the set of non-registerable endpoints.
+     * Returns the set of non-registrable endpoints.
      */
     public Set<String> getReservedEndpoints() {
       return Collections.unmodifiableSet(reservedEndpoints);

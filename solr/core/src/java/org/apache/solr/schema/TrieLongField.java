@@ -101,7 +101,7 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
               
               @Override
               public void fillValue(int doc) {
-                // micro optimized (eliminate at least one redudnent ord check) 
+                // micro optimized (eliminate at least one redundant ord check) 
                 //mval.exists = exists(doc);
                 //mval.value = mval.exists ? longVal(doc) : 0;
                 //

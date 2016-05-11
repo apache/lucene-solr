@@ -85,7 +85,7 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-  // replace \0 with the field name and create a parseable string 
+  // replace \0 with the field name and create a parsable string 
   public String func(String field, String template) {
     StringBuilder sb = new StringBuilder("{!func}");
     for (char ch : template.toCharArray()) {
