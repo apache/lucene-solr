@@ -215,6 +215,9 @@ public final class CheckIndex implements Closeable {
       /** Status for testing of DocValues (null if DocValues could not be tested). */
       public DocValuesStatus docValuesStatus;
 
+      /** Version the segment was written with */
+      public Version version;
+
       /** Status for testing of PointValues (null if PointValues could not be tested). */
       public PointsStatus pointsStatus;
     }
@@ -623,9 +626,9 @@ public final class CheckIndex implements Closeable {
       msg(infoStream, "  " + (1+i) + " of " + numSegments + ": name=" + info.info.name + " maxDoc=" + info.info.maxDoc());
       segInfoStat.name = info.info.name;
       segInfoStat.maxDoc = info.info.maxDoc();
+      segInfoStat.version = info.info.getVersion();
       
-      final Version version = info.info.getVersion();
-      if (info.info.maxDoc() <= 0) {
+      if (info.info.maxDoc() <= 0 && segInfoStat.version.onOrAfter(Version.LUCENE_4_5_0)) {
         throw new RuntimeException("illegal number of documents: maxDoc=" + info.info.maxDoc());
       }
 
@@ -634,7 +637,7 @@ public final class CheckIndex implements Closeable {
       SegmentReader reader = null;
 
       try {
-        msg(infoStream, "    version=" + (version == null ? "3.0" : version));
+        msg(infoStream, "    version=" + segInfoStat.version);
         msg(infoStream, "    id=" + StringHelper.idToString(info.info.getId()));
         final Codec codec = info.info.getCodec();
         msg(infoStream, "    codec=" + codec);
@@ -782,6 +785,21 @@ public final class CheckIndex implements Closeable {
       msg(infoStream, "ERROR: Next segment name counter " + sis.counter + " is not greater than max segment name " + result.maxSegmentName);
     }
     
+    // if someone uses the -fast option, check that it wasnt a no-op or weak check.
+    if (getChecksumsOnly()) {
+      boolean old = false; // no ids
+      boolean ancient = false; // no checksums
+      for (Status.SegmentInfoStatus segment : result.segmentInfos) {
+        old |= !segment.version.onOrAfter(Version.LUCENE_5_0_0);
+        ancient |= !segment.version.onOrAfter(Version.LUCENE_4_8_0);
+      }
+      if (ancient) {
+        msg(infoStream, "WARNING: Some segments are older than 4.8 and have no checksums. Run checkindex without -fast for full verification.");
+      } else if (old) {
+        msg(infoStream, "WARNING: Some segments are older than 5.0 and have no identifiers. Run checkindex without -fast for full verification.");
+      }
+    }
+
     if (result.clean) {
       msg(infoStream, "No problems were detected with this index.\n");
     }

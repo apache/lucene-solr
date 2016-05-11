@@ -22,8 +22,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Map;
 import java.util.Set;
 
 /** Embeds a [read-only] SegmentInfo and adds per-commit
@@ -68,6 +68,10 @@ public class SegmentCommitInfo {
   // track the fieldInfos update files
   private final Set<String> fieldInfosFiles = new HashSet<>();
   
+  // Track the per-generation updates files
+  @Deprecated
+  private final Map<Long,Set<String>> genUpdatesFiles = new HashMap<>();
+
   private volatile long sizeInBytes = -1;
 
   /**
@@ -94,7 +98,25 @@ public class SegmentCommitInfo {
     this.docValuesGen = docValuesGen;
     this.nextWriteDocValuesGen = docValuesGen == -1 ? 1 : docValuesGen + 1;
   }
-  
+
+  /**
+   * Sets the updates file names per generation. Does not deep clone the map.
+   *
+   * @deprecated required to support 4.6-4.8 indexes.
+   */
+  @Deprecated
+  public void setGenUpdatesFiles(Map<Long,Set<String>> genUpdatesFiles) {
+    this.genUpdatesFiles.clear();
+    for (Map.Entry<Long,Set<String>> kv : genUpdatesFiles.entrySet()) {
+      // rename the set
+      Set<String> set = new HashSet<>();
+      for (String file : kv.getValue()) {
+        set.add(info.namedForThisSegment(file));
+      }
+      this.genUpdatesFiles.put(kv.getKey(), set);
+    }
+  }
+
   /** Returns the per-field DocValues updates files. */
   public Map<Integer,Set<String>> getDocValuesUpdatesFiles() {
     return Collections.unmodifiableMap(dvUpdatesFiles);
@@ -224,7 +246,12 @@ public class SegmentCommitInfo {
     
     // Must separately add any live docs files:
     info.getCodec().liveDocsFormat().files(this, files);
-    
+
+    // Must separately add any per-gen updates files.
+    for (Set<String> updateFiles : genUpdatesFiles.values()) {
+      files.addAll(updateFiles);
+    }
+
     // must separately add any field updates files
     for (Set<String> updatefiles : dvUpdatesFiles.values()) {
       files.addAll(updatefiles);
@@ -347,6 +374,11 @@ public class SegmentCommitInfo {
     other.nextWriteFieldInfosGen = nextWriteFieldInfosGen;
     other.nextWriteDocValuesGen = nextWriteDocValuesGen;
     
+    // deep clone
+    for (Entry<Long,Set<String>> e : genUpdatesFiles.entrySet()) {
+      other.genUpdatesFiles.put(e.getKey(), new HashSet<>(e.getValue()));
+    }
+
     // deep clone
     for (Entry<Integer,Set<String>> e : dvUpdatesFiles.entrySet()) {
       other.dvUpdatesFiles.put(e.getKey(), new HashSet<>(e.getValue()));

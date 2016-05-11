@@ -216,59 +216,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   final static String[] oldNames = {
-    "6.0.0-cfs",
-    "6.0.0-nocfs"
-  };
-  
-  final String[] unsupportedNames = {
-      "1.9.0-cfs",
-      "1.9.0-nocfs",
-      "2.0.0-cfs",
-      "2.0.0-nocfs",
-      "2.1.0-cfs",
-      "2.1.0-nocfs",
-      "2.2.0-cfs",
-      "2.2.0-nocfs",
-      "2.3.0-cfs",
-      "2.3.0-nocfs",
-      "2.4.0-cfs",
-      "2.4.0-nocfs",
-      "2.4.1-cfs",
-      "2.4.1-nocfs",
-      "2.9.0-cfs",
-      "2.9.0-nocfs",
-      "2.9.1-cfs",
-      "2.9.1-nocfs",
-      "2.9.2-cfs",
-      "2.9.2-nocfs",
-      "2.9.3-cfs",
-      "2.9.3-nocfs",
-      "2.9.4-cfs",
-      "2.9.4-nocfs",
-      "3.0.0-cfs",
-      "3.0.0-nocfs",
-      "3.0.1-cfs",
-      "3.0.1-nocfs",
-      "3.0.2-cfs",
-      "3.0.2-nocfs",
-      "3.0.3-cfs",
-      "3.0.3-nocfs",
-      "3.1.0-cfs",
-      "3.1.0-nocfs",
-      "3.2.0-cfs",
-      "3.2.0-nocfs",
-      "3.3.0-cfs",
-      "3.3.0-nocfs",
-      "3.4.0-cfs",
-      "3.4.0-nocfs",
-      "3.5.0-cfs",
-      "3.5.0-nocfs",
-      "3.6.0-cfs",
-      "3.6.0-nocfs",
-      "3.6.1-cfs",
-      "3.6.1-nocfs",
-      "3.6.2-cfs",
-      "3.6.2-nocfs",
       "4.0.0-cfs",
       "4.0.0-nocfs",
       "4.0.0.1-cfs",
@@ -319,10 +266,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "4.10.3-nocfs",
       "4.10.4-cfs",
       "4.10.4-nocfs",
-      "5x-with-4x-segments-cfs",
-      "5x-with-4x-segments-nocfs",
-      "5.0.0.singlesegment-cfs",
-      "5.0.0.singlesegment-nocfs",
       "5.0.0-cfs",
       "5.0.0-nocfs",
       "5.1.0-cfs",
@@ -343,10 +286,65 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       "5.4.1-nocfs",
       "5.5.0-cfs",
       "5.5.0-nocfs",
+      "6.0.0-cfs",
+      "6.0.0-nocfs"
   };
 
-  // TODO: on 6.0.0 release, gen the single segment indices and add here:
+  final String[] unsupportedNames = {
+      "1.9.0-cfs",
+      "1.9.0-nocfs",
+      "2.0.0-cfs",
+      "2.0.0-nocfs",
+      "2.1.0-cfs",
+      "2.1.0-nocfs",
+      "2.2.0-cfs",
+      "2.2.0-nocfs",
+      "2.3.0-cfs",
+      "2.3.0-nocfs",
+      "2.4.0-cfs",
+      "2.4.0-nocfs",
+      "2.4.1-cfs",
+      "2.4.1-nocfs",
+      "2.9.0-cfs",
+      "2.9.0-nocfs",
+      "2.9.1-cfs",
+      "2.9.1-nocfs",
+      "2.9.2-cfs",
+      "2.9.2-nocfs",
+      "2.9.3-cfs",
+      "2.9.3-nocfs",
+      "2.9.4-cfs",
+      "2.9.4-nocfs",
+      "3.0.0-cfs",
+      "3.0.0-nocfs",
+      "3.0.1-cfs",
+      "3.0.1-nocfs",
+      "3.0.2-cfs",
+      "3.0.2-nocfs",
+      "3.0.3-cfs",
+      "3.0.3-nocfs",
+      "3.1.0-cfs",
+      "3.1.0-nocfs",
+      "3.2.0-cfs",
+      "3.2.0-nocfs",
+      "3.3.0-cfs",
+      "3.3.0-nocfs",
+      "3.4.0-cfs",
+      "3.4.0-nocfs",
+      "3.5.0-cfs",
+      "3.5.0-nocfs",
+      "3.6.0-cfs",
+      "3.6.0-nocfs",
+      "3.6.1-cfs",
+      "3.6.1-nocfs",
+      "3.6.2-cfs",
+      "3.6.2-nocfs",
+      "4x-with-3x-segments"
+  };
+
   final static String[] oldSingleSegmentNames = {
+    "5.0.0.singlesegment-cfs",
+    "5.0.0.singlesegment-nocfs"
   };
   
   static Map<String,Directory> oldIndexDirs;
@@ -410,45 +408,21 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     for (java.lang.reflect.Field field : Version.class.getDeclaredFields()) {
       if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
         Version v = (Version)field.get(Version.class);
-        if (v.equals(Version.LATEST)) {
-          continue;
-        }
+        if (v.equals(Version.LATEST)) continue;
 
         Matcher constant = constantPattern.matcher(field.getName());
-        if (constant.matches() == false) {
-          continue;
-        }
+        if (constant.matches() == false) continue;
 
         expectedVersions.add(v.toString() + "-cfs");
       }
     }
-
-    // BEGIN TRUNK ONLY BLOCK
-    // on trunk, the last release of the prev major release is also untested
-    Version lastPrevMajorVersion = null;
-    for (java.lang.reflect.Field field : Version.class.getDeclaredFields()) {
-      if (Modifier.isStatic(field.getModifiers()) && field.getType() == Version.class) {
-        Version v = (Version)field.get(Version.class);
-        Matcher constant = constantPattern.matcher(field.getName());
-        if (constant.matches() == false) continue;
-        if (v.major == Version.LATEST.major - 1 &&
-            (lastPrevMajorVersion == null || v.onOrAfter(lastPrevMajorVersion))) {
-          lastPrevMajorVersion = v;
-        }
-      }
-    }
-    assertNotNull(lastPrevMajorVersion);
-    expectedVersions.remove(lastPrevMajorVersion.toString() + "-cfs");
-    // END TRUNK ONLY BLOCK
 
     Collections.sort(expectedVersions);
 
     // find what versions we are testing
     List<String> testedVersions = new ArrayList<>();
     for (String testedVersion : oldNames) {
-      if (testedVersion.endsWith("-cfs") == false) {
-        continue;
-      }
+      if (testedVersion.endsWith("-cfs") == false) continue;
       testedVersions.add(testedVersion);
     }
     Collections.sort(testedVersions);
@@ -478,7 +452,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       ++i;
     }
     while (j < testedVersions.size()) {
-      missingFiles.add(testedVersions.get(j));
+      extraFiles.add(testedVersions.get(j));
       ++j;
     }
 
