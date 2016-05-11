@@ -55,7 +55,7 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
 
   private int minDf; // knn specific - the minimum Document Frequency for considering a term
 
-  private int k; // knn specific - thw window of top results to evaluate, when assgning the class
+  private int k; // knn specific - thw window of top results to evaluate, when assigning the class
 
   @Override
   public void init(final NamedList args) {

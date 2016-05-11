@@ -114,7 +114,7 @@ public class TestMergePolicyConfig extends SolrTestCaseJ4 {
     
     assertCommitSomeNewDocs();
     // even though we have a single segment (which is 100% of the size of 
-    // the index which is higher then our 0.6D threashold) the
+    // the index which is higher then our 0.6D threshold) the
     // compound ratio doesn't matter because the segment was never merged
     assertCompoundSegments(h.getCore(), expectCFS);
 

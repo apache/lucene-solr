@@ -159,9 +159,9 @@ public class QueryResultKeyTest extends SolrTestCaseJ4 {
   /**
    * returns a "small" list of "small" random numbers.  The idea behind this method is 
    * that multiple calls have a decent change of returning two arrays which are the 
-   * same size and contain the same numbers but in a differnet order.
+   * same size and contain the same numbers but in a differed order.
    *
-   * the array is garunteed to always have at least 1 element
+   * the array is guaranteed to always have at least 1 element
    */
   private int[] smallArrayOfRandomNumbers() {
     int size = TestUtil.nextInt(random(), 1, 5);

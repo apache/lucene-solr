@@ -38,7 +38,7 @@ import org.apache.solr.update.processor.UUIDUpdateProcessorFactory; // jdoc
  * configured as the unique key field) since the result will be that each 
  * replica of each document will get a unique UUID value.  
  * Using {@link UUIDUpdateProcessorFactory} to generate UUID values when 
- * documents are added is recomended instead.
+ * documents are added is recommended instead.
  * </p>
  * 
  * @see UUID#toString

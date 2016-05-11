@@ -309,7 +309,7 @@ public abstract class AbstractCurrencyFieldTest extends SolrTestCaseJ4 {
 
     assertU(commit());
 
-    // direct value source usage, gets "raw" form od default curency
+    // direct value source usage, gets "raw" form od default currency
     // default==USD, so raw==penies
     assertQ(req("fl", "id,func:field($f)",
                 "f", field(),

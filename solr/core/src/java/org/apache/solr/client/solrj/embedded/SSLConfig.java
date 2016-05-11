@@ -20,7 +20,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 /** 
  * Encapsulates settings related to SSL Configuration for an embedded Jetty Server.
- * NOTE: all other settings are ignogred if {@link #isSSLMode} is false.
+ * NOTE: all other settings are ignored if {@link #isSSLMode} is false.
  * @see #setUseSSL
  */
 public class SSLConfig {
