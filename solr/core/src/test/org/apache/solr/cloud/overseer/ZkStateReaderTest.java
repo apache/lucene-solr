@@ -62,6 +62,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     ZkTestServer server = new ZkTestServer(zkDir);
 
     SolrZkClient zkClient = null;
+    ZkStateReader reader = null;
 
     try {
       server.run();
@@ -71,7 +72,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
       ZkController.createClusterZkNodes(zkClient);
 
-      ZkStateReader reader = new ZkStateReader(zkClient);
+      reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
       if (isInteresting) {
         reader.registerCore("c1");
@@ -136,7 +137,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         assertEquals(2, collection.getStateFormat());
       }
     } finally {
-      IOUtils.close(zkClient);
+      IOUtils.close(reader, zkClient);
       server.shutdown();
 
     }
@@ -146,6 +147,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     String zkDir = createTempDir("testExternalCollectionWatchedNotWatched").toFile().getAbsolutePath();
     ZkTestServer server = new ZkTestServer(zkDir);
     SolrZkClient zkClient = null;
+    ZkStateReader reader = null;
 
     try {
       server.run();
@@ -155,7 +157,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
       ZkController.createClusterZkNodes(zkClient);
 
-      ZkStateReader reader = new ZkStateReader(zkClient);
+      reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
 
       ZkStateWriter writer = new ZkStateWriter(reader, new Overseer.Stats());
@@ -176,7 +178,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       assertTrue(reader.getClusterState().getCollectionRef("c1").isLazilyLoaded());
 
     } finally {
-      IOUtils.close(zkClient);
+      IOUtils.close(reader, zkClient);
       server.shutdown();
     }
   }
@@ -187,6 +189,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
     ZkTestServer server = new ZkTestServer(zkDir);
 
     SolrZkClient zkClient = null;
+    ZkStateReader reader = null;
 
     try {
       server.run();
@@ -196,7 +199,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       zkClient = new SolrZkClient(server.getZkAddress(), OverseerTest.DEFAULT_CONNECTION_TIMEOUT);
       ZkController.createClusterZkNodes(zkClient);
 
-      ZkStateReader reader = new ZkStateReader(zkClient);
+      reader = new ZkStateReader(zkClient);
       reader.createClusterStateWatchersAndUpdate();
       reader.registerCore("c1");
 
@@ -234,7 +237,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       assertFalse(ref.isLazilyLoaded());
       assertEquals(2, ref.get().getStateFormat());
     } finally {
-      IOUtils.close(zkClient);
+      IOUtils.close(reader, zkClient);
       server.shutdown();
 
     }
