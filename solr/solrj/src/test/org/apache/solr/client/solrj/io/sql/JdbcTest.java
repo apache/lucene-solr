@@ -408,7 +408,7 @@ public class JdbcTest extends SolrCloudTestCase {
             "order by sum(a_f) desc")) {
         } catch (Exception e) {
           String errorMessage = e.getMessage();
-          assertTrue(errorMessage.contains("Group by queries must include atleast one aggregate function"));
+          assertTrue(errorMessage.contains("Group by queries must include at least one aggregate function"));
         }
       }
     }
