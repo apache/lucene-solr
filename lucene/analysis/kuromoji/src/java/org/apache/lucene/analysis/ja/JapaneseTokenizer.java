@@ -163,9 +163,6 @@ public final class JapaneseTokenizer extends Tokenizer {
   // Allowable cost difference for N-best output:
   private int nBestCost = 0;
 
-  // Index of the last character of unknown word:
-  private int unknownWordEndIndex = -1;
-
   // True once we've hit the EOF from the input reader:
   private boolean end;
 
@@ -279,7 +276,6 @@ public final class JapaneseTokenizer extends Tokenizer {
 
   private void resetState() {
     positions.reset();
-    unknownWordEndIndex = -1;
     pos = 0;
     end = false;
     lastBackTracePos = 0;
@@ -432,7 +428,7 @@ public final class JapaneseTokenizer extends Tokenizer {
       // end of loop), plus bigram cost:
       final int cost = fromPosData.costs[idx] + costs.get(fromPosData.lastRightID[idx], leftID);
       if (VERBOSE) {
-        System.out.println("      fromIDX=" + idx + ": cost=" + cost + " (prevCost=" + fromPosData.costs[idx] + " wordCost=" + wordCost + " bgCost=" + costs.get(fromPosData.lastRightID[idx], leftID) + " leftID=" + leftID);
+        System.out.println("      fromIDX=" + idx + ": cost=" + cost + " (prevCost=" + fromPosData.costs[idx] + " wordCost=" + wordCost + " bgCost=" + costs.get(fromPosData.lastRightID[idx], leftID) + " leftID=" + leftID + ")");
       }
       if (cost < leastCost) {
         leastCost = cost;
@@ -629,6 +625,9 @@ public final class JapaneseTokenizer extends Tokenizer {
       System.out.println("\nPARSE");
     }
 
+    // Index of the last character of unknown word:
+    int unknownWordEndIndex = -1;
+
     // Advances over each position (character):
     while (true) {
 
@@ -752,7 +751,7 @@ public final class JapaneseTokenizer extends Tokenizer {
       }
 
       if (VERBOSE) {
-        System.out.println("\n  extend @ pos=" + pos + " char=" + (char) buffer.get(pos));
+        System.out.println("\n  extend @ pos=" + pos + " char=" + (char) buffer.get(pos) + " hex=" + Integer.toHexString(buffer.get(pos)));
       }
 
       if (VERBOSE) {
