@@ -30,8 +30,11 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -1053,6 +1056,14 @@ public class TestIndexSorting extends LuceneTestCase {
     TERM_VECTORS_TYPE.setStoreTermVectors(true);
     TERM_VECTORS_TYPE.freeze();
 
+    Analyzer a = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer();
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+
     List<Document> docs = new ArrayList<>();
     for (int i=0;i<numDocs;i++) {
       int id = i * 10;
@@ -1085,14 +1096,15 @@ public class TestIndexSorting extends LuceneTestCase {
     // We add document alread in ID order for the first writer:
     Directory dir1 = newFSDirectory(createTempDir());
     
-    IndexWriterConfig iwc1 = newIndexWriterConfig(new MockAnalyzer(random()));
+    Random random1 = new Random(seed);
+    IndexWriterConfig iwc1 = newIndexWriterConfig(random1, a);
     iwc1.setSimilarity(new NormsSimilarity(iwc1.getSimilarity())); // for testing norms field
     // preserve docIDs
     iwc1.setMergePolicy(newLogMergePolicy());
     if (VERBOSE) {
       System.out.println("TEST: now index pre-sorted");
     }
-    RandomIndexWriter w1 = new RandomIndexWriter(new Random(seed), dir1, iwc1);
+    RandomIndexWriter w1 = new RandomIndexWriter(random1, dir1, iwc1);
     for(Document doc : docs) {
       ((PositionsTokenStream) ((Field) doc.getField("positions")).tokenStreamValue()).setId(Integer.parseInt(doc.get("id")));
       w1.addDocument(doc);
@@ -1101,7 +1113,8 @@ public class TestIndexSorting extends LuceneTestCase {
     // We shuffle documents, but set index sort, for the second writer:
     Directory dir2 = newFSDirectory(createTempDir());
     
-    IndexWriterConfig iwc2 = newIndexWriterConfig(new MockAnalyzer(random()));
+    Random random2 = new Random(seed);
+    IndexWriterConfig iwc2 = newIndexWriterConfig(random2, a);
     iwc2.setSimilarity(new NormsSimilarity(iwc2.getSimilarity())); // for testing norms field
 
     Sort sort = new Sort(new SortField("numeric", SortField.Type.INT));
@@ -1111,7 +1124,7 @@ public class TestIndexSorting extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: now index with index-time sorting");
     }
-    RandomIndexWriter w2 = new RandomIndexWriter(new Random(seed), dir2, iwc2);
+    RandomIndexWriter w2 = new RandomIndexWriter(random2, dir2, iwc2);
     int count = 0;
     int commitAtCount = TestUtil.nextInt(random(), 1, numDocs-1);
     for(Document doc : docs) {
@@ -1122,10 +1135,16 @@ public class TestIndexSorting extends LuceneTestCase {
       }
       w2.addDocument(doc);
     }
+    if (VERBOSE) {
+      System.out.println("TEST: now force merge");
+    }
     w2.forceMerge(1);
 
     DirectoryReader r1 = w1.getReader();
     DirectoryReader r2 = w2.getReader();
+    if (VERBOSE) {
+      System.out.println("TEST: now compare r1=" + r1 + " r2=" + r2);
+    }
     assertEquals(sort, getOnlyLeafReader(r2).getIndexSort());
     assertReaderEquals("left: sorted by hand; right: sorted by Lucene", r1, r2);
     IOUtils.close(w1, w2, r1, r2, dir1, dir2);

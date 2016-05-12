@@ -831,7 +831,7 @@ public final class CheckIndex implements Closeable {
 
     if (sort != null) {
       if (infoStream != null) {
-        infoStream.print("    test: check index sort.....");
+        infoStream.print("    test: index sort..........");
       }
 
       SortField fields[] = sort.getSort();
