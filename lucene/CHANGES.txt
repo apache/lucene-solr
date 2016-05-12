@@ -111,6 +111,9 @@ Bug Fixes
   minPackedValue and maxPackedValue to skip leaves that do not have points
   rather than raising an IllegalStateException. (Adrien Grand)
 
+* LUCENE-7279: JapaneseTokenizer throws ArrayIndexOutOfBoundsException
+  on some valid inputs (Mike McCandless)
+
 Documentation
 
 * LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
