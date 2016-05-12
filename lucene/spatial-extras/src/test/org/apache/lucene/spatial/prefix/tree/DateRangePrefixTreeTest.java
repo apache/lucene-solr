@@ -17,19 +17,32 @@
 package org.apache.lucene.spatial.prefix.tree;
 
 import java.text.ParseException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.SpatialRelation;
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
 import org.apache.lucene.spatial.prefix.tree.NumberRangePrefixTree.UnitNRShape;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.SpatialRelation;
 
 public class DateRangePrefixTreeTest extends LuceneTestCase {
 
-  private DateRangePrefixTree tree = DateRangePrefixTree.INSTANCE;
+  @ParametersFactory
+  public static Iterable<Object[]> parameters() {
+    return Arrays.asList(new Object[][]{
+        {DateRangePrefixTree.DEFAULT_CAL}, {DateRangePrefixTree.JAVA_UTIL_TIME_COMPAT_CAL}
+    });
+  }
+
+  private final DateRangePrefixTree tree;
+
+  public DateRangePrefixTreeTest(Calendar templateCal) {
+    tree = new DateRangePrefixTree(templateCal);
+  }
 
   public void testRoundTrip() throws Exception {
     Calendar cal = tree.newCal();
@@ -77,6 +90,10 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
     //test random
     cal.setTimeInMillis(random().nextLong());
     roundTrip(cal);
+    //assert same toString as java.time, provided it's after the GCD
+    if (cal.getTimeInMillis() > ((GregorianCalendar)tree.newCal()).getGregorianChange().getTime()) {
+      assertEquals(Instant.ofEpochMilli(cal.getTimeInMillis()).toString(), tree.toString(cal) + 'Z');
+    }
   }
 
   //copies from DateRangePrefixTree
@@ -88,8 +105,14 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
     Calendar cal = (Calendar) calOrig.clone();
     String lastString = null;
     while (true) {
-      String calString = tree.toString(cal);
-      assert lastString == null || calString.length() < lastString.length();
+      String calString;
+      {
+        Calendar preToStringCalClone = (Calendar) cal.clone();
+        calString = tree.toString(cal);
+        assert lastString == null || calString.length() < lastString.length();
+        assertEquals(preToStringCalClone, cal);//ensure toString doesn't modify cal state
+      }
+
       //test parseCalendar
       assertEquals(cal, tree.parseCalendar(calString));
 

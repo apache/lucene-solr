@@ -19,6 +19,9 @@ New Features
 * LUCENE-7234: Added InetAddressPoint.nextDown/nextUp to easily generate range
   queries with excluded bounds. (Adrien Grand)
 
+* LUCENE-7278: Spatial-extras DateRangePrefixTree's Calendar is now configurable, to
+  e.g. clear the Gregorian Change Date. (David Smiley)
+
 API Changes
 
 * LUCENE-7163: refactor GeoRect, Polygon, and GeoUtils tests to geo
