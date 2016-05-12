@@ -5,6 +5,12 @@ http://s.apache.org/luceneversions
 
 ======================= Lucene 6.0.1 =======================
 
+New Features
+
+* LUCENE-7278: Spatial-extras DateRangePrefixTree's Calendar is now configurable, to
+  e.g. clear the Gregorian Change Date.  Also, toString(cal) is now identical to
+  DateTimeFormatter.ISO_INSTANT. (David Smiley)
+
 Bug Fixes
 
 * LUCENE-7187: Block join queries' Weight#extractTerms(...) implementations
