@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -185,7 +186,13 @@ public class MergeState {
 
     } else {
       // do a merge sort of the incoming leaves:
-      return MultiSorter.sort(indexSort, readers);
+      long t0 = System.nanoTime();
+      DocMap[] result = MultiSorter.sort(indexSort, readers);
+      long t1 = System.nanoTime();
+      if (infoStream.isEnabled("SM")) {
+        infoStream.message("SM", String.format(Locale.ROOT, "%.2f msec to build merge sorted DocMaps", (t1-t0)/1000000.0));
+      }
+      return result;
     }
   }
 
@@ -218,10 +225,14 @@ public class MergeState {
         // to their index files on each indexed document:
 
         // This segment was written by flush, so documents are not yet sorted, so we sort them now:
+        long t0 = System.nanoTime();
         Sorter.DocMap sortDocMap = sorter.sort(leaf);
+        long t1 = System.nanoTime();
+        double msec = (t1-t0)/1000000.0;
+        
         if (sortDocMap != null) {
           if (infoStream.isEnabled("SM")) {
-            infoStream.message("SM", "segment " + leaf + " is not sorted; wrapping for sort " + indexSort + " now");
+            infoStream.message("SM", String.format(Locale.ROOT, "segment %s is not sorted; wrapping for sort %s now (%.2f msec to sort)", leaf, indexSort, msec));
           }
           leaf = SlowCodecReaderWrapper.wrap(SortingLeafReader.wrap(new MergeReaderWrapper(leaf), sortDocMap));
           leafDocMaps[readers.size()] = new DocMap() {
@@ -232,7 +243,7 @@ public class MergeState {
             };
         } else {
           if (infoStream.isEnabled("SM")) {
-            infoStream.message("SM", "segment " + leaf + " is not sorted, but is already accidentally in sort " + indexSort + " order");
+            infoStream.message("SM", String.format(Locale.ROOT, "segment %s is not sorted, but is already accidentally in sort %s order (%.2f msec to sort)", leaf, indexSort, msec));
           }
         }
 

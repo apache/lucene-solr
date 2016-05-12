@@ -57,7 +57,8 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
   public DocIDMerger(List<T> subs, int maxCount, boolean indexIsSorted) {
     this.subs = subs;
 
-    if (indexIsSorted) {
+    // nocommit safe?
+    if (indexIsSorted && maxCount > 1) {
       queue = new PriorityQueue<T>(maxCount) {
         @Override
         protected boolean lessThan(Sub a, Sub b) {
