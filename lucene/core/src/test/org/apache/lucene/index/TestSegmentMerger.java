@@ -35,6 +35,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.packed.PackedLongValues;
 
 public class TestSegmentMerger extends LuceneTestCase {
   //The variables for the new merged segment
@@ -83,7 +84,7 @@ public class TestSegmentMerger extends LuceneTestCase {
 
   public void testMerge() throws IOException {
     final Codec codec = Codec.getDefault();
-    final SegmentInfo si = new SegmentInfo(mergedDir, Version.LATEST, mergedSegment, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>());
+    final SegmentInfo si = new SegmentInfo(mergedDir, Version.LATEST, mergedSegment, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
 
     SegmentMerger merger = new SegmentMerger(Arrays.<CodecReader>asList(reader1, reader2),
                                              si, InfoStream.getDefault(), mergedDir,
@@ -144,22 +145,9 @@ public class TestSegmentMerger extends LuceneTestCase {
     mergedReader.close();
   }
 
-  private static boolean equals(MergeState.DocMap map1, MergeState.DocMap map2) {
-    if (map1.maxDoc() != map2.maxDoc()) {
-      return false;
-    }
-    for (int i = 0; i < map1.maxDoc(); ++i) {
-      if (map1.get(i) != map2.get(i)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   public void testBuildDocMap() {
     final int maxDoc = TestUtil.nextInt(random(), 1, 128);
     final int numDocs = TestUtil.nextInt(random(), 0, maxDoc);
-    final int numDeletedDocs = maxDoc - numDocs;
     final FixedBitSet liveDocs = new FixedBitSet(maxDoc);
     for (int i = 0; i < numDocs; ++i) {
       while (true) {
@@ -171,15 +159,11 @@ public class TestSegmentMerger extends LuceneTestCase {
       }
     }
 
-    final MergeState.DocMap docMap = MergeState.DocMap.build(maxDoc, liveDocs);
+    final PackedLongValues docMap = MergeState.removeDeletes(maxDoc, liveDocs);
 
-    assertEquals(maxDoc, docMap.maxDoc());
-    assertEquals(numDocs, docMap.numDocs());
-    assertEquals(numDeletedDocs, docMap.numDeletedDocs());
     // assert the mapping is compact
     for (int i = 0, del = 0; i < maxDoc; ++i) {
-      if (!liveDocs.get(i)) {
-        assertEquals(-1, docMap.get(i));
+      if (liveDocs.get(i) == false) {
         ++del;
       } else {
         assertEquals(i - del, docMap.get(i));

@@ -1,3 +1,5 @@
+package org.apache.lucene.index;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,7 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.index;
 
 import java.io.IOException;
 
@@ -23,18 +24,19 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 
-/** this is a hack to make SortingMP fast! */
+/** This is a hack to make index sorting fast, with a {@link LeafReader} that always returns merge instances when you ask for the codec readers. */
 class MergeReaderWrapper extends LeafReader {
-  final SegmentReader in;
+  final CodecReader in;
   final FieldsProducer fields;
   final NormsProducer norms;
   final DocValuesProducer docValues;
   final StoredFieldsReader store;
   final TermVectorsReader vectors;
   
-  MergeReaderWrapper(SegmentReader in) throws IOException {
+  MergeReaderWrapper(CodecReader in) throws IOException {
     this.in = in;
     
     FieldsProducer fields = in.getPostingsReader();
@@ -255,5 +257,10 @@ class MergeReaderWrapper extends LeafReader {
   @Override
   public String toString() {
     return "MergeReaderWrapper(" + in + ")";
+  }
+
+  @Override
+  public Sort getIndexSort() {
+    return in.getIndexSort();
   }
 }

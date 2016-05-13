@@ -29,16 +29,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
-import org.apache.lucene.index.SortingMergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.solr.cloud.ActionThrottle;
 import org.apache.solr.cloud.RecoveryStrategy;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.index.SortingMergePolicy;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;

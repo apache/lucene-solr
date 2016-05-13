@@ -2008,9 +2008,9 @@ public abstract class LuceneTestCase extends Assert {
       return;
     }
     assertTermsStatisticsEquals(info, leftTerms, rightTerms);
-    assertEquals(leftTerms.hasOffsets(), rightTerms.hasOffsets());
-    assertEquals(leftTerms.hasPositions(), rightTerms.hasPositions());
-    assertEquals(leftTerms.hasPayloads(), rightTerms.hasPayloads());
+    assertEquals("hasOffsets", leftTerms.hasOffsets(), rightTerms.hasOffsets());
+    assertEquals("hasPositions", leftTerms.hasPositions(), rightTerms.hasPositions());
+    assertEquals("hasPayloads", leftTerms.hasPayloads(), rightTerms.hasPayloads());
 
     TermsEnum leftTermsEnum = leftTerms.iterator();
     TermsEnum rightTermsEnum = rightTerms.iterator();

@@ -16,8 +16,7 @@
  */
 package org.apache.solr.update;
 
-import static org.apache.solr.core.Config.assertWarnOrFail;
-
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +30,7 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.util.NamedList;
@@ -44,10 +44,13 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.index.DefaultMergePolicyFactory;
 import org.apache.solr.index.MergePolicyFactory;
 import org.apache.solr.index.MergePolicyFactoryArgs;
+import org.apache.solr.index.SortingMergePolicy;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.core.Config.assertWarnOrFail;
 
 /**
  * This config object encapsulates IndexWriter config params,
@@ -222,7 +225,7 @@ public class SolrIndexConfig implements MapSerializable {
     }
   }
 
-  public IndexWriterConfig toIndexWriterConfig(SolrCore core) {
+  public IndexWriterConfig toIndexWriterConfig(SolrCore core) throws IOException {
     IndexSchema schema = core.getLatestSchema();
     IndexWriterConfig iwc = new IndexWriterConfig(new DelayedSchemaAnalyzer(core));
     if (maxBufferedDocs != -1)
@@ -232,9 +235,15 @@ public class SolrIndexConfig implements MapSerializable {
       iwc.setRAMBufferSizeMB(ramBufferSizeMB);
 
     iwc.setSimilarity(schema.getSimilarity());
-    iwc.setMergePolicy(buildMergePolicy(schema));
+    MergePolicy mergePolicy = buildMergePolicy(schema);
+    iwc.setMergePolicy(mergePolicy);
     iwc.setMergeScheduler(buildMergeScheduler(schema));
     iwc.setInfoStream(infoStream);
+
+    if (mergePolicy instanceof SortingMergePolicy) {
+      Sort indexSort = ((SortingMergePolicy) mergePolicy).getSort();
+      iwc.setIndexSort(indexSort);
+    }
 
     // do this after buildMergePolicy since the backcompat logic 
     // there may modify the effective useCompoundFile

@@ -36,6 +36,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
   private IndexOutput out;
   private final BytesRefBuilder scratch = new BytesRefBuilder();
   private final SegmentWriteState writeState;
+  final String segment;
 
   final static BytesRef END          = new BytesRef("END");
   final static BytesRef FIELD        = new BytesRef("field ");
@@ -49,6 +50,7 @@ class SimpleTextFieldsWriter extends FieldsConsumer {
 
   public SimpleTextFieldsWriter(SegmentWriteState writeState) throws IOException {
     final String fileName = SimpleTextPostingsFormat.getPostingsFileName(writeState.segmentInfo.name, writeState.segmentSuffix);
+    segment = writeState.segmentInfo.name;
     out = writeState.directory.createOutput(fileName, writeState.context);
     this.writeState = writeState;
   }

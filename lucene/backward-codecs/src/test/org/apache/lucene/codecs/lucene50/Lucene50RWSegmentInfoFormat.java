@@ -37,43 +37,14 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.Version;
 
 /**
- * Lucene 5.0 Segment info format.
- * <p>
- * Files:
- * <ul>
- *   <li><tt>.si</tt>: Header, SegVersion, SegSize, IsCompoundFile, Diagnostics, Files, Attributes, Footer
- * </ul>
- * Data types:
- * <ul>
- *   <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
- *   <li>SegSize --&gt; {@link DataOutput#writeInt Int32}</li>
- *   <li>SegVersion --&gt; {@link DataOutput#writeString String}</li>
- *   <li>Files --&gt; {@link DataOutput#writeSetOfStrings Set&lt;String&gt;}</li>
- *   <li>Diagnostics,Attributes --&gt; {@link DataOutput#writeMapOfStrings Map&lt;String,String&gt;}</li>
- *   <li>IsCompoundFile --&gt; {@link DataOutput#writeByte Int8}</li>
- *   <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
- * </ul>
- * Field Descriptions:
- * <ul>
- *   <li>SegVersion is the code version that created the segment.</li>
- *   <li>SegSize is the number of documents contained in the segment index.</li>
- *   <li>IsCompoundFile records whether the segment is written as a compound file or
- *       not. If this is -1, the segment is not a compound file. If it is 1, the segment
- *       is a compound file.</li>
- *   <li>The Diagnostics Map is privately written by {@link IndexWriter}, as a debugging aid,
- *       for each segment it creates. It includes metadata like the current Lucene
- *       version, OS, Java version, why the segment was created (merge, flush,
- *       addIndexes), etc.</li>
- *   <li>Files is a list of files referred to by this segment.</li>
- * </ul>
- * 
- * @see SegmentInfos
- * @lucene.experimental
+ * Read-write version of 5.0 SegmentInfoFormat for testing
+ * @deprecated for test purposes only
  */
-public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
+@Deprecated
+public class Lucene50RWSegmentInfoFormat extends Lucene50SegmentInfoFormat {
 
   /** Sole constructor. */
-  public Lucene50SegmentInfoFormat() {
+  public Lucene50RWSegmentInfoFormat() {
   }
   
   @Override
@@ -109,7 +80,7 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
           attributes = Collections.unmodifiableMap(input.readStringStringMap());
         }
         
-        si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, segmentID, attributes);
+        si = new SegmentInfo(dir, version, segment, docCount, isCompoundFile, null, diagnostics, segmentID, attributes, null);
         si.setFiles(files);
       } catch (Throwable exception) {
         priorE = exception;
@@ -123,6 +94,8 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
   @Override
   public void write(Directory dir, SegmentInfo si, IOContext ioContext) throws IOException {
     final String fileName = IndexFileNames.segmentFileName(si.name, "", Lucene50SegmentInfoFormat.SI_EXTENSION);
+
+    assert si.getIndexSort() == null;
 
     try (IndexOutput output = dir.createOutput(fileName, ioContext)) {
       // Only add the file once we've successfully created it, else IFD assert can trip:
@@ -153,6 +126,7 @@ public class Lucene50SegmentInfoFormat extends SegmentInfoFormat {
       }
       output.writeSetOfStrings(files);
       output.writeMapOfStrings(si.getAttributes());
+      
       CodecUtil.writeFooter(output);
     }
   }

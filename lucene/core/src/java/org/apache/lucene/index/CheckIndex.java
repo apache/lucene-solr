@@ -43,6 +43,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.DocumentStoredFieldVisitor;
 import org.apache.lucene.index.CheckIndex.Status.DocValuesStatus;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -217,6 +220,9 @@ public final class CheckIndex implements Closeable {
 
       /** Status for testing of PointValues (null if PointValues could not be tested). */
       public PointsStatus pointsStatus;
+
+      /** Status of index sort */
+      public IndexSortStatus indexSortStatus;
     }
     
     /**
@@ -374,6 +380,18 @@ public final class CheckIndex implements Closeable {
       /** Exception thrown during doc values test (null on success) */
       public Throwable error = null;
     }
+
+    /**
+     * Status from testing index sort
+     */
+    public static final class IndexSortStatus {
+      IndexSortStatus() {
+      }
+
+      /** Exception thrown during term index test (null on success) */
+      public Throwable error = null;
+    }
+    
   }
 
   /** Create a new CheckIndex on the directory. */
@@ -632,6 +650,7 @@ public final class CheckIndex implements Closeable {
       int toLoseDocCount = info.info.maxDoc();
 
       SegmentReader reader = null;
+      Sort previousIndexSort = null;
 
       try {
         msg(infoStream, "    version=" + (version == null ? "3.0" : version));
@@ -642,6 +661,17 @@ public final class CheckIndex implements Closeable {
         msg(infoStream, "    compound=" + info.info.getUseCompoundFile());
         segInfoStat.compound = info.info.getUseCompoundFile();
         msg(infoStream, "    numFiles=" + info.files().size());
+        Sort indexSort = info.info.getIndexSort();
+        if (indexSort != null) {
+          msg(infoStream, "    sort=" + indexSort);
+          if (previousIndexSort != null) {
+            if (previousIndexSort.equals(indexSort) == false) {
+              throw new RuntimeException("index sort changed from " + previousIndexSort + " to " + indexSort);
+            }
+          } else {
+            previousIndexSort = indexSort;
+          }
+        }
         segInfoStat.numFiles = info.files().size();
         segInfoStat.sizeMB = info.sizeInBytes()/(1024.*1024.);
         msg(infoStream, "    size (MB)=" + nf.format(segInfoStat.sizeMB));
@@ -722,6 +752,9 @@ public final class CheckIndex implements Closeable {
           // Test PointValues
           segInfoStat.pointsStatus = testPoints(reader, infoStream, failFast);
 
+          // Test index sort
+          segInfoStat.indexSortStatus = testSort(reader, indexSort, infoStream, failFast);
+
           // Rethrow the first exception we encountered
           //  This will cause stats for failed segments to be incremented properly
           if (segInfoStat.liveDocStatus.error != null) {
@@ -789,6 +822,72 @@ public final class CheckIndex implements Closeable {
     msg(infoStream, String.format(Locale.ROOT, "Took %.3f sec total.", nsToSec(System.nanoTime()-startNS)));
 
     return result;
+  }
+
+  /**
+   * Tests index sort order.
+   * @lucene.experimental
+   */
+  public static Status.IndexSortStatus testSort(CodecReader reader, Sort sort, PrintStream infoStream, boolean failFast) throws IOException {
+    // This segment claims its documents are sorted according to the incoming sort ... let's make sure:
+
+    long startNS = System.nanoTime();
+
+    Status.IndexSortStatus status = new Status.IndexSortStatus();
+
+    if (sort != null) {
+      if (infoStream != null) {
+        infoStream.print("    test: index sort..........");
+      }
+
+      SortField fields[] = sort.getSort();
+      final int reverseMul[] = new int[fields.length];
+      final LeafFieldComparator comparators[] = new LeafFieldComparator[fields.length];
+
+      LeafReaderContext readerContext = new LeafReaderContext(reader);
+    
+      for (int i = 0; i < fields.length; i++) {
+        reverseMul[i] = fields[i].getReverse() ? -1 : 1;
+        comparators[i] = fields[i].getComparator(1, i).getLeafComparator(readerContext);
+      }
+
+      int maxDoc = reader.maxDoc();
+
+      try {
+
+        for(int docID=1;docID < maxDoc;docID++) {
+      
+          int cmp = 0;
+
+          for (int i = 0; i < comparators.length; i++) {
+            // TODO: would be better if copy() didnt cause a term lookup in TermOrdVal & co,
+            // the segments are always the same here...
+            comparators[i].copy(0, docID-1);
+            comparators[i].setBottom(0);
+            cmp = reverseMul[i] * comparators[i].compareBottom(docID);
+            if (cmp != 0) {
+              break;
+            }
+          }
+
+          if (cmp > 0) {
+            throw new RuntimeException("segment has indexSort=" + sort + " but docID=" + (docID-1) + " sorts after docID=" + docID);
+          }
+        }
+        msg(infoStream, String.format(Locale.ROOT, "OK [took %.3f sec]", nsToSec(System.nanoTime()-startNS)));
+      } catch (Throwable e) {
+        if (failFast) {
+          IOUtils.reThrow(e);
+        }
+        msg(infoStream, "ERROR [" + String.valueOf(e.getMessage()) + "]");
+        status.error = e;
+        if (infoStream != null) {
+          e.printStackTrace(infoStream);
+        }
+      }
+    }
+
+    return status;
   }
   
   /**

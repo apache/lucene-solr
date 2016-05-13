@@ -168,6 +168,7 @@ final class Sorter {
     }
     final PackedLongValues newToOld = newToOldBuilder.build();
 
+    // invert the docs mapping:
     for (int i = 0; i < maxDoc; ++i) {
       docs[(int) newToOld.get(i)] = i;
     } // docs is now the oldToNew mapping
@@ -196,7 +197,7 @@ final class Sorter {
       }
     };
   }
-  
+
   /**
    * Returns a mapping from the old document ID to its new location in the
    * sorted index. Implementations can use the auxiliary
