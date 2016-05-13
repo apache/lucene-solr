@@ -68,11 +68,6 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
     if (getFieldInfos().hasPointValues()) {
       throw new IllegalArgumentException("cannot wrap points");
     }
-    for(LeafReaderContext context : reader.leaves()) {
-      if (context.reader().getIndexSort() != null) {
-        throw new IllegalArgumentException("cannot use index sort");
-      }
-    }
     fields = MultiFields.getFields(in);
     in.registerParentReader(this);
     this.merging = merging;

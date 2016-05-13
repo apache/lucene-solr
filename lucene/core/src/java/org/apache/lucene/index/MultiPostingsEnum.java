@@ -171,6 +171,9 @@ public final class MultiPostingsEnum extends PostingsEnum {
     /** {@link ReaderSlice} describing how this sub-reader
      *  fits into the composite reader. */
     public ReaderSlice slice;
+
+    EnumWithSlice() {
+    }
     
     @Override
     public String toString() {

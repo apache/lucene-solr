@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.index.MergeState.DocMap;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Sort;
@@ -32,7 +33,7 @@ import org.apache.lucene.util.packed.PackedLongValues;
 
 final class MultiSorter {
   
-  /** Does a merge sort of the leaves of the incoming reader, returning {@link MergeState#DocMap} to map each leaf's
+  /** Does a merge sort of the leaves of the incoming reader, returning {@link DocMap} to map each leaf's
    *  documents into the merged segment.  The documents for each incoming leaf reader must already be sorted by the same sort! */
   static MergeState.DocMap[] sort(Sort sort, List<CodecReader> readers) throws IOException {
 
