@@ -867,7 +867,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
                 
     assertQ("check counts using fixed NOW and TZ rounding",
             req("q", "bday:[NOW/DAY TO NOW/DAY+1DAY]",
-                "TZ", "GMT-23",
+                "TZ", "GMT+01",
                 "NOW", "205369736000" // 1976-07-04T23:08:56.235Z
                 ),
             "*[count(//doc)=0]");

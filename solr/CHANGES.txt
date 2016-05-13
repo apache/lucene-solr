@@ -47,6 +47,11 @@ Optimizations
 
 ==================  6.1.0 ==================
 
+Upgrading from Solr any prior release
+----------------------
+
+* If you use historical dates, specifically on or before the year 1582, you should re-index.
+
 Detailed Change List
 ----------------------
 
@@ -205,6 +210,10 @@ Bug Fixes
 
 * SOLR-8970: Change SSLTestConfig to use a keystore file that is included as a resource in the
   test-framework jar so users subclassing SolrTestCaseJ4 don't need to preserve magic paths (hossman)
+
+* SOLR-9080, SOLR-9085: (6.0 bug) For years <= 1582, date math (round,add,sub) introduced error.  Range faceting
+  on such dates was also affected.  With this fixed, this is the first release range faceting works on BC years.
+  (David Smiley)
 
 Optimizations
 ----------------------

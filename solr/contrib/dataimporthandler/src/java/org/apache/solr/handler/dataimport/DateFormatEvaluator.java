@@ -16,9 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -34,6 +31,9 @@ import java.util.TimeZone;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.handler.dataimport.config.EntityField;
 import org.apache.solr.util.DateMathParser;
+
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 
 /**
  * <p>Formats values using a given date format. </p>
@@ -99,7 +99,7 @@ public class DateFormatEvaluator extends Evaluator {
         throw new DataImportHandlerException(SEVERE, "Malformed / non-existent locale: " + localeStr, ex);
       }
     }
-    TimeZone tz = TimeZone.getDefault();
+    TimeZone tz = TimeZone.getDefault(); // DWS TODO: is this the right default for us?  Deserves explanation if so.
     if(l.size()==4) {
       Object tzObj = l.get(3);
       String tzStr = null;
@@ -153,24 +153,19 @@ public class DateFormatEvaluator extends Evaluator {
    * @return the result of evaluating a string
    */
   protected Date evaluateString(String datemathfmt, Locale locale, TimeZone tz) {
-    Date date = null;
-    datemathfmt = datemathfmt.replaceAll("NOW", "");
-    try {
-      DateMathParser parser = getDateMathParser(locale, tz);
-      date = parseMathString(parser,datemathfmt);
-    } catch (ParseException e) {
-      wrapAndThrow(SEVERE, e, "Invalid expression for date");
+    // note: DMP does not use the locale but perhaps a subclass might use it, for e.g. parsing a date in a custom
+    // string that doesn't necessarily have date math?
+    //TODO refactor DateMathParser.parseMath a bit to have a static method for this logic.
+    if (datemathfmt.startsWith("NOW")) {
+      datemathfmt = datemathfmt.substring("NOW".length());
     }
-    return date;
-  }
-
-  /**
-   * NOTE: declared as a method to allow for extensibility
-   * @lucene.experimental
-   * @return the result of resolving the variable wrapper
-   */
-  protected Date parseMathString(DateMathParser parser, String datemathfmt) throws ParseException {
-    return parser.parseMath(datemathfmt);
+    try {
+      DateMathParser parser = new DateMathParser(tz);
+      parser.setNow(new Date());// thus do *not* use SolrRequestInfo
+      return parser.parseMath(datemathfmt);
+    } catch (ParseException e) {
+      throw wrapAndThrow(SEVERE, e, "Invalid expression for date");
+    }
   }
 
   /**
@@ -182,16 +177,4 @@ public class DateFormatEvaluator extends Evaluator {
     return variableWrapper.resolve();
   }
 
-  /**
-   * @lucene.experimental
-   * @return a DateMathParser
-   */
-  protected DateMathParser getDateMathParser(Locale l, TimeZone tz) {
-    return new DateMathParser(tz, l) {
-      @Override
-      public Date getNow() {
-        return new Date();
-      }
-    };
-  }
 }
