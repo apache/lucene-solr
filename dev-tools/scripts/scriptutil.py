@@ -94,11 +94,11 @@ def update_file(filename, line_re, edit):
     f.write(''.join(buffer))
   return True
 
-# branch types are "release", "stable" and "major"
+# branch types are "release", "stable" and "unstable"
 class BranchType(Enum):
-  major   = 1
-  stable  = 2
-  release = 3
+  unstable = 1
+  stable   = 2
+  release  = 3
 
 def find_branch_type():
   output = subprocess.check_output('git status', shell=True)
@@ -110,7 +110,7 @@ def find_branch_type():
     raise Exception('git status missing branch name')
 
   if branchName == b'master':
-    return BranchType.major
+    return BranchType.unstable
   if re.match(r'branch_(\d+)x', branchName.decode('UTF-8')):
     return BranchType.stable
   if re.match(r'branch_(\d+)_(\d+)', branchName.decode('UTF-8')):
