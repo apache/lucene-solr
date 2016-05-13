@@ -19,6 +19,7 @@ package org.apache.solr.common.cloud;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -29,7 +30,12 @@ import org.noggit.JSONWriter;
 /**
  * A Slice contains immutable information about a logical shard (all replicas that share the same shard id).
  */
-public class Slice extends ZkNodeProps {
+public class Slice extends ZkNodeProps implements Iterable<Replica> {
+
+  @Override
+  public Iterator<Replica> iterator() {
+    return replicas.values().iterator();
+  }
 
   /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */
   public static Map<String,Slice> loadAllFromMap(Map<String, Object> genericSlices) {

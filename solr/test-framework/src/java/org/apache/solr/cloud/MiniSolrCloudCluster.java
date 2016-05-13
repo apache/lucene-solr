@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.SortedMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -181,8 +182,8 @@ public class MiniSolrCloudCluster {
    */
   public MiniSolrCloudCluster(int numServers, Path baseDir, String solrXml, JettyConfig jettyConfig, ZkTestServer zkTestServer) throws Exception {
 
-    this.baseDir = baseDir;
-    this.jettyConfig = jettyConfig;
+    this.baseDir = Objects.requireNonNull(baseDir);
+    this.jettyConfig = Objects.requireNonNull(jettyConfig);
 
     Files.createDirectories(baseDir);
 
@@ -194,8 +195,7 @@ public class MiniSolrCloudCluster {
     }
     this.zkServer = zkTestServer;
 
-    try(SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(),
-        AbstractZkTestCase.TIMEOUT, AbstractZkTestCase.TIMEOUT, null)) {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
       zkClient.makePath("/solr/solr.xml", solrXml.getBytes(Charset.defaultCharset()), true);
       if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
         zkClient.makePath("/solr" + ZkStateReader.CLUSTER_PROPS, "{'urlScheme':'https'}".getBytes(Charsets.UTF_8), true);
@@ -222,12 +222,17 @@ public class MiniSolrCloudCluster {
       throw startupError;
     }
 
-    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(),
-        AbstractZkTestCase.TIMEOUT, 45000, null)) {
+    waitForAllNodes(numServers, 60);
+
+    solrClient = buildSolrClient();
+  }
+
+  private void waitForAllNodes(int numServers, int timeout) throws IOException, InterruptedException {
+    try (SolrZkClient zkClient = new SolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
       int numliveNodes = 0;
-      int retries = 60;
+      int retries = timeout;
       String liveNodesPath = "/solr/live_nodes";
-      // Wait up to 60 seconds for number of live_nodes to match up number of servers
+      // Wait up to {timeout} seconds for number of live_nodes to match up number of servers
       do {
         if (zkClient.exists(liveNodesPath, true)) {
           numliveNodes = zkClient.getChildren(liveNodesPath, null, true).size();
@@ -244,8 +249,13 @@ public class MiniSolrCloudCluster {
         Thread.sleep(1000);
       } while (numliveNodes != numServers);
     }
+    catch (KeeperException e) {
+      throw new IOException("Error communicating with zookeeper", e);
+    }
+  }
 
-    solrClient = buildSolrClient();
+  public void waitForAllNodes(int timeout) throws IOException, InterruptedException {
+    waitForAllNodes(jettys.size(), timeout);
   }
 
   private String newNodeName() {
@@ -348,7 +358,13 @@ public class MiniSolrCloudCluster {
     return jetty;
   }
 
-  protected JettySolrRunner startJettySolrRunner(JettySolrRunner jetty) throws Exception {
+  /**
+   * Add a previously stopped node back to the cluster
+   * @param jetty a {@link JettySolrRunner} previously returned by {@link #stopJettySolrRunner(int)}
+   * @return the started node
+   * @throws Exception on error
+   */
+  public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty) throws Exception {
     jetty.start();
     jettys.add(jetty);
     return jetty;
