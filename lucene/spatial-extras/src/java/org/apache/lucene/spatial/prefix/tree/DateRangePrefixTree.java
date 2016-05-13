@@ -256,10 +256,10 @@ public class DateRangePrefixTree extends NumberRangePrefixTree {
     int assertEra = -1;
     assert (assertEra = (((Calendar)cal.clone()).get(Calendar.ERA))) >= 0;//a trick to only get this if assert enabled
     //note: Calendar.ERA == 0;
-    for (int f = field+1; f <= Calendar.MILLISECOND; f++) {
+    for (int f = field + 1; f <= Calendar.MILLISECOND; f++) {
       cal.clear(f);
     }
-    assert ((Calendar)cal.clone()).get(Calendar.ERA) == assertEra : "Calendar underflow";
+    assert field + 1 == Calendar.ERA || ((Calendar)cal.clone()).get(Calendar.ERA) == assertEra : "Calendar underflow";
   }
 
   /** Converts {@code value} from a {@link Calendar} or {@link Date} to a {@link Shape}. Other arguments
