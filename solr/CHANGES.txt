@@ -239,6 +239,8 @@ Optimizations
 * SOLR-9014: Deprecate and reduce usage of ClusterState methods which may make calls to ZK via
   the lazy collection reference. (Scott Blum, shalin)
 
+* SOLR-9106: Cluster properties are now cached on ZkStateReader. (Alan Woodward)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.

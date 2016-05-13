@@ -761,7 +761,7 @@ public class CoreContainer {
     boolean preExisitingZkEntry = false;
     try {
       if (getZkController() != null) {
-        if (!Overseer.isLegacy(getZkController().getZkStateReader().getClusterProps())) {
+        if (!Overseer.isLegacy(getZkController().getZkStateReader())) {
           if (cd.getCloudDescriptor().getCoreNodeName() == null) {
             throw new SolrException(ErrorCode.SERVER_ERROR, "non legacy mode coreNodeName missing " + parameters.toString());
 

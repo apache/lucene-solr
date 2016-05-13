@@ -16,6 +16,15 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.List;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.RegexFileFilter;
@@ -23,6 +32,7 @@ import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -36,15 +46,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.List;
 
 // TODO: This test would be a lot faster if it used a solrhome with fewer config
 // files - there are a lot of them to upload
@@ -321,22 +322,19 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testSetClusterProperty() throws Exception {
-    ZkStateReader reader = new ZkStateReader(zkClient);
-    try {
-      // add property urlScheme=http
-      String[] args = new String[] {"-zkhost", zkServer.getZkAddress(),
-          "-cmd", "CLUSTERPROP", "-name", "urlScheme", "-val", "http"};
-      ZkCLI.main(args);
-      assertEquals("http", reader.getClusterProps().get("urlScheme"));
-      
-      // remove it again
-      args = new String[] {"-zkhost", zkServer.getZkAddress(),
-          "-cmd", "CLUSTERPROP", "-name", "urlScheme"};
-      ZkCLI.main(args);
-      assertNull(reader.getClusterProps().get("urlScheme"));
-    } finally {
-      reader.close();
-    }
+    ClusterProperties properties = new ClusterProperties(zkClient);
+    // add property urlScheme=http
+    String[] args = new String[] {"-zkhost", zkServer.getZkAddress(),
+        "-cmd", "CLUSTERPROP", "-name", "urlScheme", "-val", "http"};
+    ZkCLI.main(args);
+    assertEquals("http", properties.getClusterProperty("urlScheme", "none"));
+
+    // remove it again
+    args = new String[] {"-zkhost", zkServer.getZkAddress(),
+        "-cmd", "CLUSTERPROP", "-name", "urlScheme"};
+    ZkCLI.main(args);
+    assertNull(properties.getClusterProperty("urlScheme", (String) null));
+
   }
   
   @Test

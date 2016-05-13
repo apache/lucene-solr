@@ -1062,8 +1062,9 @@ public class Overseer implements Closeable {
       throw new RuntimeException(e);
     }
   }
-  public static boolean isLegacy(Map clusterProps) {
-    return !"false".equals(clusterProps.get(ZkStateReader.LEGACY_CLOUD));
+  public static boolean isLegacy(ZkStateReader stateReader) {
+    String legacyProperty = stateReader.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true");
+    return !"false".equals(legacyProperty);
   }
 
   public ZkStateReader getZkStateReader() {
