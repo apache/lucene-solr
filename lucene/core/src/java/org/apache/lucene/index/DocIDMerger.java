@@ -42,10 +42,14 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
   private T current;
   private int nextIndex;
 
+  /** Represents one sub-reader being merged */
   public static abstract class Sub {
+    /** Mapped doc ID */
     public int mappedDocID;
+
     final MergeState.DocMap docMap;
 
+    /** Sole constructor */
     public Sub(MergeState.DocMap docMap) {
       this.docMap = docMap;
     }
@@ -54,10 +58,10 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
     public abstract int nextDoc();
   }
 
+  /** Construct this from the provided subs, specifying the maximum sub count */
   public DocIDMerger(List<T> subs, int maxCount, boolean indexIsSorted) {
     this.subs = subs;
 
-    // nocommit safe?
     if (indexIsSorted && maxCount > 1) {
       queue = new PriorityQueue<T>(maxCount) {
         @Override
@@ -74,6 +78,7 @@ public class DocIDMerger<T extends DocIDMerger.Sub> {
     reset();
   }
 
+  /** Construct this from the provided subs */
   public DocIDMerger(List<T> subs, boolean indexIsSorted) {
     this(subs, subs.size(), indexIsSorted);
   }

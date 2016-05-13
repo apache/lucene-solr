@@ -237,7 +237,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           !EarlyTerminatingSortingCollector.canEarlyTerminate(cmdSort, mergeSort)) {
         log.warn("unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} mergeSort={}", cmdSort, cmdLen, mergeSort);
       } else {
-        collector = earlyTerminatingSortingCollector = new EarlyTerminatingSortingCollector(collector, cmdSort, cmd.getLen(), mergeSort);
+        collector = earlyTerminatingSortingCollector = new EarlyTerminatingSortingCollector(collector, cmdSort, cmd.getLen());
       }
     }
 

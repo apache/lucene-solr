@@ -385,6 +385,8 @@ public final class CheckIndex implements Closeable {
      * Status from testing index sort
      */
     public static final class IndexSortStatus {
+      IndexSortStatus() {
+      }
 
       /** Exception thrown during term index test (null on success) */
       public Throwable error = null;
@@ -822,6 +824,10 @@ public final class CheckIndex implements Closeable {
     return result;
   }
 
+  /**
+   * Tests index sort order.
+   * @lucene.experimental
+   */
   public static Status.IndexSortStatus testSort(CodecReader reader, Sort sort, PrintStream infoStream, boolean failFast) throws IOException {
     // This segment claims its documents are sorted according to the incoming sort ... let's make sure:
 
