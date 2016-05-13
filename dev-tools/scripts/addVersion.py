@@ -220,10 +220,7 @@ def get_solr_init_changes():
     ''' % parse_properties_file('lucene/ivy-versions.properties'))
   
 def main():
-  c = read_config()
-
-  if c.changeid:
-    cherry_pick_change(c.changeid)
+  c = read_config() 
 
   print('\nAdding new version %s' % c.version)
   update_changes('lucene/CHANGES.txt', c.version)
