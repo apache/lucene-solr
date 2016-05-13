@@ -299,6 +299,9 @@ Other Changes
 
 * SOLR-9072: Migrate morphline-core tests to SolrCloudTestCase. (Alan Woodward)
 
+==================  6.0.1 ==================
+(No Changes)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release

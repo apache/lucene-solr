@@ -137,6 +137,9 @@ Other
 * LUCENE-7263: Make queryparser/xml/CoreParser's SpanQueryBuilderFactory
   accessible to deriving classes. (Daniel Collins via Christine Poerschke)
 
+======================= Lucene 6.0.1 =======================
+(No Changes)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
