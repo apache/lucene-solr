@@ -151,7 +151,7 @@ public final class ZkController {
   private final int localHostPort;      // example: 54065
   private final String hostName;           // example: 127.0.0.1
   private final String nodeName;           // example: 127.0.0.1:54065_solr
-  private final String baseURL;            // example: http://127.0.0.1:54065/solr
+  private String baseURL;            // example: http://127.0.0.1:54065/solr
 
   private final CloudConfig cloudConfig;
 
@@ -385,8 +385,6 @@ public final class ZkController {
     zkStateReader = new ZkStateReader(zkClient, () -> {
       if (cc != null) cc.securityNodeChanged();
     });
-
-    this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
     init(registerOnReconnect);
   }
@@ -642,6 +640,7 @@ public final class ZkController {
     try {
       createClusterZkNodes(zkClient);
       zkStateReader.createClusterStateWatchersAndUpdate();
+      this.baseURL = zkStateReader.getBaseUrlForNodeName(this.nodeName);
 
       // start the overseer first as following code may need it's processing
       if (!zkRunOnly) {
@@ -1488,7 +1487,7 @@ public final class ZkController {
   }
 
   private void checkStateInZk(CoreDescriptor cd) throws InterruptedException {
-    if (!Overseer.isLegacy(zkStateReader.getClusterProps())) {
+    if (!Overseer.isLegacy(zkStateReader)) {
       CloudDescriptor cloudDesc = cd.getCloudDescriptor();
       String coreNodeName = cloudDesc.getCoreNodeName();
       assert coreNodeName != null : "SolrCore: " + cd.getName() + " has no coreNodeName";

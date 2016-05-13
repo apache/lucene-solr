@@ -197,7 +197,7 @@ public class ReplicaMutator {
   }
 
   public ZkWriteCommand setState(ClusterState clusterState, ZkNodeProps message) {
-    if (Overseer.isLegacy(zkStateReader.getClusterProps())) {
+    if (Overseer.isLegacy(zkStateReader)) {
       return updateState(clusterState, message);
     } else {
       return updateStateNew(clusterState, message);

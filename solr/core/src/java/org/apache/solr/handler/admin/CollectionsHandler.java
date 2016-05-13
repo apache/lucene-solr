@@ -51,17 +51,8 @@ import org.apache.solr.cloud.rule.ReplicaAssigner;
 import org.apache.solr.cloud.rule.Rule;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.ImplicitDocRouter;
-import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.*;
 import org.apache.solr.common.cloud.Replica.State;
-import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -570,7 +561,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       Map<String, Object> call(SolrQueryRequest req, SolrQueryResponse rsp, CollectionsHandler h) throws Exception {
         String name = req.getParams().required().get(NAME);
         String val = req.getParams().get(VALUE_LONG);
-        h.coreContainer.getZkController().getZkStateReader().setClusterProperty(name, val);
+        ClusterProperties cp = new ClusterProperties(h.coreContainer.getZkController().getZkClient());
+        cp.setClusterProperty(name, val);
         return null;
       }
     },
@@ -808,7 +800,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
         String location = req.getParams().get("location");
         if (location == null) {
-          location = (String) h.coreContainer.getZkController().getZkStateReader().getClusterProps().get("location");
+          location = h.coreContainer.getZkController().getZkStateReader().getClusterProperty("location", (String) null);
         }
         if (location == null) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query parameter or set as a cluster property");
@@ -832,7 +824,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
         String location = req.getParams().get("location");
         if (location == null) {
-          location = (String) h.coreContainer.getZkController().getZkStateReader().getClusterProps().get("location");
+          location = h.coreContainer.getZkController().getZkStateReader().getClusterProperty("location", (String) null);
         }
         if (location == null) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "'location' is not specified as a query parameter or set as a cluster property");

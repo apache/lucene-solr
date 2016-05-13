@@ -46,7 +46,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -132,6 +131,8 @@ public class ZkStateReader implements Closeable {
   private final ConcurrentHashMap<String, LazyCollectionRef> lazyCollectionStates = new ConcurrentHashMap<>();
 
   private volatile Set<String> liveNodes = emptySet();
+
+  private volatile Map<String, Object> clusterProperties = Collections.emptyMap();
 
   private final ZkConfigManager configManager;
 
@@ -363,6 +364,7 @@ public class ZkStateReader implements Closeable {
     }
 
     // on reconnect of SolrZkClient force refresh and re-add watches.
+    loadClusterProperties();
     refreshLiveNodes(new LiveNodeWatcher());
     refreshLegacyClusterState(new LegacyClusterStateWatcher());
     refreshStateFormat2Collections();
@@ -792,69 +794,47 @@ public class ZkStateReader implements Closeable {
     final byte[] data = zkClient.getData(ALIASES, null, null, true);
     this.aliases = ClusterState.load(data);
   }
-  
-  public Map getClusterProps() {
-    try {
-      if (getZkClient().exists(ZkStateReader.CLUSTER_PROPS, true)) {
-        return (Map) Utils.fromJSON(getZkClient().getData(ZkStateReader.CLUSTER_PROPS, null, new Stat(), true)) ;
-      } else {
-        return new LinkedHashMap();
-      }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Thread interrupted. Error reading cluster properties", e);
-    } catch (KeeperException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading cluster properties", e);
-    }
+
+  @SuppressWarnings("unchecked")
+  public <T> T getClusterProperty(String key, T defaultValue) {
+    T value = (T) clusterProperties.get(key);
+    if (value == null)
+      return defaultValue;
+    return value;
   }
 
-  /**
-   * This method sets a cluster property.
-   *
-   * @param propertyName  The property name to be set.
-   * @param propertyValue The value of the property.
-   */
-  public void setClusterProperty(String propertyName, String propertyValue) {
-    if (!KNOWN_CLUSTER_PROPS.contains(propertyName)) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Not a known cluster property " + propertyName);
-    }
+  public Map<String, Object> getClusterProperties() {
+    return Collections.unmodifiableMap(clusterProperties);
+  }
 
-    for (; ; ) {
-      Stat s = new Stat();
-      try {
-        if (getZkClient().exists(CLUSTER_PROPS, true)) {
-          Map properties = (Map) Utils.fromJSON(getZkClient().getData(CLUSTER_PROPS, null, s, true));
-          if (propertyValue == null) {
-            //Don't update ZK unless absolutely necessary.
-            if (properties.get(propertyName) != null) {
-              properties.remove(propertyName);
-              getZkClient().setData(CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion(), true);
-            }
-          } else {
-            //Don't update ZK unless absolutely necessary.
-            if (!propertyValue.equals(properties.get(propertyName))) {
-              properties.put(propertyName, propertyValue);
-              getZkClient().setData(CLUSTER_PROPS, Utils.toJSON(properties), s.getVersion(), true);
-            }
-          }
-        } else {
-          Map properties = new LinkedHashMap();
-          properties.put(propertyName, propertyValue);
-          getZkClient().create(CLUSTER_PROPS, Utils.toJSON(properties), CreateMode.PERSISTENT, true);
+  private final Watcher clusterPropertiesWatcher = event -> {
+    // session events are not change events, and do not remove the watcher
+    if (Watcher.Event.EventType.None.equals(event.getType())) {
+      return;
+    }
+    loadClusterProperties();
+  };
+
+  @SuppressWarnings("unchecked")
+  private void loadClusterProperties() {
+    try {
+      while (true) {
+        try {
+          byte[] data = zkClient.getData(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, new Stat(), true);
+          this.clusterProperties = (Map<String, Object>) Utils.fromJSON(data);
+          LOG.info("Loaded cluster properties: {}", this.clusterProperties);
+          return;
+        } catch (KeeperException.NoNodeException e) {
+          this.clusterProperties = Collections.emptyMap();
+          LOG.info("Loaded empty cluster properties");
+          // set an exists watch, and if the node has been created since the last call,
+          // read the data again
+          if (zkClient.exists(ZkStateReader.CLUSTER_PROPS, clusterPropertiesWatcher, true) == null)
+            return;
         }
-      } catch (KeeperException.BadVersionException | KeeperException.NodeExistsException e) {
-        LOG.warn("Race condition while trying to set a new cluster prop on current version [{}]", s.getVersion());
-        //race condition
-        continue;
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        LOG.error("Thread Interrupted. Error updating path [{}]", CLUSTER_PROPS, e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Thread Interrupted. Error updating cluster property " + propertyName, e);
-      } catch (KeeperException e) {
-        LOG.error("Error updating path [{}]", CLUSTER_PROPS, e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Error updating cluster property " + propertyName, e);
       }
-      break;
+    } catch (KeeperException | InterruptedException e) {
+      LOG.error("Error reading cluster properties from zookeeper", SolrZkClient.checkInterrupted(e));
     }
   }
 
@@ -898,10 +878,7 @@ public class ZkStateReader implements Closeable {
     final String hostAndPort = nodeName.substring(0,_offset);
     try {
       final String path = URLDecoder.decode(nodeName.substring(1+_offset), "UTF-8");
-      String urlScheme = (String) getClusterProps().get(URL_SCHEME);
-      if(urlScheme == null) {
-        urlScheme = "http";
-      }
+      String urlScheme = getClusterProperty(URL_SCHEME, "http");
       return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
     } catch (UnsupportedEncodingException e) {
       throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
