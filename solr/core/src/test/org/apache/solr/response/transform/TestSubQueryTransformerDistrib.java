@@ -54,14 +54,12 @@ public class TestSubQueryTransformerDistrib extends AbstractFullDistribZkTestBas
     int peopleMultiplier = atLeast(1);
     int deptMultiplier = atLeast(1);
     
-    String people = "people";
-    int numPeopleShards;
-    createCollection(people, atLeast(1), numPeopleShards = atLeast(2), numPeopleShards);
+    final String people = "people";
+    createCollection(people, 2, 1, 10);
 
     
-    String depts = "departments";
-    int numDeptsShards;
-    createCollection(depts, atLeast(1), numDeptsShards = atLeast(2), numDeptsShards);
+    final String depts = "departments";
+    createCollection(depts, 2, 1, 10);
 
     
     createIndex(people, peopleMultiplier, depts, deptMultiplier);
