@@ -115,7 +115,7 @@ def find_branch_type():
     return BranchType.stable
   if re.match(r'branch_(\d+)_(\d+)', branchName.decode('UTF-8')):
     return BranchType.release
-  raise Exception('Cannot run bumpVersion.py on feature branch')
+  raise Exception('Cannot run %s on feature branch' % sys.argv[0].rsplit('/', 1)[-1])
 
 version_prop_re = re.compile('version\.base=(.*)')
 def find_current_version():
