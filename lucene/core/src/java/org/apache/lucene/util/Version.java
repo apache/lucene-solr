@@ -110,11 +110,18 @@ public final class Version {
   public static final Version LUCENE_5_5_1 = new Version(5, 5, 1);
 
   /** Match settings and bugs in Lucene's 6.0 release.
-   *  <p>
-   *  Use this to get the latest &amp; greatest settings, bug
-   *  fixes, etc, for Lucene.
+   * @deprecated (6.0.1) Use latest
    */
+  @Deprecated
   public static final Version LUCENE_6_0_0 = new Version(6, 0, 0);
+
+  /**
+   * Match settings and bugs in Lucene's 6.0.1 release.
+   * <p>
+   * Use this to get the latest &amp; greatest settings, bug
+   * fixes, etc, for Lucene.
+   */
+  public static final Version LUCENE_6_0_1 = new Version(6, 0, 1);
 
   // To add a new version:
   //  * Only add above this comment
@@ -135,7 +142,7 @@ public final class Version {
    * some defaults may have changed and may break functionality 
    * in your application.
    */
-  public static final Version LATEST = LUCENE_6_0_0;
+  public static final Version LATEST = LUCENE_6_0_1;
 
   /**
    * Constant for backwards compatibility.
