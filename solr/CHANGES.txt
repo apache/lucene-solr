@@ -18,6 +18,11 @@ See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 
 ==================  6.0.1 ==================
 
+Upgrade Notes
+----------------------
+
+* If you use historical dates, specifically on or before the year 1582, you should re-index.
+
 Bug Fixes
 ----------------------
 
@@ -27,6 +32,10 @@ Bug Fixes
 * SOLR-9016: Fix SolrIdentifierValidator to not allow empty identifiers. (Shai Erera)
 
 * SOLR-8992: Restore Schema API GET method functionality removed in 6.0 (noble, Steve Rowe)
+
+* SOLR-9080, SOLR-9085: (6.0 bug) For years <= 1582, date math (round,add,sub) introduced error.  Range faceting
+  on such dates was also affected.  With this fixed, this is the first release range faceting works on BC years.
+  (David Smiley)
 
 ==================  6.0.0 ==================
 
@@ -271,7 +280,7 @@ Bug Fixes
   unique field (Erik Hatcher, Anshum Gupta)
 
 * SOLR-8728: ReplicaAssigner throws NPE when a partial list of nodes are only participating in replica
-  placement. splitshard should preassign nodes using rules, if rules are present (noble,Shai Erera)
+  placement. splitshard should preassign nodes using rules, if rules are present (noble, Shai Erera)
 
 * SOLR-8779: Fix missing InterruptedException handling in ZkStateReader.java (Varun Thacker)
 
@@ -285,14 +294,14 @@ Bug Fixes
 
 * SOLR-8135: If a core reload is fired after a core close, it is not a non-recoverable error (noble)
 
+* SOLR-8790: Collections API responses contain node name in the core-level responses that are
+  returned. (Anshum Gupta)
+
 * SOLR-8804: Fix a race condition in the ClusterStatus API call whereby the call would fail when a concurrent delete
   collection api command was executed (Alexey Serba, Varun Thacker)
 
 * SOLR-8835: JSON Facet API: fix faceting exception on multi-valued numeric fields that
   have docValues. (yonik)
-
-* SOLR-8790: Collections API responses contain node name in the core-level responses that are
-  returned. (Anshum Gupta)
 
 * SOLR-8838: Returning non-stored docValues is incorrect for negative floats and doubles.
   (Ishan Chattopadhyaya, Steve Rowe)
@@ -489,6 +498,15 @@ Bug Fixes
   file if the file no longer exists (for example, if a commit happened and the IndexReader
   hasn't refreshed yet). In this case the reported size of the file is -1.
   (Shai Erera, Alexey Serba, Richard Coggins)
+
+* SOLR-8870: AngularJS Query tab no longer URL-encodes the /select part of the request, fixing possible 404 issue
+  when Solr is behind a proxy. Also, now supports old-style &qt param when handler not prefixed with "/" (janhoy)
+
+* SOLR-8908: Fix to OnReconnect listener registration to allow listeners to deregister, such
+  as when a core is reloaded or deleted to avoid a memory leak. (Timothy Potter)
+
+* SOLR-9007: Remove mention of the managed_schema_configs as valid config directory when creating
+  the collection for the SolrCloud example. (Timothy Potter)
 
 ======================= 5.5.0 =======================
 

@@ -20,7 +20,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.Locale;
 
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexDeletionPolicy;
@@ -174,7 +173,7 @@ public class SolrDeletionPolicy extends IndexDeletionPolicy implements NamedList
         try {
           if (maxCommitAge != null) {
             if (maxCommitAgeTimeStamp==-1) {
-              DateMathParser dmp = new DateMathParser(DateMathParser.UTC, Locale.ROOT);
+              DateMathParser dmp = new DateMathParser(DateMathParser.UTC);
               maxCommitAgeTimeStamp = dmp.parseMath(maxCommitAge).getTime();
             }
             if (IndexDeletionPolicyWrapper.getCommitTimestamp(commit) < maxCommitAgeTimeStamp) {
