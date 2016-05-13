@@ -39,16 +39,18 @@ import org.apache.solr.util.DateMathParser;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * A field for indexed dates and date ranges. It's mostly compatible with TrieDateField.
+ * A field for indexed dates and date ranges. It's mostly compatible with TrieDateField.  It has the potential to allow
+ * efficient faceting, similar to facet.enum.
  *
  * @see NumberRangePrefixTreeStrategy
  * @see DateRangePrefixTree
  */
-public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRangePrefixTreeStrategy> {
+public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRangePrefixTreeStrategy>
+  implements DateValueFieldType { // used by ParseDateFieldUpdateProcessorFactory
 
   private static final String OP_PARAM = "op";//local-param to resolve SpatialOperation
 
-  private static final DateRangePrefixTree tree = DateRangePrefixTree.INSTANCE;
+  private static final DateRangePrefixTree tree = new DateRangePrefixTree(DateRangePrefixTree.JAVA_UTIL_TIME_COMPAT_CAL);
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -69,16 +71,23 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
 
   @Override
   protected String getStoredValue(Shape shape, String shapeStr) {
+    // even if shapeStr is set, it might have included some dateMath, so see if we can resolve it first:
     if (shape instanceof UnitNRShape) {
       UnitNRShape unitShape = (UnitNRShape) shape;
       if (unitShape.getLevel() == tree.getMaxLevels()) {
-        //fully precise date. We can be fully compatible with TrieDateField.
-        Date date = tree.toCalendar(unitShape).getTime();
-        return date.toInstant().toString();
+        //fully precise date. We can be fully compatible with TrieDateField (incl. 'Z')
+        return shape.toString() + 'Z';
       }
     }
     return (shapeStr == null ? shape.toString() : shapeStr);//we don't normalize ranges here; should we?
   }
+
+  // Won't be called because we override getStoredValue? any way; easy to implement in terms of that
+  @Override
+  public String shapeToString(Shape shape) {
+    return getStoredValue(shape, null);
+  }
+
 
   @Override
   public NRShape parseShape(String str) {
@@ -96,9 +105,9 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
   }
 
   private Calendar parseCalendar(String str) {
-    if (str.startsWith("NOW") || str.lastIndexOf('Z') >= 0) {
-      //use Solr standard date format parsing rules.
-      //TODO parse a Calendar instead of a Date, rounded according to DateMath syntax.
+    if (str.startsWith("NOW") || str.lastIndexOf('Z') >= 0) { //  ? but not if Z is last char ?   Ehh, whatever.
+      //use Solr standard date format parsing rules:
+      //TODO add DMP utility to return ZonedDateTime alternative, then set cal fields manually, which is faster?
       Date date = DateMathParser.parseMath(null, str);
       Calendar cal = tree.newCal();
       cal.setTime(date);
@@ -117,19 +126,6 @@ public class DateRangeField extends AbstractSpatialPrefixTreeFieldType<NumberRan
   /** For easy compatibility with {@link DateMathParser#parseMath(Date, String)}. */
   public Date parseMath(Date now, String rawval) {
     return DateMathParser.parseMath(now, rawval);
-  }
-
-  @Override
-  public String shapeToString(Shape shape) {
-    if (shape instanceof UnitNRShape) {
-      UnitNRShape unitShape = (UnitNRShape) shape;
-      if (unitShape.getLevel() == tree.getMaxLevels()) {
-        //fully precise date. We can be fully compatible with TrieDateField.
-        Date date = tree.toCalendar(unitShape).getTime();
-        return date.toInstant().toString();
-      }
-    }
-    return shape.toString();//range shape
   }
 
   @Override
