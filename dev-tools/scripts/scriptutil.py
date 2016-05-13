@@ -121,11 +121,6 @@ version_prop_re = re.compile('version\.base=(.*)')
 def find_current_version():
   return version_prop_re.search(open('lucene/version.properties').read()).group(1)
 
-def cherry_pick_change(changeid):
-  print('\nCherry-picking downstream change %s...' % changeid, end='')
-  run('git cherry-pick %s' % changeid)
-  print('done')
-
 if __name__ == '__main__':
   print('This is only a support module, it cannot be run')
   sys.exit(1)
