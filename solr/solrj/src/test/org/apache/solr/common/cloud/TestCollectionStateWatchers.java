@@ -89,9 +89,11 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   public void testSimpleCollectionWatch() throws Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
-    cluster.createCollection("testcollection", CLUSTER_SIZE, 1, "config", new HashMap<>());
+    CollectionAdminRequest.createCollection("testcollection", "config", 4, 1)
+        .processAndWait(client, MAX_WAIT_TIMEOUT);
 
-    client.waitForState("testcollection", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, DocCollection::isFullyActive);
+    client.waitForState("testcollection", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
+        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
 
     // shutdown a node and check that we get notified about the change
     final AtomicInteger nodeCount = new AtomicInteger(0);
@@ -121,14 +123,16 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   public void testWaitForStateChecksCurrentState() throws Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
-    cluster.createCollection("waitforstate", 1, 1, "config", new HashMap<>());
+    CollectionAdminRequest.createCollection("waitforstate", "config", 1, 1)
+        .processAndWait(client, MAX_WAIT_TIMEOUT);
 
-    client.waitForState("waitforstate", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, DocCollection::isFullyActive);
+    client.waitForState("waitforstate", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
+        (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
 
     // several goes, to check that we're not getting delayed state changes
     for (int i = 0; i < 10; i++) {
       try {
-        client.waitForState("waitforstate", 1, TimeUnit.SECONDS, DocCollection::isFullyActive);
+        client.waitForState("waitforstate", 1, TimeUnit.SECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
       }
       catch (TimeoutException e) {
         fail("waitForState should return immediately if the predicate is already satisfied");
@@ -140,8 +144,12 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   @Test
   public void testCanWaitForNonexistantCollection() throws Exception {
 
-    Future<Boolean> future = waitInBackground("delayed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, DocCollection::isFullyActive);
-    cluster.createCollection("delayed", 1, 1, "config", new HashMap<>());
+    Future<Boolean> future = waitInBackground("delayed", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
+        (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
+
+    CollectionAdminRequest.createCollection("delayed", "config", 1, 1)
+        .processAndWait(cluster.getSolrClient(), MAX_WAIT_TIMEOUT);
+
     assertTrue("waitForState was not triggered by collection creation", future.get());
 
   }
@@ -162,8 +170,11 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   public void testWaitForStateWatcherIsRetainedOnPredicateFailure() throws Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
-    cluster.createCollection("falsepredicate", 4, 1, "config", new HashMap<>());
-    client.waitForState("falsepredicate", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, DocCollection::isFullyActive);
+    CollectionAdminRequest.createCollection("falsepredicate", "config", 4, 1)
+        .processAndWait(client, MAX_WAIT_TIMEOUT);
+
+    client.waitForState("falsepredicate", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
+        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
 
     final CountDownLatch firstCall = new CountDownLatch(1);
 
@@ -172,7 +183,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
     Future<Boolean> future = waitInBackground("falsepredicate", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
           firstCall.countDown();
-          return DocCollection.isFullyActive(liveNodes, collectionState);
+          return DocCollection.isFullyActive(liveNodes, collectionState, 4, 1);
         });
 
     // first, stop another node; the watch should not be fired after this!
@@ -195,7 +206,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         client.getZkStateReader().getStateWatchers("no-such-collection") == null);
 
     expectThrows(TimeoutException.class, () -> {
-      client.waitForState("no-such-collection", 10, TimeUnit.MILLISECONDS, DocCollection::isFullyActive);
+      client.waitForState("no-such-collection", 10, TimeUnit.MILLISECONDS, (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
     });
 
     Set<CollectionStateWatcher> watchers = client.getZkStateReader().getStateWatchers("no-such-collection");
@@ -219,8 +230,8 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
     final CloudSolrClient client = cluster.getSolrClient();
 
-    Future<Boolean> future
-        = waitInBackground("stateformat1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS, DocCollection::isFullyActive);
+    Future<Boolean> future = waitInBackground("stateformat1", 10, TimeUnit.SECONDS,
+        (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
 
     CollectionAdminRequest.createCollection("stateformat1", "config", 1, 1).setStateFormat(1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
