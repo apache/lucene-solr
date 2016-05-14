@@ -518,9 +518,10 @@ public class ZkStateReader implements Closeable {
           if (ref == null)
             continue;
           // legacy collections are always in-memory
-          DocCollection newState = ref.get();
+          DocCollection oldState = ref.get();
+          DocCollection newState = loadedData.getCollectionStates().get(coll).get();
           if (!collWatch.stateWatchers.isEmpty()
-              && !Objects.equals(loadedData.getCollectionStates().get(coll).get(), newState)) {
+              && !Objects.equals(oldState, newState)) {
             notifyStateWatchers(liveNodes, coll, newState);
           }
         }

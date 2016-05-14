@@ -226,17 +226,24 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *
    * @see CollectionStatePredicate
    */
-  public static boolean isFullyActive(Set<String> liveNodes, DocCollection collectionState) {
+  public static boolean isFullyActive(Set<String> liveNodes, DocCollection collectionState,
+                                      int expectedShards, int expectedReplicas) {
     Objects.requireNonNull(liveNodes);
     if (collectionState == null)
       return false;
+    int activeShards = 0;
     for (Slice slice : collectionState) {
+      int activeReplicas = 0;
       for (Replica replica : slice) {
         if (replica.isActive(liveNodes) == false)
           return false;
+        activeReplicas++;
       }
+      if (activeReplicas != expectedReplicas)
+        return false;
+      activeShards++;
     }
-    return true;
+    return activeShards == expectedShards;
   }
 
   @Override
