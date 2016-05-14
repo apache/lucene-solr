@@ -21,6 +21,9 @@ Bug Fixes
 * LUCENE-7232: Fixed InetAddressPoint.newPrefixQuery, which was generating an
   incorrect query when the prefix length was not a multiple of 8. (Adrien Grand)
 
+* LUCENE-7279: JapaneseTokenizer throws ArrayIndexOutOfBoundsException
+  on some valid inputs (Mike McCandless)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
