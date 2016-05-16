@@ -38,6 +38,7 @@
   <property name="dev-tools.dir" location="${common.dir}/../dev-tools"/>
   <property name="prettify.dir" location="${common.dir}/tools/prettify"/>
   <property name="license.dir" location="${common.dir}/licenses"/>
+  <property name="ivysettings.xml" location="${common.dir}/default-nested-ivy-settings.xml"/>
 
   <tstamp>
     <format property="current.year" pattern="yyyy"/>
@@ -422,7 +423,7 @@
           you have an idea, fix it.
           unless="ivy.settings.uptodate" -->
     <!-- override: just for safety, should be unnecessary -->
-    <ivy:configure file="${common.dir}/ivy-settings.xml" override="true"/>
+    <ivy:configure file="${common.dir}/top-level-ivy-settings.xml" override="true"/>
     <!-- <property name="ivy.settings.uptodate" value="true"/> -->
   </target>
 
