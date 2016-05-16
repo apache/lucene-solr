@@ -64,6 +64,14 @@ public class SolrQuery extends ModifiableSolrParams
     this.set(CommonParams.Q, q);
   }
 
+  public SolrQuery(String k, String v, String... params) {
+    assert params.length % 2 == 0;
+    this.set(k, v);
+    for (int i = 0; i < params.length; i += 2) {
+      this.set(params[i], params[i + 1]);
+    }
+  }
+
   /** enable/disable terms.  
    * 
    * @param b flag to indicate terms should be enabled. <br> if b==false, removes all other terms parameters
@@ -858,8 +866,9 @@ public class SolrQuery extends ModifiableSolrParams
     return this.getInt(CommonParams.ROWS);
   }
 
-  public void setShowDebugInfo(boolean showDebugInfo) {
+  public SolrQuery setShowDebugInfo(boolean showDebugInfo) {
     this.set(CommonParams.DEBUG_QUERY, String.valueOf(showDebugInfo));
+    return this;
   }
 
   public void setDistrib(boolean val) {

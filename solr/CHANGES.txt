@@ -294,7 +294,7 @@ Other Changes
 
 * SOLR-9066: Make CountMetric return long instead of double (Kevin Risden)
 
-* SOLR-9065: Migrate SolrJ distributed tests to SolrCloudTestCase. (Alan Woodward)
+* SOLR-9065, SOLR-9072, SOLR-9132: Migrate some distributed tests to SolrCloudTestCase. (Alan Woodward)
 
 * SOLR-8184: Negative tests for JDBC Connection String (Susheel Kumar, Jason Gerlowski, Kevin Risden)
 
@@ -307,8 +307,6 @@ Other Changes
   back compat. (Erick Erickson)
 
 * SOLR-9105: Fix a bunch of typos across 103 files (Bartosz Krasiński via janhoy)
-
-* SOLR-9072: Migrate morphline-core tests to SolrCloudTestCase. (Alan Woodward)
 
 * SOLR-9115: Get rid of javax.xml.bind.DatatypeConverter in SimplePostTool
   for Java 9 compatibility. (Uwe Schindler)

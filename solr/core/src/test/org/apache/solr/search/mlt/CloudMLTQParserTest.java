@@ -19,129 +19,130 @@ package org.apache.solr.search.mlt;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
-import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.cloud.DocCollection;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
+public class CloudMLTQParserTest extends SolrCloudTestCase {
 
-  public CloudMLTQParserTest() {
-    sliceCount = 2;
-    
-    configString = "solrconfig.xml";
-    schemaString = "schema.xml";
-  }
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(2)
+        .addConfig("conf", configset("cloud-dynamic"))
+        .configure();
 
-  @Override
-  protected String getCloudSolrConfig() {
-    return configString;
-  }
+    final CloudSolrClient client = cluster.getSolrClient();
 
-  @Test
-  @ShardsFixed(num = 2)
-  public void test() throws Exception {
-    
-    waitForRecoveriesToFinish(false);
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
+        .processAndWait(client, DEFAULT_TIMEOUT);
+
+    client.waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+        (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
 
     String id = "id";
-    delQ("*:*");
-    String FIELD1 = "lowerfilt" ;
-    String FIELD2 = "lowerfilt1" ;
-    
-    indexDoc(sdoc(id, "1", FIELD1, "toyota"));
-    indexDoc(sdoc(id, "2", FIELD1, "chevrolet"));
-    indexDoc(sdoc(id, "3", FIELD1, "bmw usa"));
-    indexDoc(sdoc(id, "4", FIELD1, "ford"));
-    indexDoc(sdoc(id, "5", FIELD1, "ferrari"));
-    indexDoc(sdoc(id, "6", FIELD1, "jaguar"));
-    indexDoc(sdoc(id, "7", FIELD1, "mclaren moon or the moon and moon moon shine and the moon but moon was good foxes too"));
-    indexDoc(sdoc(id, "8", FIELD1, "sonata"));
-    indexDoc(sdoc(id, "9", FIELD1, "The quick red fox jumped over the lazy big and large brown dogs."));
-    indexDoc(sdoc(id, "10", FIELD1, "blue"));
-    indexDoc(sdoc(id, "12", FIELD1, "glue"));
-    indexDoc(sdoc(id, "13", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "14", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "15", FIELD1, "The fat red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "16", FIELD1, "The slim red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "17", FIELD1, "The quote red fox jumped moon over the lazy brown dogs moon. Of course moon. Foxes and moon come back to the foxes and moon"));
-    indexDoc(sdoc(id, "18", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "19", FIELD1, "The hose red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "20", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "21", FIELD1, "The court red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "22", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "23", FIELD1, "The quote red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "24", FIELD1, "The file red fox jumped over the lazy brown dogs."));
-    indexDoc(sdoc(id, "25", FIELD1, "rod fix"));
-    indexDoc(sdoc(id, "26", FIELD1, "bmw usa 328i"));
-    indexDoc(sdoc(id, "27", FIELD1, "bmw usa 535i"));
-    indexDoc(sdoc(id, "28", FIELD1, "bmw 750Li"));
-    indexDoc(sdoc(id, "29", FIELD1, "bmw usa",
-        FIELD2, "red green blue"));
-    indexDoc(sdoc(id, "30", FIELD1, "The quote red fox jumped over the lazy brown dogs.",
-        FIELD2, "red green yellow"));
-    indexDoc(sdoc(id, "31", FIELD1, "The fat red fox jumped over the lazy brown dogs.",
-        FIELD2, "green blue yellow"));
-    indexDoc(sdoc(id, "32", FIELD1, "The slim red fox jumped over the lazy brown dogs.",
-        FIELD2, "yellow white black"));
+    String FIELD1 = "lowerfilt_u" ;
+    String FIELD2 = "lowerfilt1_u" ;
 
-    commit();
+    new UpdateRequest()
+        .add(sdoc(id, "1", FIELD1, "toyota"))
+        .add(sdoc(id, "2", FIELD1, "chevrolet"))
+        .add(sdoc(id, "3", FIELD1, "bmw usa"))
+        .add(sdoc(id, "4", FIELD1, "ford"))
+        .add(sdoc(id, "5", FIELD1, "ferrari"))
+        .add(sdoc(id, "6", FIELD1, "jaguar"))
+        .add(sdoc(id, "7", FIELD1, "mclaren moon or the moon and moon moon shine and the moon but moon was good foxes too"))
+        .add(sdoc(id, "8", FIELD1, "sonata"))
+        .add(sdoc(id, "9", FIELD1, "The quick red fox jumped over the lazy big and large brown dogs."))
+        .add(sdoc(id, "10", FIELD1, "blue"))
+        .add(sdoc(id, "12", FIELD1, "glue"))
+        .add(sdoc(id, "13", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(sdoc(id, "14", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(sdoc(id, "15", FIELD1, "The fat red fox jumped over the lazy brown dogs."))
+        .add(sdoc(id, "16", FIELD1, "The slim red fox jumped over the lazy brown dogs."))
+        .add(sdoc(id, "17", FIELD1,
+            "The quote red fox jumped moon over the lazy brown dogs moon. Of course moon. Foxes and moon come back to the foxes and moon"))
+        .add(sdoc(id, "18", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(sdoc(id, "19", FIELD1, "The hose red fox jumped over the lazy brown dogs."))
+        .add(sdoc(id, "20", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(sdoc(id, "21", FIELD1, "The court red fox jumped over the lazy brown dogs."))
+        .add(sdoc(id, "22", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(sdoc(id, "23", FIELD1, "The quote red fox jumped over the lazy brown dogs."))
+        .add(sdoc(id, "24", FIELD1, "The file red fox jumped over the lazy brown dogs."))
+        .add(sdoc(id, "25", FIELD1, "rod fix"))
+        .add(sdoc(id, "26", FIELD1, "bmw usa 328i"))
+        .add(sdoc(id, "27", FIELD1, "bmw usa 535i"))
+        .add(sdoc(id, "28", FIELD1, "bmw 750Li"))
+        .add(sdoc(id, "29", FIELD1, "bmw usa", FIELD2, "red green blue"))
+        .add(sdoc(id, "30", FIELD1, "The quote red fox jumped over the lazy brown dogs.", FIELD2, "red green yellow"))
+        .add(sdoc(id, "31", FIELD1, "The fat red fox jumped over the lazy brown dogs.", FIELD2, "green blue yellow"))
+        .add(sdoc(id, "32", FIELD1, "The slim red fox jumped over the lazy brown dogs.", FIELD2, "yellow white black"))
+        .commit(client, COLLECTION);
+  }
 
-    handle.clear();
-    handle.put("QTime", SKIPVAL);
-    handle.put("timestamp", SKIPVAL);
-    handle.put("maxScore", SKIPVAL);
+  public static final String COLLECTION = "mlt-collection";
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
+  @Test
+  public void testMLTQParser() throws Exception {
 
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt}17");
-    QueryResponse queryResponse = cloudClient.query(params);
+    QueryResponse queryResponse = cluster.getSolrClient()
+        .query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u}17").setShowDebugInfo(true));
     SolrDocumentList solrDocuments = queryResponse.getResults();
     int[] expectedIds = new int[]{7, 13, 14, 15, 16, 20, 22, 24, 32, 9};
     int[] actualIds = new int[10];
     int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
     }
     assertArrayEquals(expectedIds, actualIds);
 
-    params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt boost=true}17");
-    queryResponse = queryServer(params);
-    solrDocuments = queryResponse.getResults();
-    expectedIds = new int[]{7, 13, 14, 15, 16, 20, 22, 24, 32, 9};
-    actualIds = new int[solrDocuments.size()];
-    i = 0;
+  }
+
+  @Test
+  public void testBoost() throws Exception {
+
+    QueryResponse queryResponse = cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u boost=true}17"));
+    SolrDocumentList solrDocuments = queryResponse.getResults();
+    int[] expectedIds = new int[]{7, 13, 14, 15, 16, 20, 22, 24, 32, 9};
+    int[] actualIds = new int[solrDocuments.size()];
+    int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
     }
     assertArrayEquals(expectedIds, actualIds);
-    
-    params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt mindf=0 mintf=1}3");
-    params.set(CommonParams.DEBUG, "true");
-    queryResponse = queryServer(params);
-    solrDocuments = queryResponse.getResults();
-    expectedIds = new int[]{29, 27, 26, 28};
-    actualIds = new int[solrDocuments.size()];
-    i = 0;
+
+  }
+
+  @Test
+  public void testMinDF() throws Exception {
+
+    QueryResponse queryResponse = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("{!mlt qf=lowerfilt_u mindf=0 mintf=1}3").setShowDebugInfo(true));
+    SolrDocumentList solrDocuments = queryResponse.getResults();
+    int[] expectedIds = new int[]{29, 27, 26, 28};
+    int[] actualIds = new int[solrDocuments.size()];
+    int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
     }
     assertArrayEquals(expectedIds, actualIds);
 
     String[] expectedQueryStrings = new String[]{
-      "(+(lowerfilt:bmw lowerfilt:usa) -id:3)/no_coord",
-      "(+(lowerfilt:usa lowerfilt:bmw) -id:3)/no_coord"};
+        "(+(lowerfilt_u:bmw lowerfilt_u:usa) -id:3)/no_coord",
+        "(+(lowerfilt_u:usa lowerfilt_u:bmw) -id:3)/no_coord"};
 
     String[] actualParsedQueries;
-    if(queryResponse.getDebugMap().get("parsedquery") instanceof  String) {
+    if (queryResponse.getDebugMap().get("parsedquery") instanceof String) {
       String parsedQueryString = (String) queryResponse.getDebugMap().get("parsedquery");
       assertTrue(parsedQueryString.equals(expectedQueryStrings[0]) || parsedQueryString.equals(expectedQueryStrings[1]));
     } else {
@@ -150,56 +151,68 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
       Arrays.sort(actualParsedQueries);
       assertArrayEquals(expectedQueryStrings, actualParsedQueries);
     }
+  }
 
+  @Test
+  public void testMultipleFields() throws Exception {
 
-    params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt,lowerfilt1 mindf=0 mintf=1}26");
-    params.set(CommonParams.DEBUG, "true");
-    queryResponse = queryServer(params);
-    solrDocuments = queryResponse.getResults();
-    expectedIds = new int[]{27, 3, 29, 28};
-    actualIds = new int[solrDocuments.size()];
-    i = 0;
+    QueryResponse queryResponse = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("{!mlt qf=lowerfilt_u,lowerfilt1_u mindf=0 mintf=1}26"));
+    SolrDocumentList solrDocuments = queryResponse.getResults();
+    int[] expectedIds = new int[]{27, 3, 29, 28};
+    int[] actualIds = new int[solrDocuments.size()];
+    int i = 0;
     for (SolrDocument solrDocument : solrDocuments) {
-      actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
+      actualIds[i++] = Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
     }
-    
+
     assertArrayEquals(expectedIds, actualIds);
 
-    params = new ModifiableSolrParams();
+  }
+
+  @Test
+  public void testHighDFValue() throws Exception {
+
     // Test out a high value of df and make sure nothing matches.
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt mindf=20 mintf=1}3");
-    params.set(CommonParams.DEBUG, "true");
-    queryResponse = queryServer(params);
-    solrDocuments = queryResponse.getResults();
+    QueryResponse queryResponse = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("{!mlt qf=lowerfilt_u mindf=20 mintf=1}3"));
+    SolrDocumentList solrDocuments = queryResponse.getResults();
     assertEquals("Expected to match 0 documents with a mindf of 20 but found more", solrDocuments.size(), 0);
 
-    params = new ModifiableSolrParams();
+  }
+
+  @Test
+  public void testHighWLValue() throws Exception {
+
     // Test out a high value of wl and make sure nothing matches.
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt minwl=4 mintf=1}3");
-    params.set(CommonParams.DEBUG, "true");
-    queryResponse = queryServer(params);
-    solrDocuments = queryResponse.getResults();
+    QueryResponse queryResponse = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("{!mlt qf=lowerfilt_u minwl=4 mintf=1}3"));
+    SolrDocumentList solrDocuments = queryResponse.getResults();
     assertEquals("Expected to match 0 documents with a minwl of 4 but found more", solrDocuments.size(), 0);
 
-    params = new ModifiableSolrParams();
+  }
+
+  @Test
+  public void testLowMinWLValue() throws Exception {
+
     // Test out a low enough value of minwl and make sure we get the expected matches.
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt minwl=3 mintf=1}3");
-    params.set(CommonParams.DEBUG, "true");
-    queryResponse = queryServer(params);
-    solrDocuments = queryResponse.getResults();
+    QueryResponse queryResponse = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("{!mlt qf=lowerfilt_u minwl=3 mintf=1}3"));
+    SolrDocumentList solrDocuments = queryResponse.getResults();
     assertEquals("Expected to match 4 documents with a minwl of 3 but found more", 4, solrDocuments.size());
+
+  }
+
+  @Test
+  public void testUnstoredAndUnanalyzedFieldsAreIgnored() throws Exception {
 
     // Assert that {!mlt}id does not throw an exception i.e. implicitly, only fields that are stored + have explicit
     // analyzer are used for MLT Query construction.
-    params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt}20");
-
-    queryResponse = queryServer(params);
-    solrDocuments = queryResponse.getResults();
-    actualIds = new int[solrDocuments.size()];
-    expectedIds = new int[]{13, 14, 15, 16, 22, 24, 32, 18, 19, 21};
-    i = 0;
+    QueryResponse queryResponse = cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt}20"));
+    SolrDocumentList solrDocuments = queryResponse.getResults();
+    int[] actualIds = new int[solrDocuments.size()];
+    int[] expectedIds = new int[]{13, 14, 15, 16, 22, 24, 32, 18, 19, 21};
+    int i = 0;
     StringBuilder sb = new StringBuilder();
     for (SolrDocument solrDocument : solrDocuments) {
       actualIds[i++] =  Integer.valueOf(String.valueOf(solrDocument.getFieldValue("id")));
@@ -208,15 +221,9 @@ public class CloudMLTQParserTest extends AbstractFullDistribZkTestBase {
     assertArrayEquals(expectedIds, actualIds);
   }
   
-  @Test(expected=SolrException.class)
-  public void testInvalidDocument() throws IOException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "{!mlt qf=lowerfilt}999999");
-    try {
-      cloudClient.query(params);
-      fail("The above query is supposed to throw an exception.");
-    } catch (SolrServerException e) {
-      // Do nothing.
-    }
+  public void testInvalidSourceDocument() throws IOException {
+    SolrException e = expectThrows(SolrException.class, () -> {
+      cluster.getSolrClient().query(COLLECTION, new SolrQuery("{!mlt qf=lowerfilt_u}999999"));
+    });
   }
 }

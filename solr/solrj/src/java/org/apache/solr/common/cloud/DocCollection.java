@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -249,5 +250,13 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   @Override
   public Iterator<Slice> iterator() {
     return slices.values().iterator();
+  }
+
+  public List<Replica> getReplicas() {
+    List<Replica> replicas = new ArrayList<>();
+    for (Slice slice : this) {
+      replicas.addAll(slice.getReplicas());
+    }
+    return replicas;
   }
 }

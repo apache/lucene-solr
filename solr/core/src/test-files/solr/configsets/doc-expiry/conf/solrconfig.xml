@@ -1,0 +1,96 @@
+<?xml version="1.0" ?>
+
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<!--
+   See DocExpirationUpdateProcessorFactoryTest
+   and DistribDocExpirationUpdateProcessorTest
+  -->
+<config>
+
+  <dataDir>${solr.data.dir:}</dataDir>
+
+  <directoryFactory name="DirectoryFactory"
+                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
+  <schemaFactory class="ClassicIndexSchemaFactory"/>
+
+  <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+
+  <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
+
+  <updateHandler class="solr.DirectUpdateHandler2">
+    <updateLog>
+      <str name="dir">${solr.ulog.dir:}</str>
+    </updateLog>
+  </updateHandler>
+
+  <requestHandler name="/select" class="solr.SearchHandler" default="true" />
+
+  <updateRequestProcessorChain name="convert-ttl-defaults">
+    <processor class="solr.processor.DocExpirationUpdateProcessorFactory">
+      <str name="expirationFieldName">_expire_at_tdt</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="convert-ttl-field">
+    <processor class="solr.processor.DocExpirationUpdateProcessorFactory">
+      <str name="ttlFieldName">_ttl_field_</str>
+      <null name="ttlParamName"/>
+      <str name="expirationFieldName">_expire_at_tdt</str>
+    </processor>
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldName">_ttl_field_</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="convert-ttl-param">
+    <processor class="solr.processor.DocExpirationUpdateProcessorFactory">
+      <str name="ttlParamName">_ttl_param_</str>
+      <null name="ttlFieldName"/>
+      <str name="expirationFieldName">_expire_at_tdt</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="convert-ttl-field-with-param-default">
+    <processor class="solr.processor.DocExpirationUpdateProcessorFactory">
+      <str name="ttlFieldName">_ttl_field_</str>
+      <str name="ttlParamName">_ttl_param_</str>
+      <str name="expirationFieldName">_expire_at_tdt</str>
+    </processor>
+    <processor class="solr.IgnoreFieldUpdateProcessorFactory">
+      <str name="fieldName">_ttl_field_</str>
+    </processor>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="scheduled-delete" default="true">
+    <!-- NOTE: this chain is default so we can see that
+         autoDeleteChainName defaults to the default chain for the SolrCore
+    -->
+    <processor class="solr.processor.DocExpirationUpdateProcessorFactory">
+      <!-- str name="autoDeleteChainName">scheduled-delete</str -->
+      <int name="autoDeletePeriodSeconds">3</int>
+      <str name="expirationFieldName">eXpField_tdt</str>
+      <str name="ttlFieldName">tTl_s</str>
+      <null name="ttlParamName"/>
+    </processor>
+    <processor class="solr.RecordingUpdateProcessorFactory" />
+    <processor class="solr.LogUpdateProcessorFactory" />
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+</config>
