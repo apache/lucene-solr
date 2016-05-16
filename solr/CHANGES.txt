@@ -301,6 +301,9 @@ Other Changes
 
 * SOLR-9072: Migrate morphline-core tests to SolrCloudTestCase. (Alan Woodward)
 
+* SOLR-9115: Get rid of javax.xml.bind.DatatypeConverter in SimplePostTool
+  for Java 9 compatibility. (Uwe Schindler)
+
 ==================  6.0.1 ==================
 (No Changes)
 
