@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.codecs.lucene60;
 
-
 import java.util.Objects;
 
 import org.apache.lucene.codecs.Codec;
@@ -51,7 +50,9 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
  * @see org.apache.lucene.codecs.lucene60 package documentation for file format details.
  *
  * @lucene.experimental
+ * @deprecated Only for 6.0 back compat
  */
+@Deprecated
 public class Lucene60Codec extends Codec {
   private final TermVectorsFormat vectorsFormat = new Lucene50TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene60FieldInfosFormat();
@@ -149,7 +150,7 @@ public class Lucene60Codec extends Codec {
   /** Returns the docvalues format that should be used for writing 
    *  new segments of <code>field</code>.
    *  
-   *  The default implementation always returns "Lucene50".
+   *  The default implementation always returns "Lucene54".
    *  <p>
    *  <b>WARNING:</b> if you subclass, you are responsible for index 
    *  backwards compatibility: future version of Lucene are only 

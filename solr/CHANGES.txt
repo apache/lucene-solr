@@ -47,6 +47,11 @@ Optimizations
 
 ==================  6.1.0 ==================
 
+Upgrading from Solr any prior release
+----------------------
+
+* If you use historical dates, specifically on or before the year 1582, you should re-index.
+
 Detailed Change List
 ----------------------
 
@@ -135,6 +140,8 @@ New Features
 
 * SOLR-8208: [subquery] document transformer executes separate requests per result document. (Cao Manh Dat  via Mikhail Khludnev)
 
+* SOLR-8323: All CollectionStateWatcher API (Alan Woodward, Scott Blum)
+
 Bug Fixes
 ----------------------
 
@@ -206,6 +213,10 @@ Bug Fixes
 * SOLR-8970: Change SSLTestConfig to use a keystore file that is included as a resource in the
   test-framework jar so users subclassing SolrTestCaseJ4 don't need to preserve magic paths (hossman)
 
+* SOLR-9080, SOLR-9085: (6.0 bug) For years <= 1582, date math (round,add,sub) introduced error.  Range faceting
+  on such dates was also affected.  With this fixed, this is the first release range faceting works on BC years.
+  (David Smiley)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
@@ -227,6 +238,8 @@ Optimizations
 
 * SOLR-9014: Deprecate and reduce usage of ClusterState methods which may make calls to ZK via
   the lazy collection reference. (Scott Blum, shalin)
+
+* SOLR-9106: Cluster properties are now cached on ZkStateReader. (Alan Woodward)
 
 Other Changes
 ----------------------
@@ -285,6 +298,11 @@ Other Changes
   back compat. (Erick Erickson)
 
 * SOLR-9105: Fix a bunch of typos across 103 files (Bartosz Krasiński via janhoy)
+
+* SOLR-9072: Migrate morphline-core tests to SolrCloudTestCase. (Alan Woodward)
+
+==================  6.0.1 ==================
+(No Changes)
 
 ==================  6.0.0 ==================
 

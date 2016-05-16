@@ -1894,7 +1894,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         positionVsNodes = identifyNodes(clusterState, nodeList, message, shardNames, repFactor);
       }
 
-      boolean isLegacyCloud =  Overseer.isLegacy(zkStateReader.getClusterProps());
+      boolean isLegacyCloud =  Overseer.isLegacy(zkStateReader);
 
       createConfNode(configName, collectionName, isLegacyCloud);
 
@@ -2126,7 +2126,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
     ModifiableSolrParams params = new ModifiableSolrParams();
     
-    if (!Overseer.isLegacy(zkStateReader.getClusterProps())) {
+    if (!Overseer.isLegacy(zkStateReader)) {
       if (!skipCreateReplicaInClusterState) {
         ZkNodeProps props = new ZkNodeProps(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower(), ZkStateReader.COLLECTION_PROP,
             collection, ZkStateReader.SHARD_ID_PROP, shard, ZkStateReader.CORE_NAME_PROP, coreName,

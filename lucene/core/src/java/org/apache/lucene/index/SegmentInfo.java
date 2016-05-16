@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 
 import org.apache.lucene.codecs.Codec;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.TrackingDirectoryWrapper;
 import org.apache.lucene.util.StringHelper;
@@ -69,6 +70,8 @@ public final class SegmentInfo {
   
   private final Map<String,String> attributes;
 
+  private final Sort indexSort;
+
   // Tracks the Lucene version this segment was created with, since 3.1. Null
   // indicates an older than 3.0 index, and it's used to detect a too old index.
   // The format expected is "x.y" - "2.x" for pre-3.0 indexes (or null), and
@@ -93,7 +96,7 @@ public final class SegmentInfo {
    */
   public SegmentInfo(Directory dir, Version version, String name, int maxDoc,
                      boolean isCompoundFile, Codec codec, Map<String,String> diagnostics,
-                     byte[] id, Map<String,String> attributes) {
+                     byte[] id, Map<String,String> attributes, Sort indexSort) {
     assert !(dir instanceof TrackingDirectoryWrapper);
     this.dir = Objects.requireNonNull(dir);
     this.version = Objects.requireNonNull(version);
@@ -107,6 +110,7 @@ public final class SegmentInfo {
       throw new IllegalArgumentException("invalid id: " + Arrays.toString(id));
     }
     this.attributes = Objects.requireNonNull(attributes);
+    this.indexSort = indexSort;
   }
 
   /**
@@ -194,13 +198,9 @@ public final class SegmentInfo {
       s.append('/').append(delCount);
     }
 
-    final String sorter_key = "sorter"; // SortingMergePolicy.SORTER_ID_PROP; // TODO: use this once we can import SortingMergePolicy (currently located in 'misc' instead of 'core')
-    final String sorter_val = diagnostics.get(sorter_key);
-    if (sorter_val != null) {
-      s.append(":[");
-      s.append(sorter_key);
-      s.append('=');
-      s.append(sorter_val);
+    if (indexSort != null) {
+      s.append(":[indexSort=");
+      s.append(indexSort);
       s.append(']');
     }
 
@@ -310,6 +310,11 @@ public final class SegmentInfo {
    */
   public Map<String,String> getAttributes() {
     return attributes;
+  }
+
+  /** Return the sort order of this segment, or null if the index has no sort. */
+  public Sort getIndexSort() {
+    return indexSort;
   }
 }
 

@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.lucene50;
 
 
 import org.apache.lucene.codecs.NormsFormat;
+import org.apache.lucene.codecs.SegmentInfoFormat;
 
 /**
  * Codec for testing 5.0 index format
@@ -26,9 +27,15 @@ import org.apache.lucene.codecs.NormsFormat;
 @Deprecated
 final class Lucene50RWCodec extends Lucene50Codec {
   private final NormsFormat normsFormat = new Lucene50RWNormsFormat();
+  private final SegmentInfoFormat segmentInfoFormat = new Lucene50RWSegmentInfoFormat();
 
   @Override
   public NormsFormat normsFormat() {
     return normsFormat;
+  }
+
+  @Override
+  public SegmentInfoFormat segmentInfoFormat() {
+    return segmentInfoFormat;
   }
 }

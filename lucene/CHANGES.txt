@@ -22,6 +22,10 @@ New Features
 * LUCENE-7234: Added InetAddressPoint.nextDown/nextUp to easily generate range
   queries with excluded bounds. (Adrien Grand)
 
+* LUCENE-7278: Spatial-extras DateRangePrefixTree's Calendar is now configurable, to
+  e.g. clear the Gregorian Change Date.  Also, toString(cal) is now identical to
+  DateTimeFormatter.ISO_INSTANT. (David Smiley)
+
 API Changes
 
 * LUCENE-7184: Refactor LatLonPoint encoding methods to new GeoEncodingUtils
@@ -132,6 +136,9 @@ Other
 
 * LUCENE-7263: Make queryparser/xml/CoreParser's SpanQueryBuilderFactory
   accessible to deriving classes. (Daniel Collins via Christine Poerschke)
+
+======================= Lucene 6.0.1 =======================
+(No Changes)
 
 ======================= Lucene 6.0.0 =======================
 

@@ -54,7 +54,7 @@ public class DataImportHandlerException extends RuntimeException {
     return errCode;
   }
 
-  public static void wrapAndThrow(int err, Exception e) {
+  public static DataImportHandlerException wrapAndThrow(int err, Exception e) {
     if (e instanceof DataImportHandlerException) {
       throw (DataImportHandlerException) e;
     } else {
@@ -62,7 +62,7 @@ public class DataImportHandlerException extends RuntimeException {
     }
   }
 
-  public static void wrapAndThrow(int err, Exception e, String msg) {
+  public static DataImportHandlerException wrapAndThrow(int err, Exception e, String msg) {
     if (e instanceof DataImportHandlerException) {
       throw (DataImportHandlerException) e;
     } else {

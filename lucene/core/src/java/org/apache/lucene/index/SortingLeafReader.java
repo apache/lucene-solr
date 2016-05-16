@@ -1,3 +1,5 @@
+package org.apache.lucene.index;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,7 +16,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -35,21 +36,13 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * An {@link org.apache.lucene.index.LeafReader} which supports sorting documents by a given
- * {@link Sort}. You can use this class to sort an index as follows:
- *
- * <pre class="prettyprint">
- * IndexWriter writer; // writer to which the sorted index will be added
- * DirectoryReader reader; // reader on the input index
- * Sort sort; // determines how the documents are sorted
- * LeafReader sortingReader = SortingLeafReader.wrap(SlowCompositeReaderWrapper.wrap(reader), sort);
- * writer.addIndexes(reader);
- * writer.close();
- * reader.close();
- * </pre>
+ * {@link Sort}.  This is package private and is only used by Lucene when it needs to merge
+ * a newly flushed (unsorted) segment.
  *
  * @lucene.experimental
  */
-public class SortingLeafReader extends FilterLeafReader {
+
+class SortingLeafReader extends FilterLeafReader {
 
   private static class SortingFields extends FilterFields {
 
@@ -109,25 +102,6 @@ public class SortingLeafReader extends FilterLeafReader {
       this.docMap = docMap;
       this.indexOptions = indexOptions;
       this.hasPositions = hasPositions;
-    }
-
-    Bits newToOld(final Bits liveDocs) {
-      if (liveDocs == null) {
-        return null;
-      }
-      return new Bits() {
-
-        @Override
-        public boolean get(int index) {
-          return liveDocs.get(docMap.oldToNew(index));
-        }
-
-        @Override
-        public int length() {
-          return liveDocs.length();
-        }
-
-      };
     }
 
     @Override
@@ -368,6 +342,7 @@ public class SortingLeafReader extends FilterLeafReader {
 
     @Override
     public void setDocument(int docID) {
+      //System.out.println("  slr.sssdv.setDocument docID=" + docID + " this=" + this);
       in.setDocument(docMap.newToOld(docID));
     }
 
@@ -865,7 +840,6 @@ public class SortingLeafReader extends FilterLeafReader {
     if (inPointValues == null) {
       return null;
     } else {
-      // TODO: this is untested!
       return new SortingPointValues(inPointValues, docMap);
     }
   }

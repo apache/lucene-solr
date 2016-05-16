@@ -819,6 +819,7 @@ public class IndexSearcher {
       sumTotalTermFreq = terms.getSumTotalTermFreq();
       sumDocFreq = terms.getSumDocFreq();
     }
+
     return new CollectionStatistics(field, reader.maxDoc(), docCount, sumTotalTermFreq, sumDocFreq);
   }
 }

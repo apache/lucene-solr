@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 
 /** An {@link LeafReader} which reads multiple, parallel indexes.  Each index
@@ -55,6 +56,7 @@ public class ParallelLeafReader extends LeafReader {
   private final boolean closeSubReaders;
   private final int maxDoc, numDocs;
   private final boolean hasDeletions;
+  private final Sort indexSort;
   private final SortedMap<String,LeafReader> fieldToReader = new TreeMap<>();
   private final SortedMap<String,LeafReader> tvFieldToReader = new TreeMap<>();
   
@@ -100,8 +102,18 @@ public class ParallelLeafReader extends LeafReader {
     
     // TODO: make this read-only in a cleaner way?
     FieldInfos.Builder builder = new FieldInfos.Builder();
+
+    Sort indexSort = null;
+
     // build FieldInfos and fieldToReader map:
     for (final LeafReader reader : this.parallelReaders) {
+      Sort leafIndexSort = reader.getIndexSort();
+      if (indexSort == null) {
+        indexSort = leafIndexSort;
+      } else if (leafIndexSort != null && indexSort.equals(leafIndexSort) == false) {
+        throw new IllegalArgumentException("cannot combine LeafReaders that have different index sorts: saw both sort=" + indexSort + " and " + leafIndexSort);
+      }
+
       final FieldInfos readerFieldInfos = reader.getFieldInfos();
       for (FieldInfo fieldInfo : readerFieldInfos) {
         // NOTE: first reader having a given field "wins":
@@ -115,6 +127,7 @@ public class ParallelLeafReader extends LeafReader {
       }
     }
     fieldInfos = builder.finish();
+    this.indexSort = indexSort;
     
     // build Fields instance
     for (final LeafReader reader : this.parallelReaders) {
@@ -423,4 +436,10 @@ public class ParallelLeafReader extends LeafReader {
     ensureOpen();
     return parallelReaders;
   }
+
+  @Override
+  public Sort getIndexSort() {
+    return indexSort;
+  }
+
 }

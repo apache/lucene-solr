@@ -283,6 +283,11 @@ public class QueryUtils {
 
       @Override
       protected void doClose() throws IOException {}
+
+      @Override
+      public Sort getIndexSort() {
+        return null;
+      }
     };
   }
 

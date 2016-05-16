@@ -1,3 +1,5 @@
+package org.apache.solr.common.cloud;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,26 +16,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
 
-
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseSegmentInfoFormatTestCase;
-import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.Version;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Tests Lucene50SegmentInfoFormat
+ * Interface to determine if a collection state matches a required state
+ *
+ * @see ZkStateReader#waitForState(String, long, TimeUnit, CollectionStatePredicate)
  */
-public class TestLucene50SegmentInfoFormat extends BaseSegmentInfoFormatTestCase {
+public interface CollectionStatePredicate {
 
-  @Override
-  protected Version[] getVersions() {
-    return new Version[] { Version.LATEST };
-  }
+  /**
+   * Check the collection state matches a required state
+   *
+   * Note that both liveNodes and collectionState should be consulted to determine
+   * the overall state.
+   *
+   * @param liveNodes the current set of live nodes
+   * @param collectionState the latest collection state, or null if the collection
+   *                        does not exist
+   */
+  boolean matches(Set<String> liveNodes, DocCollection collectionState);
 
-  @Override
-  protected Codec getCodec() {
-    return TestUtil.getDefaultCodec();
-  }
 }

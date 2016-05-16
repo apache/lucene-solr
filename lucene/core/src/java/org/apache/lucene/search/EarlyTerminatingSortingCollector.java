@@ -20,14 +20,14 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.SortingMergePolicy;
-import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.CollectionTerminatedException;
 import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.FilterLeafCollector;
 import org.apache.lucene.search.FilterCollector;
+import org.apache.lucene.search.FilterLeafCollector;
+import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TotalHitCountCollector;
@@ -39,8 +39,7 @@ import org.apache.lucene.search.TotalHitCountCollector;
  *
  * <p>
  * <b>NOTE:</b> the {@code Collector} detects segments sorted according to a
- * {@link SortingMergePolicy}'s {@link Sort} and so it's best used in conjunction
- * with a {@link SortingMergePolicy}. Also,it collects up to a specified
+ * an {@link IndexWriterConfig#setIndexSort}. Also, it collects up to a specified
  * {@code numDocsToCollect} from each segment, and therefore is mostly suitable
  * for use in conjunction with collectors such as {@link TopDocsCollector}, and
  * not e.g. {@link TotalHitCountCollector}.
@@ -48,24 +47,12 @@ import org.apache.lucene.search.TotalHitCountCollector;
  * <b>NOTE</b>: If you wrap a {@code TopDocsCollector} that sorts in the same
  * order as the index order, the returned {@link TopDocsCollector#topDocs() TopDocs}
  * will be correct. However the total of {@link TopDocsCollector#getTotalHits()
- * hit count} will be underestimated since not all matching documents will have
+ * hit count} will be vastly underestimated since not all matching documents will have
  * been collected.
- * <p>
- * <b>NOTE</b>: This {@code Collector} uses {@link Sort#toString()} to detect
- * whether a segment was sorted with the same {@code Sort}. This has
- * two implications:
- * <ul>
- * <li>if a custom comparator is not implemented correctly and returns
- * different identifiers for equivalent instances, this collector will not
- * detect sorted segments,</li>
- * <li>if you suddenly change the {@link IndexWriter}'s
- * {@code SortingMergePolicy} to sort according to another criterion and if both
- * the old and the new {@code Sort}s have the same identifier, this
- * {@code Collector} will incorrectly detect sorted segments.</li>
- * </ul>
  *
  * @lucene.experimental
  */
+
 public class EarlyTerminatingSortingCollector extends FilterCollector {
 
   /** Returns whether collection can be early-terminated if it sorts with the
@@ -85,7 +72,6 @@ public class EarlyTerminatingSortingCollector extends FilterCollector {
   protected final Sort sort;
   /** Number of documents to collect in each segment */
   protected final int numDocsToCollect;
-  private final Sort mergePolicySort;
   private final AtomicBoolean terminatedEarly = new AtomicBoolean(false);
 
   /**
@@ -99,27 +85,26 @@ public class EarlyTerminatingSortingCollector extends FilterCollector {
    *          the number of documents to collect on each segment. When wrapping
    *          a {@link TopDocsCollector}, this number should be the number of
    *          hits.
-   * @param mergePolicySort
-   *          the sort your {@link SortingMergePolicy} uses
    * @throws IllegalArgumentException if the sort order doesn't allow for early
    *          termination with the given merge policy.
    */
-  public EarlyTerminatingSortingCollector(Collector in, Sort sort, int numDocsToCollect, Sort mergePolicySort) {
+  public EarlyTerminatingSortingCollector(Collector in, Sort sort, int numDocsToCollect) {
     super(in);
     if (numDocsToCollect <= 0) {
       throw new IllegalArgumentException("numDocsToCollect must always be > 0, got " + numDocsToCollect);
     }
-    if (canEarlyTerminate(sort, mergePolicySort) == false) {
-      throw new IllegalStateException("Cannot early terminate with sort order " + sort + " if segments are sorted with " + mergePolicySort);
-    }
     this.sort = sort;
     this.numDocsToCollect = numDocsToCollect;
-    this.mergePolicySort = mergePolicySort;
   }
 
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-    if (SortingMergePolicy.isSorted(context.reader(), mergePolicySort)) {
+    Sort segmentSort = context.reader().getIndexSort();
+    if (segmentSort != null && canEarlyTerminate(sort, segmentSort) == false) {
+      throw new IllegalStateException("Cannot early terminate with sort order " + sort + " if segments are sorted with " + segmentSort);
+    }
+
+    if (segmentSort != null) {
       // segment is sorted, can early-terminate
       return new FilterLeafCollector(super.getLeafCollector(context)) {
         private int numCollected;
@@ -142,5 +127,4 @@ public class EarlyTerminatingSortingCollector extends FilterCollector {
   public boolean terminatedEarly() {
     return terminatedEarly.get();
   }
-
 }

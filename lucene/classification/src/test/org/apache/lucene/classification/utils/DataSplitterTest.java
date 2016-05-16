@@ -70,7 +70,9 @@ public class DataSplitterTest extends LuceneTestCase {
       doc = new Document();
       doc.add(new Field(idFieldName, "id" + Integer.toString(i), ft));
       doc.add(new Field(textFieldName, TestUtil.randomUnicodeString(rnd, 1024), ft));
-      doc.add(new Field(classFieldName, Integer.toString(rnd.nextInt(10)), ft));
+      String className = Integer.toString(rnd.nextInt(10));
+      doc.add(new Field(classFieldName, className, ft));
+      doc.add(new SortedDocValuesField(classFieldName, new BytesRef(className)));
       indexWriter.addDocument(doc);
     }
 
@@ -89,12 +91,10 @@ public class DataSplitterTest extends LuceneTestCase {
     super.tearDown();
   }
 
-
   @Test
   public void testSplitOnAllFields() throws Exception {
     assertSplit(originalIndex, 0.1, 0.1);
   }
-
 
   @Test
   public void testSplitOnSomeFields() throws Exception {

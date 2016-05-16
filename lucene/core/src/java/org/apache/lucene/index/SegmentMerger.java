@@ -59,6 +59,11 @@ final class SegmentMerger {
     this.codec = segmentInfo.getCodec();
     this.context = context;
     this.fieldInfosBuilder = new FieldInfos.Builder(fieldNumbers);
+    if (mergeState.infoStream.isEnabled("SM")) {
+      if (segmentInfo.getIndexSort() != null) {
+        mergeState.infoStream.message("SM", "index sort during merge: " + segmentInfo.getIndexSort());
+      }
+    }
   }
   
   /** True if any merging should happen */
