@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.SortedMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -280,6 +281,14 @@ public class MiniSolrCloudCluster {
    */
   public List<JettySolrRunner> getJettySolrRunners() {
     return Collections.unmodifiableList(jettys);
+  }
+
+  /**
+   * @return a randomly-selected Jetty
+   */
+  public JettySolrRunner getRandomJetty(Random random) {
+    int index = random.nextInt(jettys.size());
+    return jettys.get(index);
   }
 
   /**

@@ -16,19 +16,27 @@
  */
 package org.apache.solr.handler.component;
 
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.StrUtils;
-import org.junit.Test;
-
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * Test for QueryComponent's distributed querying optimization.
@@ -38,103 +46,122 @@ import java.util.Set;
  *
  * @see QueryComponent
  */
-public class DistributedQueryComponentOptimizationTest extends AbstractFullDistribZkTestBase {
+public class DistributedQueryComponentOptimizationTest extends SolrCloudTestCase {
 
-  public DistributedQueryComponentOptimizationTest() {
-    stress = 0;
-    schemaString = "schema-custom-field.xml";
+  private static final String COLLECTION = "optimize";
+  private static final String SHARD1 = "shard1";
+  private static final String SHARD2 = "shard2";
+
+  private static final int sliceCount = 3;
+
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(3)
+        .withSolrXml(TEST_PATH().resolve("solr-trackingshardhandler.xml"))
+        .addConfig("conf", configset("cloud-dynamic"))
+        .configure();
+
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 1)
+        .setMaxShardsPerNode(1)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+        (n, c) -> DocCollection.isFullyActive(n, c, sliceCount, 1));
+
+    new UpdateRequest()
+        .add(sdoc(id, "1", "text", "a", "test_sS", "21", "payload", ByteBuffer.wrap(new byte[]{0x12, 0x62, 0x15})))
+        .add(sdoc(id, "2", "text", "b", "test_sS", "22", "payload", ByteBuffer.wrap(new byte[]{0x25, 0x21, 0x16})))                  //  5
+        .add(sdoc(id, "3", "text", "a", "test_sS", "23", "payload", ByteBuffer.wrap(new byte[]{0x35, 0x32, 0x58})))                  //  8
+        .add(sdoc(id, "4", "text", "b", "test_sS", "24", "payload", ByteBuffer.wrap(new byte[]{0x25, 0x21, 0x15})))                    //  4
+        .add(sdoc(id, "5", "text", "a", "test_sS", "25", "payload", ByteBuffer.wrap(new byte[]{0x35, 0x35, 0x10, 0x00})))              //  9
+        .add(sdoc(id, "6", "text", "c", "test_sS", "26", "payload", ByteBuffer.wrap(new byte[]{0x1a, 0x2b, 0x3c, 0x00, 0x00, 0x03})))  //  3
+        .add(sdoc(id, "7", "text", "c", "test_sS", "27", "payload", ByteBuffer.wrap(new byte[]{0x00, 0x3c, 0x73})))                    //  1
+        .add(sdoc(id, "8", "text", "c", "test_sS", "28", "payload", ByteBuffer.wrap(new byte[]{0x59, 0x2d, 0x4d})))                    // 11
+        .add(sdoc(id, "9", "text", "a", "test_sS", "29", "payload", ByteBuffer.wrap(new byte[]{0x39, 0x79, 0x7a})))                    // 10
+        .add(sdoc(id, "10", "text", "b", "test_sS", "30", "payload", ByteBuffer.wrap(new byte[]{0x31, 0x39, 0x7c})))                   //  6
+        .add(sdoc(id, "11", "text", "d", "test_sS", "31", "payload", ByteBuffer.wrap(new byte[]{(byte) 0xff, (byte) 0xaf, (byte) 0x9c}))) // 13
+        .add(sdoc(id, "12", "text", "d", "test_sS", "32", "payload", ByteBuffer.wrap(new byte[]{0x34, (byte) 0xdd, 0x4d})))             //  7
+        .add(sdoc(id, "13", "text", "d", "test_sS", "33", "payload", ByteBuffer.wrap(new byte[]{(byte) 0x80, 0x11, 0x33})))             // 12
+        // SOLR-6545, wild card field list
+        .add(sdoc(id, "19", "text", "d", "cat_a_sS", "1", "dynamic_s", "2", "payload", ByteBuffer.wrap(new byte[]{(byte) 0x80, 0x11, 0x34})))
+        .commit(cluster.getSolrClient(), COLLECTION);
+
   }
 
-  @Override
-  protected String getSolrXml() {
-    return "solr-trackingshardhandler.xml";
+  private static final String id = "id";
+
+  @Test
+  public void testBasics() throws Exception {
+
+    QueryResponse rsp;
+    rsp = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("q", "*:*", "fl", "id,test_sS,score", "sort", "payload asc", "rows", "20"));
+    assertFieldValues(rsp.getResults(), id, "7", "1", "6", "4", "2", "10", "12", "3", "5", "9", "8", "13", "19", "11");
+    assertFieldValues(rsp.getResults(), "test_sS", "27", "21", "26", "24", "22", "30", "32", "23", "25", "29", "28", "33", null, "31");
+    rsp = cluster.getSolrClient().query(COLLECTION, new SolrQuery("q", "*:*", "fl", "id,score", "sort", "payload desc", "rows", "20"));
+    assertFieldValues(rsp.getResults(), id, "11", "19", "13", "8", "9", "5", "3", "12", "10", "2", "4", "6", "1", "7");
+
   }
 
   @Test
-  @ShardsFixed(num = 3)
-  public void test() throws Exception {
-    waitForThingsToLevelOut(30);
-    del("*:*");
+  public void testFieldList() throws Exception {
 
-    index(id, "1", "text", "a", "test_sS", "21", "payload", ByteBuffer.wrap(new byte[]{0x12, 0x62, 0x15}),                     //  2
-        // quick check to prove "*" dynamicField hasn't been broken by somebody mucking with schema
-        "asdfasdf_field_should_match_catchall_dynamic_field_adsfasdf", "value");
-    index(id, "2", "text", "b", "test_sS", "22", "payload", ByteBuffer.wrap(new byte[]{0x25, 0x21, 0x16}));                    //  5
-    index(id, "3", "text", "a", "test_sS", "23", "payload", ByteBuffer.wrap(new byte[]{0x35, 0x32, 0x58}));                    //  8
-    index(id, "4", "text", "b", "test_sS", "24", "payload", ByteBuffer.wrap(new byte[]{0x25, 0x21, 0x15}));                    //  4
-    index(id, "5", "text", "a", "test_sS", "25", "payload", ByteBuffer.wrap(new byte[]{0x35, 0x35, 0x10, 0x00}));              //  9
-    index(id, "6", "text", "c", "test_sS", "26", "payload", ByteBuffer.wrap(new byte[]{0x1a, 0x2b, 0x3c, 0x00, 0x00, 0x03}));  //  3
-    index(id, "7", "text", "c", "test_sS", "27", "payload", ByteBuffer.wrap(new byte[]{0x00, 0x3c, 0x73}));                    //  1
-    index(id, "8", "text", "c", "test_sS", "28", "payload", ByteBuffer.wrap(new byte[]{0x59, 0x2d, 0x4d}));                    // 11
-    index(id, "9", "text", "a", "test_sS", "29", "payload", ByteBuffer.wrap(new byte[]{0x39, 0x79, 0x7a}));                    // 10
-    index(id, "10", "text", "b", "test_sS", "30", "payload", ByteBuffer.wrap(new byte[]{0x31, 0x39, 0x7c}));                   //  6
-    index(id, "11", "text", "d", "test_sS", "31", "payload", ByteBuffer.wrap(new byte[]{(byte) 0xff, (byte) 0xaf, (byte) 0x9c})); // 13
-    index(id, "12", "text", "d", "test_sS", "32", "payload", ByteBuffer.wrap(new byte[]{0x34, (byte) 0xdd, 0x4d}));             //  7
-    index(id, "13", "text", "d", "test_sS", "33", "payload", ByteBuffer.wrap(new byte[]{(byte) 0x80, 0x11, 0x33}));             // 12
-    commit();
-
-    QueryResponse rsp;
-    rsp = query("q", "*:*", "fl", "id,test_sS,score", "sort", "payload asc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 7, 1, 6, 4, 2, 10, 12, 3, 5, 9, 8, 13, 11);
-    assertFieldValues(rsp.getResults(), "test_sS", "27", "21", "26", "24", "22", "30", "32", "23", "25", "29", "28", "33", "31");
-    rsp = query("q", "*:*", "fl", "id,score", "sort", "payload desc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 11, 13, 8, 9, 5, 3, 12, 10, 2, 4, 6, 1, 7);
     // works with just fl=id as well
-    rsp = query("q", "*:*", "fl", "id", "sort", "payload desc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 11, 13, 8, 9, 5, 3, 12, 10, 2, 4, 6, 1, 7);
+    QueryResponse rsp = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("q", "*:*", "fl", "id", "sort", "payload desc", "rows", "20"));
+    assertFieldValues(rsp.getResults(), id, "11", "19", "13", "8", "9", "5", "3", "12", "10", "2", "4", "6", "1", "7");
 
-    rsp = query("q", "*:*", "fl", "id,score", "sort", "payload asc", "rows", "20");
-    assertFieldValues(rsp.getResults(), id, 7, 1, 6, 4, 2, 10, 12, 3, 5, 9, 8, 13, 11);
+    rsp = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("q", "*:*", "fl", "id,score", "sort", "payload asc", "rows", "20"));
+    assertFieldValues(rsp.getResults(), id, "7", "1", "6", "4", "2", "10", "12", "3", "5", "9", "8", "13", "19", "11");
+  }
 
-    rsp = query("q", "*:*", "fl", "id,test_sS,score", "sort", "payload asc", "rows", "20", "distrib.singlePass", "true");
-    assertFieldValues(rsp.getResults(), id, 7, 1, 6, 4, 2, 10, 12, 3, 5, 9, 8, 13, 11);
-    assertFieldValues(rsp.getResults(), "test_sS", "27", "21", "26", "24", "22", "30", "32", "23", "25", "29", "28", "33", "31");
+  @Test
+  public void testDistribSinglePass() throws Exception {
 
-    QueryResponse nonDistribRsp = query("q", "*:*", "fl", "id,test_sS,score", "sort", "payload asc", "rows", "20");
+    QueryResponse rsp = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("q", "*:*", "fl", "id,test_sS,score", "sort", "payload asc", "rows", "20", "distrib.singlePass", "true"));
+    assertFieldValues(rsp.getResults(), id, "7", "1", "6", "4", "2", "10", "12", "3", "5", "9", "8", "13", "19", "11");
+    assertFieldValues(rsp.getResults(), "test_sS", "27", "21", "26", "24", "22", "30", "32", "23", "25", "29", "28", "33", null, "31");
+
+
+    QueryResponse nonDistribRsp = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("q", "*:*", "fl", "id,test_sS,score", "sort", "payload asc", "rows", "20"));
     compareResponses(rsp, nonDistribRsp); // make sure distrib and distrib.singlePass return the same thing
 
-    nonDistribRsp = query("q", "*:*", "fl", "score", "sort", "payload asc", "rows", "20");
-    rsp = query("q", "*:*", "fl", "score", "sort", "payload asc", "rows", "20", "distrib.singlePass", "true");
+    nonDistribRsp = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("q", "*:*", "fl", "score", "sort", "payload asc", "rows", "20"));
+    rsp = cluster.getSolrClient().query(COLLECTION,
+        new SolrQuery("q", "*:*", "fl", "score", "sort", "payload asc", "rows", "20", "distrib.singlePass", "true"));
     compareResponses(rsp, nonDistribRsp); // make sure distrib and distrib.singlePass return the same thing
+
+  }
+
+  @Test
+  public void testOptimizations() throws Exception {
 
     // verify that the optimization actually works
     queryWithAsserts("q", "*:*", "fl", "id", "sort", "payload desc", "rows", "20"); // id only is optimized by default
     queryWithAsserts("q", "*:*", "fl", "id,score", "sort", "payload desc", "rows", "20"); // id,score only is optimized by default
     queryWithAsserts("q", "*:*", "fl", "score", "sort", "payload asc", "rows", "20", "distrib.singlePass", "true");
 
-    // SOLR-6545, wild card field list
-    index(id, "19", "text", "d", "cat_a_sS", "1", "dynamic", "2", "payload", ByteBuffer.wrap(new byte[]{(byte) 0x80, 0x11, 0x34}));
-    commit();
+  }
 
-    nonDistribRsp = queryWithAsserts("q", "id:19", "fl", "id,*a_sS", "sort", "payload asc");
-    rsp = queryWithAsserts("q", "id:19", "fl", "id,*a_sS", "sort", "payload asc", "distrib.singlePass", "true");
+  @Test
+  public void testWildcardFieldList() throws Exception {
 
-    assertFieldValues(nonDistribRsp.getResults(), "id", 19);
-    assertFieldValues(rsp.getResults(), "id", 19);
+    QueryResponse nonDistribRsp = queryWithAsserts("q", "id:19", "fl", "id,*a_sS", "sort", "payload asc");
+    QueryResponse rsp = queryWithAsserts("q", "id:19", "fl", "id,*a_sS", "sort", "payload asc", "distrib.singlePass", "true");
 
-    nonDistribRsp = queryWithAsserts("q", "id:19", "fl", "id,dynamic,cat*", "sort", "payload asc");
-    rsp = queryWithAsserts("q", "id:19", "fl", "id,dynamic,cat*", "sort", "payload asc", "distrib.singlePass", "true");
-    assertFieldValues(nonDistribRsp.getResults(), "id", 19);
-    assertFieldValues(rsp.getResults(), "id", 19);
+    assertFieldValues(nonDistribRsp.getResults(), "id", "19");
+    assertFieldValues(rsp.getResults(), "id", "19");
+
+    nonDistribRsp = queryWithAsserts("q", "id:19", "fl", "id,dynamic_s,cat*", "sort", "payload asc");
+    rsp = queryWithAsserts("q", "id:19", "fl", "id,dynamic_s,cat*", "sort", "payload asc", "distrib.singlePass", "true");
+    assertFieldValues(nonDistribRsp.getResults(), "id", "19");
+    assertFieldValues(rsp.getResults(), "id", "19");
 
     queryWithAsserts("q", "id:19", "fl", "id,*a_sS", "sort", "payload asc", "distrib.singlePass", "true");
-    queryWithAsserts("q", "id:19", "fl", "id,dynamic,cat*", "sort", "payload asc", "distrib.singlePass", "true");
-
-    // see SOLR-6795, distrib.singlePass=true would return score even when not asked for
-    handle.clear();
-    handle.put("timestamp", SKIPVAL);
-    handle.put("_version_", SKIPVAL);
-    // we don't to compare maxScore because most distributed requests return it anyway (just because they have score already)
-    handle.put("maxScore", SKIPVAL);
-    // this trips the queryWithAsserts function because it uses a custom parser, so just query directly
-    query("q", "{!func}id", ShardParams.DISTRIB_SINGLE_PASS, "true");
-
-    // fix for a bug where not all fields are returned if using multiple fl parameters, see SOLR-6796
-    queryWithAsserts("q", "*:*", "fl", "id", "fl", "dynamic", "sort", "payload desc", ShardParams.DISTRIB_SINGLE_PASS, "true");
-
-    // missing fl with sort
-    queryWithAsserts("q", "*:*", "sort", "payload desc", ShardParams.DISTRIB_SINGLE_PASS, "true");
-    queryWithAsserts("q", "*:*", "sort", "payload desc");
+    queryWithAsserts("q", "id:19", "fl", "id,dynamic_s,cat*", "sort", "payload asc", "distrib.singlePass", "true");
 
     // fl=*
     queryWithAsserts("q", "*:*", "fl", "*", "sort", "payload desc", ShardParams.DISTRIB_SINGLE_PASS, "true");
@@ -143,6 +170,33 @@ public class DistributedQueryComponentOptimizationTest extends AbstractFullDistr
     // fl=*,score
     queryWithAsserts("q", "*:*", "fl", "*,score", "sort", "payload desc", ShardParams.DISTRIB_SINGLE_PASS, "true");
     queryWithAsserts("q", "*:*", "fl", "*,score", "sort", "payload desc");
+  }
+
+  @Test
+  public void testScoreAlwaysReturned() throws Exception {
+    // see SOLR-6795, distrib.singlePass=true would return score even when not asked for
+    queryWithAsserts("q", "id:19", ShardParams.DISTRIB_SINGLE_PASS, "true");
+  }
+
+  @Test
+  public void testMultipleFlParams() throws Exception {
+    // fix for a bug where not all fields are returned if using multiple fl parameters, see SOLR-6796
+    queryWithAsserts("q", "*:*", "fl", "id", "fl", "dynamic_s", "sort", "payload desc", ShardParams.DISTRIB_SINGLE_PASS, "true");
+  }
+
+  @Test
+  public void testMissingFieldListWithSort() throws Exception {
+    // missing fl with sort
+    queryWithAsserts("q", "*:*", "sort", "payload desc", ShardParams.DISTRIB_SINGLE_PASS, "true");
+    queryWithAsserts("q", "*:*", "sort", "payload desc");
+  }
+
+  private static void compareResponses(QueryResponse rsp1, QueryResponse rsp2) {
+    Map<String, Integer> skipValues = new HashMap<>();
+    skipValues.put("timestamp", BaseDistributedSearchTestCase.SKIPVAL);
+    skipValues.put("_version_", BaseDistributedSearchTestCase.SKIPVAL);
+    skipValues.put("maxScore", BaseDistributedSearchTestCase.SKIPVAL);
+    BaseDistributedSearchTestCase.compare(rsp1.getResponse(), rsp2.getResponse(), 0, skipValues);
   }
 
   /**
@@ -166,18 +220,13 @@ public class DistributedQueryComponentOptimizationTest extends AbstractFullDistr
    * <p>
    * and also asserts that each query which requests id or score or both behaves exactly like a single pass query
    */
-  private QueryResponse queryWithAsserts(Object... q) throws Exception {
+  private QueryResponse queryWithAsserts(String... q) throws Exception {
     TrackingShardHandlerFactory.RequestTrackingQueue trackingQueue = new TrackingShardHandlerFactory.RequestTrackingQueue();
     // the jettys doesn't include the control jetty which is exactly what we need here
-    TrackingShardHandlerFactory.setTrackingQueue(jettys, trackingQueue);
+    TrackingShardHandlerFactory.setTrackingQueue(cluster, trackingQueue);
 
     // let's add debug=track to such requests so we can use DebugComponent responses for assertions
-    Object[] qq = new Object[q.length + 2];
-    System.arraycopy(q, 0, qq, 0, q.length);
-    qq[qq.length - 2] = "debug";
-    qq[qq.length - 1] = "track";
-    handle.put("debug", SKIPVAL);
-    QueryResponse response = query(qq);
+    QueryResponse response = cluster.getSolrClient().query(COLLECTION, new SolrQuery("debug", "track", q));
 
     Map<String, List<TrackingShardHandlerFactory.ShardRequestAndParams>> requests = trackingQueue.getAllRequests();
     int numRequests = getNumRequests(requests);
@@ -223,9 +272,9 @@ public class DistributedQueryComponentOptimizationTest extends AbstractFullDistr
       // it must still be fetched in this phase to merge correctly
       Set<String> reqAndIdScoreFields = new HashSet<>(fls);
       reqAndIdScoreFields.addAll(idScoreFields);
-      assertParamsEquals(trackingQueue, DEFAULT_COLLECTION, SHARD1,
+      assertParamsEquals(trackingQueue, COLLECTION, SHARD1,
           CommonParams.FL, ShardRequest.PURPOSE_GET_TOP_IDS, reqAndIdScoreFields.toArray(new String[reqAndIdScoreFields.size()]));
-      assertParamsEquals(trackingQueue, DEFAULT_COLLECTION, SHARD2,
+      assertParamsEquals(trackingQueue, COLLECTION, SHARD2,
           CommonParams.FL, ShardRequest.PURPOSE_GET_TOP_IDS, reqAndIdScoreFields.toArray(new String[reqAndIdScoreFields.size()]));
     } else {
       // we are assuming there are facet refinement or distributed idf requests here
@@ -234,15 +283,15 @@ public class DistributedQueryComponentOptimizationTest extends AbstractFullDistr
           numRequests <= sliceCount * 2);
 
       // only id and/or score should be requested
-      assertParamsEquals(trackingQueue, DEFAULT_COLLECTION, SHARD1,
+      assertParamsEquals(trackingQueue, COLLECTION, SHARD1,
           CommonParams.FL, ShardRequest.PURPOSE_GET_TOP_IDS, idScoreFields.toArray(new String[idScoreFields.size()]));
-      assertParamsEquals(trackingQueue, DEFAULT_COLLECTION, SHARD2,
+      assertParamsEquals(trackingQueue, COLLECTION, SHARD2,
           CommonParams.FL, ShardRequest.PURPOSE_GET_TOP_IDS, idScoreFields.toArray(new String[idScoreFields.size()]));
 
       // only originally requested fields must be requested in GET_FIELDS request
-      assertParamsEquals(trackingQueue, DEFAULT_COLLECTION, SHARD1,
+      assertParamsEquals(trackingQueue, COLLECTION, SHARD1,
           CommonParams.FL, ShardRequest.PURPOSE_GET_FIELDS, fls.toArray(new String[fls.size()]));
-      assertParamsEquals(trackingQueue, DEFAULT_COLLECTION, SHARD2,
+      assertParamsEquals(trackingQueue, COLLECTION, SHARD2,
           CommonParams.FL, ShardRequest.PURPOSE_GET_FIELDS, fls.toArray(new String[fls.size()]));
     }
 
@@ -258,7 +307,8 @@ public class DistributedQueryComponentOptimizationTest extends AbstractFullDistr
   }
 
   private void assertParamsEquals(TrackingShardHandlerFactory.RequestTrackingQueue trackingQueue, String collection, String shard, String paramName, int purpose, String... values) {
-    TrackingShardHandlerFactory.ShardRequestAndParams getByIdRequest = trackingQueue.getShardRequestByPurpose(cloudClient.getZkStateReader(), collection, shard, purpose);
+    TrackingShardHandlerFactory.ShardRequestAndParams getByIdRequest
+        = trackingQueue.getShardRequestByPurpose(cluster.getSolrClient().getZkStateReader(), collection, shard, purpose);
     assertParamsEquals(getByIdRequest, paramName, values);
   }
 
