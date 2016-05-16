@@ -137,6 +137,9 @@ Other
 * LUCENE-7263: Make queryparser/xml/CoreParser's SpanQueryBuilderFactory
   accessible to deriving classes. (Daniel Collins via Christine Poerschke)
 
+* SOLR-9109: Allow specification of a custom Ivy settings file via system
+  property "ivysettings.xml". (Misha Dmitriev, Uwe Schindler, Steve Rowe)
+
 ======================= Lucene 6.0.1 =======================
 (No Changes)
 

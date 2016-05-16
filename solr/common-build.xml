@@ -505,12 +505,12 @@
   
   <!-- Forbidden API Task, customizations for Solr -->
   <target name="-check-forbidden-all" depends="-init-forbidden-apis,compile-core,compile-test">
-    <property file="${common.dir}/ivy-versions.properties"/> <!-- for commons-io version -->
+    <property prefix="ivyversions" file="${common.dir}/ivy-versions.properties"/> <!-- for commons-io version -->
     <forbidden-apis internalRuntimeForbidden="true" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath">
       <signatures>
         <bundled name="jdk-unsafe-${javac.target}"/>
         <bundled name="jdk-deprecated-${javac.target}"/>
-        <bundled name="commons-io-unsafe-${/commons-io/commons-io}"/>
+        <bundled name="commons-io-unsafe-${ivyversions./commons-io/commons-io}"/>
         <fileset dir="${common.dir}/tools/forbiddenApis">
           <include name="base.txt" />
           <include name="servlet-api.txt" />
