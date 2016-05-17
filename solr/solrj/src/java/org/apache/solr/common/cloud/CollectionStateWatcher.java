@@ -31,12 +31,12 @@ public interface CollectionStateWatcher {
    * Note that, due to the way Zookeeper watchers are implemented, a single call may be
    * the result of several state changes
    *
-   * A watcher is unregistered after it has been called once.  To make a watcher persistent,
-   * implementors should re-register during this call.
-   *
    * @param liveNodes       the set of live nodes
-   * @param collectionState the new collection state
+   * @param collectionState the new collection state (may be null if the collection has been
+   *                        deleted)
+   *
+   * @return true if the watcher should be removed
    */
-  void onStateChanged(Set<String> liveNodes, DocCollection collectionState);
+  boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState);
 
 }
