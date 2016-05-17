@@ -25,6 +25,7 @@ import org.apache.lucene.document.FieldType;
 
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
+import org.apache.lucene.spatial3d.geom.GeoDistanceShape;
 
 /** 
  * An per-document 3D location field.
@@ -54,15 +55,15 @@ public class Geo3DDocValuesField extends Field {
   // 0x200000 = (maximum - minimum) * factor
   // So, factor = 0x200000 / (maximum - minimum)
 
-  private final double inverseMaximumValue = 1.0 / (double)(0x200000);
+  private final static double inverseMaximumValue = 1.0 / (double)(0x200000);
   
-  private final double inverseXFactor = (PlanetModel.WGS84.getMaximumXValue() - PlanetModel.WGS84.getMinimumXValue()) * inverseMaximumValue;
-  private final double inverseYFactor = (PlanetModel.WGS84.getMaximumYValue() - PlanetModel.WGS84.getMinimumYValue()) * inverseMaximumValue;
-  private final double inverseZFactor = (PlanetModel.WGS84.getMaximumZValue() - PlanetModel.WGS84.getMinimumZValue()) * inverseMaximumValue;
+  private final static double inverseXFactor = (PlanetModel.WGS84.getMaximumXValue() - PlanetModel.WGS84.getMinimumXValue()) * inverseMaximumValue;
+  private final static double inverseYFactor = (PlanetModel.WGS84.getMaximumYValue() - PlanetModel.WGS84.getMinimumYValue()) * inverseMaximumValue;
+  private final static double inverseZFactor = (PlanetModel.WGS84.getMaximumZValue() - PlanetModel.WGS84.getMinimumZValue()) * inverseMaximumValue;
   
-  private final double xFactor = 1.0 / inverseXFactor;
-  private final double yFactor = 1.0 / inverseYFactor;
-  private final double zFactor = 1.0 / inverseZFactor;
+  private final static double xFactor = 1.0 / inverseXFactor;
+  private final static double yFactor = 1.0 / inverseYFactor;
+  private final static double zFactor = 1.0 / inverseZFactor;
   
   /**
    * Type for a Geo3DDocValuesField
@@ -128,13 +129,47 @@ public class Geo3DDocValuesField extends Field {
       );
   }
 
+  /** Decode GeoPoint value from long docvalues value.
+   * @param docValue is the doc values value.
+   * @return the GeoPoint.
+   */
+  public static GeoPoint decodePoint(final long docValue) {
+    return new GeoPoint(decodeX(((int)(docValue >> 42)) & 0x1FFFFF),
+      decodeY(((int)(docValue >> 21)) & 0x1FFFFF),
+      decodeZ(((int)(docValue)) & 0x1FFFFF));
+  }
+  
+  /** Decode X value from long docvalues value.
+   * @param docValue is the doc values value.
+   * @return the x value.
+   */
+  public static double decodeXValue(final long docValue) {
+    return decodeX(((int)(docValue >> 42)) & 0x1FFFFF);
+  }
+  
+  /** Decode Y value from long docvalues value.
+   * @param docValue is the doc values value.
+   * @return the y value.
+   */
+  public static double decodeYValue(final long docValue) {
+    return decodeY(((int)(docValue >> 21)) & 0x1FFFFF);
+  }
+  
+  /** Decode Z value from long docvalues value.
+   * @param docValue is the doc values value.
+   * @return the z value.
+   */
+  public static double decodeZValue(final long docValue) {
+    return decodeZ(((int)(docValue)) & 0x1FFFFF);
+  }
+
   // For encoding/decoding, we generally want the following behavior:
   // (1) If you encode the maximum value or the minimum value, the resulting int fits in 21 bits.
   // (2) If you decode an encoded value, you get back the original value for both the minimum and maximum planet model values.
   // (3) Rounding occurs such that a small delta from the minimum and maximum planet model values still returns the same
   // values -- that is, these are in the center of the range of input values that should return the minimum or maximum when decoded
   
-  private int encodeX(final double x) {
+  private static int encodeX(final double x) {
     if (x > PlanetModel.WGS84.getMaximumXValue()) {
       throw new IllegalArgumentException("x value exceeds WGS84 maximum");
     } else if (x < PlanetModel.WGS84.getMinimumXValue()) {
@@ -143,11 +178,11 @@ public class Geo3DDocValuesField extends Field {
     return (int)Math.floor((x - PlanetModel.WGS84.getMinimumXValue()) * xFactor + 0.5);
   }
   
-  private double decodeX(final int x) {
+  private static double decodeX(final int x) {
     return x * inverseXFactor + PlanetModel.WGS84.getMinimumXValue();
   }
 
-  private int encodeY(final double y) {
+  private static int encodeY(final double y) {
     if (y > PlanetModel.WGS84.getMaximumYValue()) {
       throw new IllegalArgumentException("y value exceeds WGS84 maximum");
     } else if (y < PlanetModel.WGS84.getMinimumYValue()) {
@@ -156,11 +191,11 @@ public class Geo3DDocValuesField extends Field {
     return (int)Math.floor((y - PlanetModel.WGS84.getMinimumYValue()) * yFactor + 0.5);
   }
 
-  private double decodeY(final int y) {
+  private static double decodeY(final int y) {
     return y * inverseYFactor + PlanetModel.WGS84.getMinimumYValue();
   }
 
-  private int encodeZ(final double z) {
+  private static int encodeZ(final double z) {
     if (z > PlanetModel.WGS84.getMaximumZValue()) {
       throw new IllegalArgumentException("z value exceeds WGS84 maximum");
     } else if (z < PlanetModel.WGS84.getMinimumZValue()) {
@@ -169,7 +204,7 @@ public class Geo3DDocValuesField extends Field {
     return (int)Math.floor((z - PlanetModel.WGS84.getMinimumZValue()) * zFactor + 0.5);
   }
 
-  private double decodeZ(final int z) {
+  private static double decodeZ(final int z) {
     return z * inverseZFactor + PlanetModel.WGS84.getMinimumZValue();
   }
 
@@ -193,14 +228,60 @@ public class Geo3DDocValuesField extends Field {
 
     long currentValue = Long.valueOf((Long)fieldsData);
     
-    result.append(decodeX(((int)(currentValue >> 42)) & 0x1FFFFF));
+    result.append(decodeXValue(currentValue));
     result.append(',');
-    result.append(decodeY(((int)(currentValue >> 21)) & 0x1FFFFF));
+    result.append(decodeYValue(currentValue));
     result.append(',');
-    result.append(decodeZ(((int)(currentValue)) & 0x1FFFFF));
+    result.append(decodeZValue(currentValue));
 
     result.append('>');
     return result.toString();
+  }
+
+  /**
+   * Creates a SortField for sorting by distance from a point.
+   * <p>
+   * This sort orders documents by ascending distance from the location. The value returned in {@link FieldDoc} for
+   * the hits contains a Double instance with the distance in meters.
+   * <p>
+   * If a document is missing the field, then by default it is treated as having {@link Double#POSITIVE_INFINITY} distance
+   * (missing values sort last).
+   * <p>
+   * If a document contains multiple values for the field, the <i>closest</i> distance to the location is used.
+   * 
+   * @param field field name. must not be null.
+   * @param latitude latitude at the center: must be within standard +/-90 coordinate bounds.
+   * @param longitude longitude at the center: must be within standard +/-180 coordinate bounds.
+   * @param maxRadiusMeters is the maximum radius in meters.
+   * @return SortField ordering documents by distance
+   * @throws IllegalArgumentException if {@code field} is null or location has invalid coordinates.
+   */
+  public static SortField newDistanceSort(final String field, final double latitude, final double longitude, final double maxRadiusMeters) {
+    final GeoDistanceShape shape = Geo3DUtil.fromDistance(latitude, longitude, maxRadiusMeters);
+    return new Geo3DPointSortField(field, shape);
+  }
+
+  /**
+   * Creates a SortField for sorting by distance along a path.
+   * <p>
+   * This sort orders documents by ascending distance along the described path. The value returned in {@link FieldDoc} for
+   * the hits contains a Double instance with the distance in meters.
+   * <p>
+   * If a document is missing the field, then by default it is treated as having {@link Double#POSITIVE_INFINITY} distance
+   * (missing values sort last).
+   * <p>
+   * If a document contains multiple values for the field, the <i>closest</i> distance to the location is used.
+   * 
+   * @param field field name. must not be null.
+   * @param pathLatitudes latitude values for points of the path: must be within standard +/-90 coordinate bounds.
+   * @param pathLongitudes longitude values for points of the path: must be within standard +/-180 coordinate bounds.
+   * @param pathWidthMeters width of the path in meters.
+   * @return SortField ordering documents by distance
+   * @throws IllegalArgumentException if {@code field} is null or location has invalid coordinates.
+   */
+  public static SortField newDistanceSort(final String field, final double[] pathLatitudes, final double[] pathLongitudes, final double pathWidthMeters) {
+    final GeoDistanceShape shape = Geo3DUtil.fromPath(pathLatitudes, pathLongitudes, pathWidthMeters);
+    return new Geo3DPointSortField(field, shape);
   }
 
 }
