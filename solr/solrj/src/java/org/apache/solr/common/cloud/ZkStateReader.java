@@ -1145,10 +1145,6 @@ public class ZkStateReader implements Closeable {
 
   /**
    * Register a CollectionStateWatcher to be called when the state of a collection changes
-   *
-   * A given CollectionStateWatcher will be only called once.  If you want to have a persistent watcher,
-   * it should register itself again in its {@link CollectionStateWatcher#onStateChanged(Set, DocCollection)}
-   * method.
    */
   public void registerCollectionStateWatcher(String collection, CollectionStateWatcher stateWatcher) {
     AtomicBoolean watchSet = new AtomicBoolean(false);
@@ -1164,6 +1160,12 @@ public class ZkStateReader implements Closeable {
       new StateWatcher(collection).refreshAndWatch();
       synchronized (getUpdateLock()) {
         constructState();
+      }
+    }
+    else {
+      DocCollection state = clusterState.getCollectionOrNull(collection);
+      if (stateWatcher.onStateChanged(liveNodes, state) == true) {
+        removeCollectionStateWatcher(collection, stateWatcher);
       }
     }
   }
@@ -1186,24 +1188,15 @@ public class ZkStateReader implements Closeable {
 
     final CountDownLatch latch = new CountDownLatch(1);
 
-    CollectionStateWatcher watcher = new CollectionStateWatcher() {
-      @Override
-      public void onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
-        if (predicate.matches(liveNodes, collectionState)) {
-          latch.countDown();
-        } else {
-          registerCollectionStateWatcher(collection, this);
-        }
-      }
+    CollectionStateWatcher watcher = (n, c) -> {
+      boolean matches = predicate.matches(n, c);
+      if (matches)
+        latch.countDown();
+      return matches;
     };
     registerCollectionStateWatcher(collection, watcher);
 
     try {
-      // check the current state
-      DocCollection dc = clusterState.getCollectionOrNull(collection);
-      if (predicate.matches(liveNodes, dc))
-        return;
-
       // wait for the watcher predicate to return true, or time out
       if (!latch.await(wait, unit))
         throw new TimeoutException();
@@ -1268,7 +1261,9 @@ public class ZkStateReader implements Closeable {
         }
       } else {
         if (oldState.getZNodeVersion() >= newState.getZNodeVersion()) {
-          // Nothing to do, someone else updated same or newer.
+          // no change to state, but we might have been triggered by the addition of a
+          // state watcher, so run notifications
+          notifyStateWatchers(liveNodes, coll, newState);
           break;
         }
         if (watchedCollectionStates.replace(coll, oldState, newState)) {
@@ -1335,7 +1330,9 @@ public class ZkStateReader implements Closeable {
         return v;
       });
       for (CollectionStateWatcher watcher : watchers) {
-        watcher.onStateChanged(liveNodes, collectionState);
+        if (watcher.onStateChanged(liveNodes, collectionState) == false) {
+          registerCollectionStateWatcher(collection, watcher);
+        }
       }
     }
 

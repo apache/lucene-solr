@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -38,8 +37,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.core.Is.is;
 
 public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
@@ -96,27 +93,58 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
         (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
 
     // shutdown a node and check that we get notified about the change
-    final AtomicInteger nodeCount = new AtomicInteger(0);
     final CountDownLatch latch = new CountDownLatch(1);
     client.registerCollectionStateWatcher("testcollection", (liveNodes, collectionState) -> {
-      // we can't just count liveNodes here, because that's updated by a separate watcher,
-      // and it may be the case that we're triggered by a node setting itself to DOWN before
-      // the liveNodes watcher is called
+      int nodeCount = 0;
       log.info("State changed: {}", collectionState);
       for (Slice slice : collectionState) {
         for (Replica replica : slice) {
           if (replica.isActive(liveNodes))
-            nodeCount.incrementAndGet();
+            nodeCount++;
         }
       }
-      latch.countDown();
+      if (nodeCount == 3) {
+        latch.countDown();
+        return true;
+      }
+      return false;
     });
 
     cluster.stopJettySolrRunner(random().nextInt(cluster.getJettySolrRunners().size()));
     assertTrue("CollectionStateWatcher was never notified of cluster change", latch.await(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS));
 
-    assertThat(nodeCount.intValue(), is(3));
+    assertEquals("CollectionStateWatcher wasn't cleared after completion",
+        0, client.getZkStateReader().getStateWatchers("testcollection").size());
 
+  }
+
+  @Test
+  public void testStateWatcherChecksCurrentStateOnRegister() throws Exception {
+
+    CloudSolrClient client = cluster.getSolrClient();
+    CollectionAdminRequest.createCollection("currentstate", "config", 1, 1)
+        .processAndWait(client, MAX_WAIT_TIMEOUT);
+
+    final CountDownLatch latch = new CountDownLatch(1);
+    client.registerCollectionStateWatcher("currentstate", (n, c) -> {
+      latch.countDown();
+      return false;
+    });
+
+    assertTrue("CollectionStateWatcher isn't called on new registration", latch.await(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS));
+    assertEquals("CollectionStateWatcher should be retained",
+        1, client.getZkStateReader().getStateWatchers("currentstate").size());
+
+    final CountDownLatch latch2 = new CountDownLatch(1);
+    client.registerCollectionStateWatcher("currentstate", (n, c) -> {
+      latch2.countDown();
+      return true;
+    });
+
+    assertTrue("CollectionStateWatcher isn't called when registering for already-watched collection",
+        latch.await(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS));
+    assertEquals("CollectionStateWatcher should be removed",
+        1, client.getZkStateReader().getStateWatchers("currentstate").size());
   }
 
   @Test

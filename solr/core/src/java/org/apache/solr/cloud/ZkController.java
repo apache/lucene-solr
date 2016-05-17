@@ -682,7 +682,6 @@ public final class ZkController {
       InterruptedException {
 
     publishNodeAsDown(getNodeName());
-
     
     // now wait till the updates are in our state
     long now = System.nanoTime();
