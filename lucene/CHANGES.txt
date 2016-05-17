@@ -118,6 +118,9 @@ Bug Fixes
 * LUCENE-7279: JapaneseTokenizer throws ArrayIndexOutOfBoundsException
   on some valid inputs (Mike McCandless)
 
+* LUCENE-7284: GapSpans needs to implement positionsCost(). (Daniel Bigham, Alan
+  Woodward)
+
 Documentation
 
 * LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
