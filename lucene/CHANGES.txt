@@ -30,6 +30,9 @@ Bug fixes
   match the underlying queries' (lower|upper)Term optionality logic.
   (Kaneshanathan Srivisagan, Christine Poerschke)
 
+* LUCENE-7284: GapSpans needs to implement positionsCost(). (Daniel Bigham, Alan
+  Woodward)
+
 ======================= Lucene 5.5.0 =======================
 
 New Features
