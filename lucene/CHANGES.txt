@@ -121,6 +121,9 @@ Bug Fixes
 * LUCENE-7284: GapSpans needs to implement positionsCost(). (Daniel Bigham, Alan
   Woodward)
 
+* LUCENE-7231: WeightedSpanTermExtractor didn't deal correctly with single-term
+  phrase queries. (Eva Popenda, Alan Woodward)
+
 Documentation
 
 * LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
