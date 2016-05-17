@@ -84,6 +84,7 @@ public class HashQParserPlugin extends QParserPlugin {
       int workers = localParams.getInt("workers");
       int worker = localParams.getInt("worker");
       String keys = params.get("partitionKeys");
+      keys = keys.replace(" ", "");
       return new HashQuery(keys, workers, worker);
     }
   }
