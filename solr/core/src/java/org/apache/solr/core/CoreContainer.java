@@ -834,7 +834,6 @@ public class CoreContainer {
       ConfigSet coreConfig = coreConfigService.getConfig(dcore);
       log.info("Creating SolrCore '{}' using configuration from {}", dcore.getName(), coreConfig.getName());
       core = new SolrCore(dcore, coreConfig);
-      solrCores.addCreated(core);
 
       // always kick off recovery if we are in non-Cloud mode
       if (!isZooKeeperAware() && core.getUpdateHandler().getUpdateLog() != null) {
