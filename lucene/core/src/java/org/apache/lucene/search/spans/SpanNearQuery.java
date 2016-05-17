@@ -386,7 +386,7 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
 
     @Override
     public float positionsCost() {
-      throw new UnsupportedOperationException();
+      return 0;
     }
   }
 
