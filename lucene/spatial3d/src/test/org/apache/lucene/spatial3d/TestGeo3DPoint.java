@@ -132,7 +132,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
   }
 
   private static double toRadians(double degrees) {
-    return degrees * Geo3DPoint.RADIANS_PER_DEGREE;
+    return degrees * Geo3DUtil.RADIANS_PER_DEGREE;
   }
 
   private static class Cell {
