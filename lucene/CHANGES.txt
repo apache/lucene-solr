@@ -39,6 +39,9 @@ Bug Fixes
 * LUCENE-7284: GapSpans needs to implement positionsCost(). (Daniel Bigham, Alan
   Woodward)
 
+* LUCENE-7231: WeightedSpanTermExtractor didn't deal correctly with single-term
+  phrase queries. (Eva Popenda, Alan Woodward)
+
 ======================= Lucene 6.0.0 =======================
 
 System Requirements
