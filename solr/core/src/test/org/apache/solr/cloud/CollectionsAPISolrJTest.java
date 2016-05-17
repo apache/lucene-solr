@@ -88,7 +88,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
         .setStateFormat(1)
         .process(cloudClient);
     assertEquals(0, response.getStatus());
-    assertTrue(response.isSuccess());
+
     Map<String, NamedList<Integer>> coresStatus = response.getCollectionCoresStatus();
     assertEquals(4, coresStatus.size());
     for (int i=0; i<4; i++) {
@@ -98,11 +98,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     }
 
     cloudClient.setDefaultCollection(collectionName);
-    CollectionAdminRequest.Delete delete = CollectionAdminRequest.deleteCollection(collectionName);
-    response = delete.process(cloudClient);
-
+    response = CollectionAdminRequest.deleteCollection(collectionName)
+        .process(cloudClient);
     assertEquals(0, response.getStatus());
-    assertTrue(response.isSuccess());
+
     Map<String,NamedList<Integer>> nodesStatus = response.getCollectionNodesStatus();
     assertNull("Deleted collection " + collectionName + "still exists",
         cloudClient.getZkStateReader().getClusterState().getCollectionOrNull(collectionName));
@@ -205,7 +204,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     waitForSlices(collectionName, 5, 10);
   }
   
-  private void waitForSlices(String collectionName, int count, int maxTries) throws InterruptedException {
+  private static void waitForSlices(String collectionName, int count, int maxTries) throws InterruptedException {
     int tries = 0;
     do {
       ++tries;

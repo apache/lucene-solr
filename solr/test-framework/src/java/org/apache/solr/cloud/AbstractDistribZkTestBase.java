@@ -234,7 +234,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     fail("Illegal state, was: " + coreState + " expected:" + expectedState + " clusterState:" + reader.getClusterState());
   }
   
-  protected void assertAllActive(String collection,ZkStateReader zkStateReader)
+  protected static void assertAllActive(String collection, ZkStateReader zkStateReader)
       throws KeeperException, InterruptedException {
 
       zkStateReader.forceUpdateCollection(collection);

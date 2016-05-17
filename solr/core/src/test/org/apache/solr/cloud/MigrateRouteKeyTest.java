@@ -61,7 +61,7 @@ public class MigrateRouteKeyTest extends BasicDistributedZkTest {
 
     if (usually()) {
       log.info("Using legacyCloud=false for cluster");
-      CollectionsAPIDistributedZkTest.setClusterProp(cloudClient, "legacyCloud", "false");
+      AbstractFullDistribZkTestBase.setClusterProp(cloudClient, "legacyCloud", "false");
     }
     multipleShardMigrateTest();
     printLayout();

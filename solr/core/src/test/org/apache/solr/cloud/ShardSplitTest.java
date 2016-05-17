@@ -76,7 +76,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     if (usually()) {
       log.info("Using legacyCloud=false for cluster");
-      CollectionsAPIDistributedZkTest.setClusterProp(cloudClient, "legacyCloud", "false");
+      AbstractFullDistribZkTestBase.setClusterProp(cloudClient, "legacyCloud", "false");
     }
     incompleteOrOverlappingCustomRangeTest();
     splitByUniqueKeyTest();
@@ -95,7 +95,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
 
     if (usually()) {
       log.info("Using legacyCloud=false for cluster");
-      CollectionsAPIDistributedZkTest.setClusterProp(cloudClient, "legacyCloud", "false");
+      AbstractFullDistribZkTestBase.setClusterProp(cloudClient, "legacyCloud", "false");
     }
 
     log.info("Starting testSplitShardWithRule");

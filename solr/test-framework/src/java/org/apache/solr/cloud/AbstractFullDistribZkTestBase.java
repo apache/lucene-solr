@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
@@ -1661,21 +1662,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return doc;
   }
 
-  private String checkCollectionExpectations(String collectionName, List<Integer> numShardsNumReplicaList, List<String> nodesAllowedToRunShards) {
-    ClusterState clusterState = getCommonCloudSolrClient().getZkStateReader().getClusterState();
-    
-    int expectedSlices = numShardsNumReplicaList.get(0);
-    // The Math.min thing is here, because we expect replication-factor to be reduced to if there are not enough live nodes to spread all shards of a collection over different nodes
-    int expectedShardsPerSlice = numShardsNumReplicaList.get(1);
-    int expectedTotalShards = expectedSlices * expectedShardsPerSlice;
+  private static String checkCollectionExpectations(ClusterState clusterState, String collectionName, int numShards, int replicationFactor, List<String> nodesAllowedToRunShards) {
+    int expectedTotalShards = numShards * replicationFactor;
 
-//      Map<String,DocCollection> collections = clusterState
-//          .getCollectionStates();
-      if (clusterState.hasCollection(collectionName)) {
-        Map<String,Slice> slices = clusterState.getCollection(collectionName).getSlicesMap();
-        // did we find expectedSlices slices/shards?
-      if (slices.size() != expectedSlices) {
-        return "Found new collection " + collectionName + ", but mismatch on number of slices. Expected: " + expectedSlices + ", actual: " + slices.size();
+    if (clusterState.hasCollection(collectionName)) {
+      Map<String,Slice> slices = clusterState.getCollection(collectionName).getSlicesMap();
+      // did we find numShards slices/shards?
+      if (slices.size() != numShards) {
+        return "Found new collection " + collectionName + ", but mismatch on number of slices. Expected: " + numShards + ", actual: " + slices.size();
       }
       int totalShards = 0;
       for (String sliceName : slices.keySet()) {
@@ -1688,30 +1682,54 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       }
       if (totalShards != expectedTotalShards) {
         return "Found new collection " + collectionName + " with correct number of slices, but mismatch on number of shards. Expected: " + expectedTotalShards + ", actual: " + totalShards;
-        }
+      }
       return null;
     } else {
       return "Could not find new collection " + collectionName;
     }
   }
 
-  protected void checkForCollection(String collectionName,
-      List<Integer> numShardsNumReplicaList,
+  private static String getCheckResultForCollection(ClusterState clusterState, 
+      String collectionName, int numShards, int replicationFactor,
       List<String> nodesAllowedToRunShards) throws Exception {
     // check for an expectedSlices new collection - we poll the state
     final TimeOut timeout = new TimeOut(120, TimeUnit.SECONDS);
-    boolean success = false;
     String checkResult = "Didnt get to perform a single check";
     while (! timeout.hasTimedOut()) {
-      checkResult = checkCollectionExpectations(collectionName,
-          numShardsNumReplicaList, nodesAllowedToRunShards);
+      checkResult = checkCollectionExpectations(clusterState, collectionName,
+          numShards, replicationFactor, nodesAllowedToRunShards);
       if (checkResult == null) {
-        success = true;
-        break;
+        return null;
       }
       Thread.sleep(500);
     }
-    if (!success) {
+    return checkResult;
+  }
+  
+  protected static void checkForCollection(ClusterState clusterState, 
+      String collectionName, int numShards, int replicationFactor,
+      List<String> nodesAllowedToRunShards) throws Exception {
+    String checkResult = getCheckResultForCollection(clusterState, collectionName, numShards,
+        replicationFactor, nodesAllowedToRunShards);
+    if (checkResult != null) {
+      fail(checkResult);
+    }
+  }
+  
+  protected static void checkForCollection(ClusterState clusterState, 
+      String collectionName, int numShards, int replicationFactor) throws Exception {
+    checkForCollection(clusterState, collectionName, numShards, replicationFactor, null);
+  }
+
+  protected void checkForCollection(String collectionName,
+      List<Integer> numShardsNumReplicaList,
+      List<String> nodesAllowedToRunShards) throws Exception {
+    ClusterState clusterState = getCommonCloudSolrClient().getZkStateReader().getClusterState();
+    int numShards = numShardsNumReplicaList.get(0);
+    int replicationFactor = numShardsNumReplicaList.get(1);
+    String checkResult = getCheckResultForCollection(clusterState, collectionName, numShards,
+        replicationFactor, nodesAllowedToRunShards);
+    if (checkResult != null) {
       super.printLayout();
       fail(checkResult);
     }
@@ -1992,6 +2010,21 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     NamedList innerResponse = (NamedList) response.getResponse().get("status");
     return RequestStatusState.fromKey((String) innerResponse.get("state"));
+  }
+
+  public static boolean setClusterProp(CloudSolrClient client, String name, String val) throws SolrServerException, IOException, InterruptedException {
+    CollectionAdminResponse response = CollectionAdminRequest.setClusterProperty(name, val)
+        .process(client);
+    assertEquals(0, response.getStatus());
+    
+    TimeOut timeout = new TimeOut(3, TimeUnit.SECONDS);
+    boolean changed = false;
+    while (! timeout.hasTimedOut()){
+      Thread.sleep(10);
+      changed = Objects.equals(val, client.getZkStateReader().getClusterProps().get(name));
+      if (changed) break;
+    }
+    return changed;
   }
 
 }

@@ -32,7 +32,7 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 @Slow
 @Nightly
 @ThreadLeakFilters(defaultFilters = true, filters = {
-    BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
+  BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistributedZkTest {
   private static MiniDFSCluster dfsCluster;
@@ -55,9 +55,9 @@ public class HdfsCollectionsAPIDistributedZkTest extends CollectionsAPIDistribut
   }
 
   
-  @Override
+  /*@Override
   protected String getDataDir(String dataDir) throws IOException {
     return HdfsTestUtil.getDataDir(dfsCluster, dataDir);
-  }
+  }*/
 
 }

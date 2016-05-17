@@ -446,9 +446,17 @@ public class MiniSolrCloudCluster {
   }
   
   protected CloudSolrClient buildSolrClient() {
-    return new Builder()
-        .withZkHost(getZkServer().getZkAddress())
-        .build();
+    return buildSolrClient(true);
+  }
+  
+  protected CloudSolrClient buildSolrClient(boolean shardLeadersOnly) {
+    Builder builder = new Builder().withZkHost(getZkServer().getZkAddress());
+    if (shardLeadersOnly) {
+      builder.sendUpdatesOnlyToShardLeaders();
+    } else {
+      builder.sendUpdatesToAllReplicasInShard();
+    }
+    return builder.build();
   }
 
   private static String getHostContextSuitableForServletContext(String ctx) {
