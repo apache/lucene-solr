@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import javax.servlet.Filter;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -37,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Charsets;
+
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -87,7 +89,7 @@ public class MiniSolrCloudCluster {
       "  \n" +
       "</solr>\n";
 
-  private final ZkTestServer zkServer;
+  private ZkTestServer zkServer;
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
@@ -265,6 +267,15 @@ public class MiniSolrCloudCluster {
     return zkServer;
   }
 
+  public void stopZkServer() throws IOException, InterruptedException {
+    zkServer.shutdown();
+  }
+
+  public void restartZkServer() throws InterruptedException {
+    zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
+    zkServer.run();
+  }
+  
   /**
    * @return Unmodifiable list of all the currently started Solr Jettys.
    */
