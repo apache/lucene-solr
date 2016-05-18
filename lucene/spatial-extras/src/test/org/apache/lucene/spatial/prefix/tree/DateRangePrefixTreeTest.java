@@ -17,7 +17,8 @@
 package org.apache.lucene.spatial.prefix.tree;
 
 import java.text.ParseException;
-import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
@@ -90,10 +91,24 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
     //test random
     cal.setTimeInMillis(random().nextLong());
     roundTrip(cal);
-    //assert same toString as java.time, provided it's after the GCD
-    if (cal.getTimeInMillis() > ((GregorianCalendar)tree.newCal()).getGregorianChange().getTime()) {
-      assertEquals(Instant.ofEpochMilli(cal.getTimeInMillis()).toString(), tree.toString(cal) + 'Z');
+  }
+
+  public void testToStringISO8601() {
+    Calendar cal = tree.newCal();
+    cal.setTimeInMillis(random().nextLong());
+    //  create ZonedDateTime from the calendar, then get toInstant.toString which is the ISO8601 we emulate
+    //   note: we don't simply init off of millisEpoch because of possible GregorianChangeDate discrepancy.
+    int year = cal.get(Calendar.YEAR);
+    if (cal.get(Calendar.ERA) == 0) { // BC
+      year = -year + 1;
     }
+    String expectedISO8601 =
+        ZonedDateTime.of(year, cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
+          cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), cal.get(Calendar.SECOND),
+          cal.get(Calendar.MILLISECOND) * 1_000_000, ZoneOffset.UTC)
+            .toInstant().toString();
+    String resultToString = tree.toString(cal) + 'Z';
+    assertEquals(expectedISO8601, resultToString);
   }
 
   //copies from DateRangePrefixTree
@@ -109,7 +124,6 @@ public class DateRangePrefixTreeTest extends LuceneTestCase {
       {
         Calendar preToStringCalClone = (Calendar) cal.clone();
         calString = tree.toString(cal);
-        assert lastString == null || calString.length() < lastString.length();
         assertEquals(preToStringCalClone, cal);//ensure toString doesn't modify cal state
       }
 
