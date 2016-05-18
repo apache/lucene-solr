@@ -1464,6 +1464,18 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
   private RefCounted<SolrIndexSearcher> realtimeSearcher;
   private Callable<DirectoryReader> newReaderCreator;
 
+  // For testing
+  boolean areAllSearcherReferencesEmpty() {
+    boolean isEmpty;
+    synchronized (searcherLock) {
+      isEmpty = _searchers.isEmpty();
+      isEmpty = isEmpty && _realtimeSearchers.isEmpty();
+      isEmpty = isEmpty && (_searcher == null);
+      isEmpty = isEmpty && (realtimeSearcher == null);
+    }
+    return isEmpty;
+  }
+
   /**
   * Return a registered {@link RefCounted}&lt;{@link SolrIndexSearcher}&gt; with
   * the reference count incremented.  It <b>must</b> be decremented when no longer needed.
@@ -1663,6 +1675,14 @@ public final class SolrCore implements SolrInfoMBean, Closeable {
       newSearcher.incref();
 
       synchronized (searcherLock) {
+        // Check if the core is closed again inside the lock in case this method is racing with a close. If the core is
+        // closed, clean up the new searcher and bail.
+        if (isClosed()) {
+          newSearcher.decref(); // once for caller since we're not returning it
+          newSearcher.decref(); // once for ourselves since it won't be "replaced"
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "openNewSearcher called on closed core");
+        }
+
         if (realtimeSearcher != null) {
           realtimeSearcher.decref();
         }
