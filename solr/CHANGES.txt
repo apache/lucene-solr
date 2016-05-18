@@ -221,6 +221,9 @@ Bug Fixes
 
 * SOLR-9117: The first SolrCore is leaked after reload. (Jessica Cheng via shalin)
 
+* SOLR-9116: Race condition causing occasional SolrIndexSearcher leak when SolrCore is reloaded.
+  (Jessica Cheng Mallet via shalin)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
