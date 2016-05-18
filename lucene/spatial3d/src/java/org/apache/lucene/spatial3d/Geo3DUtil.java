@@ -136,6 +136,9 @@ class Geo3DUtil {
    * @return the large GeoPolygon.
    */
   static GeoPolygon fromLargePolygon(final Polygon... polygons) {
+    if (polygons.length < 1) {
+      throw new IllegalArgumentException("need at least one polygon");
+    }
     return GeoPolygonFactory.makeLargeGeoPolygon(PlanetModel.WGS84, convertToDescription(polygons));
   }
   
