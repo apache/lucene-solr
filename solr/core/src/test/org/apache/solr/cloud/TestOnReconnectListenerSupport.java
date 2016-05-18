@@ -133,7 +133,8 @@ public class TestOnReconnectListenerSupport extends AbstractFullDistribZkTestBas
 
     // try to clean up
     try {
-      CollectionAdminRequest.deleteCollection(testCollectionName).process(cloudClient);
+      new CollectionAdminRequest.Delete()
+          .setCollectionName(testCollectionName).process(cloudClient);
     } catch (Exception e) {
       // don't fail the test
       log.warn("Could not delete collection {} after test completed", testCollectionName);
