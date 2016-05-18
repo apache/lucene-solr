@@ -81,6 +81,9 @@ Bug Fixes
 
 * SOLR-9117: The first SolrCore is leaked after reload. (Jessica Cheng via shalin)
 
+* SOLR-9116: Race condition causing occasional SolrIndexSearcher leak when SolrCore is reloaded.
+  (Jessica Cheng Mallet via shalin)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
