@@ -28,7 +28,7 @@
   <!-- solr uses 1.8 -->
   <property name="javac.source" value="1.8"/>
   <property name="javac.target" value="1.8"/>
-  <property name="javac.args" value=""/>
+  <property name="javac.args" value="-Xlint:-deprecation -Xlint:-options"/>
   <property name="javac.profile.args" value=""/>
 
   <property name="dest" location="${common-solr.dir}/build" />
