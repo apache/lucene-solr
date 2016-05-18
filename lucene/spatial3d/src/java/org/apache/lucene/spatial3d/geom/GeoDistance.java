@@ -26,13 +26,13 @@ package org.apache.lucene.spatial3d.geom;
 public interface GeoDistance extends Membership {
   
   // The following methods compute distances from the shape to a point
-  // expected to be INSIDE the shape.  Typically a value of Double.MAX_VALUE
+  // expected to be INSIDE the shape.  Typically a value of Double.POSITIVE_INFINITY
   // is returned for points that happen to be outside the shape.
 
   /**
    * Compute this shape's <em>internal</em> "distance" to the GeoPoint.
    * Implementations should clarify how this is computed when it's non-obvious.
-   * A return value of Double.MAX_VALUE should be returned for
+   * A return value of Double.POSITIVE_INFINITY should be returned for
    * points outside of the shape.
    *
    * @param distanceStyle is the distance style.
@@ -46,7 +46,7 @@ public interface GeoDistance extends Membership {
   /**
    * Compute this shape's <em>internal</em> "distance" to the GeoPoint.
    * Implementations should clarify how this is computed when it's non-obvious.
-   * A return value of Double.MAX_VALUE should be returned for
+   * A return value of Double.POSITIVE_INFINITY should be returned for
    * points outside of the shape.
    *
    * @param x is the point's unit x coordinate (using U.S. convention).

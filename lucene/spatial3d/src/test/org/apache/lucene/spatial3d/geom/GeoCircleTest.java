@@ -27,9 +27,9 @@ public class GeoCircleTest extends LuceneTestCase {
     GeoPoint gp;
     c = GeoCircleFactory.makeGeoCircle(PlanetModel.SPHERE, 0.0, -0.5, 0.1);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
-    assertEquals(Double.MAX_VALUE, c.computeDistance(DistanceStyle.ARC,gp), 0.0);
-    assertEquals(Double.MAX_VALUE, c.computeDistance(DistanceStyle.NORMAL,gp), 0.0);
-    assertEquals(Double.MAX_VALUE, c.computeDistance(DistanceStyle.NORMAL,gp), 0.0);
+    assertEquals(Double.POSITIVE_INFINITY, c.computeDistance(DistanceStyle.ARC,gp), 0.0);
+    assertEquals(Double.POSITIVE_INFINITY, c.computeDistance(DistanceStyle.NORMAL,gp), 0.0);
+    assertEquals(Double.POSITIVE_INFINITY, c.computeDistance(DistanceStyle.NORMAL,gp), 0.0);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.5);
     assertEquals(0.0, c.computeDistance(DistanceStyle.ARC,gp), 0.000001);
     assertEquals(0.0, c.computeDistance(DistanceStyle.NORMAL,gp), 0.000001);
