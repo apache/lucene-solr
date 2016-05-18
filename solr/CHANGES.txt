@@ -217,6 +217,10 @@ Bug Fixes
   on such dates was also affected.  With this fixed, this is the first release range faceting works on BC years.
   (David Smiley)
 
+* SOLR-9118: HashQParserPlugin should trim partition keys (Joel Bernstein)
+
+* SOLR-9117: The first SolrCore is leaked after reload. (Jessica Cheng via shalin)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.

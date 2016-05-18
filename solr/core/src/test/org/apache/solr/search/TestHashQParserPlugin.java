@@ -199,7 +199,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!hash worker=0 workers=2 cost="+getCost(random)+"}");
-    params.add("partitionKeys", "a_s,a_i,a_l");
+    params.add("partitionKeys", "a_s,       a_i,      a_l");
     params.add("rows","50");
     set1 = new HashSet();
     response = h.query(req(params));
@@ -217,7 +217,7 @@ public class TestHashQParserPlugin extends SolrTestCaseJ4 {
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!hash worker=1 workers=2 cost="+getCost(random)+"}");
-    params.add("partitionKeys", "a_s,a_i,a_l");
+    params.add("partitionKeys", "a_s, a_i, a_l");
     params.add("rows","50");
     set2 = new HashSet();
     response = h.query(req(params));
