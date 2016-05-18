@@ -296,7 +296,7 @@ public class Geo3DDocValuesField extends Field {
    * @return SortField ordering documents by distance
    * @throws IllegalArgumentException if {@code field} is null or location has invalid coordinates.
    */
-  public static SortField newDistanceSort(final String field, final double[] pathLatitudes, final double[] pathLongitudes, final double pathWidthMeters) {
+  public static SortField newPathSort(final String field, final double[] pathLatitudes, final double[] pathLongitudes, final double pathWidthMeters) {
     final GeoDistanceShape shape = Geo3DUtil.fromPath(pathLatitudes, pathLongitudes, pathWidthMeters);
     return new Geo3DPointSortField(field, shape);
   }
