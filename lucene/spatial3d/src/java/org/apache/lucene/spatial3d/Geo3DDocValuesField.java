@@ -22,10 +22,12 @@ import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.geo.Polygon;
 
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.GeoDistanceShape;
+import org.apache.lucene.spatial3d.geom.GeoOutsideDistance;
 
 /** 
  * An per-document 3D location field.
@@ -256,7 +258,7 @@ public class Geo3DDocValuesField extends Field {
   }
 
   /**
-   * Creates a SortField for sorting by distance from a point.
+   * Creates a SortField for sorting by distance within a circle.
    * <p>
    * This sort orders documents by ascending distance from the location. The value returned in {@link FieldDoc} for
    * the hits contains a Double instance with the distance in meters.
@@ -264,14 +266,14 @@ public class Geo3DDocValuesField extends Field {
    * If a document is missing the field, then by default it is treated as having {@link Double#POSITIVE_INFINITY} distance
    * (missing values sort last).
    * <p>
-   * If a document contains multiple values for the field, the <i>closest</i> distance to the location is used.
+   * If a document contains multiple values for the field, the <i>closest</i> distance from the circle center is used.
    * 
    * @param field field name. must not be null.
    * @param latitude latitude at the center: must be within standard +/-90 coordinate bounds.
    * @param longitude longitude at the center: must be within standard +/-180 coordinate bounds.
    * @param maxRadiusMeters is the maximum radius in meters.
    * @return SortField ordering documents by distance
-   * @throws IllegalArgumentException if {@code field} is null or location has invalid coordinates.
+   * @throws IllegalArgumentException if {@code field} is null or circle has invalid coordinates.
    */
   public static SortField newDistanceSort(final String field, final double latitude, final double longitude, final double maxRadiusMeters) {
     final GeoDistanceShape shape = Geo3DUtil.fromDistance(latitude, longitude, maxRadiusMeters);
@@ -287,18 +289,138 @@ public class Geo3DDocValuesField extends Field {
    * If a document is missing the field, then by default it is treated as having {@link Double#POSITIVE_INFINITY} distance
    * (missing values sort last).
    * <p>
-   * If a document contains multiple values for the field, the <i>closest</i> distance to the location is used.
+   * If a document contains multiple values for the field, the <i>closest</i> distance along the path is used.
    * 
    * @param field field name. must not be null.
    * @param pathLatitudes latitude values for points of the path: must be within standard +/-90 coordinate bounds.
    * @param pathLongitudes longitude values for points of the path: must be within standard +/-180 coordinate bounds.
    * @param pathWidthMeters width of the path in meters.
    * @return SortField ordering documents by distance
-   * @throws IllegalArgumentException if {@code field} is null or location has invalid coordinates.
+   * @throws IllegalArgumentException if {@code field} is null or path has invalid coordinates.
    */
   public static SortField newPathSort(final String field, final double[] pathLatitudes, final double[] pathLongitudes, final double pathWidthMeters) {
     final GeoDistanceShape shape = Geo3DUtil.fromPath(pathLatitudes, pathLongitudes, pathWidthMeters);
     return new Geo3DPointSortField(field, shape);
+  }
+
+  // Outside distances
+  
+  /**
+   * Creates a SortField for sorting by outside distance from a circle.
+   * <p>
+   * This sort orders documents by ascending outside distance from the circle.  Points within the circle have distance 0.0.
+   * The value returned in {@link FieldDoc} for
+   * the hits contains a Double instance with the distance in meters.
+   * <p>
+   * If a document is missing the field, then by default it is treated as having {@link Double#POSITIVE_INFINITY} distance
+   * (missing values sort last).
+   * <p>
+   * If a document contains multiple values for the field, the <i>closest</i> distance to the circle is used.
+   * 
+   * @param field field name. must not be null.
+   * @param latitude latitude at the center: must be within standard +/-90 coordinate bounds.
+   * @param longitude longitude at the center: must be within standard +/-180 coordinate bounds.
+   * @param maxRadiusMeters is the maximum radius in meters.
+   * @return SortField ordering documents by distance
+   * @throws IllegalArgumentException if {@code field} is null or location has invalid coordinates.
+   */
+  public static SortField newOutsideDistanceSort(final String field, final double latitude, final double longitude, final double maxRadiusMeters) {
+    final GeoOutsideDistance shape = Geo3DUtil.fromDistance(latitude, longitude, maxRadiusMeters);
+    return new Geo3DPointOutsideSortField(field, shape);
+  }
+
+  /**
+   * Creates a SortField for sorting by outside distance from a box.
+   * <p>
+   * This sort orders documents by ascending outside distance from the box.  Points within the box have distance 0.0.
+   * The value returned in {@link FieldDoc} for
+   * the hits contains a Double instance with the distance in meters.
+   * <p>
+   * If a document is missing the field, then by default it is treated as having {@link Double#POSITIVE_INFINITY} distance
+   * (missing values sort last).
+   * <p>
+   * If a document contains multiple values for the field, the <i>closest</i> distance to the box is used.
+   * 
+   * @param field field name. must not be null.
+   * @param minLatitude latitude lower bound: must be within standard +/-90 coordinate bounds.
+   * @param maxLatitude latitude upper bound: must be within standard +/-90 coordinate bounds.
+   * @param minLongitude longitude lower bound: must be within standard +/-180 coordinate bounds.
+   * @param maxLongitude longitude upper bound: must be within standard +/-180 coordinate bounds.
+   * @return SortField ordering documents by distance
+   * @throws IllegalArgumentException if {@code field} is null or box has invalid coordinates.
+   */
+  public static SortField newOutsideBoxSort(final String field, final double minLatitude, final double maxLatitude, final double minLongitude, final double maxLongitude) {
+    final GeoOutsideDistance shape = Geo3DUtil.fromBox(minLatitude, maxLatitude, minLongitude, maxLongitude);
+    return new Geo3DPointOutsideSortField(field, shape);
+  }
+
+  /**
+   * Creates a SortField for sorting by outside distance from a polygon.
+   * <p>
+   * This sort orders documents by ascending outside distance from the polygon.  Points within the polygon have distance 0.0.
+   * The value returned in {@link FieldDoc} for
+   * the hits contains a Double instance with the distance in meters.
+   * <p>
+   * If a document is missing the field, then by default it is treated as having {@link Double#POSITIVE_INFINITY} distance
+   * (missing values sort last).
+   * <p>
+   * If a document contains multiple values for the field, the <i>closest</i> distance to the polygon is used.
+   * 
+   * @param field field name. must not be null.
+   * @param polygons is the list of polygons to use to construct the query; must be at least one.
+   * @return SortField ordering documents by distance
+   * @throws IllegalArgumentException if {@code field} is null or polygon has invalid coordinates.
+   */
+  public static SortField newOutsidePolygonSort(final String field, final Polygon... polygons) {
+    final GeoOutsideDistance shape = Geo3DUtil.fromPolygon(polygons);
+    return new Geo3DPointOutsideSortField(field, shape);
+  }
+
+  /**
+   * Creates a SortField for sorting by outside distance from a large polygon.  This differs from the related newOutsideLargePolygonSort in that it
+   * does little or no legality checking and is optimized for very large numbers of polygon edges.
+   * <p>
+   * This sort orders documents by ascending outside distance from the polygon.  Points within the polygon have distance 0.0.
+   * The value returned in {@link FieldDoc} for
+   * the hits contains a Double instance with the distance in meters.
+   * <p>
+   * If a document is missing the field, then by default it is treated as having {@link Double#POSITIVE_INFINITY} distance
+   * (missing values sort last).
+   * <p>
+   * If a document contains multiple values for the field, the <i>closest</i> distance to the polygon is used.
+   * 
+   * @param field field name. must not be null.
+   * @param polygons is the list of polygons to use to construct the query; must be at least one.
+   * @return SortField ordering documents by distance
+   * @throws IllegalArgumentException if {@code field} is null or polygon has invalid coordinates.
+   */
+  public static SortField newOutsideLargePolygonSort(final String field, final Polygon... polygons) {
+    final GeoOutsideDistance shape = Geo3DUtil.fromLargePolygon(polygons);
+    return new Geo3DPointOutsideSortField(field, shape);
+  }
+
+  /**
+   * Creates a SortField for sorting by outside distance from a path.
+   * <p>
+   * This sort orders documents by ascending outside distance from the described path. Points within the path
+   * are given the distance of 0.0.  The value returned in {@link FieldDoc} for
+   * the hits contains a Double instance with the distance in meters.
+   * <p>
+   * If a document is missing the field, then by default it is treated as having {@link Double#POSITIVE_INFINITY} distance
+   * (missing values sort last).
+   * <p>
+   * If a document contains multiple values for the field, the <i>closest</i> distance from the path is used.
+   * 
+   * @param field field name. must not be null.
+   * @param pathLatitudes latitude values for points of the path: must be within standard +/-90 coordinate bounds.
+   * @param pathLongitudes longitude values for points of the path: must be within standard +/-180 coordinate bounds.
+   * @param pathWidthMeters width of the path in meters.
+   * @return SortField ordering documents by distance
+   * @throws IllegalArgumentException if {@code field} is null or path has invalid coordinates.
+   */
+  public static SortField newOutsidePathSort(final String field, final double[] pathLatitudes, final double[] pathLongitudes, final double pathWidthMeters) {
+    final GeoOutsideDistance shape = Geo3DUtil.fromPath(pathLatitudes, pathLongitudes, pathWidthMeters);
+    return new Geo3DPointOutsideSortField(field, shape);
   }
 
 }

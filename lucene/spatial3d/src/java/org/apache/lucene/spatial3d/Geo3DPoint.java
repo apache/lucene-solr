@@ -129,9 +129,6 @@ public final class Geo3DPoint extends Field {
    * @return query matching points within this polygon
    */
   public static Query newLargePolygonQuery(final String field, final Polygon... polygons) {
-    if (polygons.length < 1) {
-      throw new IllegalArgumentException("need at least one polygon");
-    }
     final GeoShape shape = Geo3DUtil.fromLargePolygon(polygons);
     return newShapeQuery(field, shape);
   }
