@@ -52,10 +52,10 @@ public class Geo3DDocValuesField extends Field {
   // If we plug in maximum for value, we should get 0x1FFFFF.
   // So, 0x1FFFFF = Math.floor((maximum - minimum) * factor + 0.5)
   // We factor out the 0.5 and Math.floor by stating instead:
-  // 0x200000 = (maximum - minimum) * factor
-  // So, factor = 0x200000 / (maximum - minimum)
+  // 0x1FFFFF = (maximum - minimum) * factor
+  // So, factor = 0x1FFFFF / (maximum - minimum)
 
-  private final static double inverseMaximumValue = 1.0 / (double)(0x200000);
+  private final static double inverseMaximumValue = 1.0 / (double)(0x1FFFFF);
   
   private final static double inverseXFactor = (PlanetModel.WGS84.getMaximumXValue() - PlanetModel.WGS84.getMinimumXValue()) * inverseMaximumValue;
   private final static double inverseYFactor = (PlanetModel.WGS84.getMaximumYValue() - PlanetModel.WGS84.getMinimumYValue()) * inverseMaximumValue;
@@ -108,7 +108,7 @@ public class Geo3DDocValuesField extends Field {
    * @throws IllegalArgumentException if the point is out of bounds
    */
   public void setLocationValue(final GeoPoint point) {
-    setLocationValue(point.x, point.y, point.z);
+    fieldsData = Long.valueOf(encodePoint(point));
   }
 
   /**
@@ -119,14 +119,31 @@ public class Geo3DDocValuesField extends Field {
    * @throws IllegalArgumentException if x, y, or z are out of bounds
    */
   public void setLocationValue(final double x, final double y, final double z) {
+    fieldsData = Long.valueOf(encodePoint(x, y, z));
+  }
+  
+  /** Encode a point.
+   * @param point is the point
+   * @return the encoded long
+   */
+  public static long encodePoint(final GeoPoint point) {
+    return encodePoint(point.x, point.y, point.z);
+  }
+
+  /** Encode a point.
+   * @param x is the x value
+   * @param y is the y value
+   * @param z is the z value
+   * @return the encoded long
+   */
+  public static long encodePoint(final double x, final double y, final double z) {
     int XEncoded = encodeX(x);
     int YEncoded = encodeY(y);
     int ZEncoded = encodeZ(z);
-    fieldsData = Long.valueOf(
+    return
       (((long)(XEncoded & 0x1FFFFF)) << 42) |
       (((long)(YEncoded & 0x1FFFFF)) << 21) |
-      ((long)(ZEncoded & 0x1FFFFF))
-      );
+      ((long)(ZEncoded & 0x1FFFFF));
   }
 
   /** Decode GeoPoint value from long docvalues value.
