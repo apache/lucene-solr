@@ -294,7 +294,7 @@ public class Plane extends Vector {
     if (evaluateIsZero(x,y,z)) {
       if (meetsAllBounds(x,y,z, bounds))
         return 0.0;
-      return Double.MAX_VALUE;
+      return Double.POSITIVE_INFINITY;
     }
     
     // First, compute the perpendicular plane.
@@ -307,7 +307,7 @@ public class Plane extends Vector {
     final GeoPoint[] intersectionPoints = findIntersections(planetModel, perpPlane);
     
     // For each point, compute a linear distance, and take the minimum of them
-    double minDistance = Double.MAX_VALUE;
+    double minDistance = Double.POSITIVE_INFINITY;
     
     for (final GeoPoint intersectionPoint : intersectionPoints) {
       if (meetsAllBounds(intersectionPoint, bounds)) {
@@ -347,7 +347,7 @@ public class Plane extends Vector {
     final double perpZ = z - dist * this.z;
 
     if (!meetsAllBounds(perpX, perpY, perpZ, bounds)) {
-      return Double.MAX_VALUE;
+      return Double.POSITIVE_INFINITY;
     }
     
     return Math.abs(dist);
@@ -373,7 +373,7 @@ public class Plane extends Vector {
    */
   public double normalDistanceSquared(final double x, final double y, final double z, final Membership... bounds) {
     final double normal = normalDistance(x,y,z,bounds);
-    if (normal == Double.MAX_VALUE)
+    if (normal == Double.POSITIVE_INFINITY)
       return normal;
     return normal * normal;
   }
@@ -406,7 +406,7 @@ public class Plane extends Vector {
     if (evaluateIsZero(x,y,z)) {
       if (meetsAllBounds(x,y,z, bounds))
         return 0.0;
-      return Double.MAX_VALUE;
+      return Double.POSITIVE_INFINITY;
     }
     
     // First, compute the perpendicular plane.
@@ -419,7 +419,7 @@ public class Plane extends Vector {
     final GeoPoint[] intersectionPoints = findIntersections(planetModel, perpPlane);
     
     // For each point, compute a linear distance, and take the minimum of them
-    double minDistance = Double.MAX_VALUE;
+    double minDistance = Double.POSITIVE_INFINITY;
     
     for (final GeoPoint intersectionPoint : intersectionPoints) {
       if (meetsAllBounds(intersectionPoint, bounds)) {

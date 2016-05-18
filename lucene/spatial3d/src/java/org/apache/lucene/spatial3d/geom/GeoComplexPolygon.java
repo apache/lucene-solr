@@ -171,7 +171,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       final GeoPoint[] ZIntersectionsY = travelPlaneFixedZ.findIntersections(planetModel, testPointFixedYPlane);
 
       // There will be multiple intersection points found.  We choose the one that has the lowest total distance, as measured in delta X, delta Y, and delta Z.
-      double bestDistance = Double.MAX_VALUE;
+      double bestDistance = Double.POSITIVE_INFINITY;
       double firstLegValue = 0.0;
       double secondLegValue = 0.0;
       Plane firstLegPlane = null;
@@ -323,7 +323,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
       }
 
       assert bestDistance > 0.0 : "Best distance should not be zero unless on single plane";
-      assert bestDistance < Double.MAX_VALUE : "Couldn't find an intersection point of any kind";
+      assert bestDistance < Double.POSITIVE_INFINITY : "Couldn't find an intersection point of any kind";
       
       final DualCrossingEdgeIterator edgeIterator = new DualCrossingEdgeIterator(firstLegPlane, firstLegAbovePlane, firstLegBelowPlane, secondLegPlane, x, y, z, intersectionPoint);
       if (!firstLegTree.traverse(edgeIterator, firstLegValue)) {
@@ -390,7 +390,7 @@ class GeoComplexPolygon extends GeoBasePolygon {
 
   @Override
   protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    double minimumDistance = Double.MAX_VALUE;
+    double minimumDistance = Double.POSITIVE_INFINITY;
     for (final Edge shapeStartEdge : shapeStartEdges) {
       Edge shapeEdge = shapeStartEdge;
       while (true) {

@@ -36,13 +36,13 @@ public class GeoPathTest {
     p.addPoint(0.0, 0.2);
     p.done();
     gp = new GeoPoint(PlanetModel.SPHERE, Math.PI * 0.5, 0.15);
-    assertEquals(Double.MAX_VALUE, p.computeDistance(DistanceStyle.ARC,gp), 0.0);
+    assertEquals(Double.POSITIVE_INFINITY, p.computeDistance(DistanceStyle.ARC,gp), 0.0);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.05, 0.15);
     assertEquals(0.15 + 0.05, p.computeDistance(DistanceStyle.ARC,gp), 0.000001);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.12);
     assertEquals(0.12 + 0.0, p.computeDistance(DistanceStyle.ARC,gp), 0.000001);
     gp = new GeoPoint(PlanetModel.SPHERE, -0.15, 0.05);
-    assertEquals(Double.MAX_VALUE, p.computeDistance(DistanceStyle.ARC,gp), 0.000001);
+    assertEquals(Double.POSITIVE_INFINITY, p.computeDistance(DistanceStyle.ARC,gp), 0.000001);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.25);
     assertEquals(0.20 + 0.05, p.computeDistance(DistanceStyle.ARC,gp), 0.000001);
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, -0.05);
@@ -65,9 +65,9 @@ public class GeoPathTest {
     p.addPoint(Math.PI * 0.25, -0.5);
     p.done();
     gp = new GeoPoint(PlanetModel.SPHERE, 0.0, 0.0);
-    assertEquals(Double.MAX_VALUE, p.computeDistance(DistanceStyle.ARC,gp), 0.0);
+    assertEquals(Double.POSITIVE_INFINITY, p.computeDistance(DistanceStyle.ARC,gp), 0.0);
     gp = new GeoPoint(PlanetModel.SPHERE, -0.1, -1.0);
-    assertEquals(Double.MAX_VALUE, p.computeDistance(DistanceStyle.ARC,gp), 0.0);
+    assertEquals(Double.POSITIVE_INFINITY, p.computeDistance(DistanceStyle.ARC,gp), 0.0);
     gp = new GeoPoint(PlanetModel.SPHERE, Math.PI * 0.25 + 0.05, -0.5);
     assertEquals(Math.PI * 0.5 + 0.05, p.computeDistance(DistanceStyle.ARC,gp), 0.000001);
     gp = new GeoPoint(PlanetModel.SPHERE, -Math.PI * 0.25 - 0.05, -0.5);
