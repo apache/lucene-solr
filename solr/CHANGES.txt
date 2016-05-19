@@ -85,6 +85,8 @@ Other Changes
 * SOLR-8967: In SolrCloud mode, under the 'Core Selector' dropdown in the UI the Replication tab won't be displayed
   anymore. The Replication tab is only beneficial to users running Solr in master-slave mode. (Varun Thacker)
 
+* SOLR-9131: Fix "start solr" text in cluster.vm Velocity template (janhoy)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes
