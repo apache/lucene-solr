@@ -275,7 +275,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     // collection
     expression.addParameter(collection);
 
-    if(includeStreams){
+    if(includeStreams && !(tupleStream instanceof NodeStream)){
       if(tupleStream instanceof Expressible){
         expression.addParameter(((Expressible)tupleStream).toExpression(factory));
       }
@@ -311,7 +311,14 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     if(maxDocFreq > -1) {
       expression.addParameter(new StreamExpressionNamedParameter("maxDocFreq", Integer.toString(maxDocFreq)));
     }
-    expression.addParameter(new StreamExpressionNamedParameter("walk", traverseFrom+"->"+traverseTo));
+    if(tupleStream instanceof NodeStream) {
+      NodeStream nodeStream = (NodeStream)tupleStream;
+      expression.addParameter(new StreamExpressionNamedParameter("walk", nodeStream.toString() + "->" + traverseTo));
+
+    } else {
+      expression.addParameter(new StreamExpressionNamedParameter("walk", traverseFrom + "->" + traverseTo));
+    }
+
     expression.addParameter(new StreamExpressionNamedParameter("trackTraversal", Boolean.toString(trackTraversal)));
 
     StringBuilder buf = new StringBuilder();
@@ -640,6 +647,19 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         map.put("EOF", true);
         return new Tuple(map);
       }
+    }
+
+    public String toString() {
+      StringBuilder builder = new StringBuilder();
+      boolean comma = false;
+      for(String s : ids) {
+        if(comma) {
+          builder.append(",");
+        }
+        builder.append(s);
+        comma = true;
+      }
+      return builder.toString();
     }
     
     @Override
