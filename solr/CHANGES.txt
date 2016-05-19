@@ -219,7 +219,10 @@ Bug Fixes
 
 * SOLR-9118: HashQParserPlugin should trim partition keys (Joel Bernstein)
 
-* SOLR-9117: The first SolrCore is leaked after reload. (Jessica Cheng via shalin)
+* SOLR-9117: The first SolrCore is leaked after reload. (Jessica Cheng Mallet via shalin)
+
+* SOLR-9116: Race condition causing occasional SolrIndexSearcher leak when SolrCore is reloaded.
+  (Jessica Cheng Mallet via shalin)
 
 Optimizations
 ----------------------
