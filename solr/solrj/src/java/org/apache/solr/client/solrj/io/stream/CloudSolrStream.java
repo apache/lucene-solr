@@ -125,17 +125,17 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter aliasExpression = factory.getNamedOperand(expression, "aliases");
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
-    
+
+    // Collection Name
+    if(null == collectionName){
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
+    }
+
     // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't need to count it twice
     if(expression.getParameters().size() != 1 + namedParams.size()){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - unknown operands found",expression));
     }
     
-    // Collection Name
-    if(null == collectionName){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
-    }
-        
     // Named parameters - passed directly to solr as solrparams
     if(0 == namedParams.size()){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
@@ -257,15 +257,20 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     // If the comparator is null then it was not explicitly set so we will create one using the sort parameter
     // of the query. While doing this we will also take into account any aliases such that if we are sorting on
     // fieldA but fieldA is aliased to alias.fieldA then the comparater will be against alias.fieldA.
-    String fls = String.join(",", params.getParams("fl"));
-    if (fls == null) {
-      throw new IOException("fl param expected for a stream");
+
+    if (params.get("q") == null) {
+      throw new IOException("q param expected for search function");
     }
 
-    String sorts = String.join(",", params.getParams("sort"));
-    if (sorts == null) {
-      throw new IOException("sort param expected for a stream");
+    if (params.getParams("fl") == null) {
+      throw new IOException("fl param expected for search function");
     }
+    String fls = String.join(",", params.getParams("fl"));
+
+    if (params.getParams("sort") == null) {
+      throw new IOException("sort param expected for search function");
+    }
+    String sorts = String.join(",", params.getParams("sort"));
     this.comp = parseComp(sorts, fls);
   }
   
