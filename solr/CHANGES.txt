@@ -311,6 +311,8 @@ Other Changes
 * SOLR-9115: Get rid of javax.xml.bind.DatatypeConverter in SimplePostTool
   for Java 9 compatibility. (Uwe Schindler)
 
+* SOLR-9131: Fix "start solr" text in cluster.vm Velocity template (janhoy)
+
 ==================  6.0.1 ==================
 (No Changes)
 
