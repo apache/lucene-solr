@@ -477,6 +477,9 @@ public class FacetStream extends TupleStream implements Expressible  {
 
     String bucketName = _buckets[level].toString();
     NamedList nl = (NamedList)facets.get(bucketName);
+    if(nl == null) {
+      return;
+    }
     List allBuckets = (List)nl.get("buckets");
     for(int b=0; b<allBuckets.size(); b++) {
       NamedList bucket = (NamedList)allBuckets.get(b);

@@ -129,6 +129,24 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertOrder(tuples, 0, 3, 4);
     assertLong(tuples.get(1), "a_i", 3);
 
+    try {
+      expression = StreamExpressionParser.parse("search(" + COLLECTION + ", fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\")");
+      stream = new CloudSolrStream(expression, factory);
+      tuples = getTuples(stream);
+      throw new Exception("Should be an exception here");
+    } catch(Exception e) {
+      assertTrue(e.getMessage().contains("q param expected for search function"));
+    }
+
+    try {
+      expression = StreamExpressionParser.parse("search(" + COLLECTION + ", q=\"blah\", sort=\"a_f asc, a_i asc\")");
+      stream = new CloudSolrStream(expression, factory);
+      tuples = getTuples(stream);
+      throw new Exception("Should be an exception here");
+    } catch(Exception e) {
+      assertTrue(e.getMessage().contains("fl param expected for search function"));
+    }
+
   }
 
   @Test
@@ -2130,6 +2148,27 @@ public class StreamExpressionTest extends SolrCloudTestCase {
     assertTrue(avgi.doubleValue() == 7.5D);
     assertTrue(avgf.doubleValue() == 5.5D);
     assertTrue(count.doubleValue() == 2);
+
+    //Test zero result facets
+    clause = "facet("
+        +   "collection1, "
+        +   "q=\"blahhh\", "
+        +   "fl=\"a_s,a_i,a_f\", "
+        +   "sort=\"a_s asc\", "
+        +   "buckets=\"a_s\", "
+        +   "bucketSorts=\"a_s asc\", "
+        +   "bucketSizeLimit=100, "
+        +   "sum(a_i), sum(a_f), "
+        +   "min(a_i), min(a_f), "
+        +   "max(a_i), max(a_f), "
+        +   "avg(a_i), avg(a_f), "
+        +   "count(*)"
+        + ")";
+
+    stream = factory.constructStream(clause);
+    tuples = getTuples(stream);
+
+    assert(tuples.size() == 0);
 
   }
 
