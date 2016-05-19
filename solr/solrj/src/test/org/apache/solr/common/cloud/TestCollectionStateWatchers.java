@@ -113,8 +113,9 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     cluster.stopJettySolrRunner(random().nextInt(cluster.getJettySolrRunners().size()));
     assertTrue("CollectionStateWatcher was never notified of cluster change", latch.await(MAX_WAIT_TIMEOUT, TimeUnit.SECONDS));
 
-    assertEquals("CollectionStateWatcher wasn't cleared after completion",
-        0, client.getZkStateReader().getStateWatchers("testcollection").size());
+    Set<CollectionStateWatcher> watchers = client.getZkStateReader().getStateWatchers("testcollection");
+    assertTrue("CollectionStateWatcher wasn't cleared after completion",
+        watchers == null || watchers.size() == 0);
 
   }
 
