@@ -47,6 +47,8 @@ Other Changes
 
 * SOLR-8985: Added back support for 'includeDynamic' flag to /schema/fields endpoint (noble)
 
+* SOLR-9131: Fix "start solr" text in cluster.vm Velocity template (janhoy)
+
 ==================  6.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release
