@@ -133,6 +133,7 @@ class GeoLongitudeSlice extends GeoBaseBBox {
     bounds
       .addVerticalPlane(planetModel, leftLon, leftPlane, rightPlane)
       .addVerticalPlane(planetModel, rightLon, rightPlane, leftPlane)
+      .addIntersection(planetModel, rightPlane, leftPlane)
       .addPoint(planetModel.NORTH_POLE)
       .addPoint(planetModel.SOUTH_POLE);
   }
