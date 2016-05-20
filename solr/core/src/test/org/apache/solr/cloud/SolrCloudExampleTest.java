@@ -94,6 +94,10 @@ public class SolrCloudExampleTest extends AbstractFullDistribZkTestBase {
     ensureAllReplicasAreActive(testCollectionName, "shard2", 2, 2, 10);
     cloudClient.setDefaultCollection(testCollectionName);
 
+    int invalidToolExitStatus = 1;
+    assertEquals("Collection '" + testCollectionName + "' created even though it already existed",
+        invalidToolExitStatus, tool.runTool(cli));
+
     // now index docs like bin/post would do but we can't use SimplePostTool because it uses System.exit when
     // it encounters an error, which JUnit doesn't like ...
     log.info("Created collection, now posting example docs!");
