@@ -212,6 +212,7 @@ class GeoWideRectangle extends GeoBaseBBox {
       .addVerticalPlane(planetModel, rightLon, rightPlane, topPlane, bottomPlane)
       .addHorizontalPlane(planetModel, bottomLat, bottomPlane, topPlane, eitherBound)
       .addVerticalPlane(planetModel, leftLon, leftPlane, topPlane, bottomPlane)
+      .addIntersection(planetModel, leftPlane, rightPlane, topPlane, bottomPlane)
       .addPoint(ULHC).addPoint(URHC).addPoint(LRHC).addPoint(LLHC);
   }
 

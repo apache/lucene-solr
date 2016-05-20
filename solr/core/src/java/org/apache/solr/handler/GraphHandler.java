@@ -113,6 +113,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
         .withFunctionName("update", UpdateStream.class)
         .withFunctionName("jdbc", JDBCStream.class)
         .withFunctionName("intersect", IntersectStream.class)
+        .withFunctionName("select", SelectStream.class)
         .withFunctionName("complement", ComplementStream.class)
         .withFunctionName("daemon", DaemonStream.class)
         .withFunctionName("topic", TopicStream.class)

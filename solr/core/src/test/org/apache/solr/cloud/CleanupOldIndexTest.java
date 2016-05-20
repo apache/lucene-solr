@@ -17,55 +17,45 @@
 package org.apache.solr.cloud;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.SnapShooter;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-@Slow
-public class CleanupOldIndexTest extends AbstractFullDistribZkTestBase {
+@LuceneTestCase.Slow
+public class CleanupOldIndexTest extends SolrCloudTestCase {
 
-  private StoppableIndexingThread indexThread;
-
-  public CleanupOldIndexTest() {
-    super();
-    sliceCount = 1;
-    fixShardCount(2);
-    schemaString = "schema15.xml";
-  }
-  
-  public static String[] fieldNames = new String[]{"f_i", "f_f", "f_d", "f_l", "f_dt"};
-  public static RandVal[] randVals = new RandVal[]{rint, rfloat, rdouble, rlong, rdate};
-  
-  protected String[] getFieldNames() {
-    return fieldNames;
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(2)
+        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-dynamic").resolve("conf"))
+        .configure();
   }
 
-  protected RandVal[] getRandValues() {
-    return randVals;
-  }
+  private static final String COLLECTION = "oldindextest";
 
   @Test
   public void test() throws Exception {
-    handle.clear();
-    handle.put("timestamp", SKIPVAL);
-    
+
+    CollectionAdminRequest.createCollection(COLLECTION, "conf1", 1, 2)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    cluster.getSolrClient().setDefaultCollection(COLLECTION); // TODO make this configurable on StoppableIndexingThread
+
     int[] maxDocList = new int[] {300, 700, 1200};
     int maxDoc = maxDocList[random().nextInt(maxDocList.length - 1)];
 
-    indexThread = new StoppableIndexingThread(controlClient, cloudClient, "1", true, maxDoc, 1, true);
+    StoppableIndexingThread indexThread = new StoppableIndexingThread(null, cluster.getSolrClient(), "1", true, maxDoc, 1, true);
     indexThread.start();
 
     // give some time to index...
@@ -73,10 +63,10 @@ public class CleanupOldIndexTest extends AbstractFullDistribZkTestBase {
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
 
     // create some "old" index directories
-    JettySolrRunner jetty = chaosMonkey.getShard("shard1", 1);
+    JettySolrRunner jetty = cluster.getRandomJetty(random());
     CoreContainer coreContainer = jetty.getCoreContainer();
     File dataDir = null;
-    try (SolrCore solrCore = coreContainer.getCore("collection1")) {
+    try (SolrCore solrCore = coreContainer.getCore(coreContainer.getCoreDescriptors().get(0).getName())) {
       dataDir = new File(solrCore.getDataDir());
     }
     assertTrue(dataDir.isDirectory());
@@ -94,66 +84,27 @@ public class CleanupOldIndexTest extends AbstractFullDistribZkTestBase {
     assertTrue(oldIndexDir2.isDirectory());
 
     // bring shard replica down
-    JettySolrRunner replica = chaosMonkey.stopShard("shard1", 1).jetty;
+    jetty.stop();
 
     // wait a moment - lets allow some docs to be indexed so replication time is non 0
     Thread.sleep(waitTimes[random().nextInt(waitTimes.length - 1)]);
-    
+
     // bring shard replica up
-    replica.start();
-    
+    jetty.start();
+
     // make sure replication can start
     Thread.sleep(3000);
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-    
+
     // stop indexing threads
     indexThread.safeStop();
     indexThread.join();
 
-    Thread.sleep(1000);
-  
-    waitForThingsToLevelOut(120);
-    waitForRecoveriesToFinish(DEFAULT_COLLECTION, zkStateReader, false, true);
-
-    // test that leader and replica have same doc count
-    
-    String fail = checkShardConsistency("shard1", false, false);
-    if (fail != null)
-      fail(fail);
-
-    SolrQuery query = new SolrQuery("*:*");
-    query.setParam("distrib", "false");
-    long client1Docs = shardToJetty.get("shard1").get(0).client.solrClient.query(query).getResults().getNumFound();
-    long client2Docs = shardToJetty.get("shard1").get(1).client.solrClient.query(query).getResults().getNumFound();
-    
-    assertTrue(client1Docs > 0);
-    assertEquals(client1Docs, client2Docs);
+    cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
+        (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
 
     assertTrue(!oldIndexDir1.isDirectory());
     assertTrue(!oldIndexDir2.isDirectory());
   }
   
-  @Override
-  protected void indexDoc(SolrInputDocument doc) throws IOException, SolrServerException {
-    controlClient.add(doc);
-    cloudClient.add(doc);
-  }
 
-  
-  @Override
-  public void distribTearDown() throws Exception {
-    // make sure threads have been stopped...
-    indexThread.safeStop();
-    indexThread.join();
-    super.distribTearDown();
-  }
-  
-  // skip the randoms - they can deadlock...
-  @Override
-  protected void indexr(Object... fields) throws Exception {
-    SolrInputDocument doc = new SolrInputDocument();
-    addFields(doc, fields);
-    addFields(doc, "rnd_b", true);
-    indexDoc(doc);
-  }
 }

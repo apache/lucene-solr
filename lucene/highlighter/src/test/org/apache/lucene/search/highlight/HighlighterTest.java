@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -41,33 +40,35 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.ngram.NGramTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.CommonTermsQuery;
 import org.apache.lucene.queries.CustomScoreQuery;
 import org.apache.lucene.queries.payloads.SpanPayloadCheckQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PhraseQuery.Builder;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
@@ -87,12 +88,14 @@ import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.spatial.geopoint.search.GeoPointInBBoxQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
+import org.junit.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -160,6 +163,28 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     String fragment = highlighter.getBestFragment(stream, storedField);
     assertEquals("Hello this is a piece of text that is <B>very</B> long and contains too much preamble and the meat is really here which says kennedy has been shot", fragment);
 
+  }
+
+  public void testGeoPointQueryHighlight() throws Exception {
+    BooleanQuery boolQuery = new BooleanQuery.Builder().add(
+        new BooleanClause(new GeoPointInBBoxQuery("geo_point", -64.92354174306496
+            , 61.10078883158897, -170.15625, 118.47656249999999), BooleanClause.Occur.SHOULD)).add(
+        new BooleanClause(new TermQuery(new Term(FIELD_NAME, "instances")), BooleanClause.Occur.SHOULD)).build();
+    CustomScoreQuery query = new CustomScoreQuery(boolQuery);
+
+    searcher = newSearcher(reader);
+    TopDocs hits = searcher.search(query, 10);
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(scorer);
+
+    final int docId0 = hits.scoreDocs[0].doc;
+    Document doc = searcher.doc(docId0);
+    String storedField = doc.get(FIELD_NAME);
+
+    TokenStream stream = getAnyTokenStream(FIELD_NAME, docId0);
+    Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);
+    highlighter.setTextFragmenter(fragmenter);
+    highlighter.getBestFragment(stream, storedField);
   }
 
   public void testQueryScorerHits() throws Exception {
@@ -1558,6 +1583,32 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       }
     };
     helper.start();
+  }
+
+  @Test
+  public void testHighlighterWithPhraseQuery() throws IOException, InvalidTokenOffsetsException {
+
+    final Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        return new TokenStreamComponents(new NGramTokenizer(4, 4));
+      }
+    };
+    final String fieldName = "substring";
+
+    final List<BytesRef> list = new ArrayList<>();
+    list.add(new BytesRef("uchu"));
+    final PhraseQuery query = new PhraseQuery(fieldName, list.toArray(new BytesRef[list.size()]));
+
+    final QueryScorer fragmentScorer = new QueryScorer(query, fieldName);
+    final SimpleHTMLFormatter formatter = new SimpleHTMLFormatter("<b>", "</b>");
+
+    final Highlighter highlighter = new Highlighter(formatter, fragmentScorer);
+    highlighter.setTextFragmenter(new SimpleFragmenter(100));
+    final String fragment = highlighter.getBestFragment(analyzer, fieldName, "Buchung");
+
+    assertEquals("B<b>uchu</b>ng",fragment);
+
   }
 
   public void testUnRewrittenQuery() throws Exception {

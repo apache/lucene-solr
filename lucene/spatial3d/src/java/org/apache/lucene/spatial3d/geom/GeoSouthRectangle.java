@@ -179,6 +179,7 @@ class GeoSouthRectangle extends GeoBaseBBox {
       .addHorizontalPlane(planetModel, topLat, topPlane, leftPlane, rightPlane)
       .addVerticalPlane(planetModel, leftLon, leftPlane, topPlane, rightPlane)
       .addVerticalPlane(planetModel, rightLon, rightPlane, topPlane, leftPlane)
+      .addIntersection(planetModel, rightPlane, leftPlane, topPlane)
       .addPoint(URHC).addPoint(ULHC).addPoint(planetModel.SOUTH_POLE);
   }
 

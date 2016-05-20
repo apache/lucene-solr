@@ -16,41 +16,34 @@
  */
 package org.apache.solr.cloud;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.SolrException;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-@LuceneTestCase.Slow
-public class ConfigSetsAPITest extends AbstractFullDistribZkTestBase {
-  public ConfigSetsAPITest() {
-    super();
-    sliceCount = 1;
+public class ConfigSetsAPITest extends SolrCloudTestCase {
+
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    configureCluster(1)
+        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .configure();
   }
 
   @Test
   public void testConfigSetDeleteWhenInUse() throws Exception {
-    CollectionAdminRequest.Create create = new CollectionAdminRequest.Create();
-    create.setConfigName("conf1");
-    create.setCollectionName("test_configset_delete");
-    create.setNumShards(1);
-    create.process(cloudClient);
-    waitForCollection(cloudClient.getZkStateReader(), "test_configset_delete", 1);
 
+    CollectionAdminRequest.createCollection("test_configset_delete", "conf1", 1, 1)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+
+    // TODO - check exception response!
     ConfigSetAdminRequest.Delete deleteConfigRequest = new ConfigSetAdminRequest.Delete();
     deleteConfigRequest.setConfigSetName("conf1");
-    try {
-      deleteConfigRequest.process(cloudClient);
-      fail("The config deletion should cause an exception as it's currently being used by a collection.");
-    } catch (SolrException e) {
-      // Do nothing
-    }
+    expectThrows(SolrException.class, () -> {
+      deleteConfigRequest.process(cluster.getSolrClient());
+    });
 
-    // Clean up the collection
-    CollectionAdminRequest.Delete deleteCollectionRequest = new CollectionAdminRequest.Delete();
-    deleteCollectionRequest.setCollectionName("test_configset_delete");
-    deleteCollectionRequest.process(cloudClient);
   }
 
 }
