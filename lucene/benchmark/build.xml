@@ -167,7 +167,6 @@
 
     <path id="classpath">
       <pathelement path="${memory.jar}"/>
-      <pathelement path="${spatial.jar}"/>
       <pathelement path="${highlighter.jar}"/>
       <pathelement path="${analyzers-common.jar}"/>
       <pathelement path="${queryparser.jar}"/>
@@ -278,7 +277,7 @@
       <echo>Benchmark output in JIRA table format is in file: ${shingle.jira.output.file}</echo>
     </target>
 
-    <target name="init" depends="module-build.init,jar-memory,jar-highlighter,jar-spatial,jar-analyzers-common,jar-queryparser,jar-facet,jar-spatial-extras,jar-codecs,jar-join"/>
+    <target name="init" depends="module-build.init,jar-memory,jar-highlighter,jar-analyzers-common,jar-queryparser,jar-facet,jar-spatial-extras,jar-codecs,jar-join"/>
   
     <target name="compile-test" depends="copy-alg-files-for-testing,module-build.compile-test"/>
     <target name="copy-alg-files-for-testing" description="copy .alg files as resources for testing">
