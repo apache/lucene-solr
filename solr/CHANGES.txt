@@ -54,6 +54,9 @@ Bug Fixes
 
 * SOLR-8971: Preserve root cause when wrapping exceptions (hossman)
 
+* SOLR-9034: Atomic updates failed to work when there were copyField targets that had docValues
+  enabled. (Karthik Ramachandran, Ishan Chattopadhyaya, yonik)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
@@ -640,9 +643,6 @@ Bug Fixes
 
 * SOLR-9046: Fix solr.cmd that wrongly assumes Jetty will always listen on 0.0.0.0.
   (Bram Van Dam, Uwe Schindler)
-
-* SOLR-9034: Atomic updates failed to work when there were copyField targets that had docValues
-  enabled. (Karthik Ramachandran, Ishan Chattopadhyaya, yonik)
 
 Other Changes
 ----------------------
