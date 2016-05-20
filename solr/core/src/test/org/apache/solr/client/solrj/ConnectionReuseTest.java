@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,6 +48,8 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressSSL
 public class ConnectionReuseTest extends SolrCloudTestCase {
@@ -54,6 +57,8 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
   private AtomicInteger id = new AtomicInteger();
 
   private static final String COLLECTION = "collection1";
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -97,6 +102,8 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
 
     try (SolrClient client = buildClient(httpClient, url)) {
 
+      log.info("Using client of type {}", client.getClass());
+
       HttpHost target = new HttpHost(url.getHost(), url.getPort(), isSSLMode() ? "https" : "http");
       HttpRoute route = new HttpRoute(target);
 
@@ -117,8 +124,9 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
           c.solrDoc = sdoc("id", id.incrementAndGet());
           try {
             client.add(c.solrDoc);
+            log.info("Added document");
           } catch (Exception e) {
-            e.printStackTrace();
+            log.info("Error adding document: {}", e.getMessage());
           }
           if (!done && i > 0 && i < cnt2 - 1 && client instanceof ConcurrentUpdateSolrClient
               && random().nextInt(10) > 8) {
@@ -150,12 +158,18 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
       // we try and make sure the connection we get has handled all of the requests in this test
       if (client instanceof ConcurrentUpdateSolrClient) {
         // we can't fully control queue polling breaking up requests - allow a bit of leeway
+        log.info("Outer loop count: {}", cnt1);
+        log.info("Queue breaks: {}", queueBreaks);
         int exp = cnt1 + queueBreaks + 2;
+        log.info("Expected: {}", exp);
+        log.info("Requests: {}", metrics.getRequestCount());
         assertTrue(
             "We expected all communication via streaming client to use one connection! expected=" + exp + " got="
                 + metrics.getRequestCount(),
             Math.max(exp, metrics.getRequestCount()) - Math.min(exp, metrics.getRequestCount()) < 3);
       } else {
+        log.info("Outer loop count: {}", cnt1);
+        log.info("Inner loop count: {}", cnt2);
         assertTrue("We expected all communication to use one connection! " + client.getClass().getSimpleName(),
             cnt1 * cnt2 + 2 <= metrics.getRequestCount());
       }
