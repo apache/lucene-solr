@@ -25,10 +25,9 @@
   
   <property name="Name" value="Solr" />
   
-  <!-- solr uses 1.8 -->
-  <property name="javac.source" value="1.8"/>
-  <property name="javac.target" value="1.8"/>
-  <property name="javac.args" value="-Xlint:-deprecation -Xlint:-options"/>
+  <!-- solr uses Java 8 -->
+  <property name="javac.release" value="8"/>
+  <property name="javac.args" value="-Xlint:-deprecation"/>
   <property name="javac.profile.args" value=""/>
 
   <property name="dest" location="${common-solr.dir}/build" />
@@ -508,8 +507,9 @@
     <property prefix="ivyversions" file="${common.dir}/ivy-versions.properties"/> <!-- for commons-io version -->
     <forbidden-apis internalRuntimeForbidden="true" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath">
       <signatures>
-        <bundled name="jdk-unsafe-${javac.target}"/>
-        <bundled name="jdk-deprecated-${javac.target}"/>
+        <!-- TODO: fix this in forbiddenapis 2.1+ -->
+        <bundled name="jdk-unsafe-1.${javac.release}"/>
+        <bundled name="jdk-deprecated-1.${javac.release}"/>
         <bundled name="commons-io-unsafe-${ivyversions./commons-io/commons-io}"/>
         <fileset dir="${common.dir}/tools/forbiddenApis">
           <include name="base.txt" />

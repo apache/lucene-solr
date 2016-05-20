@@ -161,9 +161,8 @@
 
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
-  <property name="javac.source" value="1.8"/>
-  <property name="javac.target" value="1.8"/>
-  <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial -Xlint:-options"/>
+  <property name="javac.release" value="8"/>
+  <property name="javac.args" value="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
   <property name="javac.profile.args" value="-profile compact2"/>
   <property name="javadoc.link" value="https://docs.oracle.com/javase/8/docs/api/"/>
   <property name="javadoc.link.junit" value="http://junit.sourceforge.net/javadoc/"/>
@@ -178,34 +177,6 @@
   <property name="javadoc.doclint.args" value="-Xdoclint:all -Xdoclint:-missing"/>
   <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing"/>
   
-  <!-- detect bootclasspath from given bootjdk path (including crazy AppleJDK special case) -->
-  <first id="-boot-rt.jar">
-    <fileset dir="${bootjdk}" erroronmissingdir="false" followsymlinks="true">
-      <include name="jre/lib/rt.jar" /><!-- Oracle JDK -->
-      <include name="lib/rt.jar" /><!-- Oracle JRE -->
-      <include name="bundle/Classes/classes.jar" /><!-- Apple JDK -->
-    </fileset>
-  </first>
-  <property name="bootclasspath" value="${toString:-boot-rt.jar}" />
-  <fail message="Invalid 'bootjdk' parameter, because it contains no class library JAR: ${bootjdk}">
-    <condition>
-      <and>
-        <isset property="bootjdk" />
-        <equals arg1="${bootclasspath}" arg2=""/>
-      </and>
-    </condition>
-  </fail>
-  <fail message="Invalid 'bootclasspath' parameter, because it does not point to a valid class library JAR: ${bootclasspath}">
-    <condition>
-      <not>
-        <or>
-          <equals arg1="${bootclasspath}" arg2=""/>
-          <available classname="java.lang.StringBuilder" classpath="${bootclasspath}" ignoresystemclasses="true"/>
-        </or>
-      </not>
-    </condition>
-  </fail>
-
   <!-- Javadoc classpath -->
   <path id="javadoc.classpath">
     <path refid="classpath"/>
@@ -691,8 +662,8 @@
                    value="${version} ${checkoutid} - ${user.name} - ${DSTAMP} ${TSTAMP}"/>
         <attribute name="Implementation-Vendor"
                    value="The Apache Software Foundation"/>
-        <attribute name="X-Compile-Source-JDK" value="${javac.source}"/>
-        <attribute name="X-Compile-Target-JDK" value="${javac.target}"/>
+        <attribute name="X-Compile-Source-JDK" value="${javac.release}"/>
+        <attribute name="X-Compile-Target-JDK" value="${javac.release}"/>
         <additional-manifest-attributes />
       </manifest>
     </sequential>
@@ -828,14 +799,12 @@
     <attribute name="srcdir"/>
     <attribute name="destdir"/>
     <attribute name="test.classpath"/>
-    <attribute name="javac.source" default="${javac.source}"/>
-    <attribute name="javac.target" default="${javac.target}"/>
-     <sequential>
+    <attribute name="javac.release" default="${javac.release}"/>
+    <sequential>
       <compile
         srcdir="@{srcdir}" 
         destdir="@{destdir}"
-        javac.source="@{javac.source}"
-        javac.target="@{javac.source}">
+        javac.release="@{javac.release}">
         <classpath refid="@{test.classpath}"/>
       </compile>
 
@@ -1950,29 +1919,30 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <macrodef name="compile">
     <attribute name="srcdir"/>
     <attribute name="destdir"/>
-    <attribute name="javac.source" default="${javac.source}"/>
-    <attribute name="javac.target" default="${javac.target}"/>
+    <attribute name="javac.release" default="${javac.release}"/>
     <attribute name="includeantruntime" default="${javac.includeAntRuntime}" />
 
     <element name="nested" implicit="yes" optional="yes"/>
 
     <sequential>
+      <local name="javac.release.args"/>
+      <condition property="javac.release.args" value="-source @{javac.release} -target @{javac.release}" else="-release @{javac.release}">
+        <equals arg1="${build.java.runtime}" arg2="1.8"/>
+      </condition>
       <mkdir dir="@{destdir}"/>
       <javac
         includeAntRuntime="@{includeantruntime}"
         encoding="${build.encoding}"
-        bootclasspath="${bootclasspath}"
         srcdir="@{srcdir}"
         destdir="@{destdir}"
         deprecation="${javac.deprecation}"
-        debug="${javac.debug}"
-        source="@{javac.source}"
-        target="@{javac.target}">
+        debug="${javac.debug}">
         <nested/>
         <!-- <compilerarg line="-Xmaxwarns 10000000"/>
         <compilerarg line="-Xmaxerrs 10000000"/> -->
         <compilerarg line="${javac.args}"/>
         <compilerarg line="${javac.profile.args}"/>
+        <compilerarg line="${javac.release.args}"/>
         <compilerarg line="${javac.doclint.args}"/>
       </javac>
     </sequential>
@@ -2024,7 +1994,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <macrodef name="ecj-macro">
     <attribute name="srcdir"/>
-    <attribute name="javac.source" default="${javac.source}"/>
+    <attribute name="javac.release" default="${javac.release}"/>
     <attribute name="includeantruntime" default="${javac.includeAntRuntime}" />
     <attribute name="configuration"/>
 
@@ -2040,8 +2010,8 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         encoding="${build.encoding}"
         srcdir="@{srcdir}"
         destdir="${ecj.trash.out}"
-        source="@{javac.source}"
-        target="@{javac.source}"
+        source="@{javac.release}"
+        target="@{javac.release}"
         taskname="ecj-lint">
         <ecj-component/>
         <nested/>
@@ -2085,13 +2055,16 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
     <attribute name="overview" default="${src.dir}/overview.html"/>
     <attribute name="linksource" default="no"/>
     <sequential>
+      <local name="javadoc.release.args"/>
+      <condition property="javadoc.release.args" value="-source ${javac.release}" else="-release ${javac.release}">
+        <equals arg1="${build.java.runtime}" arg2="1.8"/>
+      </condition>
       <antcall target="download-java8-javadoc-packagelist"/>
       <delete file="@{destdir}/stylesheet.css" failonerror="false"/>
       <copy todir="@{destdir}" file="${prettify.dir}/prettify.js" overwrite="false" />
       <record name="@{destdir}/log_javadoc.txt" action="start" append="no"/>
       <javadoc
           overview="@{overview}"
-          bootclasspath="${bootclasspath}"
           packagenames="org.apache.lucene.*,org.apache.solr.*"
           destdir="@{destdir}"
           access="${javadoc.access}"
@@ -2105,7 +2078,6 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
           linksource="@{linksource}"
           use="true"
           failonerror="true"
-          source="${javac.source}"
           locale="en_US"
           windowtitle="${Name} ${version} API"
           doctitle="@{title}"
@@ -2137,6 +2109,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
         <sources />
                 
         <classpath refid="javadoc.classpath"/>
+        <arg line="${javadoc.release.args}"/>
         <arg line="${javadoc.doclint.args}"/>
       </javadoc>
       <record name="@{destdir}/log_javadoc.txt" action="stop"/>
@@ -2389,8 +2362,9 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <target name="-check-forbidden-all" depends="-init-forbidden-apis,compile-core,compile-test">
     <forbidden-apis internalRuntimeForbidden="true" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath">
       <signatures>
-        <bundled name="jdk-unsafe-${javac.target}"/>
-        <bundled name="jdk-deprecated-${javac.target}"/>
+        <!-- TODO: fix this in forbiddenapis 2.1+ -->
+        <bundled name="jdk-unsafe-1.${javac.release}"/>
+        <bundled name="jdk-deprecated-1.${javac.release}"/>
         <fileset dir="${common.dir}/tools/forbiddenApis">
           <include name="base.txt"/>
           <include name="lucene.txt" if="forbidden-isLucene"/>
