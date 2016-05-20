@@ -226,6 +226,9 @@ Bug Fixes
 
 * SOLR-9128: Fix error handling issues in Streaming classes (Joel Bernstein)
 
+* SOLR-8801: /bin/solr create script always returns exit code 0 when a collection/core already exists.
+  (Khalid Alharbi, Marius Grama via Steve Rowe)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
