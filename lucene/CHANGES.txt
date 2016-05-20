@@ -124,6 +124,9 @@ Bug Fixes
 * LUCENE-7231: WeightedSpanTermExtractor didn't deal correctly with single-term
   phrase queries. (Eva Popenda, Alan Woodward)
 
+* LUCENE-7293: Don't try to highlight GeoPoint queries (Britta Weber,
+  Nick Knize, Mike McCandless)
+
 Documentation
 
 * LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
