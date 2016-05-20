@@ -149,6 +149,12 @@ Other
 * SOLR-9109/SOLR-9121: Allow specification of a custom Ivy settings file via system
   property "ivysettings.xml". (Misha Dmitriev, Christine Poerschke, Uwe Schindler, Steve Rowe)
 
+Build
+
+* LUCENE-7292: Use '-release' instead of '-source/-target' during
+  compilation on Java 9+ to ensure real cross-compilation.
+  (Uwe Schindler)
+  
 ======================= Lucene 6.0.1 =======================
 (No Changes)
 

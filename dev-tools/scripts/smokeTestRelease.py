@@ -189,11 +189,11 @@ def checkJARMetaData(desc, jarFile, gitRevision, version):
       'Specification-Vendor: The Apache Software Foundation',
       'Implementation-Vendor: The Apache Software Foundation',
       # Make sure 1.8 compiler was used to build release bits:
-      'X-Compile-Source-JDK: 1.8',
+      'X-Compile-Source-JDK: 8',
       # Make sure 1.8 ant was used to build release bits: (this will match 1.8+)
       'Ant-Version: Apache Ant 1.8',
       # Make sure .class files are 1.8 format:
-      'X-Compile-Target-JDK: 1.8',
+      'X-Compile-Target-JDK: 8',
       'Specification-Version: %s' % version,
       # Make sure the release was compiled with 1.8:
       'Created-By: 1.8'):

@@ -36,9 +36,6 @@
     <ibiblio name="maven.restlet.org" root="http://maven.restlet.org" m2compatible="true" />
     <ibiblio name="releases.cloudera.com" root="http://repository.cloudera.com/content/repositories/releases" m2compatible="true" />
 
-    <!-- needed only for newer svnkit releases, e.g. 1.8.x -->
-    <ibiblio name="svnkit-releases" root="http://maven.tmatesoft.com/content/repositories/releases" m2compatible="true" />
-
     <!-- you might need to tweak this from china so it works -->
     <ibiblio name="working-chinese-mirror" root="http://uk.maven.org/maven2" m2compatible="true" />
 
@@ -56,7 +53,6 @@
       <resolver ref="maven.restlet.org" />
       <resolver ref="sonatype-releases" />
       <resolver ref="releases.cloudera.com"/>
-      <!-- <resolver ref="svnkit-releases" /> -->
       <resolver ref="working-chinese-mirror" />
     </chain>
   </resolvers>
