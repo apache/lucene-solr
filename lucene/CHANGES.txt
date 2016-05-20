@@ -125,7 +125,7 @@ Bug Fixes
   phrase queries. (Eva Popenda, Alan Woodward)
 
 * LUCENE-7293: Don't try to highlight GeoPoint queries (Britta Weber,
-  Nick Knize, Mike McCandless)
+  Nick Knize, Mike McCandless, Uwe Schindler)
 
 Documentation
 
