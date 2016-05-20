@@ -33,7 +33,7 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
-    initCore("solrconfig.xml", "schema12.xml");
+    initCore("solrconfig-returnfields.xml", "schema12.xml");
     String v = "how now brown cow";
     assertU(adoc("id","1", "text",v,  "text_np", v, "#foo_s", v));
     v = "now cow";
@@ -265,11 +265,11 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
     assertFalse(rf.wantsAllFields());
     assertNull(rf.getTransformer());
 
-    // Don't return 'store_rpt' just because it is required by the transformer
-    rf = new SolrReturnFields( req("fl", "[geo f=store_rpt]") );
+    // Don't return 'text' just because it is required by the transformer
+    rf = new SolrReturnFields( req("fl", "[custom extra=text]") );
     assertFalse( rf.wantsScore() );
-    assertTrue(rf.wantsField("[geo]"));
-    assertFalse( rf.wantsField( "store_rpt" ) );
+    assertTrue(rf.wantsField("[custom]"));
+    assertFalse( rf.wantsField( "text" ) );
     assertFalse(rf.wantsAllFields());
     assertNotNull(rf.getTransformer());
   }
