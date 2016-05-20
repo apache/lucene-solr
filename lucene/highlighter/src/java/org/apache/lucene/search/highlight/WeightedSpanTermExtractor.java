@@ -62,10 +62,9 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
-import org.apache.lucene.search.spans.Spans;
-import org.apache.lucene.spatial.geopoint.search.GeoPointInBBoxQuery;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 
@@ -212,7 +211,7 @@ public class WeightedSpanTermExtractor {
       //nothing
     } else if (query instanceof CustomScoreQuery){
       extract(((CustomScoreQuery) query).getSubQuery(), boost, terms);
-    } else if (query instanceof GeoPointInBBoxQuery) {
+    } else if (isQueryUnsupported(query.getClass())) {
       // nothing
     } else {
       Query origQuery = query;
@@ -234,6 +233,18 @@ public class WeightedSpanTermExtractor {
         extractUnknownQuery(query, terms);
       }
     }
+  }
+
+  protected boolean isQueryUnsupported(Class<? extends Query> clazz) {
+    // spatial queries do not support highlighting:
+    if (clazz.getName().startsWith("org.apache.lucene.spatial.")) {
+      return true;
+    }
+    // spatial3d queries are also not supported:
+    if (clazz.getName().startsWith("org.apache.lucene.spatial3d.")) {
+      return true;
+    }
+    return false;
   }
 
   protected void extractUnknownQuery(Query query,
