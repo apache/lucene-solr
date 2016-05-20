@@ -181,6 +181,7 @@ class GeoNorthRectangle extends GeoBaseBBox {
       .addHorizontalPlane(planetModel, bottomLat, bottomPlane, leftPlane, rightPlane)
       .addVerticalPlane(planetModel, leftLon, leftPlane, bottomPlane, rightPlane)
       .addVerticalPlane(planetModel, rightLon, rightPlane, bottomPlane, leftPlane)
+      .addIntersection(planetModel, rightPlane, leftPlane, bottomPlane)
       .addPoint(LLHC).addPoint(LRHC).addPoint(planetModel.NORTH_POLE);
   }
 

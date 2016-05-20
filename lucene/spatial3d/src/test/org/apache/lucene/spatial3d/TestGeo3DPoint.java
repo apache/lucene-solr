@@ -430,7 +430,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
           } else {
             log.println("doc=" + docID + " should match but did not");
           }
-          log.println("  point=" + docs[docID]);
+          log.println("  point=" + point);
+          log.println("  mappedPoint=" + mappedPoint);
           fail = true;
         }
       }
