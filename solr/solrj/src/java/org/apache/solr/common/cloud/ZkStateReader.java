@@ -1326,12 +1326,11 @@ public class ZkStateReader implements Closeable {
         if (v == null)
           return null;
         watchers.addAll(v.stateWatchers);
-        v.stateWatchers.clear();
         return v;
       });
       for (CollectionStateWatcher watcher : watchers) {
-        if (watcher.onStateChanged(liveNodes, collectionState) == false) {
-          registerCollectionStateWatcher(collection, watcher);
+        if (watcher.onStateChanged(liveNodes, collectionState)) {
+          removeCollectionStateWatcher(collection, watcher);
         }
       }
     }
