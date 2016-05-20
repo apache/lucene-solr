@@ -62,9 +62,10 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
+import org.apache.lucene.search.spans.Spans;
+import org.apache.lucene.spatial.geopoint.search.GeoPointInBBoxQuery;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 
@@ -211,6 +212,8 @@ public class WeightedSpanTermExtractor {
       //nothing
     } else if (query instanceof CustomScoreQuery){
       extract(((CustomScoreQuery) query).getSubQuery(), boost, terms);
+    } else if (query instanceof GeoPointInBBoxQuery) {
+      // nothing
     } else {
       Query origQuery = query;
       final IndexReader reader = getLeafContext().reader();
