@@ -16,7 +16,12 @@
  */
 package org.apache.solr.search.join;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,34 +29,56 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FacetField.Count;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.BeforeClass;
+import org.junit.Test;
 
-@Slow
-public class BlockJoinFacetDistribTest extends BaseDistributedSearchTestCase {
+public class BlockJoinFacetDistribTest extends SolrCloudTestCase{
+
+  private static final String collection = "facetcollection";
 
   @BeforeClass
-  public static void beforeSuperClass() throws Exception {
-    schemaString = "schema-blockjoinfacetcomponent.xml";
-    configString = "solrconfig-blockjoinfacetcomponent.xml";
-  }
+  public static void setupCluster() throws Exception {
+    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
 
-  @ShardsFixed(num = 3)
-  public void test() throws Exception {
-    testBJQFacetComponent();
+    String configName = "solrCloudCollectionConfig";
+    int nodeCount = 6;
+    configureCluster(nodeCount)
+       .addConfig(configName, configDir)
+       .configure();
+    
+    
+    Map<String, String> collectionProperties = new HashMap<>();
+    collectionProperties.put("config", "solrconfig-blockjoinfacetcomponent.xml" );
+    collectionProperties.put("schema", "schema-blockjoinfacetcomponent.xml"); 
+    
+    // create a collection holding data for the "to" side of the JOIN
+    
+    int shards = 3;
+    int replicas = 2 ;
+    assertNotNull(cluster.createCollection(collection, shards, replicas,
+        configName,
+        collectionProperties));
+    
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collection, 
+        cluster.getSolrClient().getZkStateReader(), false, true, 30);
+   
   }
 
   final static List<String> colors = Arrays.asList("red","blue","brown","white","black","yellow","cyan","magenta","blur",
       "fuchsia", "light","dark","green","grey","don't","know","any","more" );
   final static List<String> sizes = Arrays.asList("s","m","l","xl","xxl","xml","xxxl","3","4","5","6","petite","maxi");
   
-  private void testBJQFacetComponent() throws Exception {
+  @Test
+  public void testBJQFacetComponent() throws Exception {
     
     assert ! colors.removeAll(sizes): "there is no colors in sizes";
     Collections.shuffle(colors,random());
@@ -64,8 +91,11 @@ public class BlockJoinFacetDistribTest extends BaseDistributedSearchTestCase {
       }
     };
     
+    cluster.getSolrClient().deleteByQuery(collection, "*:*");
+    
     final int parents = atLeast(10);
     boolean aggregationOccurs = false;
+    List<SolrInputDocument> parentDocs = new ArrayList<>();
     for(int parent=0; parent<parents || !aggregationOccurs;parent++){
       assert parent < 2000000 : "parent num "+parent+
            " aggregationOccurs:"+aggregationOccurs+". Sorry! too tricky loop condition.";
@@ -89,22 +119,18 @@ public class BlockJoinFacetDistribTest extends BaseDistributedSearchTestCase {
         }
         pdoc.addChildDocument(childDoc);
       }
-      indexDoc(pdoc);
+      parentDocs.add(pdoc);
+      if (!parentDocs.isEmpty() && rarely()) {
+        indexDocs(parentDocs);
+        parentDocs.clear();
+        cluster.getSolrClient().commit(collection, false, false, true);
+      }
     }
-    commit();
-    
-    //handle.clear();
-    handle.put("timestamp", SKIPVAL);
-    handle.put("_version_", SKIPVAL); // not a cloud test, but may use updateLog
-    handle.put("maxScore", SKIP);// see org.apache.solr.TestDistributedSearch.test()
-    handle.put("shards", SKIP);
-    handle.put("distrib", SKIP);
-    handle.put("rid", SKIP);
-    handle.put("track", SKIP);
-    handle.put("facet_fields", UNORDERED);
-    handle.put("SIZE_s", UNORDERED);
-    handle.put("COLOR_s", UNORDERED);
-    
+    if (!parentDocs.isEmpty()) {
+      indexDocs(parentDocs);
+    }
+    cluster.getSolrClient().commit(collection);
+
     // to parent query
     final String childQueryClause = "COLOR_s:("+(matchingColors.toString().replaceAll("[,\\[\\]]", " "))+")";
       QueryResponse results = query("q", "{!parent which=\"type_s:parent\"}"+childQueryClause,
@@ -122,15 +148,24 @@ public class BlockJoinFacetDistribTest extends BaseDistributedSearchTestCase {
       String msg = ""+parentIdsByAttrValue+" "+color_s+" "+size_s;
       for (FacetField facet: new FacetField[]{color_s, size_s}) {
         for (Count c : facet.getValues()) {
-          assertEquals(c.getName()+"("+msg+")", parentIdsByAttrValue.get(c.getName()).size(), c.getCount());
+          assertEquals(c.getName()+"("+msg+")", 
+              parentIdsByAttrValue.get(c.getName()).size(), c.getCount());
         }
       }
       
       assertEquals(msg , parentIdsByAttrValue.size(),color_s.getValueCount() + size_s.getValueCount());
-  //  }
+      //System.out.println(parentIdsByAttrValue);
   }
 
-  protected String getCloudSolrConfig() {
-    return configString;
+  private QueryResponse query(String ... arg) throws SolrServerException, IOException {
+    ModifiableSolrParams solrParams = new ModifiableSolrParams();
+    for(int i=0; i<arg.length; i+=2) {
+      solrParams.add(arg[i], arg[i+1]);
+    }
+    return cluster.getSolrClient().query(collection, solrParams);
+  }
+
+  private void indexDocs(Collection<SolrInputDocument> pdocs) throws SolrServerException, IOException {
+    cluster.getSolrClient().add(collection, pdocs);
   }
 }
