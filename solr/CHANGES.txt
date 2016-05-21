@@ -335,6 +335,8 @@ Other Changes
 
 * SOLR-9119: several static methods in ValueSourceParser have been made private (hossman)
 
+* SOLR-9110: Move JoinFromCollection- SubQueryTransformer- BlockJoinFacet- Distrib Tests to SolrCloudTestCase  (Mikhail Khludnev)
+
 ==================  6.0.1 ==================
 (No Changes)
 
