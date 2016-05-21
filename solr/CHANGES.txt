@@ -316,6 +316,8 @@ Other Changes
 
 * SOLR-9131: Fix "start solr" text in cluster.vm Velocity template (janhoy)
 
+* SOLR-9147: Upgrade commons-io to 2.5, avoid expensive array resizing in EmbeddedSolrServer (Mikhail Khludnev)
+
 ==================  6.0.1 ==================
 (No Changes)
 

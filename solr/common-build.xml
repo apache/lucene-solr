@@ -510,7 +510,6 @@
         <!-- TODO: fix this in forbiddenapis 2.1+ -->
         <bundled name="jdk-unsafe-1.${javac.release}"/>
         <bundled name="jdk-deprecated-1.${javac.release}"/>
-        <bundled name="commons-io-unsafe-${ivyversions./commons-io/commons-io}"/>
         <fileset dir="${common.dir}/tools/forbiddenApis">
           <include name="base.txt" />
           <include name="servlet-api.txt" />
