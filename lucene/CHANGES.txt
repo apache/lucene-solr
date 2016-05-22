@@ -155,6 +155,9 @@ Build
   compilation on Java 9+ to ensure real cross-compilation.
   (Uwe Schindler)
   
+* LUCENE-7296: Update forbiddenapis to version 2.1.
+  (Uwe Schindler)
+  
 ======================= Lucene 6.0.1 =======================
 (No Changes)
 

@@ -2330,7 +2330,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <property name="forbidden-sysout-excludes" value=""/>
   
   <target name="-install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.0"
+    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.1"
       inline="true" conf="default" transitive="true" pathid="forbidden-apis.classpath"/>
     <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.ant.AntTask" classpathref="forbidden-apis.classpath"/>
     <property name="forbidden-apis.loaded" value="true"/>
@@ -2360,11 +2360,12 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   
   <!-- applies to both source and test code -->
   <target name="-check-forbidden-all" depends="-init-forbidden-apis,compile-core,compile-test">
-    <forbidden-apis internalRuntimeForbidden="true" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath">
+    <forbidden-apis suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath" targetVersion="${javac.release}">
       <signatures>
-        <!-- TODO: fix this in forbiddenapis 2.1+ -->
-        <bundled name="jdk-unsafe-1.${javac.release}"/>
-        <bundled name="jdk-deprecated-1.${javac.release}"/>
+        <bundled name="jdk-unsafe"/>
+        <bundled name="jdk-deprecated"/>
+        <bundled name="jdk-non-portable"/>
+        <bundled name="jdk-reflection"/>
         <fileset dir="${common.dir}/tools/forbiddenApis">
           <include name="base.txt"/>
           <include name="lucene.txt" if="forbidden-isLucene"/>
@@ -2377,7 +2378,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- applies to only test code -->
   <target name="-check-forbidden-tests" depends="-init-forbidden-apis,compile-test">
-    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath"> 
+    <forbidden-apis signaturesFile="${common.dir}/tools/forbiddenApis/tests.txt" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath" targetVersion="${javac.release}"> 
       <fileset dir="${build.dir}/classes/test" excludes="${forbidden-tests-excludes}"/>
     </forbidden-apis>
   </target>
@@ -2386,7 +2387,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <target name="-check-forbidden-core" depends="-init-forbidden-apis,compile-core,-check-forbidden-sysout" />
 
   <target name="-check-forbidden-sysout" depends="-init-forbidden-apis,compile-core">
-    <forbidden-apis bundledSignatures="jdk-system-out" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath">
+    <forbidden-apis bundledSignatures="jdk-system-out" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath" targetVersion="${javac.release}">
       <fileset dir="${build.dir}/classes/java" excludes="${forbidden-sysout-excludes}"/>
     </forbidden-apis>
   </target>

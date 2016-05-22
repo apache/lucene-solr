@@ -40,6 +40,7 @@ import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Map;
 
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.PushBackStream;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
@@ -177,6 +178,7 @@ class ResultSetImpl implements ResultSet {
   }
 
   @Override
+  @SuppressForbidden(reason = "Implements deprecated method")
   public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
     return this.getBigDecimal(this.resultSetMetaData.getColumnLabel(columnIndex), scale);
   }
