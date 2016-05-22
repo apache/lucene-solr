@@ -92,7 +92,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
 
     if (isLeaf() || this.clauses == null) {
       ResourceBundle bundle = ResourceBundle
-          .getBundle("org.apache.lucene.queryParser.messages.QueryParserMessages");
+          .getBundle("org.apache.lucene.queryParser.messages.QueryParserMessages", Locale.getDefault());
       String message = bundle.getObject("Q0008E.NODE_ACTION_NOT_SUPPORTED")
           .toString();
 
