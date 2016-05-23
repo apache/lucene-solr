@@ -62,9 +62,10 @@ def getGitRev():
   if 'nothing to commit, working directory clean' not in status:
     raise RuntimeError('git clone is dirty:\n\n%s' % status)
   branch = os.popen('git rev-parse --abbrev-ref HEAD').read().strip()
-  unpushedCommits = os.popen('git log origin/%s..' % branch).read().strip()
+  command = 'git log origin/%s..' % branch
+  unpushedCommits = os.popen(command).read().strip()
   if len(unpushedCommits) > 0:
-    raise RuntimeError('There are unpushed commits - "git log origin.." output is:\n\n%s' % unpushedCommits)
+    raise RuntimeError('There are unpushed commits - "%s" output is:\n\n%s' % (command, unpushedCommits))
 
   print('  git clone is clean')
   return os.popen('git rev-parse HEAD').read().strip()
