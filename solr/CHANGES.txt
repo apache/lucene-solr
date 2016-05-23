@@ -253,6 +253,8 @@ Optimizations
 
 * SOLR-9106: Cluster properties are now cached on ZkStateReader. (Alan Woodward)
 
+* SOLR-9147: Upgrade commons-io to 2.5, avoid expensive array resizing in EmbeddedSolrServer (Mikhail Khludnev)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
@@ -315,8 +317,6 @@ Other Changes
   for Java 9 compatibility. (Uwe Schindler)
 
 * SOLR-9131: Fix "start solr" text in cluster.vm Velocity template (janhoy)
-
-* SOLR-9147: Upgrade commons-io to 2.5, avoid expensive array resizing in EmbeddedSolrServer (Mikhail Khludnev)
 
 ==================  6.0.1 ==================
 (No Changes)
