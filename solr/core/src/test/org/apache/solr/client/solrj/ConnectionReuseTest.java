@@ -78,7 +78,12 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
     switch (random().nextInt(3)) {
       case 0:
         // currently only testing with 1 thread
-        return getConcurrentUpdateSolrClient(url.toString() + "/" + COLLECTION, httpClient, 6, 1);
+        return new ConcurrentUpdateSolrClient(url.toString() + "/" + COLLECTION, httpClient, 6, 1) {
+          @Override
+          public void handleError(Throwable ex) {
+            // we're expecting random errors here, don't spam the logs
+          }
+        };
       case 1:
         return getHttpSolrClient(url.toString() + "/" + COLLECTION, httpClient);
       case 2:
@@ -130,6 +135,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
           }
           if (!done && i > 0 && i < cnt2 - 1 && client instanceof ConcurrentUpdateSolrClient
               && random().nextInt(10) > 8) {
+            log.info("Pausing - should start a new request");
             queueBreaks++;
             done = true;
             Thread.sleep(350); // wait past streaming client poll time of 250ms
@@ -160,7 +166,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
         // we can't fully control queue polling breaking up requests - allow a bit of leeway
         log.info("Outer loop count: {}", cnt1);
         log.info("Queue breaks: {}", queueBreaks);
-        int exp = cnt1 + queueBreaks + 2;
+        int exp = queueBreaks + 3;
         log.info("Expected: {}", exp);
         log.info("Requests: {}", metrics.getRequestCount());
         assertTrue(
