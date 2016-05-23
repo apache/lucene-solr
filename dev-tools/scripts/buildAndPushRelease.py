@@ -195,7 +195,7 @@ def parse_config():
   cwd = os.getcwd()
   os.chdir(config.root)
   config.root = os.getcwd() # Absolutize root dir
-  if os.system('git rev-parse') or 3 != len([d for d in ('dev-tools','lucene','solr') if os.isdir(d)]):
+  if os.system('git rev-parse') or 3 != len([d for d in ('dev-tools','lucene','solr') if os.path.isdir(d)]):
     parser.error('Root path "%s" is not a valid lucene-solr checkout' % config.root)
   os.chdir(cwd)
 
