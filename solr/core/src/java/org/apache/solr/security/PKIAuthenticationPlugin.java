@@ -64,7 +64,14 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
   private final Map<String, PublicKey> keyCache = new ConcurrentHashMap<>();
   private final CryptoKeys.RSAKeyPair keyPair = new CryptoKeys.RSAKeyPair();
   private final CoreContainer cores;
-  private final int MAX_VALIDITY = Integer.parseInt(System.getProperty("pkiauth.ttl", "5000"));
+  private final int MAX_VALIDITY = getTTL();
+
+  private int getTTL() {
+    String ttl = System.getProperty("pkiauth.ttl");
+    if (ttl != null) log.info("TTL is set to {}ms", ttl);
+    return Integer.parseInt(System.getProperty("pkiauth.ttl", "5000"));
+  }
+
   private final String myNodeName;
 
   private boolean interceptorRegistered = false;
@@ -122,7 +129,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin implements Htt
       return;
     }
     if ((receivedTime - decipher.timestamp) > MAX_VALIDITY) {
-        log.error("Invalid key ");
+      log.error("Invalid key request timestamp {} : received timestamp {}", decipher.timestamp, receivedTime);
         filterChain.doFilter(request, response);
         return;
     }
