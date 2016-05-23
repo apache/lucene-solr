@@ -181,9 +181,9 @@ def parse_config():
   parser.add_argument('--sign', metavar='KEYID',
                       help='Sign the release with the given gpg key')
   parser.add_argument('--rc-num', metavar='NUM', type=int, default=1,
-                      help='Release Candidate number, required')
-  parser.add_argument('--root', metavar='WORKING_TREE_PATH', default='.',
-                      help='Root of Git working tree for lucene-solr')
+                      help='Release Candidate number.  Default: 1')
+  parser.add_argument('--root', metavar='PATH', default='.',
+                      help='Root of Git working tree for lucene-solr.  Default: "." (the current directory)')
   config = parser.parse_args()
 
   if not config.prepare and config.sign:
