@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -148,7 +147,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
     // TODO: extract to configurable strategy class ??
     ClusterState clusterState = zkStateReader.getClusterState();
     //check if we have disabled autoAddReplicas cluster wide
-    String autoAddReplicas = (String) zkStateReader.getClusterProps().get(ZkStateReader.AUTO_ADD_REPLICAS);
+    String autoAddReplicas = zkStateReader.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, (String) null);
     if (autoAddReplicas != null && autoAddReplicas.equals("false")) {
       return;
     }
@@ -229,7 +228,7 @@ public class OverseerAutoReplicaFailoverThread implements Runnable, Closeable {
   private boolean addReplica(final String collection, DownReplica badReplica) {
     // first find best home - first strategy, sort by number of cores
     // hosted where maxCoresPerNode is not violated
-    final Integer maxCoreCount = (Integer) zkStateReader.getClusterProps().get(ZkStateReader.MAX_CORES_PER_NODE);
+    final Integer maxCoreCount = zkStateReader.getClusterProperty(ZkStateReader.MAX_CORES_PER_NODE, (Integer) null);
     final String createUrl = getBestCreateUrl(zkStateReader, badReplica, maxCoreCount);
     if (createUrl == null) {
       log.warn("Could not find a node to create new replica on.");

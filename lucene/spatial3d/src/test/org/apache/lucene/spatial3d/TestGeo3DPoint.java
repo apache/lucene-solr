@@ -85,14 +85,14 @@ import com.carrotsearch.randomizedtesting.generators.RandomInts;
 public class TestGeo3DPoint extends LuceneTestCase {
 
   private static Codec getCodec() {
-    if (Codec.getDefault().getName().equals("Lucene60")) {
+    if (Codec.getDefault().getName().equals("Lucene62")) {
       int maxPointsInLeafNode = TestUtil.nextInt(random(), 16, 2048);
       double maxMBSortInHeap = 3.0 + (3*random().nextDouble());
       if (VERBOSE) {
         System.out.println("TEST: using Lucene60PointsFormat with maxPointsInLeafNode=" + maxPointsInLeafNode + " and maxMBSortInHeap=" + maxMBSortInHeap);
       }
 
-      return new FilterCodec("Lucene60", Codec.getDefault()) {
+      return new FilterCodec("Lucene62", Codec.getDefault()) {
         @Override
         public PointsFormat pointsFormat() {
           return new PointsFormat() {
@@ -132,7 +132,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
   }
 
   private static double toRadians(double degrees) {
-    return degrees * Geo3DPoint.RADIANS_PER_DEGREE;
+    return degrees * Geo3DUtil.RADIANS_PER_DEGREE;
   }
 
   private static class Cell {
@@ -430,7 +430,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
           } else {
             log.println("doc=" + docID + " should match but did not");
           }
-          log.println("  point=" + docs[docID]);
+          log.println("  point=" + point);
+          log.println("  mappedPoint=" + mappedPoint);
           fail = true;
         }
       }

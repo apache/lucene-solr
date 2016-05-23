@@ -56,6 +56,8 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.ToleratedUpdateError;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
+import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
@@ -570,6 +572,40 @@ public class CloudSolrClient extends SolrClient {
   public void downloadConfig(String configName, Path downloadPath) throws IOException {
     connect();
     zkStateReader.getConfigManager().downloadConfigDir(configName, downloadPath);
+  }
+
+  /**
+   * Block until a collection state matches a predicate, or a timeout
+   *
+   * Note that the predicate may be called again even after it has returned true, so
+   * implementors should avoid changing state within the predicate call itself.
+   *
+   * @param collection the collection to watch
+   * @param wait       how long to wait
+   * @param unit       the units of the wait parameter
+   * @param predicate  a {@link CollectionStatePredicate} to check the collection state
+   * @throws InterruptedException on interrupt
+   * @throws TimeoutException on timeout
+   */
+  public void waitForState(String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
+      throws InterruptedException, TimeoutException {
+    connect();
+    zkStateReader.waitForState(collection, wait, unit, predicate);
+  }
+
+  /**
+   * Register a CollectionStateWatcher to be called when the cluster state for a collection changes
+   *
+   * Note that the watcher is unregistered after it has been called once.  To make a watcher persistent,
+   * it should re-register itself in its {@link CollectionStateWatcher#onStateChanged(Set, DocCollection)}
+   * call
+   *
+   * @param collection the collection to watch
+   * @param watcher    a watcher that will be called when the state changes
+   */
+  public void registerCollectionStateWatcher(String collection, CollectionStateWatcher watcher) {
+    connect();
+    zkStateReader.registerCollectionStateWatcher(collection, watcher);
   }
 
   private NamedList<Object> directUpdate(AbstractUpdateRequest request, String collection, ClusterState clusterState) throws SolrServerException {

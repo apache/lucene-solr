@@ -51,7 +51,6 @@
     attribute introduced, true by default except for text fields.
   -->
 
-  <types>
     <!--
       field type definitions. The "name" attribute is just a label to be
       used by field definitions. The "class" attribute and any other
@@ -416,14 +415,12 @@
     <fieldType name="ignored" stored="false" indexed="false"
       multiValued="true" class="solr.StrField" />
 
-  </types>
 
 
-  <fields>
     <!--
       Valid attributes for fields: name: mandatory - the name for the
       field type: mandatory - the name of a previously defined type from
-      the <types> section indexed: true if this field should be indexed
+      the <fieldType>s indexed: true if this field should be indexed
       (searchable or sortable) stored: true if this field should be
       retrievable multiValued: true if this field may contain multiple
       values per document omitNorms: (expert) set to true to omit the
@@ -558,7 +555,6 @@
     -->
     <!--dynamicField name="*" type="ignored" multiValued="true" /-->
 
-  </fields>
 
   <!--
     Field to use to determine and enforce document uniqueness. Unless

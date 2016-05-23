@@ -21,7 +21,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
- * Wrapper class for Logger implementaions
+ * Wrapper class for Logger implementations
  */
 public abstract class LoggerInfo implements Comparable<LoggerInfo> {
   public static final String ROOT_NAME = "root";

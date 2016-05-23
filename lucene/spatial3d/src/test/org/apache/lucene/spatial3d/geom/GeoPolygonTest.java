@@ -162,8 +162,6 @@ public class GeoPolygonTest {
     c.getBounds(xyzBounds);
     xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumX(), xyzBounds.getMaximumX(), xyzBounds.getMinimumY(), xyzBounds.getMaximumY(), xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ());
     assertEquals(GeoArea.WITHIN, xyzSolid.getRelationship(c));
-    xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumX()-0.01, xyzBounds.getMaximumX()-0.01, xyzBounds.getMinimumY()-0.01, xyzBounds.getMaximumY()-0.01, xyzBounds.getMinimumZ()-0.01, xyzBounds.getMaximumZ()-0.01);
-    assertEquals(GeoArea.OVERLAPS, xyzSolid.getRelationship(c));
     xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumY(), xyzBounds.getMaximumY(), xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ(), xyzBounds.getMinimumX(), xyzBounds.getMaximumX());
     assertEquals(GeoArea.DISJOINT, xyzSolid.getRelationship(c));
 
@@ -175,8 +173,6 @@ public class GeoPolygonTest {
     // Same bounds should work
     xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumX(), xyzBounds.getMaximumX(), xyzBounds.getMinimumY(), xyzBounds.getMaximumY(), xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ());
     assertEquals(GeoArea.WITHIN, xyzSolid.getRelationship(c));
-    xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumX()-0.01, xyzBounds.getMaximumX()-0.01, xyzBounds.getMinimumY()-0.01, xyzBounds.getMaximumY()-0.01, xyzBounds.getMinimumZ()-0.01, xyzBounds.getMaximumZ()-0.01);
-    assertEquals(GeoArea.OVERLAPS, xyzSolid.getRelationship(c));
     xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumY(), xyzBounds.getMaximumY(), xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ(), xyzBounds.getMinimumX(), xyzBounds.getMaximumX());
     assertEquals(GeoArea.DISJOINT, xyzSolid.getRelationship(c));
 
@@ -185,8 +181,6 @@ public class GeoPolygonTest {
     c.getBounds(xyzBounds);
     xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumX(), xyzBounds.getMaximumX(), xyzBounds.getMinimumY(), xyzBounds.getMaximumY(), xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ());
     assertEquals(GeoArea.WITHIN, xyzSolid.getRelationship(c));
-    xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumX()-0.01, xyzBounds.getMaximumX()-0.01, xyzBounds.getMinimumY()-0.01, xyzBounds.getMaximumY()-0.01, xyzBounds.getMinimumZ()-0.01, xyzBounds.getMaximumZ()-0.01);
-    assertEquals(GeoArea.OVERLAPS, xyzSolid.getRelationship(c));
     xyzSolid = XYZSolidFactory.makeXYZSolid(PlanetModel.SPHERE, xyzBounds.getMinimumY(), xyzBounds.getMaximumY(), xyzBounds.getMinimumZ(), xyzBounds.getMaximumZ(), xyzBounds.getMinimumX(), xyzBounds.getMaximumX());
     assertEquals(GeoArea.DISJOINT, xyzSolid.getRelationship(c));
 

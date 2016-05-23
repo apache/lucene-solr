@@ -1323,7 +1323,9 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     slaveClient.commit();
 
     slaveQueryRsp = rQuery(1, "id:2001", slaveClient);
-    SolrDocument d = ((SolrDocumentList) slaveQueryRsp.get("response")).get(0);
+    final SolrDocumentList sdl = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(1, sdl.getNumFound());
+    final SolrDocument d = sdl.get(0);
     assertEquals("n2001", (String) d.getFieldValue("newname"));
     
     checkForSingleIndex(masterJetty);

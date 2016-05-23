@@ -26,53 +26,50 @@
   -->
 
 <schema name="test" version="1.6">
-  <types>
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-    <!-- solr.TextField allows the specification of custom
-         text analyzers specified as a tokenizer and a list
-         of token filters.
-      -->
-    <fieldType name="text" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.StandardFilterFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.StopFilterFactory"/>
-        <filter class="solr.PorterStemFilterFactory"/>
-      </analyzer>
-    </fieldType>
 
-    <fieldType name="nametext" class="solr.TextField">
-      <analyzer class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
-    </fieldType>
- </types>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <!-- solr.TextField allows the specification of custom
+       text analyzers specified as a tokenizer and a list
+       of token filters.
+    -->
+  <fieldType name="text" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.StandardFilterFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.StopFilterFactory"/>
+      <filter class="solr.PorterStemFilterFactory"/>
+    </analyzer>
+  </fieldType>
 
-
- <fields>
-   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-   <field name="name" type="nametext" indexed="true" stored="true"/>
-   <field name="subject" type="text" indexed="true" stored="true"/>
+  <fieldType name="nametext" class="solr.TextField">
+    <analyzer class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
+  </fieldType>
 
 
-   <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
-        will be used if the name matches any of the patterns.
-        RESTRICTION: the glob-like pattern in the name attribute must have
-        a "*" only at the start or the end.
-        EXAMPLE:  name="*_i" will match any field ending in _i (like myid_i, z_i)
-        Longer patterns will be matched first.  if equal size patterns
-        both match, the first appearing in the schema will be used.
-   -->
-   <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
-   <dynamicField name="*_sm"  type="string"  indexed="true"  stored="true" multiValued="true" />
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="name" type="nametext" indexed="true" stored="true"/>
+  <field name="subject" type="text" indexed="true" stored="true"/>
 
-   <!-- Fields for language identification -->
-   <dynamicField name="name_*" type="string" indexed="true" stored="false"/>
-   <dynamicField name="subject_*" type="string" indexed="true" stored="false"/>
 
- </fields>
+  <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
+       will be used if the name matches any of the patterns.
+       RESTRICTION: the glob-like pattern in the name attribute must have
+       a "*" only at the start or the end.
+       EXAMPLE:  name="*_i" will match any field ending in _i (like myid_i, z_i)
+       Longer patterns will be matched first.  if equal size patterns
+       both match, the first appearing in the schema will be used.
+  -->
+  <dynamicField name="*_s" type="string" indexed="true" stored="true"/>
+  <dynamicField name="*_sm" type="string" indexed="true" stored="true" multiValued="true"/>
 
- <defaultSearchField>name</defaultSearchField>
- <uniqueKey>id</uniqueKey>
+  <!-- Fields for language identification -->
+  <dynamicField name="name_*" type="string" indexed="true" stored="false"/>
+  <dynamicField name="subject_*" type="string" indexed="true" stored="false"/>
+
+
+  <defaultSearchField>name</defaultSearchField>
+  <uniqueKey>id</uniqueKey>
 
 
 </schema>

@@ -172,7 +172,7 @@ public class TestTrie extends SolrTestCaseJ4 {
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
 
     assertU(delQ("*:*"));
-    DateMathParser dmp = new DateMathParser(DateMathParser.UTC, Locale.ROOT);
+    DateMathParser dmp = new DateMathParser(DateMathParser.UTC);
     String largestDate = "";
     for (int i = 0; i < 10; i++) {
       // index 10 days starting with today
@@ -221,7 +221,7 @@ public class TestTrie extends SolrTestCaseJ4 {
     // For tdate tests
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
-    DateMathParser dmp = new DateMathParser(DateMathParser.UTC, Locale.ROOT);
+    DateMathParser dmp = new DateMathParser(DateMathParser.UTC);
 
     for (int i = 0; i < 10; i++) {
       long l = Integer.MAX_VALUE + i*1L;

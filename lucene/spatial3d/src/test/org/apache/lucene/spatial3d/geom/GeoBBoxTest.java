@@ -361,4 +361,15 @@ public class GeoBBoxTest {
 
   }
   
+  @Test
+  public void testFailureCase1() {
+    final GeoPoint point = new GeoPoint(-0.017413370801260174, -2.132522881412925E-18, 0.9976113450663769);
+    final GeoBBox box = new GeoNorthRectangle(PlanetModel.WGS84, 0.35451471030934045, 9.908337057950734E-15, 2.891004593509811E-11);
+    final XYZBounds bounds = new XYZBounds();
+    box.getBounds(bounds);
+    final XYZSolid solid = XYZSolidFactory.makeXYZSolid(PlanetModel.WGS84, bounds.getMinimumX(), bounds.getMaximumX(), bounds.getMinimumY(), bounds.getMaximumY(), bounds.getMinimumZ(), bounds.getMaximumZ());
+    
+    assertTrue(box.isWithin(point)?solid.isWithin(point):true);
+  }
+  
 }

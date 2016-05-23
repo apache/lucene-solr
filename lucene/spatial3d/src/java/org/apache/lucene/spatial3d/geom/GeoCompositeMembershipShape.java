@@ -85,7 +85,7 @@ public class GeoCompositeMembershipShape implements GeoMembershipShape {
   public double computeOutsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
     if (isWithin(x,y,z))
       return 0.0;
-    double distance = Double.MAX_VALUE;
+    double distance = Double.POSITIVE_INFINITY;
     for (GeoMembershipShape shape : shapes) {
       final double normalDistance = shape.computeOutsideDistance(distanceStyle, x, y, z);
       if (normalDistance < distance) {

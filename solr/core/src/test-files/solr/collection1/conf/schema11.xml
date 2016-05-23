@@ -288,7 +288,7 @@ valued. -->
 
    <!-- Valid attributes for fields:
      name: mandatory - the name for the field
-     type: mandatory - the name of a previously defined type from the <types> section
+     type: mandatory - the name of a previously defined type from a fieldType
      indexed: true if this field should be indexed (searchable or sortable)
      stored: true if this field should be retrievable
      multiValued: true if this field may contain multiple values per document

@@ -659,7 +659,7 @@ public class Overseer implements Closeable {
       }
     }
 
-    // Go through the list of presently-hosted proeprties and remove any that have too many replicas that host the property
+    // Go through the list of presently-hosted properties and remove any that have too many replicas that host the property
     private void removeOverallocatedReplicas() {
       tmpMaxPropPerNode = origMaxPropPerNode; // A bit clumsy, but don't want to duplicate code.
       tmpModulo = origModulo;
@@ -1062,8 +1062,9 @@ public class Overseer implements Closeable {
       throw new RuntimeException(e);
     }
   }
-  public static boolean isLegacy(Map clusterProps) {
-    return !"false".equals(clusterProps.get(ZkStateReader.LEGACY_CLOUD));
+  public static boolean isLegacy(ZkStateReader stateReader) {
+    String legacyProperty = stateReader.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true");
+    return !"false".equals(legacyProperty);
   }
 
   public ZkStateReader getZkStateReader() {

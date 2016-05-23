@@ -201,7 +201,7 @@ class GeoStandardPath extends GeoBasePath {
     double currentDistance = 0.0;
     for (PathSegment segment : segments) {
       double distance = segment.pathDistance(planetModel, distanceStyle, x,y,z);
-      if (distance != Double.MAX_VALUE)
+      if (distance != Double.POSITIVE_INFINITY)
         return currentDistance + distance;
       currentDistance += segment.fullPathDistance(distanceStyle);
     }
@@ -210,13 +210,13 @@ class GeoStandardPath extends GeoBasePath {
     currentDistance = 0.0;
     for (SegmentEndpoint endpoint : endPoints) {
       double distance = endpoint.pathDistance(distanceStyle, x, y, z);
-      if (distance != Double.MAX_VALUE)
+      if (distance != Double.POSITIVE_INFINITY)
         return currentDistance + distance;
       if (segmentIndex < segments.size())
         currentDistance += segments.get(segmentIndex++).fullPathDistance(distanceStyle);
     }
 
-    return Double.MAX_VALUE;
+    return Double.POSITIVE_INFINITY;
   }
 
   @Override
@@ -227,7 +227,7 @@ class GeoStandardPath extends GeoBasePath {
 
   @Override
   protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    double minDistance = Double.MAX_VALUE;
+    double minDistance = Double.POSITIVE_INFINITY;
     for (final SegmentEndpoint endpoint : endPoints) {
       final double newDistance = endpoint.outsideDistance(distanceStyle, x,y,z);
       if (newDistance < minDistance)
@@ -518,7 +518,7 @@ class GeoStandardPath extends GeoBasePath {
      */
     public double pathDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       if (!isWithin(x,y,z))
-        return Double.MAX_VALUE;
+        return Double.POSITIVE_INFINITY;
       return distanceStyle.computeDistance(this.point, x, y, z);
     }
 
@@ -713,7 +713,7 @@ class GeoStandardPath extends GeoBasePath {
      */
     public double pathDistance(final PlanetModel planetModel, final DistanceStyle distanceStyle, final double x, final double y, final double z) {
       if (!isWithin(x,y,z))
-        return Double.MAX_VALUE;
+        return Double.POSITIVE_INFINITY;
 
       // (1) Compute normalizedPerpPlane.  If degenerate, then return point distance from start to point.
       // Want no allocations or expensive operations!  so we do this the hard way

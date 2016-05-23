@@ -409,7 +409,7 @@ class GeoConcavePolygon extends GeoBasePolygon {
 
   @Override
   protected double outsideDistance(final DistanceStyle distanceStyle, final double x, final double y, final double z) {
-    double minimumDistance = Double.MAX_VALUE;
+    double minimumDistance = Double.POSITIVE_INFINITY;
     for (final GeoPoint edgePoint : points) {
       final double newDist = distanceStyle.computeDistance(edgePoint, x,y,z);
       if (newDist < minimumDistance) {

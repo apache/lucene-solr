@@ -123,6 +123,13 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
 
   @Override
   public void merge(MergeState mergeState) throws IOException {
+    if (mergeState.segmentInfo.getIndexSort() != null) {
+      // TODO: can we gain back some optos even if index is sorted?  E.g. if sort results in large chunks of contiguous docs from one sub
+      // being copied over...?
+      super.merge(mergeState);
+      return;
+    }
+
     for(PointsReader reader : mergeState.pointsReaders) {
       if (reader instanceof Lucene60PointsReader == false) {
         // We can only bulk merge when all to-be-merged segments use our format:
@@ -171,7 +178,6 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                                                 singleValuePerDoc)) {
             List<BKDReader> bkdReaders = new ArrayList<>();
             List<MergeState.DocMap> docMaps = new ArrayList<>();
-            List<Integer> docIDBases = new ArrayList<>();
             for(int i=0;i<mergeState.pointsReaders.length;i++) {
               PointsReader reader = mergeState.pointsReaders[i];
 
@@ -191,7 +197,6 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
                 if (readerFieldInfo != null) {
                   BKDReader bkdReader = reader60.readers.get(readerFieldInfo.number);
                   if (bkdReader != null) {
-                    docIDBases.add(mergeState.docBase[i]);
                     bkdReaders.add(bkdReader);
                     docMaps.add(mergeState.docMaps[i]);
                   }
@@ -199,7 +204,7 @@ public class Lucene60PointsWriter extends PointsWriter implements Closeable {
               }
             }
 
-            long fp = writer.merge(dataOut, docMaps, bkdReaders, docIDBases);
+            long fp = writer.merge(dataOut, docMaps, bkdReaders);
             if (fp != -1) {
               indexFPs.put(fieldInfo.name, fp);
             }

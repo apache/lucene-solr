@@ -16,12 +16,15 @@
  */
 package org.apache.solr.common.cloud;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -35,7 +38,8 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 /**
  * Models a Collection in zookeeper (but that Java name is obviously taken, hence "DocCollection")
  */
-public class DocCollection extends ZkNodeProps {
+public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
+
   public static final String DOC_ROUTER = "router";
   public static final String SHARDS = "shards";
   public static final String STATE_FORMAT = "stateFormat";
@@ -216,5 +220,43 @@ public class DocCollection extends ZkNodeProps {
     Slice slice = getSlice(sliceName);
     if (slice == null) return null;
     return slice.getLeader();
+  }
+
+  /**
+   * Check that all replicas in a collection are live
+   *
+   * @see CollectionStatePredicate
+   */
+  public static boolean isFullyActive(Set<String> liveNodes, DocCollection collectionState,
+                                      int expectedShards, int expectedReplicas) {
+    Objects.requireNonNull(liveNodes);
+    if (collectionState == null)
+      return false;
+    int activeShards = 0;
+    for (Slice slice : collectionState) {
+      int activeReplicas = 0;
+      for (Replica replica : slice) {
+        if (replica.isActive(liveNodes) == false)
+          return false;
+        activeReplicas++;
+      }
+      if (activeReplicas != expectedReplicas)
+        return false;
+      activeShards++;
+    }
+    return activeShards == expectedShards;
+  }
+
+  @Override
+  public Iterator<Slice> iterator() {
+    return slices.values().iterator();
+  }
+
+  public List<Replica> getReplicas() {
+    List<Replica> replicas = new ArrayList<>();
+    for (Slice slice : this) {
+      replicas.addAll(slice.getReplicas());
+    }
+    return replicas;
   }
 }

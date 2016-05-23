@@ -85,7 +85,7 @@ public class UpdateShardHandler {
 
   /**
    * In general, RecoveryStrategy threads do not do disk IO, but they open and close SolrCores
-   * in async threads, amoung other things, and can trigger disk IO, so we use this alternate 
+   * in async threads, among other things, and can trigger disk IO, so we use this alternate 
    * executor rather than the 'updateExecutor', which is interrupted on shutdown.
    * 
    * @return executor for {@link RecoveryStrategy} thread which will not be interrupted on close.
@@ -96,7 +96,7 @@ public class UpdateShardHandler {
 
   public void close() {
     try {
-      // we interrupt on purpose here, but this exectuor should not run threads that do disk IO!
+      // we interrupt on purpose here, but this executor should not run threads that do disk IO!
       ExecutorUtil.shutdownWithInterruptAndAwaitTermination(updateExecutor);
       ExecutorUtil.shutdownAndAwaitTermination(recoveryExecutor);
     } catch (Exception e) {

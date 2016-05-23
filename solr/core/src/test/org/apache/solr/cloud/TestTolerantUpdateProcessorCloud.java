@@ -263,17 +263,17 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
         assertEquals("not the expected DBQ failure: " + e.getMessage(), 400, e.code());
       }
       
-      // verify oportunistic concurrency deletions fail as we expect when docs are / aren't present
+      // verify opportunistic concurrency deletions fail as we expect when docs are / aren't present
       for (UpdateRequest r : new UpdateRequest[] {
           update(params("commit", "true")).deleteById(S_ONE_PRE + "1", -1L),
           update(params("commit", "true")).deleteById(S_TWO_PRE + "2", -1L),
           update(params("commit", "true")).deleteById("id_not_exists",  1L)    }) {
         try {
           UpdateResponse rsp = r.process(c);
-          fail("sanity check for oportunistic concurrency delete didn't fail: "
+          fail("sanity check for opportunistic concurrency delete didn't fail: "
                + r.toString() + " => " + rsp.toString());
         } catch (SolrException e) {
-          assertEquals("not the expected oportunistic concurrency failure code: "
+          assertEquals("not the expected opportunistic concurrency failure code: "
                        + r.toString() + " => " + e.getMessage(), 409, e.code());
         }
       }
@@ -316,29 +316,29 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                  doc(f("id", docId2), f("foo_i", "1976"))).process(client);
     assertEquals(0, rsp.getStatus());
 
-    // attempt to delete individual doc id(s) that should fail because of oportunistic concurrency constraints
+    // attempt to delete individual doc id(s) that should fail because of opportunistic concurrency constraints
     for (String id : new String[] { docId1, docId2 }) {
       rsp = update(params("update.chain", "tolerant-chain-max-errors-10",
                           "commit", "true")).deleteById(id, -1L).process(client);
       assertEquals(0, rsp.getStatus());
-      assertUpdateTolerantErrors("failed oportunistic concurrent delId="+id, rsp,
+      assertUpdateTolerantErrors("failed opportunistic concurrent delId="+id, rsp,
                                  delIErr(id));
     }
     
-    // multiple failed deletes from the same shard (via oportunistic concurrent w/ bogus ids)
+    // multiple failed deletes from the same shard (via opportunistic concurrent w/ bogus ids)
     rsp = update(params("update.chain", "tolerant-chain-max-errors-10",
                         "commit", "true")
                  ).deleteById(S_ONE_PRE + "X", +1L).deleteById(S_ONE_PRE + "Y", +1L).process(client);
     assertEquals(0, rsp.getStatus());
-    assertUpdateTolerantErrors("failed oportunistic concurrent delete by id for 2 bogus docs", rsp,
+    assertUpdateTolerantErrors("failed opportunistic concurrent delete by id for 2 bogus docs", rsp,
                                delIErr(S_ONE_PRE + "X"), delIErr(S_ONE_PRE + "Y"));
     assertQueryDocIds(client, true, docId1, docId2);
     
-    // multiple failed deletes from the diff shards due to oportunistic concurrency constraints
+    // multiple failed deletes from the diff shards due to opportunistic concurrency constraints
     rsp = update(params("update.chain", "tolerant-chain-max-errors-10",
                         "commit", "true")).deleteById(docId2, -1L).deleteById(docId1, -1L).process(client);
     assertEquals(0, rsp.getStatus());
-    assertUpdateTolerantErrors("failed oportunistic concurrent delete by id for 2 docs", rsp,
+    assertUpdateTolerantErrors("failed opportunistic concurrent delete by id for 2 docs", rsp,
                                delIErr(docId1), delIErr(docId2));
     assertQueryDocIds(client, true, docId1, docId2);
 
@@ -346,7 +346,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
     rsp = update(params("update.chain", "tolerant-chain-max-errors-10",
                         "commit", "true")).deleteByQuery("bogus_field:foo").process(client);
     assertEquals(0, rsp.getStatus());
-    assertUpdateTolerantErrors("failed oportunistic concurrent delete by query", rsp,
+    assertUpdateTolerantErrors("failed opportunistic concurrent delete by query", rsp,
                                delQErr("bogus_field:foo"));
     assertQueryDocIds(client, true, docId1, docId2);
 
@@ -355,7 +355,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                         "commit", "true")
                  ).deleteByQuery("bogus_field:foo").deleteByQuery("foo_i:23").process(client);
     assertEquals(0, rsp.getStatus());
-    assertUpdateTolerantErrors("failed oportunistic concurrent delete by query", rsp,
+    assertUpdateTolerantErrors("failed opportunistic concurrent delete by query", rsp,
                                delQErr("bogus_field:foo"));
     assertQueryDocIds(client, true, docId1, docId2);
     
@@ -364,7 +364,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                         "commit", "true")
                  ).deleteById(docId1, -1L).deleteById("bogus", -1L).process(client);
     assertEquals(0, rsp.getStatus());
-    assertUpdateTolerantErrors("failed oportunistic concurrent delete by id: exists", rsp,
+    assertUpdateTolerantErrors("failed opportunistic concurrent delete by id: exists", rsp,
                                delIErr(docId1));
     assertQueryDocIds(client, true, docId1, docId2);
     
@@ -373,7 +373,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                         "commit", "true")
                  ).deleteById(docId1, +1L).deleteById("bogusId", +1L).process(client);
     assertEquals(0, rsp.getStatus());
-    assertUpdateTolerantErrors("failed oportunistic concurrent delete by id: bogus", rsp,
+    assertUpdateTolerantErrors("failed opportunistic concurrent delete by id: bogus", rsp,
                                delIErr("bogusId"));
     assertQueryDocIds(client, false, docId1);
     assertQueryDocIds(client, true, docId2);
@@ -384,7 +384,7 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
                         "commit", "true")
                  ).deleteByQuery("bogus_field:foo").deleteByQuery("foo_i:1976").process(client);
     assertEquals(0, rsp.getStatus());
-    assertUpdateTolerantErrors("failed oportunistic concurrent delete by query", rsp,
+    assertUpdateTolerantErrors("failed opportunistic concurrent delete by query", rsp,
                                delQErr("bogus_field:foo"));
     assertQueryDocIds(client, false, docId2);
 

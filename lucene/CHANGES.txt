@@ -22,6 +22,10 @@ New Features
 * LUCENE-7234: Added InetAddressPoint.nextDown/nextUp to easily generate range
   queries with excluded bounds. (Adrien Grand)
 
+* LUCENE-7278: Spatial-extras DateRangePrefixTree's Calendar is now configurable, to
+  e.g. clear the Gregorian Change Date.  Also, toString(cal) is now identical to
+  DateTimeFormatter.ISO_INSTANT. (David Smiley)
+
 API Changes
 
 * LUCENE-7184: Refactor LatLonPoint encoding methods to new GeoEncodingUtils
@@ -111,6 +115,18 @@ Bug Fixes
   minPackedValue and maxPackedValue to skip leaves that do not have points
   rather than raising an IllegalStateException. (Adrien Grand)
 
+* LUCENE-7279: JapaneseTokenizer throws ArrayIndexOutOfBoundsException
+  on some valid inputs (Mike McCandless)
+
+* LUCENE-7284: GapSpans needs to implement positionsCost(). (Daniel Bigham, Alan
+  Woodward)
+
+* LUCENE-7231: WeightedSpanTermExtractor didn't deal correctly with single-term
+  phrase queries. (Eva Popenda, Alan Woodward)
+
+* LUCENE-7293: Don't try to highlight GeoPoint queries (Britta Weber,
+  Nick Knize, Mike McCandless, Uwe Schindler)
+
 Documentation
 
 * LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
@@ -129,6 +145,21 @@ Other
 
 * LUCENE-7263: Make queryparser/xml/CoreParser's SpanQueryBuilderFactory
   accessible to deriving classes. (Daniel Collins via Christine Poerschke)
+
+* SOLR-9109/SOLR-9121: Allow specification of a custom Ivy settings file via system
+  property "ivysettings.xml". (Misha Dmitriev, Christine Poerschke, Uwe Schindler, Steve Rowe)
+
+Build
+
+* LUCENE-7292: Use '-release' instead of '-source/-target' during
+  compilation on Java 9+ to ensure real cross-compilation.
+  (Uwe Schindler)
+  
+* LUCENE-7296: Update forbiddenapis to version 2.1.
+  (Uwe Schindler)
+  
+======================= Lucene 6.0.1 =======================
+(No Changes)
 
 ======================= Lucene 6.0.0 =======================
 

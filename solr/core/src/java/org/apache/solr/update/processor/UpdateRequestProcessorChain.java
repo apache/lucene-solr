@@ -76,7 +76,7 @@ import java.util.Objects;
  * </ul>
  *
  * <p>
- * Allmost all processor chains should end with an instance of 
+ * Almost all processor chains should end with an instance of 
  * <code>RunUpdateProcessorFactory</code> unless the user is explicitly 
  * executing the update commands in an alternative custom 
  * <code>UpdateRequestProcessorFactory</code>.  If a chain includes 

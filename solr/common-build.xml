@@ -25,10 +25,9 @@
   
   <property name="Name" value="Solr" />
   
-  <!-- solr uses 1.8 -->
-  <property name="javac.source" value="1.8"/>
-  <property name="javac.target" value="1.8"/>
-  <property name="javac.args" value=""/>
+  <!-- solr uses Java 8 -->
+  <property name="javac.release" value="8"/>
+  <property name="javac.args" value="-Xlint:-deprecation"/>
   <property name="javac.profile.args" value=""/>
 
   <property name="dest" location="${common-solr.dir}/build" />
@@ -505,12 +504,15 @@
   
   <!-- Forbidden API Task, customizations for Solr -->
   <target name="-check-forbidden-all" depends="-init-forbidden-apis,compile-core,compile-test">
-    <property file="${common.dir}/ivy-versions.properties"/> <!-- for commons-io version -->
-    <forbidden-apis internalRuntimeForbidden="true" suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath">
+    <!--<property prefix="ivyversions" file="${common.dir}/ivy-versions.properties"/>--> <!-- for commons-io version -->
+    <!-- HACK: --><property name="ivyversions./commons-io/commons-io" value="2.4"/>
+    <forbidden-apis suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath" targetVersion="${javac.release}">
       <signatures>
-        <bundled name="jdk-unsafe-${javac.target}"/>
-        <bundled name="jdk-deprecated-${javac.target}"/>
-        <bundled name="commons-io-unsafe-${/commons-io/commons-io}"/>
+        <bundled name="jdk-unsafe"/>
+        <bundled name="jdk-deprecated"/>
+        <bundled name="jdk-non-portable"/>
+        <bundled name="jdk-reflection"/>
+        <bundled name="commons-io-unsafe-${ivyversions./commons-io/commons-io}"/>
         <fileset dir="${common.dir}/tools/forbiddenApis">
           <include name="base.txt" />
           <include name="servlet-api.txt" />

@@ -309,7 +309,7 @@ public class TrieField extends PrimitiveFieldType {
    * field is not supported for this field type
    *
    * @param choice the selector Type to use, will never be null
-   * @param field the field to use, garunteed to be multivalued.
+   * @param field the field to use, guaranteed to be multivalued.
    * @see #getSingleValueSource(MultiValueSelector,SchemaField,QParser) 
    */
   protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField field) {

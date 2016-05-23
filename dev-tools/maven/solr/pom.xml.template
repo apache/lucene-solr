@@ -117,14 +117,15 @@
           <execution>
             <id>solr-shared-check-forbidden-apis</id>
             <configuration>
-              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
-              <internalRuntimeForbidden>true</internalRuntimeForbidden>
               <!-- for simplicty with servlet-api and commons-io checks, disable this: -->
               <failOnUnresolvableSignatures>false</failOnUnresolvableSignatures>
               <bundledSignatures>
                 <bundledSignature>jdk-unsafe</bundledSignature>
                 <bundledSignature>jdk-deprecated</bundledSignature>
-                <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>
+                <bundledSignature>jdk-non-portable</bundledSignature>
+                <bundledSignature>jdk-reflection</bundledSignature>
+                <!--TODO: fix this <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>-->
+                <bundledSignature>commons-io-unsafe-2.4</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
@@ -139,14 +140,15 @@
           <execution>
             <id>solr-shared-test-check-forbidden-apis</id>
             <configuration>
-              <!-- disallow undocumented classes like sun.misc.Unsafe: -->
-              <internalRuntimeForbidden>true</internalRuntimeForbidden>
               <!-- for simplicty with servlet-api and commons-io checks, disable this: -->
               <failOnUnresolvableSignatures>false</failOnUnresolvableSignatures>
               <bundledSignatures>
                 <bundledSignature>jdk-unsafe</bundledSignature>
                 <bundledSignature>jdk-deprecated</bundledSignature>
-                <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>
+                <bundledSignature>jdk-non-portable</bundledSignature>
+                <bundledSignature>jdk-reflection</bundledSignature>
+                <!--TODO: fix this <bundledSignature>commons-io-unsafe-@commons-io:commons-io.version@</bundledSignature>-->
+                <bundledSignature>commons-io-unsafe-2.4</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>

@@ -16,11 +16,10 @@
  */
 package org.apache.solr.util;
 
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
-import java.util.Calendar;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
@@ -38,46 +37,39 @@ public class DateMathParserTest extends LuceneTestCase {
 
   /**
    * A formatter for specifying every last nuance of a Date for easy
-   * refernece in assertion statements
+   * reference in assertion statements
    */
-  private DateFormat fmt;
+  private DateTimeFormatter fmt;
+
   /**
-   * A parser for reading in explicit dates that are convinient to type
+   * A parser for reading in explicit dates that are convenient to type
    * in a test
    */
-  private DateFormat parser;
+  private DateTimeFormatter parser;
 
   public DateMathParserTest() {
-    super();
-    fmt = new SimpleDateFormat
-      ("G yyyyy MM ww WW DD dd F E aa HH hh mm ss SSS z Z",Locale.ROOT);
-    fmt.setTimeZone(UTC);
+    fmt = DateTimeFormatter.ofPattern("G yyyyy MM ww W D dd F E a HH hh mm ss SSS z Z", Locale.ROOT)
+        .withZone(ZoneOffset.UTC);
 
-    parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS",Locale.ROOT);
-    parser.setTimeZone(UTC);
+    parser = DateTimeFormatter.ISO_LOCAL_DATE_TIME.withZone(ZoneOffset.UTC); // basically without the 'Z'
   }
 
   /** MACRO: Round: parses s, rounds with u, fmts */
   protected String r(String s, String u) throws Exception {
-    Date d = parser.parse(s);
-    Calendar c = Calendar.getInstance(UTC, Locale.ROOT);
-    c.setTime(d);
-    DateMathParser.round(c, u);
-    return fmt.format(c.getTime());
+    Date dt = DateMathParser.parseMath(null, s + "Z/" + u);
+    return fmt.format(dt.toInstant());
   }
   
   /** MACRO: Add: parses s, adds v u, fmts */
   protected String a(String s, int v, String u) throws Exception {
-    Date d = parser.parse(s);
-    Calendar c = Calendar.getInstance(UTC, Locale.ROOT);
-    c.setTime(d);
-    DateMathParser.add(c, v, u);
-    return fmt.format(c.getTime());
+    char sign = v >= 0 ? '+' : '-';
+    Date dt = DateMathParser.parseMath(null, s + 'Z' + sign + Math.abs(v) + u);
+    return fmt.format(dt.toInstant());
   }
 
   /** MACRO: Expected: parses s, fmts */
   protected String e(String s) throws Exception {
-    return fmt.format(parser.parse(s));
+    return fmt.format(parser.parse(s, Instant::from));
   }
 
   protected void assertRound(String e, String i, String u) throws Exception {
@@ -85,6 +77,7 @@ public class DateMathParserTest extends LuceneTestCase {
     String rr = r(i,u);
     assertEquals(ee + " != " + rr + " round:" + i + ":" + u, ee, rr);
   }
+
   protected void assertAdd(String e, String i, int v, String u)
     throws Exception {
     
@@ -97,13 +90,17 @@ public class DateMathParserTest extends LuceneTestCase {
     throws Exception {
     
     String ee = e(e);
-    String aa = fmt.format(p.parseMath(i));
+    String aa = fmt.format(p.parseMath(i).toInstant());
     assertEquals(ee + " != " + aa + " math:" +
-                 parser.format(p.getNow()) + ":" + i, ee, aa);
+                 parser.format(p.getNow().toInstant()) + ":" + i, ee, aa);
+  }
+
+  private void setNow(DateMathParser p, String text) {
+    p.setNow(Date.from(parser.parse(text, Instant::from)));
   }
   
   public void testCalendarUnitsConsistency() throws Exception {
-    String input = "2001-07-04T12:08:56.235";
+    String input = "1234-07-04T12:08:56.235";
     for (String u : DateMathParser.CALENDAR_UNITS.keySet()) {
       try {
         r(input, u);
@@ -120,20 +117,20 @@ public class DateMathParserTest extends LuceneTestCase {
   
   public void testRound() throws Exception {
     
-    String input = "2001-07-04T12:08:56.235";
+    String input = "1234-07-04T12:08:56.235";
     
-    assertRound("2001-07-04T12:08:56.000", input, "SECOND");
-    assertRound("2001-07-04T12:08:00.000", input, "MINUTE");
-    assertRound("2001-07-04T12:00:00.000", input, "HOUR");
-    assertRound("2001-07-04T00:00:00.000", input, "DAY");
-    assertRound("2001-07-01T00:00:00.000", input, "MONTH");
-    assertRound("2001-01-01T00:00:00.000", input, "YEAR");
+    assertRound("1234-07-04T12:08:56.000", input, "SECOND");
+    assertRound("1234-07-04T12:08:00.000", input, "MINUTE");
+    assertRound("1234-07-04T12:00:00.000", input, "HOUR");
+    assertRound("1234-07-04T00:00:00.000", input, "DAY");
+    assertRound("1234-07-01T00:00:00.000", input, "MONTH");
+    assertRound("1234-01-01T00:00:00.000", input, "YEAR");
 
   }
 
   public void testAddZero() throws Exception {
     
-    String input = "2001-07-04T12:08:56.235";
+    String input = "1234-07-04T12:08:56.235";
     
     for (String u : DateMathParser.CALENDAR_UNITS.keySet()) {
       assertAdd(input, input, 0, u);
@@ -143,24 +140,24 @@ public class DateMathParserTest extends LuceneTestCase {
   
   public void testAdd() throws Exception {
     
-    String input = "2001-07-04T12:08:56.235";
+    String input = "1234-07-04T12:08:56.235";
     
-    assertAdd("2001-07-04T12:08:56.236", input, 1, "MILLISECOND");
-    assertAdd("2001-07-04T12:08:57.235", input, 1, "SECOND");
-    assertAdd("2001-07-04T12:09:56.235", input, 1, "MINUTE");
-    assertAdd("2001-07-04T13:08:56.235", input, 1, "HOUR");
-    assertAdd("2001-07-05T12:08:56.235", input, 1, "DAY");
-    assertAdd("2001-08-04T12:08:56.235", input, 1, "MONTH");
-    assertAdd("2002-07-04T12:08:56.235", input, 1, "YEAR");
+    assertAdd("1234-07-04T12:08:56.236", input, 1, "MILLISECOND");
+    assertAdd("1234-07-04T12:08:57.235", input, 1, "SECOND");
+    assertAdd("1234-07-04T12:09:56.235", input, 1, "MINUTE");
+    assertAdd("1234-07-04T13:08:56.235", input, 1, "HOUR");
+    assertAdd("1234-07-05T12:08:56.235", input, 1, "DAY");
+    assertAdd("1234-08-04T12:08:56.235", input, 1, "MONTH");
+    assertAdd("1235-07-04T12:08:56.235", input, 1, "YEAR");
     
   }
   
   public void testParseStatelessness() throws Exception {
 
-    DateMathParser p = new DateMathParser(UTC, Locale.ROOT);
-    p.setNow(parser.parse("2001-07-04T12:08:56.235"));
+    DateMathParser p = new DateMathParser(UTC);
+    setNow(p, "1234-07-04T12:08:56.235");
 
-    String e = fmt.format(p.parseMath(""));
+    String e = fmt.format(p.parseMath("").toInstant());
     
     Date trash = p.parseMath("+7YEARS");
     trash = p.parseMath("/MONTH");
@@ -168,90 +165,89 @@ public class DateMathParserTest extends LuceneTestCase {
     Thread.currentThread();
     Thread.sleep(5);
     
-    String a = fmt.format(p.parseMath(""));
+    String a =fmt.format(p.parseMath("").toInstant());
     assertEquals("State of DateMathParser changed", e, a);
   }
-    
+
   public void testParseMath() throws Exception {
 
-    DateMathParser p = new DateMathParser(UTC, Locale.ROOT);
-    p.setNow(parser.parse("2001-07-04T12:08:56.235"));
+    DateMathParser p = new DateMathParser(UTC);
+    setNow(p, "1234-07-04T12:08:56.235");
 
     // No-Op
-    assertMath("2001-07-04T12:08:56.235", p, "");
+    assertMath("1234-07-04T12:08:56.235", p, "");
     
     // simple round
-    assertMath("2001-07-04T12:08:56.000", p, "/SECOND");
-    assertMath("2001-07-04T12:08:00.000", p, "/MINUTE");
-    assertMath("2001-07-04T12:00:00.000", p, "/HOUR");
-    assertMath("2001-07-04T00:00:00.000", p, "/DAY");
-    assertMath("2001-07-01T00:00:00.000", p, "/MONTH");
-    assertMath("2001-01-01T00:00:00.000", p, "/YEAR");
+    assertMath("1234-07-04T12:08:56.235", p, "/MILLIS"); // no change
+    assertMath("1234-07-04T12:08:56.000", p, "/SECOND");
+    assertMath("1234-07-04T12:08:00.000", p, "/MINUTE");
+    assertMath("1234-07-04T12:00:00.000", p, "/HOUR");
+    assertMath("1234-07-04T00:00:00.000", p, "/DAY");
+    assertMath("1234-07-01T00:00:00.000", p, "/MONTH");
+    assertMath("1234-01-01T00:00:00.000", p, "/YEAR");
 
     // simple addition
-    assertMath("2001-07-04T12:08:56.236", p, "+1MILLISECOND");
-    assertMath("2001-07-04T12:08:57.235", p, "+1SECOND");
-    assertMath("2001-07-04T12:09:56.235", p, "+1MINUTE");
-    assertMath("2001-07-04T13:08:56.235", p, "+1HOUR");
-    assertMath("2001-07-05T12:08:56.235", p, "+1DAY");
-    assertMath("2001-08-04T12:08:56.235", p, "+1MONTH");
-    assertMath("2002-07-04T12:08:56.235", p, "+1YEAR");
+    assertMath("1234-07-04T12:08:56.236", p, "+1MILLISECOND");
+    assertMath("1234-07-04T12:08:57.235", p, "+1SECOND");
+    assertMath("1234-07-04T12:09:56.235", p, "+1MINUTE");
+    assertMath("1234-07-04T13:08:56.235", p, "+1HOUR");
+    assertMath("1234-07-05T12:08:56.235", p, "+1DAY");
+    assertMath("1234-08-04T12:08:56.235", p, "+1MONTH");
+    assertMath("1235-07-04T12:08:56.235", p, "+1YEAR");
 
     // simple subtraction
-    assertMath("2001-07-04T12:08:56.234", p, "-1MILLISECOND");
-    assertMath("2001-07-04T12:08:55.235", p, "-1SECOND");
-    assertMath("2001-07-04T12:07:56.235", p, "-1MINUTE");
-    assertMath("2001-07-04T11:08:56.235", p, "-1HOUR");
-    assertMath("2001-07-03T12:08:56.235", p, "-1DAY");
-    assertMath("2001-06-04T12:08:56.235", p, "-1MONTH");
-    assertMath("2000-07-04T12:08:56.235", p, "-1YEAR");
+    assertMath("1234-07-04T12:08:56.234", p, "-1MILLISECOND");
+    assertMath("1234-07-04T12:08:55.235", p, "-1SECOND");
+    assertMath("1234-07-04T12:07:56.235", p, "-1MINUTE");
+    assertMath("1234-07-04T11:08:56.235", p, "-1HOUR");
+    assertMath("1234-07-03T12:08:56.235", p, "-1DAY");
+    assertMath("1234-06-04T12:08:56.235", p, "-1MONTH");
+    assertMath("1233-07-04T12:08:56.235", p, "-1YEAR");
 
     // simple '+/-'
-    assertMath("2001-07-04T12:08:56.235", p, "+1MILLISECOND-1MILLISECOND");
-    assertMath("2001-07-04T12:08:56.235", p, "+1SECOND-1SECOND");
-    assertMath("2001-07-04T12:08:56.235", p, "+1MINUTE-1MINUTE");
-    assertMath("2001-07-04T12:08:56.235", p, "+1HOUR-1HOUR");
-    assertMath("2001-07-04T12:08:56.235", p, "+1DAY-1DAY");
-    assertMath("2001-07-04T12:08:56.235", p, "+1MONTH-1MONTH");
-    assertMath("2001-07-04T12:08:56.235", p, "+1YEAR-1YEAR");
+    assertMath("1234-07-04T12:08:56.235", p, "+1MILLISECOND-1MILLISECOND");
+    assertMath("1234-07-04T12:08:56.235", p, "+1SECOND-1SECOND");
+    assertMath("1234-07-04T12:08:56.235", p, "+1MINUTE-1MINUTE");
+    assertMath("1234-07-04T12:08:56.235", p, "+1HOUR-1HOUR");
+    assertMath("1234-07-04T12:08:56.235", p, "+1DAY-1DAY");
+    assertMath("1234-07-04T12:08:56.235", p, "+1MONTH-1MONTH");
+    assertMath("1234-07-04T12:08:56.235", p, "+1YEAR-1YEAR");
 
     // simple '-/+'
-    assertMath("2001-07-04T12:08:56.235", p, "-1MILLISECOND+1MILLISECOND");
-    assertMath("2001-07-04T12:08:56.235", p, "-1SECOND+1SECOND");
-    assertMath("2001-07-04T12:08:56.235", p, "-1MINUTE+1MINUTE");
-    assertMath("2001-07-04T12:08:56.235", p, "-1HOUR+1HOUR");
-    assertMath("2001-07-04T12:08:56.235", p, "-1DAY+1DAY");
-    assertMath("2001-07-04T12:08:56.235", p, "-1MONTH+1MONTH");
-    assertMath("2001-07-04T12:08:56.235", p, "-1YEAR+1YEAR");
+    assertMath("1234-07-04T12:08:56.235", p, "-1MILLISECOND+1MILLISECOND");
+    assertMath("1234-07-04T12:08:56.235", p, "-1SECOND+1SECOND");
+    assertMath("1234-07-04T12:08:56.235", p, "-1MINUTE+1MINUTE");
+    assertMath("1234-07-04T12:08:56.235", p, "-1HOUR+1HOUR");
+    assertMath("1234-07-04T12:08:56.235", p, "-1DAY+1DAY");
+    assertMath("1234-07-04T12:08:56.235", p, "-1MONTH+1MONTH");
+    assertMath("1234-07-04T12:08:56.235", p, "-1YEAR+1YEAR");
 
     // more complex stuff
-    assertMath("2000-07-04T12:08:56.236", p, "+1MILLISECOND-1YEAR");
-    assertMath("2000-07-04T12:08:57.235", p, "+1SECOND-1YEAR");
-    assertMath("2000-07-04T12:09:56.235", p, "+1MINUTE-1YEAR");
-    assertMath("2000-07-04T13:08:56.235", p, "+1HOUR-1YEAR");
-    assertMath("2000-07-05T12:08:56.235", p, "+1DAY-1YEAR");
-    assertMath("2000-08-04T12:08:56.235", p, "+1MONTH-1YEAR");
-    assertMath("2000-07-04T12:08:56.236", p, "-1YEAR+1MILLISECOND");
-    assertMath("2000-07-04T12:08:57.235", p, "-1YEAR+1SECOND");
-    assertMath("2000-07-04T12:09:56.235", p, "-1YEAR+1MINUTE");
-    assertMath("2000-07-04T13:08:56.235", p, "-1YEAR+1HOUR");
-    assertMath("2000-07-05T12:08:56.235", p, "-1YEAR+1DAY");
-    assertMath("2000-08-04T12:08:56.235", p, "-1YEAR+1MONTH");
-    assertMath("2000-07-01T00:00:00.000", p, "-1YEAR+1MILLISECOND/MONTH");
-    assertMath("2000-07-04T00:00:00.000", p, "-1YEAR+1SECOND/DAY");
-    assertMath("2000-07-04T00:00:00.000", p, "-1YEAR+1MINUTE/DAY");
-    assertMath("2000-07-04T13:00:00.000", p, "-1YEAR+1HOUR/HOUR");
-    assertMath("2000-07-05T12:08:56.000", p, "-1YEAR+1DAY/SECOND");
-    assertMath("2000-08-04T12:08:56.000", p, "-1YEAR+1MONTH/SECOND");
+    assertMath("1233-07-04T12:08:56.236", p, "+1MILLISECOND-1YEAR");
+    assertMath("1233-07-04T12:08:57.235", p, "+1SECOND-1YEAR");
+    assertMath("1233-07-04T12:09:56.235", p, "+1MINUTE-1YEAR");
+    assertMath("1233-07-04T13:08:56.235", p, "+1HOUR-1YEAR");
+    assertMath("1233-07-05T12:08:56.235", p, "+1DAY-1YEAR");
+    assertMath("1233-08-04T12:08:56.235", p, "+1MONTH-1YEAR");
+    assertMath("1233-07-04T12:08:56.236", p, "-1YEAR+1MILLISECOND");
+    assertMath("1233-07-04T12:08:57.235", p, "-1YEAR+1SECOND");
+    assertMath("1233-07-04T12:09:56.235", p, "-1YEAR+1MINUTE");
+    assertMath("1233-07-04T13:08:56.235", p, "-1YEAR+1HOUR");
+    assertMath("1233-07-05T12:08:56.235", p, "-1YEAR+1DAY");
+    assertMath("1233-08-04T12:08:56.235", p, "-1YEAR+1MONTH");
+    assertMath("1233-07-01T00:00:00.000", p, "-1YEAR+1MILLISECOND/MONTH");
+    assertMath("1233-07-04T00:00:00.000", p, "-1YEAR+1SECOND/DAY");
+    assertMath("1233-07-04T00:00:00.000", p, "-1YEAR+1MINUTE/DAY");
+    assertMath("1233-07-04T13:00:00.000", p, "-1YEAR+1HOUR/HOUR");
+    assertMath("1233-07-05T12:08:56.000", p, "-1YEAR+1DAY/SECOND");
+    assertMath("1233-08-04T12:08:56.000", p, "-1YEAR+1MONTH/SECOND");
 
     // "tricky" cases
-    p.setNow(parser.parse("2006-01-31T17:09:59.999"));
+    setNow(p, "2006-01-31T17:09:59.999");
     assertMath("2006-02-28T17:09:59.999", p, "+1MONTH");
     assertMath("2008-02-29T17:09:59.999", p, "+25MONTH");
     assertMath("2006-02-01T00:00:00.000", p, "/MONTH+35DAYS/MONTH");
     assertMath("2006-01-31T17:10:00.000", p, "+3MILLIS/MINUTE");
-
-    
   }
 
   public void testParseMathTz() throws Exception {
@@ -267,13 +263,14 @@ public class DateMathParserTest extends LuceneTestCase {
     // US, Positive Offset with DST
 
     TimeZone tz = TimeZone.getTimeZone(PLUS_TZS);
-    DateMathParser p = new DateMathParser(tz, Locale.ROOT);
+    DateMathParser p = new DateMathParser(tz);
 
-    p.setNow(parser.parse("2001-07-04T12:08:56.235"));
+    setNow(p, "2001-07-04T12:08:56.235");
 
     // No-Op
     assertMath("2001-07-04T12:08:56.235", p, "");
-    
+    assertMath("2001-07-04T12:08:56.235", p, "/MILLIS");
+
     assertMath("2001-07-04T12:08:56.000", p, "/SECOND");
     assertMath("2001-07-04T12:08:00.000", p, "/MINUTE");
     assertMath("2001-07-04T12:00:00.000", p, "/HOUR");
@@ -289,8 +286,8 @@ public class DateMathParserTest extends LuceneTestCase {
     // France, Negative Offset with DST
 
     tz = TimeZone.getTimeZone(NEG_TZS);
-    p = new DateMathParser(tz, Locale.ROOT);
-    p.setNow(parser.parse("2001-07-04T12:08:56.235"));
+    p = new DateMathParser(tz);
+    setNow(p, "2001-07-04T12:08:56.235");
 
     assertMath("2001-07-04T12:08:56.000", p, "/SECOND");
     assertMath("2001-07-04T12:08:00.000", p, "/MINUTE");
@@ -306,8 +303,8 @@ public class DateMathParserTest extends LuceneTestCase {
  
   public void testParseMathExceptions() throws Exception {
     
-    DateMathParser p = new DateMathParser(UTC, Locale.ROOT);
-    p.setNow(parser.parse("2001-07-04T12:08:56.235"));
+    DateMathParser p = new DateMathParser(UTC);
+    setNow(p, "1234-07-04T12:08:56.235");
     
     Map<String,Integer> badCommands = new HashMap<>();
     badCommands.put("/", 1);
@@ -373,7 +370,8 @@ public class DateMathParserTest extends LuceneTestCase {
   }
 
   private void assertFormat(final String expected, final long millis) {
-    assertEquals(expected, Instant.ofEpochMilli(millis).toString());
+    assertEquals(expected, Instant.ofEpochMilli(millis).toString()); // assert same as ISO_INSTANT
+    assertEquals(millis, DateMathParser.parseMath(null, expected).getTime()); // assert DMP has same result
   }
 
   /**

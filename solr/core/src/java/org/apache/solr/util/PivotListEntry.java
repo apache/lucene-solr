@@ -80,7 +80,7 @@ public enum PivotListEntry {
       assert this.minIndex < pivotList.size();
       return pivotList.getVal(this.minIndex);
     }
-    // otherweise...
+    // otherwise...
     // scan starting at the min/optional index
     return pivotList.get(this.getName(), this.minIndex);
   }

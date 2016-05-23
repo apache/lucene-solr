@@ -425,7 +425,7 @@ public class TestLazyCores extends SolrTestCaseJ4 {
       };
       
       // with SOLR-6279 UNLOAD will wait for the core's reference count to have reached zero
-      // hence cN.close() need to preceed or run in parallel with unloadViaAdmin(...)
+      // hence cN.close() need to proceed or run in parallel with unloadViaAdmin(...)
       final TestThread cThread = new TestThread();
       cThread.start();
       

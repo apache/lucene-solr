@@ -16,21 +16,17 @@
  limitations under the License.
 -->
 <schema name="test" version="1.2">
-  <types>
 
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
-    <fieldType name="nametext" class="solr.TextField">
-      <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
-    </fieldType>
-  </types>
+  <fieldType name="nametext" class="solr.TextField">
+    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+  </fieldType>
 
-  <fields>
-    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="true"/>
-    <field name="name" type="nametext" indexed="true" stored="true"/>
-    <field name="title" type="nametext" indexed="true" stored="true"/>
-    <field name="text" type="nametext" indexed="true" stored="true"/>
-  </fields>
+  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="true"/>
+  <field name="name" type="nametext" indexed="true" stored="true"/>
+  <field name="title" type="nametext" indexed="true" stored="true"/>
+  <field name="text" type="nametext" indexed="true" stored="true"/>
 
   <defaultSearchField>text</defaultSearchField>
   <solrQueryParser defaultOperator="AND"/>

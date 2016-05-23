@@ -25,6 +25,7 @@ import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.TermVectorsReader;
+import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.Bits;
 
 /** 
@@ -99,6 +100,11 @@ public abstract class FilterCodecReader extends CodecReader {
   @Override
   public int maxDoc() {
     return in.maxDoc();
+  }
+
+  @Override
+  public Sort getIndexSort() {
+    return in.getIndexSort();
   }
 
   @Override

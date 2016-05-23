@@ -28,6 +28,7 @@ public class XYZBounds implements Bounds {
    * except that our 'bounds' is defined as always equaling or exceeding the boundary
    * of the shape, and we cannot guarantee that without making MINIMUM_RESOLUTION
    * unacceptably large.
+   * Also, see LUCENE-7290 for a description of how geometry can magnify the bounds delta.
    */
   private static final double FUDGE_FACTOR = Vector.MINIMUM_RESOLUTION * 500.0;
   
@@ -253,6 +254,12 @@ public class XYZBounds implements Bounds {
     if (maxZ == null || maxZ < large) {
       maxZ = new Double(large);
     }
+    return this;
+  }
+
+  @Override
+  public Bounds addIntersection(final PlanetModel planetModel, final Plane plane1, final Plane plane2, final Membership... bounds) {
+    plane1.recordBounds(planetModel, this, plane2, bounds);
     return this;
   }
 

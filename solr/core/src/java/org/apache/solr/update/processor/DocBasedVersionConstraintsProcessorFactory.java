@@ -229,7 +229,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
     private Object convertFieldValueUsingType(SchemaField sf, final Object rawValue) {
       if (rawValue instanceof CharSequence) {
         // in theory, the FieldType might still be CharSequence based,
-        // but in that case trust it to do an identiy conversion...
+        // but in that case trust it to do an identity conversion...
         FieldType fieldType = userVersionField.getType();
         BytesRefBuilder term = new BytesRefBuilder();
         fieldType.readableToIndexed((CharSequence)rawValue, term);
@@ -468,7 +468,7 @@ public class DocBasedVersionConstraintsProcessorFactory extends UpdateRequestPro
         //   - deleteVersionParam to do a version check
         //   - some new boolean param to determine if a stub document gets added in place?
         try {
-          // drop the delete, and instead propogate an AddDoc that
+          // drop the delete, and instead propagate an AddDoc that
           // replaces the doc with a new "empty" one that records the deleted version
 
           SolrInputDocument newDoc = new SolrInputDocument();
