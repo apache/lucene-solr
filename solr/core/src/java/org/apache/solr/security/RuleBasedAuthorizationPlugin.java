@@ -233,12 +233,14 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
     Set<String> path, role, collections, method;
     Map<String, Object> params;
     Predicate<AuthorizationContext> predicate;
+    Map originalConfig;
 
     private Permission() {
     }
 
     static Permission load(Map m) {
       Permission p = new Permission();
+      p.originalConfig = new LinkedHashMap<>(m);
       String name = (String) m.get(NAME);
       if (!m.containsKey("role")) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "role not specified");
       p.role = readValueAsSet(m, "role");
@@ -259,6 +261,11 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
       p.method = readSetSmart(name, m, "method");
       p.params = (Map<String, Object>) m.get("params");
       return p;
+    }
+
+    @Override
+    public String toString() {
+      return Utils.toJSONString(originalConfig);
     }
 
     static final Set<String> knownKeys = ImmutableSet.of("collection", "role", "params", "path", "method", NAME);
