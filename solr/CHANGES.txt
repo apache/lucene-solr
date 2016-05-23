@@ -84,6 +84,8 @@ Bug Fixes
 * SOLR-8801: /bin/solr create script always returns exit code 0 when a collection/core already exists.
   (Khalid Alharbi, Marius Grama via Steve Rowe)
 
+* SOLR-9134: Fix RestManager.addManagedResource return value. (Christine Poerschke)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
