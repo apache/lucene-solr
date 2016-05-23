@@ -242,7 +242,7 @@ def main():
     print('Next run the smoker tester:')
     p = re.compile(".*/")
     m = p.match(sys.argv[0])
-    print('%s -u %(s)smokeTestRelease.py %s' % (sys.executable, m.group(), url))
+    print('%s -u %ssmokeTestRelease.py %s' % (sys.executable, m.group(), url))
 
 if __name__ == '__main__':
   try:
