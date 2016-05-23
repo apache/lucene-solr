@@ -82,8 +82,9 @@ Optimizations
 * LUCENE-7237: LRUQueryCache now prefers returning an uncached Scorer than
   waiting on a lock. (Adrien Grand)
 
-* LUCENE-7261, LUCENE-7262, LUCENE-7264: Speed up DocIdSetBuilder (which is used
-  by TermsQuery, multi-term queries and point queries). (Adrien Grand)
+* LUCENE-7261, LUCENE-7262, LUCENE-7264, LUCENE-7258: Speed up DocIdSetBuilder
+  (which is used by TermsQuery, multi-term queries and several point queries).
+  (Adrien Grand, Jeff Wartes, David Smiley)
 
 Bug Fixes
 
