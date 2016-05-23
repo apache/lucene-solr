@@ -215,7 +215,7 @@ def parse_config():
   return config
 
 def check_cmdline_tools():  # Fail fast if there are cmdline tool problems
-  if os.system('git --version'):
+  if os.system('git --version >/dev/null 2>/dev/null'):
     raise RuntimeError('"git --version" returned a non-zero exit code.')
   antVersion = os.popen('ant -version').read().strip()
   if not antVersion.startswith('Apache Ant(TM) version 1.8'):
