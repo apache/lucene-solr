@@ -17,13 +17,9 @@
 -->
 
 <schema name="bad-schema-throws-java-error" version="1.6">
-  <types>
-    <fieldType name="error_ft" class="solr.ThrowErrorOnInitFieldType" />
- </types>
+  <fieldType name="error_ft" class="solr.ThrowErrorOnInitFieldType"/>
 
 
- <fields>
-   <field name="id" type="error_ft" />
- </fields>
+  <field name="id" type="error_ft"/>
 
 </schema>

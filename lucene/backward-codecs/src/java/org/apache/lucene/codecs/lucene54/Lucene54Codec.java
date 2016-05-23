@@ -51,7 +51,9 @@ import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
  *
  * @see org.apache.lucene.codecs.lucene54 package documentation for file format details.
  * @lucene.experimental
+ * @deprecated Only for 5.x back compat
  */
+@Deprecated
 public class Lucene54Codec extends Codec {
   private final TermVectorsFormat vectorsFormat = new Lucene50TermVectorsFormat();
   private final FieldInfosFormat fieldInfosFormat = new Lucene50FieldInfosFormat();

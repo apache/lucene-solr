@@ -132,7 +132,7 @@ public class TestGeo3DPoint extends LuceneTestCase {
   }
 
   private static double toRadians(double degrees) {
-    return degrees * Geo3DPoint.RADIANS_PER_DEGREE;
+    return degrees * Geo3DUtil.RADIANS_PER_DEGREE;
   }
 
   private static class Cell {
@@ -430,7 +430,8 @@ public class TestGeo3DPoint extends LuceneTestCase {
           } else {
             log.println("doc=" + docID + " should match but did not");
           }
-          log.println("  point=" + docs[docID]);
+          log.println("  point=" + point);
+          log.println("  mappedPoint=" + mappedPoint);
           fail = true;
         }
       }

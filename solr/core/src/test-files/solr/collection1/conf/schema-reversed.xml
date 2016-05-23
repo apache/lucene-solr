@@ -22,67 +22,63 @@
   -->
 
 <schema name="test" version="1.0">
-  <types>
 
 
-    <fieldType name="long" class="solr.TrieLongField" />
-    <fieldType name="integer" class="solr.TrieIntField" precisionStep="0"/>
-    <fieldType name="string" class="solr.StrField" />
+  <fieldType name="long" class="solr.TrieLongField"/>
+  <fieldType name="integer" class="solr.TrieIntField" precisionStep="0"/>
+  <fieldType name="string" class="solr.StrField"/>
 
-    <fieldType name="text" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-      </analyzer>
-    </fieldType>
-    
-    <fieldType name="srev" class="solr.TextField">
-      <analyzer type="index">
-        <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.ReversedWildcardFilterFactory" withOriginal="true"
-            maxPosAsterisk="3" maxPosQuestion="2" maxFractionAsterisk="0.33"/>
-      </analyzer>
+  <fieldType name="text" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
 
-      <analyzer type="query">
-        <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
+  <fieldType name="srev" class="solr.TextField">
+    <analyzer type="index">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.ReversedWildcardFilterFactory" withOriginal="true"
+              maxPosAsterisk="3" maxPosQuestion="2" maxFractionAsterisk="0.33"/>
+    </analyzer>
 
-      </analyzer>
-    </fieldType>
-    <fieldType name="rev" class="solr.TextField">
-      <analyzer type="index">
-        <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.ReversedWildcardFilterFactory" withOriginal="false"
-            maxPosAsterisk="3" maxPosQuestion="2" maxFractionAsterisk="0.33"
-            minTrailing="1"/>
-      </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
 
-      <analyzer type="query">
-        <tokenizer class="solr.MockTokenizerFactory"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType name="rev" class="solr.TextField">
+    <analyzer type="index">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.ReversedWildcardFilterFactory" withOriginal="false"
+              maxPosAsterisk="3" maxPosQuestion="2" maxFractionAsterisk="0.33"
+              minTrailing="1"/>
+    </analyzer>
 
-      </analyzer>
-    </fieldType>
- </types>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+
+    </analyzer>
+  </fieldType>
 
 
- <fields>
-   <field name="id" type="integer" indexed="true" stored="true" multiValued="false" required="false"/>
-   <field name="one" type="srev" indexed="true" stored="false"/>
-   <field name="two" type="rev" indexed="true" stored="false"/>
-   <field name="three" type="text" indexed="true" stored="false"/>
+  <field name="id" type="integer" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="one" type="srev" indexed="true" stored="false"/>
+  <field name="two" type="rev" indexed="true" stored="false"/>
+  <field name="three" type="text" indexed="true" stored="false"/>
 
-   <field name="_version_" type="long" indexed="true" stored="true" multiValued="false" />
+  <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
 
-   <field name="signatureField" type="string" indexed="true" stored="false"/>
-   <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
+  <field name="signatureField" type="string" indexed="true" stored="false"/>
+  <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
 
- </fields>
 
- <defaultSearchField>one</defaultSearchField>
- <uniqueKey>id</uniqueKey>
+  <defaultSearchField>one</defaultSearchField>
+  <uniqueKey>id</uniqueKey>
 
 
 </schema>

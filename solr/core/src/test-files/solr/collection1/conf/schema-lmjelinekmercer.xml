@@ -19,30 +19,25 @@
 <!-- Test schema file for LMJelinekMercerSimilarityFactory -->
 
 <schema name="test" version="1.0">
-  <types>
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    
-    <!-- default parameters -->
-    <fieldType name="text" class="solr.TextField">
-      <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
-      <similarity class="solr.LMJelinekMercerSimilarityFactory"/>
-    </fieldType>
-    
-    <!-- with parameters -->
-    <fieldType name="text_params" class="solr.TextField">
-      <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
-      <similarity class="solr.LMJelinekMercerSimilarityFactory">
-        <float name="lambda">0.4</float>
-      </similarity>
-    </fieldType>
-   
-  </types>
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
-  <fields>
-    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="text" type="text" indexed="true" stored="false"/>
-    <field name="text_params" type="text_params" indexed="true" stored="false"/>
-  </fields>
+  <!-- default parameters -->
+  <fieldType name="text" class="solr.TextField">
+    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+    <similarity class="solr.LMJelinekMercerSimilarityFactory"/>
+  </fieldType>
+
+  <!-- with parameters -->
+  <fieldType name="text_params" class="solr.TextField">
+    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+    <similarity class="solr.LMJelinekMercerSimilarityFactory">
+      <float name="lambda">0.4</float>
+    </similarity>
+  </fieldType>
+
+  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="text" type="text" indexed="true" stored="false"/>
+  <field name="text_params" type="text_params" indexed="true" stored="false"/>
 
   <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>

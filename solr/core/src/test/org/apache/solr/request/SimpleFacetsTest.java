@@ -939,7 +939,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"*[count("+pre+"/int)=2]"
             ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
             ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
-            
+
             ,meta+"/int[@name='before' ][.='5']"
             );
     assertQ("check after is not inclusive of lower bound by default (for dates)",
@@ -955,10 +955,10 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"*[count("+pre+"/int)=2]"
             ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
             ,pre+"/int[@name='1976-07-04T00:00:00Z']" + jul4
-            
+
             ,meta+"/int[@name='after' ][.='9']"
             );
-            
+
 
     assertQ("check hardend=false",
             req( "q", "*:*"
@@ -975,7 +975,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='5'  ]"
             ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0'  ]"
             ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='4'  ]"
-            
+
             ,meta+"/int[@name='before' ][.='2']"
             ,meta+"/int[@name='after'  ][.='3']"
             ,meta+"/int[@name='between'][.='9']"
@@ -996,12 +996,33 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='5'  ]"
             ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0'  ]"
             ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='1'  ]"
-            
+
             ,meta+"/int[@name='before' ][.='2']"
             ,meta+"/int[@name='after'  ][.='6']"
             ,meta+"/int[@name='between'][.='6']"
             );
-    
+
+    //Fixed by SOLR-9080 related to the Gregorian Change Date
+    assertQ("check BC era",
+        req( "q", "*:*"
+            ,"rows", "0"
+            ,"facet", "true"
+            ,p, f
+            ,p+".start", "-0200-01-01T00:00:00Z" // BC
+            ,p+".end",   "+0200-01-01T00:00:00Z" // AD
+            ,p+".gap",   "+100YEARS"
+            ,p+".other", "all"
+        )
+        ,pre+"/int[@name='-0200-01-01T00:00:00Z'][.='0']"
+        ,pre+"/int[@name='-0100-01-01T00:00:00Z'][.='0']"
+        ,pre+"/int[@name='0000-01-01T00:00:00Z'][.='0']"
+        ,pre+"/int[@name='0100-01-01T00:00:00Z'][.='0']"
+        ,meta+"/int[@name='before' ][.='0']"
+        ,meta+"/int[@name='after'  ][.='14']"
+        ,meta+"/int[@name='between'][.='0']"
+
+    );
+
   }
 
   @Test

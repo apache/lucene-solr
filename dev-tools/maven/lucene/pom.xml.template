@@ -74,10 +74,11 @@
             <id>lucene-shared-check-forbidden-apis</id>
             <configuration>
               <!-- disallow undocumented classes like sun.misc.Unsafe: -->
-              <internalRuntimeForbidden>true</internalRuntimeForbidden>
               <bundledSignatures>
                 <bundledSignature>jdk-unsafe</bundledSignature>
                 <bundledSignature>jdk-deprecated</bundledSignature>
+                <bundledSignature>jdk-non-portable</bundledSignature>
+                <bundledSignature>jdk-reflection</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/base.txt</signaturesFile>
@@ -103,10 +104,11 @@
             <id>lucene-shared-test-check-forbidden-apis</id>
             <configuration>
               <!-- disallow undocumented classes like sun.misc.Unsafe: -->
-              <internalRuntimeForbidden>true</internalRuntimeForbidden>
               <bundledSignatures>
                 <bundledSignature>jdk-unsafe</bundledSignature>
                 <bundledSignature>jdk-deprecated</bundledSignature>
+                <bundledSignature>jdk-non-portable</bundledSignature>
+                <bundledSignature>jdk-reflection</bundledSignature>
               </bundledSignatures>
               <signaturesFiles>
                 <signaturesFile>${top-level}/lucene/tools/forbiddenApis/tests.txt</signaturesFile>

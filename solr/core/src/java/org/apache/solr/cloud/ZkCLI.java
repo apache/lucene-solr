@@ -16,7 +16,16 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.params.CommonParams.*;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -28,26 +37,16 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.xml.sax.SAXException;
 
-import javax.xml.parsers.ParserConfigurationException;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.concurrent.TimeoutException;
-import java.util.regex.Pattern;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 
 public class ZkCLI {
   
@@ -324,28 +323,12 @@ public class ZkCLI {
           //If -val option is missing, we will use the null value. This is required to maintain
           //compatibility with Collections API.
           String propertyValue = line.getOptionValue(VALUE_LONG);
-          ZkStateReader reader = new ZkStateReader(zkClient);
+          ClusterProperties props = new ClusterProperties(zkClient);
           try {
-            reader.setClusterProperty(propertyName, propertyValue);
-          } catch (SolrException ex) {
-            //This can happen if two concurrent invocations of this command collide
-            //with each other. Here we are just adding a defensive check to see if
-            //the value is already set to expected value. If yes, then we don't
-            //fail the command.
-            Throwable cause = ex.getCause();
-            if(cause instanceof KeeperException.NodeExistsException
-                || cause instanceof KeeperException.BadVersionException) {
-                String currentValue = (String)reader.getClusterProps().get(propertyName);
-                if((currentValue == propertyValue) || (currentValue != null && currentValue.equals(propertyValue))) {
-                  return;
-                }
-            }
-            System.out.println("Unable to set the cluster property due to following error : " +
-                ex.getLocalizedMessage() +
-                ((cause instanceof KeeperException.BadVersionException)?". Try again":""));
+            props.setClusterProperty(propertyName, propertyValue);
+          } catch (IOException ex) {
+            System.out.println("Unable to set the cluster property due to following error : " + ex.getLocalizedMessage());
             System.exit(1);
-          } finally {
-            reader.close();
           }
         } else {
           // If not cmd matches

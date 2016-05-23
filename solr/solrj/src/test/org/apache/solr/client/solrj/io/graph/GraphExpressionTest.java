@@ -397,7 +397,6 @@ public class GraphExpressionTest extends SolrCloudTestCase {
         .commit(cluster.getSolrClient(), COLLECTION);
 
     List<Tuple> tuples = null;
-    Set<String> paths = null;
     GatherNodesStream stream = null;
     StreamContext context = new StreamContext();
     SolrClientCache cache = new SolrClientCache();

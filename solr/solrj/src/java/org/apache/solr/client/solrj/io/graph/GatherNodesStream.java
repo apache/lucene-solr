@@ -45,7 +45,10 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 
 public class GatherNodesStream extends TupleStream implements Expressible {
@@ -272,7 +275,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     // collection
     expression.addParameter(collection);
 
-    if(includeStreams){
+    if(includeStreams && !(tupleStream instanceof NodeStream)){
       if(tupleStream instanceof Expressible){
         expression.addParameter(((Expressible)tupleStream).toExpression(factory));
       }
@@ -308,7 +311,14 @@ public class GatherNodesStream extends TupleStream implements Expressible {
     if(maxDocFreq > -1) {
       expression.addParameter(new StreamExpressionNamedParameter("maxDocFreq", Integer.toString(maxDocFreq)));
     }
-    expression.addParameter(new StreamExpressionNamedParameter("walk", traverseFrom+"->"+traverseTo));
+    if(tupleStream instanceof NodeStream) {
+      NodeStream nodeStream = (NodeStream)tupleStream;
+      expression.addParameter(new StreamExpressionNamedParameter("walk", nodeStream.toString() + "->" + traverseTo));
+
+    } else {
+      expression.addParameter(new StreamExpressionNamedParameter("walk", traverseFrom + "->" + traverseTo));
+    }
+
     expression.addParameter(new StreamExpressionNamedParameter("trackTraversal", Boolean.toString(trackTraversal)));
 
     StringBuilder buf = new StringBuilder();
@@ -404,7 +414,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
     public List<Tuple> call() {
 
-      Map joinParams = new HashMap();
+
       Set<String> flSet = new HashSet();
       flSet.add(gather);
       flSet.add(traverseTo);
@@ -435,11 +445,11 @@ public class GatherNodesStream extends TupleStream implements Expressible {
           buf.append(",");
         }
       }
-
-      joinParams.putAll(queryParams);
-      joinParams.put("fl", buf.toString());
-      joinParams.put("qt", "/export");
-      joinParams.put("sort", gather + " asc,"+traverseTo +" asc");
+      
+      ModifiableSolrParams joinSParams = new ModifiableSolrParams(SolrParams.toMultiMap(new NamedList(queryParams)));
+      joinSParams.set("fl", buf.toString());
+      joinSParams.set("qt", "/export");
+      joinSParams.set("sort", gather + " asc,"+traverseTo +" asc");
 
       StringBuffer nodeQuery = new StringBuffer();
 
@@ -454,14 +464,14 @@ public class GatherNodesStream extends TupleStream implements Expressible {
 
       if(maxDocFreq > -1) {
         String docFreqParam = " maxDocFreq="+maxDocFreq;
-        joinParams.put("q", "{!graphTerms f=" + traverseTo + docFreqParam + "}" + nodeQuery.toString());
+        joinSParams.set("q", "{!graphTerms f=" + traverseTo + docFreqParam + "}" + nodeQuery.toString());
       } else {
-        joinParams.put("q", "{!terms f=" + traverseTo+"}" + nodeQuery.toString());
+        joinSParams.set("q", "{!terms f=" + traverseTo+"}" + nodeQuery.toString());
       }
 
       TupleStream stream = null;
       try {
-        stream = new UniqueStream(new CloudSolrStream(zkHost, collection, joinParams), new MultipleFieldEqualitor(new FieldEqualitor(gather), new FieldEqualitor(traverseTo)));
+        stream = new UniqueStream(new CloudSolrStream(zkHost, collection, joinSParams), new MultipleFieldEqualitor(new FieldEqualitor(gather), new FieldEqualitor(traverseTo)));
         stream.setStreamContext(streamContext);
         stream.open();
         BATCH:
@@ -637,6 +647,19 @@ public class GatherNodesStream extends TupleStream implements Expressible {
         map.put("EOF", true);
         return new Tuple(map);
       }
+    }
+
+    public String toString() {
+      StringBuilder builder = new StringBuilder();
+      boolean comma = false;
+      for(String s : ids) {
+        if(comma) {
+          builder.append(",");
+        }
+        builder.append(s);
+        comma = true;
+      }
+      return builder.toString();
     }
     
     @Override

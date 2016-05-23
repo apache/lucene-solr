@@ -103,7 +103,7 @@ public class TrieDoubleField extends TrieField implements DoubleValueFieldType {
               
               @Override
               public void fillValue(int doc) {
-                // micro optimized (eliminate at least one redudnent ord check) 
+                // micro optimized (eliminate at least one redundant ord check) 
                 //mval.exists = exists(doc);
                 //mval.value = mval.exists ? doubleVal(doc) : 0.0D;
                 BytesRef bytes = view.get(doc);

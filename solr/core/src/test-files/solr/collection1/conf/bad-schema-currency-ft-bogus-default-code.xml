@@ -17,22 +17,18 @@
 -->
 
 <schema name="bad-schema-currency-ft-bogus-default-code" version="1.4">
-  <types>
-    <fieldType name="string" class="solr.StrField" multiValued="true"/>
-    <!-- BEGIN BAD STUFF: default -->
-    <fieldType name="currency" 
-               class="solr.CurrencyField"
-               defaultCurrency="HOSS"
-               currencyConfig="currency.xml"
-               multiValued="false" />
- </types>
+  <fieldType name="string" class="solr.StrField" multiValued="true"/>
+  <!-- BEGIN BAD STUFF: default -->
+  <fieldType name="currency"
+             class="solr.CurrencyField"
+             defaultCurrency="HOSS"
+             currencyConfig="currency.xml"
+             multiValued="false"/>
 
- <fields>
-   <field name="id" type="string" indexed="true" stored="true" multiValued="false"/>
-   <field name="money" type="currency" indexed="true" stored="true" />
- </fields>
+  <field name="id" type="string" indexed="true" stored="true" multiValued="false"/>
+  <field name="money" type="currency" indexed="true" stored="true"/>
 
- <defaultSearchField>id</defaultSearchField>
- <uniqueKey>id</uniqueKey>
+  <defaultSearchField>id</defaultSearchField>
+  <uniqueKey>id</uniqueKey>
 
 </schema>

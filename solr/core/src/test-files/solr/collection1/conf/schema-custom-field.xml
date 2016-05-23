@@ -17,29 +17,25 @@
 -->
 
 <schema name="test-custom-field-sort" version="1.6">
-  <types>
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-    <fieldType name="text" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.StandardTokenizerFactory"/>
-      </analyzer>
-    </fieldType>
-    <fieldType class="org.apache.solr.schema.SortableBinaryField" name="sortable_binary"/>
-  </types>
-  <fields>
-    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
-    <field name="signatureField" type="string" indexed="true" stored="false"/>
-    <field name="text" type="text" indexed="true" stored="false"/>
-    <field name="payload" type="sortable_binary" indexed="false" 
-           stored="true"  multiValued="false"    docValues="true" required="true"/>
-    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="solr.TrieLongField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+  <fieldType name="text" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+    </analyzer>
+  </fieldType>
+  <fieldType class="org.apache.solr.schema.SortableBinaryField" name="sortable_binary"/>
+  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="_version_" type="long" indexed="true" stored="true" multiValued="false"/>
+  <field name="signatureField" type="string" indexed="true" stored="false"/>
+  <field name="text" type="text" indexed="true" stored="false"/>
+  <field name="payload" type="sortable_binary" indexed="false"
+         stored="true" multiValued="false" docValues="true" required="true"/>
+  <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
 
-    <!-- catchall wildcard to help ensure we aren't breaking function sorting -->
-    <dynamicField name="*" type="string"  indexed="true" stored="true"/>
-  </fields>
+  <!-- catchall wildcard to help ensure we aren't breaking function sorting -->
+  <dynamicField name="*" type="string" indexed="true" stored="true"/>
   <defaultSearchField>text</defaultSearchField>
   <uniqueKey>id</uniqueKey>
 </schema>

@@ -97,7 +97,7 @@
           description="Verify that the '/org/name' keys in ivy-versions.properties are sorted lexically and are neither duplicates nor orphans, and that all dependencies in all ivy.xml files use rev=&quot;$${/org/name}&quot; format.">
     <lib-versions-check-macro dir="${common.dir}/.."
                               centralized.versions.file="${common.dir}/ivy-versions.properties"
-                              ivy.settings.file="${common.dir}/ivy-settings.xml"
+                              top.level.ivy.settings.file="${common.dir}/top-level-ivy-settings.xml"
                               ivy.resolution-cache.dir="${ivy.resolution-cache.dir}"
                               ivy.lock-strategy="${ivy.lock-strategy}"
                               common.build.dir="${common.build.dir}"

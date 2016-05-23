@@ -20,45 +20,41 @@
 <!-- Test schema file for SimpleQParserPlugin. -->
 
 <schema name="simpleqp" version="1.0">
-  <types>
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
 
-    <!-- basic text field: no offsets -->
-    <fieldType name="text" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.MockTokenizerFactory" pattern="whitespace"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-        <filter class="solr.ASCIIFoldingFilterFactory"/>
-      </analyzer>
-    </fieldType>
+  <!-- basic text field: no offsets -->
+  <fieldType name="text" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.MockTokenizerFactory" pattern="whitespace"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.ASCIIFoldingFilterFactory"/>
+    </analyzer>
+  </fieldType>
 
-    <!-- basic text field: except it will use the keyword analyzer -->
-    <fieldType name="text-keyword" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
-      </analyzer>
-    </fieldType>
+  <!-- basic text field: except it will use the keyword analyzer -->
+  <fieldType name="text-keyword" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.MockTokenizerFactory" pattern="keyword"/>
+    </analyzer>
+  </fieldType>
 
-    <!-- basic text field: except it will use the keyword analyzer -->
-    <fieldType name="text-query" class="solr.TextField">
-      <analyzer type="index">
-        <tokenizer class="solr.MockTokenizerFactory" pattern="whitespace"/>
-      </analyzer>
-      <!-- only lower case at query time, so we can check the query analyzer is used -->
-      <analyzer type="query">
-        <tokenizer class="solr.MockTokenizerFactory" pattern="whitespace"/>
-        <filter class="solr.LowerCaseFilterFactory"/>
-      </analyzer>
-    </fieldType>
-  </types>
+  <!-- basic text field: except it will use the keyword analyzer -->
+  <fieldType name="text-query" class="solr.TextField">
+    <analyzer type="index">
+      <tokenizer class="solr.MockTokenizerFactory" pattern="whitespace"/>
+    </analyzer>
+    <!-- only lower case at query time, so we can check the query analyzer is used -->
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory" pattern="whitespace"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+    </analyzer>
+  </fieldType>
 
-  <fields>
-    <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
-    <field name="text0" type="text" indexed="true" stored="true"/>
-    <field name="text1" type="text" indexed="true" stored="true"/>
-    <field name="text-keyword0" type="text-keyword" indexed="true" stored="true"/>
-    <field name="text-query0" type="text-query" indexed="true" stored="true"/>
-  </fields>
+  <field name="id" type="int" indexed="true" stored="true" multiValued="false" required="false"/>
+  <field name="text0" type="text" indexed="true" stored="true"/>
+  <field name="text1" type="text" indexed="true" stored="true"/>
+  <field name="text-keyword0" type="text-keyword" indexed="true" stored="true"/>
+  <field name="text-query0" type="text-query" indexed="true" stored="true"/>
 
   <defaultSearchField>text0</defaultSearchField>
   <uniqueKey>id</uniqueKey>

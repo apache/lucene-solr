@@ -16,12 +16,14 @@
  */
 package org.apache.solr.common.cloud;
 
-import static org.apache.solr.common.cloud.ZkStateReader.*;
-
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.noggit.JSONUtil;
+
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 
 public class Replica extends ZkNodeProps {
   
@@ -102,8 +104,13 @@ public class Replica extends ZkNodeProps {
   public String getName() {
     return name;
   }
+
   public String getCoreUrl() {
     return ZkCoreNodeProps.getCoreUrl(getStr(BASE_URL_PROP), getStr(CORE_NAME_PROP));
+  }
+
+  public String getCoreName() {
+    return getStr(CORE_NAME_PROP);
   }
 
   /** The name of the node this replica resides on */
@@ -114,6 +121,10 @@ public class Replica extends ZkNodeProps {
   /** Returns the {@link State} of this replica. */
   public State getState() {
     return state;
+  }
+
+  public boolean isActive(Set<String> liveNodes) {
+    return liveNodes.contains(this.nodeName) && this.state == State.ACTIVE;
   }
 
   @Override

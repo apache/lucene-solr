@@ -51,8 +51,6 @@ class SolrCores {
 
   private final Map<String, CoreDescriptor> dynamicDescriptors = new LinkedHashMap<>();
 
-  private final Map<String, SolrCore> createdCores = new LinkedHashMap<>();
-
   private final CoreContainer container;
   
   private Set<String> currentlyLoadingCores = Collections.newSetFromMap(new ConcurrentHashMap<String,Boolean>());
@@ -213,7 +211,6 @@ class SolrCores {
       set.addAll(cores.keySet());
       set.addAll(transientCores.keySet());
       set.addAll(dynamicDescriptors.keySet());
-      set.addAll(createdCores.keySet());
     }
     return set;
   }
@@ -260,8 +257,6 @@ class SolrCores {
       // It could have been a newly-created core. It could have been a transient core. The newly-created cores
       // in particular should be checked. It could have been a dynamic core.
       tmp = transientCores.remove(name);
-      ret = (ret == null) ? tmp : ret;
-      tmp = createdCores.remove(name);
       ret = (ret == null) ? tmp : ret;
       dynamicDescriptors.remove(name);
       return ret;
@@ -405,12 +400,6 @@ class SolrCores {
       }
     }
     return null;
-  }
-
-  protected void addCreated(SolrCore core) {
-    synchronized (modifyLock) {
-      createdCores.put(core.getName(), core);
-    }
   }
 
   /**

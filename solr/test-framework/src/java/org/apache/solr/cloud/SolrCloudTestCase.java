@@ -50,6 +50,12 @@ import org.junit.Before;
  */
 public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
+  public static final int DEFAULT_TIMEOUT = 30;
+
+  public static Path configset(String name) {
+    return TEST_PATH().resolve("configsets").resolve(name).resolve("conf");
+  }
+
   private static class Config {
     final String name;
     final Path path;

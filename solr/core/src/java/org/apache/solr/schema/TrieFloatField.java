@@ -103,7 +103,7 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
               
               @Override
               public void fillValue(int doc) {
-                // micro optimized (eliminate at least one redudnent ord check) 
+                // micro optimized (eliminate at least one redundant ord check) 
                 //mval.exists = exists(doc);
                 //mval.value = mval.exists ? floatVal(doc) : 0.0F;
                 //

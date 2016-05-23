@@ -595,7 +595,7 @@ public class CdcrUpdateLog extends UpdateLog {
      */
     public void forwardSeek(CdcrLogReader subReader) {
       // If a subreader has a null tlog reader, does nothing
-      // This can happend if a subreader is instantiated from a non-initialised parent reader, or if the subreader
+      // This can happened if a subreader is instantiated from a non-initialised parent reader, or if the subreader
       // has been closed.
       if (subReader.tlogReader == null) {
         return;

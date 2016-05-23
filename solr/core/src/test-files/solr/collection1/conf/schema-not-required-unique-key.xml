@@ -22,25 +22,20 @@
 
   -->
 <schema name="test" version="1.0">
-  <types>
-    <fieldType name="string" class="solr.StrField"/>
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0"/>
-    <fieldType name="text" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.StandardFilterFactory"/>
-      </analyzer>
-    </fieldType>
- </types>
+  <fieldType name="string" class="solr.StrField"/>
+  <fieldType name="int" class="solr.TrieIntField" precisionStep="0"/>
+  <fieldType name="text" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      <filter class="solr.StandardFilterFactory"/>
+    </analyzer>
+  </fieldType>
 
+  <field name="id" type="int" multiValued="false" indexed="true" stored="true" required="false"/>
+  <field name="subject" type="text" indexed="true" stored="true"/>
+  <field name="signatureField" type="string" indexed="true" stored="false"/>
+  <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
 
- <fields>
-   <field name="id" type="int" multiValued="false" indexed="true" stored="true" required="false"/>
-   <field name="subject" type="text" indexed="true" stored="true"/>
-   <field name="signatureField" type="string" indexed="true" stored="false"/>
-   <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
- </fields>
-
- <defaultSearchField>subject</defaultSearchField>
- <uniqueKey>id</uniqueKey>
+  <defaultSearchField>subject</defaultSearchField>
+  <uniqueKey>id</uniqueKey>
 </schema>

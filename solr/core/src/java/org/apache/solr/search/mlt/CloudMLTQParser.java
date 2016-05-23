@@ -15,6 +15,13 @@
  * limitations under the License.
  */
 package org.apache.solr.search.mlt;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.mlt.MoreLikeThis;
 import org.apache.lucene.search.BooleanClause;
@@ -38,13 +45,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.util.SolrPluginUtils;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 public class CloudMLTQParser extends QParser {
   // Pattern is thread safe -- TODO? share this with general 'fl' param
@@ -112,13 +112,12 @@ public class CloudMLTQParser extends QParser {
         }
       }
     } else {
-      Map<String, SchemaField> fields = req.getSchema().getFields();
       for (String field : doc.getFieldNames()) {
         // Only use fields that are stored and have an explicit analyzer.
         // This makes sense as the query uses tf/idf/.. for query construction.
         // We might want to relook and change this in the future though.
-        if(fields.get(field).stored() 
-            && fields.get(field).getType().isExplicitAnalyzer()) {
+        SchemaField f = req.getSchema().getFieldOrNull(field);
+        if (f != null && f.stored() && f.getType().isExplicitAnalyzer()) {
           fieldNames.add(field);
         }
       }
