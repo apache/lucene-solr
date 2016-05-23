@@ -229,6 +229,8 @@ Bug Fixes
 * SOLR-8801: /bin/solr create script always returns exit code 0 when a collection/core already exists.
   (Khalid Alharbi, Marius Grama via Steve Rowe)
 
+* SOLR-9134: Fix RestManager.addManagedResource return value. (Christine Poerschke)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
