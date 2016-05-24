@@ -34,7 +34,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * single segment. This is used to hold buffered pending
  * deletes and updates against the to-be-flushed segment.  Once the
  * deletes and updates are pushed (on flush in DocumentsWriter), they
- * are converted to a FrozenDeletes instance. */
+ * are converted to a FrozenBufferedUpdates instance. */
 
 // NOTE: instances of this class are accessed either via a private
 // instance on DocumentWriterPerThread, or via sync'd code by

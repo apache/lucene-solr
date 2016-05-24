@@ -17,6 +17,7 @@
 package org.apache.lucene.index;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -76,23 +77,28 @@ final class DocumentsWriterDeleteQueue implements Accountable {
 
   private final DeleteSlice globalSlice;
   private final BufferedUpdates globalBufferedUpdates;
+  private long gen;
   
   // only acquired to update the global deletes, pkg-private for access by tests:
   final ReentrantLock globalBufferLock = new ReentrantLock();
 
   final long generation;
+
+  final AtomicLong seqNo;
   
   DocumentsWriterDeleteQueue() {
-    this(0);
+    // seqNo must start at 1 because some APIs negate this to encode a boolean
+    this(0, 1);
   }
   
-  DocumentsWriterDeleteQueue(long generation) {
-    this(new BufferedUpdates(), generation);
+  DocumentsWriterDeleteQueue(long generation, long startSeqNo) {
+    this(new BufferedUpdates(), generation, startSeqNo);
   }
 
-  DocumentsWriterDeleteQueue(BufferedUpdates globalBufferedUpdates, long generation) {
+  DocumentsWriterDeleteQueue(BufferedUpdates globalBufferedUpdates, long generation, long startSeqNo) {
     this.globalBufferedUpdates = globalBufferedUpdates;
     this.generation = generation;
+    this.seqNo = new AtomicLong(startSeqNo);
     /*
      * we use a sentinel instance as our initial tail. No slice will ever try to
      * apply this tail since the head is always omitted.
@@ -101,28 +107,31 @@ final class DocumentsWriterDeleteQueue implements Accountable {
     globalSlice = new DeleteSlice(tail);
   }
 
-  void addDelete(Query... queries) {
-    add(new QueryArrayNode(queries));
+  long addDelete(Query... queries) {
+    long seqNo = add(new QueryArrayNode(queries));
     tryApplyGlobalSlice();
+    return seqNo;
   }
 
-  void addDelete(Term... terms) {
-    add(new TermArrayNode(terms));
+  long addDelete(Term... terms) {
+    long seqNo = add(new TermArrayNode(terms));
     tryApplyGlobalSlice();
+    return seqNo;
   }
 
-  void addDocValuesUpdates(DocValuesUpdate... updates) {
-    add(new DocValuesUpdatesNode(updates));
+  long addDocValuesUpdates(DocValuesUpdate... updates) {
+    long seqNo = add(new DocValuesUpdatesNode(updates));
     tryApplyGlobalSlice();
+    return seqNo;
   }
   
   /**
    * invariant for document update
    */
-  void add(Term term, DeleteSlice slice) {
+  long add(Term term, DeleteSlice slice) {
     final TermNode termNode = new TermNode(term);
 //    System.out.println(Thread.currentThread().getName() + ": push " + termNode + " this=" + this);
-    add(termNode);
+    long seqNo = add(termNode);
     /*
      * this is an update request where the term is the updated documents
      * delTerm. in that case we need to guarantee that this insert is atomic
@@ -137,9 +146,12 @@ final class DocumentsWriterDeleteQueue implements Accountable {
     assert slice.sliceHead != slice.sliceTail : "slice head and tail must differ after add";
     tryApplyGlobalSlice(); // TODO doing this each time is not necessary maybe
     // we can do it just every n times or so?
+
+    return seqNo;
   }
 
-  void add(Node<?> item) {
+  // nocommit can we remove the sync'd
+  synchronized long add(Node<?> newNode) {
     /*
      * this non-blocking / 'wait-free' linked list add was inspired by Apache
      * Harmony's ConcurrentLinkedQueue Implementation.
@@ -157,18 +169,18 @@ final class DocumentsWriterDeleteQueue implements Accountable {
           tailUpdater.compareAndSet(this, currentTail, tailNext); // can fail
         } else {
           /*
-           * we are in quiescent state and can try to insert the item to the
+           * we are in quiescent state and can try to insert the new node to the
            * current tail if we fail to insert we just retry the operation since
            * somebody else has already added its item
            */
-          if (currentTail.casNext(null, item)) {
+          if (currentTail.casNext(null, newNode)) {
             /*
              * now that we are done we need to advance the tail while another
              * thread could have advanced it already so we can ignore the return
              * type of this CAS call
              */
-            tailUpdater.compareAndSet(this, currentTail, item);
-            return;
+            tailUpdater.compareAndSet(this, currentTail, newNode);
+            return seqNo.getAndIncrement();
           }
         }
       }
@@ -230,8 +242,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
       }
 
 //      System.out.println(Thread.currentThread().getName() + ": now freeze global buffer " + globalBufferedDeletes);
-      final FrozenBufferedUpdates packet = new FrozenBufferedUpdates(
-          globalBufferedUpdates, false);
+      final FrozenBufferedUpdates packet = new FrozenBufferedUpdates(globalBufferedUpdates, false);
       globalBufferedUpdates.clear();
       return packet;
     } finally {
