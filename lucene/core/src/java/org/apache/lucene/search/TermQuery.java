@@ -211,14 +211,13 @@ public class TermQuery extends Query {
 
   /** Returns true iff <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof TermQuery)) return false;
-    TermQuery other = (TermQuery) o;
-    return super.equals(o) && this.term.equals(other.term);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           term.equals(((TermQuery) other).term);
   }
 
   @Override
   public int hashCode() {
-    return super.hashCode() ^ term.hashCode();
+    return classHash() ^ term.hashCode();
   }
 }

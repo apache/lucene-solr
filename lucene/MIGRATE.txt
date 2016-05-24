@@ -1,5 +1,10 @@
 # Apache Lucene Migration Guide
 
+## Query.hashCode and Query.equals are now abstract methods (LUCENE-7277)
+Any custom query subclasses should redeclare equivalence relationship according
+to the subclass's details. See code patterns used in existing core Lucene query
+classes for details.
+
 ## The way how number of document calculated is changed (LUCENE-6711)
 The number of documents (numDocs) is used to calculate term specificity (idf) and average document length (avdl).
 Prior to LUCENE-6711, collectionStats.maxDoc() was used for the statistics.

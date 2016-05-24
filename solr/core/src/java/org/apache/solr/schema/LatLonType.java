@@ -554,7 +554,7 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
   /** Returns true if <code>o</code> is equal to this. */
   @Override
   public boolean equals(Object o) {
-    if (!super.equals(o)) return false;
+    if (!sameClassAs(o)) return false;
     SpatialDistanceQuery other = (SpatialDistanceQuery)o;
     return     this.latCenter == other.latCenter
             && this.lonCenter == other.lonCenter
@@ -576,12 +576,11 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
   @Override
   public int hashCode() {
     // don't bother making the hash expensive - the center latitude + min longitude will be very unique
-    long hash = Double.doubleToLongBits(latCenter);
+    long hash = classHash();
+    hash = hash * 31 + Double.doubleToLongBits(latCenter);
     hash = hash * 31 + Double.doubleToLongBits(lonMin);
-    hash = hash * 31 + (long)super.hashCode();
-    return (int)(hash >> 32 + hash);
+    return (int) (hash >> 32 + hash);
   }
-
 }
 
 

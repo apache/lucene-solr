@@ -123,19 +123,13 @@ public class SpanMultiTermQueryWrapper<Q extends MultiTermQuery> extends SpanQue
   
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + query.hashCode();
-    return result;
+    return classHash() * 31 + query.hashCode();
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (! super.equals(obj)) {
-      return false;
-    }
-    SpanMultiTermQueryWrapper<?> other = (SpanMultiTermQueryWrapper<?>) obj;
-    return query.equals(other.query);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           query.equals(((SpanMultiTermQueryWrapper<?>) other).query);
   }
 
   /** Abstract class that defines how the query is rewritten. */

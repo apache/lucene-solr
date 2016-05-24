@@ -173,22 +173,20 @@ public class TermsQuery extends Query implements Accountable {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (!super.equals(obj)) {
-      return false;
-    }
-    TermsQuery that = (TermsQuery) obj;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(TermsQuery other) {
     // termData might be heavy to compare so check the hash code first
-    return termDataHashCode == that.termDataHashCode
-        && termData.equals(that.termData);
+    return termDataHashCode == other.termDataHashCode && 
+           termData.equals(other.termData);
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + termDataHashCode;
+    return 31 * classHash() + termDataHashCode;
   }
 
   /** Returns the terms wrapped in a PrefixCodedTerms. */

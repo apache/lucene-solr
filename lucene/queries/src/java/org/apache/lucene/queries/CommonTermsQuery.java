@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -411,42 +412,35 @@ public class CommonTermsQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
+    int result = classHash();
     result = prime * result + (disableCoord ? 1231 : 1237);
     result = prime * result + Float.floatToIntBits(highFreqBoost);
-    result = prime * result
-        + ((highFreqOccur == null) ? 0 : highFreqOccur.hashCode());
+    result = prime * result + Objects.hashCode(highFreqOccur);
+    result = prime * result + Objects.hashCode(lowFreqOccur);
     result = prime * result + Float.floatToIntBits(lowFreqBoost);
-    result = prime * result
-        + ((lowFreqOccur == null) ? 0 : lowFreqOccur.hashCode());
     result = prime * result + Float.floatToIntBits(maxTermFrequency);
     result = prime * result + Float.floatToIntBits(lowFreqMinNrShouldMatch);
     result = prime * result + Float.floatToIntBits(highFreqMinNrShouldMatch);
-    result = prime * result + ((terms == null) ? 0 : terms.hashCode());
+    result = prime * result + Objects.hashCode(terms);
     return result;
   }
-  
+
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
-    CommonTermsQuery other = (CommonTermsQuery) obj;
-    if (disableCoord != other.disableCoord) return false;
-    if (Float.floatToIntBits(highFreqBoost) != Float
-        .floatToIntBits(other.highFreqBoost)) return false;
-    if (highFreqOccur != other.highFreqOccur) return false;
-    if (Float.floatToIntBits(lowFreqBoost) != Float
-        .floatToIntBits(other.lowFreqBoost)) return false;
-    if (lowFreqOccur != other.lowFreqOccur) return false;
-    if (Float.floatToIntBits(maxTermFrequency) != Float
-        .floatToIntBits(other.maxTermFrequency)) return false;
-    if (lowFreqMinNrShouldMatch != other.lowFreqMinNrShouldMatch) return false;
-    if (highFreqMinNrShouldMatch != other.highFreqMinNrShouldMatch) return false;
-    if (terms == null) {
-      if (other.terms != null) return false;
-    } else if (!terms.equals(other.terms)) return false;
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(CommonTermsQuery other) {
+    return disableCoord == other.disableCoord &&
+           Float.floatToIntBits(highFreqBoost) == Float.floatToIntBits(other.highFreqBoost) &&
+           highFreqOccur == other.highFreqOccur &&
+           lowFreqOccur == other.lowFreqOccur &&
+           Float.floatToIntBits(lowFreqBoost) == Float.floatToIntBits(other.lowFreqBoost) &&
+           Float.floatToIntBits(maxTermFrequency) == Float.floatToIntBits(other.maxTermFrequency) &&
+           lowFreqMinNrShouldMatch == other.lowFreqMinNrShouldMatch &&
+           highFreqMinNrShouldMatch == other.highFreqMinNrShouldMatch &&
+           terms.equals(other.terms);
   }
 
   /**

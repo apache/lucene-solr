@@ -149,16 +149,12 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
     }
 
     public int hashCode() {
-      return 31 * super.hashCode() + id.hashCode();
+      return 31 * classHash() + id.hashCode();
     }
 
-    public boolean equals(Object o) {
-      if (super.equals(o) == false) {
-        return false;
-      }
-
-      GraphTermsQuery q = (GraphTermsQuery)o;
-      return id == q.id;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             id == ((GraphTermsQuery) other).id;
     }
 
     public GraphTermsQuery clone() {

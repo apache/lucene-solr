@@ -31,7 +31,6 @@ import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
 
 /**
  * Counterpart of {@link BoostQuery} for spans.
@@ -63,18 +62,19 @@ public final class SpanBoostQuery extends SpanQuery {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
-      return false;
-    }
-    SpanBoostQuery that = (SpanBoostQuery) obj;
-    return query.equals(that.query)
-        && Float.floatToIntBits(boost) == Float.floatToIntBits(that.boost);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(SpanBoostQuery other) {
+    return query.equals(other.query) && 
+           Float.floatToIntBits(boost) == Float.floatToIntBits(other.boost);
   }
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = classHash();
     h = 31 * h + query.hashCode();
     h = 31 * h + Float.floatToIntBits(boost);
     return h;

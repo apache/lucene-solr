@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Set;
+import java.util.Objects;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -95,7 +96,7 @@ public class TestNeedsScores extends LuceneTestCase {
     final boolean value;
     
     AssertNeedsScores(Query in, boolean value) {
-      this.in = in;
+      this.in = Objects.requireNonNull(in);
       this.value = value;
     }
 
@@ -144,23 +145,21 @@ public class TestNeedsScores extends LuceneTestCase {
     @Override
     public int hashCode() {
       final int prime = 31;
-      int result = super.hashCode();
-      result = prime * result + ((in == null) ? 0 : in.hashCode());
+      int result = classHash();
+      result = prime * result + in.hashCode();
       result = prime * result + (value ? 1231 : 1237);
       return result;
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (this == obj) return true;
-      if (!super.equals(obj)) return false;
-      if (getClass() != obj.getClass()) return false;
-      AssertNeedsScores other = (AssertNeedsScores) obj;
-      if (in == null) {
-        if (other.in != null) return false;
-      } else if (!in.equals(other.in)) return false;
-      if (value != other.value) return false;
-      return true;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+    
+    private boolean equalsTo(AssertNeedsScores other) {
+      return in.equals(other.in) && 
+             value == other.value;
     }
 
     @Override

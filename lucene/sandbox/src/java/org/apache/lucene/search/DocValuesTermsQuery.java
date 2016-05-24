@@ -119,20 +119,19 @@ public class DocValuesTermsQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
-      return false;
-    }
-    DocValuesTermsQuery that = (DocValuesTermsQuery) obj;
-    if (!field.equals(that.field)) {
-      return false;
-    }
-    return Arrays.equals(terms, that.terms);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(DocValuesTermsQuery other) {
+    return field.equals(other.field) &&
+           Arrays.equals(terms, other.terms);
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + Objects.hash(field, Arrays.asList(terms));
+    return 31 * classHash() + Objects.hash(field, Arrays.asList(terms));
   }
 
   @Override

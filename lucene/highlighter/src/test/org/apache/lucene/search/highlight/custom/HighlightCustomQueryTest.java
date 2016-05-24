@@ -38,6 +38,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Tests the extensibility of {@link WeightedSpanTermExtractor} and
@@ -161,7 +162,6 @@ public class HighlightCustomQueryTest extends LuceneTestCase {
     private final Term term;
 
     public CustomQuery(Term term) {
-      super();
       this.term = term;
     }
 
@@ -177,28 +177,13 @@ public class HighlightCustomQueryTest extends LuceneTestCase {
 
     @Override
     public int hashCode() {
-      final int prime = 31;
-      int result = super.hashCode();
-      result = prime * result + ((term == null) ? 0 : term.hashCode());
-      return result;
+      return classHash() + Objects.hashCode(term);
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (!super.equals(obj))
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
-      CustomQuery other = (CustomQuery) obj;
-      if (term == null) {
-        if (other.term != null)
-          return false;
-      } else if (!term.equals(other.term))
-        return false;
-      return true;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             Objects.equals(term, ((CustomQuery) other).term);
     }
-
   }
 }

@@ -132,25 +132,22 @@ public class GeoPointInBBoxQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (!(o instanceof GeoPointInBBoxQuery)) return false;
-    if (!super.equals(o)) return false;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
 
-    GeoPointInBBoxQuery that = (GeoPointInBBoxQuery) o;
-
-    if (Double.compare(that.minLat, minLat) != 0) return false;
-    if (Double.compare(that.maxLat, maxLat) != 0) return false;
-    if (Double.compare(that.minLon, minLon) != 0) return false;
-    if (Double.compare(that.maxLon, maxLon) != 0) return false;
-    if (!field.equals(that.field)) return false;
-
-    return true;
+  private boolean equalsTo(GeoPointInBBoxQuery other) {
+    return Double.compare(other.minLat, minLat) == 0 &&
+           Double.compare(other.maxLat, maxLat) == 0 &&
+           Double.compare(other.minLon, minLon) == 0 &&
+           Double.compare(other.maxLon, maxLon) == 0 &&
+           field.equals(other.field);
   }
 
   @Override
   public int hashCode() {
-    int result = super.hashCode();
+    int result = classHash();
     long temp;
     result = 31 * result + field.hashCode();
     temp = Double.doubleToLongBits(minLat);

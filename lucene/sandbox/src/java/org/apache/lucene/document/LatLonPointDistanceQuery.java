@@ -263,7 +263,7 @@ final class LatLonPointDistanceQuery extends Query {
   @Override
   public int hashCode() {
     final int prime = 31;
-    int result = super.hashCode();
+    int result = classHash();
     result = prime * result + field.hashCode();
     long temp;
     temp = Double.doubleToLongBits(latitude);
@@ -276,16 +276,16 @@ final class LatLonPointDistanceQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
-    LatLonPointDistanceQuery other = (LatLonPointDistanceQuery) obj;
-    if (field.equals(other.field) == false) return false;
-    if (Double.doubleToLongBits(latitude) != Double.doubleToLongBits(other.latitude)) return false;
-    if (Double.doubleToLongBits(longitude) != Double.doubleToLongBits(other.longitude)) return false;
-    if (Double.doubleToLongBits(radiusMeters) != Double.doubleToLongBits(other.radiusMeters)) return false;
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(LatLonPointDistanceQuery other) {
+    return field.equals(other.field) &&
+           Double.doubleToLongBits(latitude) == Double.doubleToLongBits(other.latitude) &&
+           Double.doubleToLongBits(longitude) == Double.doubleToLongBits(other.longitude) &&
+           Double.doubleToLongBits(radiusMeters) == Double.doubleToLongBits(other.radiusMeters);
   }
 
   @Override

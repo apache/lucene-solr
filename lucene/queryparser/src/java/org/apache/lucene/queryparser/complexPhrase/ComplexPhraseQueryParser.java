@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.IndexReader;
@@ -221,9 +222,8 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
     public ComplexPhraseQuery(String field, String phrasedQueryStringContents,
         int slopFactor, boolean inOrder) {
-      super();
-      this.field = field;
-      this.phrasedQueryStringContents = phrasedQueryStringContents;
+      this.field = Objects.requireNonNull(field);
+      this.phrasedQueryStringContents = Objects.requireNonNull(phrasedQueryStringContents);
       this.slopFactor = slopFactor;
       this.inOrder = inOrder;
     }
@@ -407,43 +407,25 @@ public class ComplexPhraseQueryParser extends QueryParser {
     @Override
     public int hashCode() {
       final int prime = 31;
-      int result = super.hashCode();
-      result = prime * result + ((field == null) ? 0 : field.hashCode());
-      result = prime
-          * result
-          + ((phrasedQueryStringContents == null) ? 0
-              : phrasedQueryStringContents.hashCode());
+      int result = classHash();
+      result = prime * result + field.hashCode();
+      result = prime * result + phrasedQueryStringContents.hashCode();
       result = prime * result + slopFactor;
       result = prime * result + (inOrder ? 1 : 0);
       return result;
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (this == obj)
-        return true;
-      if (obj == null)
-        return false;
-      if (getClass() != obj.getClass())
-        return false;
-      if (!super.equals(obj)) {
-        return false;
-      }
-      ComplexPhraseQuery other = (ComplexPhraseQuery) obj;
-      if (field == null) {
-        if (other.field != null)
-          return false;
-      } else if (!field.equals(other.field))
-        return false;
-      if (phrasedQueryStringContents == null) {
-        if (other.phrasedQueryStringContents != null)
-          return false;
-      } else if (!phrasedQueryStringContents
-          .equals(other.phrasedQueryStringContents))
-        return false;
-      if (slopFactor != other.slopFactor)
-        return false;
-      return inOrder == other.inOrder;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(ComplexPhraseQuery other) {
+      return field.equals(other.field) &&
+             phrasedQueryStringContents.equals(other.phrasedQueryStringContents) &&
+             slopFactor == other.slopFactor &&
+             inOrder == other.inOrder;
     }
   }
 }

@@ -239,25 +239,25 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return false;
     }
 
+    // Only a subset of fields in hashCode/equals?
+
     public int hashCode() {
-      int hashCode = super.hashCode();
+      int hashCode = classHash();
       hashCode = 31 * hashCode + collapseField.hashCode();
       hashCode = 31 * hashCode + groupHeadSelector.hashCode();
       hashCode = 31 * hashCode + nullPolicy;
       return hashCode;
     }
 
-    public boolean equals(Object o) {
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
 
-      if(o instanceof CollapsingPostFilter) {
-        CollapsingPostFilter c = (CollapsingPostFilter)o;
-        if(this.collapseField.equals(c.collapseField) &&
-           this.groupHeadSelector.equals(c.groupHeadSelector) &&
-           this.nullPolicy == c.nullPolicy) {
-          return true;
-        }
-      }
-      return false;
+    private boolean equalsTo(CollapsingPostFilter other) {
+      return collapseField.equals(other.collapseField) &&
+             groupHeadSelector.equals(other.groupHeadSelector) &&
+             nullPolicy == other.nullPolicy;
     }
 
     public int getCost() {

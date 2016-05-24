@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
@@ -118,17 +119,15 @@ public class SolrConstantScoreQuery extends Query implements ExtendedQuery {
 
   /** Returns true if <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (super.equals(o) == false) return false;
-    SolrConstantScoreQuery other = (SolrConstantScoreQuery)o;
-    return filter.equals(other.filter);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           Objects.equals(filter, ((SolrConstantScoreQuery) other).filter);
   }
 
   /** Returns a hash code value for this object. */
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + filter.hashCode();
+    return 31 * classHash() + filter.hashCode();
   }
 
 }

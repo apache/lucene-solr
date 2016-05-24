@@ -561,20 +561,21 @@ public class PhraseQuery extends Query {
 
   /** Returns true iff <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (super.equals(o) == false) {
-      return false;
-    }
-    PhraseQuery that = (PhraseQuery) o;
-    return slop == that.slop
-        && Arrays.equals(terms, that.terms)
-        && Arrays.equals(positions, that.positions);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(PhraseQuery other) {
+    return slop == other.slop && 
+           Arrays.equals(terms, other.terms) && 
+           Arrays.equals(positions, other.positions);
   }
 
   /** Returns a hash code value for this object.*/
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = classHash();
     h = 31 * h + slop;
     h = 31 * h + Arrays.hashCode(terms);
     h = 31 * h + Arrays.hashCode(positions);
