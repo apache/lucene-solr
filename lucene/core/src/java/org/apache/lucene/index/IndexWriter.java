@@ -266,6 +266,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   private List<SegmentCommitInfo> rollbackSegments;      // list of segmentInfo we will fallback to if the commit fails
 
   volatile SegmentInfos pendingCommit;            // set when a commit is pending (after prepareCommit() & before commit())
+  volatile long pendingSeqNo;
   volatile long pendingCommitChangeCount;
 
   private Collection<String> filesToCommit;
@@ -425,7 +426,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       boolean success = false;
       synchronized (fullFlushLock) {
         try {
-          anyChanges = docWriter.flushAllThreads();
+          // nocommit should we make this available in the returned NRT reader?
+          long seqNo = docWriter.flushAllThreads();
+          if (seqNo < 0) {
+            anyChanges = true;
+            seqNo = -seqNo;
+          } else {
+            anyChanges = false;
+          }
           if (!anyChanges) {
             // prevent double increment since docWriter#doFlush increments the flushcount
             // if we flushed anything.
@@ -1283,8 +1291,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void addDocument(Iterable<? extends IndexableField> doc) throws IOException {
-    updateDocument(null, doc);
+  public long addDocument(Iterable<? extends IndexableField> doc) throws IOException {
+    return updateDocument(null, doc);
   }
 
   /**
@@ -1447,14 +1455,20 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void deleteDocuments(Term... terms) throws IOException {
+  public long deleteDocuments(Term... terms) throws IOException {
     ensureOpen();
     try {
-      if (docWriter.deleteTerms(terms)) {
+      long seqNo = docWriter.deleteTerms(terms);
+      if (seqNo < 0) {
+        seqNo = -seqNo;
         processEvents(true, false);
       }
+      return seqNo;
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "deleteDocuments(Term..)");
+
+      // dead code but javac disagrees:
+      return -1;
     }
   }
 
@@ -1500,15 +1514,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void updateDocument(Term term, Iterable<? extends IndexableField> doc) throws IOException {
+  public long updateDocument(Term term, Iterable<? extends IndexableField> doc) throws IOException {
     ensureOpen();
     try {
       boolean success = false;
       try {
-        if (docWriter.updateDocument(doc, analyzer, term)) {
+        long seqNo = docWriter.updateDocument(doc, analyzer, term);
+        if (seqNo < 0) {
+          seqNo = - seqNo;
           processEvents(true, false);
         }
         success = true;
+        return seqNo;
       } finally {
         if (!success) {
           if (infoStream.isEnabled("IW")) {
@@ -1518,6 +1535,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     } catch (AbortingException | VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateDocument");
+
+      // dead code but javac disagrees:
+      return -1;
     }
   }
 
@@ -2807,12 +2827,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  will internally call prepareCommit.
    */
   @Override
-  public final void prepareCommit() throws IOException {
+  public final long prepareCommit() throws IOException {
     ensureOpen();
-    prepareCommitInternal(config.getMergePolicy());
+    pendingSeqNo = prepareCommitInternal(config.getMergePolicy());
+    return pendingSeqNo;
   }
 
-  private void prepareCommitInternal(MergePolicy mergePolicy) throws IOException {
+  private long prepareCommitInternal(MergePolicy mergePolicy) throws IOException {
     startCommitTime = System.nanoTime();
     synchronized(commitLock) {
       ensureOpen(false);
@@ -2833,6 +2854,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       testPoint("startDoFlush");
       SegmentInfos toCommit = null;
       boolean anySegmentsFlushed = false;
+      long seqNo;
 
       // This is copied from doFlush, except it's modified to
       // clone & incRef the flushed SegmentInfos inside the
@@ -2844,7 +2866,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           boolean flushSuccess = false;
           boolean success = false;
           try {
-            anySegmentsFlushed = docWriter.flushAllThreads();
+            seqNo = docWriter.flushAllThreads();
+            if (seqNo < 0) {
+              anySegmentsFlushed = true;
+              seqNo = -seqNo;
+            }
             if (!anySegmentsFlushed) {
               // prevent double increment since docWriter#doFlush increments the flushcount
               // if we flushed anything.
@@ -2898,6 +2924,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
       } catch (AbortingException | VirtualMachineError tragedy) {
         tragicEvent(tragedy, "prepareCommit");
+
+        // dead code but javac disagrees:
+        seqNo = -1;
       }
      
       boolean success = false;
@@ -2907,6 +2936,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
         startCommit(toCommit);
         success = true;
+        return seqNo;
       } finally {
         if (!success) {
           synchronized (this) {
@@ -2983,9 +3013,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @see #prepareCommit
    */
   @Override
-  public final void commit() throws IOException {
+  public final long commit() throws IOException {
     ensureOpen();
-    commitInternal(config.getMergePolicy());
+    // nocommit should we put seq no into sis?
+    return commitInternal(config.getMergePolicy());
   }
 
   /** Returns true if there may be changes that have not been
@@ -3001,7 +3032,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     return changeCount.get() != lastCommitChangeCount || docWriter.anyChanges() || bufferedUpdatesStream.any();
   }
 
-  private final void commitInternal(MergePolicy mergePolicy) throws IOException {
+  private final long commitInternal(MergePolicy mergePolicy) throws IOException {
 
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "commit: start");
@@ -3014,18 +3045,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         infoStream.message("IW", "commit: enter lock");
       }
 
+      long seqNo;
+
       if (pendingCommit == null) {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: now prepare");
         }
-        prepareCommitInternal(mergePolicy);
+        seqNo = prepareCommitInternal(mergePolicy);
       } else {
         if (infoStream.isEnabled("IW")) {
           infoStream.message("IW", "commit: already prepared");
         }
+        seqNo = pendingSeqNo;
       }
 
       finishCommit();
+
+      return seqNo;
     }
   }
 
@@ -3167,7 +3203,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       synchronized (fullFlushLock) {
         boolean flushSuccess = false;
         try {
-          anyChanges = docWriter.flushAllThreads();
+          long seqNo = docWriter.flushAllThreads();
+          if (seqNo < 0) {
+            seqNo = -seqNo;
+            anyChanges = true;
+          } else {
+            anyChanges = false;
+          }
           if (!anyChanges) {
             // flushCount is incremented in flushAllThreads
             flushCount.incrementAndGet();

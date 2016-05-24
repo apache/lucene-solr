@@ -34,7 +34,7 @@ public interface TwoPhaseCommit {
    * 2-phase commit fails, {@link #rollback()} is called to discard all changes
    * since last successful commit.
    */
-  public void prepareCommit() throws IOException;
+  public long prepareCommit() throws IOException;
 
   /**
    * The second phase of a 2-phase commit. Implementations should ideally do
@@ -42,7 +42,7 @@ public interface TwoPhaseCommit {
    * after it returns, the caller can assume that the changes were successfully
    * committed to the underlying storage.
    */
-  public void commit() throws IOException;
+  public long commit() throws IOException;
 
   /**
    * Discards any changes that have occurred since the last commit. In a 2-phase
@@ -50,6 +50,7 @@ public interface TwoPhaseCommit {
    * {@link #prepareCommit()}, this method is used to roll all other objects
    * back to their previous state.
    */
+  // nocommit return long?
   public void rollback() throws IOException;
 
 }

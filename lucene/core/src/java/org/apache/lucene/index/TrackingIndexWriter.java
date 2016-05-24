@@ -37,6 +37,7 @@ import org.apache.lucene.store.Directory;
  *
  * @lucene.experimental */
 
+// nocommit removeme
 public class TrackingIndexWriter {
   private final IndexWriter writer;
   private final AtomicLong indexingGen = new AtomicLong(1);
