@@ -32,6 +32,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.util.StringHelper;
@@ -117,18 +118,21 @@ final class LatLonPointDistanceQuery extends Query {
         LatLonPoint.checkCompatible(fieldInfo);
         
         // matching docids
-        MatchingPoints result = new MatchingPoints(reader, field);
+        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
         values.intersect(field,
                          new IntersectVisitor() {
+
+                           DocIdSetBuilder.BulkAdder adder;
+
                            @Override
                            public void grow(int count) {
-                             result.grow(count);
+                             adder = result.grow(count);
                            }
 
                            @Override
                            public void visit(int docID) {
-                             result.add(docID);
+                             adder.add(docID);
                            }
 
                            @Override
@@ -152,7 +156,7 @@ final class LatLonPointDistanceQuery extends Query {
 
                              // its a match only if its sortKey <= our sortKey
                              if (SloppyMath.haversinSortKey(latitude, longitude, docLatitude, docLongitude) <= sortKey) {
-                               result.add(docID);
+                               adder.add(docID);
                              }
                            }
                            
@@ -206,7 +210,7 @@ final class LatLonPointDistanceQuery extends Query {
                            }
                          });
 
-        return new ConstantScoreScorer(this, score(), result.iterator());
+        return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
     };
   }
