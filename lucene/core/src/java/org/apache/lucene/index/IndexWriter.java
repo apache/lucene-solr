@@ -4960,4 +4960,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     };
   }
+
+  // nocommit javadocs
+  public long getLastSequenceNumber() {
+    ensureOpen();
+    return docWriter.deleteQueue.seqNo.get();
+  }
 }
