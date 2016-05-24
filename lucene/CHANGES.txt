@@ -136,6 +136,9 @@ Documentation
 
 Other
 
+* LUCENE-7295: TermAutomatonQuery.hashCode calculates Automaton.toDot().hash,
+  equivalence relationship replaced with object identity. (Dawid Weiss)
+
 * LUCENE-7277: Make Query.hashCode and Query.equals abstract. (Paul Elschot, 
   Dawid Weiss)
 
