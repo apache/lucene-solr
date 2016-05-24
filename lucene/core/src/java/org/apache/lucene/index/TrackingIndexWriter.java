@@ -68,24 +68,8 @@ public class TrackingIndexWriter {
 
   /** Calls {@link IndexWriter#deleteDocuments(Term...)} and
    *  returns the generation that reflects this change. */
-  public long deleteDocuments(Term t) throws IOException {
-    writer.deleteDocuments(t);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
-
-  /** Calls {@link IndexWriter#deleteDocuments(Term...)} and
-   *  returns the generation that reflects this change. */
   public long deleteDocuments(Term... terms) throws IOException {
     writer.deleteDocuments(terms);
-    // Return gen as of when indexing finished:
-    return indexingGen.get();
-  }
-
-  /** Calls {@link IndexWriter#deleteDocuments(Query...)} and
-   *  returns the generation that reflects this change. */
-  public long deleteDocuments(Query q) throws IOException {
-    writer.deleteDocuments(q);
     // Return gen as of when indexing finished:
     return indexingGen.get();
   }
@@ -159,7 +143,7 @@ public class TrackingIndexWriter {
    *  IndexWriter#tryDeleteDocument(IndexReader,int)} and
    *  returns the generation that reflects this change. */
   public long tryDeleteDocument(IndexReader reader, int docID) throws IOException {
-    if (writer.tryDeleteDocument(reader, docID)) {
+    if (writer.tryDeleteDocument(reader, docID) != -1) {
       return indexingGen.get();
     } else {
       return -1;

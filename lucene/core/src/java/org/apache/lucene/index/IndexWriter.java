@@ -1332,8 +1332,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @lucene.experimental
    */
-  public void addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
-    updateDocuments(null, docs);
+  public long addDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
+    return updateDocuments(null, docs);
   }
 
   /**
@@ -1349,15 +1349,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * @lucene.experimental
    */
-  public void updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
+  public long updateDocuments(Term delTerm, Iterable<? extends Iterable<? extends IndexableField>> docs) throws IOException {
     ensureOpen();
     try {
       boolean success = false;
       try {
-        if (docWriter.updateDocuments(docs, analyzer, delTerm)) {
+        long seqNo = docWriter.updateDocuments(docs, analyzer, delTerm);
+        if (seqNo < 0) {
+          seqNo = -seqNo;
           processEvents(true, false);
         }
         success = true;
+        return seqNo;
       } finally {
         if (!success) {
           if (infoStream.isEnabled("IW")) {
@@ -1367,6 +1370,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     } catch (AbortingException | VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateDocuments");
+
+      // dead code but javac disagrees
+      return -1;
     }
   }
 
@@ -1375,15 +1381,15 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  DirectoryReader#open(IndexWriter)}).  If the
    *  provided reader is an NRT reader obtained from this
    *  writer, and its segment has not been merged away, then
-   *  the delete succeeds and this method returns true; else, it
-   *  returns false the caller must then separately delete by
-   *  Term or Query.
+   *  the delete succeeds and this method returns a valid (&gt; 0) sequence
+   *  number; else, it returns -1 and the caller must then
+   *  separately delete by Term or Query.
    *
    *  <b>NOTE</b>: this method can only delete documents
    *  visible to the currently open NRT reader.  If you need
    *  to delete documents indexed after opening the NRT
    *  reader you must use {@link #deleteDocuments(Term...)}). */
-  public synchronized boolean tryDeleteDocument(IndexReader readerIn, int docID) throws IOException {
+  public synchronized long tryDeleteDocument(IndexReader readerIn, int docID) throws IOException {
 
     final LeafReader reader;
     if (readerIn instanceof LeafReader) {
@@ -1434,7 +1440,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             changed();
           }
           //System.out.println("  yes " + info.info.name + " " + docID);
-          return true;
+
+          return docWriter.deleteQueue.seqNo.getAndIncrement();
         }
       } else {
         //System.out.println("  no rld " + info.info.name + " " + docID);
@@ -1442,7 +1449,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     } else {
       //System.out.println("  no seg " + info.info.name + " " + docID);
     }
-    return false;
+
+    return -1;
   }
 
   /**
@@ -1481,23 +1489,29 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void deleteDocuments(Query... queries) throws IOException {
+  public long deleteDocuments(Query... queries) throws IOException {
     ensureOpen();
 
     // LUCENE-6379: Specialize MatchAllDocsQuery
     for(Query query : queries) {
       if (query.getClass() == MatchAllDocsQuery.class) {
-        deleteAll();
-        return;
+        return deleteAll();
       }
     }
 
     try {
-      if (docWriter.deleteQueries(queries)) {
+      long seqNo = docWriter.deleteQueries(queries);
+      if (seqNo < 0) {
+        seqNo = -seqNo;
         processEvents(true, false);
       }
+
+      return seqNo;
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "deleteDocuments(Query..)");
+
+      // dead code but javac disagrees:
+      return -1;
     }
   }
 
@@ -2225,7 +2239,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * or {@link #forceMergeDeletes} methods, they may receive
    * {@link MergePolicy.MergeAbortedException}s.
    */
-  public void deleteAll() throws IOException {
+  public long deleteAll() throws IOException {
     ensureOpen();
     // Remove any buffered docs
     boolean success = false;
@@ -2272,6 +2286,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             globalFieldNumberMap.clear();
 
             success = true;
+            return docWriter.deleteQueue.seqNo.get();
+
           } finally {
             docWriter.unlockAllAfterAbortAll(this);
             if (!success) {
@@ -2284,6 +2300,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "deleteAll");
+
+      // dead code but javac disagrees
+      return -1;
     }
   }
 
@@ -2511,7 +2530,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *   the index to exceed {@link #MAX_DOCS}, or if the indoming
    *   index sort does not match this index's index sort
    */
-  public void addIndexes(Directory... dirs) throws IOException {
+  public long addIndexes(Directory... dirs) throws IOException {
     ensureOpen();
 
     noDupDirs(dirs);
@@ -2618,6 +2637,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     }
     maybeMerge();
+
+    // no need to increment:
+    return docWriter.deleteQueue.seqNo.get();
   }
   
   /**
@@ -2649,7 +2671,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IllegalArgumentException
    *           if addIndexes would cause the index to exceed {@link #MAX_DOCS}
    */
-  public void addIndexes(CodecReader... readers) throws IOException {
+  public long addIndexes(CodecReader... readers) throws IOException {
     ensureOpen();
 
     // long so we can detect int overflow:
@@ -2691,7 +2713,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       rateLimiters.set(new MergeRateLimiter(null));
 
       if (!merger.shouldMerge()) {
-        return;
+        // no need to increment:
+        return docWriter.deleteQueue.seqNo.get();
       }
 
       merger.merge();                // merge 'em
@@ -2709,7 +2732,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         if (stopMerges) {
           // Safe: these files must exist
           deleteNewFiles(infoPerCommit.files());
-          return;
+
+          // no need to increment:
+          return docWriter.deleteQueue.seqNo.get();
         }
         ensureOpen();
         useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, infoPerCommit, this);
@@ -2744,7 +2769,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         if (stopMerges) {
           // Safe: these files must exist
           deleteNewFiles(infoPerCommit.files());
-          return;
+
+          // no need to increment:
+          return docWriter.deleteQueue.seqNo.get();
         }
         ensureOpen();
 
@@ -2758,6 +2785,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       tragicEvent(tragedy, "addIndexes(CodecReader...)");
     }
     maybeMerge();
+
+    // no need to increment:
+    return docWriter.deleteQueue.seqNo.get();
   }
 
   /** Copies the segment files as-is into the IndexWriter's directory. */

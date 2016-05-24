@@ -244,7 +244,7 @@ class DocumentsWriterPerThread {
     return finishDocument(delTerm);
   }
 
-  public int updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, Term delTerm) throws IOException, AbortingException {
+  public long updateDocuments(Iterable<? extends Iterable<? extends IndexableField>> docs, Analyzer analyzer, Term delTerm) throws IOException, AbortingException {
     testPoint("DocumentsWriterPerThread addDocuments start");
     assert deleteQueue != null;
     docState.analyzer = analyzer;
@@ -285,13 +285,17 @@ class DocumentsWriterPerThread {
       // Apply delTerm only after all indexing has
       // succeeded, but apply it only to docs prior to when
       // this batch started:
+      long seqNo;
       if (delTerm != null) {
-        deleteQueue.add(delTerm, deleteSlice);
+        seqNo = deleteQueue.add(delTerm, deleteSlice);
         assert deleteSlice.isTailItem(delTerm) : "expected the delete term as the tail item";
         deleteSlice.apply(pendingUpdates, numDocsInRAM-docCount);
+        return seqNo;
+      } else {
+        seqNo = deleteQueue.seqNo.get();
       }
 
-      // nocommit return seqNo here
+      return seqNo;
 
     } finally {
       if (!allDocsIndexed && !aborted) {
@@ -306,8 +310,6 @@ class DocumentsWriterPerThread {
       }
       docState.clear();
     }
-
-    return docCount;
   }
   
   private long finishDocument(Term delTerm) {
@@ -326,7 +328,6 @@ class DocumentsWriterPerThread {
       assert deleteSlice.isTailItem(delTerm) : "expected the delete term as the tail item";
     } else  {
       applySlice &= deleteQueue.updateSlice(deleteSlice);
-      // nocommit we don't need to increment here?
       seqNo = deleteQueue.seqNo.get();
     }
     
