@@ -389,14 +389,13 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
       super(d, conf);
       this.latch = latch;
       this.signal = signal;
-
     }
 
     @Override
-    public void updateDocument(Term term,
+    public long updateDocument(Term term,
         Iterable<? extends IndexableField> doc)
         throws IOException {
-      super.updateDocument(term, doc);
+      long result = super.updateDocument(term, doc);
       try {
         if (waitAfterUpdate) {
           signal.countDown();
@@ -405,6 +404,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
       } catch (InterruptedException e) {
         throw new ThreadInterruptedException(e);
       }
+      return result;
     }
   }
 

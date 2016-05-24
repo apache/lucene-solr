@@ -480,6 +480,8 @@ final class DocumentsWriterFlushControl implements Accountable {
       // Set a new delete queue - all subsequent DWPT will use this queue until
       // we do another full flush
       //System.out.println("DWFC: fullFLush old seqNo=" + documentsWriter.deleteQueue.seqNo.get() + " activeThreadCount=" + perThreadPool.getActiveThreadStateCount());
+
+      // jump over any possible in flight ops:
       seqNo = documentsWriter.deleteQueue.seqNo.get() + perThreadPool.getActiveThreadStateCount();
 
       // nocommit is this (active thread state count) always enough of a gap?  what if new indexing thread sneaks in just now?  it would

@@ -136,13 +136,15 @@ final class DocumentsWriter implements Closeable, Accountable {
     flushControl = new DocumentsWriterFlushControl(this, config, writer.bufferedUpdatesStream);
   }
   
-  synchronized boolean deleteQueries(final Query... queries) throws IOException {
+  synchronized long deleteQueries(final Query... queries) throws IOException {
     // TODO why is this synchronized?
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
-    deleteQueue.addDelete(queries);
+    long seqNo = deleteQueue.addDelete(queries);
     flushControl.doOnDelete();
-    // nocommit long
-    return applyAllDeletes(deleteQueue);
+    if (applyAllDeletes(deleteQueue)) {
+      seqNo = -seqNo;
+    }
+    return seqNo;
   }
 
   // TODO: we could check w/ FreqProxTermsWriter: if the
@@ -251,6 +253,10 @@ final class DocumentsWriter implements Closeable, Accountable {
         abortedDocCount += abortThreadState(perThread);
       }
       deleteQueue.clear();
+
+      // jump over any possible in flight ops:
+      deleteQueue.seqNo.addAndGet(perThreadPool.getActiveThreadStateCount()+1);
+
       flushControl.abortPendingFlushes();
       flushControl.waitForFlush();
       success = true;
@@ -397,13 +403,14 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
   }
 
-  boolean updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
-                          final Term delTerm) throws IOException, AbortingException {
+  long updateDocuments(final Iterable<? extends Iterable<? extends IndexableField>> docs, final Analyzer analyzer,
+                       final Term delTerm) throws IOException, AbortingException {
     boolean hasEvents = preUpdate();
 
     final ThreadState perThread = flushControl.obtainAndLock();
     final DocumentsWriterPerThread flushingDWPT;
-    
+    final long seqNo;
+
     try {
       // This must happen after we've pulled the ThreadState because IW.close
       // waits for all ThreadStates to be released:
@@ -413,7 +420,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        dwpt.updateDocuments(docs, analyzer, delTerm);
+        seqNo = dwpt.updateDocuments(docs, analyzer, delTerm);
       } catch (AbortingException ae) {
         flushControl.doOnAbort(perThread);
         dwpt.abort();
@@ -430,7 +437,11 @@ final class DocumentsWriter implements Closeable, Accountable {
       perThreadPool.release(perThread);
     }
 
-    return postUpdate(flushingDWPT, hasEvents);
+    if (postUpdate(flushingDWPT, hasEvents)) {
+      return -seqNo;
+    } else {
+      return seqNo;
+    }
   }
 
   long updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
@@ -441,7 +452,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     final ThreadState perThread = flushControl.obtainAndLock();
 
     final DocumentsWriterPerThread flushingDWPT;
-    final long seqno;
+    final long seqNo;
     try {
       // This must happen after we've pulled the ThreadState because IW.close
       // waits for all ThreadStates to be released:
@@ -451,7 +462,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       final DocumentsWriterPerThread dwpt = perThread.dwpt;
       final int dwptNumDocs = dwpt.getNumDocsInRAM();
       try {
-        seqno = dwpt.updateDocument(doc, analyzer, delTerm); 
+        seqNo = dwpt.updateDocument(doc, analyzer, delTerm); 
       } catch (AbortingException ae) {
         flushControl.doOnAbort(perThread);
         dwpt.abort();
@@ -469,9 +480,9 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
 
     if (postUpdate(flushingDWPT, hasEvents)) {
-      return -seqno;
+      return -seqNo;
     } else {
-      return seqno;
+      return seqNo;
     }
   }
 
