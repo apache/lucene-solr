@@ -42,6 +42,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.StringHelper;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -66,6 +67,8 @@ public class JoinQParserPlugin extends QParserPlugin {
       
       @Override
       public Query parse() throws SyntaxError {
+        System.out.println(" Initialized JoinQParserPlugin !!!! ");
+
         if(localParams!=null && localParams.get(ScoreJoinQParserPlugin.SCORE)!=null){
           return new ScoreJoinQParserPlugin().createParser(qstr, localParams, params, req).parse();
         }else{
@@ -85,9 +88,11 @@ public class JoinQParserPlugin extends QParserPlugin {
 
         if (fromIndex != null && !fromIndex.equals(req.getCore().getCoreDescriptor().getName()) ) {
           CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
+          System.out.println(" inside JoinQParserPlugin coreShard: " + req.getCore().getCoreDescriptor().getName());
+          CloudDescriptor cloudDescriptor = req.getCore().getCoreDescriptor().getCloudDescriptor();
 
           // if in SolrCloud mode, fromIndex should be the name of a single-sharded collection
-          coreName = ScoreJoinQParserPlugin.getCoreName(fromIndex, container);
+          coreName = ScoreJoinQParserPlugin.getCoreName(fromIndex, container, cloudDescriptor, req);
 
           final SolrCore fromCore = container.getCore(coreName);
           if (fromCore == null) {

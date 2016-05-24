@@ -25,9 +25,12 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.JoinUtil;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.lucene.uninverting.UninvertingReader;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -35,6 +38,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -72,6 +76,7 @@ import org.apache.solr.util.RefCounted;
 public class ScoreJoinQParserPlugin extends QParserPlugin {
 
   public static final String SCORE = "score";
+  //private CloudDescriptor cloudDescriptor; 
 
   static class OtherCoreJoinQuery extends SameCoreJoinQuery {
     private final String fromIndex;
@@ -232,8 +237,8 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
 
         if (fromIndex != null && (!fromIndex.equals(myCore) || byPassShortCircutCheck)) {
           CoreContainer container = req.getCore().getCoreDescriptor().getCoreContainer();
-
-          final String coreName = getCoreName(fromIndex, container);
+          CloudDescriptor cloudDescriptor = req.getCore().getCoreDescriptor().getCloudDescriptor();
+          final String coreName = getCoreName(fromIndex, container, cloudDescriptor, req);
           final SolrCore fromCore = container.getCore(coreName);
           RefCounted<SolrIndexSearcher> fromHolder = null;
 
@@ -280,7 +285,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
    * @param  container the core container for searching the core with fromIndex name or alias
    * @return      the string with name of core
    */
-  public static String getCoreName(final String fromIndex, CoreContainer container) {
+  public static String getCoreName(final String fromIndex, CoreContainer container, CloudDescriptor cloudDescriptor, SolrQueryRequest req) {
     if (container.isZooKeeperAware()) {
       ZkController zkController = container.getZkController();
       final String resolved =
@@ -290,7 +295,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "SolrCloud join: Collection '" + fromIndex + "' not found!");
       }
-      return findLocalReplicaForFromIndex(zkController, resolved);
+      return findLocalReplicaForFromIndex(zkController, resolved, cloudDescriptor, req);
     }
     return fromIndex;
   }
@@ -314,13 +319,39 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     return null;
   }
 
-  private static String findLocalReplicaForFromIndex(ZkController zkController, String fromIndex) {
+  private static String findLocalReplicaForFromIndex(ZkController zkController, String fromIndex, CloudDescriptor cloudDescriptor, SolrQueryRequest req) {
     String fromReplica = null;
-
+    String toShardId = cloudDescriptor.getShardId();
     String nodeName = zkController.getNodeName();
+    
+    CoreDescriptor containerDesc = req.getCore().getCoreDescriptor();
+    //CloudDescriptor cloudDescriptor = req.getCore().getCoreDescriptor().getCloudDescriptor();
+    
+    
+    
+    //Get collection information of to_shard or shard on which query is applied
+    DocCollection toCollection = zkController.getClusterState().getCollection(containerDesc.getCollectionName());
+    Slice toShardSlice = toCollection.getActiveSlicesMap().get(req.getCore().getCoreDescriptor().getCoreProperty(CoreDescriptor.CORE_SHARD, null));
+    
+    DocRouter.Range toRange = toShardSlice.getRange();
+    String toRouteField = getRouterField(toCollection);
+    
+    String fromRouteField = getRouterField(zkController.getClusterState().getCollection(fromIndex));
+    
+    System.out.println("toRouteField = " + toRouteField + " fromRouteField = " + fromRouteField);
+    
     for (Slice slice : zkController.getClusterState().getActiveSlices(fromIndex)) {
+      System.out.println(" Slice: " + slice.toString());
       for (Replica replica : slice.getReplicas()) {
-        if (replica.getNodeName().equals(nodeName) && replica.getState() == Replica.State.ACTIVE) {
+        System.out.println(" ToShardId: " + toShardId + " Replica : " + replica.getNodeName() + " Slice Name: " + slice.getName() + " Overlaps: " + toRange.overlaps(slice.getRange()));
+        
+        //Get slice hash range and match it with 'to' range, 
+        //If it is not matching get the available replica
+        //If no matching range and multiple shards -> throw error
+        if (replica.getNodeName().equals(nodeName) && replica.getState() == Replica.State.ACTIVE && toRange.overlaps(slice.getRange())) {
+          if(!toShardId.equals(slice.getName())){
+            System.out.println(" shardId not equal to slice name:: " + slice.getName());
+          }
           if (fromReplica == null) {
             fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
           } else {
@@ -334,9 +365,19 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     if (fromReplica == null)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
           "SolrCloud join: No active replicas for "+fromIndex+
-              " found in node " + nodeName);
+              " found in node " + nodeName + " Shard: " + toShardId);
 
     return fromReplica;
+  }
+  
+  private static String getRouterField(DocCollection docCollection){
+    Map routerMap  = (Map)docCollection.get(DocCollection.DOC_ROUTER);
+    String routerField = null;
+    if(routerMap != null){
+      routerField = (String)routerMap.get("field");
+    }
+    
+    return routerField;
   }
 }
 
