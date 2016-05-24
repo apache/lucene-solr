@@ -2490,7 +2490,7 @@ public class SolrCLI {
       String solrHome = solrHomeDir.getAbsolutePath();
 
       // don't display a huge path for solr home if it is relative to the cwd
-      if (!isWindows && solrHome.startsWith(cwdPath))
+      if (!isWindows && cwdPath.length() > 1 && solrHome.startsWith(cwdPath))
         solrHome = solrHome.substring(cwdPath.length()+1);
 
       String startCmd =
