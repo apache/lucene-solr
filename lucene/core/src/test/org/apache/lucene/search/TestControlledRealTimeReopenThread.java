@@ -40,7 +40,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.ThreadedIndexingAndSearchingTestCase;
-import org.apache.lucene.index.TrackingIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.util.IOUtils;
@@ -57,7 +56,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
   // Is guaranteed to reflect deletes:
   private SearcherManager nrtDeletes;
 
-  private TrackingIndexWriter genWriter;
+  private IndexWriter genWriter;
 
   private ControlledRealTimeReopenThread<IndexSearcher> nrtDeletesThread;
   private ControlledRealTimeReopenThread<IndexSearcher> nrtNoDeletesThread;
@@ -219,7 +218,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
       System.out.println("TEST: make SearcherManager maxReopenSec=" + maxReopenSec + " minReopenSec=" + minReopenSec);
     }
 
-    genWriter = new TrackingIndexWriter(writer);
+    genWriter = writer;
 
     final SearcherFactory sf = new SearcherFactory() {
         @Override
@@ -311,9 +310,8 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     final CountDownLatch latch = new CountDownLatch(1);
     final CountDownLatch signal = new CountDownLatch(1);
 
-    LatchedIndexWriter _writer = new LatchedIndexWriter(d, conf, latch, signal);
-    final TrackingIndexWriter writer = new TrackingIndexWriter(_writer);
-    final SearcherManager manager = new SearcherManager(_writer, false, false, null);
+    LatchedIndexWriter writer = new LatchedIndexWriter(d, conf, latch, signal);
+    final SearcherManager manager = new SearcherManager(writer, false, false, null);
     Document doc = new Document();
     doc.add(newTextField("test", "test", Field.Store.YES));
     writer.addDocument(doc);
@@ -334,7 +332,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
       }
     };
     t.start();
-    _writer.waitAfterUpdate = true; // wait in addDocument to let some reopens go through
+    writer.waitAfterUpdate = true; // wait in addDocument to let some reopens go through
     final long lastGen = writer.updateDocument(new Term("foo", "bar"), doc); // once this returns the doc is already reflected in the last reopen
 
     assertFalse(manager.isSearcherCurrent()); // false since there is a delete in the queue
@@ -373,7 +371,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     }
     thread.close();
     thread.join();
-    _writer.close();
+    writer.close();
     IOUtils.close(manager, d);
   }
   
@@ -483,9 +481,8 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     config.setOpenMode(IndexWriterConfig.OpenMode.CREATE_OR_APPEND);
     final IndexWriter iw = new IndexWriter(dir, config);
     SearcherManager sm = new SearcherManager(iw, new SearcherFactory());
-    final TrackingIndexWriter tiw = new TrackingIndexWriter(iw);
     ControlledRealTimeReopenThread<IndexSearcher> controlledRealTimeReopenThread =
-      new ControlledRealTimeReopenThread<>(tiw, sm, maxStaleSecs, 0);
+      new ControlledRealTimeReopenThread<>(iw, sm, maxStaleSecs, 0);
 
     controlledRealTimeReopenThread.setDaemon(true);
     controlledRealTimeReopenThread.start();
@@ -517,7 +514,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
       d.add(new TextField("count", i + "", Field.Store.NO));
       d.add(new TextField("content", content, Field.Store.YES));
       long start = System.currentTimeMillis();
-      long l = tiw.addDocument(d);
+      long l = iw.addDocument(d);
       controlledRealTimeReopenThread.waitForGeneration(l);
       long wait = System.currentTimeMillis() - start;
       assertTrue("waited too long for generation " + wait,
