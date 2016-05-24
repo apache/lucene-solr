@@ -158,40 +158,23 @@ public final class BytesRefHash {
    */
   public int[] sort() {
     final int[] compact = compact();
-    new IntroSorter() {
+    new StringMSBRadixSorter() {
+
+      BytesRef scratch = new BytesRef();
+
       @Override
       protected void swap(int i, int j) {
-        final int o = compact[i];
+        int tmp = compact[i];
         compact[i] = compact[j];
-        compact[j] = o;
-      }
-      
-      @Override
-      protected int compare(int i, int j) {
-        final int id1 = compact[i], id2 = compact[j];
-        assert bytesStart.length > id1 && bytesStart.length > id2;
-        pool.setBytesRef(scratch1, bytesStart[id1]);
-        pool.setBytesRef(scratch2, bytesStart[id2]);
-        return scratch1.compareTo(scratch2);
+        compact[j] = tmp;
       }
 
       @Override
-      protected void setPivot(int i) {
-        final int id = compact[i];
-        assert bytesStart.length > id;
-        pool.setBytesRef(pivot, bytesStart[id]);
+      protected BytesRef get(int i) {
+        pool.setBytesRef(scratch, bytesStart[compact[i]]);
+        return scratch;
       }
-  
-      @Override
-      protected int comparePivot(int j) {
-        final int id = compact[j];
-        assert bytesStart.length > id;
-        pool.setBytesRef(scratch2, bytesStart[id]);
-        return pivot.compareTo(scratch2);
-      }
-      
-      private final BytesRef pivot = new BytesRef(),
-        scratch1 = new BytesRef(), scratch2 = new BytesRef();
+
     }.sort(0, count);
     return compact;
   }

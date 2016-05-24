@@ -86,6 +86,8 @@ Optimizations
   (which is used by TermsQuery, multi-term queries and several point queries).
   (Adrien Grand, Jeff Wartes, David Smiley)
 
+* LUCENE-7299: Speed up BytesRefHash.sort(). (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7127: Fix corner case bugs in GeoPointDistanceQuery. (Robert Muir)
