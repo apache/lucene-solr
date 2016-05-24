@@ -76,6 +76,8 @@ Bug Fixes
 
 * SOLR-9134: Fix RestManager.addManagedResource return value. (Christine Poerschke)
 
+* SOLR-9151: Fix SolrCLI so that bin/solr -e cloud example can be run from any CWD (janhoy)
+
 Other Changes
 ----------------------
 
