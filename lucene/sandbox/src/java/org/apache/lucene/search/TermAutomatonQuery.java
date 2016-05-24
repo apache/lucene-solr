@@ -232,33 +232,32 @@ public class TermAutomatonQuery extends Query {
 
   /** Returns true iff <code>o</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof TermAutomatonQuery)) {
-      return false;
-    }
-    TermAutomatonQuery other = (TermAutomatonQuery) o;
-
-    if (det == null) {
-      throw new IllegalStateException("please call finish first");
-    }
-    if (other.det == null) {
-      throw new IllegalStateException("please call other.finish first");
-    }
-
-    // NOTE: not quite correct, because if terms were added in different
-    // order in each query but the language is the same, we return false:
-    return super.equals(o)
-      && this.termToID.equals(other.termToID) &&
-      Operations.sameLanguage(det, other.det);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
   }
 
-  /** Returns a hash code value for this object.  This is very costly! */
+  private static boolean checkFinished(TermAutomatonQuery q) {
+    if (q.det == null) {
+      throw new IllegalStateException("Call finish first on: " + q);
+    }
+    return true;
+  }
+
+  private boolean equalsTo(TermAutomatonQuery other) {
+    // NOTE: not quite correct, because if terms were added in different
+    // order in each query but the language is the same, we return false:
+    return checkFinished(this) &&
+           checkFinished(other) &&
+           termToID.equals(other.termToID) &&
+           Operations.sameLanguage(det, other.det);
+  }
+
   @Override
   public int hashCode() {
-    if (det == null) {
-      throw new IllegalStateException("please call finish first");
-    }
-    return super.hashCode() ^ termToID.hashCode() + det.toDot().hashCode();
+    checkFinished(this);
+    // TODO: LUCENE-7295: Automaton.toDot() is very costly!
+    return classHash() ^ termToID.hashCode() + det.toDot().hashCode();
   }
 
   /** Returns the dot (graphviz) representation of this automaton.

@@ -49,12 +49,9 @@ public final class AssertingQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (obj == null || !(obj instanceof AssertingQuery)) {
-      return false;
-    }
-    final AssertingQuery that = (AssertingQuery) obj;
-    return this.in.equals(that.in);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           in.equals(((AssertingQuery) other).in);
   }
 
   @Override

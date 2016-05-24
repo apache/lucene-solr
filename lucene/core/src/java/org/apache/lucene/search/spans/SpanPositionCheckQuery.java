@@ -120,18 +120,15 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
     return super.rewrite(reader);
   }
 
-  /** Returns true iff <code>o</code> is equal to this. */
+  /** Returns true iff <code>other</code> is equal to this. */
   @Override
-  public boolean equals(Object o) {
-    if (! super.equals(o)) {
-      return false;
-    }
-    SpanPositionCheckQuery spcq = (SpanPositionCheckQuery) o;
-    return match.equals(spcq.match);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           match.equals(((SpanPositionCheckQuery) other).match);
   }
 
   @Override
   public int hashCode() {
-    return match.hashCode() ^ super.hashCode();
+    return classHash() ^ match.hashCode();
   }
 }

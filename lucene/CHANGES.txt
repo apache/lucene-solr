@@ -136,6 +136,9 @@ Documentation
 
 Other
 
+* LUCENE-7277: Make Query.hashCode and Query.equals abstract. (Paul Elschot, 
+  Dawid Weiss)
+
 * LUCENE-7174: Upgrade randomizedtesting to 2.3.4. (Uwe Schindler, Dawid Weiss)
 
 * LUCENE-7205: Remove repeated nl.getLength() calls in

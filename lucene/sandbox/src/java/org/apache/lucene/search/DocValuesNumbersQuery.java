@@ -58,21 +58,19 @@ public class DocValuesNumbersQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (!super.equals(obj)) {
-      return false;
-    }
-    // super.equals ensures we are the same class:
-    DocValuesNumbersQuery that = (DocValuesNumbersQuery) obj;
-    if (!field.equals(that.field)) {
-      return false;
-    }
-    return numbers.equals(that.numbers);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+
+  private boolean equalsTo(DocValuesNumbersQuery other) {
+    return field.equals(other.field) &&
+           numbers.equals(other.numbers);
   }
 
   @Override
   public int hashCode() {
-    return 31 * super.hashCode() + Objects.hash(field, numbers);
+    return 31 * classHash() + Objects.hash(field, numbers);
   }
 
   public String getField() {

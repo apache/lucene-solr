@@ -34,7 +34,7 @@ import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.fst.Util;
 
 /**
- * A {@link CompletionQuery} that match documents specified by
+ * A {@link CompletionQuery} that matches documents specified by
  * a wrapped {@link CompletionQuery} supporting boosting and/or filtering
  * by specified contexts.
  * <p>
@@ -315,4 +315,15 @@ public class ContextQuery extends CompletionQuery {
       return currentBoost + innerWeight.boost();
     }
   }
+
+  @Override
+  public boolean equals(Object o) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int hashCode() {
+    throw new UnsupportedOperationException();
+  }
+
 }

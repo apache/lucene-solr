@@ -215,7 +215,7 @@ abstract class LatLonPointBoxQuery extends Query {
 
   @Override
   public final int hashCode() {
-    int hash = super.hashCode();
+    int hash = classHash();
     hash = 31 * hash + field.hashCode();
     hash = 31 * hash + Arrays.hashCode(lowerPoint);
     hash = 31 * hash + Arrays.hashCode(upperPoint);
@@ -226,32 +226,16 @@ abstract class LatLonPointBoxQuery extends Query {
 
   @Override
   public final boolean equals(Object other) {
-    if (super.equals(other) == false) {
-      return false;
-    }
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
 
-    final LatLonPointBoxQuery q = (LatLonPointBoxQuery) other;
-    if (field.equals(q.field) == false) {
-      return false;
-    }
-
-    if (q.numDims != numDims) {
-      return false;
-    }
-
-    if (q.bytesPerDim != bytesPerDim) {
-      return false;
-    }
-
-    if (Arrays.equals(lowerPoint, q.lowerPoint) == false) {
-      return false;
-    }
-    
-    if (Arrays.equals(upperPoint, q.upperPoint) == false) {
-      return false;
-    }
-
-    return true;
+  private boolean equalsTo(LatLonPointBoxQuery other) {
+    return field.equals(other.field) &&
+           numDims == other.numDims &&
+           bytesPerDim == other.bytesPerDim &&
+           Arrays.equals(lowerPoint, other.lowerPoint) &&
+           Arrays.equals(upperPoint, other.upperPoint);
   }
 
   @Override

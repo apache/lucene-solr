@@ -45,9 +45,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BitSetIterator;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
@@ -659,17 +657,19 @@ public class TestTermAutomatonQuery extends LuceneTestCase {
     }
 
     @Override
-    public boolean equals(Object obj) {
-      if (super.equals(obj) == false) {
-        return false;
-      }
-      RandomQuery other = (RandomQuery) obj;
-      return seed == other.seed && density == other.density;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(RandomQuery other) {
+      return seed == other.seed &&  
+             density == other.density;
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(super.hashCode(), seed, density);
+      return classHash() ^ Objects.hash(seed, density);
     }
   }
 

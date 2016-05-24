@@ -110,14 +110,15 @@ public class ReRankQParserPlugin extends QParserPlugin {
     private Map<BytesRef, Integer> boostedPriority;
 
     public int hashCode() {
-      return 31 * super.hashCode() + mainQuery.hashCode()+reRankQuery.hashCode()+(int)reRankWeight+reRankDocs;
+      return 31 * classHash() + mainQuery.hashCode()+reRankQuery.hashCode()+(int)reRankWeight+reRankDocs;
     }
 
-    public boolean equals(Object o) {
-      if (super.equals(o) == false) {
-        return false;
-      }
-      ReRankQuery rrq = (ReRankQuery)o;
+    public boolean equals(Object other) {
+      return sameClassAs(other) &&
+             equalsTo(getClass().cast(other));
+    }
+
+    private boolean equalsTo(ReRankQuery rrq) {
       return mainQuery.equals(rrq.mainQuery) &&
              reRankQuery.equals(rrq.reRankQuery) &&
              reRankWeight == rrq.reRankWeight &&

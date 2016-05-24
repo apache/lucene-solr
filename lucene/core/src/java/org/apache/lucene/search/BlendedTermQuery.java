@@ -224,20 +224,21 @@ public final class BlendedTermQuery extends Query {
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (super.equals(obj) == false) {
-      return false;
-    }
-    BlendedTermQuery that = (BlendedTermQuery) obj;
-    return Arrays.equals(terms, that.terms)
-        && Arrays.equals(contexts, that.contexts)
-        && Arrays.equals(boosts, that.boosts)
-        && rewriteMethod.equals(that.rewriteMethod);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           equalsTo(getClass().cast(other));
+  }
+  
+  private boolean equalsTo(BlendedTermQuery other) {
+    return Arrays.equals(terms, other.terms) && 
+           Arrays.equals(contexts, other.contexts) && 
+           Arrays.equals(boosts, other.boosts) && 
+           rewriteMethod.equals(other.rewriteMethod);
   }
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
+    int h = classHash();
     h = 31 * h + Arrays.hashCode(terms);
     h = 31 * h + Arrays.hashCode(contexts);
     h = 31 * h + Arrays.hashCode(boosts);

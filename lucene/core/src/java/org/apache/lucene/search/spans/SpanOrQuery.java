@@ -103,19 +103,14 @@ public final class SpanOrQuery extends SpanQuery {
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (! super.equals(o)) {
-      return false;
-    }
-    final SpanOrQuery that = (SpanOrQuery) o;
-    return clauses.equals(that.clauses);
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           clauses.equals(((SpanOrQuery) other).clauses);
   }
 
   @Override
   public int hashCode() {
-    int h = super.hashCode();
-    h = (h * 7) ^ clauses.hashCode();
-    return h;
+    return classHash() ^ clauses.hashCode();
   }
 
   @Override

@@ -222,8 +222,8 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     fragment = highlighter.getBestFragment(stream, storedField);
     assertEquals("This piece of text refers to Kennedy at the beginning then has a longer piece of text that is <B>very</B>", fragment);
   }
-  
-  public void testHighlightUnknowQueryAfterRewrite() throws IOException, InvalidTokenOffsetsException {
+
+  public void testHighlightUnknownQueryAfterRewrite() throws IOException, InvalidTokenOffsetsException {
     Query query = new Query() {
       
       @Override
@@ -242,12 +242,12 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       @Override
       public int hashCode() {
-        return 31 * super.hashCode();
+        return System.identityHashCode(this);
       }
 
       @Override
       public boolean equals(Object obj) {
-        return super.equals(obj);
+        return obj == this;
       }
     };
 

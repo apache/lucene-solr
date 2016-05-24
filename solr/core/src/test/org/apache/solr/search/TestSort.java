@@ -245,6 +245,16 @@ public class TestSort extends SolrTestCaseJ4 {
           public String toString(String field) {
             return "TestSortFilter";
           }
+
+          @Override
+          public boolean equals(Object other) {
+            return other == this;
+          }
+          
+          @Override
+          public int hashCode() {
+            return System.identityHashCode(this);
+          }          
         };
 
         int top = r.nextInt((ndocs>>3)+1)+1;

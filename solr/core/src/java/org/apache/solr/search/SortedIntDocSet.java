@@ -775,6 +775,18 @@ public class SortedIntDocSet extends DocSetBase {
       public String toString(String field) {
         return "SortedIntDocSetTopFilter";
       }
+
+      // Equivalence should/could be based on docs here? How did it work previously?
+
+      @Override
+      public boolean equals(Object other) {
+        return other == this;
+      }
+
+      @Override
+      public int hashCode() {
+        return System.identityHashCode(this);
+      }
     };
   }
 

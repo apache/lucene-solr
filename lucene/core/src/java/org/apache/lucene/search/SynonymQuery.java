@@ -88,20 +88,13 @@ public final class SynonymQuery extends Query {
 
   @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = super.hashCode();
-    result = prime * result + Arrays.hashCode(terms);
-    return result;
+    return 31 * classHash() + Arrays.hashCode(terms);
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) return true;
-    if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
-    SynonymQuery other = (SynonymQuery) obj;
-    if (!Arrays.equals(terms, other.terms)) return false;
-    return true;
+  public boolean equals(Object other) {
+    return sameClassAs(other) &&
+           Arrays.equals(terms, ((SynonymQuery) other).terms);
   }
 
   @Override

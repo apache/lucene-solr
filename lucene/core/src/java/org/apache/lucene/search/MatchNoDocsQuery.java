@@ -22,18 +22,27 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 
 /**
- * A query that matches no documents.
+     * A query that matches no documents.
  */
 public class MatchNoDocsQuery extends Query {
+  @Override
+  public Query rewrite(IndexReader reader) throws IOException {
+    // Rewrite to an empty BooleanQuery so no Scorer or Weight is required
+    return new BooleanQuery.Builder().build();
+  }
 
-    @Override
-    public Query rewrite(IndexReader reader) throws IOException {
-        // Rewrite to an empty BooleanQuery so no Scorer or Weight is required
-        return new BooleanQuery.Builder().build();
-    }
+  @Override
+  public String toString(String field) {
+      return "";
+  }
 
-    @Override
-    public String toString(String field) {
-        return "";
-    }
+  @Override
+  public boolean equals(Object o) {
+    return sameClassAs(o);
+  }
+
+  @Override
+  public int hashCode() {
+    return classHash();
+  }
 }
