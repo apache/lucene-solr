@@ -142,6 +142,9 @@ New Features
 
 * SOLR-8323, SOLR-9113: Add CollectionStateWatcher API (Alan Woodward, Scott Blum)
 
+* SOLR-8988: Adds query option facet.distrib.mco which when set to true allows the use of facet.mincount=1 in cloud mode.
+  (Keith Laban, Dennis Gove)
+
 Bug Fixes
 ----------------------
 
@@ -228,6 +231,8 @@ Bug Fixes
 
 * SOLR-8801: /bin/solr create script always returns exit code 0 when a collection/core already exists.
   (Khalid Alharbi, Marius Grama via Steve Rowe)
+
+* SOLR-9134: Fix RestManager.addManagedResource return value. (Christine Poerschke)
 
 Optimizations
 ----------------------

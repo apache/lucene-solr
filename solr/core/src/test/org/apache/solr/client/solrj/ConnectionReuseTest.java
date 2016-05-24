@@ -149,7 +149,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
       // we try and make sure the connection we get has handled all of the requests in this test
       if (client instanceof ConcurrentUpdateSolrClient) {
         // we can't fully control queue polling breaking up requests - allow a bit of leeway
-        int exp = cnt1 + queueBreaks + 2;
+        int exp = queueBreaks + 3;
         assertTrue(
             "We expected all communication via streaming client to use one connection! expected=" + exp + " got="
                 + metrics.getRequestCount(),
