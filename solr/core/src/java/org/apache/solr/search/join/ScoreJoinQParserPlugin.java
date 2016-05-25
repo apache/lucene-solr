@@ -346,7 +346,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
       
       if(req.getParams().getBool(SearchParams.STRICT_JOIN, false)){
         if(!toRange.overlaps(slice.getRange())){
-          return null;
+          continue;
         }
       }
       //get replica on this node
