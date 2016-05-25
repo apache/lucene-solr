@@ -484,8 +484,8 @@ final class DocumentsWriterFlushControl implements Accountable {
       // jump over any possible in flight ops:
       seqNo = documentsWriter.deleteQueue.seqNo.get() + perThreadPool.getActiveThreadStateCount();
 
-      // nocommit is this (active thread state count) always enough of a gap?  what if new indexing thread sneaks in just now?  it would
-      // have to get this next delete queue?
+      // Insert a gap in seqNo of current active thread count, in the worst case those threads now have one operation in flight.  It's fine
+      // if we have some sequence numbers that were never assigned:
       DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(flushingQueue.generation+1, seqNo+1);
 
       documentsWriter.deleteQueue = newQueue;
