@@ -17,8 +17,10 @@
 package org.apache.lucene.search.join;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -184,7 +186,7 @@ public class ToParentBlockJoinQuery extends Query {
     public Explanation explain(LeafReaderContext context, int doc) throws IOException {
       BlockJoinScorer scorer = (BlockJoinScorer) scorer(context);
       if (scorer != null && scorer.iterator().advance(doc) == doc) {
-        return scorer.explain(context.docBase);
+        return scorer.explain(context, childWeight);
       }
       return Explanation.noMatch("Not a match");
     }
@@ -436,10 +438,24 @@ public class ToParentBlockJoinQuery extends Query {
       return parentFreq;
     }
 
-    public Explanation explain(int docBase) throws IOException {
-      int start = docBase + prevParentDoc + 1; // +1 b/c prevParentDoc is previous parent doc
-      int end = docBase + parentDoc - 1; // -1 b/c parentDoc is parent doc
-      return Explanation.match(score(), String.format(Locale.ROOT, "Score based on child doc range from %d to %d", start, end)
+    public Explanation explain(LeafReaderContext context, Weight childWeight) throws IOException {
+      int start = context.docBase + prevParentDoc + 1; // +1 b/c prevParentDoc is previous parent doc
+      int end = context.docBase + parentDoc - 1; // -1 b/c parentDoc is parent doc
+
+      Explanation bestChild = null;
+      int matches = 0;
+      for (int childDoc = start; childDoc <= end; childDoc++) {
+        Explanation child = childWeight.explain(context, childDoc - context.docBase);
+        if (child.isMatch()) {
+          matches++;
+          if (bestChild == null || child.getValue() > bestChild.getValue()) {
+            bestChild = child;
+          }
+        }
+      }
+
+      return Explanation.match(score(), String.format(Locale.ROOT,
+          "Score based on %d child docs in range from %d to %d, best match:", matches, start, end), bestChild
       );
     }
 

@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -50,6 +52,7 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
+import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldDoc;
@@ -230,6 +233,8 @@ public class TestBlockJoin extends LuceneTestCase {
     fullQuery.add(new BooleanClause(childJoinQuery, Occur.MUST));
 
     ToParentBlockJoinCollector c = new ToParentBlockJoinCollector(Sort.RELEVANCE, 1, true, true);
+
+    CheckHits.checkHitCollector(random(), fullQuery.build(), "country", s, new int[] {2});
 
     s.search(fullQuery.build(), c);
 
@@ -869,7 +874,16 @@ public class TestBlockJoin extends LuceneTestCase {
           //System.out.println("  hit docID=" + hit.doc + " childId=" + childId + " parentId=" + document.get("parentID"));
           assertTrue(explanation.isMatch());
           assertEquals(hit.score, explanation.getValue(), 0.0f);
-          assertEquals(String.format(Locale.ROOT, "Score based on child doc range from %d to %d", hit.doc - 1 - childId, hit.doc - 1), explanation.getDescription());
+          Matcher m = Pattern.compile("Score based on ([0-9]+) child docs in range from ([0-9]+) to ([0-9]+), best match:").matcher(explanation.getDescription());
+          assertTrue("Block Join description not matches", m.matches());
+          assertTrue("Matched children not positive", Integer.parseInt(m.group(1)) > 0);
+          assertEquals("Wrong child range start", hit.doc - 1 - childId, Integer.parseInt(m.group(2)));
+          assertEquals("Wrong child range end", hit.doc - 1, Integer.parseInt(m.group(3)));
+          Explanation childWeightExplanation = explanation.getDetails()[0];
+          if ("sum of:".equals(childWeightExplanation.getDescription())) {
+            childWeightExplanation = childWeightExplanation.getDetails()[0];
+          }
+          assertTrue("Wrong child weight description", childWeightExplanation.getDescription().startsWith("weight(child"));
         }
       }
 

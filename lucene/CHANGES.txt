@@ -156,6 +156,9 @@ Other
 * SOLR-9109/SOLR-9121: Allow specification of a custom Ivy settings file via system
   property "ivysettings.xml". (Misha Dmitriev, Christine Poerschke, Uwe Schindler, Steve Rowe)
 
+* LUCENE-7206: Improve the ToParentBlockJoinQuery's explain by including the explain
+  of the best matching child doc. (Ilya Kasnacheev, Jeff Evans via Martijn van Groningen)
+
 Build
 
 * LUCENE-7292: Use '-release' instead of '-source/-target' during
