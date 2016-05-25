@@ -1227,7 +1227,7 @@ revision_re = re.compile(r'rev([a-f\d]+)')
 def parse_config():
   epilogue = textwrap.dedent('''
     Example usage:
-    python3.2 -u dev-tools/scripts/smokeTestRelease.py http://people.apache.org/~whoever/staging_area/lucene-solr-4.3.0-RC1-rev1469340
+    python3 -u dev-tools/scripts/smokeTestRelease.py https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-6.0.1-RC2-revc7510a0...
   ''')
   description = 'Utility to test a release.'
   parser = argparse.ArgumentParser(description=description, epilog=epilogue,
@@ -1381,8 +1381,25 @@ def confirmAllReleasesAreTestedForBackCompat(smokeVersion, unpackPath):
   else:
     print('    success!')
 
+def getScriptVersion():
+  topLevelDir = '../..'                       # Assumption: this script is in dev-tools/scripts/ of a checkout
+  m = re.compile(r'(.*)/').match(sys.argv[0]) # Get this script's directory
+  if m is not None and m.group(1) != '.':
+    origCwd = os.getcwd()
+    os.chdir(m.group(1))
+    os.chdir('../..')
+    topLevelDir = os.getcwd()
+    os.chdir(origCwd)
+  reBaseVersion = re.compile(r'version\.base\s*=\s*(\d+\.\d+)')
+  return reBaseVersion.search(open('%s/lucene/version.properties' % topLevelDir).read()).group(1)
+
 def main():
   c = parse_config()
+
+  scriptVersion = getScriptVersion()
+  if not c.version.startswith(scriptVersion + '.'):
+    raise RuntimeError('smokeTestRelease.py for %s.X is incompatible with a %s release.' % (scriptVersion, c.version))
+
   print('NOTE: output encoding is %s' % sys.stdout.encoding)
   smokeTest(c.java, c.url, c.revision, c.version, c.tmp_dir, c.is_signed, ' '.join(c.test_args))
 
