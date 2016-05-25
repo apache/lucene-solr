@@ -35,6 +35,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SearchParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
@@ -342,24 +343,15 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     
     for (Slice slice : zkController.getClusterState().getActiveSlices(fromIndex)) {
       System.out.println(" Slice: " + slice.toString());
-      for (Replica replica : slice.getReplicas()) {
-        System.out.println(" ToShardId: " + toShardId + " Replica : " + replica.getNodeName() + " Slice Name: " + slice.getName() + " Overlaps: " + toRange.overlaps(slice.getRange()));
-        
-        //Get slice hash range and match it with 'to' range, 
-        //If it is not matching get the available replica
-        //If no matching range and multiple shards -> throw error
-        if (replica.getNodeName().equals(nodeName) && replica.getState() == Replica.State.ACTIVE && toRange.overlaps(slice.getRange())) {
-          if(!toShardId.equals(slice.getName())){
-            System.out.println(" shardId not equal to slice name:: " + slice.getName());
-          }
-          if (fromReplica == null) {
-            fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-          } else {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "SolrCloud join: multiple shards not yet supported " + fromIndex);
-          }
+      
+      if(req.getParams().getBool(SearchParams.STRICT_JOIN, false)){
+        if(!toRange.overlaps(slice.getRange())){
+          return null;
         }
       }
+      //get replica on this node
+      fromReplica = findReplica(fromIndex, fromReplica, toShardId, nodeName, toRange, slice);
+      
     }
 
     if (fromReplica == null)
@@ -367,6 +359,29 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
           "SolrCloud join: No active replicas for "+fromIndex+
               " found in node " + nodeName + " Shard: " + toShardId);
 
+    return fromReplica;
+  }
+
+  private static String findReplica(String fromIndex, String fromReplica, String toShardId, String nodeName,
+      DocRouter.Range toRange, Slice slice) {
+    for (Replica replica : slice.getReplicas()) {
+      System.out.println(" ToShardId: " + toShardId + " Replica : " + replica.getNodeName() + " Slice Name: " + slice.getName() + " Overlaps: " + toRange.overlaps(slice.getRange()));
+      
+      //Get slice hash range and match it with 'to' range, 
+      //If it is not matching get the available replica
+      //If no matching range and multiple shards -> throw error
+      if (replica.getNodeName().equals(nodeName) && replica.getState() == Replica.State.ACTIVE) {
+        if(!toShardId.equals(slice.getName())){
+          System.out.println(" shardId not equal to slice name:: " + slice.getName());
+        }
+        if (fromReplica == null) {
+          fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+        } else {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "SolrCloud join: multiple shards not yet supported " + fromIndex);
+        }
+      }
+    }
     return fromReplica;
   }
   
