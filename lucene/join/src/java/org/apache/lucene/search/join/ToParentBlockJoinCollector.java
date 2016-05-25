@@ -280,13 +280,13 @@ public class ToParentBlockJoinCollector implements Collector {
           // While rare, this could happen if join query had
           // null scorer on first segment(s) but then became
           // non-null on later segments
-          og.docs = ArrayUtil.grow(og.docs);
+          og.docs = ArrayUtil.grow(og.docs, numSubScorers);
         }
         if (og.counts.length < numSubScorers) {
           og.counts = ArrayUtil.grow(og.counts);
         }
         if (trackScores && og.scores.length < numSubScorers) {
-          og.scores = ArrayUtil.grow(og.scores);
+          og.scores = ArrayUtil.grow(og.scores, numSubScorers);
         }
 
         //System.out.println("\ncopyGroups parentDoc=" + og.doc);
