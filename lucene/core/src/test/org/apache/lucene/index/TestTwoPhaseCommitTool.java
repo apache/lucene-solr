@@ -50,8 +50,7 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
       if (failOnPrepare) {
         throw new IOException("failOnPrepare");
       }
-      // nocommit hmm
-      return -1;
+      return 1;
     }
 
     @Override
@@ -65,8 +64,7 @@ public class TestTwoPhaseCommitTool extends LuceneTestCase {
       if (failOnCommit) {
         throw new RuntimeException("failOnCommit");
       }
-      // nocommit hmm
-      return -1;
+      return 1;
     }
 
     @Override

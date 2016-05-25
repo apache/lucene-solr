@@ -1571,17 +1571,23 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException
    *           if there is a low-level IO error
    */
-  public void updateNumericDocValue(Term term, String field, long value) throws IOException {
+  public long updateNumericDocValue(Term term, String field, long value) throws IOException {
     ensureOpen();
     if (!globalFieldNumberMap.contains(field, DocValuesType.NUMERIC)) {
       throw new IllegalArgumentException("can only update existing numeric-docvalues fields!");
     }
     try {
-      if (docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value))) {
+      long seqNo = docWriter.updateDocValues(new NumericDocValuesUpdate(term, field, value));
+      if (seqNo < 0) {
+        seqNo = -seqNo;
         processEvents(true, false);
       }
+      return seqNo;
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateNumericDocValue");
+
+      // dead code but javac disagrees:
+      return -1;
     }
   }
 
@@ -1605,7 +1611,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException
    *           if there is a low-level IO error
    */
-  public void updateBinaryDocValue(Term term, String field, BytesRef value) throws IOException {
+  public long updateBinaryDocValue(Term term, String field, BytesRef value) throws IOException {
     ensureOpen();
     if (value == null) {
       throw new IllegalArgumentException("cannot update a field to a null value: " + field);
@@ -1614,11 +1620,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       throw new IllegalArgumentException("can only update existing binary-docvalues fields!");
     }
     try {
-      if (docWriter.updateDocValues(new BinaryDocValuesUpdate(term, field, value))) {
+      long seqNo = docWriter.updateDocValues(new BinaryDocValuesUpdate(term, field, value));
+      if (seqNo < 0) {
+        seqNo = -seqNo;
         processEvents(true, false);
       }
+      return seqNo;
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateBinaryDocValue");
+
+      // dead code but javac disagrees:
+      return -1;
     }
   }
   
@@ -1635,7 +1647,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @throws IOException
    *           if there is a low-level IO error
    */
-  public void updateDocValues(Term term, Field... updates) throws IOException {
+  public long updateDocValues(Term term, Field... updates) throws IOException {
     ensureOpen();
     DocValuesUpdate[] dvUpdates = new DocValuesUpdate[updates.length];
     for (int i = 0; i < updates.length; i++) {
@@ -1662,11 +1674,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       }
     }
     try {
-      if (docWriter.updateDocValues(dvUpdates)) {
+      long seqNo = docWriter.updateDocValues(dvUpdates);
+      if (seqNo < 0) {
+        seqNo = -seqNo;
         processEvents(true, false);
       }
+      return seqNo;
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "updateDocValues");
+
+      // dead code but javac disagrees:
+      return -1;
     }
   }
   
@@ -3045,7 +3063,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   @Override
   public final long commit() throws IOException {
     ensureOpen();
-    // nocommit should we put seq no into sis?
     return commitInternal(config.getMergePolicy());
   }
 

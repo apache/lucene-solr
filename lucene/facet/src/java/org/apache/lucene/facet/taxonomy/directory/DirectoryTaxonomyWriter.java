@@ -581,14 +581,14 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   }
   
   @Override
-  public synchronized void commit() throws IOException {
+  public synchronized long commit() throws IOException {
     ensureOpen();
     // LUCENE-4972: if we always call setCommitData, we create empty commits
     String epochStr = indexWriter.getCommitData().get(INDEX_EPOCH);
     if (epochStr == null || Long.parseLong(epochStr, 16) != indexEpoch) {
       indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
     }
-    indexWriter.commit();
+    return indexWriter.commit();
   }
 
   /** Combine original user data with the taxonomy epoch. */
@@ -616,14 +616,14 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
    * See {@link IndexWriter#prepareCommit}.
    */
   @Override
-  public synchronized void prepareCommit() throws IOException {
+  public synchronized long prepareCommit() throws IOException {
     ensureOpen();
     // LUCENE-4972: if we always call setCommitData, we create empty commits
     String epochStr = indexWriter.getCommitData().get(INDEX_EPOCH);
     if (epochStr == null || Long.parseLong(epochStr, 16) != indexEpoch) {
       indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
     }
-    indexWriter.prepareCommit();
+    return indexWriter.prepareCommit();
   }
   
   @Override

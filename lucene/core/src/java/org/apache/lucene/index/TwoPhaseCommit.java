@@ -50,7 +50,5 @@ public interface TwoPhaseCommit {
    * {@link #prepareCommit()}, this method is used to roll all other objects
    * back to their previous state.
    */
-  // nocommit return long?
   public void rollback() throws IOException;
-
 }

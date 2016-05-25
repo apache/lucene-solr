@@ -161,11 +161,15 @@ final class DocumentsWriter implements Closeable, Accountable {
     return seqNo;
   }
 
-  synchronized boolean updateDocValues(DocValuesUpdate... updates) throws IOException {
+  synchronized long updateDocValues(DocValuesUpdate... updates) throws IOException {
     final DocumentsWriterDeleteQueue deleteQueue = this.deleteQueue;
-    deleteQueue.addDocValuesUpdates(updates);
+    long seqNo = deleteQueue.addDocValuesUpdates(updates);
     flushControl.doOnDelete();
-    return applyAllDeletes(deleteQueue);
+    if (applyAllDeletes(deleteQueue)) {
+      seqNo = -seqNo;
+    }
+
+    return seqNo;
   }
   
   DocumentsWriterDeleteQueue currentDeleteSession() {
