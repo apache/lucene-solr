@@ -14,19 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.uninverting;
+package org.apache.solr.uninverting;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.codecs.PostingsFormat; // javadocs
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -276,7 +277,7 @@ public class DocTermOrds implements Accountable {
       throw new IllegalStateException("Type mismatch: " + field + " was indexed as " + info.getDocValuesType());
     }
     //System.out.println("DTO uninvert field=" + field + " prefix=" + termPrefix);
-    final long startTime = System.currentTimeMillis();
+    final long startTime = System.nanoTime();
     prefix = termPrefix == null ? null : BytesRef.deepCopyOf(termPrefix);
 
     final int maxDoc = reader.maxDoc();
@@ -444,7 +445,7 @@ public class DocTermOrds implements Accountable {
 
     numTermsInField = termNum;
 
-    long midPoint = System.currentTimeMillis();
+    long midPoint = System.nanoTime();
 
     if (termInstances == 0) {
       // we didn't invert anything
@@ -533,10 +534,10 @@ public class DocTermOrds implements Accountable {
     }
     indexedTermsArray = indexedTerms.toArray(new BytesRef[indexedTerms.size()]);
 
-    long endTime = System.currentTimeMillis();
+    long endTime = System.nanoTime();
 
-    total_time = (int)(endTime-startTime);
-    phase1_time = (int)(midPoint-startTime);
+    total_time = (int) TimeUnit.MILLISECONDS.convert(endTime-startTime, TimeUnit.NANOSECONDS);
+    phase1_time = (int) TimeUnit.MILLISECONDS.convert(midPoint-startTime, TimeUnit.NANOSECONDS);
   }
 
   /** Number of bytes to represent an unsigned int as a vint. */

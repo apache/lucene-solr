@@ -14,26 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.uninverting;
+package org.apache.solr.uninverting;
 
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.LegacyDoubleField;
 import org.apache.lucene.document.LegacyFloatField;
 import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.document.LegacyLongField;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.index.SlowCompositeReaderWrapper;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.uninverting.FieldCacheSanityChecker.Insanity;
-import org.apache.lucene.uninverting.FieldCacheSanityChecker.InsanityType;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.index.SlowCompositeReaderWrapper;
+import org.apache.solr.uninverting.FieldCacheSanityChecker.Insanity;
+import org.apache.solr.uninverting.FieldCacheSanityChecker.InsanityType;
 
 public class TestFieldCacheSanityChecker extends LuceneTestCase {
 

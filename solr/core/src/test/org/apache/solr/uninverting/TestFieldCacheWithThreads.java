@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.uninverting;
+package org.apache.solr.uninverting;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -23,17 +23,18 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SortedDocValues;
@@ -183,7 +184,7 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
     
     final LeafReader sr = getOnlyLeafReader(r);
 
-    final long END_TIME = System.currentTimeMillis() + (TEST_NIGHTLY ? 30 : 1);
+    final long END_TIME = System.nanoTime() + TimeUnit.NANOSECONDS.convert((TEST_NIGHTLY ? 30 : 1), TimeUnit.SECONDS);
 
     final int NUM_THREADS = TestUtil.nextInt(random(), 1, 10);
     Thread[] threads = new Thread[NUM_THREADS];
@@ -201,7 +202,7 @@ public class TestFieldCacheWithThreads extends LuceneTestCase {
             } catch (IOException ioe) {
               throw new RuntimeException(ioe);
             }
-            while(System.currentTimeMillis() < END_TIME) {
+            while(System.nanoTime() < END_TIME) {
               final SortedDocValues source;
               source = stringDVDirect;
 
