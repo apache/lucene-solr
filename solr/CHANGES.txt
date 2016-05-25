@@ -303,6 +303,9 @@ Other Changes
 
 * SOLR-9110: Move JoinFromCollection- SubQueryTransformer- BlockJoinFacet- Distrib Tests to SolrCloudTestCase  (Mikhail Khludnev)
 
+* SOLR-9160: Sync 6x and 7.0 move of UninvertingReader, SlowCompositeReaderWrapper for Solr (LUCENE-7283)
+  (yonik)
+
 ==================  6.0.1 ==================
 (No Changes)
 
