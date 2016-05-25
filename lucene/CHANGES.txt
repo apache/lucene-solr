@@ -40,6 +40,9 @@ API Changes
 * LUCENE-7243: Removed the LeafReaderContext parameter from
   QueryCachingPolicy#shouldCache. (Adrien Grand)
 
+* LUCENE-7283: SlowCompositeReaderWrapper and the uninverting package have
+  been moved to Solr.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-7071: Reduce bytes copying in OfflineSorter, giving ~10%

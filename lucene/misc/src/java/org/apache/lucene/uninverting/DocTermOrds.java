@@ -75,6 +75,8 @@ import org.apache.lucene.util.StringHelper;
  * The RAM consumption of this class can be high!
  *
  * @lucene.experimental
+ *
+ * @deprecated This will be removed in Lucene 7.0.
  */
 
 /*
@@ -106,7 +108,7 @@ import org.apache.lucene.util.StringHelper;
  *   much like Lucene's own internal term index).
  *
  */
-
+@Deprecated
 public class DocTermOrds implements Accountable {
 
   // Term ords are shifted by this, internally, to reserve

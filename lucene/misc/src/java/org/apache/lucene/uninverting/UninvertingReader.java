@@ -50,7 +50,10 @@ import org.apache.lucene.util.Bits;
  * field's docvalues (e.g. via {@link org.apache.lucene.index.LeafReader#getNumericDocValues(String)} 
  * or similar), it will create the docvalues on-the-fly if needed and cache it,
  * based on the core cache key of the wrapped LeafReader.
+ *
+ * @deprecated This will be removed in Lucene 7.0.
  */
+@Deprecated
 public class UninvertingReader extends FilterLeafReader {
   
   /**

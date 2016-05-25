@@ -40,8 +40,11 @@ import org.apache.lucene.util.Bits;
  * {@link IndexReader#getContext()} to get the
  * leaves and then operate per-LeafReader,
  * instead of using this class.
+ *
+ * @deprecated This will be removed in Lucene 7.0.
  */
 
+@Deprecated
 public final class SlowCompositeReaderWrapper extends LeafReader {
 
   private final CompositeReader in;
