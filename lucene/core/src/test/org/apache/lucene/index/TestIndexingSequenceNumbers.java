@@ -74,8 +74,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     int iters = atLeast(100);
     for(int iter=0;iter<iters;iter++) {
       Directory dir = newDirectory();
-      // nocommit use RandomIndexWriter
-      final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+      final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
       Thread[] threads = new Thread[TestUtil.nextInt(random(), 2, 5)];
       final CountDownLatch startingGun = new CountDownLatch(1);
       final long[] seqNos = new long[threads.length];
@@ -117,7 +116,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
       }
       // make sure all sequence numbers were different
       assertEquals(threads.length, allSeqNos.size());
-      DirectoryReader r = DirectoryReader.open(w);
+      DirectoryReader r = w.getReader();
       IndexSearcher s = newSearcher(r);
       TopDocs hits = s.search(new TermQuery(id), 1);
       assertEquals(1, hits.totalHits);
@@ -142,10 +141,12 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     final int idCount = TestUtil.nextInt(random(), 10, 1000);
 
     Directory dir = newDirectory();
-    // nocommit use RandomIndexWriter
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
+
+    // Cannot use RIW since it randomly commits:
     final IndexWriter w = new IndexWriter(dir, iwc);
+
     final int numThreads = TestUtil.nextInt(random(), 2, 5);
     Thread[] threads = new Thread[numThreads];
     //System.out.println("TEST: iter=" + iter + " opCount=" + opCount + " idCount=" + idCount + " threadCount=" + threads.length);
@@ -171,11 +172,10 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
                 if (random().nextInt(500) == 17) {
                   op.what = 2;
                   synchronized(commitLock) {
-                    if (w.hasUncommittedChanges()) {
-                      op.seqNo = w.commit();
+                    op.seqNo = w.commit();
+                    if (op.seqNo != -1) {
                       commits.add(op);
                     }
-                    //System.out.println("done commit seqNo=" + op.seqNo);
                   }
                 } else {
                   op.id = random().nextInt(idCount);
@@ -215,14 +215,11 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
       thread.join();
     }
 
-    /*
-    // nocommit: why does this make the assertEquals angry...?
-    if (w.hasUncommittedChanges()) {
-      Operation commitOp = new Operation();
-      commitOp.seqNo = w.commit();
+    Operation commitOp = new Operation();
+    commitOp.seqNo = w.commit();
+    if (commitOp.seqNo != -1) {
       commits.add(commitOp);
     }
-    */
 
     List<IndexCommit> indexCommits = DirectoryReader.listCommits(dir);
     assertEquals(commits.size(), indexCommits.size());
@@ -296,6 +293,4 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
 
     dir.close();
   }
-
-  // nocommit test that does n ops across threads, then does it again with a single index / single thread, and assert indices are the same
 }

@@ -426,7 +426,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       boolean success = false;
       synchronized (fullFlushLock) {
         try {
-          // nocommit should we make this available in the returned NRT reader?
+          // TODO: should we somehow make this available in the returned NRT reader?
           long seqNo = docWriter.flushAllThreads();
           if (seqNo < 0) {
             anyChanges = true;
@@ -2984,7 +2984,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         }
         startCommit(toCommit);
         success = true;
-        return seqNo;
+        if (pendingCommit == null) {
+          return -1;
+        } else {
+          return seqNo;
+        }
       } finally {
         if (!success) {
           synchronized (this) {
@@ -3057,6 +3061,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * not have a battery backup (for example) then on power
    * loss it may still lose data.  Lucene cannot guarantee
    * consistency on such devices.  </p>
+   *
+   * <p> If nothing was committed, because there were no
+   * pending changes, this returns -1.  Otherwise, it returns
+   * the sequence number such that all indexing operations
+   * prior to this sequence will be included in the commit
+   * point, and all other operations will not. </p>
    *
    * @see #prepareCommit
    */
@@ -4978,9 +4988,11 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     };
   }
 
-  // nocommit javadocs
+  /** Returns the last sequence number.
+   *
+   * @lucene.experimental */
   public long getLastSequenceNumber() {
     ensureOpen();
-    return docWriter.deleteQueue.seqNo.get();
+    return docWriter.deleteQueue.seqNo.get()-1;
   }
 }

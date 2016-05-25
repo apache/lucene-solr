@@ -151,9 +151,6 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
    */
   public synchronized boolean waitForGeneration(long targetGen, int maxMS) throws InterruptedException {
     final long curGen = writer.getLastSequenceNumber();
-    if (targetGen > curGen) {
-      throw new IllegalArgumentException("targetGen=" + targetGen + " was never returned by the ReferenceManager instance (current gen=" + curGen + ")");
-    }
     if (targetGen > searchingGen) {
       // Notify the reopen thread that the waitingGen has
       // changed, so it may wake up and realize it should

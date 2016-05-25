@@ -150,41 +150,10 @@ final class DocumentsWriterDeleteQueue implements Accountable {
     return seqNo;
   }
 
-  // nocommit can we remove the sync'd
   synchronized long add(Node<?> newNode) {
-    /*
-     * this non-blocking / 'wait-free' linked list add was inspired by Apache
-     * Harmony's ConcurrentLinkedQueue Implementation.
-     */
-    while (true) {
-      final Node<?> currentTail = this.tail;
-      final Node<?> tailNext = currentTail.next;
-      if (tail == currentTail) {
-        if (tailNext != null) {
-          /*
-           * we are in intermediate state here. the tails next pointer has been
-           * advanced but the tail itself might not be updated yet. help to
-           * advance the tail and try again updating it.
-           */
-          tailUpdater.compareAndSet(this, currentTail, tailNext); // can fail
-        } else {
-          /*
-           * we are in quiescent state and can try to insert the new node to the
-           * current tail if we fail to insert we just retry the operation since
-           * somebody else has already added its item
-           */
-          if (currentTail.casNext(null, newNode)) {
-            /*
-             * now that we are done we need to advance the tail while another
-             * thread could have advanced it already so we can ignore the return
-             * type of this CAS call
-             */
-            tailUpdater.compareAndSet(this, currentTail, newNode);
-            return seqNo.getAndIncrement();
-          }
-        }
-      }
-    }
+    tail.next = newNode;
+    tail = newNode;
+    return seqNo.getAndIncrement();
   }
 
   boolean anyChanges() {
