@@ -26,6 +26,10 @@ New Features
   e.g. clear the Gregorian Change Date.  Also, toString(cal) is now identical to
   DateTimeFormatter.ISO_INSTANT. (David Smiley)
 
+* LUCENE-7300: The misc module now has a directory wrapper that uses hard-links if
+  applicable and supported when copying files from another FSDirectory in 
+  Directory#copyFrom. (Simon Willnauer)
+
 API Changes
 
 * LUCENE-7184: Refactor LatLonPoint encoding methods to new GeoEncodingUtils
