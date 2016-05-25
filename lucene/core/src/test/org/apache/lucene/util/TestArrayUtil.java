@@ -17,6 +17,7 @@
 package org.apache.lucene.util;
 
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
@@ -70,30 +71,37 @@ public class TestArrayUtil extends LuceneTestCase {
     }
   }
 
+  private static int parseInt(String s) {
+    int start = random().nextInt(5);
+    char[] chars = new char[s.length() + start + random().nextInt(4)];
+    s.getChars(0, s.length(), chars, start);
+    return ArrayUtil.parseInt(chars, start, s.length());
+  }
+
   public void testParseInt() throws Exception {
     expectThrows(NumberFormatException.class, () -> {
-      ArrayUtil.parseInt("".toCharArray());
+      parseInt("");
     });
 
     expectThrows(NumberFormatException.class, () -> {
-      ArrayUtil.parseInt("foo".toCharArray());
+      parseInt("foo");
     });
 
     expectThrows(NumberFormatException.class, () -> {
-      ArrayUtil.parseInt(String.valueOf(Long.MAX_VALUE).toCharArray());
+      parseInt(String.valueOf(Long.MAX_VALUE));
     });
 
     expectThrows(NumberFormatException.class, () -> {
-      ArrayUtil.parseInt("0.34".toCharArray());
+      parseInt("0.34");
     });
 
-    int test = ArrayUtil.parseInt("1".toCharArray());
+    int test = parseInt("1");
     assertTrue(test + " does not equal: " + 1, test == 1);
-    test = ArrayUtil.parseInt("-10000".toCharArray());
+    test = parseInt("-10000");
     assertTrue(test + " does not equal: " + -10000, test == -10000);
-    test = ArrayUtil.parseInt("1923".toCharArray());
+    test = parseInt("1923");
     assertTrue(test + " does not equal: " + 1923, test == 1923);
-    test = ArrayUtil.parseInt("-1".toCharArray());
+    test = parseInt("-1");
     assertTrue(test + " does not equal: " + -1, test == -1);
     test = ArrayUtil.parseInt("foo 1923 bar".toCharArray(), 4, 4);
     assertTrue(test + " does not equal: " + 1923, test == 1923);
@@ -102,8 +110,8 @@ public class TestArrayUtil extends LuceneTestCase {
   public void testSliceEquals() {
     String left = "this is equal";
     String right = left;
-    char[] leftChars = left.toCharArray();
-    char[] rightChars = right.toCharArray();
+    byte[] leftChars = left.getBytes(StandardCharsets.UTF_8);
+    byte[] rightChars = right.getBytes(StandardCharsets.UTF_8);
     assertTrue(left + " does not equal: " + right, ArrayUtil.equals(leftChars, 0, rightChars, 0, left.length()));
     
     assertFalse(left + " does not equal: " + right, ArrayUtil.equals(leftChars, 1, rightChars, 0, left.length()));

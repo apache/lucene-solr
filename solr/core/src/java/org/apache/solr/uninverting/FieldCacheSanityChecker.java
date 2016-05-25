@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.uninverting;
+package org.apache.solr.uninverting;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,8 +27,8 @@ import java.util.Set;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.uninverting.FieldCache.CacheEntry;
 import org.apache.lucene.util.MapOfSets;
+import org.apache.solr.uninverting.FieldCache.CacheEntry;
 
 /** 
  * Provides methods for sanity checking that entries in the FieldCache 

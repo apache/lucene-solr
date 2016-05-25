@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
 import org.apache.lucene.util.packed.PackedInts;
 
@@ -403,9 +402,7 @@ public class Builder<T> {
     final int prefixLenPlus1 = pos1+1;
       
     if (frontier.length < input.length+1) {
-      @SuppressWarnings({"rawtypes","unchecked"}) final UnCompiledNode<T>[] next =
-        new UnCompiledNode[ArrayUtil.oversize(input.length+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-      System.arraycopy(frontier, 0, next, 0, frontier.length);
+      final UnCompiledNode<T>[] next = ArrayUtil.grow(frontier, input.length+1);
       for(int idx=frontier.length;idx<next.length;idx++) {
         next[idx] = new UnCompiledNode<>(this, idx);
       }
@@ -606,9 +603,7 @@ public class Builder<T> {
       assert label >= 0;
       assert numArcs == 0 || label > arcs[numArcs-1].label: "arc[-1].label=" + arcs[numArcs-1].label + " new label=" + label + " numArcs=" + numArcs;
       if (numArcs == arcs.length) {
-        @SuppressWarnings({"rawtypes","unchecked"}) final Arc<T>[] newArcs =
-          new Arc[ArrayUtil.oversize(numArcs+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-        System.arraycopy(arcs, 0, newArcs, 0, arcs.length);
+        final Arc<T>[] newArcs = ArrayUtil.grow(arcs, numArcs+1);
         for(int arcIdx=numArcs;arcIdx<newArcs.length;arcIdx++) {
           newArcs[arcIdx] = new Arc<>();
         }

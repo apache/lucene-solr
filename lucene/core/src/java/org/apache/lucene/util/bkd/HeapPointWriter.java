@@ -18,6 +18,7 @@ package org.apache.lucene.util.bkd;
 
 import java.io.Closeable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.util.ArrayUtil;
@@ -105,20 +106,6 @@ final class HeapPointWriter implements PointWriter {
     System.arraycopy(bytes, 0, blocks.get(block), blockIndex * packedBytesLength, packedBytesLength);
   }
 
-  private int[] growExact(int[] arr, int size) {
-    assert size > arr.length;
-    int[] newArr = new int[size];
-    System.arraycopy(arr, 0, newArr, 0, arr.length);
-    return newArr;
-  }
-
-  private long[] growExact(long[] arr, int size) {
-    assert size > arr.length;
-    long[] newArr = new long[size];
-    System.arraycopy(arr, 0, newArr, 0, arr.length);
-    return newArr;
-  }
-
   @Override
   public void append(byte[] packedValue, long ord, int docID) {
     assert closed == false;
@@ -126,12 +113,12 @@ final class HeapPointWriter implements PointWriter {
     if (docIDs.length == nextWrite) {
       int nextSize = Math.min(maxSize, ArrayUtil.oversize(nextWrite+1, Integer.BYTES));
       assert nextSize > nextWrite: "nextSize=" + nextSize + " vs nextWrite=" + nextWrite;
-      docIDs = growExact(docIDs, nextSize);
+      docIDs = Arrays.copyOf(docIDs, nextSize);
       if (singleValuePerDoc == false) {
         if (ordsLong != null) {
-          ordsLong = growExact(ordsLong, nextSize);
+          ordsLong = Arrays.copyOf(ordsLong, nextSize);
         } else {
-          ords = growExact(ords, nextSize);
+          ords = Arrays.copyOf(ords, nextSize);
         }
       }
     }

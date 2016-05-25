@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.uninverting;
+package org.apache.solr.uninverting;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,8 +37,8 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.uninverting.FieldCache.CacheEntry;
 import org.apache.lucene.util.Bits;
+import org.apache.solr.uninverting.FieldCache.CacheEntry;
 
 /**
  * A FilterReader that exposes <i>indexed</i> values as if they also had

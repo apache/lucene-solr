@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.uninverting;
+package org.apache.solr.uninverting;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -51,7 +51,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 

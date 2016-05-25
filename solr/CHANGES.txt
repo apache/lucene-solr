@@ -325,6 +325,10 @@ Other Changes
 
 * SOLR-9131: Fix "start solr" text in cluster.vm Velocity template (janhoy)
 
+* SOLR-9159: New cloud based concurrent atomic update test (hossman)
+
+* SOLR-9119: several static methods in ValueSourceParser have been made private (hossman)
+
 ==================  6.0.1 ==================
 (No Changes)
 
