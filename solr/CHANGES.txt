@@ -78,6 +78,9 @@ Bug Fixes
 
 * SOLR-9151: Fix SolrCLI so that bin/solr -e cloud example can be run from any CWD (janhoy)
 
+* SOLR-9165: Spellcheck does not return collations if "maxCollationTries" is used with "cursorMark".
+  (James Dyer)
+
 Other Changes
 ----------------------
 
