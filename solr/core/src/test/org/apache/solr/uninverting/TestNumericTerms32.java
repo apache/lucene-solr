@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.uninverting;
+package org.apache.solr.uninverting;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -22,7 +22,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.LegacyLongField;
+import org.apache.lucene.document.LegacyIntField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.IndexSearcher;
@@ -33,18 +33,18 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestNumericTerms64 extends LuceneTestCase {
+public class TestNumericTerms32 extends LuceneTestCase {
   // distance of entries
-  private static long distance;
+  private static int distance;
   // shift the starting of the values to the left, to also have negative values:
-  private static final long startOffset = - 1L << 31;
+  private static final int startOffset = - 1 << 15;
   // number of docs to generate for testing
   private static int noDocs;
   
@@ -55,55 +55,50 @@ public class TestNumericTerms64 extends LuceneTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     noDocs = atLeast(4096);
-    distance = (1L << 60) / noDocs;
+    distance = (1 << 30) / noDocs;
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), directory,
         newIndexWriterConfig(new MockAnalyzer(random()))
         .setMaxBufferedDocs(TestUtil.nextInt(random(), 100, 1000))
         .setMergePolicy(newLogMergePolicy()));
+    
+    final FieldType storedInt = new FieldType(LegacyIntField.TYPE_NOT_STORED);
+    storedInt.setStored(true);
+    storedInt.freeze();
 
-    final FieldType storedLong = new FieldType(LegacyLongField.TYPE_NOT_STORED);
-    storedLong.setStored(true);
-    storedLong.freeze();
+    final FieldType storedInt8 = new FieldType(storedInt);
+    storedInt8.setNumericPrecisionStep(8);
 
-    final FieldType storedLong8 = new FieldType(storedLong);
-    storedLong8.setNumericPrecisionStep(8);
+    final FieldType storedInt4 = new FieldType(storedInt);
+    storedInt4.setNumericPrecisionStep(4);
 
-    final FieldType storedLong4 = new FieldType(storedLong);
-    storedLong4.setNumericPrecisionStep(4);
+    final FieldType storedInt2 = new FieldType(storedInt);
+    storedInt2.setNumericPrecisionStep(2);
 
-    final FieldType storedLong6 = new FieldType(storedLong);
-    storedLong6.setNumericPrecisionStep(6);
-
-    final FieldType storedLong2 = new FieldType(storedLong);
-    storedLong2.setNumericPrecisionStep(2);
-
-    LegacyLongField
-      field8 = new LegacyLongField("field8", 0L, storedLong8),
-      field6 = new LegacyLongField("field6", 0L, storedLong6),
-      field4 = new LegacyLongField("field4", 0L, storedLong4),
-      field2 = new LegacyLongField("field2", 0L, storedLong2);
-
+    LegacyIntField
+      field8 = new LegacyIntField("field8", 0, storedInt8),
+      field4 = new LegacyIntField("field4", 0, storedInt4),
+      field2 = new LegacyIntField("field2", 0, storedInt2);
+    
     Document doc = new Document();
     // add fields, that have a distance to test general functionality
-    doc.add(field8); doc.add(field6); doc.add(field4); doc.add(field2);
+    doc.add(field8); doc.add(field4); doc.add(field2);
     
-    // Add a series of noDocs docs with increasing long values, by updating the fields
+    // Add a series of noDocs docs with increasing int values
     for (int l=0; l<noDocs; l++) {
-      long val=distance*l+startOffset;
-      field8.setLongValue(val);
-      field6.setLongValue(val);
-      field4.setLongValue(val);
-      field2.setLongValue(val);
+      int val=distance*l+startOffset;
+      field8.setIntValue(val);
+      field4.setIntValue(val);
+      field2.setIntValue(val);
 
       val=l-(noDocs/2);
       writer.addDocument(doc);
     }
+  
     Map<String,Type> map = new HashMap<>();
-    map.put("field2", Type.LEGACY_LONG);
-    map.put("field4", Type.LEGACY_LONG);
-    map.put("field6", Type.LEGACY_LONG);
-    map.put("field8", Type.LEGACY_LONG);
+    map.put("field2", Type.LEGACY_INTEGER);
+    map.put("field4", Type.LEGACY_INTEGER);
+    map.put("field8", Type.LEGACY_INTEGER);
     reader = UninvertingReader.wrap(writer.getReader(), map);
     searcher=newSearcher(reader);
     writer.close();
@@ -125,19 +120,19 @@ public class TestNumericTerms64 extends LuceneTestCase {
     // so using a reverse sort field should retun descending documents
     int num = TestUtil.nextInt(random(), 10, 20);
     for (int i = 0; i < num; i++) {
-      long lower=(long)(random().nextDouble()*noDocs*distance)+startOffset;
-      long upper=(long)(random().nextDouble()*noDocs*distance)+startOffset;
+      int lower=(int)(random().nextDouble()*noDocs*distance)+startOffset;
+      int upper=(int)(random().nextDouble()*noDocs*distance)+startOffset;
       if (lower>upper) {
-        long a=lower; lower=upper; upper=a;
+        int a=lower; lower=upper; upper=a;
       }
-      Query tq= LegacyNumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
-      TopDocs topDocs = searcher.search(tq, noDocs, new Sort(new SortField(field, SortField.Type.LONG, true)));
+      Query tq= LegacyNumericRangeQuery.newIntRange(field, precisionStep, lower, upper, true, true);
+      TopDocs topDocs = searcher.search(tq, noDocs, new Sort(new SortField(field, SortField.Type.INT, true)));
       if (topDocs.totalHits==0) continue;
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
-      long last=searcher.doc(sd[0].doc).getField(field).numericValue().longValue();
+      int last = searcher.doc(sd[0].doc).getField(field).numericValue().intValue();
       for (int j=1; j<sd.length; j++) {
-        long act=searcher.doc(sd[j].doc).getField(field).numericValue().longValue();
+        int act = searcher.doc(sd[j].doc).getField(field).numericValue().intValue();
         assertTrue("Docs should be sorted backwards", last>act );
         last=act;
       }
@@ -150,11 +145,6 @@ public class TestNumericTerms64 extends LuceneTestCase {
   }
   
   @Test
-  public void testSorting_6bit() throws Exception {
-    testSorting(6);
-  }
-  
-  @Test
   public void testSorting_4bit() throws Exception {
     testSorting(4);
   }
@@ -162,5 +152,5 @@ public class TestNumericTerms64 extends LuceneTestCase {
   @Test
   public void testSorting_2bit() throws Exception {
     testSorting(2);
-  }
+  }  
 }

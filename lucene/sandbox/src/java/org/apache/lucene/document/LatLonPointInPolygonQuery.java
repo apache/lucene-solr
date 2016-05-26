@@ -32,6 +32,7 @@ import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.geo.Polygon;
@@ -110,25 +111,28 @@ final class LatLonPointInPolygonQuery extends Query {
         LatLonPoint.checkCompatible(fieldInfo);
 
         // matching docids
-        MatchingPoints result = new MatchingPoints(reader, field);
+        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
         values.intersect(field, 
                          new IntersectVisitor() {
+
+                           DocIdSetBuilder.BulkAdder adder;
+
                            @Override
                            public void grow(int count) {
-                             result.grow(count);
+                             adder = result.grow(count);
                            }
 
                            @Override
                            public void visit(int docID) {
-                             result.add(docID);
+                             adder.add(docID);
                            }
 
                            @Override
                            public void visit(int docID, byte[] packedValue) {
                              if (tree.contains(decodeLatitude(packedValue, 0), 
                                                decodeLongitude(packedValue, Integer.BYTES))) {
-                               result.add(docID);
+                               adder.add(docID);
                              }
                            }
 
@@ -151,7 +155,7 @@ final class LatLonPointInPolygonQuery extends Query {
                            }
                          });
 
-        return new ConstantScoreScorer(this, score(), result.iterator());
+        return new ConstantScoreScorer(this, score(), result.build().iterator());
       }
     };
   }

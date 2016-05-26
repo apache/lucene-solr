@@ -503,7 +503,7 @@ public class FacetStream extends TupleStream implements Expressible  {
             t.put(identifier, d);
             ++m;
           } else {
-            long l = (long)bucket.get("count");
+            long l = ((Number)bucket.get("count")).longValue();
             t.put("count(*)", l);
           }
         }

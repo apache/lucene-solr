@@ -73,14 +73,19 @@ public class StreamingTest extends SolrCloudTestCase {
       .withFunctionName("parallel", ParallelStream.class);
 
   private static String zkHost;
+  
+  private static int numShards;
+  private static int numWorkers;
 
   @BeforeClass
   public static void configureCluster() throws Exception {
-    configureCluster(2)
+    numShards = random().nextInt(2) + 1;  //1 - 3
+    numWorkers = numShards > 2 ? random().nextInt(numShards - 1) + 1 : numShards;
+    configureCluster(numShards)
         .addConfig("conf", getFile("solrj").toPath().resolve("solr").resolve("configsets").resolve("streaming").resolve("conf"))
         .configure();
 
-    CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(COLLECTION, "conf", numShards, 1).process(cluster.getSolrClient());
     AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION, cluster.getSolrClient().getZkStateReader(), false, true, TIMEOUT);
 
     zkHost = cluster.getZkServer().getZkAddress();
@@ -147,12 +152,11 @@ public class StreamingTest extends SolrCloudTestCase {
 
     SolrParams sParamsA = StreamingTest.mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_s asc,a_f asc", "partitionKeys", "none");
     CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParamsA);
-    ParallelStream pstream = new ParallelStream(zkHost, COLLECTION, stream, 2, new FieldComparator("a_s",ComparatorOrder.ASCENDING));
-
+    ParallelStream pstream = parallelStream(stream, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
     attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
-    assert(tuples.size() == 20); // Each tuple will be double counted.
+    assert(tuples.size() == (10 * numWorkers)); // Each tuple will be double counted.
 
   }
 
@@ -174,7 +178,7 @@ public class StreamingTest extends SolrCloudTestCase {
     SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i,a_f", "sort", "a_f asc,a_i asc", "partitionKeys", "a_f");
     CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
     UniqueStream ustream = new UniqueStream(stream, new FieldEqualitor("a_f"));
-    ParallelStream pstream = new ParallelStream(zkHost, COLLECTION, ustream, 2, new FieldComparator("a_f",ComparatorOrder.ASCENDING));
+    ParallelStream pstream = parallelStream(ustream, new FieldComparator("a_f", ComparatorOrder.ASCENDING));
     attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
     assert(tuples.size() == 5);
@@ -183,7 +187,7 @@ public class StreamingTest extends SolrCloudTestCase {
     //Test the eofTuples
 
     Map<String,Tuple> eofTuples = pstream.getEofTuples();
-    assert(eofTuples.size() == 2); //There should be an EOF tuple for each worker.
+    assert(eofTuples.size() == numWorkers); //There should be an EOF tuple for each worker.
 
   }
 
@@ -253,7 +257,7 @@ public class StreamingTest extends SolrCloudTestCase {
     SolrParams sParams = mapParams("q", "*:*", "fl", "id,a_s,a_i", "sort", "a_i asc", "partitionKeys", "a_i");
     CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
     RankStream rstream = new RankStream(stream, 11, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
-    ParallelStream pstream = new ParallelStream(zkHost, COLLECTION, rstream, 2, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
+    ParallelStream pstream = parallelStream(rstream, new FieldComparator("a_i", ComparatorOrder.DESCENDING));    
     attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
@@ -405,9 +409,7 @@ public class StreamingTest extends SolrCloudTestCase {
     ReducerStream rstream = new ReducerStream(stream,
                                               new FieldEqualitor("a_s"),
                                               new GroupOperation(new FieldComparator("a_f", ComparatorOrder.DESCENDING), 5));
-
-    ParallelStream pstream = new ParallelStream(zkHost, COLLECTION, rstream, 2, new FieldComparator("a_s",ComparatorOrder.ASCENDING));
-
+    ParallelStream pstream = parallelStream(rstream, new FieldComparator("a_s", ComparatorOrder.ASCENDING));    
     attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
@@ -433,9 +435,7 @@ public class StreamingTest extends SolrCloudTestCase {
     rstream = new ReducerStream(stream,
                                 new FieldEqualitor("a_s"),
                                 new GroupOperation(new FieldComparator("a_f", ComparatorOrder.ASCENDING), 3));
-
-    pstream = new ParallelStream(zkHost, COLLECTION, rstream, 2, new FieldComparator("a_s",ComparatorOrder.DESCENDING));
-
+    pstream = parallelStream(rstream, new FieldComparator("a_s", ComparatorOrder.DESCENDING));
     attachStreamFactory(pstream);
     tuples = getTuples(pstream);
 
@@ -1401,7 +1401,7 @@ public class StreamingTest extends SolrCloudTestCase {
                         new CountMetric()};
 
     RollupStream rollupStream = new RollupStream(stream, buckets, metrics);
-    ParallelStream parallelStream = new ParallelStream(zkHost, COLLECTION, rollupStream, 2, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
+    ParallelStream parallelStream = parallelStream(rollupStream, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
     attachStreamFactory(parallelStream);
     List<Tuple> tuples = getTuples(parallelStream);
 
@@ -1501,9 +1501,7 @@ public class StreamingTest extends SolrCloudTestCase {
     ReducerStream rstream = new ReducerStream(stream,
                                               new FieldEqualitor("a_s"),
                                               new GroupOperation(new FieldComparator("a_s", ComparatorOrder.ASCENDING), 2));
-
-    ParallelStream pstream = new ParallelStream(zkHost, COLLECTION, rstream, 2, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
-
+    ParallelStream pstream = parallelStream(rstream, new FieldComparator("a_s", ComparatorOrder.ASCENDING));
     attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
     assert(tuples.size() == 0);
@@ -1636,7 +1634,7 @@ public class StreamingTest extends SolrCloudTestCase {
     CloudSolrStream streamB = new CloudSolrStream(zkHost, COLLECTION, sParamsB);
 
     MergeStream mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
-    ParallelStream pstream = new ParallelStream(zkHost, COLLECTION, mstream, 2, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
+    ParallelStream pstream = parallelStream(mstream, new FieldComparator("a_i", ComparatorOrder.ASCENDING));
     attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
@@ -1651,7 +1649,7 @@ public class StreamingTest extends SolrCloudTestCase {
     streamB = new CloudSolrStream(zkHost, COLLECTION, sParamsB);
 
     mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
-    pstream = new ParallelStream(zkHost, COLLECTION, mstream, 2, new FieldComparator("a_i",ComparatorOrder.DESCENDING));
+    pstream = parallelStream(mstream, new FieldComparator("a_i", ComparatorOrder.DESCENDING));
     attachStreamFactory(pstream);
     tuples = getTuples(pstream);
 
@@ -1684,14 +1682,13 @@ public class StreamingTest extends SolrCloudTestCase {
     CloudSolrStream streamB = new CloudSolrStream(zkHost, COLLECTION, sParamsB);
 
     MergeStream mstream = new MergeStream(streamA, streamB, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
-    ParallelStream pstream = new ParallelStream(zkHost, COLLECTION, mstream, 2, new FieldComparator("a_i",ComparatorOrder.ASCENDING));
-    
+    ParallelStream pstream = parallelStream(mstream, new FieldComparator("a_i", ComparatorOrder.ASCENDING));    
     attachStreamFactory(pstream);
     List<Tuple> tuples = getTuples(pstream);
 
     assert(tuples.size() == 9);
     Map<String, Tuple> eofTuples = pstream.getEofTuples();
-    assert(eofTuples.size() == 2); // There should be an EOF Tuple for each worker.
+    assert(eofTuples.size() == numWorkers); // There should be an EOF Tuple for each worker.
 
   }
 
@@ -1834,5 +1831,10 @@ public class StreamingTest extends SolrCloudTestCase {
 
     return params;
   }
+  
+  private ParallelStream parallelStream(TupleStream stream, FieldComparator comparator) throws IOException {
+    ParallelStream pstream = new ParallelStream(zkHost, COLLECTION, stream, numWorkers, comparator);
+    return pstream;
+  }  
 
 }

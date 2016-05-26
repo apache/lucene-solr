@@ -26,6 +26,10 @@ New Features
   e.g. clear the Gregorian Change Date.  Also, toString(cal) is now identical to
   DateTimeFormatter.ISO_INSTANT. (David Smiley)
 
+* LUCENE-7300: The misc module now has a directory wrapper that uses hard-links if
+  applicable and supported when copying files from another FSDirectory in 
+  Directory#copyFrom. (Simon Willnauer)
+
 API Changes
 
 * LUCENE-7184: Refactor LatLonPoint encoding methods to new GeoEncodingUtils
@@ -86,6 +90,8 @@ Optimizations
   (which is used by TermsQuery, multi-term queries and several point queries).
   (Adrien Grand, Jeff Wartes, David Smiley)
 
+* LUCENE-7299: Speed up BytesRefHash.sort(). (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-7127: Fix corner case bugs in GeoPointDistanceQuery. (Robert Muir)
@@ -136,6 +142,9 @@ Documentation
 
 Other
 
+* LUCENE-7295: TermAutomatonQuery.hashCode calculates Automaton.toDot().hash,
+  equivalence relationship replaced with object identity. (Dawid Weiss)
+
 * LUCENE-7277: Make Query.hashCode and Query.equals abstract. (Paul Elschot, 
   Dawid Weiss)
 
@@ -152,6 +161,9 @@ Other
 
 * SOLR-9109/SOLR-9121: Allow specification of a custom Ivy settings file via system
   property "ivysettings.xml". (Misha Dmitriev, Christine Poerschke, Uwe Schindler, Steve Rowe)
+
+* LUCENE-7206: Improve the ToParentBlockJoinQuery's explain by including the explain
+  of the best matching child doc. (Ilya Kasnacheev, Jeff Evans via Martijn van Groningen)
 
 Build
 

@@ -245,19 +245,18 @@ public class TermAutomatonQuery extends Query {
   }
 
   private boolean equalsTo(TermAutomatonQuery other) {
-    // NOTE: not quite correct, because if terms were added in different
-    // order in each query but the language is the same, we return false:
     return checkFinished(this) &&
            checkFinished(other) &&
-           termToID.equals(other.termToID) &&
-           Operations.sameLanguage(det, other.det);
+           other == this;
   }
 
   @Override
   public int hashCode() {
     checkFinished(this);
-    // TODO: LUCENE-7295: Automaton.toDot() is very costly!
-    return classHash() ^ termToID.hashCode() + det.toDot().hashCode();
+    // LUCENE-7295: this used to be very awkward toDot() call; it is safer to assume
+    // that no two instances are equivalent instead (until somebody finds a better way to check
+    // on automaton equivalence quickly).
+    return System.identityHashCode(this);
   }
 
   /** Returns the dot (graphviz) representation of this automaton.
@@ -328,7 +327,6 @@ public class TermAutomatonQuery extends Query {
   }
 
   final class TermAutomatonWeight extends Weight {
-    private final IndexSearcher searcher;
     final Automaton automaton;
     private final Map<Integer,TermContext> termStates;
     private final Similarity.SimWeight stats;
@@ -337,7 +335,6 @@ public class TermAutomatonQuery extends Query {
     public TermAutomatonWeight(Automaton automaton, IndexSearcher searcher, Map<Integer,TermContext> termStates) throws IOException {
       super(TermAutomatonQuery.this);
       this.automaton = automaton;
-      this.searcher = searcher;
       this.termStates = termStates;
       this.similarity = searcher.getSimilarity(true);
       List<TermStatistics> allTermStats = new ArrayList<>();

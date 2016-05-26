@@ -661,7 +661,7 @@ public class MultiDocValues {
     public final OrdinalMap mapping;
   
     /** Creates a new MultiSortedDocValues over <code>values</code> */
-    MultiSortedDocValues(SortedDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
+    public MultiSortedDocValues(SortedDocValues values[], int docStarts[], OrdinalMap mapping) throws IOException {
       assert docStarts.length == values.length + 1;
       this.values = values;
       this.docStarts = docStarts;

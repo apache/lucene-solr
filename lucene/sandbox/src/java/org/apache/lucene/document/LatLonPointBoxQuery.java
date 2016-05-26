@@ -34,6 +34,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.StringHelper;
 
 /** 
@@ -103,19 +104,21 @@ abstract class LatLonPointBoxQuery extends Query {
     return new ConstantScoreWeight(this) {
 
       private DocIdSetIterator buildMatchingIterator(LeafReader reader, PointValues values) throws IOException {
-        MatchingPoints result = new MatchingPoints(reader, field);
+        DocIdSetBuilder result = new DocIdSetBuilder(reader.maxDoc(), values, field);
 
         values.intersect(field,
             new IntersectVisitor() {
 
+              DocIdSetBuilder.BulkAdder adder;
+
               @Override
               public void grow(int count) {
-                result.grow(count);
+                adder = result.grow(count);
               }
 
               @Override
               public void visit(int docID) {
-                result.add(docID);
+                adder.add(docID);
               }
 
               @Override
@@ -133,7 +136,7 @@ abstract class LatLonPointBoxQuery extends Query {
                 }
 
                 // Doc is in-bounds
-                result.add(docID);
+                adder.add(docID);
               }
 
               @Override
@@ -160,7 +163,7 @@ abstract class LatLonPointBoxQuery extends Query {
                 }
               }
             });
-        return result.iterator();
+        return result.build().iterator();
       }
 
       @Override
