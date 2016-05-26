@@ -150,10 +150,31 @@ final class DocumentsWriterDeleteQueue implements Accountable {
     return seqNo;
   }
 
-  synchronized long add(Node<?> newNode) {
-    tail.next = newNode;
-    tail = newNode;
-    return seqNo.getAndIncrement();
+  long add(Node<?> newNode) {
+    /*
+     * this non-blocking / 'wait-free' linked list add was inspired by Apache
+     * Harmony's ConcurrentLinkedQueue Implementation.
+     */
+    while (true) {
+      final Node<?> currentTail = tail;
+      final Node<?> tailNext = currentTail.next;
+      if (tail == currentTail && tailNext == null) {
+        /*
+         * we are in quiescent state and can try to insert the newNode to the
+         * current tail if we fail to insert we just retry the operation since
+         * somebody else has already added its newNode
+         */
+        if (currentTail.casNext(null, newNode)) {
+          /*
+           * now that we are done we need to advance the tail
+           */
+          long mySeqNo = seqNo.getAndIncrement();
+          boolean result = tailUpdater.compareAndSet(this, currentTail, newNode);
+          assert result;
+          return mySeqNo;
+        }
+      }
+    }
   }
 
   boolean anyChanges() {
