@@ -21,10 +21,13 @@ import java.util.Arrays;
 /** Radix sorter for variable-length strings. This class sorts based on the most
  *  significant byte first and falls back to {@link IntroSorter} when the size
  *  of the buckets to sort becomes small. It is <b>NOT</b> stable.
- *  Worst-case memory usage is about {@code 2.3 KB} */
+ *  Worst-case memory usage is about {@code 2.3 KB}. */
 abstract class StringMSBRadixSorter extends Sorter {
 
   // after that many levels of recursion we fall back to introsort anyway
+  // this is used as a protection against the fact that radix sort performs
+  // worse when there are long common prefixes (probably because of cache
+  // locality)
   private static final int LEVEL_THRESHOLD = 8;
   // size of histograms: 256 + 1 to indicate that the string is finished
   private static final int HISTOGRAM_SIZE = 257;

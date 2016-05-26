@@ -23,7 +23,7 @@ import java.util.Comparator;
  * @lucene.internal */
 public abstract class Sorter {
 
-  static final int THRESHOLD = 20;
+  static final int INSERTION_SORT_THRESHOLD = 20;
 
   /** Sole constructor, used for inheritance. */
   protected Sorter() {}
