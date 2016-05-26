@@ -238,6 +238,9 @@ Bug Fixes
 
 * SOLR-9141: Fix ClassCastException when using the /sql handler count() function with 
   single-shard collections (Minoru Osuka via James Dyer)
+  
+* SOLR-9165: Spellcheck does not return collations if "maxCollationTries" is used with "cursorMark".
+  (James Dyer)
 
 Optimizations
 ----------------------
