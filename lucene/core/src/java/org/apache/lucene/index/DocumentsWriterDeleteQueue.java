@@ -77,17 +77,17 @@ final class DocumentsWriterDeleteQueue implements Accountable {
 
   private final DeleteSlice globalSlice;
   private final BufferedUpdates globalBufferedUpdates;
-  private long gen;
   
   // only acquired to update the global deletes, pkg-private for access by tests:
   final ReentrantLock globalBufferLock = new ReentrantLock();
 
   final long generation;
 
+  /** Generates the sequence number that IW returns to callers changing the index, showing the effective serialization of all operations. */
   final AtomicLong seqNo;
   
   DocumentsWriterDeleteQueue() {
-    // seqNo must start at 1 because some APIs negate this to encode a boolean
+    // seqNo must start at 1 because some APIs negate this to also return a boolean
     this(0, 1);
   }
   
