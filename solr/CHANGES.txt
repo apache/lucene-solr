@@ -236,6 +236,9 @@ Bug Fixes
 
 * SOLR-9151: Fix SolrCLI so that bin/solr -e cloud example can be run from any CWD (janhoy)
 
+* SOLR-9141: Fix ClassCastException when using the /sql handler count() function with 
+  single-shard collections (Minoru Osuka via James Dyer)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
