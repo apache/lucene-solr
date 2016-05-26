@@ -45,32 +45,37 @@ public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
 
     Directory luceneDir_1 = newFSDirectory(dir_1);
     Directory luceneDir_2 = newFSDirectory(dir_2);
-    try(IndexOutput output = luceneDir_1.createOutput("foo.bar", IOContext.DEFAULT)) {
-      CodecUtil.writeHeader(output, "foo", 0);
-      output.writeString("hey man, nice shot!");
-      CodecUtil.writeFooter(output);
-    }
     try {
-      Files.createLink(tempDir.resolve("test"), dir_1.resolve("foo.bar"));
-      BasicFileAttributes destAttr = Files.readAttributes(tempDir.resolve("test"), BasicFileAttributes.class);
+      try (IndexOutput output = luceneDir_1.createOutput("foo.bar", IOContext.DEFAULT)) {
+        CodecUtil.writeHeader(output, "foo", 0);
+        output.writeString("hey man, nice shot!");
+        CodecUtil.writeFooter(output);
+      }
+      try {
+        Files.createLink(tempDir.resolve("test"), dir_1.resolve("foo.bar"));
+        BasicFileAttributes destAttr = Files.readAttributes(tempDir.resolve("test"), BasicFileAttributes.class);
+        BasicFileAttributes sourceAttr = Files.readAttributes(dir_1.resolve("foo.bar"), BasicFileAttributes.class);
+        assumeTrue("hardlinks are not supported", destAttr.fileKey() != null
+            && destAttr.fileKey().equals(sourceAttr.fileKey()));
+      } catch (UnsupportedOperationException ex) {
+        assumeFalse("hardlinks are not supported", true);
+      }
+
+      HardlinkCopyDirectoryWrapper wrapper = new HardlinkCopyDirectoryWrapper(luceneDir_2);
+      wrapper.copyFrom(luceneDir_1, "foo.bar", "bar.foo", IOContext.DEFAULT);
+      assertTrue(Files.exists(dir_2.resolve("bar.foo")));
+      BasicFileAttributes destAttr = Files.readAttributes(dir_2.resolve("bar.foo"), BasicFileAttributes.class);
       BasicFileAttributes sourceAttr = Files.readAttributes(dir_1.resolve("foo.bar"), BasicFileAttributes.class);
-      assumeTrue("hardlinks are not supported", destAttr.fileKey() != null
-          && destAttr.fileKey().equals(sourceAttr.fileKey()));
-    } catch (UnsupportedOperationException ex) {
-      assumeFalse("hardlinks are not supported", false);
+      assertEquals(destAttr.fileKey(), sourceAttr.fileKey());
+      try (ChecksumIndexInput indexInput = wrapper.openChecksumInput("bar.foo", IOContext.DEFAULT)) {
+        CodecUtil.checkHeader(indexInput, "foo", 0, 0);
+        assertEquals("hey man, nice shot!", indexInput.readString());
+        CodecUtil.checkFooter(indexInput);
+      }
+    } finally {
+      // close them in a finally block we might run into an assume here
+      IOUtils.close(luceneDir_1, luceneDir_2);
     }
 
-    HardlinkCopyDirectoryWrapper wrapper = new HardlinkCopyDirectoryWrapper(luceneDir_2);
-    wrapper.copyFrom(luceneDir_1, "foo.bar", "bar.foo", IOContext.DEFAULT);
-    assertTrue(Files.exists(dir_2.resolve("bar.foo")));
-    BasicFileAttributes destAttr = Files.readAttributes(dir_2.resolve("bar.foo"), BasicFileAttributes.class);
-    BasicFileAttributes sourceAttr = Files.readAttributes(dir_1.resolve("foo.bar"), BasicFileAttributes.class);
-    assertEquals(destAttr.fileKey(), sourceAttr.fileKey());
-    try(ChecksumIndexInput indexInput = wrapper.openChecksumInput("bar.foo", IOContext.DEFAULT)) {
-      CodecUtil.checkHeader(indexInput, "foo", 0, 0);
-      assertEquals("hey man, nice shot!", indexInput.readString());
-      CodecUtil.checkFooter(indexInput);
-    }
-    IOUtils.close(luceneDir_1, luceneDir_2);
   }
 }
