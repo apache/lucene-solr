@@ -105,6 +105,35 @@ final class FixedLengthBytesRefArray implements SortableBytesRefArray {
       orderedEntries[i] = i;
     }
 
+    if (comp instanceof BytesRefComparator) {
+      BytesRefComparator bComp = (BytesRefComparator) comp;
+      new MSBRadixSorter(bComp.comparedBytesCount) {
+
+        BytesRef scratch;
+
+        {
+          scratch = new BytesRef();
+          scratch.length = valueLength;
+        }
+
+        @Override
+        protected void swap(int i, int j) {
+          int o = orderedEntries[i];
+          orderedEntries[i] = orderedEntries[j];
+          orderedEntries[j] = o;
+        }
+
+        @Override
+        protected int byteAt(int i, int k) {
+          int index1 = orderedEntries[i];
+          scratch.bytes = blocks[index1 / valuesPerBlock];
+          scratch.offset = (index1 % valuesPerBlock) * valueLength;
+          return bComp.byteAt(scratch, k);
+        }
+      }.sort(0, size());
+      return orderedEntries;
+    }
+
     final BytesRef pivot = new BytesRef();
     final BytesRef scratch1 = new BytesRef();
     final BytesRef scratch2 = new BytesRef();
