@@ -1,0 +1,20 @@
+{
+	"type":"org.apache.solr.ltr.ranking.RankSVMModel",
+	"name":"svm",
+	"features":[
+		{"name":"constant1"},
+	    {"name":"constant2"},
+	    {"name":"constant3"},
+        {"name":"constant4"},
+	    {"name":"constant5"}
+	],
+	 "params":{
+     "weights":{
+       "constant1":1,
+       "constant2":2,
+       "constant3":3,
+       "constant4":4,
+       "constant5":5
+     }
+  }
+}

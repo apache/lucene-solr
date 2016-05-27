@@ -1,0 +1,22 @@
+{
+	"type":"org.apache.solr.ltr.ranking.RankSVMModel",
+	"name":"norm2",
+	"features":[
+	    {
+                "name":"feature2normalize",
+                "norm": {
+                    "type":"org.apache.solr.ltr.feature.norm.impl.StandardNormalizer",
+
+                    "params":{
+                        "avg":0.0,
+                        "std":2.0
+                    }
+                }
+        }
+	],
+	"params":{
+	   "weights":{
+       "feature2normalize":1.0
+      }
+   }
+}

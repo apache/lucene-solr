@@ -1,0 +1,6 @@
+[
+{
+	"name":"constant";
+	"type":"org.apache.solr.ltr.feature.impl.ValueFeature"
+}
+]

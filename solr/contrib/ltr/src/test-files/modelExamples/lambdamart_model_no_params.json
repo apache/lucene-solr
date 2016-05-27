@@ -1,0 +1,8 @@
+{
+    "type":"org.apache.solr.ltr.ranking.LambdaMARTModel",
+    "name":"lambdamartmodel_no_params",
+    "features":[
+        { "name": "matchedTitle"},
+        { "name": "constantScoreToForceLambdaMARTScoreAllDocs"}
+    ]
+}

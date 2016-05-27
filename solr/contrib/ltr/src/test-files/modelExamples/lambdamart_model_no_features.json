@@ -1,0 +1,14 @@
+{
+    "type":"org.apache.solr.ltr.ranking.LambdaMARTModel",
+    "name":"lambdamartmodel_no_features",
+    "params":{
+        "trees": [
+            {
+                "weight" : 2,
+                "tree": {
+                    "value" : -10
+                }
+            }
+        ]
+    }
+}
