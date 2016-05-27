@@ -88,6 +88,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
   }
 
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  static final String sqlNonCloudErrorMsg = "/sql handler only works in Solr Cloud mode";
 
   public void inform(SolrCore core) {
 
@@ -111,7 +112,7 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     String sql = params.get("stmt");
     int numWorkers = params.getInt("numWorkers", 1);
     String workerCollection = params.get("workerCollection", defaultWorkerCollection);
-    String workerZkhost = params.get("workerZkhost",defaultZkhost);
+    String workerZkhost = params.get("workerZkhost", defaultZkhost);
     String mode = params.get("aggregationMode", "map_reduce");
     StreamContext context = new StreamContext();
 
@@ -119,6 +120,10 @@ public class SQLHandler extends RequestHandlerBase implements SolrCoreAware , Pe
     boolean includeMetadata = params.getBool("includeMetadata", false);
 
     try {
+
+      if(workerZkhost == null) {
+        throw new IllegalStateException(sqlNonCloudErrorMsg);
+      }
 
       if(sql == null) {
         throw new Exception("stmt parameter cannot be null");
