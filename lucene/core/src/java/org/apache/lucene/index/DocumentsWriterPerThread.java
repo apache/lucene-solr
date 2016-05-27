@@ -292,7 +292,7 @@ class DocumentsWriterPerThread {
         deleteSlice.apply(pendingUpdates, numDocsInRAM-docCount);
         return seqNo;
       } else {
-        seqNo = deleteQueue.seqNo.get();
+        seqNo = deleteQueue.getNextSequenceNumber();
       }
 
       return seqNo;
@@ -328,7 +328,7 @@ class DocumentsWriterPerThread {
       assert deleteSlice.isTailItem(delTerm) : "expected the delete term as the tail item";
     } else  {
       applySlice &= deleteQueue.updateSlice(deleteSlice);
-      seqNo = deleteQueue.seqNo.get();
+      seqNo = deleteQueue.getNextSequenceNumber();
     }
     
     if (applySlice) {
