@@ -265,6 +265,8 @@ Other Changes
 
 * SOLR-8385: Narrow StreamFactory.withFunctionName clazz parameter to prevent misconfiguration (Jason Gerlowski, Kevin Risden)
 
+* SOLR-8969: SQLHandler causes NPE in non-cloud mode (Markus Jelsma, Kevin Risden)
+
 ==================  6.2.1 ==================
 
 Bug Fixes
