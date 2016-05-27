@@ -43,7 +43,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     long a = w.addDocument(new Document());
     long b = w.addDocument(new Document());
-    assertTrue(b >= a);
+    assertTrue(b > a);
     w.close();
     dir.close();
   }
@@ -129,7 +129,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
   }
 
   static class Operation {
-    // 0 = update, 1 = delete, 2 = commit
+    // 0 = update, 1 = delete, 2 = commit, 3 = add
     byte what;
     int id;
     int threadID;
@@ -248,7 +248,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
             }
           }
 
-          assertTrue(op.seqNo >= lastSeqNo);
+          assertTrue(op.seqNo > lastSeqNo);
           lastSeqNo = op.seqNo;
         }
       }
@@ -291,6 +291,155 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
       r.close();
     }
 
+    dir.close();
+  }
+
+  public void testStressConcurrentAddAndDeleteAndCommit() throws Exception {
+    final int opCount = atLeast(10000);
+    final int idCount = TestUtil.nextInt(random(), 10, 1000);
+
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
+
+    // Cannot use RIW since it randomly commits:
+    final IndexWriter w = new IndexWriter(dir, iwc);
+
+    final int numThreads = TestUtil.nextInt(random(), 2, 5);
+    Thread[] threads = new Thread[numThreads];
+    //System.out.println("TEST: iter=" + iter + " opCount=" + opCount + " idCount=" + idCount + " threadCount=" + threads.length);
+    final CountDownLatch startingGun = new CountDownLatch(1);
+    List<List<Operation>> threadOps = new ArrayList<>();
+
+    Object commitLock = new Object();
+    final List<Operation> commits = new ArrayList<>();
+
+    // multiple threads update the same set of documents, and we randomly commit
+    for(int i=0;i<threads.length;i++) {
+      final List<Operation> ops = new ArrayList<>();
+      threadOps.add(ops);
+      final int threadID = i;
+      threads[i] = new Thread() {
+          @Override
+          public void run() {
+            try {
+              startingGun.await();
+              for(int i=0;i<opCount;i++) {
+                Operation op = new Operation();
+                op.threadID = threadID;
+                if (random().nextInt(500) == 17) {
+                  op.what = 2;
+                  synchronized(commitLock) {
+                    op.seqNo = w.commit();
+                    if (op.seqNo != -1) {
+                      commits.add(op);
+                    }
+                  }
+                } else {
+                  op.id = random().nextInt(idCount);
+                  Term idTerm = new Term("id", "" + op.id);
+                  if (random().nextInt(10) == 1) {
+                    op.what = 1;
+                    if (random().nextBoolean()) {
+                      op.seqNo = w.deleteDocuments(idTerm);
+                    } else {
+                      op.seqNo = w.deleteDocuments(new TermQuery(idTerm));
+                    }
+                  } else {
+                    Document doc = new Document();
+                    doc.add(new StoredField("thread", threadID));
+                    doc.add(new StringField("id", "" + op.id, Field.Store.NO));
+                    if (random().nextBoolean()) {
+                      List<Document> docs = new ArrayList<>();
+                      docs.add(doc);
+                      op.seqNo = w.addDocuments(docs);
+                    } else {
+                      op.seqNo = w.addDocument(doc);
+                    }
+                    op.what = 3;
+                  }
+                  ops.add(op);
+                }
+              }
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
+      threads[i].start();
+    }
+    startingGun.countDown();
+    for(Thread thread : threads) {
+      thread.join();
+    }
+
+    Operation commitOp = new Operation();
+    commitOp.seqNo = w.commit();
+    if (commitOp.seqNo != -1) {
+      commits.add(commitOp);
+    }
+
+    List<IndexCommit> indexCommits = DirectoryReader.listCommits(dir);
+    assertEquals(commits.size(), indexCommits.size());
+
+    // how many docs with this id are expected:
+    int[] expectedCounts = new int[idCount];
+    long[] lastDelSeqNos = new long[idCount];
+      
+    //System.out.println("TEST: " + commits.size() + " commits");
+    for(int i=0;i<commits.size();i++) {
+      // this commit point should reflect all operations <= this seqNo
+      long commitSeqNo = commits.get(i).seqNo;
+      //System.out.println("  commit " + i + ": seqNo=" + commitSeqNo + " segs=" + indexCommits.get(i));
+
+      // first find the highest seqNo of the last delete op, for each id, prior to this commit:
+      Arrays.fill(lastDelSeqNos, -1);
+      for(int threadID=0;threadID<threadOps.size();threadID++) {
+        long lastSeqNo = 0;
+        for(Operation op : threadOps.get(threadID)) {
+          if (op.what == 1 && op.seqNo <= commitSeqNo && op.seqNo > lastDelSeqNos[op.id]) {
+            lastDelSeqNos[op.id] = op.seqNo;
+          }
+
+          // within one thread the seqNos must only increase:
+          assertTrue(op.seqNo > lastSeqNo);
+          lastSeqNo = op.seqNo;
+        }
+      }
+
+      // then count how many adds happened since the last delete and before this commit:
+      Arrays.fill(expectedCounts, 0);
+      for(int threadID=0;threadID<threadOps.size();threadID++) {
+        for(Operation op : threadOps.get(threadID)) {
+          if (op.what == 3 && op.seqNo <= commitSeqNo && op.seqNo > lastDelSeqNos[op.id]) {
+            expectedCounts[op.id]++;
+          }
+        }
+      }
+
+      DirectoryReader r = DirectoryReader.open(indexCommits.get(i));
+      IndexSearcher s = new IndexSearcher(r);
+
+      for(int id=0;id<idCount;id++) {
+        //System.out.println("TEST: check id=" + id + " expectedThreadID=" + expectedThreadIDs[id]);
+        assertEquals(expectedCounts[id], s.count(new TermQuery(new Term("id", ""+id))));
+      }
+      w.close();
+      r.close();
+    }
+
+    dir.close();
+  }
+
+  public void testDeleteAll() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    long a = w.addDocument(new Document());
+    long b = w.deleteAll();
+    assertTrue(a < b);
+    long c = w.commit();
+    assertTrue(b < c);
+    w.close();
     dir.close();
   }
 }

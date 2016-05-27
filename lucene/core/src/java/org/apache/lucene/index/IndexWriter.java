@@ -95,6 +95,14 @@ import org.apache.lucene.util.Version;
   and then adds the entire document). When finished adding, deleting 
   and updating documents, {@link #close() close} should be called.</p>
 
+  <a name="sequence_numbers"></a>
+  <p>Each method that changes the index returns a {@code long} sequence number, which
+  expresses the effective order in which each change was applied.
+  {@link #commit} also returns a sequence number, describing which
+  changes are in the commit point and which are not.  Sequence numbers
+  are transient (not saved into the index in any way) and only valid
+  within a single {@code IndexWriter} instance.</p>
+
   <a name="flush"></a>
   <p>These changes are buffered in memory and periodically
   flushed to the {@link Directory} (during the above method
@@ -1288,6 +1296,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * replaced with the Unicode replacement character
    * U+FFFD.</p>
    *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
@@ -1327,6 +1338,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * and will likely break them up.  Use such tools at your
    * own risk!
    *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    *
@@ -1343,6 +1357,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * will see all or none of the documents. 
    *
    * See {@link #addDocuments(Iterable)}.
+   *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -1441,7 +1458,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           }
           //System.out.println("  yes " + info.info.name + " " + docID);
 
-          return docWriter.deleteQueue.seqNo.getAndIncrement();
+          return docWriter.deleteQueue.getNextSequenceNumber();
         }
       } else {
         //System.out.println("  no rld " + info.info.name + " " + docID);
@@ -1457,6 +1474,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * Deletes the document(s) containing any of the
    * terms. All given deletes are applied and flushed atomically
    * at the same time.
+   *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
    *
    * @param terms array of terms to identify the documents
    * to be deleted
@@ -1483,6 +1503,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   /**
    * Deletes the document(s) matching any of the provided queries.
    * All given deletes are applied and flushed atomically at the same time.
+   *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
    *
    * @param queries array of queries to identify the documents
    * to be deleted
@@ -1521,6 +1544,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * document.  The delete and then add are atomic as seen
    * by a reader on the same index (flush may happen only after
    * the add).
+   *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
    *
    * @param term the term to identify the document(s) to be
    * deleted
@@ -1566,6 +1592,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *          field name of the {@link NumericDocValues} field
    * @param value
    *          new value for the field
+   *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
+   *
    * @throws CorruptIndexException
    *           if the index is corrupt
    * @throws IOException
@@ -1606,6 +1636,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *          field name of the {@link BinaryDocValues} field
    * @param value
    *          new value for the field
+   *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
+   *
    * @throws CorruptIndexException
    *           if the index is corrupt
    * @throws IOException
@@ -1642,6 +1676,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * 
    * @param updates
    *          the updates to apply
+   *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
+   *
    * @throws CorruptIndexException
    *           if the index is corrupt
    * @throws IOException
@@ -2256,6 +2294,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * threads are running {@link #forceMerge}, {@link #addIndexes(CodecReader[])}
    * or {@link #forceMergeDeletes} methods, they may receive
    * {@link MergePolicy.MergeAbortedException}s.
+   *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
    */
   public long deleteAll() throws IOException {
     ensureOpen();
@@ -2304,7 +2345,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             globalFieldNumberMap.clear();
 
             success = true;
-            return docWriter.deleteQueue.seqNo.get();
+            return docWriter.deleteQueue.getNextSequenceNumber();
 
           } finally {
             docWriter.unlockAllAfterAbortAll(this);
@@ -2542,6 +2583,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *
    * <p>This requires this index not be among those to be added.
    *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
+   *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    * @throws IllegalArgumentException if addIndexes would cause
@@ -2558,6 +2602,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     Sort indexSort = config.getIndexSort();
 
     boolean successTop = false;
+
+    long seqNo;
 
     try {
       if (infoStream.isEnabled("IW")) {
@@ -2630,6 +2676,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // Now reserve the docs, just before we update SIS:
           reserveDocs(totalMaxDoc);
 
+          seqNo = docWriter.deleteQueue.getNextSequenceNumber();
+
           success = true;
         } finally {
           if (!success) {
@@ -2647,6 +2695,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "addIndexes(Directory...)");
+      // dead code but javac disagrees:
+      seqNo = -1;
     } finally {
       if (successTop) {
         IOUtils.close(locks);
@@ -2656,8 +2706,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     }
     maybeMerge();
 
-    // no need to increment:
-    return docWriter.deleteQueue.seqNo.get();
+    return seqNo;
   }
   
   /**
@@ -2682,6 +2731,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * {@code maxMergeAtOnce} parameter, you should pass that many readers in one
    * call.
    * 
+   * @return The <a href="#sequence_number">sequence number</a>
+   * for this operation
+   *
    * @throws CorruptIndexException
    *           if the index is corrupt
    * @throws IOException
@@ -2696,6 +2748,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     long numDocs = 0;
 
     Sort indexSort = config.getIndexSort();
+
+    long seqNo;
 
     try {
       if (infoStream.isEnabled("IW")) {
@@ -2731,8 +2785,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
       rateLimiters.set(new MergeRateLimiter(null));
 
       if (!merger.shouldMerge()) {
-        // no need to increment:
-        return docWriter.deleteQueue.seqNo.get();
+        return docWriter.deleteQueue.getNextSequenceNumber();
       }
 
       merger.merge();                // merge 'em
@@ -2751,8 +2804,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // Safe: these files must exist
           deleteNewFiles(infoPerCommit.files());
 
-          // no need to increment:
-          return docWriter.deleteQueue.seqNo.get();
+          return docWriter.deleteQueue.getNextSequenceNumber();
         }
         ensureOpen();
         useCompoundFile = mergePolicy.useCompoundFile(segmentInfos, infoPerCommit, this);
@@ -2788,8 +2840,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
           // Safe: these files must exist
           deleteNewFiles(infoPerCommit.files());
 
-          // no need to increment:
-          return docWriter.deleteQueue.seqNo.get();
+          return docWriter.deleteQueue.getNextSequenceNumber();
         }
         ensureOpen();
 
@@ -2797,15 +2848,17 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
         reserveDocs(numDocs);
       
         segmentInfos.add(infoPerCommit);
+        seqNo = docWriter.deleteQueue.getNextSequenceNumber();
         checkpoint();
       }
     } catch (VirtualMachineError tragedy) {
       tragicEvent(tragedy, "addIndexes(CodecReader...)");
+      // dead code but javac disagrees:
+      seqNo = -1;
     }
     maybeMerge();
 
-    // no need to increment:
-    return docWriter.deleteQueue.seqNo.get();
+    return seqNo;
   }
 
   /** Copies the segment files as-is into the IndexWriter's directory. */
@@ -2873,6 +2926,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * <p>You can also just call {@link #commit()} directly
    *  without prepareCommit first in which case that method
    *  will internally call prepareCommit.
+   *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * last operation in the commit.  All sequence numbers &lt;= this value
+   * will be reflected in the commit, and all others will not.
    */
   @Override
   public final long prepareCommit() throws IOException {
@@ -3069,6 +3126,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * point, and all other operations will not. </p>
    *
    * @see #prepareCommit
+   *
+   * @return The <a href="#sequence_number">sequence number</a>
+   * last operation in the commit.  All sequence numbers &lt;= this value
+   * will be reflected in the commit, and all others will not.
    */
   @Override
   public final long commit() throws IOException {
@@ -4988,11 +5049,12 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     };
   }
 
-  /** Returns the last sequence number.
+  /** Returns the last <a href="#sequence_number">sequence number</a>, or 0
+   *  if no index-changing operations have completed yet.
    *
    * @lucene.experimental */
   public long getLastSequenceNumber() {
     ensureOpen();
-    return docWriter.deleteQueue.seqNo.get()-1;
+    return docWriter.deleteQueue.getLastSequenceNumber();
   }
 }

@@ -84,7 +84,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
   final long generation;
 
   /** Generates the sequence number that IW returns to callers changing the index, showing the effective serialization of all operations. */
-  final AtomicLong seqNo;
+  private final AtomicLong nextSeqNo;
   
   DocumentsWriterDeleteQueue() {
     // seqNo must start at 1 because some APIs negate this to also return a boolean
@@ -98,7 +98,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
   DocumentsWriterDeleteQueue(BufferedUpdates globalBufferedUpdates, long generation, long startSeqNo) {
     this.globalBufferedUpdates = globalBufferedUpdates;
     this.generation = generation;
-    this.seqNo = new AtomicLong(startSeqNo);
+    this.nextSeqNo = new AtomicLong(startSeqNo);
     /*
      * we use a sentinel instance as our initial tail. No slice will ever try to
      * apply this tail since the head is always omitted.
@@ -168,10 +168,10 @@ final class DocumentsWriterDeleteQueue implements Accountable {
           /*
            * now that we are done we need to advance the tail
            */
-          long mySeqNo = seqNo.getAndIncrement();
+          long seqNo = getNextSequenceNumber();
           boolean result = tailUpdater.compareAndSet(this, currentTail, newNode);
           assert result;
-          return mySeqNo;
+          return seqNo;
         }
       }
     }
@@ -460,6 +460,16 @@ final class DocumentsWriterDeleteQueue implements Accountable {
   public String toString() {
     return "DWDQ: [ generation: " + generation + " ]";
   }
-  
-  
+
+  public long getNextSequenceNumber() {
+    return nextSeqNo.getAndIncrement();
+  }  
+
+  public long getLastSequenceNumber() {
+    return nextSeqNo.get()-1;
+  }  
+
+  public void skipSequenceNumbers(long jump) {
+    nextSeqNo.addAndGet(jump);
+  }  
 }

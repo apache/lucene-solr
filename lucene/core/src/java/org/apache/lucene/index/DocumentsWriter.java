@@ -259,7 +259,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       deleteQueue.clear();
 
       // jump over any possible in flight ops:
-      deleteQueue.seqNo.addAndGet(perThreadPool.getActiveThreadStateCount()+1);
+      deleteQueue.skipSequenceNumbers(perThreadPool.getActiveThreadStateCount()+1);
 
       flushControl.abortPendingFlushes();
       flushControl.waitForFlush();

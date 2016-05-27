@@ -481,9 +481,9 @@ final class DocumentsWriterFlushControl implements Accountable {
       // we do another full flush
       //System.out.println("DWFC: fullFLush old seqNo=" + documentsWriter.deleteQueue.seqNo.get() + " activeThreadCount=" + perThreadPool.getActiveThreadStateCount());
 
-      // Insert a gap in seqNo of current active thread count, in the worst case those threads now have one operation in flight.  It's fine
+      // Insert a gap in seqNo of current active thread count, in the worst case each of those threads now have one operation in flight.  It's fine
       // if we have some sequence numbers that were never assigned:
-      seqNo = documentsWriter.deleteQueue.seqNo.get() + perThreadPool.getActiveThreadStateCount();
+      seqNo = documentsWriter.deleteQueue.getLastSequenceNumber() + perThreadPool.getActiveThreadStateCount() + 2;
 
       DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(flushingQueue.generation+1, seqNo+1);
 
