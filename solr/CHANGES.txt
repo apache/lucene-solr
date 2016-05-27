@@ -337,6 +337,8 @@ Other Changes
 
 * SOLR-9110: Move JoinFromCollection- SubQueryTransformer- BlockJoinFacet- Distrib Tests to SolrCloudTestCase  (Mikhail Khludnev)
 
+* SOLR-9161: SolrPluginUtils.invokeSetters now accommodates setter variants (Christine Poerschke)
+
 ==================  6.0.1 ==================
 (No Changes)
 
