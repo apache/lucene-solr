@@ -46,7 +46,6 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   
   final static String people = "people";
   final static String depts = "departments";
-  private static CloudSolrClient client;
   
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -72,7 +71,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     assertNotNull(cluster.createCollection(depts, shards, replicas,
         configName, collectionProperties));
     
-    client = cluster.getSolrClient();
+    CloudSolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(people);
     
     ZkStateReader zkStateReader = client.getZkStateReader();
@@ -105,7 +104,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
           "depts.rows",""+(deptMultiplier*2),
           "depts.logParamsList","q,fl,rows,row.dept_ss_dv"}));
       final QueryResponse  rsp = new QueryResponse();
-      rsp.setResponse(client.request(qr, people));
+      rsp.setResponse(cluster.getSolrClient().request(qr, people));
       final SolrDocumentList hits = rsp.getResults();
       
       assertEquals(peopleMultiplier, hits.getNumFound());
@@ -197,7 +196,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
       if (rarely()) {
         upd.append(commit("softCommit", "true"));
       }
-      if (!rarely() || !iterator.hasNext()) {
+      if (rarely() || !iterator.hasNext()) {
         if (!iterator.hasNext()) {
           upd.append(commit("softCommit", "false"));
         }
@@ -206,7 +205,7 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
         ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
         req.addContentStream(new ContentStreamBase.StringStream(upd.toString(),"text/xml"));
         
-        client.request(req, collection);
+        cluster.getSolrClient().request(req, collection);
         upd.setLength("<update>".length());
       }
     }

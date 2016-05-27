@@ -64,9 +64,6 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
 
   private static Integer toDocId;
   
-  private static CloudSolrClient cloudClient;
-  
-  
   @BeforeClass
   public static void setupCluster() throws Exception {
     final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
@@ -90,11 +87,9 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
         configName,
         collectionProperties));
     
-
     // get the set of nodes where replicas for the "to" collection exist
     Set<String> nodeSet = new HashSet<>();
-    cloudClient = cluster.getSolrClient();
-    ZkStateReader zkStateReader = cloudClient.getZkStateReader();
+    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     ClusterState cs = zkStateReader.getClusterState();
     for (Slice slice : cs.getCollection(toColl).getActiveSlices())
       for (Replica replica : slice.getReplicas())
@@ -138,7 +133,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
     for (String c : new String[]{ toColl, fromColl }) {
       try {
         CollectionAdminRequest.Delete req =  CollectionAdminRequest.deleteCollection(c);
-        req.process(cloudClient);
+        req.process(cluster.getSolrClient());
       } catch (Exception e) {
         // don't fail the test
         log.warn("Could not delete collection {} after test completed due to: " + e, c);
@@ -152,12 +147,13 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
       throws SolrServerException, IOException {
     // verify the join with fromIndex works
     final String fromQ = "match_s:c match_s:not_1_0_score_after_weight_normalization";
+    CloudSolrClient client = cluster.getSolrClient();
     {
     final String joinQ = "{!join " + anyScoreMode(isScoresTest)
                    + "from=join_s fromIndex=" + fromColl + 
                    " to=join_s}" + fromQ;
     QueryRequest qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-    QueryResponse rsp = new QueryResponse(cloudClient.request(qr), cloudClient);
+    QueryResponse rsp = new QueryResponse(client.request(qr), client);
     SolrDocumentList hits = rsp.getResults();
     assertTrue("Expected 1 doc, got "+hits, hits.getNumFound() == 1);
     SolrDocument doc = hits.get(0);
@@ -172,13 +168,13 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
     // create an alias for the fromIndex and then query through the alias
     String alias = fromColl+"Alias";
     CollectionAdminRequest.CreateAlias request = CollectionAdminRequest.createAlias(alias,fromColl);
-    request.process(cloudClient);
+    request.process(client);
 
     {
       final String joinQ = "{!join " + anyScoreMode(isScoresTest)
               + "from=join_s fromIndex=" + alias + " to=join_s}"+fromQ;
       final QueryRequest qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-      final QueryResponse rsp = new QueryResponse(cloudClient.request(qr), cloudClient);
+      final QueryResponse rsp = new QueryResponse(client.request(qr), client);
       final SolrDocumentList hits = rsp.getResults();
       assertTrue("Expected 1 doc", hits.getNumFound() == 1);
       SolrDocument doc = hits.get(0);
@@ -195,7 +191,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase{
       final String joinQ = "{!join " + (anyScoreMode(isScoresTest))
               + "from=join_s fromIndex=" + fromColl + " to=join_s}match_s:d";
       final QueryRequest  qr = new QueryRequest(params("collection", toColl, "q", joinQ, "fl", "id,get_s,score"));
-      final QueryResponse  rsp = new QueryResponse(cloudClient.request(qr), cloudClient);
+      final QueryResponse  rsp = new QueryResponse(client.request(qr), client);
       final SolrDocumentList hits = rsp.getResults();
       assertTrue("Expected no hits", hits.getNumFound() == 0);
     }
