@@ -306,6 +306,9 @@ Other Changes
 * SOLR-9160: Sync 6x and 7.0 move of UninvertingReader, SlowCompositeReaderWrapper for Solr (LUCENE-7283)
   (yonik)
 
+* SOLR-9136: Separate out the error statistics into server-side error vs client-side error
+  (Jessica Cheng Mallet via Erick Erickson)
+
 ==================  6.0.1 ==================
 (No Changes)
 
