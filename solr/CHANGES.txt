@@ -145,6 +145,9 @@ New Features
 * SOLR-8988: Adds query option facet.distrib.mco which when set to true allows the use of facet.mincount=1 in cloud mode.
   (Keith Laban, Dennis Gove)
 
+* SOLR-8583: Apply highlighting to hl.alternateField by default for Default and FastVectorHighlighter.
+  Turn off with hl.highlightAlternate=false (janhoy, David Smiley)
+
 Bug Fixes
 ----------------------
 
