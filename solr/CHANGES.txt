@@ -340,7 +340,7 @@ Other Changes
 * SOLR-9161: SolrPluginUtils.invokeSetters now accommodates setter variants (Christine Poerschke)
 
 * SOLR-9136: Separate out the error statistics into server-side error vs client-side error
-  (Jessica Chent Mallet via Erick Erickson)
+  (Jessica Cheng Mallet via Erick Erickson)
 
 ==================  6.0.1 ==================
 (No Changes)
