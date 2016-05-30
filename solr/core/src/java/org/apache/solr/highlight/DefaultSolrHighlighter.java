@@ -678,7 +678,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       return null;
     }
 
-    if (params.getFieldBool(fieldName, HighlightParams.HIGHLIGHT_ALTERNATE, true)) {
+    if (params.getFieldBool(fieldName, HighlightParams.HIGHLIGHT_ALTERNATE, true) && !alternateField.equals(fieldName)) {
       // Try to highlight alternate field
       Object fieldHighlights = null;
       SchemaField schemaField = schema.getFieldOrNull(alternateField);
