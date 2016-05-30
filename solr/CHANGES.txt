@@ -145,6 +145,9 @@ New Features
 * SOLR-8988: Adds query option facet.distrib.mco which when set to true allows the use of facet.mincount=1 in cloud mode.
   (Keith Laban, Dennis Gove)
 
+* SOLR-8583: Apply highlighting to hl.alternateField by default for Default and FastVectorHighlighter.
+  Turn off with hl.highlightAlternate=false (janhoy, David Smiley)
+
 Bug Fixes
 ----------------------
 
@@ -238,6 +241,9 @@ Bug Fixes
 
 * SOLR-9141: Fix ClassCastException when using the /sql handler count() function with 
   single-shard collections (Minoru Osuka via James Dyer)
+  
+* SOLR-9165: Spellcheck does not return collations if "maxCollationTries" is used with "cursorMark".
+  (James Dyer)
 
 Optimizations
 ----------------------
@@ -331,6 +337,13 @@ Other Changes
 * SOLR-9159: New cloud based concurrent atomic update test (hossman)
 
 * SOLR-9119: several static methods in ValueSourceParser have been made private (hossman)
+
+* SOLR-9110: Move JoinFromCollection- SubQueryTransformer- BlockJoinFacet- Distrib Tests to SolrCloudTestCase  (Mikhail Khludnev)
+
+* SOLR-9161: SolrPluginUtils.invokeSetters now accommodates setter variants (Christine Poerschke)
+
+* SOLR-9136: Separate out the error statistics into server-side error vs client-side error
+  (Jessica Cheng Mallet via Erick Erickson)
 
 ==================  6.0.1 ==================
 (No Changes)

@@ -17,6 +17,8 @@
 package org.apache.solr.response.transform;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -26,41 +28,64 @@ import java.util.Random;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
+import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 @SuppressSSL 
-public class TestSubQueryTransformerDistrib extends AbstractFullDistribZkTestBase {
+public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
   
-  @Override
-  protected String getCloudSchemaFile() {
-    return "schema-docValuesJoin.xml";
+  final static String people = "people";
+  final static String depts = "departments";
+  
+  @BeforeClass
+  public static void setupCluster() throws Exception {
+    
+    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+
+    String configName = "solrCloudCollectionConfig";
+    int nodeCount = 5;
+    configureCluster(nodeCount)
+       .addConfig(configName, configDir)
+       .configure();
+    
+    Map<String, String> collectionProperties = new HashMap<>();
+    collectionProperties.put("config", "solrconfig-doctransformers.xml" );
+    collectionProperties.put("schema", "schema-docValuesJoin.xml"); 
+
+    int shards = 2;
+    int replicas = 2 ;
+    assertNotNull(cluster.createCollection(people, shards, replicas,
+        configName,
+        collectionProperties));
+    
+    assertNotNull(cluster.createCollection(depts, shards, replicas,
+        configName, collectionProperties));
+    
+    CloudSolrClient client = cluster.getSolrClient();
+    client.setDefaultCollection(people);
+    
+    ZkStateReader zkStateReader = client.getZkStateReader();
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(people, zkStateReader, true, true, 30);
+    
+    AbstractDistribZkTestBase.waitForRecoveriesToFinish(depts, zkStateReader, false, true, 30);
   }
   
-  @Override
-  protected String getCloudSolrConfig() {
-    return "solrconfig-basic.xml";
-  }
   
   @SuppressWarnings("serial")
   @Test
   public void test() throws SolrServerException, IOException {
     int peopleMultiplier = atLeast(1);
     int deptMultiplier = atLeast(1);
-    
-    final String people = "people";
-    createCollection(people, 2, 1, 10);
-
-    
-    final String depts = "departments";
-    createCollection(depts, 2, 1, 10);
-
     
     createIndex(people, peopleMultiplier, depts, deptMultiplier);
     
@@ -79,7 +104,7 @@ public class TestSubQueryTransformerDistrib extends AbstractFullDistribZkTestBas
           "depts.rows",""+(deptMultiplier*2),
           "depts.logParamsList","q,fl,rows,row.dept_ss_dv"}));
       final QueryResponse  rsp = new QueryResponse();
-      rsp.setResponse(cloudClient.request(qr, people));
+      rsp.setResponse(cluster.getSolrClient().request(qr, people));
       final SolrDocumentList hits = rsp.getResults();
       
       assertEquals(peopleMultiplier, hits.getNumFound());
@@ -116,6 +141,7 @@ public class TestSubQueryTransformerDistrib extends AbstractFullDistribZkTestBas
 
   private void createIndex(String people, int peopleMultiplier, String depts, int deptMultiplier)
       throws SolrServerException, IOException {
+    
     int id=0;
     List<String> peopleDocs = new ArrayList<>();
     for (int p=0; p < peopleMultiplier; p++){
@@ -161,13 +187,16 @@ public class TestSubQueryTransformerDistrib extends AbstractFullDistribZkTestBas
 
   private void addDocs(String collection, List<String> docs) throws SolrServerException, IOException {
     StringBuilder upd = new StringBuilder("<update>");
+    
+    upd.append("<delete><query>*:*</query></delete>");
+    
     for (Iterator<String> iterator = docs.iterator(); iterator.hasNext();) {
       String add =  iterator.next();
       upd.append(add);
       if (rarely()) {
         upd.append(commit("softCommit", "true"));
       }
-      if (!rarely() || !iterator.hasNext()) {
+      if (rarely() || !iterator.hasNext()) {
         if (!iterator.hasNext()) {
           upd.append(commit("softCommit", "false"));
         }
@@ -176,7 +205,7 @@ public class TestSubQueryTransformerDistrib extends AbstractFullDistribZkTestBas
         ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update");
         req.addContentStream(new ContentStreamBase.StringStream(upd.toString(),"text/xml"));
         
-        cloudClient.request(req, collection);
+        cluster.getSolrClient().request(req, collection);
         upd.setLength("<update>".length());
       }
     }

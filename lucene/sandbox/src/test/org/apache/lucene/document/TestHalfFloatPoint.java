@@ -105,7 +105,7 @@ public class TestHalfFloatPoint extends LuceneTestCase {
         assertEquals(Float.floatToIntBits(f), Float.floatToIntBits(rounded), 0f);
       } else if (Float.isFinite(rounded) == false) {
         assertFalse(Float.isNaN(rounded));
-        assertTrue(Math.abs(f) > 65520);
+        assertTrue(Math.abs(f) >= 65520);
       } else {
         int index = Arrays.binarySearch(values, f);
         float closest;

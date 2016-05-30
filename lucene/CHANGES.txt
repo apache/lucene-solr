@@ -90,7 +90,10 @@ Optimizations
   (which is used by TermsQuery, multi-term queries and several point queries).
   (Adrien Grand, Jeff Wartes, David Smiley)
 
-* LUCENE-7299: Speed up BytesRefHash.sort(). (Adrien Grand)
+* LUCENE-7299: Speed up BytesRefHash.sort() using radix sort. (Adrien Grand)
+
+* LUCENE-7306: Speed up points indexing and merging using radix sort.
+  (Adrien Grand)
 
 Bug Fixes
 
