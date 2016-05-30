@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Collections;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.util.IOUtils;
@@ -51,6 +52,8 @@ public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
         output.writeString("hey man, nice shot!");
         CodecUtil.writeFooter(output);
       }
+      // In case luceneDir_1 has an NRTCachingDirectory
+      luceneDir_1.sync(Collections.singleton("foo.bar"));
       try {
         Files.createLink(tempDir.resolve("test"), dir_1.resolve("foo.bar"));
         BasicFileAttributes destAttr = Files.readAttributes(tempDir.resolve("test"), BasicFileAttributes.class);
