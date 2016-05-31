@@ -35,6 +35,8 @@ Bug Fixes
 * SOLR-9034: Atomic updates failed to work when there were copyField targets that had docValues
   enabled. (Karthik Ramachandran, Ishan Chattopadhyaya, yonik)
 
+* SOLR-8940: Fix group.sort option (hossman)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes
