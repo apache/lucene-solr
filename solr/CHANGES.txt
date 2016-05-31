@@ -245,6 +245,8 @@ Bug Fixes
 * SOLR-9165: Spellcheck does not return collations if "maxCollationTries" is used with "cursorMark".
   (James Dyer)
 
+* SOLR-8940: Fix group.sort option (hossman)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
