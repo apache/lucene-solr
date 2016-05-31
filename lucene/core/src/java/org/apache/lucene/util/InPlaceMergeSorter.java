@@ -33,7 +33,7 @@ public abstract class InPlaceMergeSorter extends Sorter {
   }
 
   void mergeSort(int from, int to) {
-    if (to - from < THRESHOLD) {
+    if (to - from < INSERTION_SORT_THRESHOLD) {
       insertionSort(from, to);
     } else {
       final int mid = (from + to) >>> 1;

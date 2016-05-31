@@ -46,6 +46,7 @@ public interface HighlightParams {
   public static final String DEFAULT_SUMMARY = HIGHLIGHT + ".defaultSummary";
   public static final String ALTERNATE_FIELD = HIGHLIGHT+".alternateField";
   public static final String ALTERNATE_FIELD_LENGTH = HIGHLIGHT+".maxAlternateFieldLength";
+  public static final String HIGHLIGHT_ALTERNATE = HIGHLIGHT+".highlightAlternate";
   public static final String MAX_MULTIVALUED_TO_EXAMINE = HIGHLIGHT + ".maxMultiValuedToExamine";
   public static final String MAX_MULTIVALUED_TO_MATCH = HIGHLIGHT + ".maxMultiValuedToMatch";
   

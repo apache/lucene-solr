@@ -26,16 +26,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.carrotsearch.hppc.IntHashSet;
-import com.carrotsearch.hppc.IntObjectHashMap;
-import com.carrotsearch.hppc.LongHashSet;
-import com.carrotsearch.hppc.LongObjectHashMap;
-import com.carrotsearch.hppc.LongObjectMap;
-import com.carrotsearch.hppc.cursors.IntObjectCursor;
-import com.carrotsearch.hppc.cursors.LongCursor;
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
-import com.carrotsearch.hppc.cursors.ObjectCursor;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -53,7 +43,6 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Query;
-import org.apache.solr.search.QueryWrapperFilter;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
@@ -61,7 +50,6 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopDocsCollector;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.TopScoreDocCollector;
-import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -87,11 +75,23 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.QueryWrapperFilter;
 import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
+import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+
+import com.carrotsearch.hppc.IntHashSet;
+import com.carrotsearch.hppc.IntObjectHashMap;
+import com.carrotsearch.hppc.LongHashSet;
+import com.carrotsearch.hppc.LongObjectHashMap;
+import com.carrotsearch.hppc.LongObjectMap;
+import com.carrotsearch.hppc.cursors.IntObjectCursor;
+import com.carrotsearch.hppc.cursors.LongCursor;
+import com.carrotsearch.hppc.cursors.LongObjectCursor;
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 
 /**
  * The ExpandComponent is designed to work with the CollapsingPostFilter.

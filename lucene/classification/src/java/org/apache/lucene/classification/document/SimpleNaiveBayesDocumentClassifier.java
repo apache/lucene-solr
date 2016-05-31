@@ -169,28 +169,6 @@ public class SimpleNaiveBayesDocumentClassifier extends SimpleNaiveBayesClassifi
   }
 
   /**
-   * Counts the number of documents in the index having at least a value for the 'class' field
-   *
-   * @return the no. of documents having a value for the 'class' field
-   * @throws java.io.IOException If accessing to term vectors or search fails
-   */
-  protected int countDocsWithClass() throws IOException {
-    int docCount = MultiFields.getTerms(this.leafReader, this.classFieldName).getDocCount();
-    if (docCount == -1) { // in case codec doesn't support getDocCount
-      TotalHitCountCollector classQueryCountCollector = new TotalHitCountCollector();
-      BooleanQuery.Builder q = new BooleanQuery.Builder();
-      q.add(new BooleanClause(new WildcardQuery(new Term(classFieldName, String.valueOf(WildcardQuery.WILDCARD_STRING))), BooleanClause.Occur.MUST));
-      if (query != null) {
-        q.add(query, BooleanClause.Occur.MUST);
-      }
-      indexSearcher.search(q.build(),
-          classQueryCountCollector);
-      docCount = classQueryCountCollector.getTotalHits();
-    }
-    return docCount;
-  }
-
-  /**
    * Returns a token array from the {@link org.apache.lucene.analysis.TokenStream} in input
    *
    * @param tokenizedText the tokenized content of a field

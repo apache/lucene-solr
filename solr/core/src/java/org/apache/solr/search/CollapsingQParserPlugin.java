@@ -25,15 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import com.carrotsearch.hppc.FloatArrayList;
-import com.carrotsearch.hppc.IntArrayList;
-import com.carrotsearch.hppc.IntIntHashMap;
-import com.carrotsearch.hppc.IntLongHashMap;
-import com.carrotsearch.hppc.cursors.IntIntCursor;
-import com.carrotsearch.hppc.cursors.IntLongCursor;
-
 import org.apache.commons.lang.StringUtils;
-
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -49,13 +41,12 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.uninverting.UninvertingReader;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
@@ -65,8 +56,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.QueryElevationComponent;
+import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -75,6 +66,14 @@ import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TrieFloatField;
 import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
+import org.apache.solr.uninverting.UninvertingReader;
+
+import com.carrotsearch.hppc.FloatArrayList;
+import com.carrotsearch.hppc.IntArrayList;
+import com.carrotsearch.hppc.IntIntHashMap;
+import com.carrotsearch.hppc.IntLongHashMap;
+import com.carrotsearch.hppc.cursors.IntIntCursor;
+import com.carrotsearch.hppc.cursors.IntLongCursor;
 
 /**
 

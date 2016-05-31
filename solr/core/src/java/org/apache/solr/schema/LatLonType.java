@@ -22,8 +22,8 @@ import java.util.Map;
 
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.VectorValueSource;
@@ -37,7 +37,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.DelegatingCollector;
@@ -45,8 +44,8 @@ import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.PostFilter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.apache.solr.util.SpatialUtils;
-
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Point;

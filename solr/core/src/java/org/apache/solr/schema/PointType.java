@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
@@ -30,13 +29,14 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.uninverting.UninvertingReader.Type;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SpatialOptions;
+import org.apache.solr.uninverting.UninvertingReader.Type;
+import org.locationtech.spatial4j.distance.DistanceUtils;
 
 /**
  * A point type that indexes a point in an n-dimensional space as separate fields and supports range queries.

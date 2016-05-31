@@ -32,16 +32,17 @@ import org.locationtech.spatial4j.shape.SpatialRelation;
 
 public class DateRangePrefixTreeTest extends LuceneTestCase {
 
-  @ParametersFactory
+  @ParametersFactory(argumentFormatting = "calendar=%s")
   public static Iterable<Object[]> parameters() {
     return Arrays.asList(new Object[][]{
-        {DateRangePrefixTree.DEFAULT_CAL}, {DateRangePrefixTree.JAVA_UTIL_TIME_COMPAT_CAL}
+        {"default", DateRangePrefixTree.DEFAULT_CAL},
+        {"compat", DateRangePrefixTree.JAVA_UTIL_TIME_COMPAT_CAL}
     });
   }
 
   private final DateRangePrefixTree tree;
 
-  public DateRangePrefixTreeTest(Calendar templateCal) {
+  public DateRangePrefixTreeTest(String suiteName, Calendar templateCal) {
     tree = new DateRangePrefixTree(templateCal);
   }
 
