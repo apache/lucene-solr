@@ -172,6 +172,9 @@ Other
 * LUCENE-7206: Improve the ToParentBlockJoinQuery's explain by including the explain
   of the best matching child doc. (Ilya Kasnacheev, Jeff Evans via Martijn van Groningen)
 
+* LUCENE-7307: Add getters to the PointInSetQuery and PointRangeQuery queries.
+  (Martijn van Groningen, Adrien Grand)
+
 Build
 
 * LUCENE-7292: Use '-release' instead of '-source/-target' during

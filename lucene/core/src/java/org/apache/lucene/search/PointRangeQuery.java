@@ -218,6 +218,26 @@ public abstract class PointRangeQuery extends Query {
     };
   }
 
+  public String getField() {
+    return field;
+  }
+
+  public int getNumDims() {
+    return numDims;
+  }
+
+  public int getBytesPerDim() {
+    return bytesPerDim;
+  }
+
+  public byte[] getLowerPoint() {
+    return lowerPoint.clone();
+  }
+
+  public byte[] getUpperPoint() {
+    return upperPoint.clone();
+  }
+
   @Override
   public final int hashCode() {
     int hash = classHash();
