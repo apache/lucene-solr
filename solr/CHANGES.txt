@@ -148,6 +148,8 @@ New Features
 * SOLR-8583: Apply highlighting to hl.alternateField by default for Default and FastVectorHighlighter.
   Turn off with hl.highlightAlternate=false (janhoy, David Smiley)
 
+* SOLR-7123: '/update/json/docs' path supports nested documents (noble)
+
 Bug Fixes
 ----------------------
 

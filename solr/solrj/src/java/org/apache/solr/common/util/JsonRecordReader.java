@@ -34,9 +34,11 @@ public class JsonRecordReader {
 
   private Node rootNode = new Node("/", (Node) null);
 
-  public static JsonRecordReader getInst(String split, List<String> fieldMappings) {
+  public static JsonRecordReader getInst(String split, String childSplit, List<String> fieldMappings) {
 
-    JsonRecordReader jsonRecordReader = new JsonRecordReader(split);
+    JsonRecordReader jsonRecordReader = new JsonRecordReader();
+    jsonRecordReader.addSplit(split);
+    if (childSplit != null) jsonRecordReader.addSplit(childSplit);
     for (String s : fieldMappings) {
       String path = s;
       int idx = s.indexOf(':');
@@ -50,14 +52,21 @@ public class JsonRecordReader {
     return jsonRecordReader;
   }
 
+  public static JsonRecordReader getInst(String split, List<String> fieldMappings) {
+    return getInst(split, null, fieldMappings);
+  }
+
+  private JsonRecordReader() {
+  }
   /**
-   * A constructor called with a '|' separated list of path expressions
+   * a '|' separated list of path expressions
    * which define sub sections of the JSON stream that are to be emitted as
    * separate records.
+   * It is possible to have multiple levels of split one for parent and one for child
+   * each child record (or a list of records) will be emitted as a part of the parent record with
+   * null as the key
    *
-   * @param splitPath The PATH for which a record is emitted. Once the
-   *                  path tag is encountered, the Node.getInst method starts collecting wanted
-   *                  fields and at the close of the tag, a record is emitted containing all
+   * @param splitPath The PATH for which a record is emitted.  A record is emitted containing all
    *                  fields collected since the tag start. Once
    *                  emitted the collected fields are cleared. Any fields collected in the
    *                  parent tag or above will also be included in the record, but these are
@@ -65,7 +74,8 @@ public class JsonRecordReader {
    *                  <p>
    *                  It uses the ' | ' syntax of PATH to pass in multiple paths.
    */
-  private JsonRecordReader(String splitPath) {
+
+  void addSplit(String splitPath) {
     String[] splits = splitPath.split("\\|");
     for (String split : splits) {
       split = split.trim();
@@ -93,7 +103,7 @@ public class JsonRecordReader {
     if (!path.startsWith("/")) throw new RuntimeException("All paths must start with '/' " + path);
     List<String> paths = splitEscapeQuote(path);
     if (paths.size() == 0) {
-      if (isRecord) rootNode.isRecord = true;
+      if (isRecord) rootNode.setAsRecord();
       return;//the path is "/"
     }
     // deal with how split behaves when separator starts with an empty string!
@@ -113,11 +123,8 @@ public class JsonRecordReader {
    */
   public List<Map<String, Object>> getAllRecords(Reader r) throws IOException {
     final List<Map<String, Object>> results = new ArrayList<>();
-    streamRecords(r, new Handler() {
-      @Override
-      public void handle(Map<String, Object> record, String path) {
-        results.add(record);
-      }
+    streamRecords(r, (record, path) -> {
+      results.add(record);
     });
     return results;
   }
@@ -158,6 +165,7 @@ public class JsonRecordReader {
     Node parent; // parent Node in the tree
     boolean isLeaf = false; // flag: store/emit streamed text for this node
     boolean isRecord = false; //flag: this Node starts a new record
+    boolean isChildRecord = false;
     Node wildCardChild;
     Node recursiveWildCardChild;
     private boolean useFqn = false;
@@ -174,6 +182,24 @@ public class JsonRecordReader {
       // This is only called from build() when describing an attribute.
       this.name = name;               // a segment from the path
       this.fieldName = fieldName;     // name to store collected values against
+    }
+
+    void setAsRecord() {
+      if (isMyChildARecord()) throw new RuntimeException(name + " has a parent node at my level or lower");
+      isChildRecord = hasParentRecord();
+      isRecord = true;
+    }
+
+    private boolean hasParentRecord() {
+      return isRecord || parent != null && parent.hasParentRecord();
+    }
+
+    private boolean isMyChildARecord() {
+      if (isRecord) return true;
+      for (Node node : childNodes.values()) {
+        if (node.isMyChildARecord()) return true;
+      }
+      return false;
     }
 
 
@@ -222,7 +248,7 @@ public class JsonRecordReader {
           assert !WILDCARD_PATH.equals(n.name);
           assert !RECURSIVE_WILDCARD_PATH.equals(n.name);
           // split attribute
-          n.isRecord = true; // flag: split attribute, prepare to emit rec
+          n.setAsRecord(); // flag: split attribute, prepare to emit rec
           n.splitPath = fieldName; // the full split attribute path
         } else {
           if (n.name.equals(WILDCARD_PATH)) {
@@ -340,17 +366,30 @@ public class JsonRecordReader {
         @Override
         public void walk(int event) throws IOException {
           if (event == OBJECT_START) {
-            node.handleObjectStart(parser, handler, values, stack, isRecordStarted, this);
+            walkObject();
           } else if (event == ARRAY_START) {
             for (; ; ) {
               event = parser.nextEvent();
               if (event == ARRAY_END) break;
               if (event == OBJECT_START) {
-                node.handleObjectStart(parser, handler, values, stack, isRecordStarted, this);
+                walkObject();
               }
             }
           }
+        }
 
+        void walkObject() throws IOException {
+          if (node.isChildRecord) {
+            node.handleObjectStart(parser,
+                (record, path) -> addChildDoc2ParentDoc(record, values),
+                new LinkedHashMap<>(),
+                new Stack<>(),
+                true,
+                this
+            );
+          } else {
+            node.handleObjectStart(parser, handler, values, stack, isRecordStarted, this);
+          }
         }
       }
 
@@ -372,7 +411,7 @@ public class JsonRecordReader {
           if (node == null) node = recursiveWildCardChild;
 
           if (node != null) {
-            if (node.isLeaf) {//this is a leaf collect data here
+            if (node.isLeaf) {//this is a leaf. Collect data here
               event = parser.nextEvent();
               String nameInRecord = node.fieldName == null ? getNameInRecord(name, frameWrapper, node) : node.fieldName;
               MethodFrameWrapper runnable = null;
@@ -420,10 +459,27 @@ public class JsonRecordReader {
       }
     }
 
+    private void addChildDoc2ParentDoc(Map<String, Object> record, Map<String, Object> values) {
+      Object oldVal = values.get(null);
+      if (oldVal == null) {
+        values.put(null, record);
+      } else if (oldVal instanceof List) {
+        ((List) oldVal).add(record);
+      } else {
+        ArrayList l = new ArrayList();
+        l.add(oldVal);
+        l.add(record);
+        values.put(null, l);
+      }
+    }
+
+    /**
+     * Construct the name as it would appear in the final record
+     */
     private String getNameInRecord(String name, MethodFrameWrapper frameWrapper, Node n) {
-      if (frameWrapper == null || !n.useFqn) return name;
+      if (frameWrapper == null || !n.useFqn || frameWrapper.node.isChildRecord) return name;
       StringBuilder sb = new StringBuilder();
-      frameWrapper.prependName(sb);
+      frameWrapper.addName(sb);
       return sb.append(DELIM).append(name).toString();
     }
 
@@ -539,9 +595,9 @@ public class JsonRecordReader {
     MethodFrameWrapper parent;
     String name;
 
-    void prependName(StringBuilder sb) {
-      if (parent != null) {
-        parent.prependName(sb);
+    void addName(StringBuilder sb) {
+      if (parent != null && !parent.node.isChildRecord) {
+        parent.addName(sb);
         sb.append(DELIM);
       }
       sb.append(name);
