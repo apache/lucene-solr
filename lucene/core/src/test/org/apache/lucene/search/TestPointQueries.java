@@ -22,9 +22,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -1852,6 +1855,24 @@ public class TestPointQueries extends LuceneTestCase {
 
     // binary
     assertEquals("bytes:{[12] [2a]}", BinaryPoint.newSetQuery("bytes", new byte[] {42}, new byte[] {18}).toString());
+  }
+
+  public void testPointInSetQueryGetPackedPoints() throws Exception {
+    int numValues = randomIntValue(1, 32);
+    List<byte[]> values = new ArrayList<>(numValues);
+    for (byte i = 0; i < numValues; i++) {
+      values.add(new byte[]{i});
+    }
+
+    PointInSetQuery query = (PointInSetQuery) BinaryPoint.newSetQuery("field", values.toArray(new byte[][]{}));
+    Collection<byte[]> packedPoints = query.getPackedPoints();
+    assertEquals(numValues, packedPoints.size());
+    Iterator<byte[]> iterator = packedPoints.iterator();
+    for (byte[] expectedValue : values) {
+      assertArrayEquals(expectedValue, iterator.next());
+    }
+    expectThrows(NoSuchElementException.class, () -> iterator.next());
+    assertFalse(iterator.hasNext());
   }
 
   public void testRangeOptimizesIfAllPointsMatch() throws IOException {
