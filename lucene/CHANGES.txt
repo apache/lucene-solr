@@ -90,7 +90,10 @@ Optimizations
   (which is used by TermsQuery, multi-term queries and several point queries).
   (Adrien Grand, Jeff Wartes, David Smiley)
 
-* LUCENE-7299: Speed up BytesRefHash.sort(). (Adrien Grand)
+* LUCENE-7299: Speed up BytesRefHash.sort() using radix sort. (Adrien Grand)
+
+* LUCENE-7306: Speed up points indexing and merging using radix sort.
+  (Adrien Grand)
 
 Bug Fixes
 
@@ -133,6 +136,10 @@ Bug Fixes
 
 * LUCENE-7293: Don't try to highlight GeoPoint queries (Britta Weber,
   Nick Knize, Mike McCandless, Uwe Schindler)
+
+* LUCENE-7301: Multiple doc values updates to the same document within
+  one update batch could be applied in the wrong order resulting in
+  the wrong updated value (Ishan Chattopadhyaya, hossman, Mike McCandless)
 
 Documentation
 
