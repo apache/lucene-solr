@@ -171,7 +171,7 @@ class DocumentsWriterPerThread {
     this.pendingNumDocs = pendingNumDocs;
     bytesUsed = Counter.newCounter();
     byteBlockAllocator = new DirectTrackingAllocator(bytesUsed);
-    pendingUpdates = new BufferedUpdates();
+    pendingUpdates = new BufferedUpdates(segmentName);
     intBlockAllocator = new IntBlockAllocator(bytesUsed);
     this.deleteQueue = deleteQueue;
     assert numDocsInRAM == 0 : "num docs " + numDocsInRAM;
@@ -278,7 +278,8 @@ class DocumentsWriterPerThread {
             numDocsInRAM++;
           }
         }
-        finishDocument(null);
+
+        numDocsInRAM++;
       }
       allDocsIndexed = true;
 
@@ -292,7 +293,13 @@ class DocumentsWriterPerThread {
         deleteSlice.apply(pendingUpdates, numDocsInRAM-docCount);
         return seqNo;
       } else {
-        seqNo = deleteQueue.getNextSequenceNumber();
+        seqNo = deleteQueue.updateSlice(deleteSlice);
+        if (seqNo < 0) {
+          seqNo = -seqNo;
+          deleteSlice.apply(pendingUpdates, numDocsInRAM-docCount);
+        } else {
+          deleteSlice.reset();
+        }
       }
 
       return seqNo;
@@ -327,8 +334,13 @@ class DocumentsWriterPerThread {
       seqNo = deleteQueue.add(delTerm, deleteSlice);
       assert deleteSlice.isTailItem(delTerm) : "expected the delete term as the tail item";
     } else  {
-      applySlice &= deleteQueue.updateSlice(deleteSlice);
-      seqNo = deleteQueue.getNextSequenceNumber();
+      seqNo = deleteQueue.updateSlice(deleteSlice);
+      
+      if (seqNo < 0) {
+        seqNo = -seqNo;
+      } else {
+        applySlice = false;
+      }
     }
     
     if (applySlice) {

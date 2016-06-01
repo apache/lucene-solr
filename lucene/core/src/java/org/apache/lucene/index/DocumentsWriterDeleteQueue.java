@@ -69,12 +69,15 @@ import org.apache.lucene.util.BytesRef;
  */
 final class DocumentsWriterDeleteQueue implements Accountable {
 
+  // the current end (latest delete operation) in the delete queue:
   private volatile Node<?> tail;
   
   @SuppressWarnings("rawtypes")
   private static final AtomicReferenceFieldUpdater<DocumentsWriterDeleteQueue,Node> tailUpdater = AtomicReferenceFieldUpdater
       .newUpdater(DocumentsWriterDeleteQueue.class, Node.class, "tail");
 
+  /** Used to record deletes against all prior (already written to disk) segments.  Whenever any segment flushes, we bundle up this set of
+   *  deletes and insert into the buffered updates stream before the newly flushed segment(s). */
   private final DeleteSlice globalSlice;
   private final BufferedUpdates globalBufferedUpdates;
   
@@ -85,6 +88,9 @@ final class DocumentsWriterDeleteQueue implements Accountable {
 
   /** Generates the sequence number that IW returns to callers changing the index, showing the effective serialization of all operations. */
   private final AtomicLong nextSeqNo;
+
+  // for asserts
+  long maxSeqNo = Long.MAX_VALUE;
   
   DocumentsWriterDeleteQueue() {
     // seqNo must start at 1 because some APIs negate this to also return a boolean
@@ -92,7 +98,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
   }
   
   DocumentsWriterDeleteQueue(long generation, long startSeqNo) {
-    this(new BufferedUpdates(), generation, startSeqNo);
+    this(new BufferedUpdates("global"), generation, startSeqNo);
   }
 
   DocumentsWriterDeleteQueue(BufferedUpdates globalBufferedUpdates, long generation, long startSeqNo) {
@@ -130,7 +136,6 @@ final class DocumentsWriterDeleteQueue implements Accountable {
    */
   long add(Term term, DeleteSlice slice) {
     final TermNode termNode = new TermNode(term);
-//    System.out.println(Thread.currentThread().getName() + ": push " + termNode + " this=" + this);
     long seqNo = add(termNode);
     /*
      * this is an update request where the term is the updated documents
@@ -150,31 +155,10 @@ final class DocumentsWriterDeleteQueue implements Accountable {
     return seqNo;
   }
 
-  long add(Node<?> newNode) {
-    /*
-     * this non-blocking / 'wait-free' linked list add was inspired by Apache
-     * Harmony's ConcurrentLinkedQueue Implementation.
-     */
-    while (true) {
-      final Node<?> currentTail = tail;
-      final Node<?> tailNext = currentTail.next;
-      if (tail == currentTail && tailNext == null) {
-        /*
-         * we are in quiescent state and can try to insert the newNode to the
-         * current tail if we fail to insert we just retry the operation since
-         * somebody else has already added its newNode
-         */
-        if (currentTail.casNext(null, newNode)) {
-          /*
-           * now that we are done we need to advance the tail
-           */
-          long seqNo = getNextSequenceNumber();
-          boolean result = tailUpdater.compareAndSet(this, currentTail, newNode);
-          assert result;
-          return seqNo;
-        }
-      }
-    }
+  synchronized long add(Node<?> newNode) {
+    tail.next = newNode;
+    this.tail = newNode;
+    return getNextSequenceNumber();
   }
 
   boolean anyChanges() {
@@ -185,8 +169,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
        * and if the global slice is up-to-date
        * and if globalBufferedUpdates has changes
        */
-      return globalBufferedUpdates.any() || !globalSlice.isEmpty() || globalSlice.sliceTail != tail
-          || tail.next != null;
+      return globalBufferedUpdates.any() || !globalSlice.isEmpty() || globalSlice.sliceTail != tail || tail.next != null;
     } finally {
       globalBufferLock.unlock();
     }
@@ -201,8 +184,7 @@ final class DocumentsWriterDeleteQueue implements Accountable {
        * tail the next time we can get the lock!
        */
       try {
-        if (updateSlice(globalSlice)) {
-//          System.out.println(Thread.currentThread() + ": apply globalSlice");
+        if (updateSliceNoSeqNo(globalSlice)) {
           globalSlice.apply(globalBufferedUpdates, BufferedUpdates.MAX_INT);
         }
       } finally {
@@ -231,7 +213,6 @@ final class DocumentsWriterDeleteQueue implements Accountable {
         globalSlice.apply(globalBufferedUpdates, BufferedUpdates.MAX_INT);
       }
 
-//      System.out.println(Thread.currentThread().getName() + ": now freeze global buffer " + globalBufferedDeletes);
       final FrozenBufferedUpdates packet = new FrozenBufferedUpdates(globalBufferedUpdates, false);
       globalBufferedUpdates.clear();
       return packet;
@@ -244,8 +225,21 @@ final class DocumentsWriterDeleteQueue implements Accountable {
     return new DeleteSlice(tail);
   }
 
-  boolean updateSlice(DeleteSlice slice) {
-    if (slice.sliceTail != tail) { // If we are the same just
+  /** Negative result means there were new deletes since we last applied */
+  synchronized long updateSlice(DeleteSlice slice) {
+    long seqNo = getNextSequenceNumber();
+    if (slice.sliceTail != tail) {
+      // new deletes arrived since we last checked
+      slice.sliceTail = tail;
+      seqNo = -seqNo;
+    }
+    return seqNo;
+  }
+
+  /** Just like updateSlice, but does not assign a sequence number */
+  boolean updateSliceNoSeqNo(DeleteSlice slice) {
+    if (slice.sliceTail != tail) {
+      // new deletes arrived since we last checked
       slice.sliceTail = tail;
       return true;
     }
@@ -283,7 +277,6 @@ final class DocumentsWriterDeleteQueue implements Accountable {
         current = current.next;
         assert current != null : "slice property violated between the head on the tail must not be a null node";
         current.apply(del, docIDUpto);
-//        System.out.println(Thread.currentThread().getName() + ": pull " + current + " docIDUpto=" + docIDUpto);
       } while (current != sliceTail);
       reset();
     }
@@ -462,13 +455,17 @@ final class DocumentsWriterDeleteQueue implements Accountable {
   }
 
   public long getNextSequenceNumber() {
-    return nextSeqNo.getAndIncrement();
+    long seqNo = nextSeqNo.getAndIncrement();
+    assert seqNo < maxSeqNo: "seqNo=" + seqNo + " vs maxSeqNo=" + maxSeqNo;
+    return seqNo;
   }  
 
   public long getLastSequenceNumber() {
     return nextSeqNo.get()-1;
   }  
 
+  /** Inserts a gap in the sequence numbers.  This is used by IW during flush or commit to ensure any in-flight threads get sequence numbers
+   *  inside the gap */
   public void skipSequenceNumbers(long jump) {
     nextSeqNo.addAndGet(jump);
   }  

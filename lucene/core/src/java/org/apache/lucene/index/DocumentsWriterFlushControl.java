@@ -190,7 +190,7 @@ final class DocumentsWriterFlushControl implements Accountable {
           flushingDWPT = null;
         }
       } else {
-       flushingDWPT = tryCheckoutForFlush(perThread);
+        flushingDWPT = tryCheckoutForFlush(perThread);
       }
       return flushingDWPT;
     } finally {
@@ -452,8 +452,7 @@ final class DocumentsWriterFlushControl implements Accountable {
         .currentThread(), documentsWriter);
     boolean success = false;
     try {
-      if (perThread.isInitialized()
-          && perThread.dwpt.deleteQueue != documentsWriter.deleteQueue) {
+      if (perThread.isInitialized() && perThread.dwpt.deleteQueue != documentsWriter.deleteQueue) {
         // There is a flush-all in process and this DWPT is
         // now stale -- enroll it for flush and try for
         // another DWPT:
@@ -479,11 +478,11 @@ final class DocumentsWriterFlushControl implements Accountable {
       flushingQueue = documentsWriter.deleteQueue;
       // Set a new delete queue - all subsequent DWPT will use this queue until
       // we do another full flush
-      //System.out.println("DWFC: fullFLush old seqNo=" + documentsWriter.deleteQueue.seqNo.get() + " activeThreadCount=" + perThreadPool.getActiveThreadStateCount());
 
       // Insert a gap in seqNo of current active thread count, in the worst case each of those threads now have one operation in flight.  It's fine
       // if we have some sequence numbers that were never assigned:
       seqNo = documentsWriter.deleteQueue.getLastSequenceNumber() + perThreadPool.getActiveThreadStateCount() + 2;
+      flushingQueue.maxSeqNo = seqNo+1;
 
       DocumentsWriterDeleteQueue newQueue = new DocumentsWriterDeleteQueue(flushingQueue.generation+1, seqNo+1);
 

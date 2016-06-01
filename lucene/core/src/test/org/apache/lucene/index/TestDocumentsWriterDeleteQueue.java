@@ -43,8 +43,8 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
     }
     DeleteSlice slice1 = queue.newSlice();
     DeleteSlice slice2 = queue.newSlice();
-    BufferedUpdates bd1 = new BufferedUpdates();
-    BufferedUpdates bd2 = new BufferedUpdates();
+    BufferedUpdates bd1 = new BufferedUpdates("bd1");
+    BufferedUpdates bd2 = new BufferedUpdates("bd2");
     int last1 = 0;
     int last2 = 0;
     Set<Term> uniqueValues = new HashSet<>();
@@ -225,7 +225,7 @@ public class TestDocumentsWriterDeleteQueue extends LuceneTestCase {
       this.index = index;
       this.ids = ids;
       this.slice = queue.newSlice();
-      deletes = new BufferedUpdates();
+      deletes = new BufferedUpdates("deletes");
       this.latch = latch;
     }
 

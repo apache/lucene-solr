@@ -158,9 +158,12 @@ class BufferedUpdates {
   private final static boolean VERBOSE_DELETES = false;
 
   long gen;
+
+  final String segmentName;
   
-  public BufferedUpdates() {
+  public BufferedUpdates(String segmentName) {
     this.bytesUsed = new AtomicLong();
+    this.segmentName = segmentName;
   }
 
   @Override
