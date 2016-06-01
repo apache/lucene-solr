@@ -344,8 +344,6 @@ Other Changes
 
 * SOLR-9110: Move JoinFromCollection- SubQueryTransformer- BlockJoinFacet- Distrib Tests to SolrCloudTestCase  (Mikhail Khludnev)
 
-* SOLR-9161: SolrPluginUtils.invokeSetters now accommodates setter variants (Christine Poerschke)
-
 * SOLR-9136: Separate out the error statistics into server-side error vs client-side error
   (Jessica Cheng Mallet via Erick Erickson)
 
