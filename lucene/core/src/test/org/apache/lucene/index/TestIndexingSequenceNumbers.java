@@ -17,6 +17,20 @@
 
 package org.apache.lucene.index;
 
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -24,17 +38,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 public class TestIndexingSequenceNumbers extends LuceneTestCase {
 
@@ -91,7 +94,13 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
                 doc.add(new StringField("id", "id", Field.Store.NO));
                 startingGun.await();
                 for(int j=0;j<100;j++) {
-                  seqNos[threadID] = w.updateDocument(id, doc);
+                  if (random().nextBoolean()) {
+                    seqNos[threadID] = w.updateDocument(id, doc);
+                  } else {
+                    List<Document> docs = new ArrayList<>();
+                    docs.add(doc);
+                    seqNos[threadID] = w.updateDocuments(id, docs);
+                  }
                 }
               } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -147,7 +156,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     // Cannot use RIW since it randomly commits:
     final IndexWriter w = new IndexWriter(dir, iwc);
 
-    final int numThreads = TestUtil.nextInt(random(), 2, 5);
+    final int numThreads = TestUtil.nextInt(random(), 2, 10);
     Thread[] threads = new Thread[numThreads];
     //System.out.println("TEST: iter=" + iter + " opCount=" + opCount + " idCount=" + idCount + " threadCount=" + threads.length);
     final CountDownLatch startingGun = new CountDownLatch(1);
@@ -198,7 +207,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
                     } else {
                       op.seqNo = w.updateDocument(idTerm, doc);
                     }
-                    op.what = 2;
+                    op.what = 0;
                   }
                   ops.add(op);
                 }
@@ -241,7 +250,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
         for(Operation op : threadOps.get(threadID)) {
           if (op.seqNo <= commitSeqNo && op.seqNo > seqNos[op.id]) {
             seqNos[op.id] = op.seqNo;
-            if (op.what == 2) {
+            if (op.what == 0) {
               expectedThreadIDs[op.id] = threadID;
             } else {
               expectedThreadIDs[op.id] = -1;
@@ -265,7 +274,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
           Document doc = r.document(hits.scoreDocs[0].doc);
           int actualThreadID = doc.getField("thread").numericValue().intValue();
           if (expectedThreadIDs[id] != actualThreadID) {
-            System.out.println("FAIL: id=" + id + " expectedThreadID=" + expectedThreadIDs[id] + " vs actualThreadID=" + actualThreadID);
+            System.out.println("FAIL: id=" + id + " expectedThreadID=" + expectedThreadIDs[id] + " vs actualThreadID=" + actualThreadID + " commitSeqNo=" + commitSeqNo + " numThreads=" + numThreads);
             for(int threadID=0;threadID<threadOps.size();threadID++) {
               for(Operation op : threadOps.get(threadID)) {
                 if (id == op.id) {
@@ -276,7 +285,168 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
             assertEquals("id=" + id, expectedThreadIDs[id], actualThreadID);
           }
         } else if (hits.totalHits != 0) {
-          System.out.println("FAIL: id=" + id + " expectedThreadID=" + expectedThreadIDs[id] + " vs totalHits=" + hits.totalHits);
+          System.out.println("FAIL: id=" + id + " expectedThreadID=" + expectedThreadIDs[id] + " vs totalHits=" + hits.totalHits + " commitSeqNo=" + commitSeqNo + " numThreads=" + numThreads);
+          for(int threadID=0;threadID<threadOps.size();threadID++) {
+            for(Operation op : threadOps.get(threadID)) {
+              if (id == op.id) {
+                System.out.println("  threadID=" + threadID + " seqNo=" + op.seqNo + " " + (op.what == 2 ? "updated" : "del"));
+              }
+            }
+          }
+          assertEquals(0, hits.totalHits);
+        }
+      }
+      w.close();
+      r.close();
+    }
+
+    dir.close();
+  }
+
+  public void testStressConcurrentDocValuesUpdatesCommit() throws Exception {
+    final int opCount = atLeast(10000);
+    final int idCount = TestUtil.nextInt(random(), 10, 1000);
+
+    Directory dir = newDirectory();
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
+
+    // Cannot use RIW since it randomly commits:
+    final IndexWriter w = new IndexWriter(dir, iwc);
+
+    final int numThreads = TestUtil.nextInt(random(), 2, 10);
+    Thread[] threads = new Thread[numThreads];
+    //System.out.println("TEST: iter=" + iter + " opCount=" + opCount + " idCount=" + idCount + " threadCount=" + threads.length);
+    final CountDownLatch startingGun = new CountDownLatch(1);
+    List<List<Operation>> threadOps = new ArrayList<>();
+
+    Object commitLock = new Object();
+    final List<Operation> commits = new ArrayList<>();
+
+    List<Operation> ops1 = new ArrayList<>();
+    threadOps.add(ops1);
+    
+    for(int id=0;id<idCount;id++) {
+      int threadID = 0;
+      Operation op = new Operation();
+      op.threadID = threadID;
+      op.id = id;
+
+      Document doc = new Document();
+      doc.add(new StoredField("thread", threadID));
+      doc.add(new NumericDocValuesField("thread", threadID));
+      doc.add(new StringField("id", "" + id, Field.Store.NO));
+      op.seqNo = w.addDocument(doc);
+      ops1.add(op);
+    }
+
+    // multiple threads update the same set of documents, and we randomly commit
+    for(int i=0;i<threads.length;i++) {
+      final List<Operation> ops;
+      if (i == 0) {
+        ops = threadOps.get(0);
+      } else {
+        ops = new ArrayList<>();
+        threadOps.add(ops);
+      }
+
+      final int threadID = i;
+      threads[i] = new Thread() {
+          @Override
+          public void run() {
+            try {
+              startingGun.await();
+              for(int i=0;i<opCount;i++) {
+                Operation op = new Operation();
+                op.threadID = threadID;
+                if (random().nextInt(500) == 17) {
+                  op.what = 2;
+                  synchronized(commitLock) {
+                    op.seqNo = w.commit();
+                    if (op.seqNo != -1) {
+                      commits.add(op);
+                    }
+                  }
+                } else {
+                  op.id = random().nextInt(idCount);
+                  Term idTerm = new Term("id", "" + op.id);
+                  op.seqNo = w.updateNumericDocValue(idTerm, "thread", threadID);
+                  op.what = 0;
+                  ops.add(op);
+                }
+              }
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          }
+        };
+      threads[i].start();
+    }
+    startingGun.countDown();
+    for(Thread thread : threads) {
+      thread.join();
+    }
+
+    Operation commitOp = new Operation();
+    commitOp.seqNo = w.commit();
+    if (commitOp.seqNo != -1) {
+      commits.add(commitOp);
+    }
+
+    List<IndexCommit> indexCommits = DirectoryReader.listCommits(dir);
+    assertEquals(commits.size(), indexCommits.size());
+
+    int[] expectedThreadIDs = new int[idCount];
+    long[] seqNos = new long[idCount];
+      
+    //System.out.println("TEST: " + commits.size() + " commits");
+    for(int i=0;i<commits.size();i++) {
+      // this commit point should reflect all operations <= this seqNo
+      long commitSeqNo = commits.get(i).seqNo;
+      //System.out.println("  commit " + i + ": seqNo=" + commitSeqNo + " segs=" + indexCommits.get(i));
+
+      Arrays.fill(expectedThreadIDs, -1);
+      Arrays.fill(seqNos, 0);
+
+      for(int threadID=0;threadID<threadOps.size();threadID++) {
+        long lastSeqNo = 0;
+        for(Operation op : threadOps.get(threadID)) {
+          if (op.seqNo <= commitSeqNo && op.seqNo > seqNos[op.id]) {
+            seqNos[op.id] = op.seqNo;
+            if (op.what == 0) {
+              expectedThreadIDs[op.id] = threadID;
+            }
+          }
+
+          assertTrue(op.seqNo > lastSeqNo);
+          lastSeqNo = op.seqNo;
+        }
+      }
+
+      DirectoryReader r = DirectoryReader.open(indexCommits.get(i));
+      IndexSearcher s = new IndexSearcher(r);
+      NumericDocValues docValues = MultiDocValues.getNumericValues(r, "thread");
+
+      for(int id=0;id<idCount;id++) {
+        //System.out.println("TEST: check id=" + id + " expectedThreadID=" + expectedThreadIDs[id]);
+        TopDocs hits = s.search(new TermQuery(new Term("id", ""+id)), 1);
+                                  
+        if (expectedThreadIDs[id] != -1) {
+          assertEquals(1, hits.totalHits);
+          int actualThreadID = (int) docValues.get(id);
+          if (expectedThreadIDs[id] != actualThreadID) {
+            System.out.println("FAIL: id=" + id + " expectedThreadID=" + expectedThreadIDs[id] + " vs actualThreadID=" + actualThreadID + " commitSeqNo=" + commitSeqNo + " numThreads=" + numThreads);
+            for(int threadID=0;threadID<threadOps.size();threadID++) {
+              for(Operation op : threadOps.get(threadID)) {
+                if (id == op.id) {
+                  System.out.println("  threadID=" + threadID + " seqNo=" + op.seqNo + " " + (op.what == 2 ? "updated" : "deleted"));
+                }
+              }
+            }
+            assertEquals("id=" + id, expectedThreadIDs[id], actualThreadID);
+          }
+        } else if (hits.totalHits != 0) {
+          System.out.println("FAIL: id=" + id + " expectedThreadID=" + expectedThreadIDs[id] + " vs totalHits=" + hits.totalHits + " commitSeqNo=" + commitSeqNo + " numThreads=" + numThreads);
           for(int threadID=0;threadID<threadOps.size();threadID++) {
             for(Operation op : threadOps.get(threadID)) {
               if (id == op.id) {
@@ -347,7 +517,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
                     }
                   } else {
                     Document doc = new Document();
-                    doc.add(new StoredField("thread", threadID));
+                    doc.add(new StoredField("threadop", threadID + "-" + ops.size()));
                     doc.add(new StringField("id", "" + op.id, Field.Store.NO));
                     if (random().nextBoolean()) {
                       List<Document> docs = new ArrayList<>();
@@ -366,6 +536,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
             }
           }
         };
+      threads[i].setName("thread" + threadID);
       threads[i].start();
     }
     startingGun.countDown();
@@ -422,7 +593,34 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
 
       for(int id=0;id<idCount;id++) {
         //System.out.println("TEST: check id=" + id + " expectedThreadID=" + expectedThreadIDs[id]);
-        assertEquals(expectedCounts[id], s.count(new TermQuery(new Term("id", ""+id))));
+        int actualCount = s.count(new TermQuery(new Term("id", ""+id)));
+        if (expectedCounts[id] != actualCount) {
+          System.out.println("TEST: FAIL r=" + r + " id=" + id + " commitSeqNo=" + commitSeqNo);
+          for(int threadID=0;threadID<threadOps.size();threadID++) {
+            int opCount2 = 0;
+            for(Operation op : threadOps.get(threadID)) {
+              if (op.id == id) {
+                boolean shouldCount = op.seqNo <= commitSeqNo && op.seqNo > lastDelSeqNos[op.id];
+                System.out.println("  id=" + id + " what=" + op.what + " threadop=" + threadID + "-" + opCount2 + " seqNo=" + op.seqNo + " vs lastDelSeqNo=" + lastDelSeqNos[op.id] + " shouldCount=" + shouldCount);
+              }
+              opCount2++;
+            }
+          }
+          TopDocs hits = s.search(new TermQuery(new Term("id", ""+id)), 1+actualCount);
+          for(ScoreDoc hit : hits.scoreDocs) {
+            System.out.println("  hit: " + s.doc(hit.doc).get("threadop"));
+          }
+
+          for(LeafReaderContext ctx : r.leaves()) {
+            System.out.println("  sub=" + ctx.reader());
+            Bits liveDocs = ctx.reader().getLiveDocs();
+            for(int docID=0;docID<ctx.reader().maxDoc();docID++) {
+              System.out.println("    docID=" + docID + " threadop=" + ctx.reader().document(docID).get("threadop") + (liveDocs != null && liveDocs.get(docID) == false ? " (deleted)" : ""));
+            }
+          }
+
+          assertEquals("commit " + i + " of " + commits.size() + " id=" + id + " reader=" + r, expectedCounts[id], actualCount);
+        }
       }
       w.close();
       r.close();

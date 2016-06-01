@@ -137,6 +137,10 @@ Bug Fixes
 * LUCENE-7293: Don't try to highlight GeoPoint queries (Britta Weber,
   Nick Knize, Mike McCandless, Uwe Schindler)
 
+* LUCENE-7301: Multiple doc values updates to the same document within
+  one update batch could be applied in the wrong order resulting in
+  the wrong updated value (Ishan Chattopadhyaya, hossman, Mike McCandless)
+
 Documentation
 
 * LUCENE-7223: Improve XXXPoint javadocs to make it clear that you

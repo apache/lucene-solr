@@ -17,6 +17,7 @@
 package org.apache.solr.common.util;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.util.RecordingJSONParser;
 
 import java.io.IOException;
@@ -202,6 +203,44 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
 
   }
 
+  public void testNestedDocs() throws Exception {
+    String json = "{a:{" +
+        "b:{c:d}," +
+        "x:y" +
+        "}}";
+    JsonRecordReader streamer = JsonRecordReader.getInst("/", "/a/b", Arrays.asList("/a/x", "/a/b/*"));
+    streamer.streamRecords(new StringReader(json), (record, path) -> {
+      assertEquals(record.get("x"), "y");
+      assertEquals(((Map) record.get(null)).get("c"), "d");
+    });
+    json = "{a:{" +
+        "b:[{c:c1, e:e1},{c:c2, e :e2, d:{p:q}}]," +
+        "x:y" +
+        "}}";
+    streamer.streamRecords(new StringReader(json), (record, path) -> {
+      assertEquals(record.get("x"), "y");
+      List l = (List) record.get(null);
+      Map m = (Map) l.get(0);
+      assertEquals(m.get("c"), "c1");
+      assertEquals(m.get("e"), "e1");
+      m = (Map) l.get(1);
+      assertEquals(m.get("c"), "c2");
+      assertEquals(m.get("e"), "e2");
+    });
+    streamer = JsonRecordReader.getInst("/", "/a/b", Arrays.asList("$FQN:/**"));
+    streamer.streamRecords(new StringReader(json), (record, path) -> {
+      assertEquals(record.get("a.x"), "y");
+      List l = (List) record.get(null);
+      Map m = (Map) l.get(0);
+      assertEquals(m.get("c"), "c1");
+      assertEquals(m.get("e"), "e1");
+      m = (Map) l.get(1);
+      assertEquals(m.get("c"), "c2");
+      assertEquals(m.get("e"), "e2");
+      assertEquals(m.get("d.p"), "q");
+    });
+  }
+
   public void testNestedJsonWithFloats() throws Exception {
 
     String json = "{\n" +
@@ -264,16 +303,13 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
 
     final AtomicReference<WeakReference<String>> ref = new AtomicReference<>();
     streamer = JsonRecordReader.getInst("/", Collections.singletonList("$FQN:/**"));
-    streamer.streamRecords(new StringReader(json), new JsonRecordReader.Handler() {
-      @Override
-      public void handle(Map<String, Object> record, String path) {
-        System.gc();
-        if (ref.get() != null) {
-          assertNull("This reference is still intact :" +ref.get().get() ,ref.get().get());
-        }
-        String fName = record.keySet().iterator().next();
-        ref.set(new WeakReference<String>(fName));
+    streamer.streamRecords(new StringReader(json), (record, path) -> {
+      System.gc();
+      if (ref.get() != null) {
+        assertNull("This reference is still intact :" + ref.get().get(), ref.get().get());
       }
+      String fName = record.keySet().iterator().next();
+      ref.set(new WeakReference<>(fName));
     });
 
 
@@ -621,12 +657,8 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
     RecordingJSONParser parser = new RecordingJSONParser(new StringReader(json));
     JsonRecordReader recordReader = JsonRecordReader.getInst("/",Collections.singletonList("/**"));
     try {
-      recordReader.streamRecords(parser, new JsonRecordReader.Handler() {
-        @Override
-        public void handle(Map<String, Object> record, String path) {
-          /*don't care*/
-        }
-      });
+      recordReader.streamRecords(parser, (record, path) -> {
+      });   /*don't care*/
     } catch (RuntimeException e) {
       parser.error("").printStackTrace();
       throw e;

@@ -626,7 +626,7 @@ final class DocumentsWriter implements Closeable, Accountable {
       /* Cutover to a new delete queue.  This must be synced on the flush control
        * otherwise a new DWPT could sneak into the loop with an already flushing
        * delete queue */
-      seqNo = flushControl.markForFullFlush(); // swaps the delQueue synced on FlushControl
+      seqNo = flushControl.markForFullFlush(); // swaps this.deleteQueue synced on FlushControl
       assert setFlushingDeleteQueue(flushingDeleteQueue);
     }
     assert currentFullFlushDelQueue != null;
@@ -676,7 +676,6 @@ final class DocumentsWriter implements Closeable, Accountable {
     } finally {
       pendingChangesInCurrentFullFlush = false;
     }
-    
   }
 
   public LiveIndexWriterConfig getIndexWriterConfig() {

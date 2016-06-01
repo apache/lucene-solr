@@ -148,6 +148,8 @@ New Features
 * SOLR-8583: Apply highlighting to hl.alternateField by default for Default and FastVectorHighlighter.
   Turn off with hl.highlightAlternate=false (janhoy, David Smiley)
 
+* SOLR-7123: '/update/json/docs' path supports nested documents (noble)
+
 Bug Fixes
 ----------------------
 
@@ -245,6 +247,8 @@ Bug Fixes
 * SOLR-9165: Spellcheck does not return collations if "maxCollationTries" is used with "cursorMark".
   (James Dyer)
 
+* SOLR-8940: Fix group.sort option (hossman)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
@@ -340,10 +344,10 @@ Other Changes
 
 * SOLR-9110: Move JoinFromCollection- SubQueryTransformer- BlockJoinFacet- Distrib Tests to SolrCloudTestCase  (Mikhail Khludnev)
 
-* SOLR-9161: SolrPluginUtils.invokeSetters now accommodates setter variants (Christine Poerschke)
-
 * SOLR-9136: Separate out the error statistics into server-side error vs client-side error
   (Jessica Cheng Mallet via Erick Erickson)
+
+* SOLR-9107: new @RandomizeSSL annotation for more fine grained control of SSL testing (hossman, sarowe)
 
 ==================  6.0.1 ==================
 (No Changes)

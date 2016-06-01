@@ -20,6 +20,7 @@ package org.apache.lucene.util;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Random;
 
 public class TestArrayUtil extends LuceneTestCase {
@@ -275,5 +276,38 @@ public class TestArrayUtil extends LuceneTestCase {
     ArrayUtil.introSort(a, Collections.reverseOrder());
     ArrayUtil.timSort(a, Collections.reverseOrder());
   }
-  
+
+  public void testSelect() {
+    for (int iter = 0; iter < 100; ++iter) {
+      doTestSelect();
+    }
+  }
+
+  private void doTestSelect() {
+    final int from = random().nextInt(5);
+    final int to = from + TestUtil.nextInt(random(), 1, 10000);
+    final int max = random().nextBoolean() ? random().nextInt(100) : random().nextInt(100000);
+    Integer[] arr = new Integer[from + to + random().nextInt(5)];
+    for (int i = 0; i < arr.length; ++i) {
+      arr[i] = TestUtil.nextInt(random(), 0, max);
+    }
+    final int k = TestUtil.nextInt(random(), from, to - 1);
+
+    Integer[] expected = arr.clone();
+    Arrays.sort(expected, from, to);
+
+    Integer[] actual = arr.clone();
+    ArrayUtil.select(actual, from, to, k, Comparator.naturalOrder());
+
+    assertEquals(expected[k], actual[k]);
+    for (int i = 0; i < actual.length; ++i) {
+      if (i < from || i >= to) {
+        assertSame(arr[i], actual[i]);
+      } else if (i <= k) {
+        assertTrue(actual[i].intValue() <= actual[k].intValue());
+      } else {
+        assertTrue(actual[i].intValue() >= actual[k].intValue());
+      }
+    }
+  }
 }

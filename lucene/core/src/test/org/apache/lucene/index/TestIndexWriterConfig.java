@@ -93,7 +93,6 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     getters.add("getIndexingChain");
     getters.add("getMergedSegmentWarmer");
     getters.add("getMergePolicy");
-    getters.add("getMaxThreadStates");
     getters.add("getReaderPooling");
     getters.add("getIndexerThreadPool");
     getters.add("getFlushPolicy");

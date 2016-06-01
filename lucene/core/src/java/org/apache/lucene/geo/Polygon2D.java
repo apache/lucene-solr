@@ -17,9 +17,11 @@
 package org.apache.lucene.geo;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.util.ArrayUtil;
 
 /**
  * 2D polygon implementation represented as a balanced interval tree of edges.
@@ -209,28 +211,30 @@ public final class Polygon2D {
   private static Polygon2D createTree(Polygon2D components[], int low, int high, boolean splitX) {
     if (low > high) {
       return null;
-    } else if (low < high) {
-      // TODO: do one sort instead! there are better algorithms!
+    }
+    final int mid = (low + high) >>> 1;
+    if (low < high) {
+      Comparator<Polygon2D> comparator;
       if (splitX) {
-        Arrays.sort(components, low, high+1, (left, right) -> {
+        comparator = (left, right) -> {
           int ret = Double.compare(left.minLon, right.minLon);
           if (ret == 0) {
             ret = Double.compare(left.maxX, right.maxX);
           }
           return ret;
-        });
+        };
       } else {
-        Arrays.sort(components, low, high+1, (left, right) -> {
+        comparator = (left, right) -> {
           int ret = Double.compare(left.minLat, right.minLat);
           if (ret == 0) {
             ret = Double.compare(left.maxY, right.maxY);
           }
           return ret;
-        });
+        };
       }
+      ArrayUtil.select(components, low, high + 1, mid, comparator);
     }
     // add midpoint
-    int mid = (low + high) >>> 1;
     Polygon2D newNode = components[mid];
     newNode.splitX = splitX;
     // add children
