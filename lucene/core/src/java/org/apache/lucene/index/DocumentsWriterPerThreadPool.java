@@ -226,6 +226,7 @@ final class DocumentsWriterPerThreadPool {
     return threadStates.get(ord);
   }
 
+  // TODO: merge this with getActiveThreadStateCount: they are the same!
   synchronized int getMaxThreadStates() {
     return threadStates.size();
   }
