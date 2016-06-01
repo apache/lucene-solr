@@ -29,14 +29,12 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Callable;
@@ -60,6 +58,8 @@ public class JdbcDataSource extends
   private long connLastUsed = 0;
 
   private Connection conn;
+  
+  private ResultSetIterator resultSetIterator;  
 
   private Map<String, Integer> fieldNameVsType = new HashMap<>();
 
@@ -275,16 +275,20 @@ public class JdbcDataSource extends
   }
 
   @Override
-  public Iterator<Map<String, Object>> getData(String query) {
-    ResultSetIterator r = new ResultSetIterator(query);
-    return r.getIterator();
+  public synchronized Iterator<Map<String, Object>> getData(String query) {
+    if (resultSetIterator != null) {
+      resultSetIterator.close();
+      resultSetIterator = null;
+    }
+    resultSetIterator = new ResultSetIterator(query);
+    return resultSetIterator.getIterator();
   }
 
   private void logError(String msg, Exception e) {
     LOG.warn(msg, e);
   }
 
-  private List<String> readFieldNames(ResultSetMetaData metaData)
+  protected List<String> readFieldNames(ResultSetMetaData metaData)
           throws SQLException {
     List<String> colNames = new ArrayList<>();
     int count = metaData.getColumnCount();
@@ -299,35 +303,38 @@ public class JdbcDataSource extends
 
     private Statement stmt = null;
 
+    private List<String> colNames; 
    
     private Iterator<Map<String, Object>> rSetIterator;
 
     public ResultSetIterator(String query) {
 
-      final List<String> colNames;
       try {
         Connection c = getConnection();
-        stmt = createStatement(c);
+        stmt = createStatement(c, batchSize, maxRows);
         LOG.debug("Executing SQL: " + query);
         long start = System.nanoTime();
         resultSet = executeStatement(stmt, query);
         LOG.trace("Time taken for sql :"
                 + TimeUnit.MILLISECONDS.convert(System.nanoTime() - start, TimeUnit.NANOSECONDS));
-        colNames = readFieldNames(resultSet.getMetaData());
+        setColNames(resultSet);
       } catch (Exception e) {
+        close();
         wrapAndThrow(SEVERE, e, "Unable to execute query: " + query);
         return;
       }
       if (resultSet == null) {
+        close();
         rSetIterator = new ArrayList<Map<String, Object>>().iterator();
         return;
       }
 
-      rSetIterator = createIterator(stmt, resultSet, convertType, colNames, fieldNameVsType);
+      rSetIterator = createIterator(convertType, fieldNameVsType);
     }
 
     
-    protected Statement createStatement(Connection c) throws SQLException {
+    protected Statement createStatement(final Connection c, final int batchSize, final int maxRows)
+        throws SQLException {
       Statement statement = c.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
       statement.setFetchSize(batchSize);
       statement.setMaxRows(maxRows);
@@ -340,19 +347,26 @@ public class JdbcDataSource extends
       }
       return null;
     }
+    
+    protected void setColNames(final ResultSet resultSet) throws SQLException {
+      if (resultSet != null) {
+        colNames = readFieldNames(resultSet.getMetaData());
+      } else {
+        colNames = Collections.emptyList();
+      }
+    }
 
-
-    protected Iterator<Map<String,Object>> createIterator(Statement stmt, ResultSet resultSet, boolean convertType,
-        List<String> colNames, Map<String,Integer> fieldNameVsType) {
+    protected Iterator<Map<String,Object>> createIterator(final boolean convertType,
+        final Map<String,Integer> fieldNameVsType) {
       return new Iterator<Map<String,Object>>() {
         @Override
         public boolean hasNext() {
-          return hasnext(resultSet, stmt);
+          return hasnext();
         }
 
         @Override
         public Map<String,Object> next() {
-          return getARow(resultSet, convertType, colNames, fieldNameVsType);
+          return getARow(convertType, fieldNameVsType);
         }
 
         @Override
@@ -363,17 +377,16 @@ public class JdbcDataSource extends
     
  
 
-    protected Map<String,Object> getARow(ResultSet resultSet, boolean convertType, List<String> colNames,
-        Map<String,Integer> fieldNameVsType) {
-      if (resultSet == null)
+    protected Map<String,Object> getARow(boolean convertType, Map<String,Integer> fieldNameVsType) {
+      if (getResultSet() == null)
         return null;
       Map<String, Object> result = new HashMap<>();
-      for (String colName : colNames) {
+      for (String colName : getColNames()) {
         try {
           if (!convertType) {
             // Use underlying database's type information except for BigDecimal and BigInteger
             // which cannot be serialized by JavaBin/XML. See SOLR-6165
-            Object value = resultSet.getObject(colName);
+            Object value = getResultSet().getObject(colName);
             if (value instanceof BigDecimal || value instanceof BigInteger) {
               result.put(colName, value.toString());
             } else {
@@ -387,28 +400,28 @@ public class JdbcDataSource extends
             type = Types.VARCHAR;
           switch (type) {
             case Types.INTEGER:
-              result.put(colName, resultSet.getInt(colName));
+              result.put(colName, getResultSet().getInt(colName));
               break;
             case Types.FLOAT:
-              result.put(colName, resultSet.getFloat(colName));
+              result.put(colName, getResultSet().getFloat(colName));
               break;
             case Types.BIGINT:
-              result.put(colName, resultSet.getLong(colName));
+              result.put(colName, getResultSet().getLong(colName));
               break;
             case Types.DOUBLE:
-              result.put(colName, resultSet.getDouble(colName));
+              result.put(colName, getResultSet().getDouble(colName));
               break;
             case Types.DATE:
-              result.put(colName, resultSet.getTimestamp(colName));
+              result.put(colName, getResultSet().getTimestamp(colName));
               break;
             case Types.BOOLEAN:
-              result.put(colName, resultSet.getBoolean(colName));
+              result.put(colName, getResultSet().getBoolean(colName));
               break;
             case Types.BLOB:
-              result.put(colName, resultSet.getBytes(colName));
+              result.put(colName, getResultSet().getBytes(colName));
               break;
             default:
-              result.put(colName, resultSet.getString(colName));
+              result.put(colName, getResultSet().getString(colName));
               break;
           }
         } catch (SQLException e) {
@@ -419,11 +432,13 @@ public class JdbcDataSource extends
       return result;
     }
 
-    protected boolean hasnext(ResultSet resultSet, Statement stmt) {
-      if (resultSet == null)
+    protected boolean hasnext() {
+      if (getResultSet() == null) {
+        close();
         return false;
+      }
       try {
-        if (resultSet.next()) {
+        if (getResultSet().next()) {
           return true;
         } else {
           close();
@@ -438,20 +453,45 @@ public class JdbcDataSource extends
 
     protected void close() {
       try {
-        if (resultSet != null)
-          resultSet.close();
-        if (stmt != null)
-          stmt.close();
+        if (getResultSet() != null)
+          getResultSet().close();
+        if (getStmt() != null)
+          getStmt().close();
       } catch (Exception e) {
         logError("Exception while closing result set", e);
       } finally {
-        resultSet = null;
-        stmt = null;
+        setResultSet(null);
+        setStmt(null);
       }
     }
 
     protected final Iterator<Map<String,Object>> getIterator() {
       return rSetIterator;
+    }
+    
+    
+    protected final Statement getStmt() {
+      return stmt;
+    }
+    
+    protected final void setStmt(Statement stmt) {
+      this.stmt = stmt;
+    }
+    
+    protected final ResultSet getResultSet() {
+      return resultSet;
+    }
+    
+    protected final void setResultSet(ResultSet resultSet) {
+      this.resultSet = resultSet;
+    }
+    
+    protected final List<String> getColNames() {
+      return colNames;
+    }
+
+    protected final void setColNames(List<String> colNames) {
+      this.colNames = colNames;
     }
     
   }
@@ -487,7 +527,10 @@ public class JdbcDataSource extends
   private boolean isClosed = false;
 
   @Override
-  public void close() {
+  public synchronized void close() {
+    if (resultSetIterator != null) {
+      resultSetIterator.close();
+    }
     try {
       closeConnection();
     } finally {
@@ -522,4 +565,5 @@ public class JdbcDataSource extends
   public static final String DRIVER = "driver";
 
   public static final String CONVERT_TYPE = "convertType";
+
 }
