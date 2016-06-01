@@ -453,4 +453,75 @@ public final class ArrayUtil {
     timSort(a, 0, a.length);
   }
 
+  /** Reorganize {@code arr[from:to[} so that the element at offset k is at the
+   *  same position as if {@code arr[from:to[} was sorted, and all elements on
+   *  its left are less than or equal to it, and all elements on its right are
+   *  greater than or equal to it.
+   *  This runs in linear time on average and in {@code n log(n)} time in the
+   *  worst case.*/
+  public static <T> void select(T[] arr, int from, int to, int k, Comparator<T> comparator) {
+    if (k < from) {
+      throw new IllegalArgumentException("k must be >= from");
+    }
+    if (k >= to) {
+      throw new IllegalArgumentException("k must be < to");
+    }
+    final int maxDepth = 2 * MathUtil.log(to - from, 2);
+    quickSelect(arr, from, to, k, comparator, maxDepth);
+  }
+
+  private static <T> void quickSelect(T[] arr, int from, int to, int k, Comparator<T> comparator, int maxDepth) {
+    assert from <= k;
+    assert k < to;
+    if (to - from == 1) {
+      return;
+    }
+    if (--maxDepth < 0) {
+      Arrays.sort(arr, from, to, comparator);
+      return;
+    }
+
+    final int mid = (from + to) >>> 1;
+    // heuristic: we use the median of the values at from, to-1 and mid as a pivot
+    if (comparator.compare(arr[from], arr[to - 1]) > 0) {
+      swap(arr, from, to - 1);
+    }
+    if (comparator.compare(arr[to - 1], arr[mid]) > 0) {
+      swap(arr, to - 1, mid);
+      if (comparator.compare(arr[from], arr[to - 1]) > 0) {
+        swap(arr, from, to - 1);
+      }
+    }
+
+    T pivot = arr[to - 1];
+
+    int left = from + 1;
+    int right = to - 2;
+
+    for (;;) {
+      while (comparator.compare(pivot, arr[left]) > 0) {
+        ++left;
+      }
+
+      while (left < right && comparator.compare(pivot, arr[right]) <= 0) {
+        --right;
+      }
+
+      if (left < right) {
+        swap(arr, left, right);
+        --right;
+      } else {
+        break;
+      }
+    }
+    swap(arr, left, to - 1);
+
+    if (left == k) {
+      return;
+    } else if (left < k) {
+      quickSelect(arr, left + 1, to, k, comparator, maxDepth);
+    } else {
+      quickSelect(arr, from, left, k, comparator, maxDepth);
+    }
+  }
 }
