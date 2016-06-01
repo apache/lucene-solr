@@ -18,6 +18,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -59,12 +61,118 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 public class TestNumericDocValuesUpdates extends LuceneTestCase {
 
   private Document doc(int id) {
+    // make sure we don't set the doc's value to 0, to not confuse with a document that's missing values
+    return doc(id, id +1);
+  }
+  
+  private Document doc(int id, long val) {
     Document doc = new Document();
     doc.add(new StringField("id", "doc-" + id, Store.NO));
-    // make sure we don't set the doc's value to 0, to not confuse with a document that's missing values
-    doc.add(new NumericDocValuesField("val", id + 1));
+    doc.add(new NumericDocValuesField("val", val));
     return doc;
   }
+
+  public void testMultipleUpdatesSameDoc() throws Exception {
+
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+    
+    conf.setMaxBufferedDocs(3); // small number of docs, so use a tiny maxBufferedDocs
+
+    IndexWriter writer = new IndexWriter(dir, conf);
+
+    writer.updateDocument       (new Term("id","doc-1"), doc(1, 1000000000L ));
+    writer.updateNumericDocValue(new Term("id","doc-1"), "val", 1000001111L );
+    writer.updateDocument       (new Term("id","doc-2"), doc(2, 2000000000L ));
+    writer.updateDocument       (new Term("id","doc-2"), doc(2, 2222222222L ));
+    writer.updateNumericDocValue(new Term("id","doc-1"), "val", 1111111111L );
+    writer.commit();
+    
+    final DirectoryReader reader = DirectoryReader.open(dir);
+    final IndexSearcher searcher = new IndexSearcher(reader);
+    TopFieldDocs td;
+    
+    td = searcher.search(new TermQuery(new Term("id", "doc-1")), 1, 
+                         new Sort(new SortField("val", SortField.Type.LONG)));
+    assertEquals("doc-1 missing?", 1, td.scoreDocs.length);
+    assertEquals("doc-1 value", 1111111111L, ((FieldDoc)td.scoreDocs[0]).fields[0]);
+    
+    td = searcher.search(new TermQuery(new Term("id", "doc-2")), 1, 
+                        new Sort(new SortField("val", SortField.Type.LONG)));
+    assertEquals("doc-2 missing?", 1, td.scoreDocs.length);
+    assertEquals("doc-2 value", 2222222222L, ((FieldDoc)td.scoreDocs[0]).fields[0]);
+    
+    IOUtils.close(reader, writer, dir);
+  }
+
+  public void testBiasedMixOfRandomUpdates() throws Exception {
+    // 3 types of operations: add, updated, updateDV.
+    // rather then randomizing equally, we'll pick (random) cutoffs so each test run is biased,
+    // in terms of some ops happen more often then others
+    final int ADD_CUTOFF = TestUtil.nextInt(random(), 1, 98);
+    final int UPD_CUTOFF = TestUtil.nextInt(random(), ADD_CUTOFF+1, 99);
+
+    Directory dir = newDirectory();
+    IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
+
+    IndexWriter writer = new IndexWriter(dir, conf);
+    
+    final int numOperations = atLeast(1000);
+    final Map<Integer,Long> expected = new HashMap<>(numOperations / 3);
+
+    // start with at least one doc before any chance of updates
+    final int numSeedDocs = atLeast(1); 
+    for (int i = 0; i < numSeedDocs; i++) {
+      final long val = random().nextLong();
+      expected.put(i, val);
+      writer.addDocument(doc(i, val));
+    }
+
+    int numDocUpdates = 0;
+    int numValueUpdates = 0;
+
+    //System.out.println("TEST: numOperations=" + numOperations + " ADD_CUTOFF=" + ADD_CUTOFF + " UPD_CUTOFF=" + UPD_CUTOFF);
+
+    for (int i = 0; i < numOperations; i++) {
+      final int op = TestUtil.nextInt(random(), 1, 100);
+      final long val = random().nextLong();
+      if (op <= ADD_CUTOFF) {
+        final int id = expected.size();
+        //System.out.println("TEST i=" + i + ": addDocument id=" + id + " val=" + val);
+        expected.put(id, val);
+        writer.addDocument(doc(id, val));
+      } else {
+        final int id = TestUtil.nextInt(random(), 0, expected.size()-1);
+        expected.put(id, val);
+        if (op <= UPD_CUTOFF) {
+          numDocUpdates++;
+          //System.out.println("TEST i=" + i + ": updateDocument id=" + id + " val=" + val);
+          writer.updateDocument(new Term("id","doc-" + id), doc(id, val));
+        } else {
+          numValueUpdates++;
+          //System.out.println("TEST i=" + i + ": updateDV id=" + id + " val=" + val);
+          writer.updateNumericDocValue(new Term("id","doc-" + id), "val", val);
+        }
+      }
+    }
+
+    writer.commit();
+    
+    final DirectoryReader reader = DirectoryReader.open(dir);
+    final IndexSearcher searcher = new IndexSearcher(reader);
+
+    // TODO: make more efficient if max numOperations is going to be increased much
+    for (Map.Entry<Integer,Long> expect : expected.entrySet()) {
+      String id = "doc-" + expect.getKey();
+      TopFieldDocs td = searcher.search(new TermQuery(new Term("id", id)), 1, 
+                                        new Sort(new SortField("val", SortField.Type.LONG)));
+      assertEquals(id + " missing?", 1, td.totalHits);
+      assertEquals(id + " value", expect.getValue(), ((FieldDoc)td.scoreDocs[0]).fields[0]);
+    }
+    
+    IOUtils.close(reader, writer, dir);
+  }
+
   
   @Test
   public void testUpdatesAreFlushed() throws IOException {
