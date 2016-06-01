@@ -366,7 +366,28 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     obj = (Map) ObjectBuilder.fromJSON(content);
     assertEquals("2", obj.get("id"));
 
+    String json = "{a:{" +
+        "b:[{c:c1, e:e1},{c:c2, e :e2, d:{p:q}}]," +
+        "x:y" +
+        "}}";
+    req = req("split", "/", "child.split" , "/a/b"   );
+    req.getContext().put("path","/update/json/docs");
+    rsp = new SolrQueryResponse();
+    p = new BufferingRequestProcessor(null);
+    loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(json), p);
 
+    assertEquals( 1, p.addCommands.size() );
+    assertEquals("y",  p.addCommands.get(0).solrDoc.getFieldValue("a.x"));
+    List<SolrInputDocument> children = p.addCommands.get(0).solrDoc.getChildDocuments();
+    assertEquals(2, children.size());
+    SolrInputDocument d = children.get(0);
+    assertEquals(d.getFieldValue("c"), "c1");
+    assertEquals(d.getFieldValue("e"), "e1");
+    d = children.get(1);
+    assertEquals(d.getFieldValue("c"), "c2");
+    assertEquals(d.getFieldValue("e"), "e2");
+    assertEquals(d.getFieldValue("d.p"), "q");
   }
 
 

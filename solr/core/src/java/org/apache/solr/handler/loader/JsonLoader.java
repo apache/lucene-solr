@@ -64,7 +64,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  */
 public class JsonLoader extends ContentStreamLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String CHILD_DOC_KEY = "_childDocuments_";
+  public static final String CHILD_DOC_KEY = "_childDocuments_";
 
   @Override
   public String getDefaultWT() {
@@ -125,8 +125,9 @@ public class JsonLoader extends ContentStreamLoader {
       String path = (String) req.getContext().get(PATH);
       if (UpdateRequestHandler.DOC_PATH.equals(path) || "false".equals(req.getParams().get("json.command"))) {
         String split = req.getParams().get("split");
+        String childSplit = req.getParams().get("child.split");
         String[] f = req.getParams().getParams("f");
-        handleSplitMode(split, f, reader);
+        handleSplitMode(split, childSplit, f, reader);
         return;
       }
       parser = new JSONParser(reader);
@@ -193,7 +194,7 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
-    private void handleSplitMode(String split, String[] fields, final Reader reader) throws IOException {
+    private void handleSplitMode(String split, String childSplit, String[] fields, final Reader reader) throws IOException {
       if (split == null) split = "/";
       if (fields == null || fields.length == 0) fields = new String[]{"$FQN:/**"};
       final boolean echo = "true".equals(req.getParams().get("echo"));
@@ -208,7 +209,7 @@ public class JsonLoader extends ContentStreamLoader {
 
       }
 
-      JsonRecordReader jsonRecordReader = JsonRecordReader.getInst(split, Arrays.asList(fields));
+      JsonRecordReader jsonRecordReader = JsonRecordReader.getInst(split, childSplit, Arrays.asList(fields));
       jsonRecordReader.streamRecords(parser, new JsonRecordReader.Handler() {
         ArrayList docs = null;
 
@@ -221,15 +222,16 @@ public class JsonLoader extends ContentStreamLoader {
               docs = new ArrayList();
               rsp.add("docs", docs);
             }
+            if (copy.containsKey(null)) {
+              copy.put(CHILD_DOC_KEY, copy.get(null));
+              copy.remove(null);
+            }
             docs.add(copy);
           } else {
             AddUpdateCommand cmd = new AddUpdateCommand(req);
             cmd.commitWithin = commitWithin;
             cmd.overwrite = overwrite;
-            cmd.solrDoc = new SolrInputDocument();
-            for (Map.Entry<String, Object> entry : copy.entrySet()) {
-              cmd.solrDoc.setField(entry.getKey(), entry.getValue());
-            }
+            cmd.solrDoc = buildDoc(copy);
             try {
               processor.processAdd(cmd);
             } catch (IOException e) {
@@ -238,6 +240,25 @@ public class JsonLoader extends ContentStreamLoader {
           }
         }
       });
+    }
+
+    private SolrInputDocument buildDoc(Map<String, Object> m) {
+      SolrInputDocument result = new SolrInputDocument();
+      for (Map.Entry<String, Object> e : m.entrySet()) {
+        if (e.getKey() == null) {// special case. JsonRecordReader emits child docs with null key
+          if (e.getValue() instanceof List) {
+            List value = (List) e.getValue();
+            for (Object o : value) {
+              if (o instanceof Map) result.addChildDocument(buildDoc((Map) o));
+            }
+          } else if (e.getValue() instanceof Map) {
+            result.addChildDocument(buildDoc((Map) e));
+          }
+        } else {
+          result.setField(e.getKey(), e.getValue());
+        }
+      }
+      return result;
     }
 
     private Map<String, Object> getDocMap(Map<String, Object> record, JSONParser parser, String srcField, boolean mapUniqueKeyOnly) {
