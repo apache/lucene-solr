@@ -72,7 +72,7 @@ abstract class DocValuesUpdate {
   
   @Override
   public String toString() {
-    return "term=" + term + ",field=" + field + ",value=" + value;
+    return "term=" + term + ",field=" + field + ",value=" + value + ",docIDUpto=" + docIDUpto;
   }
   
   /** An in-place update to a binary DocValues field */
