@@ -30,6 +30,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.assertUpdateTolerantErrors;
 import static org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.addErr;
@@ -83,6 +84,7 @@ import org.slf4j.LoggerFactory;
  * </p>
  *
  */
+@SuppressSSL(bugUrl="https://issues.apache.org/jira/browse/SOLR-9182 - causes OOM")
 public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
