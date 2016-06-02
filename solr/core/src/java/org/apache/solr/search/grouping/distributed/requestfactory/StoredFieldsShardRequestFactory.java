@@ -76,7 +76,9 @@ public class StoredFieldsShardRequestFactory implements ShardRequestFactory {
 
       List<String> ids = new ArrayList<>(shardDocs.size());
       for (ShardDoc shardDoc : shardDocs) {
-        ids.add(shardDoc.id.toString());
+        // Need the IndexSchema#printableUniqueKey() for correlation with other lists that must
+        // be strings (like keys in highlighting, explain, etc)
+        ids.add(rb.req.getSchema().printableUniqueKey(uniqueField, shardDoc.id));
       }
       sreq.params.add(ShardParams.IDS, StrUtils.join(ids, ','));
       shardRequests[i++] = sreq;

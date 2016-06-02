@@ -1110,9 +1110,9 @@ public class QueryComponent extends SearchComponent
       for (int i=resultSize-1; i>=0; i--) {
         ShardDoc shardDoc = queue.pop();
         shardDoc.positionInResponse = i;
-        // Need the toString() for correlation with other lists that must
+        // Need the IndexSchema#printableUniqueKey() for correlation with other lists that must
         // be strings (like keys in highlighting, explain, etc)
-        resultIds.put(shardDoc.id.toString(), shardDoc);
+        resultIds.put(rb.req.getSchema().printableUniqueKey(uniqueKeyField, shardDoc.id), shardDoc);
       }
 
       // Add hits for distributed requests
@@ -1285,8 +1285,9 @@ public class QueryComponent extends SearchComponent
     
       ArrayList<String> ids = new ArrayList<>(shardDocs.size());
       for (ShardDoc shardDoc : shardDocs) {
-        // TODO: depending on the type, we may need more tha a simple toString()?
-        ids.add(shardDoc.id.toString());
+        // Need the IndexSchema#printableUniqueKey() for correlation with other lists that must
+        // be strings (like keys in highlighting, explain, etc)
+        ids.add(rb.req.getSchema().printableUniqueKey(uniqueField, shardDoc.id));
       }
       sreq.params.add(ShardParams.IDS, StrUtils.join(ids, ','));
 
@@ -1305,8 +1306,8 @@ public class QueryComponent extends SearchComponent
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
       boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;
 
-      String keyFieldName = rb.req.getSchema().getUniqueKeyField().getName();
-      boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(keyFieldName);
+      SchemaField uniqueKeyField = rb.req.getSchema().getUniqueKeyField();
+      boolean removeKeyField = !rb.rsp.getReturnFields().wantsField(uniqueKeyField.getName());
 
       for (ShardResponse srsp : sreq.responses) {
         if (srsp.getException() != null) {
@@ -1334,7 +1335,9 @@ public class QueryComponent extends SearchComponent
         SolrDocumentList docs = (SolrDocumentList) srsp.getSolrResponse().getResponse().get("response");
 
         for (SolrDocument doc : docs) {
-          Object id = doc.getFieldValue(keyFieldName);
+          // Need the IndexSchema#printableUniqueKey() for correlation with other lists that must
+          // be strings (like keys in highlighting, explain, etc)
+          Object id = rb.req.getSchema().printableUniqueKey(uniqueKeyField, doc.getFieldValue(uniqueKeyField.getName()));
           ShardDoc sdoc = rb.resultIds.get(id.toString());
           if (sdoc != null) {
             if (returnScores) {
@@ -1345,7 +1348,7 @@ public class QueryComponent extends SearchComponent
               doc.remove("score");
             }
             if (removeKeyField) {
-              doc.removeFields(keyFieldName);
+              doc.removeFields(uniqueKeyField.getName());
             }
             rb.getResponseDocs().set(sdoc.positionInResponse, doc);
           }

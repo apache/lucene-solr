@@ -23,6 +23,7 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardDoc;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.grouping.distributed.ShardResponseProcessor;
 
@@ -39,10 +40,12 @@ public class StoredFieldsShardResponseProcessor implements ShardResponseProcesso
     boolean returnScores = (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0;
     ShardResponse srsp = shardRequest.responses.get(0);
     SolrDocumentList docs = (SolrDocumentList)srsp.getSolrResponse().getResponse().get("response");
-    String uniqueIdFieldName = rb.req.getSchema().getUniqueKeyField().getName();
+    SchemaField uniqueKeyField = rb.req.getSchema().getUniqueKeyField();
 
     for (SolrDocument doc : docs) {
-      Object id = doc.getFieldValue(uniqueIdFieldName).toString();
+      // Need the IndexSchema#printableUniqueKey() for correlation with other lists that must
+      // be strings (like keys in highlighting, explain, etc)
+      Object id = rb.req.getSchema().printableUniqueKey(uniqueKeyField, doc.getFieldValue(uniqueKeyField.getName()));
       ShardDoc shardDoc = rb.resultIds.get(id);
       FieldDoc fieldDoc = (FieldDoc) shardDoc;
       if (shardDoc != null) {

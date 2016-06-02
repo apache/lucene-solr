@@ -348,7 +348,49 @@ public class IndexSchema {
    */
   public String printableUniqueKey(org.apache.lucene.document.Document doc) {
     IndexableField f = doc.getField(uniqueKeyFieldName);
-    return f==null ? null : uniqueKeyFieldType.toExternal(f);
+    return printableUniqueKey(f);
+  }
+  
+  /**
+   * The printable value of the Unique Key field for
+   * the specified IndexableField
+   * @throws SolrException if the field is not the unique key field
+   * @return null if the field is null or the printable representation of the field
+   */
+  public String printableUniqueKey(IndexableField f) {
+    String res = null;
+    
+    if (f!=null){
+      if (f.name().equals(uniqueKeyFieldName)) {
+        res = uniqueKeyFieldType.toExternal(f);
+      }
+      else {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "IndexableField [" + f.toString() + "] is not the unique key field [" + uniqueKeyFieldName + "]");
+      }
+    }
+    
+   return res;
+  }
+  
+  /**
+   * The printable value of the Unique Key field for
+   * the specified SchemaField
+   * @throws SolrException if the field is not the unique key field
+   * @return null if the field is null or the printable representation of the field
+   */
+  public String printableUniqueKey(SchemaField f, Object value) {
+    String res = null;
+    
+    if (f!=null){
+      if (f.getName().equals(uniqueKeyFieldName)) {
+        res = printableUniqueKey(f.createField(value, 1.0f));
+      }
+      else {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "SchemaField [" + f.toString() + "] is not the unique key field [" + uniqueKeyFieldName + "]");
+      }
+    }
+    
+    return res;
   }
 
   private SchemaField getIndexedField(String fname) {
