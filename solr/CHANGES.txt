@@ -150,6 +150,8 @@ New Features
 
 * SOLR-7123: '/update/json/docs' path supports nested documents (noble)
 
+* SOLR-8610: Resolve variables in encryptKeyFile of DIH's JdbcDataSource (Kristine Jetzke via Mikhail Khludnev)
+
 Bug Fixes
 ----------------------
 

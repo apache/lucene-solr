@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.Connection;
@@ -136,15 +137,10 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
   @Test
   public void testRetrieveFromJndiWithCredentialsWithEncryptedPwd() throws Exception {
     MockInitialContextFactory.bind("java:comp/env/jdbc/JndiDB", dataSource);
-    File tmpdir = File.createTempFile("test", "tmp", createTempDir().toFile());
-    Files.delete(tmpdir.toPath());
-    tmpdir.mkdir();
-    byte[] content = "secret".getBytes(StandardCharsets.UTF_8);
-    createFile(tmpdir, "enckeyfile.txt", content, false);
 
     props.put(JdbcDataSource.JNDI_NAME, "java:comp/env/jdbc/JndiDB");
     props.put("user", "Fred");
-    props.put("encryptKeyFile", new File(tmpdir, "enckeyfile.txt").getAbsolutePath());
+    props.put("encryptKeyFile", createEncryptionKeyFile());
     props.put("password", "U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o=");
     props.put("holdability", "HOLD_CURSORS_OVER_COMMIT");
     EasyMock.expect(dataSource.getConnection("Fred", "MyPassword")).andReturn(
@@ -161,6 +157,32 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     mockControl.verify();
 
     assertSame("connection", conn, connection);
+  }
+  
+  @Test
+  public void testRetrieveFromJndiWithCredentialsWithEncryptedAndResolvedPwd() throws Exception {
+    MockInitialContextFactory.bind("java:comp/env/jdbc/JndiDB", dataSource);
+
+    props.put(JdbcDataSource.JNDI_NAME, "java:comp/env/jdbc/JndiDB");
+    props.put("user", "Fred");
+    props.put("encryptKeyFile", "${foo.bar}");
+    props.put("password", "U2FsdGVkX18QMjY0yfCqlfBMvAB4d3XkwY96L7gfO2o=");
+    EasyMock.expect(dataSource.getConnection("Fred", "MyPassword")).andReturn(
+        connection);
+    
+    Map<String,Object> values = new HashMap<>();
+    values.put("bar", createEncryptionKeyFile());
+    context.getVariableResolver().addNamespace("foo", values);
+    
+    jdbcDataSource.init(context, props);
+    
+    connection.setAutoCommit(false);
+
+    mockControl.replay();
+
+    jdbcDataSource.getConnection();
+
+    mockControl.verify();
   }
 
   @Test
@@ -403,7 +425,6 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
       DriverManager.deregisterDriver(driver);
     }
   }
-
   @Test
   @Ignore("Needs a Mock database server to work")
   public void testBasic() throws Exception {
@@ -442,4 +463,13 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     assertEquals(Float.class, msrp.getClass());
     assertEquals(Long.class, trim_id.getClass());
   }
+  
+  private String createEncryptionKeyFile() throws IOException {
+    File tmpdir = File.createTempFile("test", "tmp", createTempDir().toFile());
+    Files.delete(tmpdir.toPath());
+    tmpdir.mkdir();
+    byte[] content = "secret".getBytes(StandardCharsets.UTF_8);
+    createFile(tmpdir, "enckeyfile.txt", content, false);
+    return new File(tmpdir, "enckeyfile.txt").getAbsolutePath();
+  }  
 }

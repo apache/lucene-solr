@@ -71,7 +71,7 @@ public class JdbcDataSource extends
 
   @Override
   public void init(Context context, Properties initProps) {
-    initProps = decryptPwd(initProps);
+    initProps = decryptPwd(context, initProps);
     Object o = initProps.get(CONVERT_TYPE);
     if (o != null)
       convertType = Boolean.parseBoolean(o.toString());
@@ -112,8 +112,8 @@ public class JdbcDataSource extends
     }
   }
 
-  private Properties decryptPwd(Properties initProps) {
-    String encryptionKey = initProps.getProperty("encryptKeyFile");
+  private Properties decryptPwd(Context context, Properties initProps) {
+    String encryptionKey = context.replaceTokens(initProps.getProperty("encryptKeyFile"));
     if (initProps.getProperty("password") != null && encryptionKey != null) {
       // this means the password is encrypted and use the file to decode it
       try {
