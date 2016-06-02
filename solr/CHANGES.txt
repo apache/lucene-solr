@@ -253,6 +253,8 @@ Bug Fixes
 
 * SOLR-8612: closing JDBC Statement on failures in DataImportHandler (DIH) (Kristine Jetzke via Mikhail Khludnev)
 
+* SOLR-8676: keep LOG4J_CONFIG in solr.cmd (Kristine Jetzke via Mikhail Khludnev)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
