@@ -515,10 +515,8 @@ public class ZkStateReader implements Closeable {
           String coll = watchEntry.getKey();
           CollectionWatch collWatch = watchEntry.getValue();
           ClusterState.CollectionRef ref = this.legacyCollectionStates.get(coll);
-          if (ref == null)
-            continue;
           // legacy collections are always in-memory
-          DocCollection oldState = ref.get();
+          DocCollection oldState = ref == null ? null : ref.get();
           ClusterState.CollectionRef newRef = loadedData.getCollectionStates().get(coll);
           DocCollection newState = newRef == null ? null : newRef.get();
           if (!collWatch.stateWatchers.isEmpty()
@@ -1156,17 +1154,17 @@ public class ZkStateReader implements Closeable {
       v.stateWatchers.add(stateWatcher);
       return v;
     });
+
     if (watchSet.get()) {
       new StateWatcher(collection).refreshAndWatch();
       synchronized (getUpdateLock()) {
         constructState();
       }
     }
-    else {
-      DocCollection state = clusterState.getCollectionOrNull(collection);
-      if (stateWatcher.onStateChanged(liveNodes, state) == true) {
-        removeCollectionStateWatcher(collection, stateWatcher);
-      }
+
+    DocCollection state = clusterState.getCollectionOrNull(collection);
+    if (stateWatcher.onStateChanged(liveNodes, state) == true) {
+      removeCollectionStateWatcher(collection, stateWatcher);
     }
   }
 
