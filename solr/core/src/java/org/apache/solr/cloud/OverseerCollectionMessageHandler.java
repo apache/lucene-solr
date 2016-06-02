@@ -179,7 +179,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
   // Set that tracks collections that are currently being processed by a running task.
   // This is used for handling mutual exclusion of the tasks.
-  final private Set collectionWip;
+
+  final private LockTree lockTree = new LockTree();
 
   static final Random RANDOM;
   static {
@@ -206,7 +207,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     this.stats = stats;
     this.overseer = overseer;
     this.overseerPrioritizer = overseerPrioritizer;
-    this.collectionWip = new HashSet();
   }
 
   @Override
@@ -216,10 +216,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
 
     NamedList results = new NamedList();
     try {
-      CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(operation);
-      if (action == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:" + operation);
-      }
+      CollectionParams.CollectionAction action = getCollectionAction(operation);
       switch (action) {
         case CREATE:
           createCollection(zkStateReader.getClusterState(), message, results);
@@ -287,6 +284,13 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         case RESTORE:
           processRestoreAction(message, results);
           break;
+        case MOCK_COLL_TASK:
+        case MOCK_SHARD_TASK:
+        case MOCK_REPLICA_TASK: {
+          //only for test purposes
+          Thread.sleep(message.getInt("sleep", 1));
+          break;
+        }
         default:
           throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:"
               + operation);
@@ -309,6 +313,14 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       results.add("exception", nl);
     }
     return new OverseerSolrResponse(results);
+  }
+
+  private CollectionParams.CollectionAction getCollectionAction(String operation) {
+    CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(operation);
+    if (action == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:" + operation);
+    }
+    return action;
   }
 
   //
@@ -2663,7 +2675,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
       message.getStr(COLLECTION_PROP) : message.getStr(NAME);
   }
 
-  @Override
+
+ /* @Override
   public void markExclusiveTask(String collectionName, ZkNodeProps message) {
     if (collectionName != null) {
       synchronized (collectionWip) {
@@ -2679,8 +2692,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         collectionWip.remove(collectionName);
       }
     }
-  }
-
+  }*/
+/*
   @Override
   public ExclusiveMarking checkExclusiveMarking(String collectionName, ZkNodeProps message) {
     synchronized (collectionWip) {
@@ -2689,5 +2702,29 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
     }
 
     return ExclusiveMarking.NOTDETERMINED;
+  }*/
+
+  private long sessionId = -1;
+  private LockTree.Session lockSession;
+
+  @Override
+  public Lock lockTask(ZkNodeProps message, OverseerTaskProcessor.TaskBatch taskBatch) {
+    if (lockSession == null || sessionId != taskBatch.getId()) {
+      //this is always called in the same thread.
+      //Each batch is supposed to have a new taskBatch
+      //So if taskBatch changes we must create a new Session
+      // also check if the running tasks are empty. If yes, clear lockTree
+      // this will ensure that locks are not 'leaked'
+      if(taskBatch.getRunningTasks() == 0) lockTree.clear();
+      lockSession = lockTree.getSession();
+    }
+    return lockSession.lock(getCollectionAction(message.getStr(Overseer.QUEUE_OPERATION)),
+        Arrays.asList(
+            getTaskKey(message),
+            message.getStr(ZkStateReader.SHARD_ID_PROP),
+            message.getStr(ZkStateReader.REPLICA_PROP))
+
+    );
   }
+
 }

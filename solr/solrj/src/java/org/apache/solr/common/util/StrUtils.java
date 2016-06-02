@@ -149,10 +149,11 @@ public class StrUtils {
    * @see #escapeTextWithSeparator
    */
   public static String join(Collection<?> items, char separator) {
+    if (items == null) return "";
     StringBuilder sb = new StringBuilder(items.size() << 3);
     boolean first=true;
     for (Object o : items) {
-      String item = o.toString();
+      String item = String.valueOf(o);
       if (first) {
         first = false;
       } else {

@@ -81,10 +81,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private String myId;
 
-  private final ShardHandlerFactory shardHandlerFactory;
-
-  private String adminPath;
-
   private ZkStateReader zkStateReader;
 
   private boolean isClosed;
@@ -102,8 +98,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private OverseerNodePrioritizer prioritizer;
 
   public OverseerTaskProcessor(ZkStateReader zkStateReader, String myId,
-                                        final ShardHandlerFactory shardHandlerFactory,
-                                        String adminPath,
                                         Overseer.Stats stats,
                                         OverseerMessageHandlerSelector selector,
                                         OverseerNodePrioritizer prioritizer,
@@ -113,8 +107,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
                                         DistributedMap failureMap) {
     this.zkStateReader = zkStateReader;
     this.myId = myId;
-    this.shardHandlerFactory = shardHandlerFactory;
-    this.adminPath = adminPath;
     this.stats = stats;
     this.selector = selector;
     this.prioritizer = prioritizer;
@@ -206,10 +198,11 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
           if (isClosed) break;
 
+          taskBatch.batchId++;
           for (QueueEvent head : heads) {
+            if (runningZKTasks.contains(head.getId())) continue;
             final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
             OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
-            String taskKey = messageHandler.getTaskKey(message);
             final String asyncId = message.getStr(ASYNC);
             if (hasLeftOverItems) {
               if (head.getId().equals(oldestItemInWorkQueue))
@@ -220,27 +213,29 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
                 continue;
               }
             }
-
-            if (!checkExclusivity(messageHandler, message, head.getId())) {
+            String operation = message.getStr(Overseer.QUEUE_OPERATION);
+            OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, taskBatch);
+            if (lock == null) {
               log.debug("Exclusivity check failed for [{}]", message.toString());
               continue;
             }
-
             try {
-              markTaskAsRunning(messageHandler, head, taskKey, asyncId, message);
+              markTaskAsRunning(head, asyncId);
               log.debug("Marked task [{}] as running", head.getId());
             } catch (KeeperException.NodeExistsException e) {
+              lock.unlock();
               // This should never happen
               log.error("Tried to pick up task [{}] when it was already running!", head.getId());
+              continue;
             } catch (InterruptedException e) {
+              lock.unlock();
               log.error("Thread interrupted while trying to pick task for execution.", head.getId());
               Thread.currentThread().interrupt();
+              continue;
             }
-
             log.info(messageHandler.getName() + ": Get the message id:" + head.getId() + " message:" + message.toString());
-            String operation = message.getStr(Overseer.QUEUE_OPERATION);
             Runner runner = new Runner(messageHandler, message,
-                operation, head);
+                operation, head, lock);
             tpe.execute(runner);
           }
 
@@ -260,31 +255,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     } finally {
       this.close();
     }
-  }
-
-  protected boolean checkExclusivity(OverseerMessageHandler messageHandler, ZkNodeProps message, String id)
-      throws KeeperException, InterruptedException {
-    String taskKey = messageHandler.getTaskKey(message);
-
-    if (taskKey == null)
-      return true;
-
-    OverseerMessageHandler.ExclusiveMarking marking = messageHandler.checkExclusiveMarking(taskKey, message);
-    switch (marking) {
-      case NOTDETERMINED:
-        break;
-      case EXCLUSIVE:
-        return true;
-      case NONEXCLUSIVE:
-        return false;
-      default:
-        throw new IllegalArgumentException("Undefined marking: " + marking);
-    }
-
-    if (runningZKTasks.contains(id))
-      return false;
-
-    return true;
   }
 
   private void cleanUpWorkQueue() throws KeeperException, InterruptedException {
@@ -390,8 +360,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   }
 
   @SuppressWarnings("unchecked")
-  private void markTaskAsRunning(OverseerMessageHandler messageHandler, QueueEvent head, String taskKey,
-                                 String asyncId, ZkNodeProps message)
+  private void markTaskAsRunning(QueueEvent head, String asyncId)
       throws KeeperException, InterruptedException {
     synchronized (runningZKTasks) {
       runningZKTasks.add(head.getId());
@@ -401,7 +370,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       runningTasks.add(head.getId());
     }
 
-    messageHandler.markExclusiveTask(taskKey, message);
+//    messageHandler.markExclusiveTask(taskKey, message);
 
     if (asyncId != null)
       runningMap.put(asyncId, null);
@@ -413,12 +382,14 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     SolrResponse response;
     QueueEvent head;
     OverseerMessageHandler messageHandler;
-  
-    public Runner(OverseerMessageHandler messageHandler, ZkNodeProps message, String operation, QueueEvent head) {
+    private final OverseerMessageHandler.Lock lock;
+
+    public Runner(OverseerMessageHandler messageHandler, ZkNodeProps message, String operation, QueueEvent head, OverseerMessageHandler.Lock lock) {
       this.message = message;
       this.operation = operation;
       this.head = head;
       this.messageHandler = messageHandler;
+      this.lock = lock;
       response = null;
     }
 
@@ -454,7 +425,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           log.debug("Completed task:[{}]", head.getId());
         }
 
-        markTaskComplete(messageHandler, head.getId(), asyncId, taskKey, message);
+        markTaskComplete(head.getId(), asyncId);
         log.debug("Marked task [{}] as completed.", head.getId());
         printTrackingMaps();
 
@@ -469,6 +440,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         log.warn("Resetting task {} as the thread was interrupted.", head.getId());
         Thread.currentThread().interrupt();
       } finally {
+        lock.unlock();
         if (!success) {
           // Reset task from tracking data structures so that it can be retried.
           resetTaskWithException(messageHandler, head.getId(), asyncId, taskKey, message);
@@ -479,7 +451,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       }
     }
 
-    private void markTaskComplete(OverseerMessageHandler messageHandler, String id, String asyncId, String taskKey, ZkNodeProps message)
+    private void markTaskComplete(String id, String asyncId)
         throws KeeperException, InterruptedException {
       synchronized (completedTasks) {
         completedTasks.put(id, head);
@@ -494,9 +466,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           log.warn("Could not find and remove async call [" + asyncId + "] from the running map.");
         }
       }
-
-
-      messageHandler.unmarkExclusiveTask(taskKey, operation, message);
     }
 
     private void resetTaskWithException(OverseerMessageHandler messageHandler, String id, String asyncId, String taskKey, ZkNodeProps message) {
@@ -512,7 +481,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           runningTasks.remove(id);
         }
 
-        messageHandler.unmarkExclusiveTask(taskKey, operation, message);
       } catch (KeeperException e) {
         SolrException.log(log, "", e);
       } catch (InterruptedException e) {
@@ -566,6 +534,22 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
    */
   public interface OverseerMessageHandlerSelector {
     OverseerMessageHandler selectOverseerMessageHandler(ZkNodeProps message);
+  }
+
+  final private TaskBatch taskBatch = new TaskBatch();
+
+  public class TaskBatch {
+    private long batchId = 0;
+
+    public long getId() {
+      return batchId;
+    }
+
+    public int getRunningTasks() {
+      synchronized (runningTasks) {
+        return runningTasks.size();
+      }
+    }
   }
 
 }
