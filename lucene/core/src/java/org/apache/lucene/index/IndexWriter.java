@@ -2928,7 +2928,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    *  will internally call prepareCommit.
    *
    * @return The <a href="#sequence_number">sequence number</a>
-   * last operation in the commit.  All sequence numbers &lt;= this value
+   * of the last operation in the commit.  All sequence numbers &lt;= this value
    * will be reflected in the commit, and all others will not.
    */
   @Override
@@ -3128,7 +3128,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
    * @see #prepareCommit
    *
    * @return The <a href="#sequence_number">sequence number</a>
-   * last operation in the commit.  All sequence numbers &lt;= this value
+   * of the last operation in the commit.  All sequence numbers &lt;= this value
    * will be reflected in the commit, and all others will not.
    */
   @Override

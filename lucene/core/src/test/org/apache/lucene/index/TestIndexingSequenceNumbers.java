@@ -165,7 +165,8 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     Object commitLock = new Object();
     final List<Operation> commits = new ArrayList<>();
 
-    // multiple threads update the same set of documents, and we randomly commit
+    // multiple threads update the same set of documents, and we randomly commit, recording the commit seqNo and then opening each commit in
+    // the end to verify it reflects the correct updates
     for(int i=0;i<threads.length;i++) {
       final List<Operation> ops = new ArrayList<>();
       threadOps.add(ops);
@@ -325,7 +326,8 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
 
     List<Operation> ops1 = new ArrayList<>();
     threadOps.add(ops1);
-    
+
+    // pre-index every ID so none are missing:
     for(int id=0;id<idCount;id++) {
       int threadID = 0;
       Operation op = new Operation();
@@ -340,7 +342,8 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
       ops1.add(op);
     }
 
-    // multiple threads update the same set of documents, and we randomly commit
+    // multiple threads update the same set of documents, and we randomly commit, recording the commit seqNo and then opening each commit in
+    // the end to verify it reflects the correct updates
     for(int i=0;i<threads.length;i++) {
       final List<Operation> ops;
       if (i == 0) {
@@ -430,31 +433,21 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
       for(int id=0;id<idCount;id++) {
         //System.out.println("TEST: check id=" + id + " expectedThreadID=" + expectedThreadIDs[id]);
         TopDocs hits = s.search(new TermQuery(new Term("id", ""+id)), 1);
-                                  
-        if (expectedThreadIDs[id] != -1) {
-          assertEquals(1, hits.totalHits);
-          int actualThreadID = (int) docValues.get(id);
-          if (expectedThreadIDs[id] != actualThreadID) {
-            System.out.println("FAIL: id=" + id + " expectedThreadID=" + expectedThreadIDs[id] + " vs actualThreadID=" + actualThreadID + " commitSeqNo=" + commitSeqNo + " numThreads=" + numThreads);
-            for(int threadID=0;threadID<threadOps.size();threadID++) {
-              for(Operation op : threadOps.get(threadID)) {
-                if (id == op.id) {
-                  System.out.println("  threadID=" + threadID + " seqNo=" + op.seqNo + " " + (op.what == 2 ? "updated" : "deleted"));
-                }
-              }
-            }
-            assertEquals("id=" + id, expectedThreadIDs[id], actualThreadID);
-          }
-        } else if (hits.totalHits != 0) {
-          System.out.println("FAIL: id=" + id + " expectedThreadID=" + expectedThreadIDs[id] + " vs totalHits=" + hits.totalHits + " commitSeqNo=" + commitSeqNo + " numThreads=" + numThreads);
+
+        // We pre-add all ids up front:
+        assert expectedThreadIDs[id] != -1;
+        assertEquals(1, hits.totalHits);
+        int actualThreadID = (int) docValues.get(id);
+        if (expectedThreadIDs[id] != actualThreadID) {
+          System.out.println("FAIL: commit=" + i + " (of " + commits.size() + ") id=" + id + " expectedThreadID=" + expectedThreadIDs[id] + " vs actualThreadID=" + actualThreadID + " commitSeqNo=" + commitSeqNo + " numThreads=" + numThreads);
           for(int threadID=0;threadID<threadOps.size();threadID++) {
             for(Operation op : threadOps.get(threadID)) {
               if (id == op.id) {
-                System.out.println("  threadID=" + threadID + " seqNo=" + op.seqNo + " " + (op.what == 2 ? "updated" : "del"));
+                System.out.println("  threadID=" + threadID + " seqNo=" + op.seqNo);
               }
             }
           }
-          assertEquals(0, hits.totalHits);
+          assertEquals("id=" + id, expectedThreadIDs[id], actualThreadID);
         }
       }
       w.close();
