@@ -1066,8 +1066,8 @@ public class SolrPluginUtils {
       String key = entry.getKey();
       String setterName = "set" + String.valueOf(Character.toUpperCase(key.charAt(0))) + key.substring(1);
       try {
+        final Method method = findSetter(clazz, setterName, key);
         final Object val = entry.getValue();
-        final Method method = findSetter(clazz, setterName, key, val.getClass());
         method.invoke(bean, val);
       } catch (InvocationTargetException | IllegalAccessException e1) {
         throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName(), e1);
@@ -1075,14 +1075,10 @@ public class SolrPluginUtils {
     }
   }
 
-  private static Method findSetter(Class<?> clazz, String setterName, String key, Class<?> paramClazz) {
-    try {
-      return clazz.getMethod(setterName, new Class<?>[] { paramClazz });
-    } catch (NoSuchMethodException e) {
-      for (Method m : clazz.getMethods()) {
-        if (m.getName().equals(setterName) && m.getParameterTypes().length == 1) {
-          return m;
-        }
+  private static Method findSetter(Class<?> clazz, String setterName, String key) {
+    for (Method m : clazz.getMethods()) {
+      if (m.getName().equals(setterName) && m.getParameterTypes().length == 1) {
+        return m;
       }
     }
     throw new RuntimeException("No setter corrresponding to '" + key + "' in " + clazz.getName());
