@@ -275,6 +275,8 @@ Optimizations
 
 * SOLR-9147: Upgrade commons-io to 2.5, avoid expensive array resizing in EmbeddedSolrServer (Mikhail Khludnev)
 
+* SOLR-8744: Overseer operations performed with fine grained mutual exclusion (noble, Scott Blum)
+
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
