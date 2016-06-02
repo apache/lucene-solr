@@ -249,6 +249,8 @@ Bug Fixes
 
 * SOLR-8940: Fix group.sort option (hossman)
 
+* SOLR-8612: closing JDBC Statement on failures in DataImportHandler (DIH) (Kristine Jetzke via Mikhail Khludnev)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
