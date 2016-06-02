@@ -81,6 +81,8 @@ Bug Fixes
 * SOLR-9165: Spellcheck does not return collations if "maxCollationTries" is used with "cursorMark".
   (James Dyer)
 
+* SOLR-8612: closing JDBC Statement on failures in DataImportHandler (DIH) (Kristine Jetzke via Mikhail Khludnev)
+
 Other Changes
 ----------------------
 
