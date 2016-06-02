@@ -30,7 +30,7 @@ New Features
   applicable and supported when copying files from another FSDirectory in 
   Directory#copyFrom. (Simon Willnauer)
 
-* LUCENE-73012: IndexWriter methods that change the index now return a
+* LUCENE-7302: IndexWriter methods that change the index now return a
   long "sequence number" indicating the effective equivalent
   single-threaded execution order (Mike McCandless)
 
