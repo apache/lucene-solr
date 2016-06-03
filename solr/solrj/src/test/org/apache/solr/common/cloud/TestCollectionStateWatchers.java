@@ -51,8 +51,9 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
   @BeforeClass
   public static void startCluster() throws Exception {
     configureCluster(CLUSTER_SIZE)
-        .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+        .addConfig("config", getFile("solrj/solr/configsets/streaming/conf").toPath())
         .configure();
+    cluster.getSolrClient().connect();
   }
 
   @AfterClass
@@ -259,7 +260,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
 
     final CloudSolrClient client = cluster.getSolrClient();
 
-    Future<Boolean> future = waitInBackground("stateformat1", 10, TimeUnit.SECONDS,
+    Future<Boolean> future = waitInBackground("stateformat1", 30, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
 
     CollectionAdminRequest.createCollection("stateformat1", "config", 1, 1).setStateFormat(1)
