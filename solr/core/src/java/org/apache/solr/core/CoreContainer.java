@@ -26,11 +26,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.Callable;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -41,6 +42,7 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -820,6 +822,7 @@ public class CoreContainer {
 
       return core;
     } catch (Exception e) {
+      SolrZkClient.checkInterrupted(e);
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       log.error("Error creating core [{}]: {}", dcore.getName(), e.getMessage(), e);
       final SolrException solrException = new SolrException(ErrorCode.SERVER_ERROR, "Unable to create core [" + dcore.getName() + "]", e);
@@ -867,6 +870,17 @@ public class CoreContainer {
   public Collection<String> getAllCoreNames() {
     return solrCores.getAllCoreNames();
 
+  }
+
+  /**
+   * @return a Set containing the names of all collections with a core hosted in this container
+   */
+  public Set<String> getLocalCollections() {
+    Set<String> collections = getCoreDescriptors().stream()
+        .filter(cd -> cd.getCollectionName() != null)
+        .map(CoreDescriptor::getCollectionName)
+        .collect(Collectors.toSet());
+    return collections;
   }
 
   /**
