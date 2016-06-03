@@ -216,9 +216,8 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public TestRule solrTestRules = 
     RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
-  @BeforeClass 
-  @SuppressWarnings("unused")
-  private static void beforeClass() {
+  @BeforeClass
+  public static void setupTestCases() {
     initCoreDataDir = createTempDir("init-core-data").toFile();
 
     System.err.println("Creating dataDir: " + initCoreDataDir.getAbsolutePath());
@@ -242,8 +241,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   }
 
   @AfterClass
-  @SuppressWarnings("unused")
-  private static void afterClass() throws Exception {
+  public static void teardownTestCases() throws Exception {
     try {
       deleteCore();
       resetExceptionIgnores();
