@@ -351,6 +351,9 @@ Other Changes
 
 * SOLR-9107: new @RandomizeSSL annotation for more fine grained control of SSL testing (hossman, sarowe)
 
+* SOLR-9081: Make SolrTestCaseJ4.beforeClass() / .afterClass() public so it
+  works with Mockito (Georg Sorst, Alan Woodward)
+
 ==================  6.0.1 ==================
 (No Changes)
 
