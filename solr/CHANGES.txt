@@ -108,6 +108,9 @@ Bug Fixes
 
 * SOLR-9246: If the JDBCStream sees an unknown column type it will now throw a detailed exception. (Dennis Gove)
 
+* SOLR-9181: Fix some races in CollectionStateWatcher API (Alan Woodward, Scott
+  Blum)
+
 Optimizations
 ----------------------
 
