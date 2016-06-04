@@ -140,7 +140,7 @@ New Features
 
 * SOLR-8208: [subquery] document transformer executes separate requests per result document. (Cao Manh Dat  via Mikhail Khludnev)
 
-* SOLR-8323, SOLR-9113, SOLR-9181: Add CollectionStateWatcher API (Alan Woodward, Scott Blum)
+* SOLR-8323, SOLR-9113: Add CollectionStateWatcher API (Alan Woodward, Scott Blum)
 
 * SOLR-8988: Adds query option facet.distrib.mco which when set to true allows the use of facet.mincount=1 in cloud mode.
   (Keith Laban, Dennis Gove)
