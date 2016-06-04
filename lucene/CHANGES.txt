@@ -141,6 +141,9 @@ Bug Fixes
   one update batch could be applied in the wrong order resulting in
   the wrong updated value (Ishan Chattopadhyaya, hossman, Mike McCandless)
 
+* LUCENE-7312: Fix geo3d's x/y/z double to int encoding to ensure it always
+  rounds down (Karl Wright, Mike McCandless)
+
 Documentation
 
 * LUCENE-7223: Improve XXXPoint javadocs to make it clear that you

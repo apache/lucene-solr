@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.codecs.Codec;
@@ -55,8 +56,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
-import org.apache.lucene.spatial3d.geom.XYZSolid;
-import org.apache.lucene.spatial3d.geom.XYZSolidFactory;
 import org.apache.lucene.spatial3d.geom.GeoArea;
 import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
 import org.apache.lucene.spatial3d.geom.GeoBBox;
@@ -71,6 +70,8 @@ import org.apache.lucene.spatial3d.geom.Plane;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.SidedPlane;
 import org.apache.lucene.spatial3d.geom.XYZBounds;
+import org.apache.lucene.spatial3d.geom.XYZSolid;
+import org.apache.lucene.spatial3d.geom.XYZSolidFactory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
@@ -1175,6 +1176,50 @@ public class TestGeo3DPoint extends LuceneTestCase {
         assertTrue(pointEnc.x <= point.x);
         assertTrue(pointEnc.y <= point.y);
         assertTrue(pointEnc.z <= point.z);
+      }
+    }
+  }
+
+  // poached from TestGeoEncodingUtils.testLatitudeQuantization:
+
+  /**
+   * step through some integers, ensuring they decode to their expected double values.
+   * double values start at -90 and increase by LATITUDE_DECODE for each integer.
+   * check edge cases within the double range and random doubles within the range too.
+   */
+  public void testQuantization() throws Exception {
+    Random random = random();
+    for (int i = 0; i < 10000; i++) {
+      int encoded = random.nextInt();
+      double min = encoded * Geo3DUtil.DECODE;
+      double decoded = Geo3DUtil.decodeValueFloor(encoded);
+      // should exactly equal expected value
+      assertEquals(min, decoded, 0.0D);
+      // should round-trip
+      assertEquals(encoded, Geo3DUtil.encodeValue(decoded));
+      // test within the range
+      if (encoded != Integer.MAX_VALUE) {
+        // this is the next representable value
+        // all double values between [min .. max) should encode to the current integer
+        // all double values between (min .. max] should encodeCeil to the next integer.
+        double max = min + Geo3DUtil.DECODE;
+        assertEquals(max, Geo3DUtil.decodeValueFloor(encoded+1), 0.0D);
+        assertEquals(encoded+1, Geo3DUtil.encodeValue(max));
+
+        // first and last doubles in range that will be quantized
+        double minEdge = Math.nextUp(min);
+        double maxEdge = Math.nextDown(max);
+        assertEquals(encoded, Geo3DUtil.encodeValue(minEdge));
+        assertEquals(encoded, Geo3DUtil.encodeValue(maxEdge));
+
+        // check random values within the double range
+        long minBits = NumericUtils.doubleToSortableLong(minEdge);
+        long maxBits = NumericUtils.doubleToSortableLong(maxEdge);
+        for (int j = 0; j < 100; j++) {
+          double value = NumericUtils.sortableLongToDouble(TestUtil.nextLong(random, minBits, maxBits));
+          // round down
+          assertEquals(encoded,   Geo3DUtil.encodeValue(value));
+        }
       }
     }
   }
