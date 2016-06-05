@@ -421,7 +421,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
 
     @Override
     public String toString() {
-      return "DirectoryReader.ReaderCommit(" + segmentsFileName + ")";
+      return "StandardDirectoryReader.ReaderCommit(" + segmentsFileName + " files=" + files + ")";
     }
 
     @Override

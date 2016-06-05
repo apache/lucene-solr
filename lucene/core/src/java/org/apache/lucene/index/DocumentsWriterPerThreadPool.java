@@ -226,22 +226,8 @@ final class DocumentsWriterPerThreadPool {
     return threadStates.get(ord);
   }
 
+  // TODO: merge this with getActiveThreadStateCount: they are the same!
   synchronized int getMaxThreadStates() {
     return threadStates.size();
-  }
-
-  /**
-   * Returns the ThreadState with the minimum estimated number of threads
-   * waiting to acquire its lock or <code>null</code> if no {@link ThreadState}
-   * is yet visible to the calling thread.
-   */
-  ThreadState minContendedThreadState() {
-    ThreadState minThreadState = null;
-    for (ThreadState state : threadStates) {
-      if (minThreadState == null || state.getQueueLength() < minThreadState.getQueueLength()) {
-        minThreadState = state;
-      }
-    }
-    return minThreadState;
   }
 }

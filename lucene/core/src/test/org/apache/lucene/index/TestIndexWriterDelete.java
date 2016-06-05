@@ -1238,8 +1238,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     iwc.setOpenMode(IndexWriterConfig.OpenMode.APPEND);
     w = new IndexWriter(d, iwc);
     IndexReader r = DirectoryReader.open(w, false, false);
-    assertTrue(w.tryDeleteDocument(r, 1));
-    assertTrue(w.tryDeleteDocument(r.leaves().get(0).reader(), 0));
+    assertTrue(w.tryDeleteDocument(r, 1) != -1);
+    assertTrue(w.tryDeleteDocument(r.leaves().get(0).reader(), 0) != -1);
     r.close();
     w.close();
 
