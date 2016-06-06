@@ -1104,7 +1104,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
           deleteAsyncId(requestId).process(client);
           return state;
         }
-        TimeUnit.MILLISECONDS.sleep(100);
+        TimeUnit.SECONDS.sleep(1);
       }
       return state;
     }

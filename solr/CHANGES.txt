@@ -277,9 +277,6 @@ Optimizations
 
 * SOLR-8744: Overseer operations performed with fine grained mutual exclusion (noble, Scott Blum)
 
-* SOLR-9140: Replace zk polling in ZkController with CollectionStateWatchers
-  (Alan Woodward)
-
 Other Changes
 ----------------------
 * SOLR-7516: Improve javadocs for JavaBinCodec, ObjectResolver and enforce the single-usage policy.
