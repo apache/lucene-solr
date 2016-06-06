@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -259,27 +258,5 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
       replicas.addAll(slice.getReplicas());
     }
     return replicas;
-  }
-
-  /**
-   * Get all the replicas on a particular node
-   */
-  public List<Replica> getReplicasOnNode(String nodeName) {
-    return getReplicas().stream()
-        .filter(replica -> replica.getNodeName().equals(nodeName))
-        .collect(Collectors.toList());
-  }
-
-  /**
-   * Get the shardId of a core on a specific node
-   */
-  public String getShardId(String nodeName, String coreName) {
-    for (Slice slice : this) {
-      for (Replica replica : slice) {
-        if (Objects.equals(replica.getNodeName(), nodeName) && Objects.equals(replica.getCoreName(), coreName))
-          return slice.getName();
-      }
-    }
-    return null;
   }
 }
