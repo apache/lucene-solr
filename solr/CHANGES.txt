@@ -112,6 +112,8 @@ Other Changes
 
 * SOLR-9105: Fix a bunch of typos across 103 files (Bartosz Krasiński via janhoy)
 
+* SOLR-8445: fix line separator in log4j.properties files (Ahmet Arslan via Mikhail Khludnev)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes
