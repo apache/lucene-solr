@@ -360,6 +360,8 @@ Other Changes
 * SOLR-9081: Make SolrTestCaseJ4.beforeClass() / .afterClass() public so it
   works with Mockito (Georg Sorst, Alan Woodward)
 
+* SOLR-8445: fix line separator in log4j.properties files (Ahmet Arslan via Mikhail Khludnev)
+
 ==================  6.0.1 ==================
 (No Changes)
 
