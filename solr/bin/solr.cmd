@@ -657,7 +657,6 @@ IF "%STOP_KEY%"=="" set STOP_KEY=solrrocks
 @REM so that we can write logs for examples to %SOLR_HOME%\..\logs
 set "SOLR_LOGS_DIR=%SOLR_SERVER_DIR%\logs"
 set "EXAMPLE_DIR=%SOLR_TIP%\example"
-set LOG4J_CONFIG=
 set TMP=!SOLR_HOME:%EXAMPLE_DIR%=!
 IF NOT "%TMP%"=="%SOLR_HOME%" (
   set "SOLR_LOGS_DIR=%SOLR_HOME%\..\logs"

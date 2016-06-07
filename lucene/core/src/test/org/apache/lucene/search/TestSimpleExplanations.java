@@ -296,6 +296,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.MUST);
 
     BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
+    innerQuery.setDisableCoord(random().nextBoolean());
     innerQuery.add(new TermQuery(new Term(FIELD, "qq")), BooleanClause.Occur.SHOULD);
 
     BooleanQuery.Builder childLeft = new BooleanQuery.Builder();
@@ -317,6 +318,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.MUST);
 
     BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
+    innerQuery.setDisableCoord(random().nextBoolean());
     innerQuery.add(new TermQuery(new Term(FIELD, "qq")), BooleanClause.Occur.SHOULD);
 
     BooleanQuery.Builder childLeft = new BooleanQuery.Builder();
@@ -338,6 +340,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.MUST);
 
     BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
+    innerQuery.setDisableCoord(random().nextBoolean());
     innerQuery.add(new TermQuery(new Term(FIELD, "qq")), BooleanClause.Occur.SHOULD);
 
     BooleanQuery.Builder childLeft = new BooleanQuery.Builder();
@@ -359,6 +362,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.MUST);
 
     BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
+    innerQuery.setDisableCoord(random().nextBoolean());
     innerQuery.add(new TermQuery(new Term(FIELD, "qq")), BooleanClause.Occur.SHOULD);
 
     BooleanQuery.Builder childLeft = new BooleanQuery.Builder();
@@ -377,6 +381,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   }
   public void testBQ11() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.setDisableCoord(random().nextBoolean());
     query.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
     TermQuery boostedQuery = new TermQuery(new Term(FIELD, "w1"));
     query.add(new BoostQuery(boostedQuery, 1000), BooleanClause.Occur.SHOULD);
@@ -385,21 +390,21 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   }
   public void testBQ14() throws Exception {
     BooleanQuery.Builder q = new BooleanQuery.Builder();
-    q.setDisableCoord(true);
+    q.setDisableCoord(random().nextBoolean());
     q.add(new TermQuery(new Term(FIELD, "QQQQQ")), BooleanClause.Occur.SHOULD);
     q.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
     qtest(q.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ15() throws Exception {
     BooleanQuery.Builder q = new BooleanQuery.Builder();
-    q.setDisableCoord(true);
+    q.setDisableCoord(random().nextBoolean());
     q.add(new TermQuery(new Term(FIELD, "QQQQQ")), BooleanClause.Occur.MUST_NOT);
     q.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
     qtest(q.build(), new int[] { 0,1,2,3 });
   }
   public void testBQ16() throws Exception {
     BooleanQuery.Builder q = new BooleanQuery.Builder();
-    q.setDisableCoord(true);
+    q.setDisableCoord(random().nextBoolean());
     q.add(new TermQuery(new Term(FIELD, "QQQQQ")), BooleanClause.Occur.SHOULD);
 
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
@@ -411,7 +416,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   }
   public void testBQ17() throws Exception {
     BooleanQuery.Builder q = new BooleanQuery.Builder();
-    q.setDisableCoord(true);
+    q.setDisableCoord(random().nextBoolean());
     q.add(new TermQuery(new Term(FIELD, "w2")), BooleanClause.Occur.SHOULD);
 
     BooleanQuery.Builder booleanQuery = new BooleanQuery.Builder();
@@ -431,6 +436,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   
   public void testBQ20() throws Exception {
     BooleanQuery.Builder q = new BooleanQuery.Builder();
+    q.setDisableCoord(random().nextBoolean());
     q.setMinimumNumberShouldMatch(2);
     q.add(new TermQuery(new Term(FIELD, "QQQQQ")), BooleanClause.Occur.SHOULD);
     q.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
@@ -439,6 +445,16 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
     q.add(new TermQuery(new Term(FIELD, "w4")), BooleanClause.Occur.SHOULD);
     
     qtest(q.build(), new int[] { 0,3 });
+    
+  }
+  
+  public void testBQ21() throws Exception {
+    BooleanQuery.Builder q = new BooleanQuery.Builder();
+    q.setDisableCoord(random().nextBoolean());
+    q.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
+    q.add(new TermQuery(new Term(FIELD, "zz")), BooleanClause.Occur.SHOULD);
+    
+    qtest(q.build(), new int[] { 1,2,3 });
     
   }
 
@@ -488,6 +504,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   }
   public void testMultiFieldBQ3() throws Exception {
     BooleanQuery.Builder query = new BooleanQuery.Builder();
+    query.setDisableCoord(random().nextBoolean());
     query.add(new TermQuery(new Term(FIELD, "yy")), BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term(ALTFIELD, "w3")), BooleanClause.Occur.MUST);
 
@@ -495,6 +512,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   }
   public void testMultiFieldBQ4() throws Exception {
     BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
+    outerQuery.setDisableCoord(random().nextBoolean());
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
 
     BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();
@@ -506,6 +524,7 @@ public class TestSimpleExplanations extends BaseExplanationTestCase {
   }
   public void testMultiFieldBQ5() throws Exception {
     BooleanQuery.Builder outerQuery = new BooleanQuery.Builder();
+    outerQuery.setDisableCoord(random().nextBoolean());
     outerQuery.add(new TermQuery(new Term(FIELD, "w1")), BooleanClause.Occur.SHOULD);
 
     BooleanQuery.Builder innerQuery = new BooleanQuery.Builder();

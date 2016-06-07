@@ -71,22 +71,26 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
   public static void beforeClassTestExplanations() throws Exception {
     directory = newDirectory();
     analyzer = new MockAnalyzer(random());
-    RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy()));
-    for (int i = 0; i < docFields.length; i++) {
-      Document doc = new Document();
-      doc.add(newStringField(KEY, ""+i, Field.Store.NO));
-      doc.add(new SortedDocValuesField(KEY, new BytesRef(""+i)));
-      Field f = newTextField(FIELD, docFields[i], Field.Store.NO);
-      f.setBoost(i);
-      doc.add(f);
-      doc.add(newTextField(ALTFIELD, docFields[i], Field.Store.NO));
-      writer.addDocument(doc);
+    try (RandomIndexWriter writer = new RandomIndexWriter(random(), directory, newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy()))) {
+      for (int i = 0; i < docFields.length; i++) {
+        writer.addDocument(createDoc(i));
+      }
+      reader = writer.getReader();
+      searcher = newSearcher(reader);
     }
-    reader = writer.getReader();
-    writer.close();
-    searcher = newSearcher(reader);
   }
 
+  public static Document createDoc(int index) {
+    Document doc = new Document();
+    doc.add(newStringField(KEY, ""+index, Field.Store.NO));
+    doc.add(new SortedDocValuesField(KEY, new BytesRef(""+index)));
+    Field f = newTextField(FIELD, docFields[index], Field.Store.NO);
+    f.setBoost(index);
+    doc.add(f);
+    doc.add(newTextField(ALTFIELD, docFields[index], Field.Store.NO));
+    return doc;
+  }
+  
   protected static final String[] docFields = {
     "w1 w2 w3 w4 w5",
     "w1 w3 w2 w3 zz",
@@ -94,8 +98,19 @@ public abstract class BaseExplanationTestCase extends LuceneTestCase {
     "w1 w3 xx w2 yy w3 zz"
   };
   
-  /** check the expDocNrs first, then check the query (and the explanations) */
+  /** 
+   * check the expDocNrs match and have scores that match the explanations.
+   * Query may be randomly wrapped in a BooleanQuery with a term that matches no documents in 
+   * order to trigger coord logic.
+   */
   public void qtest(Query q, int[] expDocNrs) throws Exception {
+    if (random().nextBoolean()) {
+      BooleanQuery.Builder bq = new BooleanQuery.Builder();
+      bq.setDisableCoord(random().nextBoolean());
+      bq.add(q, BooleanClause.Occur.SHOULD);
+      bq.add(new TermQuery(new Term("NEVER","MATCH")), BooleanClause.Occur.SHOULD);
+      q = bq.build();
+    }
     CheckHits.checkHitCollector(random(), q, FIELD, searcher, expDocNrs);
   }
 

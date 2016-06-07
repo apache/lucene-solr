@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -683,23 +682,35 @@ public final class ZkController {
       InterruptedException {
 
     publishNodeAsDown(getNodeName());
+    
+    // now wait till the updates are in our state
+    long now = System.nanoTime();
+    long timeout = now + TimeUnit.NANOSECONDS.convert(WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    boolean foundStates = true;
 
-    Set<String> collections = cc.getLocalCollections();
-    CountDownLatch latch = new CountDownLatch(collections.size());
-
-    for (String collection : collections) {
-      zkStateReader.registerCollectionStateWatcher(collection, (nodes, state) -> {
-        for (Replica replica : state.getReplicasOnNode(getNodeName())) {
-          if (replica.getState() != Replica.State.DOWN)
-            return false;
+    while (System.nanoTime() < timeout) {
+      ClusterState clusterState = zkStateReader.getClusterState();
+      Map<String, DocCollection> collections = clusterState.getCollectionsMap();
+      for (Map.Entry<String, DocCollection> entry : collections.entrySet()) {
+        DocCollection collection = entry.getValue();
+        Collection<Slice> slices = collection.getSlices();
+        for (Slice slice : slices) {
+          Collection<Replica> replicas = slice.getReplicas();
+          for (Replica replica : replicas) {
+            if (getNodeName().equals(replica.getNodeName()) && replica.getState() != Replica.State.DOWN) {
+              foundStates = false;
+            }
+          }
         }
-        latch.countDown();
-        return true;
-      });
-    }
+      }
 
-    if (latch.await(WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS) == false) {
-      // TODO should we abort here?
+      if (foundStates) {
+        Thread.sleep(1000);
+        break;
+      }
+      Thread.sleep(1000);
+    }
+    if (!foundStates) {
       log.warn("Timed out waiting to see all nodes published as DOWN in our cluster state.");
     }
 
@@ -1355,7 +1366,7 @@ public final class ZkController {
     return zkStateReader;
   }
 
-  private void doGetShardIdAndNodeNameProcess(CoreDescriptor cd) throws InterruptedException {
+  private void doGetShardIdAndNodeNameProcess(CoreDescriptor cd) {
     final String coreNodeName = cd.getCloudDescriptor().getCoreNodeName();
 
     if (coreNodeName != null) {
@@ -1367,45 +1378,58 @@ public final class ZkController {
     }
   }
 
-  private void waitForCoreNodeName(CoreDescriptor descriptor) throws InterruptedException {
-    log.info("Waiting for coreNodeName for core {} in collection {} to be assigned",
-        descriptor.getName(), descriptor.getCollectionName());
-    final String thisNode = getNodeName();
-    try {
-      zkStateReader.waitForState(descriptor.getCollectionName(), 320, TimeUnit.SECONDS, (n, c) -> {
-        if (c == null)
-          return false;
-        for (Replica replica : c.getReplicasOnNode(thisNode)) {
-          if (descriptor.getName().equals(replica.getCoreName())) {
-            descriptor.getCloudDescriptor().setCoreNodeName(replica.getName());
-            return true;
+  private void waitForCoreNodeName(CoreDescriptor descriptor) {
+    int retryCount = 320;
+    log.info("look for our core node name");
+    while (retryCount-- > 0) {
+      Map<String, Slice> slicesMap = zkStateReader.getClusterState()
+          .getSlicesMap(descriptor.getCloudDescriptor().getCollectionName());
+      if (slicesMap != null) {
+
+        for (Slice slice : slicesMap.values()) {
+          for (Replica replica : slice.getReplicas()) {
+            // TODO: for really large clusters, we could 'index' on this
+
+            String nodeName = replica.getStr(ZkStateReader.NODE_NAME_PROP);
+            String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
+
+            String msgNodeName = getNodeName();
+            String msgCore = descriptor.getName();
+
+            if (msgNodeName.equals(nodeName) && core.equals(msgCore)) {
+              descriptor.getCloudDescriptor()
+                  .setCoreNodeName(replica.getName());
+              return;
+            }
           }
         }
-        return false;
-      });
-    } catch (TimeoutException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out getting coreNodeName for " + descriptor.getName());
+      }
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     }
   }
 
-  private void waitForShardId(CoreDescriptor cd) throws InterruptedException {
+  private void waitForShardId(CoreDescriptor cd) {
     log.info("waiting to find shard id in clusterstate for " + cd.getName());
-    final String thisNode = getNodeName();
-    try {
-      zkStateReader.waitForState(cd.getCollectionName(), 320, TimeUnit.SECONDS, (n, c) -> {
-        if (c == null)
-          return false;
-        String shardId = c.getShardId(thisNode, cd.getName());
-        if (shardId != null) {
-          cd.getCloudDescriptor().setShardId(shardId);
-          return true;
-        }
-        return false;
-      });
+    int retryCount = 320;
+    while (retryCount-- > 0) {
+      final String shardId = zkStateReader.getClusterState().getShardId(cd.getCollectionName(), getNodeName(), cd.getName());
+      if (shardId != null) {
+        cd.getCloudDescriptor().setShardId(shardId);
+        return;
+      }
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     }
-    catch (TimeoutException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Timed out getting shard id for core: " + cd.getName());
-    }
+
+    throw new SolrException(ErrorCode.SERVER_ERROR,
+        "Could not get shard id for core: " + cd.getName());
   }
 
 
@@ -1419,7 +1443,7 @@ public final class ZkController {
     return coreNodeName;
   }
 
-  public void preRegister(CoreDescriptor cd) throws InterruptedException {
+  public void preRegister(CoreDescriptor cd) {
 
     String coreNodeName = getCoreNodeName(cd);
 

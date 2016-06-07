@@ -30,6 +30,10 @@ New Features
   applicable and supported when copying files from another FSDirectory in 
   Directory#copyFrom. (Simon Willnauer)
 
+* LUCENE-7302: IndexWriter methods that change the index now return a
+  long "sequence number" indicating the effective equivalent
+  single-threaded execution order (Mike McCandless)
+
 API Changes
 
 * LUCENE-7184: Refactor LatLonPoint encoding methods to new GeoEncodingUtils
@@ -143,6 +147,11 @@ Bug Fixes
 
 * LUCENE-7312: Fix geo3d's x/y/z double to int encoding to ensure it always
   rounds down (Karl Wright, Mike McCandless)
+
+* LUCENE-7132: BooleanQuery sometimes assigned too-low scores in cases
+  where ranges of documents had only a single clause matching while
+  other ranges had more than one clause matching (Ahmet Arslan,
+  hossman, Mike McCandless)
 
 Documentation
 

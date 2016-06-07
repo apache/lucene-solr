@@ -150,6 +150,8 @@ New Features
 
 * SOLR-7123: '/update/json/docs' path supports nested documents (noble)
 
+* SOLR-8610: Resolve variables in encryptKeyFile of DIH's JdbcDataSource (Kristine Jetzke via Mikhail Khludnev)
+
 Bug Fixes
 ----------------------
 
@@ -249,6 +251,10 @@ Bug Fixes
 
 * SOLR-8940: Fix group.sort option (hossman)
 
+* SOLR-8612: closing JDBC Statement on failures in DataImportHandler (DIH) (Kristine Jetzke via Mikhail Khludnev)
+
+* SOLR-8676: keep LOG4J_CONFIG in solr.cmd (Kristine Jetzke via Mikhail Khludnev)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
@@ -276,9 +282,6 @@ Optimizations
 * SOLR-9147: Upgrade commons-io to 2.5, avoid expensive array resizing in EmbeddedSolrServer (Mikhail Khludnev)
 
 * SOLR-8744: Overseer operations performed with fine grained mutual exclusion (noble, Scott Blum)
-
-* SOLR-9140: Replace zk polling in ZkController with CollectionStateWatchers
-  (Alan Woodward)
 
 Other Changes
 ----------------------
@@ -356,6 +359,8 @@ Other Changes
 
 * SOLR-9081: Make SolrTestCaseJ4.beforeClass() / .afterClass() public so it
   works with Mockito (Georg Sorst, Alan Woodward)
+
+* SOLR-8445: fix line separator in log4j.properties files (Ahmet Arslan via Mikhail Khludnev)
 
 ==================  6.0.1 ==================
 (No Changes)
