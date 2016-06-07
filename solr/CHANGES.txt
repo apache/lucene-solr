@@ -19,6 +19,11 @@ New Features
 
 * SOLR-8938: Add optional --excluderegex argument to ZkCLI. (Christine Poerschke)
 
+Bug Fixes
+----------------------
+
+* SOLR-9191: OverseerTaskQueue.peekTopN() fatally flawed (Scott Blum, Noble Paul)
+
 Other Changes
 ----------------------
 
