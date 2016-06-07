@@ -301,10 +301,9 @@ public class ZkCLITest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFileNotExists() throws Exception {
-    File tmpDir = createTempDir().toFile();
     String getNode = "/getFileNotExistsNode";
 
-    File file = File.createTempFile("newfile", null, tmpDir);
+    File file = createTempFile("newfile", null).toFile();
     String[] args = new String[] {"-zkhost", zkServer.getZkAddress(), "-cmd",
         "getfile", getNode, file.getAbsolutePath()};
     try {
