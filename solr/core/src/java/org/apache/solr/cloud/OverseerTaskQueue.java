@@ -17,14 +17,15 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.google.common.base.Predicate;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -61,7 +62,7 @@ public class OverseerTaskQueue extends DistributedQueue {
     List<String> childNames = zookeeper.getChildren(dir, null, true);
     stats.setQueueLength(childNames.size());
     for (String childName : childNames) {
-      if (childName != null) {
+      if (childName != null && childName.startsWith(PREFIX)) {
         try {
           byte[] data = zookeeper.getData(dir + "/" + childName, null, null, true);
           if (data != null) {
@@ -82,9 +83,8 @@ public class OverseerTaskQueue extends DistributedQueue {
 
   /**
    * Remove the event and save the response into the other path.
-   * 
    */
-  public byte[] remove(QueueEvent event) throws KeeperException,
+  public void remove(QueueEvent event) throws KeeperException,
       InterruptedException {
     TimerContext time = stats.time(dir + "_remove_event");
     try {
@@ -97,9 +97,10 @@ public class OverseerTaskQueue extends DistributedQueue {
         LOG.info("Response ZK path: " + responsePath + " doesn't exist."
             + "  Requestor may have disconnected from ZooKeeper");
       }
-      byte[] data = zookeeper.getData(path, null, null, true);
-      zookeeper.delete(path, -1, true);
-      return data;
+      try {
+        zookeeper.delete(path, -1, true);
+      } catch (KeeperException.NoNodeException ignored) {
+      }
     } finally {
       time.stop();
     }
@@ -211,49 +212,36 @@ public class OverseerTaskQueue extends DistributedQueue {
     }
   }
 
-  public List<QueueEvent> peekTopN(int n, Set<String> excludeSet, long waitMillis)
+  public List<QueueEvent> peekTopN(int n, final Set<String> excludeSet, long waitMillis)
       throws KeeperException, InterruptedException {
     ArrayList<QueueEvent> topN = new ArrayList<>();
 
     LOG.debug("Peeking for top {} elements. ExcludeSet: {}", n, excludeSet);
-    TimerContext time = null;
+    TimerContext time;
     if (waitMillis == Long.MAX_VALUE) time = stats.time(dir + "_peekTopN_wait_forever");
     else time = stats.time(dir + "_peekTopN_wait" + waitMillis);
 
     try {
-      for (String headNode : getChildren(waitMillis)) {
-        if (topN.size() < n) {
-          try {
-            String id = dir + "/" + headNode;
-            if (excludeSet.contains(id)) continue;
-            QueueEvent queueEvent = new QueueEvent(id,
-                zookeeper.getData(dir + "/" + headNode, null, null, true), null);
-            topN.add(queueEvent);
-          } catch (KeeperException.NoNodeException e) {
-            // Another client removed the node first, try next
-          }
-        } else {
-          if (topN.size() >= 1) {
-            printQueueEventsListElementIds(topN);
-            return topN;
-          }
+      for (Pair<String, byte[]> element : peekElements(n, waitMillis, new Predicate<String>() {
+        @Override
+        public boolean apply(String child) {
+          return !excludeSet.contains(dir + "/" + child);
         }
+      })) {
+        topN.add(new QueueEvent(dir + "/" + element.getKey(),
+            element.getValue(), null));
       }
-
-      if (topN.size() > 0 ) {
-        printQueueEventsListElementIds(topN);
-        return topN;
-      }
-      return null;
+      printQueueEventsListElementIds(topN);
+      return topN;
     } finally {
       time.stop();
     }
   }
 
   private static void printQueueEventsListElementIds(ArrayList<QueueEvent> topN) {
-    if(LOG.isDebugEnabled()) {
-      StringBuffer sb = new StringBuffer("[");
-      for(QueueEvent queueEvent: topN) {
+    if (LOG.isDebugEnabled() && !topN.isEmpty()) {
+      StringBuilder sb = new StringBuilder("[");
+      for (QueueEvent queueEvent : topN) {
         sb.append(queueEvent.getId()).append(", ");
       }
       sb.append("]");
