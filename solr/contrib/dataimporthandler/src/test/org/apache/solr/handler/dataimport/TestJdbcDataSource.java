@@ -465,9 +465,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
   }
   
   private String createEncryptionKeyFile() throws IOException {
-    File tmpdir = File.createTempFile("test", "tmp", createTempDir().toFile());
-    Files.delete(tmpdir.toPath());
-    tmpdir.mkdir();
+    File tmpdir = createTempDir().toFile();
     byte[] content = "secret".getBytes(StandardCharsets.UTF_8);
     createFile(tmpdir, "enckeyfile.txt", content, false);
     return new File(tmpdir, "enckeyfile.txt").getAbsolutePath();
