@@ -42,8 +42,6 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
         "     {\"c\":\"C2\",\"d\":\"D2\"}\n" +
         " ]\n" +
         "}";
-//    System.out.println(json);
-//    All parameters are mapped with field name
     JsonRecordReader streamer = JsonRecordReader.getInst("/b", Arrays.asList(
         "a_s:/a",
         "c_s:/b/c",
@@ -208,7 +206,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
         "b:{c:d}," +
         "x:y" +
         "}}";
-    JsonRecordReader streamer = JsonRecordReader.getInst("/", "/a/b", Arrays.asList("/a/x", "/a/b/*"));
+    JsonRecordReader streamer = JsonRecordReader.getInst("/|/a/b", Arrays.asList("/a/x", "/a/b/*"));
     streamer.streamRecords(new StringReader(json), (record, path) -> {
       assertEquals(record.get("x"), "y");
       assertEquals(((Map) record.get(null)).get("c"), "d");
@@ -227,7 +225,7 @@ public class TestJsonRecordReader extends SolrTestCaseJ4 {
       assertEquals(m.get("c"), "c2");
       assertEquals(m.get("e"), "e2");
     });
-    streamer = JsonRecordReader.getInst("/", "/a/b", Arrays.asList("$FQN:/**"));
+    streamer = JsonRecordReader.getInst("/|/a/b", Arrays.asList("$FQN:/**"));
     streamer.streamRecords(new StringReader(json), (record, path) -> {
       assertEquals(record.get("a.x"), "y");
       List l = (List) record.get(null);

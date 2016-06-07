@@ -34,11 +34,10 @@ public class JsonRecordReader {
 
   private Node rootNode = new Node("/", (Node) null);
 
-  public static JsonRecordReader getInst(String split, String childSplit, List<String> fieldMappings) {
+  public static JsonRecordReader getInst(String split, List<String> fieldMappings) {
 
     JsonRecordReader jsonRecordReader = new JsonRecordReader();
     jsonRecordReader.addSplit(split);
-    if (childSplit != null) jsonRecordReader.addSplit(childSplit);
     for (String s : fieldMappings) {
       String path = s;
       int idx = s.indexOf(':');
@@ -52,9 +51,6 @@ public class JsonRecordReader {
     return jsonRecordReader;
   }
 
-  public static JsonRecordReader getInst(String split, List<String> fieldMappings) {
-    return getInst(split, null, fieldMappings);
-  }
 
   private JsonRecordReader() {
   }

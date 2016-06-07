@@ -125,9 +125,8 @@ public class JsonLoader extends ContentStreamLoader {
       String path = (String) req.getContext().get(PATH);
       if (UpdateRequestHandler.DOC_PATH.equals(path) || "false".equals(req.getParams().get("json.command"))) {
         String split = req.getParams().get("split");
-        String childSplit = req.getParams().get("child.split");
         String[] f = req.getParams().getParams("f");
-        handleSplitMode(split, childSplit, f, reader);
+        handleSplitMode(split, f, reader);
         return;
       }
       parser = new JSONParser(reader);
@@ -194,7 +193,7 @@ public class JsonLoader extends ContentStreamLoader {
       }
     }
 
-    private void handleSplitMode(String split, String childSplit, String[] fields, final Reader reader) throws IOException {
+    private void handleSplitMode(String split, String[] fields, final Reader reader) throws IOException {
       if (split == null) split = "/";
       if (fields == null || fields.length == 0) fields = new String[]{"$FQN:/**"};
       final boolean echo = "true".equals(req.getParams().get("echo"));
@@ -209,7 +208,7 @@ public class JsonLoader extends ContentStreamLoader {
 
       }
 
-      JsonRecordReader jsonRecordReader = JsonRecordReader.getInst(split, childSplit, Arrays.asList(fields));
+      JsonRecordReader jsonRecordReader = JsonRecordReader.getInst(split, Arrays.asList(fields));
       jsonRecordReader.streamRecords(parser, new JsonRecordReader.Handler() {
         ArrayList docs = null;
 
