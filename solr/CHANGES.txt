@@ -17,7 +17,11 @@ servlet container in the directory named "example".
 See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 
 ==================  6.0.2 ==================
-(No Changes)
+
+Bug Fixes
+----------------------
+
+* SOLR-9191: OverseerTaskQueue.peekTopN() fatally flawed (Scott Blum, Noble Paul)
 
 ==================  6.0.1 ==================
 
