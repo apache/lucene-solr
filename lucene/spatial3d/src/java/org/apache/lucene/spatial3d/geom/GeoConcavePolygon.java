@@ -50,7 +50,11 @@ class GeoConcavePolygon extends GeoBasePolygon {
   protected boolean isDone = false;
   /** A bounds object for each sided plane */
   protected Map<SidedPlane, Membership> eitherBounds = null;
-  
+  /** Edge plane for one side of intersection */
+  protected Map<SidedPlane, Plane> edgePlanes = null;
+  /** Intersection bounds */
+  protected Map<SidedPlane, Membership> intersectionBounds = null;
+
   /**
    * Create a concave polygon from a list of points.  The first point must be on the
    * external edge.
@@ -210,6 +214,8 @@ class GeoConcavePolygon extends GeoBasePolygon {
     
     // For each edge, create a bounds object.
     eitherBounds = new HashMap<>(edges.length);
+    intersectionBounds = new HashMap<>(edges.length);
+    edgePlanes = new HashMap<>(edges.length);
     for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
       final SidedPlane edge = edges[edgeIndex];
       final SidedPlane invertedEdge = invertedEdges[edgeIndex];
@@ -218,10 +224,29 @@ class GeoConcavePolygon extends GeoBasePolygon {
         bound1Index++;
       }
       int bound2Index = legalIndex(edgeIndex-1);
+      int otherIndex = bound2Index;
+      final SidedPlane otherEdge;
+      final SidedPlane otherInvertedEdge;
+      if (invertedEdges[legalIndex(otherIndex)].isNumericallyIdentical(invertedEdge)) {
+        otherInvertedEdge = null;
+        otherEdge = null;
+      } else {
+        otherInvertedEdge = invertedEdges[legalIndex(otherIndex)];
+        otherEdge = edges[legalIndex(otherIndex)];
+      }
       while (invertedEdges[legalIndex(bound2Index)].isNumericallyIdentical(invertedEdge)) {
         bound2Index--;
       }
       eitherBounds.put(edge, new EitherBound(invertedEdges[legalIndex(bound1Index)], invertedEdges[legalIndex(bound2Index)]));
+      // For intersections, we look at the point at the intersection between the previous edge and this one.  We need to locate the 
+      // Intersection bounds needs to look even further forwards/backwards
+      if (otherInvertedEdge != null) {
+        while (invertedEdges[legalIndex(otherIndex)].isNumericallyIdentical(otherInvertedEdge)) {
+          otherIndex--;
+        }
+        intersectionBounds.put(edge, new EitherBound(invertedEdges[legalIndex(otherIndex)], invertedEdges[legalIndex(bound2Index)]));
+        edgePlanes.put(edge, otherEdge);
+      }
     }
 
     // Pick an edge point arbitrarily from the outer polygon.  Glom this together with all edge points from
@@ -403,6 +428,10 @@ class GeoConcavePolygon extends GeoBasePolygon {
     // Add planes with membership.
     for (final SidedPlane edge : edges) {
       bounds.addPlane(planetModel, edge, eitherBounds.get(edge));
+      final Membership m = intersectionBounds.get(edge);
+      if (m != null) {
+        bounds.addIntersection(planetModel, edgePlanes.get(edge), edge, m);
+      }
     }
     
   }
