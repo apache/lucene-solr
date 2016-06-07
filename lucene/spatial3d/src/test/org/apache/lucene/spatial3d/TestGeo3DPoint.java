@@ -238,6 +238,29 @@ public class TestGeo3DPoint extends LuceneTestCase {
         log.println("  root cell: " + root);
       }
 
+      // make sure the root cell (XYZBounds) does in fact contain all points that the shape contains
+      {
+        boolean fail = false;
+        for(int docID=0;docID<numDocs;docID++) {
+          if (root.contains(docs[docID]) == false) {
+            boolean expected = shape.isWithin(unquantizedDocs[docID]);
+            if (expected) {
+              log.println("    doc=" + docID + " is contained by shape but is outside the returned XYZBounds");
+              log.println("      unquantized=" + unquantizedDocs[docID]);
+              log.println("      quantized=" + docs[docID]);
+              fail = true;
+            }
+          }
+        }
+
+        if (fail) {
+          log.println("  shape=" + shape);
+          log.println("  bounds=" + bounds);
+          System.out.print(sw.toString());
+          fail("invalid bounds for shape=" + shape);
+        }
+      }
+
       List<Cell> queue = new ArrayList<>();
       queue.add(root);
       Set<Integer> hits = new HashSet<>();
@@ -1201,7 +1224,6 @@ public class TestGeo3DPoint extends LuceneTestCase {
       if (encoded != Integer.MAX_VALUE) {
         // this is the next representable value
         // all double values between [min .. max) should encode to the current integer
-        // all double values between (min .. max] should encodeCeil to the next integer.
         double max = min + Geo3DUtil.DECODE;
         assertEquals(max, Geo3DUtil.decodeValueFloor(encoded+1), 0.0D);
         assertEquals(encoded+1, Geo3DUtil.encodeValue(max));
