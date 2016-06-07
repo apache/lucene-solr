@@ -46,7 +46,11 @@ Optimizations
   (Ryan Zezeski, Mark Miller, Shawn Heisey, Steve Davids)
 
 ==================  6.2.0 ==================
-(No Changes)
+
+Bug Fixes
+----------------------
+
+* SOLR-9191: OverseerTaskQueue.peekTopN() fatally flawed (Scott Blum, Noble Paul)
 
 ==================  6.1.0 ==================
 
