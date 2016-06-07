@@ -48,6 +48,10 @@ class GeoConvexPolygon extends GeoBasePolygon {
   protected boolean isDone = false;
   /** A bounds object for each sided plane */
   protected Map<SidedPlane, Membership> eitherBounds = null;
+  /** Edge plane for one side of intersection */
+  protected Map<SidedPlane, Plane> edgePlanes = null;
+  /** Intersection bounds */
+  protected Map<SidedPlane, Membership> intersectionBounds = null;
   
   /**
    * Create a convex polygon from a list of points.  The first point must be on the
@@ -206,6 +210,8 @@ class GeoConvexPolygon extends GeoBasePolygon {
     
     // For each edge, create a bounds object.
     eitherBounds = new HashMap<>(edges.length);
+    intersectionBounds = new HashMap<>(edges.length);
+    edgePlanes = new HashMap<>(edges.length);
     for (int edgeIndex = 0; edgeIndex < edges.length; edgeIndex++) {
       final SidedPlane edge = edges[edgeIndex];
       int bound1Index = legalIndex(edgeIndex+1);
@@ -213,10 +219,27 @@ class GeoConvexPolygon extends GeoBasePolygon {
         bound1Index++;
       }
       int bound2Index = legalIndex(edgeIndex-1);
+      int otherIndex = bound2Index;
+      final SidedPlane otherEdge;
+      if (edges[legalIndex(otherIndex)].isNumericallyIdentical(edge)) {
+        otherEdge = null;
+      } else {
+        otherEdge = edges[legalIndex(otherIndex)];
+      }
+      // Look for bound2
       while (edges[legalIndex(bound2Index)].isNumericallyIdentical(edge)) {
         bound2Index--;
       }
       eitherBounds.put(edge, new EitherBound(edges[legalIndex(bound1Index)], edges[legalIndex(bound2Index)]));
+      // For intersections, we look at the point at the intersection between the previous edge and this one.  We need to locate the 
+      // Intersection bounds needs to look even further forwards/backwards
+      if (otherEdge != null) {
+        while (edges[legalIndex(otherIndex)].isNumericallyIdentical(otherEdge)) {
+          otherIndex--;
+        }
+        intersectionBounds.put(edge, new EitherBound(edges[legalIndex(otherIndex)], edges[legalIndex(bound2Index)]));
+        edgePlanes.put(edge, otherEdge);
+      }
     }
     
     // Pick an edge point arbitrarily from the outer polygon.  Glom this together with all edge points from
@@ -383,7 +406,7 @@ class GeoConvexPolygon extends GeoBasePolygon {
       bounds.addPoint(planetModel.MAX_Y_POLE);
     }
 
-    // Add all the points
+    // Add all the points and the intersections
     for (final GeoPoint point : points) {
       bounds.addPoint(point);
     }
@@ -391,6 +414,10 @@ class GeoConvexPolygon extends GeoBasePolygon {
     // Add planes with membership.
     for (final SidedPlane edge : edges) {
       bounds.addPlane(planetModel, edge, eitherBounds.get(edge));
+      final Membership m = intersectionBounds.get(edge);
+      if (m != null) {
+        bounds.addIntersection(planetModel, edgePlanes.get(edge), edge, m);
+      }
     }
     
   }
