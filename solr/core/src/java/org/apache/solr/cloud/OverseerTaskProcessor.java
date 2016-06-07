@@ -190,9 +190,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             cleanUpWorkQueue();
 
           List<QueueEvent> heads = workQueue.peekTopN(MAX_PARALLEL_TASKS, runningZKTasks, 2000L);
-
-          if (heads == null)
+          if (heads.isEmpty()) {
             continue;
+          }
 
           log.debug("Got {} tasks from work-queue : [{}]", heads.size(), heads.toString());
 
@@ -466,6 +466,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           log.warn("Could not find and remove async call [" + asyncId + "] from the running map.");
         }
       }
+
+      workQueue.remove(head);
     }
 
     private void resetTaskWithException(OverseerMessageHandler messageHandler, String id, String asyncId, String taskKey, ZkNodeProps message) {
