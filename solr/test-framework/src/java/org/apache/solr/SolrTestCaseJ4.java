@@ -139,7 +139,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 })
 @SuppressSysoutChecks(bugUrl = "Solr dumps tons of logs to console.")
 @SuppressFileSystems("ExtrasFS") // might be ok, the failures with e.g. nightly runs might be "normal"
-@RandomizeSSL(ssl=0.0,reason="https://issues.apache.org/jira/browse/SOLR-9189 - temp disable randomized ssl to get to bottom of recent explosion of timeout related failures in jenkins builds")
+@RandomizeSSL()
 public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
