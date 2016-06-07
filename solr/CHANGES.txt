@@ -81,8 +81,8 @@ New Features
   https://github.com/locationtech/spatial4j/blob/master/FORMATS.md
   To return the FeatureCollection as the root element, add '&omitHeader=true" (ryan)
 
-* SOLR-8859: AbstractSpatialFieldType will now convert Shapes to/from Strings
-  using the SpatialContext.  (ryan)
+* SOLR-8859: Spatial fields like RPT can now be configured to use Spatial4j registered shape formats
+  e.g. via format="GeoJSON".  (ryan, David Smiley)
 
 * SOLR-445: new ToleranteUpdateProcessorFactory to support skipping update commands that cause
   failures when sending multiple updates in a single request.
