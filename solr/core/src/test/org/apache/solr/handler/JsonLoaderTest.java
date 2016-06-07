@@ -370,7 +370,7 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
         "b:[{c:c1, e:e1},{c:c2, e :e2, d:{p:q}}]," +
         "x:y" +
         "}}";
-    req = req("split", "/", "child.split" , "/a/b"   );
+    req = req("split", "/|/a/b"   );
     req.getContext().put("path","/update/json/docs");
     rsp = new SolrQueryResponse();
     p = new BufferingRequestProcessor(null);
