@@ -25,10 +25,6 @@ New Features
 * LUCENE-7234: Added InetAddressPoint.nextDown/nextUp to easily generate range
   queries with excluded bounds. (Adrien Grand)
 
-* LUCENE-7278: Spatial-extras DateRangePrefixTree's Calendar is now configurable, to
-  e.g. clear the Gregorian Change Date.  Also, toString(cal) is now identical to
-  DateTimeFormatter.ISO_INSTANT. (David Smiley)
-
 * LUCENE-7300: The misc module now has a directory wrapper that uses hard-links if
   applicable and supported when copying files from another FSDirectory in 
   Directory#copyFrom. (Simon Willnauer)
@@ -112,38 +108,6 @@ Bug Fixes
 * LUCENE-7168: Switch to stable encode for geo3d, remove quantization
   test leniency, remove dead code (Mike McCandless)
 
-* LUCENE-7187: Block join queries' Weight#extractTerms(...) implementations
-  should delegate to the wrapped weight. (Martijn van Groningen)
-
-* LUCENE-7188: remove incorrect sanity check in NRTCachingDirectory.listAll()
-  that led to IllegalStateException being thrown when nothing was wrong.
-  (David Smiley, yonik)  
-
-* LUCENE-7219: Make queryparser/xml (Point|LegacyNumeric)RangeQuery builders
-  match the underlying queries' (lower|upper)Term optionality logic.
-  (Kaneshanathan Srivisagan, Christine Poerschke)
-
-* LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
-
-* LUCENE-7232: Fixed InetAddressPoint.newPrefixQuery, which was generating an
-  incorrect query when the prefix length was not a multiple of 8. (Adrien Grand)
-
-* LUCENE-7257: Fixed PointValues#size(IndexReader, String), docCount,
-  minPackedValue and maxPackedValue to skip leaves that do not have points
-  rather than raising an IllegalStateException. (Adrien Grand)
-
-* LUCENE-7279: JapaneseTokenizer throws ArrayIndexOutOfBoundsException
-  on some valid inputs (Mike McCandless)
-
-* LUCENE-7284: GapSpans needs to implement positionsCost(). (Daniel Bigham, Alan
-  Woodward)
-
-* LUCENE-7231: WeightedSpanTermExtractor didn't deal correctly with single-term
-  phrase queries. (Eva Popenda, Alan Woodward)
-
-* LUCENE-7293: Don't try to highlight GeoPoint queries (Britta Weber,
-  Nick Knize, Mike McCandless, Uwe Schindler)
-
 * LUCENE-7301: Multiple doc values updates to the same document within
   one update batch could be applied in the wrong order resulting in
   the wrong updated value (Ishan Chattopadhyaya, hossman, Mike McCandless)
@@ -155,12 +119,6 @@ Bug Fixes
   where ranges of documents had only a single clause matching while
   other ranges had more than one clause matching (Ahmet Arslan,
   hossman, Mike McCandless)
-
-Documentation
-
-* LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
-  should separately add StoredField if you want to retrieve these
-  field values at search time (Greg Huber, Robert Muir, Mike McCandless)
 
 Other
 
@@ -200,7 +158,52 @@ Build
   (Uwe Schindler)
   
 ======================= Lucene 6.0.1 =======================
-(No Changes)
+
+New Features
+
+* LUCENE-7278: Spatial-extras DateRangePrefixTree's Calendar is now configurable, to
+  e.g. clear the Gregorian Change Date.  Also, toString(cal) is now identical to
+  DateTimeFormatter.ISO_INSTANT. (David Smiley)
+
+Bug Fixes
+
+* LUCENE-7187: Block join queries' Weight#extractTerms(...) implementations
+  should delegate to the wrapped weight. (Martijn van Groningen)
+
+* LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
+
+* LUCENE-7232: Fixed InetAddressPoint.newPrefixQuery, which was generating an
+  incorrect query when the prefix length was not a multiple of 8. (Adrien Grand)
+
+* LUCENE-7279: JapaneseTokenizer throws ArrayIndexOutOfBoundsException
+  on some valid inputs (Mike McCandless)
+
+* LUCENE-7188: remove incorrect sanity check in NRTCachingDirectory.listAll()
+  that led to IllegalStateException being thrown when nothing was wrong.
+  (David Smiley, yonik)
+
+* LUCENE-7219: Make queryparser/xml (Point|LegacyNumeric)RangeQuery builders
+  match the underlying queries' (lower|upper)Term optionality logic.
+  (Kaneshanathan Srivisagan, Christine Poerschke)
+
+* LUCENE-7257: Fixed PointValues#size(IndexReader, String), docCount,
+  minPackedValue and maxPackedValue to skip leaves that do not have points
+  rather than raising an IllegalStateException. (Adrien Grand)
+
+* LUCENE-7284: GapSpans needs to implement positionsCost(). (Daniel Bigham, Alan
+  Woodward)
+
+* LUCENE-7231: WeightedSpanTermExtractor didn't deal correctly with single-term
+  phrase queries. (Eva Popenda, Alan Woodward)
+
+* LUCENE-7293: Don't try to highlight GeoPoint queries (Britta Weber,
+  Nick Knize, Mike McCandless, Uwe Schindler)
+
+Documentation
+
+* LUCENE-7223: Improve XXXPoint javadocs to make it clear that you
+  should separately add StoredField if you want to retrieve these
+  field values at search time (Greg Huber, Robert Muir, Mike McCandless)
 
 ======================= Lucene 6.0.0 =======================
 
