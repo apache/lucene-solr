@@ -45,6 +45,9 @@ Optimizations
   check on every request and move connection lifecycle management towards the client.
   (Ryan Zezeski, Mark Miller, Shawn Heisey, Steve Davids)
 
+==================  6.2.0 ==================
+(No Changes)
+
 ==================  6.1.0 ==================
 
 Upgrading from Solr any prior release
