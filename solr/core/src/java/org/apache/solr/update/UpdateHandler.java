@@ -111,7 +111,7 @@ public abstract class UpdateHandler implements SolrInfoMBean {
         dataDir = core.getDataDir();
       }
 
-      ulog = initialisePluginUpdateLog(core, dataDir, ulogPluginInfo);
+      ulog = core.getDirectoryFactory().newUpdateLog(core, dataDir, ulogPluginInfo);
 
       if (!core.isReloaded() && !core.getDirectoryFactory().isPersistent()) {
         ulog.clearLog(core, ulogPluginInfo);
@@ -187,16 +187,4 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   }
 
   public abstract void split(SplitIndexCommand cmd) throws IOException;
-  
-  private static UpdateLog initialisePluginUpdateLog(SolrCore core, String dataDir, PluginInfo ulogPluginInfo)
-  {
-    String className = ulogPluginInfo.className;
-    if (System.getProperty("test.hdfs.forceHdfsUpdateLog") != null) {
-      className = "solr.HdfsUpdateLog";
-    }
-    if (className != null) {
-      return core.getResourceLoader().newInstance(className, UpdateLog.class);
-    }
-    return new UpdateLog();
-  }
 }

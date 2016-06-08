@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -55,6 +54,8 @@ import org.apache.solr.store.blockcache.Metrics;
 import org.apache.solr.store.hdfs.HdfsDirectory;
 import org.apache.solr.store.hdfs.HdfsLocalityReporter;
 import org.apache.solr.store.hdfs.HdfsLockFactory;
+import org.apache.solr.update.HdfsUpdateLog;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.HdfsUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -535,5 +536,13 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
         }
       }
     }
+  }
+  
+  @Override
+  public UpdateLog newUpdateLog(SolrCore core, String dataDir, PluginInfo ulogPluginInfo) {
+    if (ulogPluginInfo.className == null) {
+      return new HdfsUpdateLog();
+    }
+    return super.newUpdateLog(core, dataDir, ulogPluginInfo);
   }
 }

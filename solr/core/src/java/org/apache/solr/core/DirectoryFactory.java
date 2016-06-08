@@ -31,6 +31,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CachingDirectoryFactory.CloseListener;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -330,5 +331,12 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   
   public void initCoreContainer(CoreContainer cc) {
     this.coreContainer = cc;
+  }
+  
+  public UpdateLog newUpdateLog(SolrCore core, String dataDir, PluginInfo ulogPluginInfo) {
+    if (ulogPluginInfo.className == null) {
+      return new UpdateLog();
+    }
+    return core.getResourceLoader().newInstance(ulogPluginInfo.className, UpdateLog.class);
   }
 }
