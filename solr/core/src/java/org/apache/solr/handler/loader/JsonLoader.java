@@ -221,10 +221,7 @@ public class JsonLoader extends ContentStreamLoader {
               docs = new ArrayList();
               rsp.add("docs", docs);
             }
-            if (copy.containsKey(null)) {
-              copy.put(CHILD_DOC_KEY, copy.get(null));
-              copy.remove(null);
-            }
+            changeChildDoc(copy);
             docs.add(copy);
           } else {
             AddUpdateCommand cmd = new AddUpdateCommand(req);
@@ -251,7 +248,7 @@ public class JsonLoader extends ContentStreamLoader {
               if (o instanceof Map) result.addChildDocument(buildDoc((Map) o));
             }
           } else if (e.getValue() instanceof Map) {
-            result.addChildDocument(buildDoc((Map) e));
+            result.addChildDocument(buildDoc((Map) e.getValue()));
           }
         } else {
           result.setField(e.getKey(), e.getValue());
@@ -657,6 +654,11 @@ public class JsonLoader extends ContentStreamLoader {
         lst.add(val);
       }
     }
+  }
+
+  private static Map changeChildDoc(Map m) {
+    if (m.containsKey(null)) m.put(CHILD_DOC_KEY, changeChildDoc((Map) m.remove(null)));
+    return m;
   }
 
 }
