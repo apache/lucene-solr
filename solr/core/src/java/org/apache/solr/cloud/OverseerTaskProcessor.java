@@ -31,7 +31,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableList;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
@@ -42,7 +42,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.stats.TimerContext;
 import org.apache.zookeeper.KeeperException;
@@ -80,7 +79,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   private DistributedMap failureMap;
 
   // Set that maintains a list of all the tasks that are running. This is keyed on zk id of the task.
-  final private Set runningTasks;
+  final private Set<String> runningTasks;
 
   // List of completed tasks. This is used to clean up workQueue in zk.
   final private HashMap<String, QueueEvent> completedTasks;
@@ -106,7 +105,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
     @Override
     public String toString() {
-      return StrUtils.join(ImmutableSet.of(runningTasks, blockedTasks.keySet()), ',');
+      return StrUtils.join(ImmutableList.<String>builder().addAll(runningTasks).addAll(blockedTasks.keySet()).build(), ',');
     }
 
   };
@@ -135,7 +134,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.completedMap = completedMap;
     this.failureMap = failureMap;
     this.runningZKTasks = new HashSet<>();
-    this.runningTasks = new HashSet();
+    this.runningTasks = new HashSet<>();
     this.completedTasks = new HashMap<>();
   }
 
@@ -553,6 +552,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     if (log.isDebugEnabled()) {
       synchronized (runningTasks) {
         log.debug("RunningTasks: {}", runningTasks.toString());
+      }
+      synchronized (blockedTasks) {
+        log.debug("BlockedTasks: {}", blockedTasks.keySet().toString());
       }
       synchronized (completedTasks) {
         log.debug("CompletedTasks: {}", completedTasks.keySet().toString());
