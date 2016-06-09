@@ -100,7 +100,7 @@ final class Lucene50CompoundReader extends Directory {
   }
 
   /** Helper method that reads CFS entries from an input stream */
-  private final Map<String, FileEntry> readEntries(byte[] segmentID, Directory dir, String entriesFileName) throws IOException {
+  private Map<String, FileEntry> readEntries(byte[] segmentID, Directory dir, String entriesFileName) throws IOException {
     Map<String,FileEntry> mapping = null;
     try (ChecksumIndexInput entriesStream = dir.openChecksumInput(entriesFileName, IOContext.READONCE)) {
       Throwable priorE = null;
@@ -140,7 +140,8 @@ final class Lucene50CompoundReader extends Directory {
     final String id = IndexFileNames.stripSegmentName(name);
     final FileEntry entry = entries.get(id);
     if (entry == null) {
-      throw new FileNotFoundException("No sub-file with id " + id + " found (fileName=" + name + " files: " + entries.keySet() + ")");
+      String datFileName = IndexFileNames.segmentFileName(segmentName, "", Lucene50CompoundFormat.DATA_EXTENSION);
+      throw new FileNotFoundException("No sub-file with id " + id + " found in compound file \"" + datFileName + "\" (fileName=" + name + " files: " + entries.keySet() + ")");
     }
     return handle.slice(name, entry.offset, entry.length);
   }

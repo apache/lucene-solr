@@ -43,7 +43,9 @@ public abstract class CompoundFormat {
   public abstract Directory getCompoundReader(Directory dir, SegmentInfo si, IOContext context) throws IOException;
   
   /**
-   * Packs the provided segment's files into a compound format.
+   * Packs the provided segment's files into a compound format.  All files referenced
+   * by the provided {@link SegmentInfo} must have {@link CodecUtil#writeIndexHeader}
+   * and {@link CodecUtil#writeFooter}.
    */
   public abstract void write(Directory dir, SegmentInfo si, IOContext context) throws IOException;
 }
