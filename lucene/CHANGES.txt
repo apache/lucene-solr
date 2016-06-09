@@ -10,7 +10,7 @@ http://s.apache.org/luceneversions
 
 Bug Fixes
 
-LUCENE-6662: Fixd potential resource leaks. (Rishabh Patel via Adrien Grand)
+LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
 
 ======================= Lucene 6.1.0 =======================
 
