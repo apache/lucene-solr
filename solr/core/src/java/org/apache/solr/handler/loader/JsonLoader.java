@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.common.SolrException;
@@ -55,6 +57,7 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.util.stream.Collectors.toList;
 import static org.apache.solr.common.params.CommonParams.JSON;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
@@ -656,8 +659,15 @@ public class JsonLoader extends ContentStreamLoader {
     }
   }
 
-  private static Map changeChildDoc(Map m) {
-    if (m.containsKey(null)) m.put(CHILD_DOC_KEY, changeChildDoc((Map) m.remove(null)));
+  private static Object changeChildDoc(Object o) {
+    if (o instanceof List) {
+      return ((List) o)
+          .stream()
+          .map(JsonLoader::changeChildDoc)
+          .collect(toList());
+    }
+    Map m = (Map) o;
+    if (m.containsKey(null)) m.put(CHILD_DOC_KEY, changeChildDoc(m.remove(null)));
     return m;
   }
 
