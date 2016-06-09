@@ -388,6 +388,49 @@ public class JsonLoaderTest extends SolrTestCaseJ4 {
     assertEquals(d.getFieldValue("c"), "c2");
     assertEquals(d.getFieldValue("e"), "e2");
     assertEquals(d.getFieldValue("d.p"), "q");
+
+    json = "{\n" +
+        "  \"id\": \"1\",\n" +
+        "  \"name\": \"i am the parent\",\n" +
+        "  \"cat\": \"parent\",\n" +
+        "  \"children\": [\n" +
+        "    {\n" +
+        "      \"id\": \"1.1\",\n" +
+        "      \"name\": \"i am the 1st child\",\n" +
+        "      \"cat\": \"child\"\n" +
+        "    },\n" +
+        "    {\n" +
+        "      \"id\": \"1.2\",\n" +
+        "      \"name\": \"i am the 2nd child\",\n" +
+        "      \"cat\": \"child\",\n" +
+        "      \"grandchildren\": [\n" +
+        "        {\n" +
+        "          \"id\": \"1.2.1\",\n" +
+        "          \"name\": \"i am the grandchild\",\n" +
+        "          \"cat\": \"grandchild\"\n" +
+        "        }\n" +
+        "      ]\n" +
+        "    }\n" +
+        "  ]\n" +
+        "}";
+    req = req(
+        "split", "/|/children|/children/grandchildren",
+        "f","$FQN:/**",
+        "f", "id:/children/id",
+        "f", "/name",
+        "f", "/children/name",
+        "f", "cat:/children/cat",
+        "f", "id:/children/grandchildren/id",
+        "f", "name:/children/grandchildren/name",
+        "f", "cat:/children/grandchildren/cat");
+    req.getContext().put("path", "/update/json/docs");
+    rsp = new SolrQueryResponse();
+    p = new BufferingRequestProcessor(null);
+    loader = new JsonLoader();
+    loader.load(req, rsp, new ContentStreamBase.StringStream(json), p);
+    assertEquals(2, p.addCommands.get(0).solrDoc.getChildDocuments().size());
+    assertEquals(1, p.addCommands.get(0).solrDoc.getChildDocuments().get(1).getChildDocuments().size());
+
   }
 
 
