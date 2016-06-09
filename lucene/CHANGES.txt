@@ -4,7 +4,10 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 6.2.0 =======================
-(No Changes)
+
+Bug Fixes
+
+LUCENE-6662: Fixd potential resource leaks. (Rishabh Patel via Adrien Grand)
 
 ======================= Lucene 6.1.0 =======================
 
