@@ -210,34 +210,38 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             cleanUpWorkQueue();
 
 
+          ArrayList<QueueEvent> heads = new ArrayList<>(blockedTasks.size() + MAX_PARALLEL_TASKS);
+          heads.addAll(blockedTasks.values());
+
           //If we have enough items in the blocked tasks already, it makes
           // no sense to read more items from the work queue. it makes sense
           // to clear out at least a few items in the queue before we read more items
-          List<QueueEvent> heads = blockedTasks.size() >= MAX_BLOCKED_TASKS ?
-              Collections.emptyList() :
-              //instead of reading MAX_PARALLEL_TASKS items always, we should only fetch as much as we can execute
-              workQueue.peekTopN((MAX_PARALLEL_TASKS - runningTasks.size()), excludedTasks, 2000L);
-          if (heads.isEmpty() && blockedTasks.isEmpty())
-            continue;
+          if (heads.size() < MAX_BLOCKED_TASKS) {
+            //instead of reading MAX_PARALLEL_TASKS items always, we should only fetch as much as we can execute
+            int toFetch = Math.min(MAX_BLOCKED_TASKS - heads.size(), MAX_PARALLEL_TASKS - runningTasks.size());
+            List<QueueEvent> newTasks = workQueue.peekTopN(toFetch, excludedTasks, 2000L);
+            log.debug("Got {} tasks from work-queue : [{}]", newTasks.size(), newTasks.toString());
+            heads.addAll(newTasks);
+          }
 
-          log.debug("Got {} tasks from work-queue : [{}]", heads.size(), heads.toString());
+          if (heads.isEmpty()) {
+            continue;
+          }
+
+          blockedTasks.clear(); // clear it now; may get refilled below.
 
           if (isClosed) break;
 
           taskBatch.batchId++;
-          if (!blockedTasks.isEmpty()) {
-            ArrayList<QueueEvent> l = new ArrayList<>(blockedTasks.size() + heads.size());
-            l.addAll(blockedTasks.values());
-            l.addAll(heads);
-            heads = l;
-            blockedTasks.clear();// clear it now. It may get refilled later
-          }
+          boolean tooManyTasks = false;
           for (QueueEvent head : heads) {
-            // We are breaking out if we already have reached the no:of parallel tasks running
-            // By doing so we may end up discarding the old list of blocked tasks . But we have
-            // no means to know if they would still be blocked after some of the items ahead
-            // were cleared.
-            if (runningTasks.size() >= MAX_PARALLEL_TASKS) break;
+            tooManyTasks = tooManyTasks || runningTasks.size() >= MAX_PARALLEL_TASKS;
+            if (tooManyTasks) {
+              // Too many tasks are running, just shove the rest into the "blocked" queue.
+              blockedTasks.put(head.getId(), head);
+              continue;
+            }
+
             if (runningZKTasks.contains(head.getId())) continue;
             final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
             OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
@@ -255,9 +259,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, taskBatch);
             if (lock == null) {
               log.debug("Exclusivity check failed for [{}]", message.toString());
-              if (blockedTasks.size() < MAX_BLOCKED_TASKS) {
-                blockedTasks.put(head.getId(), head);
-              }
+              blockedTasks.put(head.getId(), head);
               continue;
             }
             try {
