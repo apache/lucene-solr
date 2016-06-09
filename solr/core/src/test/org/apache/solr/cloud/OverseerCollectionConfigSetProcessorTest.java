@@ -21,6 +21,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -163,7 +164,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
       log.info("SHARDHANDLER");
       return shardHandlerMock;
     }).anyTimes();
-    workQueueMock.peekTopN(EasyMock.anyInt(), anyObject(Set.class), EasyMock.anyLong());
+    workQueueMock.peekTopN(EasyMock.anyInt(), anyObject(Predicate.class), EasyMock.anyLong());
     expectLastCall().andAnswer(() -> {
       Object result;
       int count = 0;

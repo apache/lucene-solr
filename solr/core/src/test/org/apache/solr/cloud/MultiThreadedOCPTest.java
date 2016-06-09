@@ -55,11 +55,58 @@ public class MultiThreadedOCPTest extends AbstractFullDistribZkTestBase {
   @Test
   @ShardsFixed(num = 4)
   public void test() throws Exception {
-
     testParallelCollectionAPICalls();
     testTaskExclusivity();
     testDeduplicationOfSubmittedTasks();
     testLongAndShortRunningParallelApiCalls();
+    testFillWorkQueue();
+  }
+
+  private void testFillWorkQueue() throws Exception {
+    try (SolrClient client = createNewSolrClient("", getBaseUrl((HttpSolrClient) clients.get(0)))) {
+      DistributedQueue distributedQueue = new DistributedQueue(cloudClient.getZkStateReader().getZkClient(),
+          "/overseer/collection-queue-work", new Overseer.Stats());
+      //fill the work queue with blocked tasks
+      for (int i = 0; i < 105; i++) {
+        distributedQueue.offer(Utils.toJSON(Utils.makeMap(
+            "collection", "A_COLL",
+            Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MOCK_COLL_TASK.toLower(),
+            CommonAdminParams.ASYNC, String.valueOf(i),
+
+            "sleep", (i == 0 ? "1000" : "1") //first task waits for 1 second, and thus blocking
+            // all other tasks. Subsequent tasks only wait for 1ms
+        )));
+        log.info("MOCK task added {}", i);
+
+      }
+      Thread.sleep(10);//wait and post the next message
+
+      //this is not going to be blocked because it operates on another collection
+      distributedQueue.offer(Utils.toJSON(Utils.makeMap(
+          "collection", "B_COLL",
+          Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.MOCK_COLL_TASK.toLower(),
+          CommonAdminParams.ASYNC, "200",
+          "sleep", "1"
+      )));
+
+
+      Long acoll = null, bcoll = null;
+      for (int i = 0; i < 100; i++) {
+        if (bcoll == null) {
+          CollectionAdminResponse statusResponse = getStatusResponse("200", client);
+          bcoll = (Long) statusResponse.getResponse().get("MOCK_FINISHED");
+        }
+        if (acoll == null) {
+          CollectionAdminResponse statusResponse = getStatusResponse("2", client);
+          acoll = (Long) statusResponse.getResponse().get("MOCK_FINISHED");
+        }
+        if (acoll != null && bcoll != null) break;
+        Thread.sleep(100);
+      }
+      assertTrue(acoll != null && bcoll != null);
+      assertTrue(acoll > bcoll);
+    }
+
   }
 
   private void testParallelCollectionAPICalls() throws IOException, SolrServerException {

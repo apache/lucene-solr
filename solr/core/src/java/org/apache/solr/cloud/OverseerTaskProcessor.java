@@ -19,15 +19,19 @@ package org.apache.solr.cloud;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
@@ -36,6 +40,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -63,6 +68,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
    * executed concurrently
    */
   public static final int MAX_PARALLEL_TASKS = 100;
+  public static final int MAX_BLOCKED_TASKS = 1000;
 
   public ExecutorService tpe;
 
@@ -91,6 +97,20 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   // It may contain tasks that have completed execution, have been entered into the completed/failed map in zk but not
   // deleted from the work-queue as that is a batched operation.
   final private Set<String> runningZKTasks;
+  final private Map<String, QueueEvent> blockedTasks = new LinkedHashMap<>();
+  final private Predicate<String> excludedTasks = new Predicate<String>() {
+    @Override
+    public boolean test(String s) {
+      return runningTasks.contains(s) || blockedTasks.containsKey(s);
+    }
+
+    @Override
+    public String toString() {
+      return StrUtils.join(ImmutableSet.of(runningTasks, blockedTasks.keySet()), ',');
+    }
+
+  };
+
   private final Object waitLock = new Object();
 
   private OverseerMessageHandlerSelector selector;
@@ -189,17 +209,35 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
           if (waited)
             cleanUpWorkQueue();
 
-          List<QueueEvent> heads = workQueue.peekTopN(MAX_PARALLEL_TASKS, runningZKTasks, 2000L);
-          if (heads.isEmpty()) {
+
+          //If we have enough items in the blocked tasks already, it makes
+          // no sense to read more items from the work queue. it makes sense
+          // to clear out at least a few items in the queue before we read more items
+          List<QueueEvent> heads = blockedTasks.size() >= MAX_BLOCKED_TASKS ?
+              Collections.emptyList() :
+              //instead of reading MAX_PARALLEL_TASKS items always, we should only fetch as much as we can execute
+              workQueue.peekTopN((MAX_PARALLEL_TASKS - runningTasks.size()), excludedTasks, 2000L);
+          if (heads.isEmpty() && blockedTasks.isEmpty())
             continue;
-          }
 
           log.debug("Got {} tasks from work-queue : [{}]", heads.size(), heads.toString());
 
           if (isClosed) break;
 
           taskBatch.batchId++;
+          if (!blockedTasks.isEmpty()) {
+            ArrayList<QueueEvent> l = new ArrayList<>(blockedTasks.size() + heads.size());
+            l.addAll(blockedTasks.values());
+            l.addAll(heads);
+            heads = l;
+            blockedTasks.clear();// clear it now. It may get refilled later
+          }
           for (QueueEvent head : heads) {
+            // We are breaking out if we already have reached the no:of parallel tasks running
+            // By doing so we may end up discarding the old list of blocked tasks . But we have
+            // no means to know if they would still be blocked after some of the items ahead
+            // were cleared.
+            if (runningTasks.size() >= MAX_PARALLEL_TASKS) break;
             if (runningZKTasks.contains(head.getId())) continue;
             final ZkNodeProps message = ZkNodeProps.load(head.getBytes());
             OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
@@ -217,6 +255,9 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
             OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, taskBatch);
             if (lock == null) {
               log.debug("Exclusivity check failed for [{}]", message.toString());
+              if (blockedTasks.size() < MAX_BLOCKED_TASKS) {
+                blockedTasks.put(head.getId(), head);
+              }
               continue;
             }
             try {
@@ -370,7 +411,6 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       runningTasks.add(head.getId());
     }
 
-//    messageHandler.markExclusiveTask(taskKey, message);
 
     if (asyncId != null)
       runningMap.put(asyncId, null);
