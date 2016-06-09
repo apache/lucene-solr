@@ -52,6 +52,8 @@ Bug Fixes
 
 * SOLR-9191: OverseerTaskQueue.peekTopN() fatally flawed (Scott Blum, Noble Paul)
 
+* SOLR-9199: ZkController#publishAndWaitForDownStates logic is inefficient (Hrishikesh Gadre)
+
 ==================  6.1.0 ==================
 
 Upgrading from Solr any prior release
