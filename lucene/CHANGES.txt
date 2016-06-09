@@ -12,6 +12,12 @@ Bug Fixes
 
 * LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
 
+Improvements
+
+* LUCENE-7323: Compound file writing now verifies the incoming
+  sub-files' checkums and segment IDs, to catch hardware issues or
+  filesytem bugs earlier (Robert Muir, Mike McCandless)
+
 Other
 
 * LUCENE-4787: Fixed some highlighting javadocs. (Michael Dodsworth via Adrien

@@ -1086,14 +1086,14 @@ public class TestAddIndexes extends LuceneTestCase {
   }
 
   private static final class CustomPerFieldCodec extends AssertingCodec {
-    private final PostingsFormat simpleTextFormat = PostingsFormat.forName("SimpleText");
+    private final PostingsFormat directFormat = PostingsFormat.forName("Direct");
     private final PostingsFormat defaultFormat = TestUtil.getDefaultPostingsFormat();
     private final PostingsFormat memoryFormat = PostingsFormat.forName("Memory");
 
     @Override
     public PostingsFormat getPostingsFormatForField(String field) {
       if (field.equals("id")) {
-        return simpleTextFormat;
+        return directFormat;
       } else if (field.equals("content")) {
         return memoryFormat;
       } else {
