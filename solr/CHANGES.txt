@@ -9,7 +9,10 @@ caching, replication, and a web administration interface.
 See http://lucene.apache.org/solr for more information.
 
 ======================= 5.5.2 =======================
-(No Changes)
+
+Bug Fixes
+
+* SOLR-9198: config APIs unable to add multiple values with same name (noble)
 
 ======================= 5.5.1 =======================
 
