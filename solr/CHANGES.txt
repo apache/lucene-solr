@@ -19,6 +19,8 @@ See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 ==================  6.2.0 ==================
 (No Changes)
 
+* SOLR-9199: ZkController#publishAndWaitForDownStates logic is inefficient (Hrishikesh Gadre)
+
 ==================  6.1.0 ==================
 
 Upgrading from Solr any prior release
