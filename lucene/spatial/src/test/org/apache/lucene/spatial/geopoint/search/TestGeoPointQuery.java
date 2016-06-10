@@ -17,11 +17,14 @@
 package org.apache.lucene.spatial.geopoint.search;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.geo.BaseGeoPointTestCase;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
+import org.apache.lucene.store.Directory;
 
 /**
  * random testing for GeoPoint query logic
@@ -60,25 +63,23 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
     return new GeoPointInPolygonQuery(field, polygons);
   }
 
-  // TODO: remove these once we get tests passing!
+  /** explicit test failure for LUCENE-7325 */
+  public void testInvalidShift() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
 
-  @Override
-  protected double nextLongitude() {
-    return GeoPointTestUtil.nextLongitude();
-  }
+    // add a doc with a point
+    Document document = new Document();
+    addPointToDoc("field", document, 80, -65);
+    writer.addDocument(document);
 
-  @Override
-  protected double nextLatitude() {
-    return GeoPointTestUtil.nextLatitude();
-  }
+    // search and verify we found our doc
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = newSearcher(reader);
+    assertEquals(0, searcher.count(newRectQuery("field", 90, 90, -180, 0)));
 
-  @Override
-  protected Rectangle nextBox() {
-    return GeoPointTestUtil.nextBox();
-  }
-
-  @Override
-  protected Polygon nextPolygon() {
-    return GeoPointTestUtil.nextPolygon();
+    reader.close();
+    writer.close();
+    dir.close();
   }
 }
