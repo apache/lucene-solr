@@ -26,7 +26,6 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
 import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.util.SloppyMath;
@@ -45,14 +44,13 @@ abstract class GeoPointMultiTermQuery extends MultiTermQuery {
   protected final double maxLat;
 
   protected final short maxShift;
-  protected final TermEncoding termEncoding;
   protected final CellComparator cellComparator;
 
   /**
    * Constructs a query matching terms that cannot be represented with a single
    * Term.
    */
-  public GeoPointMultiTermQuery(String field, final TermEncoding termEncoding, final double minLat, final double maxLat, final double minLon, final double maxLon) {
+  public GeoPointMultiTermQuery(String field, final double minLat, final double maxLat, final double minLon, final double maxLon) {
     super(field);
 
     GeoUtils.checkLatitude(minLat);
@@ -66,7 +64,6 @@ abstract class GeoPointMultiTermQuery extends MultiTermQuery {
     this.maxLon = maxLon;
 
     this.maxShift = computeMaxShift();
-    this.termEncoding = termEncoding;
     this.cellComparator = newCellComparator();
 
     this.rewriteMethod = GEO_CONSTANT_SCORE_REWRITE;
@@ -81,7 +78,7 @@ abstract class GeoPointMultiTermQuery extends MultiTermQuery {
 
   @Override @SuppressWarnings("unchecked")
   protected TermsEnum getTermsEnum(final Terms terms, AttributeSource atts) throws IOException {
-    return GeoPointTermsEnum.newInstance(terms.iterator(), this);
+    return new GeoPointTermsEnum(terms.iterator(), this);
   }
 
   /**

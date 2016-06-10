@@ -19,7 +19,6 @@ package org.apache.lucene.spatial.geopoint.search;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.util.SloppyMath;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.spatial.util.GeoRelationUtils;
 
 /** Package private implementation for the public facing GeoPointInBBoxQuery delegate class.
@@ -36,8 +35,8 @@ class GeoPointInBBoxQueryImpl extends GeoPointMultiTermQuery {
    * @param maxLon upper longitude (x) value of the bounding box
    * @param maxLat upper latitude (y) value of the bounding box
    */
-  GeoPointInBBoxQueryImpl(final String field, final TermEncoding termEncoding, final double minLat, final double maxLat, final double minLon, final double maxLon) {
-    super(field, termEncoding, minLat, maxLat, minLon, maxLon);
+  GeoPointInBBoxQueryImpl(final String field, final double minLat, final double maxLat, final double minLon, final double maxLon) {
+    super(field, minLat, maxLat, minLon, maxLon);
   }
 
   @Override

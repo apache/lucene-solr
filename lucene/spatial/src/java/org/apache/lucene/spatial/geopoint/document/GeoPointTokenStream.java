@@ -35,28 +35,17 @@ import static org.apache.lucene.spatial.geopoint.document.GeoPointField.PRECISIO
 
 /**
  * <b>Expert:</b> This class provides a {@link TokenStream} used by {@link GeoPointField}
- * for encoding {@link GeoPointField.TermEncoding#PREFIX} only GeoPointTerms.
+ * for encoding GeoPoint terms.
  *
- * <p><i>NOTE: This is used as the default encoding unless
- * {@code GeoPointField.setNumericType(FieldType.LegacyNumericType.LONG)} is set</i></p>
- *
- * This class is similar to {@link org.apache.lucene.analysis.LegacyNumericTokenStream} but encodes terms up to a
- * a maximum of {@link #MAX_SHIFT} using a fixed precision step defined by
+ * This class encodes terms up to a maximum of {@link #MAX_SHIFT} using a fixed precision step defined by
  * {@link GeoPointField#PRECISION_STEP}. This yields a total of 4 terms per GeoPoint
  * each consisting of 5 bytes (4 prefix bytes + 1 precision byte).
- *
- * <p>For best performance use the provided {@link GeoPointField#PREFIX_TYPE_NOT_STORED} or
- * {@link GeoPointField#PREFIX_TYPE_STORED}</p>
- *
- * <p>If prefix terms are used then the default GeoPoint query constructors may be used, but if
- * {@link org.apache.lucene.analysis.LegacyNumericTokenStream} is used, then be sure to pass
- * {@link GeoPointField.TermEncoding#NUMERIC} to all GeoPointQuery constructors</p>
  *
  * Here's an example usage:
  *
  * <pre class="prettyprint">
  *   // using prefix terms
- *   GeoPointField geoPointField = new GeoPointField(fieldName1, lat, lon, GeoPointField.PREFIX_TYPE_NOT_STORED);
+ *   GeoPointField geoPointField = new GeoPointField(fieldName1, lat, lon, GeoPointField.TYPE_NOT_STORED);
  *   document.add(geoPointField);
  *
  *   // query by bounding box (default uses TermEncoding.PREFIX)

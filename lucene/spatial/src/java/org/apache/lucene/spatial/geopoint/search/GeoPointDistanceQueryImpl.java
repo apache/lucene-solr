@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.geopoint.search;
 
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.util.SloppyMath;
 
 /** Package private implementation for the public facing GeoPointDistanceQuery delegate class.
@@ -35,9 +34,9 @@ final class GeoPointDistanceQueryImpl extends GeoPointInBBoxQueryImpl {
   // optimization, used for detecting axis cross
   final double axisLat;
   
-  GeoPointDistanceQueryImpl(final String field, final TermEncoding termEncoding, final GeoPointDistanceQuery q,
+  GeoPointDistanceQueryImpl(final String field, final GeoPointDistanceQuery q,
                             final double centerLonUnwrapped, final Rectangle bbox) {
-    super(field, termEncoding, bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon);
+    super(field, bbox.minLat, bbox.maxLat, bbox.minLon, bbox.maxLon);
     distanceQuery = q;
     centerLon = centerLonUnwrapped;
 

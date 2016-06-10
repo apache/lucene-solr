@@ -22,7 +22,6 @@ import org.apache.lucene.geo.BaseGeoPointTestCase;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 
 /**
  * random testing for GeoPoint query logic
@@ -43,22 +42,22 @@ public class TestGeoPointQuery extends BaseGeoPointTestCase {
 
   @Override
   protected void addPointToDoc(String field, Document doc, double lat, double lon) {
-    doc.add(new GeoPointField(field, lat, lon, GeoPointField.PREFIX_TYPE_NOT_STORED));
+    doc.add(new GeoPointField(field, lat, lon, GeoPointField.TYPE_NOT_STORED));
   }
 
   @Override
   protected Query newRectQuery(String field, double minLat, double maxLat, double minLon, double maxLon) {
-    return new GeoPointInBBoxQuery(field, TermEncoding.PREFIX, minLat, maxLat, minLon, maxLon);
+    return new GeoPointInBBoxQuery(field, minLat, maxLat, minLon, maxLon);
   }
 
   @Override
   protected Query newDistanceQuery(String field, double centerLat, double centerLon, double radiusMeters) {
-    return new GeoPointDistanceQuery(field, TermEncoding.PREFIX, centerLat, centerLon, radiusMeters);
+    return new GeoPointDistanceQuery(field, centerLat, centerLon, radiusMeters);
   }
 
   @Override
   protected Query newPolygonQuery(String field, Polygon... polygons) {
-    return new GeoPointInPolygonQuery(field, TermEncoding.PREFIX, polygons);
+    return new GeoPointInPolygonQuery(field, polygons);
   }
 
   // TODO: remove these once we get tests passing!

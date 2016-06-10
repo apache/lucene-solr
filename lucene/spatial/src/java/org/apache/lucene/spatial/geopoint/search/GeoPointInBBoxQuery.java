@@ -20,13 +20,10 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldValueQuery;
-import org.apache.lucene.search.LegacyNumericRangeQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding;
 import org.apache.lucene.geo.GeoUtils;
 
-/** Implements a simple bounding box query on a GeoPoint field. This is inspired by
- * {@link LegacyNumericRangeQuery} and is implemented using a
+/** Implements a simple bounding box query on a GeoPoint field. This is implemented using a
  * two phase approach. First, candidate terms are queried using a numeric
  * range based on the morton codes of the min and max lat/lon pairs. Terms
  * passing this initial filter are passed to a final check that verifies whether
@@ -53,27 +50,14 @@ public class GeoPointInBBoxQuery extends Query {
   protected final double maxLat;
   /** maximum longitude value (in degrees) */
   protected final double maxLon;
-  /** term encoding enum to define how the points are encoded (PREFIX or NUMERIC) */
-  protected final TermEncoding termEncoding;
 
   /**
    * Constructs a query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types that fall within a
-   * defined bounding box
+   * defined bounding box.
    */
   public GeoPointInBBoxQuery(final String field, final double minLat, final double maxLat, final double minLon, final double maxLon) {
-    this(field, TermEncoding.PREFIX, minLat, maxLat, minLon, maxLon);
-  }
-
-  /**
-   * Constructs a query for all {@link org.apache.lucene.spatial.geopoint.document.GeoPointField} types that fall within a
-   * defined bounding box. Accepts optional {@link org.apache.lucene.spatial.geopoint.document.GeoPointField.TermEncoding} parameter
-   */
-  public GeoPointInBBoxQuery(final String field, final TermEncoding termEncoding, final double minLat, final double maxLat, final double minLon, final double maxLon) {
     if (field == null) {
       throw new IllegalArgumentException("field must not be null");
-    }
-    if (termEncoding == null) {
-      throw new IllegalArgumentException("termEncoding must not be null");
     }
     GeoUtils.checkLatitude(minLat);
     GeoUtils.checkLatitude(maxLat);
@@ -84,7 +68,6 @@ public class GeoPointInBBoxQuery extends Query {
     this.maxLat = maxLat;
     this.minLon = minLon;
     this.maxLon = maxLon;
-    this.termEncoding = termEncoding;
   }
 
   @Override
@@ -99,13 +82,13 @@ public class GeoPointInBBoxQuery extends Query {
     if (maxLon < minLon) {
       BooleanQuery.Builder bqb = new BooleanQuery.Builder();
 
-      GeoPointInBBoxQueryImpl left = new GeoPointInBBoxQueryImpl(field, termEncoding, minLat, maxLat, -180.0D, maxLon);
+      GeoPointInBBoxQueryImpl left = new GeoPointInBBoxQueryImpl(field, minLat, maxLat, -180.0D, maxLon);
       bqb.add(new BooleanClause(left, BooleanClause.Occur.SHOULD));
-      GeoPointInBBoxQueryImpl right = new GeoPointInBBoxQueryImpl(field, termEncoding, minLat, maxLat, minLon, 180.0D);
+      GeoPointInBBoxQueryImpl right = new GeoPointInBBoxQueryImpl(field, minLat, maxLat, minLon, 180.0D);
       bqb.add(new BooleanClause(right, BooleanClause.Occur.SHOULD));
       return bqb.build();
     }
-    return new GeoPointInBBoxQueryImpl(field, termEncoding, minLat, maxLat, minLon, maxLon);
+    return new GeoPointInBBoxQueryImpl(field, minLat, maxLat, minLon, maxLon);
   }
 
   @Override

@@ -4,7 +4,14 @@ For more information on past and future Lucene versions, please see:
 http://s.apache.org/luceneversions
 
 ======================= Lucene 7.0.0 =======================
-(No Changes)
+
+Bug Fixes
+
+Improvements
+
+Other
+
+* LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
 
 ======================= Lucene 6.2.0 =======================
 
