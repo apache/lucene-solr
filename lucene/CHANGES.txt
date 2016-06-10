@@ -143,6 +143,10 @@ Bug Fixes
 
 * LUCENE-7286: Added support for highlighting SynonymQuery. (Adrien Grand)
 
+* LUCENE-7291: Spatial heatmap faceting could mis-count when the heatmap crosses the
+  dateline and indexed non-point shapes are much bigger than the heatmap region.
+  (David Smiley)
+
 Other
 
 * LUCENE-7295: TermAutomatonQuery.hashCode calculates Automaton.toDot().hash,
