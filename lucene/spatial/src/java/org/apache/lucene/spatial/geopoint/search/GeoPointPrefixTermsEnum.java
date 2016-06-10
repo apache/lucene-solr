@@ -55,7 +55,7 @@ final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
   public GeoPointPrefixTermsEnum(final TermsEnum tenum, final GeoPointMultiTermQuery query) {
     super(tenum, query);
     this.start = GeoPointField.encodeLatLon(query.minLat, query.minLon);
-    this.currentRange = new Range(0, shift, true);
+    this.currentRange = new Range(-1, shift, true);
     // start shift at maxShift value (from computeMaxShift)
     this.shift = maxShift;
     final long mask = (1L << shift) - 1;
