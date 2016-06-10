@@ -53,6 +53,7 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
@@ -138,7 +139,7 @@ public class WeightedSpanTermExtractor {
         SpanNearQuery sp = new SpanNearQuery(clauses, phraseQuery.getSlop() + positionGaps, inorder);
         extractWeightedSpanTerms(terms, sp, boost);
       }
-    } else if (query instanceof TermQuery) {
+    } else if (query instanceof TermQuery || query instanceof SynonymQuery) {
       extractWeightedTerms(terms, query, boost);
     } else if (query instanceof SpanQuery) {
       extractWeightedSpanTerms(terms, (SpanQuery) query, boost);

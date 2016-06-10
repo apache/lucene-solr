@@ -134,6 +134,8 @@ Bug Fixes
   other ranges had more than one clause matching (Ahmet Arslan,
   hossman, Mike McCandless)
 
+* LUCENE-7286: Added support for highlighting SynonymQuery. (Adrien Grand)
+
 Other
 
 * LUCENE-7295: TermAutomatonQuery.hashCode calculates Automaton.toDot().hash,
