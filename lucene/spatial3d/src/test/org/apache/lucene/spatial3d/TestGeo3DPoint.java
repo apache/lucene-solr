@@ -1207,13 +1207,19 @@ public class TestGeo3DPoint extends LuceneTestCase {
 
   /**
    * step through some integers, ensuring they decode to their expected double values.
-   * double values start at -90 and increase by LATITUDE_DECODE for each integer.
+   * double values start at -planetMax and increase by Geo3DUtil.DECODE for each integer.
    * check edge cases within the double range and random doubles within the range too.
    */
   public void testQuantization() throws Exception {
     Random random = random();
     for (int i = 0; i < 10000; i++) {
       int encoded = random.nextInt();
+      if (encoded < Geo3DUtil.MIN_ENCODED_VALUE) {
+        continue;
+      }
+      if (encoded > Geo3DUtil.MAX_ENCODED_VALUE) {
+        continue;
+      }
       double min = encoded * Geo3DUtil.DECODE;
       double decoded = Geo3DUtil.decodeValueFloor(encoded);
       // should exactly equal expected value
