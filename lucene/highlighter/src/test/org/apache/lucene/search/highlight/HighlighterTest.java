@@ -71,6 +71,7 @@ import org.apache.lucene.search.PhraseQuery.Builder;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
+import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
@@ -221,6 +222,24 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     highlighter.setTextFragmenter(new SimpleSpanFragmenter(scorer));
     fragment = highlighter.getBestFragment(stream, storedField);
     assertEquals("This piece of text refers to Kennedy at the beginning then has a longer piece of text that is <B>very</B>", fragment);
+  }
+
+  public void testHighlightingSynonymQuery() throws Exception {
+    searcher = newSearcher(reader);
+    Query query = new SynonymQuery(new Term(FIELD_NAME, "jfk"), new Term(FIELD_NAME, "kennedy"));
+    QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
+    Highlighter highlighter = new Highlighter(scorer);
+    TokenStream stream = getAnyTokenStream(FIELD_NAME, 2);
+    Fragmenter fragmenter = new SimpleSpanFragmenter(scorer);
+    highlighter.setTextFragmenter(fragmenter);
+    String storedField = searcher.doc(2).get(FIELD_NAME);
+    String fragment = highlighter.getBestFragment(stream, storedField);
+    assertEquals("<B>JFK</B> has been shot", fragment);
+
+    stream = getAnyTokenStream(FIELD_NAME, 3);
+    storedField = searcher.doc(3).get(FIELD_NAME);
+    fragment = highlighter.getBestFragment(stream, storedField);
+    assertEquals("John <B>Kennedy</B> has been shot", fragment);
   }
 
   public void testHighlightUnknownQueryAfterRewrite() throws IOException, InvalidTokenOffsetsException {
@@ -2093,7 +2112,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     analyzer = new MockAnalyzer(random(), MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET);
     ramDir = newDirectory();
     fieldType = random().nextBoolean() ? FIELD_TYPE_TV : TextField.TYPE_STORED;
-    IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(analyzer));
+    IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(analyzer).setMergePolicy(newLogMergePolicy()));
 
     for (String text : texts) {
       writer.addDocument(doc(FIELD_NAME, text));
