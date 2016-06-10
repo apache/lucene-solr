@@ -45,8 +45,8 @@ class Geo3DUtil {
   private static final int BITS = 32;
   private static final double MUL = (0x1L<<BITS)/(2*MAX_VALUE);
   static final double DECODE = getNextSafeDouble(1/MUL);
-  private static final int MIN_ENCODED_VALUE = encodeValue(-MAX_VALUE);
-  private static final int MAX_ENCODED_VALUE = encodeValue(MAX_VALUE);
+  static final int MIN_ENCODED_VALUE = encodeValue(-MAX_VALUE);
+  static final int MAX_ENCODED_VALUE = encodeValue(MAX_VALUE);
 
   public static int encodeValue(double x) {
     if (x > MAX_VALUE) {
