@@ -201,8 +201,9 @@ public class HeatmapFacetCounter {
 
     int[] pair = new int[2];//output of intersectInterval
     for (Map.Entry<Rectangle, Integer> entry : ancestors.entrySet()) {
-      Rectangle rect = entry.getKey();
+      Rectangle rect = entry.getKey(); // from a cell (thus doesn't cross DL)
       final int count = entry.getValue();
+
       //note: we approach this in a way that eliminates int overflow/underflow (think huge cell, tiny heatmap)
       intersectInterval(heatMinY, heatMaxY, cellHeight, rows, rect.getMinY(), rect.getMaxY(), pair);
       final int startRow = pair[0];
@@ -215,32 +216,33 @@ public class HeatmapFacetCounter {
         incrementRange(heatmap, startCol, endCol, startRow, endRow, count);
 
       } else {
+        // note: the cell rect might intersect 2 disjoint parts of the heatmap, so we do the left & right separately
+        final int leftColumns = (int) Math.round((180 - heatMinX) / cellWidth);
+        final int rightColumns = heatmap.columns - leftColumns;
         //left half of dateline:
-        if (rect.getMaxX() >= heatMinX) {
-          final int leftColumns = (int) Math.round((180 - heatMinX) / cellWidth) + 1;
+        if (rect.getMaxX() > heatMinX) {
           intersectInterval(heatMinX, 180, cellWidth, leftColumns, rect.getMinX(), rect.getMaxX(), pair);
           final int startCol = pair[0];
           final int endCol = pair[1];
           incrementRange(heatmap, startCol, endCol, startRow, endRow, count);
         }
         //right half of dateline
-        if (rect.getMinY() <= heatMaxX) {
-          final int rightColumns = (int) Math.round(heatMaxX / cellWidth) + 1;
-          intersectInterval(0, heatMaxX, cellWidth, rightColumns, rect.getMinX(), rect.getMaxX(), pair);
-          final int startCol = pair[0];
-          final int endCol = pair[1];
+        if (rect.getMinX() < heatMaxX) {
+          intersectInterval(-180, heatMaxX, cellWidth, rightColumns, rect.getMinX(), rect.getMaxX(), pair);
+          final int startCol = pair[0] + leftColumns;
+          final int endCol = pair[1] + leftColumns;
           incrementRange(heatmap, startCol, endCol, startRow, endRow, count);
         }
       }
-
     }
 
     return heatmap;
   }
 
-  private static void intersectInterval(double heatMin, double heatMax, double heatCellLen, int heatLen,
+  private static void intersectInterval(double heatMin, double heatMax, double heatCellLen, int numCells,
                                         double cellMin, double cellMax,
                                         int[] out) {
+    assert heatMin < heatMax && cellMin < cellMax;
     //precondition: we know there's an intersection
     if (heatMin >= cellMin) {
       out[0] = 0;
@@ -248,7 +250,7 @@ public class HeatmapFacetCounter {
       out[0] = (int) Math.round((cellMin - heatMin) / heatCellLen);
     }
     if (heatMax <= cellMax) {
-      out[1] = heatLen - 1;
+      out[1] = numCells - 1;
     } else {
       out[1] = (int) Math.round((cellMax - heatMin) / heatCellLen) - 1;
     }
