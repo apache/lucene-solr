@@ -203,6 +203,10 @@ Bug Fixes
 
 * SOLR-9198: config APIs unable to add multiple values with same name (noble)
 
+* SOLR-8812: edismax: turn off mm processing if no explicit mm spec is provided
+  and there are explicit operators (except for AND) - addresses problems caused by SOLR-2649.
+  (Greg Pendlebury, Jan Høydahl, Erick Erickson, Steve Rowe)
+
 Optimizations
 ----------------------
 * SOLR-8722: Don't force a full ZkStateReader refresh on every Overseer operation.
