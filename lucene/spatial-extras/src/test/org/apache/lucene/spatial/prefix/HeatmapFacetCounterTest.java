@@ -21,15 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import org.locationtech.spatial4j.context.SpatialContext;
-import org.locationtech.spatial4j.context.SpatialContextFactory;
-import org.locationtech.spatial4j.distance.DistanceUtils;
-import org.locationtech.spatial4j.shape.Circle;
-import org.locationtech.spatial4j.shape.Point;
-import org.locationtech.spatial4j.shape.Rectangle;
-import org.locationtech.spatial4j.shape.Shape;
-import org.locationtech.spatial4j.shape.SpatialRelation;
-import org.locationtech.spatial4j.shape.impl.RectangleImpl;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.spatial.StrategyTestCase;
@@ -39,6 +30,15 @@ import org.apache.lucene.util.Bits;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.locationtech.spatial4j.context.SpatialContext;
+import org.locationtech.spatial4j.context.SpatialContextFactory;
+import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.locationtech.spatial4j.shape.Circle;
+import org.locationtech.spatial4j.shape.Point;
+import org.locationtech.spatial4j.shape.Rectangle;
+import org.locationtech.spatial4j.shape.Shape;
+import org.locationtech.spatial4j.shape.SpatialRelation;
+import org.locationtech.spatial4j.shape.impl.RectangleImpl;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.atMost;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
@@ -80,6 +80,15 @@ public class HeatmapFacetCounterTest extends StrategyTestCase {
     validateHeatmapResultLoop(ctx.makeRectangle(179, 179, -89, -50), 1, 100);//line
     // We could test anything and everything at this point... I prefer we leave that to random testing and then
     // add specific tests if we find a bug.
+  }
+
+  @Test
+  public void testLucene7291Dateline() throws IOException {
+    grid = new QuadPrefixTree(ctx, 2); // only 2, and we wind up with some big leaf cells
+    strategy = new RecursivePrefixTreeStrategy(grid, getTestClass().getSimpleName());
+    adoc("0", ctx.makeRectangle(-102, -83, 43, 52));
+    commit();
+    validateHeatmapResultLoop(ctx.makeRectangle(179, -179, 62, 63), 2, 100);// HM crosses dateline
   }
 
   @Test
