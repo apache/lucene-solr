@@ -16,6 +16,10 @@ Bug Fixes
 
 * SOLR-9191: OverseerTaskQueue.peekTopN() fatally flawed (Scott Blum, Noble Paul)
 
+* SOLR-8812: edismax: turn off mm processing if no explicit mm spec is provided
+  and there are explicit operators (except for AND) - addresses problems caused by SOLR-2649.
+  (Greg Pendlebury, Jan Høydahl, Erick Erickson, Steve Rowe)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes
