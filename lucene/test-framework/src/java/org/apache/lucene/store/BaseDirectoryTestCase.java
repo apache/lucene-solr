@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.zip.CRC32;
 
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexNotFoundException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
@@ -1208,10 +1209,8 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       // Keep trying until virus checker refuses to delete:
       final String fileName;
       while (true) {
-        String candidate = TestUtil.randomSimpleString(random());
-        if (candidate.length() == 0) {
-          continue;
-        }
+        // create a random filename (segment file name style), so it cannot hit windows problem with special filenames ("con", "com1",...):
+        String candidate = IndexFileNames.segmentFileName(TestUtil.randomSimpleString(random(), 1, 6), TestUtil.randomSimpleString(random()), "test");
         try (IndexOutput out = dir.createOutput(candidate, IOContext.DEFAULT)) {
           out.getFilePointer(); // just fake access to prevent compiler warning
         }
