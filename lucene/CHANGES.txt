@@ -15,6 +15,12 @@ Other
 
 ======================= Lucene 6.2.0 =======================
 
+New Features
+
+* LUCENE-7302: IndexWriter methods that change the index now return a
+  long "sequence number" indicating the effective equivalent
+  single-threaded execution order (Mike McCandless)
+
 Bug Fixes
 
 * LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
@@ -54,10 +60,6 @@ New Features
 * LUCENE-7300: The misc module now has a directory wrapper that uses hard-links if
   applicable and supported when copying files from another FSDirectory in 
   Directory#copyFrom. (Simon Willnauer)
-
-* LUCENE-7302: IndexWriter methods that change the index now return a
-  long "sequence number" indicating the effective equivalent
-  single-threaded execution order (Mike McCandless)
 
 API Changes
 
