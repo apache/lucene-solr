@@ -147,6 +147,9 @@ Bug Fixes
   dateline and indexed non-point shapes are much bigger than the heatmap region.
   (David Smiley)
 
+* LUCENE-7333: Fix test bug where randomSimpleString() generated a filename
+  that is a reserved device name on Windows.  (Uwe Schindler, Mike McCandless)
+
 Other
 
 * LUCENE-7295: TermAutomatonQuery.hashCode calculates Automaton.toDot().hash,
