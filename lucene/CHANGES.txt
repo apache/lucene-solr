@@ -25,6 +25,11 @@ Improvements
   sub-files' checkums and segment IDs, to catch hardware issues or
   filesytem bugs earlier (Robert Muir, Mike McCandless)
 
+* LUCENE-6766: Index time sorting has graduated from the misc module
+  to core, is much simpler to use, via
+  IndexWriter.setIndexSort, and now works with dimensional points.
+  (Adrien Grand, Mike McCandless)
+
 Other
 
 * LUCENE-4787: Fixed some highlighting javadocs. (Michael Dodsworth via Adrien
