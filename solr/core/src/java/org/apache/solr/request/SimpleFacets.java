@@ -554,8 +554,8 @@ public class SimpleFacets {
 
      /*The user did not specify any preference*/
      if (method == null) {
-      /* Always use filters for booleans... we know the number of values is very small. */
-       if (type instanceof BoolField) {
+       /* Always use filters for booleans if not DocValues only... we know the number of values is very small. */
+       if (type instanceof BoolField && (field.indexed() == true || field.hasDocValues() == false)) {
          method = FacetMethod.ENUM;
        } else if (type.getNumericType() != null && !field.multiValued()) {
         /* the per-segment approach is optimal for numeric field types since there
