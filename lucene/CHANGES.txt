@@ -36,6 +36,10 @@ Improvements
   IndexWriter.setIndexSort, and now works with dimensional points.
   (Adrien Grand, Mike McCandless)
 
+* LUCENE-5931: Detect when an application tries to reopen an
+  IndexReader after (illegally) removing the old index and
+  reindexing (Vitaly Funstein, Robert Muir, Mike McCandless)
+
 Other
 
 * LUCENE-4787: Fixed some highlighting javadocs. (Michael Dodsworth via Adrien
