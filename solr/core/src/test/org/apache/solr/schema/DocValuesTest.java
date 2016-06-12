@@ -27,6 +27,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +50,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
 
     // sanity check our schema meets our expectations
     final IndexSchema schema = h.getCore().getLatestSchema();
-    for (String f : new String[] {"floatdv", "intdv", "doubledv", "longdv", "datedv", "stringdv"}) {
+    for (String f : new String[] {"floatdv", "intdv", "doubledv", "longdv", "datedv", "stringdv", "booldv"}) {
       final SchemaField sf = schema.getField(f);
       assertFalse(f + " is multiValued, test is useless, who changed the schema?",
                   sf.multiValued());
@@ -65,6 +66,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
     assertU(delQ("*:*"));
   }
 
+  @Test
   public void testDocValues() throws IOException {
     assertU(adoc("id", "1"));
     assertU(commit());
@@ -80,17 +82,21 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         assertEquals(DocValuesType.NUMERIC, infos.fieldInfo("doubledv").getDocValuesType());
         assertEquals(DocValuesType.NUMERIC, infos.fieldInfo("longdv").getDocValuesType());
         assertEquals(DocValuesType.SORTED, infos.fieldInfo("stringdv").getDocValuesType());
+        assertEquals(DocValuesType.SORTED, infos.fieldInfo("booldv").getDocValuesType());
 
         assertEquals((long) Float.floatToIntBits(1), reader.getNumericDocValues("floatdv").get(0));
         assertEquals(2L, reader.getNumericDocValues("intdv").get(0));
         assertEquals(Double.doubleToLongBits(3), reader.getNumericDocValues("doubledv").get(0));
         assertEquals(4L, reader.getNumericDocValues("longdv").get(0));
+        assertEquals("solr", reader.getSortedDocValues("stringdv").get(0).utf8ToString());
+        assertEquals("T", reader.getSortedDocValues("booldv").get(0).utf8ToString());
 
         final IndexSchema schema = core.getLatestSchema();
         final SchemaField floatDv = schema.getField("floatdv");
         final SchemaField intDv = schema.getField("intdv");
         final SchemaField doubleDv = schema.getField("doubledv");
         final SchemaField longDv = schema.getField("longdv");
+        final SchemaField boolDv = schema.getField("booldv");
 
         FunctionValues values = floatDv.getType().getValueSource(floatDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
         assertEquals(1f, values.floatVal(0), 0f);
@@ -104,6 +110,10 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         values = longDv.getType().getValueSource(longDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
         assertEquals(4L, values.longVal(0));
         assertEquals(4L, values.objectVal(0));
+        
+        values = boolDv.getType().getValueSource(boolDv, null).getValues(null, searcher.getLeafReader().leaves().get(0));
+        assertEquals("true", values.strVal(0));
+        assertEquals(true, values.objectVal(0));
 
         // check reversibility of created fields
         tstToObj(schema.getField("floatdv"), -1.5f);
@@ -118,6 +128,8 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         tstToObj(schema.getField("datedvs"), new Date(1000));
         tstToObj(schema.getField("stringdv"), "foo");
         tstToObj(schema.getField("stringdvs"), "foo");
+        tstToObj(schema.getField("booldv"), true);
+        tstToObj(schema.getField("booldvs"), true);
 
       } finally {
         searcherRef.decref();
@@ -132,10 +144,11 @@ public class DocValuesTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
   public void testDocValuesSorting() {
-    assertU(adoc("id", "1", "floatdv", "2", "intdv", "3", "doubledv", "4", "longdv", "5", "datedv", "1995-12-31T23:59:59.999Z", "stringdv", "b"));
-    assertU(adoc("id", "2", "floatdv", "5", "intdv", "4", "doubledv", "3", "longdv", "2", "datedv", "1997-12-31T23:59:59.999Z", "stringdv", "a"));
-    assertU(adoc("id", "3", "floatdv", "3", "intdv", "1", "doubledv", "2", "longdv", "1", "datedv", "1996-12-31T23:59:59.999Z", "stringdv", "c"));
+    assertU(adoc("id", "1", "floatdv", "2", "intdv", "3", "doubledv", "4", "longdv", "5", "datedv", "1995-12-31T23:59:59.999Z", "stringdv", "b", "booldv", "true"));
+    assertU(adoc("id", "2", "floatdv", "5", "intdv", "4", "doubledv", "3", "longdv", "2", "datedv", "1997-12-31T23:59:59.999Z", "stringdv", "a", "booldv", "false"));
+    assertU(adoc("id", "3", "floatdv", "3", "intdv", "1", "doubledv", "2", "longdv", "1", "datedv", "1996-12-31T23:59:59.999Z", "stringdv", "c", "booldv", "true"));
     assertU(adoc("id", "4"));
     assertU(commit());
     assertQ(req("q", "*:*", "sort", "floatdv desc", "rows", "1", "fl", "id"),
@@ -146,8 +159,10 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         "//int[@name='id'][.='1']");
     assertQ(req("q", "*:*", "sort", "longdv desc", "rows", "1", "fl", "id"),
         "//int[@name='id'][.='1']");
-    assertQ(req("q", "*:*", "sort", "datedv desc", "rows", "1", "fl", "id"),
-        "//int[@name='id'][.='2']");
+    assertQ(req("q", "*:*", "sort", "datedv desc", "rows", "1", "fl", "id,datedv"),
+        "//int[@name='id'][.='2']",
+        "//result/doc[1]/date[@name='datedv'][.='1997-12-31T23:59:59.999Z']"
+        );
     assertQ(req("q", "*:*", "sort", "stringdv desc", "rows", "1", "fl", "id"),
         "//int[@name='id'][.='4']");
     assertQ(req("q", "*:*", "sort", "floatdv asc", "rows", "1", "fl", "id"),
@@ -162,8 +177,17 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         "//int[@name='id'][.='1']");
     assertQ(req("q", "*:*", "sort", "stringdv asc", "rows", "1", "fl", "id"),
         "//int[@name='id'][.='2']");
+    assertQ(req("q", "*:*", "sort", "booldv asc", "rows", "10", "fl", "booldv,stringdv"),
+        "//result/doc[1]/bool[@name='booldv'][.='false']",
+        "//result/doc[2]/bool[@name='booldv'][.='true']",
+        "//result/doc[3]/bool[@name='booldv'][.='true']",
+        "//result/doc[4]/bool[@name='booldv'][.='true']"
+        );
+        
+
   }
   
+  @Test
   public void testDocValuesSorting2() {
     assertU(adoc("id", "1", "doubledv", "12"));
     assertU(adoc("id", "2", "doubledv", "50.567"));
@@ -184,6 +208,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         );
   }
 
+  @Test
   public void testDocValuesFaceting() {
     for (int i = 0; i < 50; ++i) {
       assertU(adoc("id", "" + i));
@@ -192,7 +217,20 @@ public class DocValuesTest extends SolrTestCaseJ4 {
       if (rarely()) {
         assertU(commit()); // to have several segments
       }
-      assertU(adoc("id", "1000" + i, "floatdv", "" + i, "intdv", "" + i, "doubledv", "" + i, "longdv", "" + i, "datedv", (1900+i) + "-12-31T23:59:59.999Z", "stringdv", "abc" + i));
+      switch (i % 3) {
+        case 0:
+          assertU(adoc("id", "1000" + i, "floatdv", "" + i, "intdv", "" + i, "doubledv", "" + i, "longdv", "" + i,
+              "datedv", (1900 + i) + "-12-31T23:59:59.999Z", "stringdv", "abc" + i, "booldv", "false"));
+          break;
+        case 1:
+          assertU(adoc("id", "1000" + i, "floatdv", "" + i, "intdv", "" + i, "doubledv", "" + i, "longdv", "" + i,
+              "datedv", (1900 + i) + "-12-31T23:59:59.999Z", "stringdv", "abc" + i, "booldv", "true"));
+          break;
+        case 2:
+          assertU(adoc("id", "1000" + i, "floatdv", "" + i, "intdv", "" + i, "doubledv", "" + i, "longdv", "" + i,
+              "datedv", (1900 + i) + "-12-31T23:59:59.999Z", "stringdv", "abc" + i));
+          break;
+      }
     }
     assertU(commit());
     assertQ(req("q", "*:*", "facet", "true", "rows", "0", "facet.field", "longdv", "facet.sort", "count", "facet.limit", "1"),
@@ -229,8 +267,20 @@ public class DocValuesTest extends SolrTestCaseJ4 {
         "//lst[@name='datedv']/int[@name='1900-12-31T23:59:59.999Z'][.='1']");
     assertQ(req("q", "*:*", "facet", "true", "rows", "0", "facet.field", "datedv", "facet.sort", "index", "facet.offset", "33", "facet.limit", "1", "facet.mincount", "1"),
         "//lst[@name='datedv']/int[@name='1933-12-31T23:59:59.999Z'][.='1']");
+
+    assertQ(req("q", "booldv:true"),
+        "//*[@numFound='83']");
+
+    assertQ(req("q", "booldv:false"),
+        "//*[@numFound='17']");
+
+    assertQ(req("q", "*:*", "facet", "true", "rows", "0", "facet.field", "booldv", "facet.sort", "index", "facet.mincount", "1"),
+        "//lst[@name='booldv']/int[@name='false'][.='17']",
+        "//lst[@name='booldv']/int[@name='true'][.='83']");
+
   }
 
+  @Test
   public void testDocValuesStats() {
     for (int i = 0; i < 50; ++i) {
       assertU(adoc("id", "1000" + i, "floatdv", "" + i%2, "intdv", "" + i%3, "doubledv", "" + i%4, "longdv", "" + i%5, "datedv", (1900+i%6) + "-12-31T23:59:59.999Z", "stringdv", "abc" + i%7));
@@ -293,10 +343,11 @@ public class DocValuesTest extends SolrTestCaseJ4 {
   /** Tests the ability to do basic queries (without scoring, just match-only) on
    *  docvalues fields that are not inverted (indexed "forward" only)
    */
+  @Test
   public void testDocValuesMatch() throws Exception {
-    assertU(adoc("id", "1", "floatdv", "2", "intdv", "3", "doubledv", "3.1", "longdv", "5", "datedv", "1995-12-31T23:59:59.999Z", "stringdv", "b"));
-    assertU(adoc("id", "2", "floatdv", "-5", "intdv", "4", "doubledv", "-4.3", "longdv", "2", "datedv", "1997-12-31T23:59:59.999Z", "stringdv", "a"));
-    assertU(adoc("id", "3", "floatdv", "3", "intdv", "1", "doubledv", "2.1", "longdv", "1", "datedv", "1996-12-31T23:59:59.999Z", "stringdv", "c"));
+    assertU(adoc("id", "1", "floatdv", "2", "intdv", "3", "doubledv", "3.1", "longdv", "5", "datedv", "1995-12-31T23:59:59.999Z", "stringdv", "b", "booldv", "false"));
+    assertU(adoc("id", "2", "floatdv", "-5", "intdv", "4", "doubledv", "-4.3", "longdv", "2", "datedv", "1997-12-31T23:59:59.999Z", "stringdv", "a", "booldv", "true"));
+    assertU(adoc("id", "3", "floatdv", "3", "intdv", "1", "doubledv", "2.1", "longdv", "1", "datedv", "1996-12-31T23:59:59.999Z", "stringdv", "c", "booldv", "false"));
     assertU(adoc("id", "4", "floatdv", "3", "intdv", "-1", "doubledv", "1.5", "longdv", "1", "datedv", "1996-12-31T23:59:59.999Z", "stringdv", "car"));
     assertU(commit());
 
@@ -439,8 +490,23 @@ public class DocValuesTest extends SolrTestCaseJ4 {
             "//result/doc[1]/int[@name='id'][.=2]",
             "//result/doc[2]/int[@name='id'][.=4]"
             );
+    // boolean basic queries:
+
+    assertQ(req("q", "booldv:false", "sort", "id asc"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/int[@name='id'][.=1]",
+        "//result/doc[2]/int[@name='id'][.=3]"
+    );
+
+    assertQ(req("q", "booldv:true", "sort", "id asc"),
+        "//*[@numFound='2']",
+        "//result/doc[1]/int[@name='id'][.=2]",
+        "//result/doc[2]/int[@name='id'][.=4]"
+    );
+
   }
 
+  @Test
   public void testFloatAndDoubleRangeQueryRandom() throws Exception {
 
     String fieldName[] = new String[] {"floatdv", "doubledv"};
@@ -556,6 +622,7 @@ public class DocValuesTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
   public void testFloatAndDoubleRangeQuery() throws Exception {
     String fieldName[] = new String[] {"floatdv", "doubledv"};
     String largestNegative[] = new String[] {String.valueOf(0f-Float.MIN_NORMAL), String.valueOf(0f-Double.MIN_NORMAL)};

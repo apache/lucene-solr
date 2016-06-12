@@ -47,6 +47,19 @@ Optimizations
 
 ==================  6.2.0 ==================
 
+
+Upgrading from Solr any prior release
+----------------------
+
+Detailed Change List
+----------------------
+
+New Features
+----------------------
+
+* SOLR-9187: Support dates and booleans in /export handler, support boolean DocValues fields
+
+
 Bug Fixes
 ----------------------
 

@@ -17,7 +17,9 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -1740,6 +1742,132 @@ public class StreamingTest extends SolrCloudTestCase {
 
   }
 
+  @Test
+  public void testDateBoolSorting() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "0", "b_sing", "false", "dt_sing", "1981-03-04T01:02:03.78Z")
+        .add(id, "3", "b_sing", "true", "dt_sing", "1980-03-04T01:02:03.78Z")
+        .add(id, "2", "b_sing", "false", "dt_sing", "1981-04-04T01:02:03.78Z")
+        .add(id, "1", "b_sing", "true", "dt_sing", "1980-04-04T01:02:03.78Z")
+        .add(id, "4", "b_sing", "true", "dt_sing", "1980-04-04T01:02:03.78Z")
+        .commit(cluster.getSolrClient(), COLLECTION);
+
+
+    trySortWithQt("/export");
+    trySortWithQt("/select");
+  }
+  private void trySortWithQt(String which) throws Exception {
+    //Basic CloudSolrStream Test bools desc
+
+    SolrParams sParams = mapParams("q", "*:*", "qt", which, "fl", "id,b_sing", "sort", "b_sing asc,id asc");
+    CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
+    try  {
+      List<Tuple> tuples = getTuples(stream);
+
+      assert (tuples.size() == 5);
+      assertOrder(tuples, 0, 2, 1, 3, 4);
+
+      //Basic CloudSolrStream Test bools desc
+      sParams = mapParams("q", "*:*", "qt", which, "fl", "id,b_sing", "sort", "b_sing desc,id desc");
+      stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
+      tuples = getTuples(stream);
+
+      assert (tuples.size() == 5);
+      assertOrder(tuples, 4, 3, 1, 2, 0);
+
+      //Basic CloudSolrStream Test dates desc
+      sParams = mapParams("q", "*:*", "qt", which, "fl", "id,dt_sing", "sort", "dt_sing desc,id asc");
+      stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
+      tuples = getTuples(stream);
+
+      assert (tuples.size() == 5);
+      assertOrder(tuples, 2, 0, 1, 4, 3);
+
+      //Basic CloudSolrStream Test ates desc
+      sParams = mapParams("q", "*:*", "qt", which, "fl", "id,dt_sing", "sort", "dt_sing asc,id desc");
+      stream = new CloudSolrStream(zkHost, COLLECTION, sParams);
+      tuples = getTuples(stream);
+
+      assert (tuples.size() == 5);
+      assertOrder(tuples, 3, 4, 1, 0, 2);
+    } finally {
+      if (stream != null) {
+        stream.close();
+      }
+    }
+
+  }
+
+
+  @Test
+  public void testAllValidExportTypes() throws Exception {
+
+    //Test whether all the expected types are actually returned, including booleans and dates.
+    // The contract is that the /select and /export handlers return the same format, so we can test this once each
+    // way
+    new UpdateRequest()
+        .add(id, "0", "i_sing", "11", "i_multi", "12", "i_multi", "13",
+            "l_sing", "14", "l_multi", "15", "l_multi", "16",
+            "f_sing", "1.70", "f_multi", "1.80", "f_multi", "1.90",
+            "d_sing", "1.20", "d_multi", "1.21", "d_multi", "1.22",
+            "s_sing", "single", "s_multi", "sm1", "s_multi", "sm2",
+            "dt_sing", "1980-01-02T11:11:33.89Z", "dt_multi", "1981-03-04T01:02:03.78Z", "dt_multi", "1981-05-24T04:05:06.99Z",
+            "b_sing", "true", "b_multi", "false", "b_multi", "true"
+        )
+        .commit(cluster.getSolrClient(), COLLECTION);
+
+    tryWithQt("/export");
+    tryWithQt("/select");
+  }
+  
+  // We should be getting the exact same thing back with both the export and select handlers, so test
+  private void tryWithQt(String which) throws IOException {
+    SolrParams sParams = StreamingTest.mapParams("q", "*:*", "qt", which, "fl", 
+        "id,i_sing,i_multi,l_sing,l_multi,f_sing,f_multi,d_sing,d_multi,dt_sing,dt_multi,s_sing,s_multi,b_sing,b_multi", 
+        "sort", "i_sing asc");
+    try (CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTION, sParams)) {
+
+      Tuple tuple = getTuple(stream); // All I really care about is that all the fields are returned. There's
+
+      assertTrue("Integers should be returned", tuple.getLong("i_sing") == 11L);
+      assertTrue("MV should be returned for i_multi", tuple.getLongs("i_multi").get(0) == 12);
+      assertTrue("MV should be returned for i_multi", tuple.getLongs("i_multi").get(1) == 13);
+
+      assertTrue("longs should be returned", tuple.getLong("l_sing") == 14L);
+      assertTrue("MV should be returned for l_multi", tuple.getLongs("l_multi").get(0) == 15);
+      assertTrue("MV should be returned for l_multi", tuple.getLongs("l_multi").get(1) == 16);
+
+      assertTrue("floats should be returned", tuple.getDouble("f_sing") == 1.7);
+      assertTrue("MV should be returned for f_multi", tuple.getDoubles("f_multi").get(0) == 1.8);
+      assertTrue("MV should be returned for f_multi", tuple.getDoubles("f_multi").get(1) == 1.9);
+
+      assertTrue("doubles should be returned", tuple.getDouble("d_sing") == 1.2);
+      assertTrue("MV should be returned for d_multi", tuple.getDoubles("d_multi").get(0) == 1.21);
+      assertTrue("MV should be returned for d_multi", tuple.getDoubles("d_multi").get(1) == 1.22);
+
+      assertTrue("Strings should be returned", tuple.getString("s_sing").equals("single"));
+      assertTrue("MV should be returned for s_multi", tuple.getStrings("s_multi").get(0).equals("sm1"));
+      assertTrue("MV should be returned for s_multi", tuple.getStrings("s_multi").get(1).equals("sm2"));
+
+      assertTrue("Dates should be returned as Strings", tuple.getString("dt_sing").equals("1980-01-02T11:11:33.890Z"));
+      assertTrue("MV dates should be returned as Strings for dt_multi", tuple.getStrings("dt_multi").get(0).equals("1981-03-04T01:02:03.780Z"));
+      assertTrue("MV dates should be returned as Strings for dt_multi", tuple.getStrings("dt_multi").get(1).equals("1981-05-24T04:05:06.990Z"));
+
+      // Also test native type conversion
+      Date dt = new Date(Instant.parse("1980-01-02T11:11:33.890Z").toEpochMilli());
+      assertTrue("Dates should be returned as Dates", tuple.getDate("dt_sing").equals(dt));
+      dt = new Date(Instant.parse("1981-03-04T01:02:03.780Z").toEpochMilli());
+      assertTrue("MV dates should be returned as Dates for dt_multi", tuple.getDates("dt_multi").get(0).equals(dt));
+      dt = new Date(Instant.parse("1981-05-24T04:05:06.990Z").toEpochMilli());
+      assertTrue("MV dates should be returned as Dates  for dt_multi", tuple.getDates("dt_multi").get(1).equals(dt));
+      
+      assertTrue("Booleans should be returned", tuple.getBool("b_sing"));
+      assertFalse("MV boolean should be returned for b_multi", tuple.getBools("b_multi").get(0));
+      assertTrue("MV boolean should be returned for b_multi", tuple.getBools("b_multi").get(1));
+    }
+
+  }
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
     List<Tuple> tuples = new ArrayList();

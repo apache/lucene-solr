@@ -112,6 +112,7 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.EnumField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
@@ -841,8 +842,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             break;
           case SORTED:
             SortedDocValues sdv = leafReader.getSortedDocValues(fieldName);
-            if (sdv.getOrd(docid) >= 0) {
-              doc.addField(fieldName, sdv.get(docid).utf8ToString());
+            int ord = sdv.getOrd(docid);
+            if (ord >= 0) {
+              // Special handling for Boolean fields since they're stored as 'T' and 'F'.
+              if (schemaField.getType() instanceof BoolField) {
+                final BytesRef bRef = sdv.lookupOrd(ord);
+                doc.addField(fieldName, schemaField.getType().toObject(schemaField, bRef));
+              } else {
+                doc.addField(fieldName, sdv.get(docid).utf8ToString());
+              }
             }
             break;
           case SORTED_NUMERIC:
