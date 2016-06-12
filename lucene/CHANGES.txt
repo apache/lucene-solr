@@ -41,6 +41,8 @@ Other
 * LUCENE-4787: Fixed some highlighting javadocs. (Michael Dodsworth via Adrien
   Grand)
 
+* LUCENE-7334: Update ASM dependency to 5.1.  (Uwe Schindler)
+
 ======================= Lucene 6.1.0 =======================
 
 New Features
