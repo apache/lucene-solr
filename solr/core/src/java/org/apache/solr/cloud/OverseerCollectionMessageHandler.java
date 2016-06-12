@@ -82,6 +82,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardHandlerFactory;
@@ -210,6 +211,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
   }
 
   @Override
+  @SuppressForbidden(reason = "Needs currentTimeMillis for mock requests")
   @SuppressWarnings("unchecked")
   public SolrResponse processMessage(ZkNodeProps message, String operation) {
     log.info("OverseerCollectionMessageHandler.processMessage : "+ operation + " , "+ message.toString());
@@ -289,6 +291,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler 
         case MOCK_REPLICA_TASK: {
           //only for test purposes
           Thread.sleep(message.getInt("sleep", 1));
+          log.info("MOCK_TASK_EXECUTED time {} data {}",System.currentTimeMillis(), Utils.toJSONString(message));
+          results.add("MOCK_FINISHED", System.currentTimeMillis());
           break;
         }
         default:

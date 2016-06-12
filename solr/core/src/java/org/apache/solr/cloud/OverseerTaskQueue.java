@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Predicate;
 
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -222,7 +223,7 @@ public class OverseerTaskQueue extends DistributedQueue {
   }
 
 
-  public List<QueueEvent> peekTopN(int n, Set<String> excludeSet, long waitMillis)
+  public List<QueueEvent> peekTopN(int n, Predicate<String> excludeSet, long waitMillis)
       throws KeeperException, InterruptedException {
     ArrayList<QueueEvent> topN = new ArrayList<>();
 
@@ -232,7 +233,7 @@ public class OverseerTaskQueue extends DistributedQueue {
     else time = stats.time(dir + "_peekTopN_wait" + waitMillis);
 
     try {
-      for (Pair<String, byte[]> element : peekElements(n, waitMillis, child -> !excludeSet.contains(dir + "/" + child))) {
+      for (Pair<String, byte[]> element : peekElements(n, waitMillis, child -> !excludeSet.test(dir + "/" + child))) {
         topN.add(new QueueEvent(dir + "/" + element.first(),
             element.second(), null));
       }
