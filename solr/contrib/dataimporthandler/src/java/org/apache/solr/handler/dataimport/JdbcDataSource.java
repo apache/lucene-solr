@@ -342,7 +342,16 @@ public class JdbcDataSource extends
     }
 
     protected ResultSet executeStatement(Statement statement, String query) throws SQLException {
-      if (statement.execute(query)) {
+      boolean resultSetReturned = statement.execute(query);
+      return getNextResultSet(resultSetReturned, statement);
+    }
+
+    protected ResultSet getNextResultSet(final boolean initialResultSetAvailable, final Statement statement) throws SQLException {
+      boolean resultSetAvailable = initialResultSetAvailable;
+      while (!resultSetAvailable && statement.getUpdateCount() != -1) {
+        resultSetAvailable = statement.getMoreResults();
+      }
+      if (resultSetAvailable) {
         return statement.getResultSet();
       }
       return null;
@@ -441,8 +450,10 @@ public class JdbcDataSource extends
         if (getResultSet().next()) {
           return true;
         } else {
-          close();
-          return false;
+          closeResultSet();
+          setResultSet(getNextResultSet(getStatement().getMoreResults(), getStatement()));
+          setColNames(getResultSet());
+          return hasnext();
         }
       } catch (SQLException e) {
         close();
@@ -452,16 +463,26 @@ public class JdbcDataSource extends
     }
 
     protected void close() {
+      closeResultSet();
       try {
-        if (getResultSet() != null)
-          getResultSet().close();
         if (getStatement() != null)
           getStatement().close();
+      } catch (Exception e) {
+        logError("Exception while closing statement", e);
+      } finally {
+        setStatement(null);
+      }
+    }
+
+    protected void closeResultSet() {
+      try {
+        if (getResultSet() != null) {
+          getResultSet().close();
+        }
       } catch (Exception e) {
         logError("Exception while closing result set", e);
       } finally {
         setResultSet(null);
-        setStatement(null);
       }
     }
 

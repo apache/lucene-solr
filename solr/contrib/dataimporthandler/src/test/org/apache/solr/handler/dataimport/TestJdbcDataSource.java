@@ -19,7 +19,6 @@ package org.apache.solr.handler.dataimport;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -27,7 +26,12 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import javax.sql.DataSource;
 
@@ -276,6 +280,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     statement.setFetchSize(500);
     statement.setMaxRows(0);
     EasyMock.expect(statement.execute("query")).andReturn(false);
+    EasyMock.expect(statement.getUpdateCount()).andReturn(-1);
     statement.close();
 
     mockControl.replay();
@@ -388,6 +393,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     statement.setFetchSize(500);
     statement.setMaxRows(0);
     EasyMock.expect(statement.execute("other query")).andReturn(false);
+    EasyMock.expect(statement.getUpdateCount()).andReturn(-1);
     statement.close();
 
     mockControl.replay();
@@ -396,6 +402,85 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
     jdbcDataSource.getData("other query");
 
     mockControl.verify();
+  }
+  
+  @Test
+  public void testMultipleResultsSets_UpdateCountUpdateCountResultSet() throws Exception {
+    MockInitialContextFactory.bind("java:comp/env/jdbc/JndiDB", dataSource);
+    props.put(JdbcDataSource.JNDI_NAME, "java:comp/env/jdbc/JndiDB");
+    EasyMock.expect(dataSource.getConnection()).andReturn(connection);
+    jdbcDataSource.init(context, props);
+    connection.setAutoCommit(false);
+
+    Statement statement = mockControl.createMock(Statement.class);
+    EasyMock.expect(connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY))
+        .andReturn(statement);
+    statement.setFetchSize(500);
+    statement.setMaxRows(0);
+    EasyMock.expect(statement.execute("query")).andReturn(false);
+    EasyMock.expect(statement.getUpdateCount()).andReturn(1);
+    EasyMock.expect(statement.getMoreResults()).andReturn(false);
+    EasyMock.expect(statement.getUpdateCount()).andReturn(1);
+    EasyMock.expect(statement.getMoreResults()).andReturn(true);
+    ResultSet resultSet = mockControl.createMock(ResultSet.class);
+    EasyMock.expect(statement.getResultSet()).andReturn(resultSet);
+    ResultSetMetaData metaData = mockControl.createMock(ResultSetMetaData.class);
+    EasyMock.expect(resultSet.getMetaData()).andReturn(metaData);
+    EasyMock.expect(metaData.getColumnCount()).andReturn(0);
+
+    mockControl.replay();
+
+    final ResultSetIterator resultSetIterator = jdbcDataSource.new ResultSetIterator("query");
+    assertSame(resultSet, resultSetIterator.getResultSet());
+
+    mockControl.verify();
+
+  }
+
+  @Test
+  public void testMultipleResultsSets_ResultSetResultSet() throws Exception {
+    MockInitialContextFactory.bind("java:comp/env/jdbc/JndiDB", dataSource);
+    props.put(JdbcDataSource.JNDI_NAME, "java:comp/env/jdbc/JndiDB");
+    EasyMock.expect(dataSource.getConnection()).andReturn(connection);
+    jdbcDataSource.init(context, props);
+    connection.setAutoCommit(false);
+
+    Statement statement = mockControl.createMock(Statement.class);
+    EasyMock.expect(connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY))
+        .andReturn(statement);
+    statement.setFetchSize(500);
+    statement.setMaxRows(0);
+    EasyMock.expect(statement.execute("query")).andReturn(true);
+    ResultSet resultSet1 = mockControl.createMock(ResultSet.class);
+    EasyMock.expect(statement.getResultSet()).andReturn(resultSet1);
+    ResultSetMetaData metaData1 = mockControl.createMock(ResultSetMetaData.class);
+    EasyMock.expect(resultSet1.getMetaData()).andReturn(metaData1);
+    EasyMock.expect(metaData1.getColumnCount()).andReturn(0);
+    EasyMock.expect(resultSet1.next()).andReturn(false);
+    resultSet1.close();
+    EasyMock.expect(statement.getMoreResults()).andReturn(true);
+    ResultSet resultSet2 = mockControl.createMock(ResultSet.class);
+    EasyMock.expect(statement.getResultSet()).andReturn(resultSet2);
+    ResultSetMetaData metaData2 = mockControl.createMock(ResultSetMetaData.class);
+    EasyMock.expect(resultSet2.getMetaData()).andReturn(metaData2);
+    EasyMock.expect(metaData2.getColumnCount()).andReturn(0);
+    EasyMock.expect(resultSet2.next()).andReturn(true);
+    EasyMock.expect(resultSet2.next()).andReturn(false);
+    resultSet2.close();
+    EasyMock.expect(statement.getMoreResults()).andReturn(false);
+    EasyMock.expect(statement.getUpdateCount()).andReturn(-1);
+    statement.close();
+
+    mockControl.replay();
+
+    final ResultSetIterator resultSetIterator = jdbcDataSource.new ResultSetIterator("query");
+    assertSame(resultSet1, resultSetIterator.getResultSet());
+    assertTrue(resultSetIterator.hasnext());
+    assertSame(resultSet2, resultSetIterator.getResultSet());
+    assertFalse(resultSetIterator.hasnext());
+
+    mockControl.verify();
+
   }
   
   @Test
