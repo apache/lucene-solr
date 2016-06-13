@@ -21,7 +21,6 @@ import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 
 /**
  * 

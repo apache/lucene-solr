@@ -16,8 +16,6 @@
  */
 package org.apache.solr.index;
 
-import java.io.IOException;
-
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergePolicyWrapper;
 

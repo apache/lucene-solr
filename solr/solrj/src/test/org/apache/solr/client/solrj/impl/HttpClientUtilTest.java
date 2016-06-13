@@ -16,10 +16,6 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -40,7 +36,6 @@ import org.apache.http.impl.conn.PoolingClientConnectionManager;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.util.SSLTestConfig;
 import org.junit.Test;
 import org.junit.Assume;
 

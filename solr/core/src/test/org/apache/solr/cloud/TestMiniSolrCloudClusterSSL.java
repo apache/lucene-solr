@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.io.File;
 import java.io.IOException;
-import java.net.SocketException;
 
 import javax.net.ssl.SSLContext;
 
@@ -34,7 +33,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.util.SSLTestConfig;

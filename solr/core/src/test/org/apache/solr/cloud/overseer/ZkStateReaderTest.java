@@ -33,7 +33,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.KeeperException;
 
 public class ZkStateReaderTest extends SolrTestCaseJ4 {
 

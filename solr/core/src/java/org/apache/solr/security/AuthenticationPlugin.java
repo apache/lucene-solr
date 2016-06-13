@@ -22,15 +22,12 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
 import java.io.Closeable;
 import java.io.IOException;
-import java.nio.file.attribute.UserPrincipal;
 import java.security.Principal;
 import java.util.Map;
 
 import org.apache.http.auth.BasicUserPrincipal;
-import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 
 /**
  * 

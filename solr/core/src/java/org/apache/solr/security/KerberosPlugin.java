@@ -45,7 +45,6 @@ import javax.servlet.descriptor.JspConfigDescriptor;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.solr.client.solrj.impl.HttpClientConfigurer;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientConfigurer;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.CoreContainer;
