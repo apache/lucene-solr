@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.lucene.analysis.ja.util.CSVUtil;
-import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.Builder;
 import org.apache.lucene.util.fst.FST;

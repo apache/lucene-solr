@@ -23,8 +23,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
-import org.apache.lucene.util.Version;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

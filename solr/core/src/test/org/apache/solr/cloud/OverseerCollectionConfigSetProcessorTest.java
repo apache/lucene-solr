@@ -46,7 +46,6 @@ import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
-import org.easymock.IAnswer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

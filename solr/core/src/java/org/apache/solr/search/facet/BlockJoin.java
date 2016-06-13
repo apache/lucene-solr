@@ -24,7 +24,6 @@ import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.DocSetCollector;
-import org.apache.solr.search.DocSetUtil;
 import org.apache.solr.search.QueryContext;
 
 /** @lucene.experimental */

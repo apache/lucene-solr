@@ -30,7 +30,6 @@ import java.util.Map;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.apache.lucene.util.Version;
 import org.xml.sax.InputSource;
 
 /**

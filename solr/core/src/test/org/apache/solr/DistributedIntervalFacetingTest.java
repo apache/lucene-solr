@@ -17,7 +17,6 @@
 package org.apache.solr;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;

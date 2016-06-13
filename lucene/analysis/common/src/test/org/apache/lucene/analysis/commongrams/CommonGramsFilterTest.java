@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis.commongrams;
 
-import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
 

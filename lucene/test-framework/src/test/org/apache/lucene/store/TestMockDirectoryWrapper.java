@@ -20,11 +20,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase.Nightly;
 
 public class TestMockDirectoryWrapper extends BaseDirectoryTestCase {
   

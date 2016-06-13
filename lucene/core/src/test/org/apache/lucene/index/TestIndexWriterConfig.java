@@ -34,7 +34,6 @@ import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.junit.Test;
 
 public class TestIndexWriterConfig extends LuceneTestCase {

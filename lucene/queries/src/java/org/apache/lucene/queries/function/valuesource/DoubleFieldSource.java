@@ -19,7 +19,6 @@ package org.apache.lucene.queries.function.valuesource;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.NumericDocValues;

@@ -22,7 +22,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.JmxMonitoredMap.JmxAugmentedSolrInfoMBean;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.uninverting.UninvertingReader;
 
 /**

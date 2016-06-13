@@ -26,7 +26,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
-import java.io.Reader;
 
 public class TestMultiPhraseQueryParsing extends LuceneTestCase {
 

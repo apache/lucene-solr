@@ -19,11 +19,9 @@ package org.apache.solr.rest;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Set;
 
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.schema.IndexSchema;
 import org.restlet.Application;
 import org.restlet.Restlet;
 import org.restlet.routing.Router;

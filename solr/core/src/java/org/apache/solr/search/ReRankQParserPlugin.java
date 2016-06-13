@@ -46,7 +46,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.MergeStrategy;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.request.SolrQueryRequest;

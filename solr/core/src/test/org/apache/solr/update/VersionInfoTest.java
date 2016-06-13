@@ -21,8 +21,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class VersionInfoTest extends SolrTestCaseJ4 {

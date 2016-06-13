@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.TimeZoneUtils;

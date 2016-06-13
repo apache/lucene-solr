@@ -21,9 +21,7 @@ import java.io.Reader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.analysis.util.TokenizerFactory;
 
 /**
  * Simple tests to ensure the Hindi filter Factories are working.

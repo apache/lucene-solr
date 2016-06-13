@@ -16,16 +16,11 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.SolrException;
 
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RefCounted;
-
 import org.junit.Assume;
 import org.junit.BeforeClass;
 

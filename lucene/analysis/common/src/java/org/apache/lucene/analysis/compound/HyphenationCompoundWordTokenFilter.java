@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.xml.sax.InputSource;
 
-import java.io.File;
 import java.io.IOException;
 
 /**

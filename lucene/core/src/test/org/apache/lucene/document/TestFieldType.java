@@ -18,8 +18,6 @@ package org.apache.lucene.document;
 
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-
 import org.apache.lucene.document.FieldType.LegacyNumericType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;

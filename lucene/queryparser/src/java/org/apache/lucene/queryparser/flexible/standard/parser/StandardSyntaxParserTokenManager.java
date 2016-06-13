@@ -17,28 +17,6 @@ package org.apache.lucene.queryparser.flexible.standard.parser;
  * limitations under the License.
  */
 
-import java.io.StringReader;
-import java.util.Vector;
-import java.util.Arrays;
-import org.apache.lucene.queryparser.flexible.messages.Message;
-import org.apache.lucene.queryparser.flexible.messages.MessageImpl;
-import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;
-import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;
-import org.apache.lucene.queryparser.flexible.core.nodes.AndQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.BoostQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.ModifierQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.GroupQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.OrQueryNode;
-import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.SlopQueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;
-import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;
-import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;
-import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
-
 /** Token Manager. */
 @SuppressWarnings("cast")
 public class StandardSyntaxParserTokenManager implements StandardSyntaxParserConstants

@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.AttributeSource.State;
 
 /** Like {@link StopFilter} except it will not remove the
  *  last token if that token was not followed by some token

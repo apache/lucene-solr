@@ -31,7 +31,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.uninverting.UninvertingReader;
-import org.apache.solr.uninverting.UninvertingReader;
 
 /** 
  * Allows access to uninverted docvalues by delete-by-queries.

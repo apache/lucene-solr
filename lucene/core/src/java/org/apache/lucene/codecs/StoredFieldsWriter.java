@@ -33,7 +33,6 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.MergeState;
 import org.apache.lucene.index.StoredFieldVisitor;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;

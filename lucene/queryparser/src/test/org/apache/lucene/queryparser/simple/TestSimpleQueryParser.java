@@ -36,7 +36,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 import static org.apache.lucene.queryparser.simple.SimpleQueryParser.AND_OPERATOR;
