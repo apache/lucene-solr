@@ -40,6 +40,10 @@ Improvements
   IndexReader after (illegally) removing the old index and
   reindexing (Vitaly Funstein, Robert Muir, Mike McCandless)
 
+Optimizations
+
+* LUCENE-7330: Speed up conjunction queries. (Adrien Grand)
+
 Other
 
 * LUCENE-4787: Fixed some highlighting javadocs. (Michael Dodsworth via Adrien

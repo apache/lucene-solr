@@ -181,7 +181,7 @@ public class TestConjunctionDISI extends LuceneTestCase {
         }
       }
 
-      final ConjunctionDISI conjunction = ConjunctionDISI.intersectScorers(Arrays.asList(iterators));
+      final DocIdSetIterator conjunction = ConjunctionDISI.intersectScorers(Arrays.asList(iterators));
       assertEquals(intersect(sets), toBitSet(maxDoc, conjunction));
     }
   }
@@ -211,8 +211,8 @@ public class TestConjunctionDISI extends LuceneTestCase {
         }
       }
 
-      final ConjunctionDISI conjunction = ConjunctionDISI.intersectScorers(Arrays.asList(iterators));
-      TwoPhaseIterator twoPhaseIterator = conjunction.asTwoPhaseIterator();
+      final DocIdSetIterator conjunction = ConjunctionDISI.intersectScorers(Arrays.asList(iterators));
+      TwoPhaseIterator twoPhaseIterator = TwoPhaseIterator.unwrap(conjunction);
       assertEquals(hasApproximation, twoPhaseIterator != null);
       if (hasApproximation) {
         assertEquals(intersect(sets), toBitSet(maxDoc, TwoPhaseIterator.asDocIdSetIterator(twoPhaseIterator)));
@@ -248,8 +248,8 @@ public class TestConjunctionDISI extends LuceneTestCase {
         if (conjunction == null) {
           conjunction = newIterator;
         } else {
-          final ConjunctionDISI conj = ConjunctionDISI.intersectScorers(Arrays.asList(conjunction, newIterator));
-          conjunction = scorer(conj, conj.asTwoPhaseIterator());
+          final DocIdSetIterator conj = ConjunctionDISI.intersectScorers(Arrays.asList(conjunction, newIterator));
+          conjunction = scorer(conj, TwoPhaseIterator.unwrap(conj));
         }
       }
 
@@ -309,7 +309,7 @@ public class TestConjunctionDISI extends LuceneTestCase {
       }
 
 
-      final ConjunctionDISI conjunction = ConjunctionDISI.intersectScorers(scorers);
+      final DocIdSetIterator conjunction = ConjunctionDISI.intersectScorers(scorers);
       assertEquals(intersect(sets), toBitSet(maxDoc, conjunction));
     }
   }
