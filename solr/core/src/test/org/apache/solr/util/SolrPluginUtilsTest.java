@@ -455,6 +455,34 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals(3, q.build().getMinimumNumberShouldMatch());
   }
 
+  private class InvokeSettersTestClass {
+    private float aFloat = random().nextFloat();
+    public float getAFloat() {
+      return aFloat;
+    }
+    public void setAFloat(float aFloat) {
+      this.aFloat = aFloat;
+    }
+    public void setAFloat(String aFloat) {
+      this.aFloat = Float.parseFloat(aFloat);
+    }
+  }
+
+  @Test
+  public void testInvokeSetters() {
+    final Float theFloat = new Float(random().nextFloat());
+    implTestInvokeSetters(theFloat, theFloat);
+    implTestInvokeSetters(theFloat, theFloat.toString());
+  }
+
+  public void implTestInvokeSetters(final Float theFloat, final Object theFloatObject) {
+    final InvokeSettersTestClass bean = new InvokeSettersTestClass();
+    final Map<String,Object> initArgs = new HashMap<>();
+    initArgs.put("aFloat", theFloatObject);
+    SolrPluginUtils.invokeSetters(bean, initArgs.entrySet());
+    assertEquals(bean.getAFloat(), theFloat.floatValue(), 0.0);
+  }
+
   /** macro */
   public String pe(CharSequence s) {
     return SolrPluginUtils.partialEscape(s).toString();
