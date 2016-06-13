@@ -85,8 +85,6 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
     int numTerms = atLeast(50);
     boolean ignoreCase = random().nextBoolean();
 
-    CharacterUtils charUtils = CharacterUtils.getInstance();
-
     for (int i = 0; i < numTerms; i++) {
       String randomRealisticUnicodeString = TestUtil
           .randomRealisticUnicodeString(random());
@@ -107,7 +105,7 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
         if (ignoreCase) {
           // TODO: can we simply use inputValue.toLowerCase(Locale.ROOT)???
           char[] buffer = inputValue.toCharArray();
-          charUtils.toLowerCase(buffer, 0, buffer.length);
+          CharacterUtils.toLowerCase(buffer, 0, buffer.length);
           seenInputValue = buffer.toString();
         } else {
           seenInputValue = inputValue;
