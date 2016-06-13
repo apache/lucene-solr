@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.util.CharacterUtils;
  * Normalizes token text to lower case.
  */
 public final class LowerCaseFilter extends TokenFilter {
-  private final CharacterUtils charUtils = CharacterUtils.getInstance();
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   
   /**
@@ -43,7 +42,7 @@ public final class LowerCaseFilter extends TokenFilter {
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      charUtils.toLowerCase(termAtt.buffer(), 0, termAtt.length());
+      CharacterUtils.toLowerCase(termAtt.buffer(), 0, termAtt.length());
       return true;
     } else
       return false;

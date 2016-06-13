@@ -199,7 +199,6 @@ public abstract class CharTokenizer extends Tokenizer {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
-  private final CharacterUtils charUtils = CharacterUtils.getInstance();
   private final CharacterBuffer ioBuffer = CharacterUtils.newCharacterBuffer(IO_BUFFER_SIZE);
   
   /**
@@ -229,7 +228,7 @@ public abstract class CharTokenizer extends Tokenizer {
     while (true) {
       if (bufferIndex >= dataLen) {
         offset += dataLen;
-        charUtils.fill(ioBuffer, input); // read supplementary char aware with CharacterUtils
+        CharacterUtils.fill(ioBuffer, input); // read supplementary char aware with CharacterUtils
         if (ioBuffer.getLength() == 0) {
           dataLen = 0; // so next offset += dataLen won't decrement offset
           if (length > 0) {
@@ -243,7 +242,7 @@ public abstract class CharTokenizer extends Tokenizer {
         bufferIndex = 0;
       }
       // use CharacterUtils here to support < 3.1 UTF-16 code unit behavior if the char based methods are gone
-      final int c = charUtils.codePointAt(ioBuffer.getBuffer(), bufferIndex, ioBuffer.getLength());
+      final int c = Character.codePointAt(ioBuffer.getBuffer(), bufferIndex, ioBuffer.getLength());
       final int charCount = Character.charCount(c);
       bufferIndex += charCount;
 
