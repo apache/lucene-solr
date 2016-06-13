@@ -15,16 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
-import org.apache.lucene.index.IndexableField;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.SolrCore;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.List;
-import java.util.Random;
-import java.util.Set;
 
 /**
  * Tests currency field type using FileExchangeRateProvider

@@ -17,7 +17,6 @@
 package org.apache.lucene.queryparser.classic;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Objects;
 
 import org.apache.lucene.analysis.*;
@@ -26,7 +25,6 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Version;
 
 /**
  * Test QueryParser's ability to deal with Analyzers that return more

@@ -18,15 +18,10 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.AbstractCollection;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
-
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
@@ -36,7 +31,6 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.index.PrefixCodedTerms;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;

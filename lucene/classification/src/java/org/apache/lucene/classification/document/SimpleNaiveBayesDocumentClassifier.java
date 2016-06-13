@@ -32,7 +32,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.SimpleNaiveBayesClassifier;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.MultiFields;
@@ -44,7 +43,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TotalHitCountCollector;
-import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 
 /**

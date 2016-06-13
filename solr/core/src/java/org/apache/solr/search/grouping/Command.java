@@ -18,8 +18,6 @@ package org.apache.solr.search.grouping;
 
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Sort;
-import org.apache.solr.schema.SchemaField;
-
 import java.io.IOException;
 import java.util.List;
 

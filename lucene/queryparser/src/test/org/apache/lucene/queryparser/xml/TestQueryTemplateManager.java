@@ -33,7 +33,6 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import java.io.IOException;
-import java.util.Locale;
 import java.util.Properties;
 import java.util.StringTokenizer;
 

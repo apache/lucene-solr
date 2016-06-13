@@ -17,7 +17,6 @@
 package org.apache.lucene.util.packed;
 
 
-import static org.apache.lucene.util.BitUtil.zigZagEncode;
 import static org.apache.lucene.util.packed.MonotonicBlockPackedReader.expected;
 
 import java.io.IOException;

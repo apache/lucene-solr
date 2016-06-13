@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.analysis;
 
-import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;

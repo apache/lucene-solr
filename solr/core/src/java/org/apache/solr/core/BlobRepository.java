@@ -19,8 +19,6 @@ package org.apache.solr.core;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
@@ -38,7 +36,6 @@ import java.util.regex.Pattern;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -50,9 +47,6 @@ import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 /**
  * The purpose of this class is to store the Jars loaded in memory and to keep only one copy of the Jar in a single node.

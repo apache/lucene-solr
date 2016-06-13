@@ -17,7 +17,6 @@
 package org.apache.lucene.queries.function.valuesource;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;

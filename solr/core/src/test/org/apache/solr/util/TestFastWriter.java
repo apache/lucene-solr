@@ -17,9 +17,6 @@
 package org.apache.solr.util;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.solr.common.util.FastOutputStream;
-import org.apache.solr.update.MemOutputStream;
-
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;

@@ -16,14 +16,8 @@
  */
 package org.apache.lucene.index;
 
-import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.FilterCodec;
-import org.apache.lucene.codecs.PointsFormat;
-import org.apache.lucene.codecs.PointsReader;
-import org.apache.lucene.codecs.PointsWriter;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.search.IndexSearcher;

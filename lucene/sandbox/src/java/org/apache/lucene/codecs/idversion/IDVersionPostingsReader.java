@@ -26,7 +26,6 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.Bits;
 
 final class IDVersionPostingsReader extends PostingsReaderBase {
 

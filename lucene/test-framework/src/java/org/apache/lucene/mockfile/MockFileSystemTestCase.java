@@ -19,7 +19,6 @@ package org.apache.lucene.mockfile;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;

@@ -23,7 +23,6 @@ import java.util.HashMap;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.MockTokenizer;
 
 /** basic tests for {@link ICUFoldingFilterFactory} */
 public class TestICUFoldingFilterFactory extends BaseTokenStreamTestCase {

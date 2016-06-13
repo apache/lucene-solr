@@ -30,7 +30,6 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.StrParser;

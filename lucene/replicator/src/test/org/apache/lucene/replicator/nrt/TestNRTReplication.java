@@ -32,7 +32,6 @@ import java.util.regex.Pattern;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LineFileDocs;
-import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.LuceneTestCase;

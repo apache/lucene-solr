@@ -17,8 +17,6 @@
 package org.apache.lucene.index;
 
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.ThreadInterruptedException;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;

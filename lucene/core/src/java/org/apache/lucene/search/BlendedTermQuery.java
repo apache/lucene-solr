@@ -28,7 +28,6 @@ import org.apache.lucene.index.TermContext;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
 
 /**

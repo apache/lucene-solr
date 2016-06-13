@@ -30,7 +30,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.ReturnFields;
 
 

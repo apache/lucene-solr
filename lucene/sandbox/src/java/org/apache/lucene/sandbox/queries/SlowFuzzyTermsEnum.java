@@ -26,7 +26,6 @@ import org.apache.lucene.search.BoostAttribute;
 import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;

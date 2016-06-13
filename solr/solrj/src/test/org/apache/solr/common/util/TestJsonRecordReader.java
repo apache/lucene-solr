@@ -17,7 +17,6 @@
 package org.apache.solr.common.util;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.handler.loader.JsonLoader;
 import org.apache.solr.util.RecordingJSONParser;
 
 import java.io.IOException;

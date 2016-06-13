@@ -21,7 +21,6 @@ import java.util.Enumeration;
 import java.util.List;
 
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.request.SolrRequestHandler;
 
 /**
  * Request context for Solr to be used by Authorization plugin.

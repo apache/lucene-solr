@@ -44,10 +44,6 @@ package org.apache.lucene.analysis.en;
 */
 
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.FileInputStream;
-
 import org.apache.lucene.util.ArrayUtil;
 
 /**

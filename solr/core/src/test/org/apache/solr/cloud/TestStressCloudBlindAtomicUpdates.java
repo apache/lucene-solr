@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,7 +35,6 @@ import java.util.Random;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -47,15 +45,11 @@ import org.apache.solr.client.solrj.request.schema.SchemaRequest.FieldType;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldTypeResponse;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.TestInjection;
 import org.apache.lucene.util.LuceneTestCase.Slow;

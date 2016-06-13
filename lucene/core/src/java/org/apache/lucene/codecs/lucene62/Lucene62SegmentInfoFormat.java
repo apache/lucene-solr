@@ -17,7 +17,6 @@
 package org.apache.lucene.codecs.lucene62;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 

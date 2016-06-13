@@ -20,12 +20,10 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import org.slf4j.Logger;

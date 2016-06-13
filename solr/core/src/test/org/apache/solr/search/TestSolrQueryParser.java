@@ -22,7 +22,6 @@ import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.transform.ScoreAugmenter;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

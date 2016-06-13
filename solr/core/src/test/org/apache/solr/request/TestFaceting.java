@@ -27,7 +27,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.uninverting.DocTermOrds;

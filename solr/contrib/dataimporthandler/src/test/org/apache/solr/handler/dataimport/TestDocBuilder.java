@@ -17,7 +17,6 @@
 package org.apache.solr.handler.dataimport;
 
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.handler.dataimport.config.ConfigNameConstants;
 import org.apache.solr.handler.dataimport.config.DIHConfiguration;
 import org.apache.solr.handler.dataimport.config.Entity;
 

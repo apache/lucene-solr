@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * Test the Arabic Analyzer

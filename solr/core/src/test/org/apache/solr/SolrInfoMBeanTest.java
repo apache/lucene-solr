@@ -20,7 +20,6 @@ import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.handler.StandardRequestHandler;
 import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.search.LRUCache;
 import org.junit.BeforeClass;

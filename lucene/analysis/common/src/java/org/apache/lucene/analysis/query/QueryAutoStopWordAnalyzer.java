@@ -30,7 +30,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * An {@link Analyzer} used primarily at query time to wrap another analyzer and provide a layer of protection

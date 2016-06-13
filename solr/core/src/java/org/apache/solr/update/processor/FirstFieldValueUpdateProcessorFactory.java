@@ -20,7 +20,6 @@ import org.apache.solr.core.SolrCore;
 
 import java.util.Collections;
 import java.util.Collection;
-import java.util.Iterator;
 
 /**
  * Keeps only the first value of fields matching the specified 

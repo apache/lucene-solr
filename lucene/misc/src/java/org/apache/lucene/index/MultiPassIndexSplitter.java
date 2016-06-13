@@ -29,7 +29,6 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.SuppressForbidden;
-import org.apache.lucene.util.Version;
 
 /**
  * This tool splits input index into multiple equal parts. The method employed

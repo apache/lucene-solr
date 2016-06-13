@@ -16,7 +16,6 @@
  */
 package org.apache.solr.analysis;
 
-import java.io.Reader;
 import java.util.Arrays;
 import java.util.Map;
 

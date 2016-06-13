@@ -21,7 +21,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoMBean;
-import org.apache.solr.util.RefCounted;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;

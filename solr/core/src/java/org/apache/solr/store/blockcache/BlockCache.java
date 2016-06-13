@@ -17,7 +17,6 @@
 package org.apache.solr.store.blockcache;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.github.benmanes.caffeine.cache.Cache;

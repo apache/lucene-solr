@@ -31,7 +31,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
 import org.junit.After;
 import org.junit.Before;

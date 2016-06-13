@@ -18,7 +18,6 @@ package org.apache.lucene.store;
 
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.store.RateLimiter.SimpleRateLimiter;

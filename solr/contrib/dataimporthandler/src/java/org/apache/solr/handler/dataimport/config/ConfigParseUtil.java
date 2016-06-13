@@ -17,14 +17,8 @@
 package org.apache.solr.handler.dataimport.config;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import org.apache.solr.handler.dataimport.DataImporter;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;

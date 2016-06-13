@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.uima;
 
 import org.apache.lucene.analysis.Analyzer;
 
-import java.io.Reader;
 import java.util.Map;
 
 /**

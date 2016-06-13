@@ -16,8 +16,6 @@
  */
 package org.apache.solr.util;
 
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 
 import java.util.Locale;

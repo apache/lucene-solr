@@ -35,7 +35,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;

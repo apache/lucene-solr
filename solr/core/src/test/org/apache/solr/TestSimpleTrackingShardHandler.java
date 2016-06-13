@@ -17,7 +17,6 @@
 package org.apache.solr;
 
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.ShardRequestAndParams;
 import org.apache.solr.handler.component.TrackingShardHandlerFactory.RequestTrackingQueue;

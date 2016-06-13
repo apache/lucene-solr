@@ -16,13 +16,9 @@
  */
 package org.apache.solr.search.mlt;
 
-import java.util.ArrayList;
-
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

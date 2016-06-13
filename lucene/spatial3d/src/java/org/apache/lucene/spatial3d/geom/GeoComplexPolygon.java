@@ -19,8 +19,6 @@ package org.apache.lucene.spatial3d.geom;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Set;
-import java.util.HashSet;
 
 /**
  * GeoComplexPolygon objects are structures designed to handle very large numbers of edges.
