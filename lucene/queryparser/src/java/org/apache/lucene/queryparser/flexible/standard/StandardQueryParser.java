@@ -84,7 +84,7 @@ import org.apache.lucene.search.Query;
  * 
  * <p>
  * Examples of appropriately formatted queries can be found in the <a
- * href="{@docRoot}/org/apache/lucene/queryparser/classic/package-summary.html#package_description">
+ * href="{@docRoot}/org/apache/lucene/queryparser/classic/package-summary.html#package.description">
  * query syntax documentation</a>.
  * </p>
  * <p>

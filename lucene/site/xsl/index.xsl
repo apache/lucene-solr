@@ -65,11 +65,11 @@
         development of Lucene. The goal is to help you "get started". It does not go into great depth
         on some of the conceptual or inner details of Lucene:</p>
         <ul>
-        <li><a href="demo/overview-summary.html#overview_description">Lucene demo, its usage, and sources</a>:
+        <li><a href="demo/overview-summary.html#overview.description">Lucene demo, its usage, and sources</a>:
         Tutorial and walk-through of the command-line Lucene demo.</li>
-        <li><a href="core/overview-summary.html#overview_description">Introduction to Lucene's APIs</a>:
+        <li><a href="core/overview-summary.html#overview.description">Introduction to Lucene's APIs</a>:
         High-level summary of the different Lucene packages. </li>
-        <li><a href="core/org/apache/lucene/analysis/package-summary.html#package_description">Analysis overview</a>:
+        <li><a href="core/org/apache/lucene/analysis/package-summary.html#package.description">Analysis overview</a>:
         Introduction to Lucene's analysis API.  See also the
         <a href="core/org/apache/lucene/analysis/TokenStream.html">TokenStream consumer workflow</a>.</li>
         </ul>
@@ -79,10 +79,10 @@
             <li><a href="SYSTEM_REQUIREMENTS.html">System Requirements</a>: Minimum and supported Java versions.</li>
             <li><a href="MIGRATE.html">Migration Guide</a>: What changed in Lucene 6; how to migrate code from Lucene 5.x.</li>
             <li><a href="JRE_VERSION_MIGRATION.html">JRE Version Migration</a>: Information about upgrading between major JRE versions.</li>
-            <li><a href="core/org/apache/lucene/codecs/{$defaultCodecPackage}/package-summary.html#package_description">File Formats</a>: Guide to the supported index format used by Lucene.  This can be customized by using <a href="core/org/apache/lucene/codecs/package-summary.html#package_description">an alternate codec</a>.</li>
-            <li><a href="core/org/apache/lucene/search/package-summary.html#package_description">Search and Scoring in Lucene</a>: Introduction to how Lucene scores documents.</li>
-            <li><a href="core/org/apache/lucene/search/similarities/TFIDFSimilarity.html">Classic Scoring Formula</a>: Formula of Lucene's classic <a href="http://en.wikipedia.org/wiki/Vector_Space_Model">Vector Space</a> implementation. (look <a href="core/org/apache/lucene/search/similarities/package-summary.html#package_description">here</a> for other models)</li>
-            <li><a href="queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package_description">Classic QueryParser Syntax</a>: Overview of the Classic QueryParser's syntax and features.</li>
+            <li><a href="core/org/apache/lucene/codecs/{$defaultCodecPackage}/package-summary.html#package.description">File Formats</a>: Guide to the supported index format used by Lucene.  This can be customized by using <a href="core/org/apache/lucene/codecs/package-summary.html#package.description">an alternate codec</a>.</li>
+            <li><a href="core/org/apache/lucene/search/package-summary.html#package.description">Search and Scoring in Lucene</a>: Introduction to how Lucene scores documents.</li>
+            <li><a href="core/org/apache/lucene/search/similarities/TFIDFSimilarity.html">Classic Scoring Formula</a>: Formula of Lucene's classic <a href="http://en.wikipedia.org/wiki/Vector_Space_Model">Vector Space</a> implementation. (look <a href="core/org/apache/lucene/search/similarities/package-summary.html#package.description">here</a> for other models)</li>
+            <li><a href="queryparser/org/apache/lucene/queryparser/classic/package-summary.html#package.description">Classic QueryParser Syntax</a>: Overview of the Classic QueryParser's syntax and features.</li>
           </ul>
         <h2>API Javadocs</h2>
         <xsl:call-template name="modules"/>
