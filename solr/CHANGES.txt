@@ -67,6 +67,9 @@ Bug Fixes
 
 * SOLR-9199: ZkController#publishAndWaitForDownStates logic is inefficient (Hrishikesh Gadre)
 
+* SOLR-9161: Change SolrPluginUtils.invokeSetters implementation to accommodate setter variants.
+  (Christine Poerschke, Steve Rowe, Uwe Schindler)
+
 ==================  6.1.0 ==================
 
 Upgrading from Solr any prior release
