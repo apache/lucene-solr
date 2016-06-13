@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FsStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.PathFilter;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -408,6 +409,38 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
         + path
         + "/"
         + cd.getDataDir()));
+  }
+  
+  /**
+   * @param directory to calculate size of
+   * @return size in bytes
+   * @throws IOException on low level IO error
+   */
+  @Override
+  public long size(Directory directory) throws IOException {
+    String hdfsDirPath = getPath(directory);
+    return size(hdfsDirPath);
+  }
+  
+  /**
+   * @param path to calculate size of
+   * @return size in bytes
+   * @throws IOException on low level IO error
+   */
+  @Override
+  public long size(String path) throws IOException {
+    Path hdfsDirPath = new Path(path);
+    FileSystem fileSystem = null;
+    try {
+      fileSystem = FileSystem.newInstance(hdfsDirPath.toUri(), getConf());
+      long size = fileSystem.getContentSummary(hdfsDirPath).getLength();
+      return size;
+    } catch (IOException e) {
+      LOG.error("Error checking if hdfs path exists", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error checking if hdfs path exists", e);
+    } finally {
+      IOUtils.closeQuietly(fileSystem);
+    }
   }
   
   public String getConfDir() {

@@ -988,7 +988,7 @@ enum CoreAdminOperation {
       dir = core.getDirectoryFactory().get(core.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
 
       try {
-        size = DirectoryFactory.sizeOfDirectory(dir);
+        size = core.getDirectoryFactory().size(dir);
       } finally {
         core.getDirectoryFactory().release(dir);
       }

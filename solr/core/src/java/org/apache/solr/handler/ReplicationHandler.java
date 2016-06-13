@@ -761,7 +761,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     try {
       dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       try {
-        size = DirectoryFactory.sizeOfDirectory(dir);
+        size = core.getDirectoryFactory().size(dir);
       } finally {
         core.getDirectoryFactory().release(dir);
       }
