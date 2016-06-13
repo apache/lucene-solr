@@ -30,7 +30,12 @@ public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
 
   @Override
   protected Directory getDirectory(Path file) throws IOException {
-    Directory open = random().nextBoolean() ? newFSDirectory(file) : newDirectory();
+    Directory open;
+    if (random().nextBoolean()) {
+      open = new RAMDirectory();
+    } else {
+      open = FSDirectory.open(file);
+    }
     return new HardlinkCopyDirectoryWrapper(open);
   }
 
