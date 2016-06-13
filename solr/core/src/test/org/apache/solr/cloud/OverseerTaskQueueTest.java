@@ -16,12 +16,9 @@
  */
 package org.apache.solr.cloud;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.function.Predicate;
 
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
