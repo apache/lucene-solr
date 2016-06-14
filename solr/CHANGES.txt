@@ -57,7 +57,9 @@ Detailed Change List
 New Features
 ----------------------
 
-* SOLR-9187: Support dates and booleans in /export handler, support boolean DocValues fields
+* SOLR-9187: Support dates and booleans in /export handler, support boolean DocValues fields (Erick Erickson)
+
+* SOLR-8048: bin/solr script should support basic auth credentials provided in solr.in.sh (noble)
 
 
 Bug Fixes
