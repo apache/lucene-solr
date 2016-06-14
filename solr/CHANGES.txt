@@ -47,9 +47,14 @@ Optimizations
 
 ==================  6.2.0 ==================
 
-
-Upgrading from Solr any prior release
-----------------------
+Versions of Major Components
+---------------------
+Apache Tika 1.7
+Carrot2 3.12.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.8.v20160314
 
 Detailed Change List
 ----------------------
@@ -58,7 +63,6 @@ New Features
 ----------------------
 
 * SOLR-9187: Support dates and booleans in /export handler, support boolean DocValues fields
-
 
 Bug Fixes
 ----------------------
@@ -71,6 +75,17 @@ Bug Fixes
   (Christine Poerschke, Steve Rowe, Uwe Schindler)
 
 ==================  6.1.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.7
+Carrot2 3.12.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.8.v20160314
 
 Upgrading from Solr any prior release
 ----------------------
