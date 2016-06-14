@@ -393,7 +393,6 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
     MockDirectoryWrapper dir = newMockDirectory();
     dir.setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     dir.setUseSlowOpenClosers(false);
-    dir.setPreventDoubleWrite(false);
     dir.setRandomIOExceptionRate(0.001); // more rare
     
     // log all exceptions we hit, in case we fail (for debugging)

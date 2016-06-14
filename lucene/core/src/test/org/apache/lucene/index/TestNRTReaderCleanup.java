@@ -40,9 +40,6 @@ public class TestNRTReaderCleanup extends LuceneTestCase {
 
     MockDirectoryWrapper dir = newMockDirectory();
     
-    // Allow writing to same file more than once:
-    dir.setPreventDoubleWrite(false);
-
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     LogMergePolicy lmp = new LogDocMergePolicy();
     lmp.setMergeFactor(2);

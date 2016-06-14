@@ -808,9 +808,6 @@ public class TestBKD extends LuceneTestCase {
     }
 
     try (Directory dir0 = newMockDirectory()) {
-      if (dir0 instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
-      }
 
       Directory dir = new FilterDirectory(dir0) {
         boolean corrupted;
@@ -857,9 +854,6 @@ public class TestBKD extends LuceneTestCase {
     }
 
     try (Directory dir0 = newMockDirectory()) {
-      if (dir0 instanceof MockDirectoryWrapper) {
-        ((MockDirectoryWrapper) dir0).setPreventDoubleWrite(false);
-      }
 
       Directory dir = new FilterDirectory(dir0) {
         boolean corrupted;

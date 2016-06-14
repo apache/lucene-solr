@@ -302,18 +302,6 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
     client.close();
     callback.close();
 
-    // Replicator violates write-once policy. It may be that the
-    // handler copies files to the index dir, then fails to copy a
-    // file and reverts the copy operation. On the next attempt, it
-    // will copy the same file again. There is nothing wrong with this
-    // in a real system, but it does violate write-once, and MDW
-    // doesn't like it. Disabling it means that we won't catch cases
-    // where the handler overwrites an existing index file, but
-    // there's nothing currently we can do about it, unless we don't
-    // use MDW.
-    handlerIndexDir.setPreventDoubleWrite(false);
-    handlerTaxoDir.setPreventDoubleWrite(false);
-
     // wrap sourceDirFactory to return a MockDirWrapper so we can simulate errors
     final SourceDirectoryFactory in = sourceDirFactory;
     final AtomicInteger failures = new AtomicInteger(atLeast(10));

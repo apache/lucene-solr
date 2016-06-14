@@ -46,9 +46,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   
   public void testDeleteLeftoverFiles() throws IOException {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
-    }
 
     MergePolicy mergePolicy = newLogMergePolicy(true, 10);
     

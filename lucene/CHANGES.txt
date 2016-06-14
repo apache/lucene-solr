@@ -42,6 +42,11 @@ Improvements
   IndexReader after (illegally) removing the old index and
   reindexing (Vitaly Funstein, Robert Muir, Mike McCandless)
 
+* LUCENE-6171: Lucene now passes the StandardOpenOption.CREATE_NEW
+  option when writing new files so the filesystem enforces our
+  write-once architecture, possibly catching externally caused
+  issues sooner (Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-7330: Speed up conjunction queries. (Adrien Grand)

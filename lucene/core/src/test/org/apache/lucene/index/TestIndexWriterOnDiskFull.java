@@ -253,7 +253,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         
         // Make a new dir that will enforce disk usage:
         MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(startDir));
-        dir.setPreventDoubleWrite(false);
         IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
           .setOpenMode(OpenMode.APPEND)
           .setMergePolicy(newLogMergePolicy(false));
