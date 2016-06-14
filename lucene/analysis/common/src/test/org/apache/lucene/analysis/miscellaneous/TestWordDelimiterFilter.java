@@ -16,18 +16,18 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.util.IOUtils;
-import org.junit.Test;
-
 import java.io.IOException;
 import java.util.*;
+
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.util.IOUtils;
+import org.junit.Test;
 
 import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
 import static org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE;

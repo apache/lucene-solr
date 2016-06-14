@@ -16,10 +16,10 @@
  */
 package org.apache.lucene.analysis.miscellaneous;
 
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.util.FilteringTokenFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.CharArraySet;
 
 /**
  * A TokenFilter that only keeps tokens with text contained in the

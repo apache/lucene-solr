@@ -19,10 +19,11 @@ package org.apache.lucene.analysis.core;
 
 import java.io.IOException;
 
+import org.apache.lucene.analysis.CharacterUtils;
+import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.CharacterUtils;
 
 /**
  * Normalizes token text to UPPER CASE.

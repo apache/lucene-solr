@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.util;
+package org.apache.lucene.analysis;
 
 
 import java.io.BufferedReader;
@@ -23,7 +23,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-import org.apache.lucene.analysis.util.WordlistLoader;
+import org.apache.lucene.analysis.WordlistLoader;
 
 public class TestWordlistLoader extends LuceneTestCase {
 

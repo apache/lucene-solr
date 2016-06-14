@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.util;
+package org.apache.lucene.analysis;
 
 
 import java.util.AbstractSet;
@@ -41,7 +41,10 @@ import java.util.Set;
  * The {@link #iterator()} returns an {@code Iterator<char[]>}.
  */
 public class CharArraySet extends AbstractSet<Object> {
+
+  /** An empty {@code CharArraySet}. */
   public static final CharArraySet EMPTY_SET = new CharArraySet(CharArrayMap.<Object>emptyMap());
+  
   private static final Object PLACEHOLDER = new Object();
   
   private final CharArrayMap<Object> map;

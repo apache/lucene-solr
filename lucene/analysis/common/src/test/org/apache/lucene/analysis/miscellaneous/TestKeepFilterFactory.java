@@ -17,8 +17,8 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
 

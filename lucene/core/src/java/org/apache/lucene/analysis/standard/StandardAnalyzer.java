@@ -19,14 +19,15 @@ package org.apache.lucene.analysis.standard;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Arrays;
+import java.util.List;
 
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.LowerCaseFilter;
-import org.apache.lucene.analysis.core.StopAnalyzer;
-import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.util.CharArraySet;
-import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
-import org.apache.lucene.analysis.util.WordlistLoader;
+import org.apache.lucene.analysis.WordlistLoader;
 
 /**
  * Filters {@link StandardTokenizer} with {@link StandardFilter}, {@link
@@ -34,6 +35,22 @@ import org.apache.lucene.analysis.util.WordlistLoader;
  * English stop words.
  */
 public final class StandardAnalyzer extends StopwordAnalyzerBase {
+
+  /** An unmodifiable set containing some common English words that are not usually useful
+  for searching.*/
+  public static final CharArraySet ENGLISH_STOP_WORDS_SET;
+  
+  static {
+    final List<String> stopWords = Arrays.asList(
+      "a", "an", "and", "are", "as", "at", "be", "but", "by",
+      "for", "if", "in", "into", "is", "it",
+      "no", "not", "of", "on", "or", "such",
+      "that", "the", "their", "then", "there", "these",
+      "they", "this", "to", "was", "will", "with"
+    );
+    final CharArraySet stopSet = new CharArraySet(stopWords, false);
+    ENGLISH_STOP_WORDS_SET = CharArraySet.unmodifiableSet(stopSet); 
+  }
   
   /** Default maximum allowed token length */
   public static final int DEFAULT_MAX_TOKEN_LENGTH = 255;
@@ -42,7 +59,7 @@ public final class StandardAnalyzer extends StopwordAnalyzerBase {
 
   /** An unmodifiable set containing some common English words that are usually not
   useful for searching. */
-  public static final CharArraySet STOP_WORDS_SET = StopAnalyzer.ENGLISH_STOP_WORDS_SET; 
+  public static final CharArraySet STOP_WORDS_SET = ENGLISH_STOP_WORDS_SET;
 
   /** Builds an analyzer with the given stop words.
    * @param stopWords stop words */
@@ -73,9 +90,9 @@ public final class StandardAnalyzer extends StopwordAnalyzerBase {
     maxTokenLength = length;
   }
     
-  /**
-   * @see #setMaxTokenLength
-   */
+  /** Returns the current maximum token length
+   * 
+   *  @see #setMaxTokenLength */
   public int getMaxTokenLength() {
     return maxTokenLength;
   }

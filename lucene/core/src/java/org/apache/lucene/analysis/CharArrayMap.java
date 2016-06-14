@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.util;
+package org.apache.lucene.analysis;
 
 
 import java.util.Arrays;
@@ -24,7 +24,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.analysis.util.CharacterUtils;
+import org.apache.lucene.analysis.CharacterUtils;
 
 /**
  * A simple class that stores key Strings as char[]'s in a
@@ -615,7 +615,7 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
   }
   
   /**
-   * Empty {@link org.apache.lucene.analysis.util.CharArrayMap.UnmodifiableCharArrayMap} optimized for speed.
+   * Empty {@link org.apache.lucene.analysis.CharArrayMap.UnmodifiableCharArrayMap} optimized for speed.
    * Contains checks will always return <code>false</code> or throw
    * NPE if necessary.
    */

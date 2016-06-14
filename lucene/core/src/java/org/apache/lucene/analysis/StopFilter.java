@@ -14,16 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.core;
+package org.apache.lucene.analysis;
 
 
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.lucene.analysis.util.FilteringTokenFilter;
+import org.apache.lucene.analysis.FilteringTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.CharArraySet;
 
 /**
  * Removes stop words from a token stream.

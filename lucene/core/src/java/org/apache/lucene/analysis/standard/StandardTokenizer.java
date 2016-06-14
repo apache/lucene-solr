@@ -40,6 +40,7 @@ public final class StandardTokenizer extends Tokenizer {
   private StandardTokenizerImpl scanner;
 
   // TODO: how can we remove these old types?!
+  /** Alpha/numeric token type */
   public static final int ALPHANUM          = 0;
   /** @deprecated (3.1) */
   @Deprecated
@@ -50,10 +51,12 @@ public final class StandardTokenizer extends Tokenizer {
   /** @deprecated (3.1) */
   @Deprecated
   public static final int COMPANY           = 3;
+  /** Email token type */
   public static final int EMAIL             = 4;
   /** @deprecated (3.1) */
   @Deprecated
   public static final int HOST              = 5;
+  /** Numeric token type */
   public static final int NUM               = 6;
   /** @deprecated (3.1) */
   @Deprecated
@@ -63,10 +66,16 @@ public final class StandardTokenizer extends Tokenizer {
   @Deprecated
   public static final int ACRONYM_DEP       = 8;
 
+  /** Southeast Asian token type */
   public static final int SOUTHEAST_ASIAN = 9;
+  /** Idiographic token type */
   public static final int IDEOGRAPHIC = 10;
+  /** Hiragana token type */
   public static final int HIRAGANA = 11;
+  /** Katakana token type */
   public static final int KATAKANA = 12;
+
+  /** Hangul token type */
   public static final int HANGUL = 13;
   
   /** String token types that correspond to token type int constants */
@@ -87,6 +96,7 @@ public final class StandardTokenizer extends Tokenizer {
     "<HANGUL>"
   };
   
+  /** Absolute maximum sized token */
   public static final int MAX_TOKEN_LENGTH_LIMIT = 1024 * 1024;
   
   private int skippedPositions;
@@ -111,7 +121,9 @@ public final class StandardTokenizer extends Tokenizer {
     }
   }
 
-  /** @see #setMaxTokenLength */
+  /** Returns the current maximum token length
+   * 
+   *  @see #setMaxTokenLength */
   public int getMaxTokenLength() {
     return maxTokenLength;
   }

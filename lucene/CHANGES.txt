@@ -47,6 +47,10 @@ Improvements
   write-once architecture, possibly catching externally caused
   issues sooner (Robert Muir, Mike McCandless)
 
+* LUCENE-7318: StandardAnalyzer has been moved from the analysis
+  module into core and is now the default analyzer in
+  IndexWriterConfig (Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-7330: Speed up conjunction queries. (Adrien Grand)
