@@ -164,7 +164,7 @@ public class SolrCLI {
 
         HttpClientUtil.addRequestInterceptor((httpRequest, httpContext) -> {
           String pair = ss.get(0) + ":" + ss.get(1);
-          byte[] encodedBytes = Base64.encodeBase64(pair.getBytes());
+          byte[] encodedBytes = Base64.encodeBase64(pair.getBytes(StandardCharsets.UTF_8));
           httpRequest.addHeader(new BasicHeader("Authorization", "Basic "+ new String(encodedBytes)));
         });
       }
