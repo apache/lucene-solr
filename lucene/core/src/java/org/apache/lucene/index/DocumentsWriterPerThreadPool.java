@@ -59,6 +59,9 @@ final class DocumentsWriterPerThreadPool {
     // write access guarded by DocumentsWriterFlushControl
     long bytesUsed = 0;
 
+    // set by DocumentsWriter after each indexing op finishes
+    volatile long lastSeqNo;
+
     ThreadState(DocumentsWriterPerThread dpwt) {
       this.dwpt = dpwt;
     }
