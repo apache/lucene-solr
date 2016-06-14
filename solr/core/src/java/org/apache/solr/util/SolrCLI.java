@@ -104,6 +104,7 @@ import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.params.CommonParams.NAME;
 /**
  * Command-line utility for working with Solr.
@@ -164,8 +165,8 @@ public class SolrCLI {
 
         HttpClientUtil.addRequestInterceptor((httpRequest, httpContext) -> {
           String pair = ss.get(0) + ":" + ss.get(1);
-          byte[] encodedBytes = Base64.encodeBase64(pair.getBytes(StandardCharsets.UTF_8));
-          httpRequest.addHeader(new BasicHeader("Authorization", "Basic "+ new String(encodedBytes)));
+          byte[] encodedBytes = Base64.encodeBase64(pair.getBytes(UTF_8));
+          httpRequest.addHeader(new BasicHeader("Authorization", "Basic "+ new String(encodedBytes, UTF_8)));
         });
       }
     }
@@ -2344,7 +2345,7 @@ public class SolrCLI {
       
       echo("\nWelcome to the SolrCloud example!\n");
 
-      Scanner readInput = prompt ? new Scanner(userInput, StandardCharsets.UTF_8.name()) : null;
+      Scanner readInput = prompt ? new Scanner(userInput, UTF_8.name()) : null;
       if (prompt) {
         echo("This interactive session will help you launch a SolrCloud cluster on your local workstation.");
 
