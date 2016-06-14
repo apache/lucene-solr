@@ -34,7 +34,6 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopScoreDocCollector;

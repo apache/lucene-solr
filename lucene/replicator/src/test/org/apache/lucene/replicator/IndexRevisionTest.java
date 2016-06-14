@@ -29,7 +29,6 @@ import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
 import org.junit.Test;
 

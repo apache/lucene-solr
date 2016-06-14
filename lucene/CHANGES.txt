@@ -13,6 +13,8 @@ Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
 
+* LUCENE-6968: LSH Filter (Tommaso Teofili, Andy Hind, Cao Manh Dat)
+
 ======================= Lucene 6.2.0 =======================
 
 New Features
@@ -39,6 +41,10 @@ Improvements
 * LUCENE-5931: Detect when an application tries to reopen an
   IndexReader after (illegally) removing the old index and
   reindexing (Vitaly Funstein, Robert Muir, Mike McCandless)
+
+Optimizations
+
+* LUCENE-7330: Speed up conjunction queries. (Adrien Grand)
 
 Other
 

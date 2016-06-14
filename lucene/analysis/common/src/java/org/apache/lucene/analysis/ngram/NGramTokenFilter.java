@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
-import org.apache.lucene.analysis.util.CharacterUtils;
 
 /**
  * Tokenizes the input into n-grams of the given size(s).
@@ -56,9 +55,7 @@ public final class NGramTokenFilter extends TokenFilter {
   private int curPosInc, curPosLen;
   private int tokStart;
   private int tokEnd;
-  private boolean hasIllegalOffsets; // only if the length changed before this filter
 
-  private final CharacterUtils charUtils;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncAtt;
   private final PositionLengthAttribute posLenAtt;
@@ -72,7 +69,6 @@ public final class NGramTokenFilter extends TokenFilter {
    */
   public NGramTokenFilter(TokenStream input, int minGram, int maxGram) {
     super(new CodepointCountFilter(input, minGram, Integer.MAX_VALUE));
-    this.charUtils = CharacterUtils.getInstance();
     if (minGram < 1) {
       throw new IllegalArgumentException("minGram must be greater than zero");
     }
@@ -104,16 +100,13 @@ public final class NGramTokenFilter extends TokenFilter {
         } else {
           curTermBuffer = termAtt.buffer().clone();
           curTermLength = termAtt.length();
-          curCodePointCount = charUtils.codePointCount(termAtt);
+          curCodePointCount = Character.codePointCount(termAtt, 0, termAtt.length());
           curGramSize = minGram;
           curPos = 0;
           curPosInc = posIncAtt.getPositionIncrement();
           curPosLen = posLenAtt.getPositionLength();
           tokStart = offsetAtt.startOffset();
           tokEnd = offsetAtt.endOffset();
-          // if length by start + end offsets doesn't match the term text then assume
-          // this is a synonym and don't adjust the offsets.
-          hasIllegalOffsets = (tokStart + curTermLength) != tokEnd;
         }
       }
 
@@ -123,8 +116,8 @@ public final class NGramTokenFilter extends TokenFilter {
       }
       if ((curPos + curGramSize) <= curCodePointCount) {
         clearAttributes();
-        final int start = charUtils.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curPos);
-        final int end = charUtils.offsetByCodePoints(curTermBuffer, 0, curTermLength, start, curGramSize);
+        final int start = Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curPos);
+        final int end = Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, start, curGramSize);
         termAtt.copyBuffer(curTermBuffer, start, end - start);
         posIncAtt.setPositionIncrement(curPosInc);
         curPosInc = 0;

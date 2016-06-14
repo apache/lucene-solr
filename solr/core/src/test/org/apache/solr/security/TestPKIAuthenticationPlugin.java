@@ -17,12 +17,8 @@
 package org.apache.solr.security;
 
 import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import java.io.IOException;
 import java.security.Principal;
 import java.security.PublicKey;
 import java.util.HashMap;
@@ -40,8 +36,6 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
 import org.easymock.EasyMock;
-import org.easymock.IAnswer;
-
 import static org.easymock.EasyMock.getCurrentArguments;
 
 public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {

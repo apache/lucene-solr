@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

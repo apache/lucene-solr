@@ -39,7 +39,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.QueryBuilder;
-import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;

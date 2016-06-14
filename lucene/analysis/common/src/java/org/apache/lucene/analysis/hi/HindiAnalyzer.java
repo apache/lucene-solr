@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.core.DecimalDigitFilter;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.in.IndicNormalizationFilter;
-import org.apache.lucene.util.Version;
 
 /**
  * Analyzer for Hindi.

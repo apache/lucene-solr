@@ -16,8 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.io.IOException;
-import java.io.StringReader;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -29,9 +27,7 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.noggit.CharArr;
-import org.noggit.JSONParser;
 import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
 
 /**
  * This class encapsulates the config overlay json file. It is immutable

@@ -33,7 +33,6 @@ import org.apache.lucene.analysis.util.CharacterUtils;
  * general search matching
  */
 public final class UpperCaseFilter extends TokenFilter {
-  private final CharacterUtils charUtils = CharacterUtils.getInstance();
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   
   /**
@@ -48,7 +47,7 @@ public final class UpperCaseFilter extends TokenFilter {
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      charUtils.toUpperCase(termAtt.buffer(), 0, termAtt.length());
+      CharacterUtils.toUpperCase(termAtt.buffer(), 0, termAtt.length());
       return true;
     } else
       return false;

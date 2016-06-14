@@ -17,7 +17,6 @@
 package org.apache.solr.spelling;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Collection;
 import java.util.regex.Pattern;
 

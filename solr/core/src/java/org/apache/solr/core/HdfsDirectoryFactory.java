@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -409,6 +408,38 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
         + path
         + "/"
         + cd.getDataDir()));
+  }
+  
+  /**
+   * @param directory to calculate size of
+   * @return size in bytes
+   * @throws IOException on low level IO error
+   */
+  @Override
+  public long size(Directory directory) throws IOException {
+    String hdfsDirPath = getPath(directory);
+    return size(hdfsDirPath);
+  }
+  
+  /**
+   * @param path to calculate size of
+   * @return size in bytes
+   * @throws IOException on low level IO error
+   */
+  @Override
+  public long size(String path) throws IOException {
+    Path hdfsDirPath = new Path(path);
+    FileSystem fileSystem = null;
+    try {
+      fileSystem = FileSystem.newInstance(hdfsDirPath.toUri(), getConf());
+      long size = fileSystem.getContentSummary(hdfsDirPath).getLength();
+      return size;
+    } catch (IOException e) {
+      LOG.error("Error checking if hdfs path exists", e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error checking if hdfs path exists", e);
+    } finally {
+      IOUtils.closeQuietly(fileSystem);
+    }
   }
   
   public String getConfDir() {

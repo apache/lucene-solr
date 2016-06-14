@@ -17,7 +17,6 @@
 package org.apache.solr.util.xslt;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 

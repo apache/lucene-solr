@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import java.net.URL;
 
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrInfoMBean.Category;
 
 class MockInfoMBean implements SolrInfoMBean {
   @Override

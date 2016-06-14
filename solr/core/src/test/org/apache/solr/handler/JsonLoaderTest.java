@@ -31,10 +31,6 @@ import org.apache.solr.update.processor.BufferingRequestProcessor;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.ObjectBuilder;
-import org.xml.sax.SAXException;
-
-import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 

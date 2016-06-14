@@ -20,9 +20,7 @@ import java.util.List;
 
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 
 /**

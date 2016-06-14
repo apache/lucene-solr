@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import com.carrotsearch.randomizedtesting.annotations.Seed;
-
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.SentinelIntSet;
 import org.apache.lucene.util.TestUtil;
@@ -42,7 +40,6 @@ import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_NEXT;
 import static org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_START;
 
-import org.apache.solr.search.CursorMark; //jdoc
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

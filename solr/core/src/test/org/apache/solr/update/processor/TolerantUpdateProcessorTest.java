@@ -31,8 +31,6 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.ToleratedUpdateError;
-import org.apache.solr.common.ToleratedUpdateError.CmdType;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.SimpleOrderedMap;

@@ -39,7 +39,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.TestDynamicLoading;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.handler.TestBlobHandler;
-import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.apache.solr.util.SimplePostTool;
 import org.junit.Test;

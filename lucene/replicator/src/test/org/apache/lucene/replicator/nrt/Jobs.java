@@ -19,8 +19,6 @@ package org.apache.lucene.replicator.nrt;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.PriorityQueue;
 
 import org.apache.lucene.store.AlreadyClosedException;

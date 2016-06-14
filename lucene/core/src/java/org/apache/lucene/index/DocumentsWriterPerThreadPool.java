@@ -17,8 +17,6 @@
 package org.apache.lucene.index;
 
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.ThreadInterruptedException;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
@@ -60,6 +58,9 @@ final class DocumentsWriterPerThreadPool {
     // TODO this should really be part of DocumentsWriterFlushControl
     // write access guarded by DocumentsWriterFlushControl
     long bytesUsed = 0;
+
+    // set by DocumentsWriter after each indexing op finishes
+    volatile long lastSeqNo;
 
     ThreadState(DocumentsWriterPerThread dpwt) {
       this.dwpt = dpwt;

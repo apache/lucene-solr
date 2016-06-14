@@ -23,15 +23,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DirectoryReader;
@@ -39,11 +32,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ReferenceManager;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.RAMOutputStream;
-import org.apache.lucene.util.StringHelper;
 
 /** Common base class for {@link PrimaryNode} and {@link ReplicaNode}.
  *

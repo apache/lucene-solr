@@ -17,48 +17,13 @@ package org.apache.lucene.replicator.nrt;
  * limitations under the License.
  */
 
-import java.io.BufferedOutputStream;
-import java.io.Closeable;
-import java.io.EOFException;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.store.DataInput;
-import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.InputStreamDataInput;
-import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.OutputStreamDataOutput;
-import org.apache.lucene.store.OutputStreamIndexOutput;
-import org.apache.lucene.store.RateLimiter;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestUtil;
 
 /** Handles one set of files that need copying, either because we have a
  *  new NRT point, or we are pre-copying merged files for merge warming. */

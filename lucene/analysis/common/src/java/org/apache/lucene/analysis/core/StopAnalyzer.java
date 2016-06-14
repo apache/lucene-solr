@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.core;
 
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.file.Path;

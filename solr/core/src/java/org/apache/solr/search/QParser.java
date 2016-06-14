@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;

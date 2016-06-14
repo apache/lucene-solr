@@ -16,9 +16,6 @@
  */
 package org.apache.lucene.spatial3d;
 
-import java.util.List;
-import java.util.ArrayList;
-
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.PointValues;
@@ -27,12 +24,6 @@ import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.spatial3d.geom.GeoPoint;
 import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
-import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
-import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
-import org.apache.lucene.spatial3d.geom.GeoPolygonFactory;
-import org.apache.lucene.spatial3d.geom.GeoPathFactory;
-import org.apache.lucene.spatial3d.geom.GeoCompositePolygon;
-import org.apache.lucene.spatial3d.geom.GeoPolygon;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;

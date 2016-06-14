@@ -3,25 +3,18 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.OverseerMessageHandler.Lock;
-import org.apache.solr.common.cloud.ClusterState;
-import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;

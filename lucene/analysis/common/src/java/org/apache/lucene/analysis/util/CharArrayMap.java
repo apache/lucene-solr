@@ -40,7 +40,6 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
   private static final CharArrayMap<?> EMPTY_MAP = new EmptyCharArrayMap<>();
 
   private final static int INIT_SIZE = 8;
-  private final CharacterUtils charUtils;
   private boolean ignoreCase;  
   private int count;
   char[][] keys; // package private because used in CharArraySet's non Set-conform CharArraySetIterator
@@ -63,7 +62,6 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
       size <<= 1;
     keys = new char[size][];
     values = (V[]) new Object[size];
-    this.charUtils = CharacterUtils.getInstance();
   }
 
   /**
@@ -86,7 +84,6 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
     this.values = toCopy.values;
     this.ignoreCase = toCopy.ignoreCase;
     this.count = toCopy.count;
-    this.charUtils = toCopy.charUtils;
   }
   
   /** Clears all entries in this map. This method is supported for reusing, but not {@link Map#remove}. */
@@ -192,7 +189,7 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
    */
   public V put(char[] text, V value) {
     if (ignoreCase) {
-      charUtils.toLowerCase(text, 0, text.length);
+      CharacterUtils.toLowerCase(text, 0, text.length);
     }
     int slot = getSlot(text, 0, text.length);
     if (keys[slot] != null) {
@@ -237,8 +234,8 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
     final int limit = off+len;
     if (ignoreCase) {
       for(int i=0;i<len;) {
-        final int codePointAt = charUtils.codePointAt(text1, off+i, limit);
-        if (Character.toLowerCase(codePointAt) != charUtils.codePointAt(text2, i, text2.length))
+        final int codePointAt = Character.codePointAt(text1, off+i, limit);
+        if (Character.toLowerCase(codePointAt) != Character.codePointAt(text2, i, text2.length))
           return false;
         i += Character.charCount(codePointAt); 
       }
@@ -257,8 +254,8 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
       return false;
     if (ignoreCase) {
       for(int i=0;i<len;) {
-        final int codePointAt = charUtils.codePointAt(text1, i);
-        if (Character.toLowerCase(codePointAt) != charUtils.codePointAt(text2, i, text2.length))
+        final int codePointAt = Character.codePointAt(text1, i);
+        if (Character.toLowerCase(codePointAt) != Character.codePointAt(text2, i, text2.length))
           return false;
         i += Character.charCount(codePointAt);
       }
@@ -278,7 +275,7 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
     final int stop = offset + len;
     if (ignoreCase) {
       for (int i=offset; i<stop;) {
-        final int codePointAt = charUtils.codePointAt(text, i, stop);
+        final int codePointAt = Character.codePointAt(text, i, stop);
         code = code*31 + Character.toLowerCase(codePointAt);
         i += Character.charCount(codePointAt);
       }
@@ -297,7 +294,7 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
     int len = text.length();
     if (ignoreCase) {
       for (int i=0; i<len;) {
-        int codePointAt = charUtils.codePointAt(text, i);
+        int codePointAt = Character.codePointAt(text, i);
         code = code*31 + Character.toLowerCase(codePointAt);
         i += Character.charCount(codePointAt);
       }

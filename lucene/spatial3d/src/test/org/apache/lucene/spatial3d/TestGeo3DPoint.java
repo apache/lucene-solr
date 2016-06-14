@@ -58,7 +58,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.spatial3d.geom.GeoArea;
 import org.apache.lucene.spatial3d.geom.GeoAreaFactory;
-import org.apache.lucene.spatial3d.geom.GeoBBox;
 import org.apache.lucene.spatial3d.geom.GeoBBoxFactory;
 import org.apache.lucene.spatial3d.geom.GeoCircleFactory;
 import org.apache.lucene.spatial3d.geom.GeoPathFactory;

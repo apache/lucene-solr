@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.util.RESTfulServerProvider;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;

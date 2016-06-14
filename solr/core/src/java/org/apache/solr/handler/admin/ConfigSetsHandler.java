@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.SolrException;

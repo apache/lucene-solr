@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.Collection;
 import java.util.List;
 import java.util.SortedSet;
-import java.util.Iterator;
 
 /**
  * Keeps only the last value of fields matching the specified 

@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
-import org.apache.lucene.analysis.util.CharacterUtils;
 
 /**
  * Tokenizes the given token into n-grams of given size(s).
@@ -38,7 +37,6 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   public static final int DEFAULT_MAX_GRAM_SIZE = 1;
   public static final int DEFAULT_MIN_GRAM_SIZE = 1;
 
-  private final CharacterUtils charUtils;
   private final int minGram;
   private final int maxGram;
   private char[] curTermBuffer;
@@ -73,7 +71,6 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
       throw new IllegalArgumentException("minGram must not be greater than maxGram");
     }
 
-    this.charUtils = CharacterUtils.getInstance();
     this.minGram = minGram;
     this.maxGram = maxGram;
   }
@@ -87,7 +84,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
         } else {
           curTermBuffer = termAtt.buffer().clone();
           curTermLength = termAtt.length();
-          curCodePointCount = charUtils.codePointCount(termAtt);
+          curCodePointCount = Character.codePointCount(termAtt, 0, termAtt.length());
           curGramSize = minGram;
           tokStart = offsetAtt.startOffset();
           tokEnd = offsetAtt.endOffset();
@@ -108,7 +105,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
             posIncrAtt.setPositionIncrement(0);
           }
           posLenAtt.setPositionLength(savePosLen);
-          final int charLength = charUtils.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curGramSize);
+          final int charLength = Character.offsetByCodePoints(curTermBuffer, 0, curTermLength, 0, curGramSize);
           termAtt.copyBuffer(curTermBuffer, 0, charLength);
           curGramSize++;
           return true;

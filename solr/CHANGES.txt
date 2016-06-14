@@ -47,9 +47,14 @@ Optimizations
 
 ==================  6.2.0 ==================
 
-
-Upgrading from Solr any prior release
-----------------------
+Versions of Major Components
+---------------------
+Apache Tika 1.7
+Carrot2 3.12.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.8.v20160314
 
 Detailed Change List
 ----------------------
@@ -61,7 +66,6 @@ New Features
 
 * SOLR-8048: bin/solr script should support basic auth credentials provided in solr.in.sh (noble)
 
-
 Bug Fixes
 ----------------------
 
@@ -69,7 +73,21 @@ Bug Fixes
 
 * SOLR-9199: ZkController#publishAndWaitForDownStates logic is inefficient (Hrishikesh Gadre)
 
+* SOLR-9161: Change SolrPluginUtils.invokeSetters implementation to accommodate setter variants.
+  (Christine Poerschke, Steve Rowe, Uwe Schindler)
+
 ==================  6.1.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.7
+Carrot2 3.12.0
+Velocity 1.7 and Velocity Tools 2.0
+Apache UIMA 2.3.1
+Apache ZooKeeper 3.4.6
+Jetty 9.3.8.v20160314
 
 Upgrading from Solr any prior release
 ----------------------
@@ -252,6 +270,8 @@ Optimizations
 * SOLR-9147: Upgrade commons-io to 2.5, avoid expensive array resizing in EmbeddedSolrServer (Mikhail Khludnev)
 
 * SOLR-8744: Overseer operations performed with fine grained mutual exclusion (noble, Scott Blum)
+
+* SOLR-9204: Improve performance of getting directory size with hdfs. (Mark Miller)
 
 Other Changes
 ----------------------

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.common.params.CommonParams;

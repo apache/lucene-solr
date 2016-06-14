@@ -25,7 +25,7 @@ import java.util.List;
 /** Scorer for conjunctions, sets of queries, all of which are required. */
 class ConjunctionScorer extends Scorer {
 
-  final ConjunctionDISI disi;
+  final DocIdSetIterator disi;
   final Scorer[] scorers;
   final float coord;
 
@@ -44,7 +44,7 @@ class ConjunctionScorer extends Scorer {
 
   @Override
   public TwoPhaseIterator twoPhaseIterator() {
-    return disi.asTwoPhaseIterator();
+    return TwoPhaseIterator.unwrap(disi);
   }
 
   @Override

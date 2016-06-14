@@ -30,7 +30,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.BinaryQueryResponseWriter;
 import org.apache.solr.response.BinaryResponseWriter.Resolver;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;

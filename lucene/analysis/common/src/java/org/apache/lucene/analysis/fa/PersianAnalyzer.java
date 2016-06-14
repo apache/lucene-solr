@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
-import org.apache.lucene.util.Version;
 
 /**
  * {@link Analyzer} for Persian.

@@ -26,9 +26,7 @@ import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 import java.io.IOException;

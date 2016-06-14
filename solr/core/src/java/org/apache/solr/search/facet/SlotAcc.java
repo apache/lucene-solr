@@ -17,17 +17,9 @@
 package org.apache.solr.search.facet;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.LongValues;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;

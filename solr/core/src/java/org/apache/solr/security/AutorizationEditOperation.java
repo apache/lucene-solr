@@ -5,12 +5,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.solr.util.CommandOperation;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.getDeepCopy;
 import static org.apache.solr.handler.admin.SecurityConfHandler.getListValue;
 import static org.apache.solr.handler.admin.SecurityConfHandler.getMapValue;

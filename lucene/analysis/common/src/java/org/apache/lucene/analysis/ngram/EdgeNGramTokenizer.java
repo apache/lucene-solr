@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.ngram;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.Version;
 
 /**
  * Tokenizes the input from an edge into n-grams of given size(s).

@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -33,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyIterator;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;

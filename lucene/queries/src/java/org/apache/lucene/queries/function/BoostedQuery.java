@@ -31,7 +31,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.ToStringUtils;
 
 /**
  * Query that is boosted by a ValueSource

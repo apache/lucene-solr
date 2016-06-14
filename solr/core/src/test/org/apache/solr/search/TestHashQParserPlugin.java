@@ -16,18 +16,13 @@
  */
 package org.apache.solr.search;
 
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.lucene.util.BytesRef;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.Random;
 

@@ -17,7 +17,6 @@
 package org.apache.lucene.analysis.commongrams;
 
 
-import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.TestStopFilter;
@@ -26,8 +25,6 @@ import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.util.Version;
-
-import java.io.StringReader;
 
 /**
  * Tests pretty much copied from StopFilterFactoryTest We use the test files

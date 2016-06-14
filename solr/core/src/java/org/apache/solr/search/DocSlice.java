@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 

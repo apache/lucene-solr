@@ -150,7 +150,6 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
    *         or false if maxMS wait time was exceeded
    */
   public synchronized boolean waitForGeneration(long targetGen, int maxMS) throws InterruptedException {
-    final long curGen = writer.getLastSequenceNumber();
     if (targetGen > searchingGen) {
       // Notify the reopen thread that the waitingGen has
       // changed, so it may wake up and realize it should
@@ -232,7 +231,7 @@ public class ControlledRealTimeReopenThread<T> extends Thread implements Closeab
       // Save the gen as of when we started the reopen; the
       // listener (HandleRefresh above) copies this to
       // searchingGen once the reopen completes:
-      refreshStartGen = writer.getLastSequenceNumber();
+      refreshStartGen = writer.getMaxCompletedSequenceNumber();
       try {
         manager.maybeRefreshBlocking();
       } catch (IOException ioe) {

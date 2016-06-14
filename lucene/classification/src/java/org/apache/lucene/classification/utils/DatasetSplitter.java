@@ -18,8 +18,6 @@ package org.apache.lucene.classification.utils;
 
 
 import java.io.IOException;
-import java.util.HashMap;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
