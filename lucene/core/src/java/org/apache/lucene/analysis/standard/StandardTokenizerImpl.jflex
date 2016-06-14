@@ -81,14 +81,19 @@ ComplexContextEx    = \p{LB:Complex_Context}                                    
    */
   public static final int SOUTH_EAST_ASIAN_TYPE = StandardTokenizer.SOUTHEAST_ASIAN;
   
+  /** Idiographic token type */
   public static final int IDEOGRAPHIC_TYPE = StandardTokenizer.IDEOGRAPHIC;
   
+  /** Hiragana token type */
   public static final int HIRAGANA_TYPE = StandardTokenizer.HIRAGANA;
   
+  /** Katakana token type */
   public static final int KATAKANA_TYPE = StandardTokenizer.KATAKANA;
-  
+
+  /** Hangul token type */
   public static final int HANGUL_TYPE = StandardTokenizer.HANGUL;
 
+  /** Character count processed so far */
   public final int yychar()
   {
     return yychar;

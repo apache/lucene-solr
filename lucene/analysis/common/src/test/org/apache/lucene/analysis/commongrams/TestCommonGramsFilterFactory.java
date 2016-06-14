@@ -17,17 +17,17 @@
 package org.apache.lucene.analysis.commongrams;
 
 
+import java.io.StringReader;
+
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.TestStopFilter;
+import org.apache.lucene.analysis.core.TestStopFilterFactory;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.util.Version;
-
-import java.io.StringReader;
 
 /**
  * Tests pretty much copied from StopFilterFactoryTest We use the test files
@@ -37,7 +37,7 @@ import java.io.StringReader;
 public class TestCommonGramsFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testInform() throws Exception {
-    ResourceLoader loader = new ClasspathResourceLoader(TestStopFilter.class);
+    ResourceLoader loader = new ClasspathResourceLoader(TestStopFilterFactory.class);
     assertTrue("loader is null and it shouldn't be", loader != null);
     CommonGramsFilterFactory factory = (CommonGramsFilterFactory) tokenFilterFactory("CommonGrams", Version.LATEST, loader,
         "words", "stop-1.txt", 

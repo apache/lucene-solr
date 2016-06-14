@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.commongrams;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.StopAnalyzer;

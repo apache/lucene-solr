@@ -26,7 +26,8 @@ import org.apache.lucene.analysis.TokenStream;
  * Normalizes tokens extracted with {@link StandardTokenizer}.
  */
 public class StandardFilter extends TokenFilter {
-  
+
+  /** Sole constructor */
   public StandardFilter(TokenStream in) {
     super(in);
   }

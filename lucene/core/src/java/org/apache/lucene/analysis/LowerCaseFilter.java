@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.core;
+package org.apache.lucene.analysis;
 
 
 import java.io.IOException;
@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.CharacterUtils;
+import org.apache.lucene.analysis.CharacterUtils;
 
 /**
  * Normalizes token text to lower case.

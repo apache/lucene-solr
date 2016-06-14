@@ -16,12 +16,11 @@
  */
 package org.apache.lucene.analysis.commongrams;
 
-
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.core.TestStopFilter;
+import org.apache.lucene.analysis.core.TestStopFilterFactory;
 import org.apache.lucene.analysis.util.BaseTokenStreamFactoryTestCase;
-import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ClasspathResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.util.Version;
@@ -34,7 +33,7 @@ import org.apache.lucene.util.Version;
 public class TestCommonGramsQueryFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   public void testInform() throws Exception {
-    ResourceLoader loader = new ClasspathResourceLoader(TestStopFilter.class);
+    ResourceLoader loader = new ClasspathResourceLoader(TestStopFilterFactory.class);
     assertTrue("loader is null and it shouldn't be", loader != null);
     CommonGramsQueryFilterFactory factory = (CommonGramsQueryFilterFactory) tokenFilterFactory("CommonGramsQuery", Version.LATEST, loader,
         "words", "stop-1.txt", 

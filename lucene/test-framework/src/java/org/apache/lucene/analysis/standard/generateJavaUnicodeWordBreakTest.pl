@@ -40,7 +40,7 @@ $underscore_version =~ s/\./_/g;
 my $class_name = "WordBreakTestUnicode_${underscore_version}";
 my $output_filename = "${class_name}.java";
 my $header =<<"__HEADER__";
-package org.apache.lucene.analysis.core;
+package org.apache.lucene.analysis;
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more

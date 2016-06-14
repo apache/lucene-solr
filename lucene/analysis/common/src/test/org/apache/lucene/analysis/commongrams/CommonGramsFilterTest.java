@@ -20,9 +20,9 @@ import java.io.StringReader;
 import java.util.Arrays;
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.util.CharArraySet;
 
 /**
  * Tests CommonGrams(Query)Filter

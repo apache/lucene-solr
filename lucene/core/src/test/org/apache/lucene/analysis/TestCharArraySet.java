@@ -14,11 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.analysis.util;
+package org.apache.lucene.analysis;
 
 
 import java.util.*;
 
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.LuceneTestCase;
 
 
