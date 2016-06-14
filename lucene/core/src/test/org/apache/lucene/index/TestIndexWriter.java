@@ -939,10 +939,6 @@ public class TestIndexWriter extends LuceneTestCase {
       // LUCENE-2239: won't work with NIOFS/MMAP
       MockDirectoryWrapper dir = new MockDirectoryWrapper(random, new RAMDirectory());
 
-      // When interrupt arrives in w.close(), this can
-      // lead to double-write of files:
-      dir.setPreventDoubleWrite(false);
-      
       // open/close slowly sometimes
       dir.setUseSlowOpenClosers(true);
       

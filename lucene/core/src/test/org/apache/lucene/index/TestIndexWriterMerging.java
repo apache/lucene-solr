@@ -28,7 +28,6 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestIndexWriterMerging extends LuceneTestCase {
@@ -359,10 +358,6 @@ public class TestIndexWriterMerging extends LuceneTestCase {
   @Slow
   public void testNoWaitClose() throws Throwable {
     Directory directory = newDirectory();
-
-    if (directory instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper) directory).setPreventDoubleWrite(false);
-    }
 
     final Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_NOT_STORED);

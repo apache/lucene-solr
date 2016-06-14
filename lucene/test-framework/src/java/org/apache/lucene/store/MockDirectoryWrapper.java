@@ -76,7 +76,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   double randomIOExceptionRateOnOpen;
   Random randomState;
   boolean assertNoDeleteOpenFile = false;
-  boolean preventDoubleWrite = true;
   boolean trackDiskUsage = false;
   boolean useSlowOpenClosers = LuceneTestCase.TEST_NIGHTLY;
   boolean allowRandomFileNotFoundException = true;
@@ -144,12 +143,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   public void setTrackDiskUsage(boolean v) {
     trackDiskUsage = v;
-  }
-
-  /** If set to true, we throw an IOException if the same
-   *  file is opened by createOutput, ever. */
-  public void setPreventDoubleWrite(boolean value) {
-    preventDoubleWrite = value;
   }
 
   /** If set to true (the default), when we throw random
@@ -240,6 +233,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           unSyncedFiles.add(dest);
         }
         openFilesDeleted.remove(source);
+        createdFiles.remove(source);
         createdFiles.add(dest);
       }
     }
@@ -622,7 +616,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
     init();
     synchronized(this) {
-      if (preventDoubleWrite && createdFiles.contains(name) && !name.equals("segments.gen")) {
+      if (createdFiles.contains(name) && !name.equals("segments.gen")) {
         throw new IOException("file \"" + name + "\" was already written to");
       }
     }
@@ -639,7 +633,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       RAMFile existing = ramdir.fileMap.get(name);
     
       // Enforce write once:
-      if (existing!=null && !name.equals("segments.gen") && preventDoubleWrite) {
+      if (existing!=null && !name.equals("segments.gen")) {
         throw new IOException("file " + name + " already exists");
       } else {
         if (existing!=null) {

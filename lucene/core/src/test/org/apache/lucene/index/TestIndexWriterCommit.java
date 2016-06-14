@@ -139,12 +139,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
                                     .setOpenMode(OpenMode.APPEND)
                                     .setMaxBufferedDocs(10));
 
-    // On abort, writer in fact may write to the same
-    // segments_N file:
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
-    }
-
     for(int i=0;i<12;i++) {
       for(int j=0;j<17;j++) {
         TestIndexWriter.addDoc(writer);
@@ -263,12 +257,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
    */
   public void testCommitOnCloseForceMerge() throws IOException {
     Directory dir = newDirectory();
-    // Must disable throwing exc on double-write: this
-    // test uses IW.rollback which easily results in
-    // writing to same file more than once
-    if (dir instanceof MockDirectoryWrapper) {
-      ((MockDirectoryWrapper)dir).setPreventDoubleWrite(false);
-    }
     IndexWriter writer = new IndexWriter(
         dir,
         newIndexWriterConfig(new MockAnalyzer(random()))
@@ -554,14 +542,6 @@ public class TestIndexWriterCommit extends LuceneTestCase {
   // LUCENE-1274: test writer.prepareCommit()
   public void testPrepareCommitRollback() throws IOException {
     Directory dir = newDirectory();
-
-    MockDirectoryWrapper mockDir;
-    if (dir instanceof MockDirectoryWrapper) {
-      mockDir = (MockDirectoryWrapper) dir;
-      mockDir.setPreventDoubleWrite(false);
-    } else {
-      mockDir = null;
-    }
 
     IndexWriter writer = new IndexWriter(
         dir,

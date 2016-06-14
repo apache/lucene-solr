@@ -25,7 +25,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -158,10 +157,6 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
 
   public void testRandom() throws Exception {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // Since we rollback writer we can easily try to write to the same filenames:
-      ((MockDirectoryWrapper) dir).setPreventDoubleWrite(false);
-    }
 
     int numOps = atLeast(100);
 
@@ -293,10 +288,6 @@ public class TestIndexWriterFromReader extends LuceneTestCase {
 
   public void testConsistentFieldNumbers() throws Exception {
     Directory dir = newDirectory();
-    if (dir instanceof MockDirectoryWrapper) {
-      // Since we use IW.rollback and then open another, the 2nd IW can easily write to the same segment name:
-      ((MockDirectoryWrapper) dir).setPreventDoubleWrite(false);
-    }
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
     // Empty first commit:
     w.commit();
