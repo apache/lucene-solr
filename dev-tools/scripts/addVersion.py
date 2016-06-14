@@ -20,8 +20,10 @@ from scriptutil import *
 
 import argparse
 import re
+from configparser import ConfigParser, ExtendedInterpolation
+from textwrap import dedent
 
-def update_changes(filename, new_version):
+def update_changes(filename, new_version, init_changes = '(No Changes)\n\n'):
   print('  adding new section to %s...' % filename, end='', flush=True)
   matcher = re.compile(r'\d+\.\d+\.\d+\s+===')
   def edit(buffer, match, line):
@@ -30,7 +32,7 @@ def update_changes(filename, new_version):
     match = new_version.previous_dot_matcher.search(line)
     if match is not None:
       buffer.append(line.replace(match.group(0), new_version.dot))
-      buffer.append('(No Changes)\n\n')
+      buffer.append(init_changes)
     buffer.append(line)
     return match is not None
      
@@ -184,14 +186,38 @@ def read_config():
   print ("branch_type is %s " % c.branch_type)
 
   return c
+
+# Hack ConfigParser, designed to parse INI files, to parse & interpolate Java .properties files
+def parse_properties_file(filename):
+  contents = open(filename, encoding='ISO-8859-1').read().replace('%', '%%') # Escape interpolation metachar
+  parser = ConfigParser(interpolation=ExtendedInterpolation())               # Handle ${property-name} interpolation
+  parser.read_string("[DUMMY_SECTION]\n" + contents)                         # Add required section
+  return dict(parser.items('DUMMY_SECTION'))
+
+def get_solr_init_changes():
+  return dedent('''
+    Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+    Versions of Major Components
+    ---------------------
+    Apache Tika %(org.apache.tika.version)s
+    Carrot2 %(/org.carrot2/carrot2-mini)s
+    Velocity %(/org.apache.velocity/velocity)s and Velocity Tools %(/org.apache.velocity/velocity-tools)s
+    Apache UIMA %(org.apache.uima.version)s
+    Apache ZooKeeper %(/org.apache.zookeeper/zookeeper)s
+    Jetty %(org.eclipse.jetty.version)s
+
+
+    (No Changes)\n\n
+    ''' % parse_properties_file('lucene/ivy-versions.properties'))
   
 def main():
   c = read_config() 
 
   print('\nAdding new version %s' % c.version)
   update_changes('lucene/CHANGES.txt', c.version)
-  update_changes('solr/CHANGES.txt', c.version)
-  add_constant(c.version, not c.matching_branch) 
+  update_changes('solr/CHANGES.txt', c.version, get_solr_init_changes())
+  add_constant(c.version, not c.matching_branch)
 
   if c.matching_branch:
     print('\nUpdating latest version')
