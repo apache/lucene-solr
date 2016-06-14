@@ -13,6 +13,8 @@ Other
 
 * LUCENE-7328: Remove LegacyNumericEncoding from GeoPointField. (Nick Knize)
 
+* LUCENE-6968: LSH Filter (Tommaso Teofili, Andy Hind, Cao Manh Dat)
+
 ======================= Lucene 6.2.0 =======================
 
 New Features
