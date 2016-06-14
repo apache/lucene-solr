@@ -11,6 +11,8 @@ Bug Fixes
 
 New Features
 
+* LUCENE-6968: LSH Filter (Tommaso Teofili, Andy Hind, Cao Manh Dat)
+
 * LUCENE-7302: IndexWriter methods that change the index now return a
   long "sequence number" indicating the effective equivalent
   single-threaded execution order (Mike McCandless)
