@@ -122,7 +122,7 @@ final class DocumentsWriter implements Closeable, Accountable {
   final DocumentsWriterFlushControl flushControl;
   private final IndexWriter writer;
   private final Queue<Event> events;
-
+  private long lastSeqNo;
   
   DocumentsWriter(IndexWriter writer, LiveIndexWriterConfig config, Directory directoryOrig, Directory directory) {
     this.directoryOrig = directoryOrig;
@@ -144,6 +144,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     if (applyAllDeletes(deleteQueue)) {
       seqNo = -seqNo;
     }
+    lastSeqNo = Math.max(lastSeqNo, seqNo);
     return seqNo;
   }
 
@@ -158,6 +159,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     if (applyAllDeletes(deleteQueue)) {
       seqNo = -seqNo;
     }
+    lastSeqNo = Math.max(lastSeqNo, seqNo);
     return seqNo;
   }
 
@@ -168,7 +170,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     if (applyAllDeletes(deleteQueue)) {
       seqNo = -seqNo;
     }
-
+    lastSeqNo = Math.max(lastSeqNo, seqNo);
     return seqNo;
   }
   
@@ -317,6 +319,17 @@ final class DocumentsWriter implements Closeable, Accountable {
     }
   }
 
+  /** returns the maximum sequence number for all previously completed operations */
+  public long getMaxCompletedSequenceNumber() {
+    long value = lastSeqNo;
+    int limit = perThreadPool.getMaxThreadStates();
+    for(int i = 0; i < limit; i++) {
+      ThreadState perThread = perThreadPool.getThreadState(i);
+      value = Math.max(value, perThread.lastSeqNo);
+    }
+    return value;
+  }
+
   boolean anyChanges() {
     /*
      * changes are either in a DWPT or in the deleteQueue.
@@ -413,7 +426,7 @@ final class DocumentsWriter implements Closeable, Accountable {
 
     final ThreadState perThread = flushControl.obtainAndLock();
     final DocumentsWriterPerThread flushingDWPT;
-    final long seqNo;
+    long seqNo;
 
     try {
       // This must happen after we've pulled the ThreadState because IW.close
@@ -437,15 +450,18 @@ final class DocumentsWriter implements Closeable, Accountable {
       }
       final boolean isUpdate = delTerm != null;
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
+
+      assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
+      perThread.lastSeqNo = seqNo;
+
     } finally {
       perThreadPool.release(perThread);
     }
 
     if (postUpdate(flushingDWPT, hasEvents)) {
-      return -seqNo;
-    } else {
-      return seqNo;
+      seqNo = -seqNo;
     }
+    return seqNo;
   }
 
   long updateDocument(final Iterable<? extends IndexableField> doc, final Analyzer analyzer,
@@ -456,7 +472,7 @@ final class DocumentsWriter implements Closeable, Accountable {
     final ThreadState perThread = flushControl.obtainAndLock();
 
     final DocumentsWriterPerThread flushingDWPT;
-    final long seqNo;
+    long seqNo;
     try {
       // This must happen after we've pulled the ThreadState because IW.close
       // waits for all ThreadStates to be released:
@@ -479,15 +495,19 @@ final class DocumentsWriter implements Closeable, Accountable {
       }
       final boolean isUpdate = delTerm != null;
       flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
+
+      assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
+      perThread.lastSeqNo = seqNo;
+
     } finally {
       perThreadPool.release(perThread);
     }
 
     if (postUpdate(flushingDWPT, hasEvents)) {
-      return -seqNo;
-    } else {
-      return seqNo;
+      seqNo = -seqNo;
     }
+    
+    return seqNo;
   }
 
   private boolean doFlush(DocumentsWriterPerThread flushingDWPT) throws IOException, AbortingException {

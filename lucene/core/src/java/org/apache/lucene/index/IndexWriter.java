@@ -1457,7 +1457,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
             changed();
           }
           //System.out.println("  yes " + info.info.name + " " + docID);
-
           return docWriter.deleteQueue.getNextSequenceNumber();
         }
       } else {
@@ -5049,12 +5048,13 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
     };
   }
 
-  /** Returns the last <a href="#sequence_number">sequence number</a>, or 0
-   *  if no index-changing operations have completed yet.
+  /** Returns the highest <a href="#sequence_number">sequence number</a> across
+   *  all completed operations, or 0 if no operations have finished yet.  Still
+   *  in-flight operations (in other threads) are not counted until they finish.
    *
    * @lucene.experimental */
-  public long getLastSequenceNumber() {
+  public long getMaxCompletedSequenceNumber() {
     ensureOpen();
-    return docWriter.deleteQueue.getLastSequenceNumber();
+    return docWriter.getMaxCompletedSequenceNumber();
   }
 }

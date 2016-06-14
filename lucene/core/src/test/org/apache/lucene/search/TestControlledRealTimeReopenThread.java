@@ -98,13 +98,13 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     // Randomly verify the update "took":
     if (random().nextInt(20) == 2) {
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: verify " + id);
+        System.out.println(Thread.currentThread().getName() + ": nrt: verify updateDocuments " + id + " gen=" + gen);
       }
       nrtDeletesThread.waitForGeneration(gen);
       assertTrue(gen <= nrtDeletesThread.getSearchingGen());
       final IndexSearcher s = nrtDeletes.acquire();
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: got searcher=" + s);
+        System.out.println(Thread.currentThread().getName() + ": nrt: got deletes searcher=" + s);
       }
       try {
         assertEquals(docs.size(), s.search(new TermQuery(id), 10).totalHits);
@@ -122,13 +122,13 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     // Randomly verify the add "took":
     if (random().nextInt(20) == 2) {
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: verify " + id);
+        System.out.println(Thread.currentThread().getName() + ": nrt: verify addDocuments " + id + " gen=" + gen);
       }
       nrtNoDeletesThread.waitForGeneration(gen);
       assertTrue(gen <= nrtNoDeletesThread.getSearchingGen());
       final IndexSearcher s = nrtNoDeletes.acquire();
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: got searcher=" + s);
+        System.out.println(Thread.currentThread().getName() + ": nrt: got noDeletes searcher=" + s);
       }
       try {
         assertEquals(docs.size(), s.search(new TermQuery(id), 10).totalHits);
@@ -146,13 +146,13 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     // Randomly verify the add "took":
     if (random().nextInt(20) == 2) {
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: verify " + id);
+        System.out.println(Thread.currentThread().getName() + ": nrt: verify addDocument " + id + " gen=" + gen);
       }
       nrtNoDeletesThread.waitForGeneration(gen);
       assertTrue(gen <= nrtNoDeletesThread.getSearchingGen());
       final IndexSearcher s = nrtNoDeletes.acquire();
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: got searcher=" + s);
+        System.out.println(Thread.currentThread().getName() + ": nrt: got noDeletes searcher=" + s);
       }
       try {
         assertEquals(1, s.search(new TermQuery(id), 10).totalHits);
@@ -169,13 +169,13 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     // Randomly verify the udpate "took":
     if (random().nextInt(20) == 2) {
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: verify " + id);
+        System.out.println(Thread.currentThread().getName() + ": nrt: verify updateDocument " + id + " gen=" + gen);
       }
       nrtDeletesThread.waitForGeneration(gen);
       assertTrue(gen <= nrtDeletesThread.getSearchingGen());
       final IndexSearcher s = nrtDeletes.acquire();
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: got searcher=" + s);
+        System.out.println(Thread.currentThread().getName() + ": nrt: got deletes searcher=" + s);
       }
       try {
         assertEquals(1, s.search(new TermQuery(id), 10).totalHits);
@@ -192,13 +192,13 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
     // randomly verify the delete "took":
     if (random().nextInt(20) == 7) {
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: verify del " + id);
+        System.out.println(Thread.currentThread().getName() + ": nrt: verify deleteDocuments " + id + " gen=" + gen);
       }
       nrtDeletesThread.waitForGeneration(gen);
       assertTrue(gen <= nrtDeletesThread.getSearchingGen());
       final IndexSearcher s = nrtDeletes.acquire();
       if (VERBOSE) {
-        System.out.println(Thread.currentThread().getName() + ": nrt: got searcher=" + s);
+        System.out.println(Thread.currentThread().getName() + ": nrt: got deletes searcher=" + s);
       }
       try {
         assertEquals(0, s.search(new TermQuery(id), 10).totalHits);
