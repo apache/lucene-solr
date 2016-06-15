@@ -265,17 +265,14 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
   static List<UpdateRequestProcessorFactory> getReqProcessors(String processor, SolrCore core) {
     if (processor == null) return Collections.EMPTY_LIST;
     List<UpdateRequestProcessorFactory> result = new ArrayList<>();
-    if (processor != null) {
-      List<String> names = StrUtils.splitSmart(processor, ',');
-      List<UpdateRequestProcessorFactory> l = new ArrayList<>(names.size());
-      for (String s : names) {
-        s = s.trim();
-        if (s.isEmpty()) continue;
-        UpdateRequestProcessorFactory p = core.getUpdateProcessors().get(s);
-        if (p == null)
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such processor " + s);
-        result.add(p);
-      }
+    List<String> names = StrUtils.splitSmart(processor, ',');
+    for (String s : names) {
+      s = s.trim();
+      if (s.isEmpty()) continue;
+      UpdateRequestProcessorFactory p = core.getUpdateProcessors().get(s);
+      if (p == null)
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No such processor " + s);
+      result.add(p);
     }
     return result;
   }
