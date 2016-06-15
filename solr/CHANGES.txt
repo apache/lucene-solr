@@ -34,9 +34,6 @@ Other Changes
 * SOLR-8677: Prevent shards containing invalid characters from being created.  Checks added server-side
   and in SolrJ.  (Shai Erera, Jason Gerlowski, Anshum Gupta)
 
-* SOLR-8857: HdfsUpdateLog does not use configured or new default number of version buckets and is
-  hard coded to 256. (Mark Miller, yonik, Gregory Chanan)
-
 ======================= 5.5.1 =======================
 
 Bug Fixes
