@@ -76,6 +76,12 @@ Bug Fixes
 * SOLR-9161: Change SolrPluginUtils.invokeSetters implementation to accommodate setter variants.
   (Christine Poerschke, Steve Rowe, Uwe Schindler)
 
+Other Changes
+----------------------
+
+* SOLR-9195: Remove unnecessary allocation and null check in UpdateRequestProcessorChain's
+  getReqProcessors method. (Christine Poerschke)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
