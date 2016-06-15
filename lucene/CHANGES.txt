@@ -23,6 +23,8 @@ Bug fixes
 
 * LUCENE-7209: Fixed explanations of FunctionScoreQuery. (Adrien Grand)
 
+* LUCENE-7279: JapaneseTokenizer throws ArrayIndexOutOfBoundsException
+  on some valid inputs (Mike McCandless)
 
 ======================= Lucene 5.5.0 =======================
 
