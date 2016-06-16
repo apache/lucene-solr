@@ -38,6 +38,11 @@ Bug Fixes
   one update batch could be applied in the wrong order resulting in
   the wrong updated value (Ishan Chattopadhyaya, hossman, Mike McCandless)
 
+* LUCENE-7132: BooleanQuery sometimes assigned too-low scores in cases
+  where ranges of documents had only a single clause matching while
+  other ranges had more than one clause matching (Ahmet Arslan,
+  hossman, Mike McCandless)
+
 ======================= Lucene 5.5.1 =======================
 
 Bug fixes
