@@ -6,10 +6,6 @@ http://s.apache.org/luceneversions
 ======================= Lucene 5.6.0 =======================
 (No Changes)
 
-* LUCENE-7301: Multiple doc values updates to the same document within
-  one update batch could be applied in the wrong order resulting in
-  the wrong updated value (Ishan Chattopadhyaya, hossman, Mike McCandless)
-
 ======================= Lucene 5.5.1 =======================
 
 Bug Fixes
