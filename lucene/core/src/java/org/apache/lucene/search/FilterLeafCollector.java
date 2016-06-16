@@ -45,7 +45,12 @@ public class FilterLeafCollector implements LeafCollector {
 
   @Override
   public String toString() {
-    return getClass().getSimpleName() + "(" + in + ")";
+    String name = getClass().getSimpleName();
+    if (name.length() == 0) {
+      // an anonoymous subclass will have empty name?
+      name = "FilterLeafCollector";
+    }
+    return name + "(" + in + ")";
   }
 
 }
