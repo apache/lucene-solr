@@ -27,6 +27,7 @@ import java.util.Set;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpException;
@@ -53,7 +54,16 @@ public class Krb5HttpClientConfigurer extends HttpClientConfigurer {
   public static final String LOGIN_CONFIG_PROP = "java.security.auth.login.config";
   private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
-  private static final Configuration jaasConfig = new SolrJaasConfiguration();
+  private static Configuration jaasConfig = new SolrJaasConfiguration();
+
+  /**
+   * The jaasConfig is static, which makes it problematic for testing in the same jvm.
+   * Call this function to regenerate the static config (this is not thread safe).
+   */
+  @VisibleForTesting
+  public static void regenerateJaasConfiguration() {
+    jaasConfig = new SolrJaasConfiguration();
+  }
 
   public void configure(DefaultHttpClient httpClient, SolrParams config) {
     super.configure(httpClient, config);

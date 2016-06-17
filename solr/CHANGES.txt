@@ -74,6 +74,9 @@ New Features
 * SOLR-9279: New boolean comparison function queries comparing numeric arguments: gt, gte, lt, lte, eq
   (Doug Turnbull, David Smiley)
 
+* SOLR-9200: Add Delegation Token Support to Solr.
+  (Gregory Chanan)
+
 Bug Fixes
 ----------------------
 
