@@ -33,6 +33,7 @@
          (except slf4j-api, commons-codec, commons-logging, commons-httpclient, geronimo-stax-api_1.0_spec, jcip-annotations, xml-apis, asm)
          WARNING: Don't add netcdf / unidataCommon (partially LGPL code) -->
     <dependency org="com.healthmarketscience.jackcess" name="jackcess" rev="${/com.healthmarketscience.jackcess/jackcess}" conf="compile"/>
+    <dependency org="com.healthmarketscience.jackcess" name="jackcess-encrypt" rev="${/com.healthmarketscience.jackcess/jackcess-encrypt}" conf="compile"/>
     <dependency org="org.gagravarr" name="vorbis-java-tika" rev="${/org.gagravarr/vorbis-java-tika}" conf="compile"/>
     <dependency org="org.gagravarr" name="vorbis-java-core" rev="${/org.gagravarr/vorbis-java-core}" conf="compile"/>
     <dependency org="org.apache.james" name="apache-mime4j-core" rev="${/org.apache.james/apache-mime4j-core}" conf="compile"/>
