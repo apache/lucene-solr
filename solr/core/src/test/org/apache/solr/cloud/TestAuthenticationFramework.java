@@ -235,21 +235,23 @@ public class TestAuthenticationFramework extends LuceneTestCase {
     public void init(Map<String,Object> pluginConfig) {}
 
     @Override
-    public void doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain)
+    public boolean doAuthenticate(ServletRequest request, ServletResponse response, FilterChain filterChain)
         throws Exception {
       if (expectedUsername == null) {
         filterChain.doFilter(request, response);
-        return;
+        return true;
       }
       HttpServletRequest httpRequest = (HttpServletRequest)request;
       String username = httpRequest.getHeader("username");
       String password = httpRequest.getHeader("password");
       
       log.info("Username: "+username+", password: "+password);
-      if(MockAuthenticationPlugin.expectedUsername.equals(username) && MockAuthenticationPlugin.expectedPassword.equals(password))      
+      if(MockAuthenticationPlugin.expectedUsername.equals(username) && MockAuthenticationPlugin.expectedPassword.equals(password)) {
         filterChain.doFilter(request, response);
-      else {
+        return true;
+      } else {
         ((HttpServletResponse)response).sendError(401, "Unauthorized request");
+        return false;
       }
     }
 

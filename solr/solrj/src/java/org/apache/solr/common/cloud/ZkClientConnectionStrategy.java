@@ -97,7 +97,9 @@ public abstract class ZkClientConnectionStrategy {
   public boolean hasZkCredentialsToAddAutomatically() {
     return zkCredentialsToAddAutomatically != null;
   }
-  
+
+  public ZkCredentialsProvider getZkCredentialsToAddAutomatically() { return zkCredentialsToAddAutomatically; }
+
   protected SolrZooKeeper createSolrZooKeeper(final String serverAddress, final int zkClientTimeout,
       final Watcher watcher) throws IOException {
     SolrZooKeeper result = new SolrZooKeeper(serverAddress, zkClientTimeout, watcher);

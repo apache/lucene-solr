@@ -16,14 +16,18 @@
  */
 package org.apache.solr.security;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.Filter;
@@ -41,12 +45,22 @@ import javax.servlet.ServletResponse;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
 import javax.servlet.descriptor.JspConfigDescriptor;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletResponseWrapper;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
+import org.apache.hadoop.security.authentication.client.AuthenticationException;
+import org.apache.hadoop.security.authentication.server.AuthenticationHandler;
+import org.apache.hadoop.security.authentication.server.AuthenticationToken;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +69,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   Krb5HttpClientBuilder kerberosBuilder = new Krb5HttpClientBuilder();
-  Filter kerberosFilter = new KerberosFilter();
+  Filter kerberosFilter;
   
   public static final String NAME_RULES_PARAM = "solr.kerberos.name.rules";
   public static final String COOKIE_DOMAIN_PARAM = "solr.kerberos.cookie.domain";
@@ -64,6 +78,26 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   public static final String KEYTAB_PARAM = "solr.kerberos.keytab";
   public static final String TOKEN_VALID_PARAM = "solr.kerberos.token.valid";
   public static final String COOKIE_PORT_AWARE_PARAM = "solr.kerberos.cookie.portaware";
+  public static final String DELEGATION_TOKEN_ENABLED = "solr.kerberos.delegation.token.enabled";
+  public static final String DELEGATION_TOKEN_KIND = "solr.kerberos.delegation.token.kind";
+  public static final String DELEGATION_TOKEN_VALIDITY = "solr.kerberos.delegation.token.validity";
+  public static final String DELEGATION_TOKEN_SECRET_PROVIDER = "solr.kerberos.delegation.token.signer.secret.provider";
+  public static final String DELEGATION_TOKEN_SECRET_PROVIDER_ZK_PATH =
+      "solr.kerberos.delegation.token.signer.secret.provider.zookeper.path";
+  public static final String DELEGATION_TOKEN_SECRET_MANAGER_ZNODE_WORKING_PATH =
+      "solr.kerberos.delegation.token.secret.manager.znode.working.path";
+  public static final String DELEGATION_TOKEN_TYPE_DEFAULT = "solr-dt";
+  
+  // filled in by Plugin/Filter
+  static final String REQUEST_CONTINUES_ATTR =
+      "org.apache.solr.security.kerberosplugin.requestcontinues";
+  static final String DELEGATION_TOKEN_ZK_CLIENT =
+      "solr.kerberos.delegation.token.zk.client";
+
+  // allows test to specify an alternate auth handler
+  @VisibleForTesting
+  public static final String AUTH_HANDLER_PARAM = "solr.kerberos.auth.handler";
+
   private final CoreContainer coreContainer;
 
   public KerberosPlugin(CoreContainer coreContainer) {
@@ -74,12 +108,47 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   public void init(Map<String, Object> pluginConfig) {
     try {
       Map<String, String> params = new HashMap();
-      params.put("type", "kerberos");
+      putParam(params, "type", AUTH_HANDLER_PARAM, "kerberos");
       putParam(params, "kerberos.name.rules", NAME_RULES_PARAM, "DEFAULT");
       putParam(params, "token.valid", TOKEN_VALID_PARAM, "30");
       putParam(params, "cookie.path", COOKIE_PATH_PARAM, "/");
-      putParam(params, "kerberos.principal", PRINCIPAL_PARAM, null);
-      putParam(params, "kerberos.keytab", KEYTAB_PARAM, null);
+      if ("kerberos".equals(params.get("type"))) {
+        putParam(params, "kerberos.principal", PRINCIPAL_PARAM, null);
+        putParam(params, "kerberos.keytab", KEYTAB_PARAM, null);
+      } else {
+        // allow tests which specify AUTH_HANDLER_PARAM to avoid specifying kerberos principal/keytab
+        putParamOptional(params, "kerberos.principal", PRINCIPAL_PARAM);
+        putParamOptional(params, "kerberos.keytab", KEYTAB_PARAM);
+      }
+
+      String delegationTokenStr = System.getProperty(DELEGATION_TOKEN_ENABLED, null);
+      boolean delegationTokenEnabled =
+          (delegationTokenStr == null) ? false : Boolean.parseBoolean(delegationTokenStr);
+      ZkController controller = coreContainer.getZkController();
+
+      if (delegationTokenEnabled) {
+        putParam(params, "delegation-token.token-kind", DELEGATION_TOKEN_KIND, DELEGATION_TOKEN_TYPE_DEFAULT);
+        if (coreContainer.isZooKeeperAware()) {
+          putParam(params, "signer.secret.provider", DELEGATION_TOKEN_SECRET_PROVIDER, "zookeeper");
+          if ("zookeeper".equals(params.get("signer.secret.provider"))) {
+            String zkHost = controller.getZkServerAddress();
+            putParam(params, "token.validity", DELEGATION_TOKEN_VALIDITY, "36000");
+            params.put("zk-dt-secret-manager.enable", "true");
+            // Note - Curator complains if the znodeWorkingPath starts with /
+            String chrootPath = zkHost.substring(zkHost.indexOf("/"));
+            String relativePath = chrootPath.startsWith("/") ? chrootPath.substring(1) : chrootPath;
+            putParam(params, "zk-dt-secret-manager.znodeWorkingPath",
+                DELEGATION_TOKEN_SECRET_MANAGER_ZNODE_WORKING_PATH,
+                relativePath + SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH + "/zkdtsm");
+            putParam(params, "signer.secret.provider.zookeeper.path",
+                DELEGATION_TOKEN_SECRET_PROVIDER_ZK_PATH, "/token");
+            // ensure krb5 is setup properly before running curator
+            getHttpClientBuilder(SolrHttpClientBuilder.create());
+          }
+        } else {
+          log.info("CoreContainer is not ZooKeeperAware, not setting ZK-related delegation token properties");
+        }
+      }
 
       // Special handling for the "cookie.domain" based on whether port should be
       // appended to the domain. Useful for situations where multiple solr nodes are
@@ -94,16 +163,27 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
         if (host==null) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Missing required parameter '"+COOKIE_DOMAIN_PARAM+"'.");
         }
-        int port = coreContainer.getZkController().getHostPort();
+        int port = controller.getHostPort();
         params.put("cookie.domain", host + ":" + port);
       }
-      
+
+      final ServletContext servletContext = new AttributeOnlyServletContext();
+      if (delegationTokenEnabled) {
+        kerberosFilter = new DelegationTokenKerberosFilter();
+        // pass an attribute-enabled context in order to pass the zkClient
+        // and because the filter may pass a curator instance.
+        if (controller != null) {
+          servletContext.setAttribute(DELEGATION_TOKEN_ZK_CLIENT, controller.getZkClient());
+        }
+      } else {
+        kerberosFilter = new KerberosFilter();
+      }
       log.info("Params: "+params);
 
       FilterConfig conf = new FilterConfig() {
         @Override
         public ServletContext getServletContext() {
-          return noContext;
+          return servletContext;
         }
 
         @Override
@@ -136,11 +216,43 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     params.put(internalParamName, value);
   }
 
+  private void putParamOptional(Map<String, String> params, String internalParamName, String externalParamName) {
+    String value = System.getProperty(externalParamName);
+    if (value!=null) {
+      params.put(internalParamName, value);
+    }
+  }
+
   @Override
-  public void doAuthenticate(ServletRequest req, ServletResponse rsp,
+  public boolean doAuthenticate(ServletRequest req, ServletResponse rsp,
       FilterChain chain) throws Exception {
     log.debug("Request to authenticate using kerberos: "+req);
-    kerberosFilter.doFilter(req, rsp, chain);    
+
+    final HttpServletResponse frsp = (HttpServletResponse)rsp;
+
+    // kerberosFilter may close the stream and write to closed streams,
+    // see HADOOP-13346.  To work around, pass a PrintWriter that ignores
+    // closes
+    HttpServletResponse rspCloseShield = new HttpServletResponseWrapper(frsp) {
+      @SuppressForbidden(reason = "Hadoop DelegationTokenAuthenticationFilter uses response writer, this" +
+          "is providing a CloseShield on top of that")
+      @Override
+      public PrintWriter getWriter() throws IOException {
+        final PrintWriter pw = new PrintWriterWrapper(frsp.getWriter()) {
+          @Override
+          public void close() {};
+        };
+        return pw;
+      }
+    };
+    kerberosFilter.doFilter(req, rspCloseShield, chain);
+    String requestContinuesAttr = (String)req.getAttribute(REQUEST_CONTINUES_ATTR);
+    if (requestContinuesAttr == null) {
+      log.warn("Could not find " + REQUEST_CONTINUES_ATTR);
+      return false;
+    } else {
+      return Boolean.parseBoolean(requestContinuesAttr);
+    }
   }
 
   @Override
@@ -153,8 +265,9 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     kerberosBuilder.close();
   }
 
-  protected static ServletContext noContext = new ServletContext() {
-    
+  protected static class AttributeOnlyServletContext implements ServletContext {
+    private Map<String, Object> attributes = new HashMap<String, Object>();
+
     @Override
     public void setSessionTrackingModes(Set<SessionTrackingMode> sessionTrackingModes) {}
     
@@ -162,12 +275,16 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     public boolean setInitParameter(String name, String value) {
       return false;
     }
-    
+
     @Override
-    public void setAttribute(String name, Object object) {}
-    
+    public void setAttribute(String name, Object object) {
+      attributes.put(name, object);
+    }
+
     @Override
-    public void removeAttribute(String name) {}
+    public void removeAttribute(String name) {
+      attributes.remove(name);
+    }
     
     @Override
     public void log(String message, Throwable throwable) {}
@@ -327,15 +444,15 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     public ClassLoader getClassLoader() {
       return null;
     }
-    
+
     @Override
     public Enumeration<String> getAttributeNames() {
-      return null;
+      return Collections.enumeration(attributes.keySet());
     }
-    
+
     @Override
     public Object getAttribute(String name) {
-      return null;
+      return attributes.get(name);
     }
     
     @Override
@@ -395,4 +512,44 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
       return null;
     }
   };
+
+  /*
+   * {@link AuthenticationHandler} that delegates to another {@link AuthenticationHandler}
+   * and records the response of managementOperation (which indicates whether the request
+   * should continue or not).
+   */
+  public static class RequestContinuesRecorderAuthenticationHandler implements AuthenticationHandler {
+    private AuthenticationHandler authHandler;
+
+    public void setAuthHandler(AuthenticationHandler authHandler) {
+      this.authHandler = authHandler;
+    }
+
+    public String getType() {
+      return authHandler.getType();
+    }
+
+    public void init(Properties config) throws ServletException {
+      // authHandler has already been init'ed, nothing to do here
+    }
+
+    public void destroy() {
+      authHandler.destroy();
+    }
+
+    public boolean managementOperation(AuthenticationToken token,
+                                       HttpServletRequest request,
+                                       HttpServletResponse response)
+        throws IOException, AuthenticationException {
+      boolean result = authHandler.managementOperation(token, request, response);
+      request.setAttribute(KerberosPlugin.REQUEST_CONTINUES_ATTR, new Boolean(result).toString());
+      return result;
+    }
+
+
+    public AuthenticationToken authenticate(HttpServletRequest request, HttpServletResponse response)
+        throws IOException, AuthenticationException {
+      return authHandler.authenticate(request, response);
+    }
+  }
 }
