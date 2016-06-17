@@ -122,9 +122,9 @@ public class IndexReplicationClientTest extends ReplicatorTestCase {
   
   private Revision createRevision(final int id) throws IOException {
     publishWriter.addDocument(new Document());
-    publishWriter.setCommitData(new HashMap<String, String>() {{
+    publishWriter.setLiveCommitData(new HashMap<String, String>() {{
       put(VERSION_ID, Integer.toString(id, 16));
-    }});
+    }}.entrySet());
     publishWriter.commit();
     return new IndexRevision(publishWriter);
   }

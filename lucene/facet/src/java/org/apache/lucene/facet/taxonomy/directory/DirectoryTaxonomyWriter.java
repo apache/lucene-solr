@@ -584,31 +584,42 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   public synchronized long commit() throws IOException {
     ensureOpen();
     // LUCENE-4972: if we always call setCommitData, we create empty commits
-    String epochStr = indexWriter.getCommitData().get(INDEX_EPOCH);
+
+    Map<String,String> data = new HashMap<>();
+    Iterable<Map.Entry<String,String>> iter = indexWriter.getLiveCommitData();
+    if (iter != null) {
+      for(Map.Entry<String,String> ent : iter) {
+        data.put(ent.getKey(), ent.getValue());
+      }
+    }
+    
+    String epochStr = data.get(INDEX_EPOCH);
     if (epochStr == null || Long.parseLong(epochStr, 16) != indexEpoch) {
-      indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
+      indexWriter.setLiveCommitData(combinedCommitData(indexWriter.getLiveCommitData()));
     }
     return indexWriter.commit();
   }
 
   /** Combine original user data with the taxonomy epoch. */
-  private Map<String,String> combinedCommitData(Map<String,String> commitData) {
+  private Iterable<Map.Entry<String,String>> combinedCommitData(Iterable<Map.Entry<String,String>> commitData) {
     Map<String,String> m = new HashMap<>();
     if (commitData != null) {
-      m.putAll(commitData);
+      for(Map.Entry<String,String> ent : commitData) {
+        m.put(ent.getKey(), ent.getValue());
+      }
     }
     m.put(INDEX_EPOCH, Long.toString(indexEpoch, 16));
-    return m;
+    return m.entrySet();
   }
   
   @Override
-  public void setCommitData(Map<String,String> commitUserData) {
-    indexWriter.setCommitData(combinedCommitData(commitUserData));
+  public void setLiveCommitData(Iterable<Map.Entry<String,String>> commitUserData) {
+    indexWriter.setLiveCommitData(combinedCommitData(commitUserData));
   }
   
   @Override
-  public Map<String,String> getCommitData() {
-    return combinedCommitData(indexWriter.getCommitData());
+  public Iterable<Map.Entry<String,String>> getLiveCommitData() {
+    return combinedCommitData(indexWriter.getLiveCommitData());
   }
   
   /**
@@ -619,9 +630,16 @@ public class DirectoryTaxonomyWriter implements TaxonomyWriter {
   public synchronized long prepareCommit() throws IOException {
     ensureOpen();
     // LUCENE-4972: if we always call setCommitData, we create empty commits
-    String epochStr = indexWriter.getCommitData().get(INDEX_EPOCH);
+    Map<String,String> data = new HashMap<>();
+    Iterable<Map.Entry<String,String>> iter = indexWriter.getLiveCommitData();
+    if (iter != null) {
+      for(Map.Entry<String,String> ent : iter) {
+        data.put(ent.getKey(), ent.getValue());
+      }
+    }
+    String epochStr = data.get(INDEX_EPOCH);
     if (epochStr == null || Long.parseLong(epochStr, 16) != indexEpoch) {
-      indexWriter.setCommitData(combinedCommitData(indexWriter.getCommitData()));
+      indexWriter.setLiveCommitData(combinedCommitData(indexWriter.getLiveCommitData()));
     }
     return indexWriter.prepareCommit();
   }
