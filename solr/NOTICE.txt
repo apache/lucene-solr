@@ -380,8 +380,6 @@ Copyright (c) 1995-2005 International Business Machines Corporation and others
 
 Copyright 2001-2005 (C) MetaStuff, Ltd. All Rights Reserved.
 
-Copyright 2004 Sun Microsystems, Inc. (Rome JAR)
-
 Copyright 2002-2008 by John Cowan (TagSoup -- http://ccil.org/~cowan/XML/tagsoup/)
 
 Copyright (C) 1994-2007 by the Xiph.org Foundation, http://www.xiph.org/ (OggVorbis)
@@ -395,6 +393,33 @@ https://github.com/rjohnsondev/java-libpst
 
 JMatIO is a JAVA library to read/write/manipulate with Matlab binary MAT-files.
 http://www.sourceforge.net/projects/jmatio
+
+metadata-extractor is a straightforward Java library for reading metadata 
+from image files.
+https://github.com/drewnoakes/metadata-extractor
+
+Java MP4 Parser; A Java API to read, write and create MP4 container
+https://github.com/sannies/mp4parser
+
+Jackcess; is a pure Java library for reading from and writing to MS Access 
+databases
+http://jackcess.sourceforge.net/
+
+Jackcess Encrypt; an extension library for the Jackcess project which 
+implements support for some forms of Microsoft Access and Microsoft 
+Money encryption
+http://jackcessencrypt.sourceforge.net/
+
+ROME; is a Java framework for RSS and Atom feeds
+(https://github.com/rometools/rome)
+
+VorbisJava; Ogg and Vorbis Tools for Java
+Copyright 2012 Nick Burch
+https://github.com/Gagravarr/VorbisJava
+
+SQLite JDBC Driver; is a library for accessing and creating SQLite 
+database files in Java
+https://bitbucket.org/xerial/sqlite-jdbc
 
 =========================================================================
 ==  Language Detection Notices                                         ==
