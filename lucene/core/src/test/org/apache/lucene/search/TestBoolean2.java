@@ -165,7 +165,7 @@ public class TestBoolean2 extends LuceneTestCase {
     "w1 w2 w3 w4 w5",
     "w1 w3 w2 w3",
     "w1 xx w2 yy w3",
-    "w1 w3 xx w2 yy w3"
+    "w1 w3 xx w2 yy mm"
   };
 
   public void queriesTest(Query query, int[] expDocNrs) throws Exception {
