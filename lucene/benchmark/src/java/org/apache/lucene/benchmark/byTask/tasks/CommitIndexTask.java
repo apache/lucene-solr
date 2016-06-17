@@ -51,7 +51,7 @@ public class CommitIndexTask extends PerfTask {
     IndexWriter iw = getRunData().getIndexWriter();
     if (iw != null) {
       if (commitUserData != null) {
-        iw.setCommitData(commitUserData);
+        iw.setLiveCommitData(commitUserData.entrySet());
       }
       iw.commit();
     }

@@ -295,6 +295,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   private volatile boolean closed;
   private volatile boolean closing;
 
+  private Iterable<Map.Entry<String,String>> commitUserData;
+
   // Holds all SegmentInfo instances currently involved in
   // merges
   private HashSet<SegmentCommitInfo> mergingSegments = new HashSet<>();
@@ -946,6 +948,8 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
 
         rollbackSegments = segmentInfos.createBackupSegmentInfos();
       }
+
+      commitUserData = new HashMap<String,String>(segmentInfos.getUserData()).entrySet();
 
       pendingNumDocs.set(segmentInfos.totalMaxDoc());
 
@@ -2997,6 +3001,14 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
                 segmentInfos.changed();
               }
 
+              if (commitUserData != null) {
+                Map<String,String> userData = new HashMap<>();
+                for(Map.Entry<String,String> ent : commitUserData) {
+                  userData.put(ent.getKey(), ent.getValue());
+                }
+                segmentInfos.setUserData(userData, false);
+              }
+
               // Must clone the segmentInfos while we still
               // hold fullFlushLock and while sync'd so that
               // no partial changes (eg a delete w/o
@@ -3011,7 +3023,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
               // we are trying to sync all referenced files, a
               // merge completes which would otherwise have
               // removed the files we are now syncing.    
-              filesToCommit = toCommit.files(false);
+              filesToCommit = toCommit.files(false); 
               deleter.incRef(filesToCommit);
             }
             success = true;
@@ -3059,36 +3071,38 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable {
   }
   
   /**
-   * Sets the commit user data map. That method is considered a transaction by
-   * {@link IndexWriter} and will be {@link #commit() committed} even if no other
-   * changes were made to the writer instance. Note that you must call this method
-   * before {@link #prepareCommit()}, or otherwise it won't be included in the
+   * Sets the iterator to provide the commit user data map at commit time.  Calling this method
+   * is considered a committable change and will be {@link #commit() committed} even if
+   * there are no other changes this writer. Note that you must call this method
+   * before {@link #prepareCommit()}.  Otherwise it won't be included in the
    * follow-on {@link #commit()}.
    * <p>
-   * <b>NOTE:</b> the map is cloned internally, therefore altering the map's
-   * contents after calling this method has no effect.
+   * <b>NOTE:</b> the iterator is late-binding: it is only visited once all documents for the
+   * commit have been written to their segments, before the next segments_N file is written
    */
-  public final synchronized void setCommitData(Map<String,String> commitUserData) {
-    setCommitData(commitUserData, true);
+  public final synchronized void setLiveCommitData(Iterable<Map.Entry<String,String>> commitUserData) {
+    setLiveCommitData(commitUserData, true);
   }
 
   /**
-   * Sets the commit user data map, controlling whether to advance the {@link SegmentInfos#getVersion}.
+   * Sets the commit user data iterator, controlling whether to advance the {@link SegmentInfos#getVersion}.
    *
-   * @see #setCommitData(Map)
+   * @see #setLiveCommitData(Iterable)
    *
    * @lucene.internal */
-  public final synchronized void setCommitData(Map<String,String> commitUserData, boolean doIncrementVersion) {
-    segmentInfos.setUserData(new HashMap<>(commitUserData), doIncrementVersion);
+  public final synchronized void setLiveCommitData(Iterable<Map.Entry<String,String>> commitUserData, boolean doIncrementVersion) {
+    this.commitUserData = commitUserData;
+    if (doIncrementVersion) {
+      segmentInfos.changed();
+    }
     changeCount.incrementAndGet();
   }
   
   /**
-   * Returns the commit user data map that was last committed, or the one that
-   * was set on {@link #setCommitData(Map)}.
+   * Returns the commit user data iterable previously set with {@link #setLiveCommitData(Iterable)}, or null if nothing has been set yet.
    */
-  public final synchronized Map<String,String> getCommitData() {
-    return segmentInfos.getUserData();
+  public final synchronized Iterable<Map.Entry<String,String>> getLiveCommitData() {
+    return commitUserData;
   }
   
   // Used only by commit and prepareCommit, below; lock

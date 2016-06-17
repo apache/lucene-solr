@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -421,13 +422,13 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     // commit to "first"
     Map<String,String> commitData = new HashMap<>();
     commitData.put("tag", "first");
-    w.setCommitData(commitData);
+    w.setLiveCommitData(commitData.entrySet());
     w.commit();
 
     // commit to "second"
     w.addDocument(doc);
     commitData.put("tag", "second");
-    w.setCommitData(commitData);
+    w.setLiveCommitData(commitData.entrySet());
     w.close();
 
     // open "first" with IndexWriter
@@ -450,7 +451,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     // commit IndexWriter to "third"
     w.addDocument(doc);
     commitData.put("tag", "third");
-    w.setCommitData(commitData);
+    w.setLiveCommitData(commitData.entrySet());
     w.close();
 
     // make sure "second" commit is still there
@@ -632,7 +633,7 @@ public class TestIndexWriterCommit extends LuceneTestCase {
       TestIndexWriter.addDoc(w);
     Map<String,String> data = new HashMap<>();
     data.put("label", "test1");
-    w.setCommitData(data);
+    w.setLiveCommitData(data.entrySet());
     w.close();
 
     r = DirectoryReader.open(dir);
@@ -661,6 +662,34 @@ public class TestIndexWriterCommit extends LuceneTestCase {
     DirectoryReader r = DirectoryReader.open(dir);
     assertEquals(1, r.maxDoc());
     r.close();
+    dir.close();
+  }
+
+  // LUCENE-7335: make sure commit data is late binding
+  public void testCommitDataIsLive() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
+    w.addDocument(new Document());
+
+    final Map<String,String> commitData = new HashMap<>();
+    commitData.put("foo", "bar");
+
+    // make sure "foo" / "bar" doesn't take
+    w.setLiveCommitData(commitData.entrySet());
+
+    commitData.clear();
+    commitData.put("boo", "baz");
+
+    // this finally does the commit, and should burn "boo" / "baz"
+    w.close();
+
+    List<IndexCommit> commits = DirectoryReader.listCommits(dir);
+    assertEquals(1, commits.size());
+
+    IndexCommit commit = commits.get(0);
+    Map<String,String> data = commit.getUserData();
+    assertEquals(1, data.size());
+    assertEquals("baz", data.get("boo"));
     dir.close();
   }
 }

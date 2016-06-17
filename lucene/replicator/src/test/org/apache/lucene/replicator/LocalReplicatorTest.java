@@ -65,9 +65,9 @@ public class LocalReplicatorTest extends ReplicatorTestCase {
   
   private Revision createRevision(final int id) throws IOException {
     sourceWriter.addDocument(new Document());
-    sourceWriter.setCommitData(new HashMap<String, String>() {{
+    sourceWriter.setLiveCommitData(new HashMap<String, String>() {{
       put(VERSION_ID, Integer.toString(id, 16));
-    }});
+    }}.entrySet());
     sourceWriter.commit();
     return new IndexRevision(sourceWriter);
   }

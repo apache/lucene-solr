@@ -172,9 +172,9 @@ public class IndexAndTaxonomyReplicationClientTest extends ReplicatorTestCase {
   
   private Revision createRevision(final int id) throws IOException {
     publishIndexWriter.addDocument(newDocument(publishTaxoWriter, id));
-    publishIndexWriter.setCommitData(new HashMap<String, String>() {{
+    publishIndexWriter.setLiveCommitData(new HashMap<String, String>() {{
       put(VERSION_ID, Integer.toString(id, 16));
-    }});
+    }}.entrySet());
     publishIndexWriter.commit();
     publishTaxoWriter.commit();
     return new IndexAndTaxonomyRevision(publishIndexWriter, publishTaxoWriter);
