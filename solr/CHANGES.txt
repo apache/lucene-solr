@@ -64,6 +64,8 @@ Bug Fixes
 
 * SOLR-9093: Fix NullPointerException in TopGroupsShardResponseProcessor. (Christine Poerschke)
 
+* SOLR-9118: HashQParserPlugin should trim partition keys (Joel Bernstein)
+
 ======================= 5.5.1 =======================
 
 Bug Fixes
