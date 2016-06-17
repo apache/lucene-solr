@@ -19,10 +19,6 @@ New Features
   recording key/values from a provided iterable based on when the
   commit actually takes place (Mike McCandless)
 
-Bug Fixes
-
-* LUCENE-6662: Fixed potential resource leaks. (Rishabh Patel via Adrien Grand)
-
 Improvements
 
 * LUCENE-7323: Compound file writing now verifies the incoming
