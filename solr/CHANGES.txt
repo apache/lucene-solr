@@ -82,6 +82,9 @@ Other Changes
 * SOLR-9195: Remove unnecessary allocation and null check in UpdateRequestProcessorChain's
   getReqProcessors method. (Christine Poerschke)
 
+* SOLR-8981: Upgraded Extraction module to Apache Tika 1.13.
+  (Tim Allison, Lewis John McGibbney via Uwe Schindler)
+
 ==================  6.1.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
