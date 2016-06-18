@@ -282,11 +282,13 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     /**
      * Lowercases the element name, but returns null for &lt;BR&gt;,
      * which suppresses the start-element event for lt;BR&gt; tags.
+     * This also suppresses the &lt;BODY&gt; tags because those
+     * are handled internally by Tika's XHTMLContentHandler.
      */
     @Override
     public String mapSafeElement(String name) {
       String lowerName = name.toLowerCase(Locale.ROOT);
-      return lowerName.equals("br") ? null : lowerName;
+      return (lowerName.equals("br") || lowerName.equals("body")) ? null : lowerName;
     }
    }
  }
