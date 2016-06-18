@@ -196,6 +196,7 @@ public class SolrCellMorphlineTest extends AbstractSolrMorphlineTestBase {
   }
   
   @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9220")
   public void testSolrCellDocumentTypes2() throws Exception {
 
     AbstractSolrMorphlineTestBase.setupMorphline(tempDir, "test-morphlines/solrCellDocumentTypes", false);

@@ -44,6 +44,7 @@ public class MorphlineMapperTest extends MRUnitBase {
   }
   
   @Test
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-9220")
   public void testMapper() throws Exception {
     MorphlineMapper mapper = new MorphlineMapper();
     MapDriver<LongWritable, Text, Text, SolrInputDocumentWritable> mapDriver = MapDriver.newMapDriver(mapper);;
