@@ -34,8 +34,6 @@ Other Changes
 * SOLR-8677: Prevent shards containing invalid characters from being created.  Checks added server-side
   and in SolrJ.  (Shai Erera, Jason Gerlowski, Anshum Gupta)
 
-* SOLR-8933: Solr should not close container streams. (Mike Drob, Uwe Schindler, Mark Miller)
-
 ======================= 5.5.1 =======================
 
 Bug Fixes
