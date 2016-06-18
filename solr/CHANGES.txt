@@ -20,7 +20,7 @@ See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.7
+Apache Tika 1.13
 Carrot2 3.12.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
