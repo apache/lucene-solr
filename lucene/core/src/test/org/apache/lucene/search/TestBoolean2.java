@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -106,6 +107,7 @@ public class TestBoolean2 extends LuceneTestCase {
 
     for (String fileName : directory.listAll()) {
       singleSegmentDirectory.copyFrom(directory, fileName, fileName, IOContext.DEFAULT);
+      singleSegmentDirectory.sync(Collections.singleton(fileName));
     }
     
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
