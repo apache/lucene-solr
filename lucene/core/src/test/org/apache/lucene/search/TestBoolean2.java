@@ -33,6 +33,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -68,8 +69,13 @@ public class TestBoolean2 extends LuceneTestCase {
     // in some runs, test immediate adjacency of matches - in others, force a full bucket gap betwen docs
     NUM_FILLER_DOCS = random().nextBoolean() ? 0 : BooleanScorer.SIZE;
     PRE_FILLER_DOCS = TestUtil.nextInt(random(), 0, (NUM_FILLER_DOCS / 2));
+
+    if (NUM_FILLER_DOCS * PRE_FILLER_DOCS > 100000) {
+      directory = newFSDirectory(createTempDir());
+    } else {
+      directory = newDirectory();
+    }
     
-    directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     
     Document doc = new Document();
@@ -92,7 +98,16 @@ public class TestBoolean2 extends LuceneTestCase {
     searcher.setSimilarity(new ClassicSimilarity());
 
     // make a copy of our index using a single segment
-    singleSegmentDirectory = new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(directory));
+    if (NUM_FILLER_DOCS * PRE_FILLER_DOCS > 100000) {
+      singleSegmentDirectory = newFSDirectory(createTempDir());
+    } else {
+      singleSegmentDirectory = newDirectory();
+    }
+
+    for (String fileName : directory.listAll()) {
+      singleSegmentDirectory.copyFrom(directory, fileName, fileName, IOContext.DEFAULT);
+    }
+    
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     // we need docID order to be preserved:
     iwc.setMergePolicy(newLogMergePolicy());
