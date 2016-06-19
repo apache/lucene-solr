@@ -105,7 +105,11 @@ public class TestBoolean2 extends LuceneTestCase {
       singleSegmentDirectory = newDirectory();
     }
 
+    // TODO: this test does not need to be doing this crazy stuff. please improve it!
     for (String fileName : directory.listAll()) {
+      if (fileName.startsWith("extra")) {
+        continue;
+      }
       singleSegmentDirectory.copyFrom(directory, fileName, fileName, IOContext.DEFAULT);
       singleSegmentDirectory.sync(Collections.singleton(fileName));
     }
