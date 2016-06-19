@@ -135,7 +135,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     FileUtils.copyDirectory(configDir, tmpConfigDir);
     if (oldProps != null) {
       FileUtils.write(new File(tmpConfigDir, ConfigSetProperties.DEFAULT_FILENAME),
-          getConfigSetProps(oldProps));
+          getConfigSetProps(oldProps), StandardCharsets.UTF_8);
     }
     solrCluster.uploadConfigDir(tmpConfigDir, baseConfigSetName);
   }
@@ -242,7 +242,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     // Ensure ConfigSet is immutable
     FileUtils.copyDirectory(configDir, tmpConfigDir);
     FileUtils.write(new File(tmpConfigDir, "configsetprops.json"),
-        getConfigSetProps(ImmutableMap.<String, String>of("immutable", "true")));
+        getConfigSetProps(ImmutableMap.<String, String>of("immutable", "true")), StandardCharsets.UTF_8);
     solrCluster.uploadConfigDir(tmpConfigDir, "configSet");
 
     // no ConfigSet name

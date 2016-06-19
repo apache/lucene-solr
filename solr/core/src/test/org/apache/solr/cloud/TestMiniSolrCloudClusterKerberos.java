@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import javax.security.auth.login.Configuration;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
@@ -113,7 +114,7 @@ public class TestMiniSolrCloudClusterKerberos extends TestMiniSolrCloudCluster {
     javax.security.auth.login.Configuration.setConfiguration(conf);
     
     String jaasFilePath = kdcDir+File.separator + "jaas-client.conf";
-    FileUtils.write(new File(jaasFilePath), jaas);
+    FileUtils.write(new File(jaasFilePath), jaas, StandardCharsets.UTF_8);
     System.setProperty("java.security.auth.login.config", jaasFilePath);
     System.setProperty("solr.kerberos.cookie.domain", "127.0.0.1");
     System.setProperty("solr.kerberos.principal", principal);

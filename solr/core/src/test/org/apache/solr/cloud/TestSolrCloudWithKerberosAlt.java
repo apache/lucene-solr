@@ -17,6 +17,7 @@
 package org.apache.solr.cloud;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
@@ -127,7 +128,7 @@ public class TestSolrCloudWithKerberosAlt extends LuceneTestCase {
     Configuration.setConfiguration(conf);
 
     String jaasFilePath = kdcDir+File.separator+"jaas-client.conf";
-    FileUtils.write(new File(jaasFilePath), jaas);
+    FileUtils.write(new File(jaasFilePath), jaas, StandardCharsets.UTF_8);
     System.setProperty("java.security.auth.login.config", jaasFilePath);
     System.setProperty("solr.kerberos.jaas.appname", "SolrClient"); // Get this app name from the jaas file
     System.setProperty("solr.kerberos.cookie.domain", "127.0.0.1");

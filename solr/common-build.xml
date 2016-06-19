@@ -504,8 +504,7 @@
   
   <!-- Forbidden API Task, customizations for Solr -->
   <target name="-check-forbidden-all" depends="-init-forbidden-apis,compile-core,compile-test">
-    <!--<property prefix="ivyversions" file="${common.dir}/ivy-versions.properties"/>--> <!-- for commons-io version -->
-    <!-- HACK: --><property name="ivyversions./commons-io/commons-io" value="2.4"/>
+    <property prefix="ivyversions" file="${common.dir}/ivy-versions.properties"/><!-- for commons-io version -->
     <forbidden-apis suppressAnnotation="**.SuppressForbidden" classpathref="forbidden-apis.allclasses.classpath" targetVersion="${javac.release}">
       <signatures>
         <bundled name="jdk-unsafe"/>

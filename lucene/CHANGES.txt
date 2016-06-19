@@ -66,6 +66,9 @@ Other
 
 * LUCENE-7334: Update ASM dependency to 5.1.  (Uwe Schindler)
 
+* LUCENE-7346: Update forbiddenapis to version 2.2.
+  (Uwe Schindler)
+  
 ======================= Lucene 6.1.0 =======================
 
 New Features
