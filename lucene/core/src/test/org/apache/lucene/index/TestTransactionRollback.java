@@ -71,7 +71,7 @@ public class TestTransactionRollback extends LuceneTestCase {
                                            .setIndexCommit(last));
     Map<String,String> data = new HashMap<>();
     data.put("index", "Rolled back to 1-"+id);
-    w.setCommitData(data);
+    w.setLiveCommitData(data.entrySet());
     w.close();
   }
 
@@ -142,7 +142,7 @@ public class TestTransactionRollback extends LuceneTestCase {
       if (currentRecordId%10 == 0) {
         Map<String,String> data = new HashMap<>();
         data.put("index", "records 1-"+currentRecordId);
-        w.setCommitData(data);
+        w.setLiveCommitData(data.entrySet());
         w.commit();
       }
     }

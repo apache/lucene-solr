@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -33,6 +34,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -68,8 +70,13 @@ public class TestBoolean2 extends LuceneTestCase {
     // in some runs, test immediate adjacency of matches - in others, force a full bucket gap betwen docs
     NUM_FILLER_DOCS = random().nextBoolean() ? 0 : BooleanScorer.SIZE;
     PRE_FILLER_DOCS = TestUtil.nextInt(random(), 0, (NUM_FILLER_DOCS / 2));
+
+    if (NUM_FILLER_DOCS * PRE_FILLER_DOCS > 100000) {
+      directory = newFSDirectory(createTempDir());
+    } else {
+      directory = newDirectory();
+    }
     
-    directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random(), directory, newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
     
     Document doc = new Document();
@@ -92,7 +99,21 @@ public class TestBoolean2 extends LuceneTestCase {
     searcher.setSimilarity(new ClassicSimilarity());
 
     // make a copy of our index using a single segment
-    singleSegmentDirectory = new MockDirectoryWrapper(random(), TestUtil.ramCopyOf(directory));
+    if (NUM_FILLER_DOCS * PRE_FILLER_DOCS > 100000) {
+      singleSegmentDirectory = newFSDirectory(createTempDir());
+    } else {
+      singleSegmentDirectory = newDirectory();
+    }
+
+    // TODO: this test does not need to be doing this crazy stuff. please improve it!
+    for (String fileName : directory.listAll()) {
+      if (fileName.startsWith("extra")) {
+        continue;
+      }
+      singleSegmentDirectory.copyFrom(directory, fileName, fileName, IOContext.DEFAULT);
+      singleSegmentDirectory.sync(Collections.singleton(fileName));
+    }
+    
     IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
     // we need docID order to be preserved:
     iwc.setMergePolicy(newLogMergePolicy());
@@ -165,7 +186,7 @@ public class TestBoolean2 extends LuceneTestCase {
     "w1 w2 w3 w4 w5",
     "w1 w3 w2 w3",
     "w1 xx w2 yy w3",
-    "w1 w3 xx w2 yy w3"
+    "w1 w3 xx w2 yy mm"
   };
 
   public void queriesTest(Query query, int[] expDocNrs) throws Exception {

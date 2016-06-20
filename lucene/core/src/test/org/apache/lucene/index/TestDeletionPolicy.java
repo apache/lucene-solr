@@ -229,7 +229,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     ExpirationTimeDeletionPolicy policy = (ExpirationTimeDeletionPolicy) writer.getConfig().getIndexDeletionPolicy();
     Map<String,String> commitData = new HashMap<>();
     commitData.put("commitTime", String.valueOf(System.currentTimeMillis()));
-    writer.setCommitData(commitData);
+    writer.setLiveCommitData(commitData.entrySet());
     writer.commit();
     writer.close();
 
@@ -251,7 +251,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       }
       commitData = new HashMap<>();
       commitData.put("commitTime", String.valueOf(System.currentTimeMillis()));
-      writer.setCommitData(commitData);
+      writer.setLiveCommitData(commitData.entrySet());
       writer.commit();
       writer.close();
 

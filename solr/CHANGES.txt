@@ -20,7 +20,7 @@ See the Quick Start guide at http://lucene.apache.org/solr/quickstart.html
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.7
+Apache Tika 1.13
 Carrot2 3.12.0
 Velocity 1.7 and Velocity Tools 2.0
 Apache UIMA 2.3.1
@@ -46,6 +46,15 @@ Bug Fixes
 
 * SOLR-9161: Change SolrPluginUtils.invokeSetters implementation to accommodate setter variants.
   (Christine Poerschke, Steve Rowe, Uwe Schindler)
+
+Other Changes
+----------------------
+
+* SOLR-9195: Remove unnecessary allocation and null check in UpdateRequestProcessorChain's
+  getReqProcessors method. (Christine Poerschke)
+
+* SOLR-8981: Upgraded Extraction module to Apache Tika 1.13.
+  (Tim Allison, Lewis John McGibbney via Uwe Schindler)
 
 ==================  6.1.0 ==================
 
