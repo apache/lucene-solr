@@ -203,6 +203,8 @@ New Features
 
 * SOLR-8610: Resolve variables in encryptKeyFile of DIH's JdbcDataSource (Kristine Jetzke via Mikhail Khludnev)
 
+* SOLR-7739: Add a new ClassificationUpdateProcessorFactory. (Alessandro Benedetti via Tommaso Teofili)
+
 Bug Fixes
 ----------------------
 
