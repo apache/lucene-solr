@@ -180,35 +180,31 @@ class ShardLeaderElectionContextBase extends ElectionContext {
     zcmd.ensureExists(parent, zkClient);
 
     try {
-      RetryUtil.retryOnThrowable(NodeExistsException.class, 60000, 5000, new RetryCmd() {
-        
-        @Override
-        public void execute() throws InterruptedException, KeeperException {
-          synchronized (lock) {
-            log.info("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
-            List<Op> ops = new ArrayList<>(2);
+      RetryUtil.retryOnThrowable(NodeExistsException.class, 60000, 5000, () -> {
+        synchronized (lock) {
+          log.info("Creating leader registration node {} after winning as {}", leaderPath, leaderSeqPath);
+          List<Op> ops = new ArrayList<>(2);
 
-            // We use a multi operation to get the parent nodes version, which will
-            // be used to make sure we only remove our own leader registration node.
-            // The setData call used to get the parent version is also the trigger to
-            // increment the version. We also do a sanity check that our leaderSeqPath exists.
+          // We use a multi operation to get the parent nodes version, which will
+          // be used to make sure we only remove our own leader registration node.
+          // The setData call used to get the parent version is also the trigger to
+          // increment the version. We also do a sanity check that our leaderSeqPath exists.
 
-            ops.add(Op.check(leaderSeqPath, -1));
-            ops.add(Op.create(leaderPath, Utils.toJSON(leaderProps), zkClient.getZkACLProvider().getACLsToAdd(leaderPath), CreateMode.EPHEMERAL));
-            ops.add(Op.setData(parent, null, -1));
-            List<OpResult> results;
+          ops.add(Op.check(leaderSeqPath, -1));
+          ops.add(Op.create(leaderPath, Utils.toJSON(leaderProps), zkClient.getZkACLProvider().getACLsToAdd(leaderPath), CreateMode.EPHEMERAL));
+          ops.add(Op.setData(parent, null, -1));
+          List<OpResult> results;
 
-            results = zkClient.multi(ops, true);
-            for (OpResult result : results) {
-              if (result.getType() == ZooDefs.OpCode.setData) {
-                SetDataResult dresult = (SetDataResult) result;
-                Stat stat = dresult.getStat();
-                leaderZkNodeParentVersion = stat.getVersion();
-                return;
-              }
+          results = zkClient.multi(ops, true);
+          for (OpResult result : results) {
+            if (result.getType() == ZooDefs.OpCode.setData) {
+              SetDataResult dresult = (SetDataResult) result;
+              Stat stat = dresult.getStat();
+              leaderZkNodeParentVersion = stat.getVersion();
+              return;
             }
-            assert leaderZkNodeParentVersion != null;
           }
+          assert leaderZkNodeParentVersion != null;
         }
       });
     } catch (Throwable t) {
