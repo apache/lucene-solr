@@ -636,22 +636,6 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     unSyncedFiles.add(name);
     createdFiles.add(name);
     
-    if (in instanceof RAMDirectory) {
-      RAMDirectory ramdir = (RAMDirectory) in;
-      RAMFile file = new RAMFile(ramdir);
-      RAMFile existing = ramdir.fileMap.get(name);
-    
-      // Enforce write once:
-      if (existing!=null && !name.equals("segments.gen")) {
-        throw new IOException("file " + name + " already exists");
-      } else {
-        if (existing!=null) {
-          ramdir.sizeInBytes.getAndAdd(-existing.sizeInBytes);
-          existing.directory = null;
-        }
-        ramdir.fileMap.put(name, file);
-      }
-    }
     //System.out.println(Thread.currentThread().getName() + ": MDW: create " + name);
     IndexOutput delegateOutput = in.createOutput(name, LuceneTestCase.newIOContext(randomState, context));
     final IndexOutput io = new MockIndexOutputWrapper(this, delegateOutput, name);
