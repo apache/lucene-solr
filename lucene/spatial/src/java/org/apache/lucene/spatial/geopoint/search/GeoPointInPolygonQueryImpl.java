@@ -72,6 +72,11 @@ final class GeoPointInPolygonQueryImpl extends GeoPointInBBoxQueryImpl {
       return polygons.relate(minLat, maxLat, minLon, maxLon) != Relation.CELL_OUTSIDE_QUERY;
     }
 
+    @Override
+    protected Relation relate(final double minLat, final double maxLat, final double minLon, final double maxLon) {
+      return polygons.relate(minLat, maxLat, minLon, maxLon);
+    }
+
     /**
      * The two-phase query approach. The parent
      * {@link org.apache.lucene.spatial.geopoint.search.GeoPointTermsEnum#accept} method is called to match

@@ -1,5 +1,3 @@
-package org.apache.lucene.spatial.geopoint.search;
-
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,12 +14,15 @@ package org.apache.lucene.spatial.geopoint.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.lucene.spatial.geopoint.search;
 
+import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.spatial.geopoint.document.GeoPointField;
 
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.decodeLatitude;
+import static org.apache.lucene.spatial.geopoint.document.GeoPointField.decodeLongitude;
 import static org.apache.lucene.spatial.geopoint.document.GeoPointField.geoCodedToPrefixCoded;
 import static org.apache.lucene.spatial.geopoint.document.GeoPointField.prefixCodedToGeoCoded;
 import static org.apache.lucene.spatial.geopoint.document.GeoPointField.getPrefixCodedShift;
@@ -37,199 +38,126 @@ import static org.apache.lucene.spatial.geopoint.document.GeoPointField.getPrefi
  *  @lucene.experimental
  */
 final class GeoPointPrefixTermsEnum extends GeoPointTermsEnum {
-  private final long start;
-
   private short shift;
 
   // current range as long
-  private long currStart;
-  private long currEnd;
-
-  private final Range nextRange = new Range(-1, shift, true);
+  private long start;
+  private long end;
 
   private boolean hasNext = false;
 
-  private boolean withinOnly = false;
-  private long lastWithin;
-
   public GeoPointPrefixTermsEnum(final TermsEnum tenum, final GeoPointMultiTermQuery query) {
     super(tenum, query);
-    this.start = GeoPointField.encodeLatLon(query.minLat, query.minLon);
     this.currentRange = new Range(-1, shift, true);
     // start shift at maxShift value (from computeMaxShift)
     this.shift = maxShift;
     final long mask = (1L << shift) - 1;
-    this.currStart = start & ~mask;
-    this.currEnd = currStart | mask;
+    this.start = query.minEncoded & ~mask;
+    this.end = start | mask;
   }
 
-  private boolean within(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-    return relationImpl.cellWithin(minLat, maxLat, minLon, maxLon);
-  }
-
-  private boolean boundary(final double minLat, final double maxLat, final double minLon, final double maxLon) {
-    return shift == maxShift && relationImpl.cellIntersectsShape(minLat, maxLat, minLon, maxLon);
-  }
-
-  private boolean nextWithin() {
-    if (withinOnly == false) {
-      return false;
-    }
-    currStart += (1L << shift);
-    setNextRange(false);
-    currentRange.set(nextRange);
-    hasNext = true;
-
-    withinOnly = lastWithin != currStart;
-    if (withinOnly == false) advanceVariables();
-    return true;
-  }
-
-  private void nextRelation() {
-    double minLon = GeoPointField.decodeLongitude(currStart);
-    double minLat = GeoPointField.decodeLatitude(currStart);
-    double maxLon;
-    double maxLat;
-    boolean isWithin;
+  private boolean nextRelation() {
+    PointValues.Relation relation;
     do {
-      maxLon = GeoPointField.decodeLongitude(currEnd);
-      maxLat = GeoPointField.decodeLatitude(currEnd);
-
-      isWithin = false;
       // within or a boundary
-      if (boundary(minLat, maxLat, minLon, maxLon) == true) {
-        isWithin = within(minLat, maxLat, minLon, maxLon);
-        final int m;
-        if (isWithin == false || (m = shift % GeoPointField.PRECISION_STEP) == 0) {
-          setNextRange(isWithin == false);
+      if ((shift % GeoPointField.PRECISION_STEP) == 0 &&
+          (relation = relationImpl.relate(decodeLatitude(start), decodeLatitude(end),
+              decodeLongitude(start), decodeLongitude(end))) != PointValues.Relation.CELL_OUTSIDE_QUERY) {
+        // if at max depth or cell completely within
+        if (shift == maxShift || relation == PointValues.Relation.CELL_INSIDE_QUERY) {
+          setRange(relation == PointValues.Relation.CELL_CROSSES_QUERY);
           advanceVariables();
-          break;
-        } else if (shift < 54) {
-          withinOnly = true;
-          shift = (short)(shift - m);
-          lastWithin = currEnd & ~((1L << shift) - 1);
-          setNextRange(false);
-          break;
+          return true;
         }
       }
 
       // within cell but not at a depth factor of PRECISION_STEP
-      if (isWithin == true || (relationImpl.cellIntersectsMBR(minLat, maxLat, minLon, maxLon) == true && shift != maxShift)) {
-        // descend: currStart need not change since shift handles end of range
-        currEnd = currStart | (1L<<--shift) - 1;
+      if (shift != maxShift && relationImpl.cellIntersectsMBR(start, end) == true) {
+        // descend: start need not change since shift handles end of range
+        end = start | (1L<<--shift) - 1;
       } else {
         advanceVariables();
-        minLon = GeoPointField.decodeLongitude(currStart);
-        minLat = GeoPointField.decodeLatitude(currStart);
       }
-    } while(shift < 63);
+    } while(shift < 62);
+    return false;
   }
 
-  private void setNextRange(final boolean boundary) {
-    nextRange.start = currStart;
-    nextRange.shift = shift;
-    nextRange.boundary = boundary;
+  private void setRange(final boolean boundary) {
+    currentRange.start = start;
+    currentRange.shift = shift;
+    currentRange.boundary = boundary;
+    hasNext = true;
   }
 
   private void advanceVariables() {
     /** set next variables */
     long shiftMask = 1L << shift;
     // pop-up if shift bit is set
-    while ( (currStart & shiftMask) == shiftMask) {
+    while ( (start & shiftMask) == shiftMask) {
       shiftMask = 1L << ++shift;
     }
     final long shiftMOne = shiftMask - 1;
-    currStart = currStart & ~shiftMOne | shiftMask;
-    currEnd = currStart | shiftMOne;
-  }
-
-  @Override
-  protected final BytesRef peek() {
-    nextRange.fillBytesRef(nextSubRangeBRB);
-    return super.peek();
+    start = start & ~shiftMOne | shiftMask;
+    end = start | shiftMOne;
   }
 
   protected void seek(long term, short res) {
-    if (term < currStart && res < maxShift) {
+    if (term < start && res < maxShift) {
       throw new IllegalArgumentException("trying to seek backwards");
-    } else if (term == currStart) {
+    } else if (term == start) {
       return;
     }
     shift = res;
-    currStart = term;
-    currEnd = currStart | ((1L<<shift)-1);
-    withinOnly = false;
-  }
-
-  @Override
-  protected void nextRange() {
-    hasNext = false;
-    super.nextRange();
+    start = term;
+    end = start | ((1L<<shift)-1);
   }
 
   @Override
   protected final boolean hasNext() {
-    if (hasNext == true || nextWithin()) {
-      return true;
+    if (hasNext == false) {
+      return nextRelation();
     }
-    nextRelation();
-    if (currentRange.compareTo(nextRange) != 0) {
-      currentRange.set(nextRange);
-      return (hasNext = true);
-    }
-    return false;
+    return true;
   }
 
   @Override
   protected final BytesRef nextSeekTerm(BytesRef term) {
-    while (hasNext()) {
-      nextRange();
-      if (term == null) {
-        return currentCell;
-      }
-
-      final int comparison = term.compareTo(currentCell);
-      if (comparison > 0) {
-        seek(prefixCodedToGeoCoded(term), (short)(64 - getPrefixCodedShift(term)));
-        continue;
-      }
-      return currentCell;
+    if (hasNext() == false) {
+      return null;
     }
-
-    // no more sub-range enums available
-    return null;
+    geoCodedToPrefixCoded(currentRange.start, currentRange.shift, currentCellBRB);
+    hasNext = false;
+    return currentCellBRB.get();
   }
 
   @Override
   protected AcceptStatus accept(BytesRef term) {
+    final long encodedTerm = prefixCodedToGeoCoded(term);
+    final short termShift = (short)(64-getPrefixCodedShift(term));
     // range < term or range is null
-    while (currentCell == null || term.compareTo(currentCell) > 0) {
+    while (currentRange.compare(encodedTerm, termShift) < 0) {
       // no more ranges, be gone
       if (hasNext() == false) {
         return AcceptStatus.END;
       }
 
       // peek next range, if the range > term then seek
-      final int peekCompare = term.compareTo(peek());
-      if (peekCompare < 0) {
+      final int peekCompare = currentRange.compare(encodedTerm, termShift);
+      if (peekCompare > 0) {
         return AcceptStatus.NO_AND_SEEK;
-      } else if (peekCompare > 0) {
-        seek(prefixCodedToGeoCoded(term), (short)(64 - getPrefixCodedShift(term)));
+      } else if (peekCompare < 0) {
+        seek(encodedTerm, termShift);
       }
-      nextRange();
+      hasNext = false;
     }
     return AcceptStatus.YES;
   }
 
-  protected final class Range extends BaseRange {
-    public Range(final long start, final short res, final boolean boundary) {
-      super(start, res, boundary);
+  @Override
+  public boolean boundaryTerm() {
+    if (currentRange.start == -1) {
+      throw new IllegalStateException("GeoPointTermsEnum empty or not initialized");
     }
-
-    @Override
-    protected void fillBytesRef(BytesRefBuilder result) {
-      assert result != null;
-      geoCodedToPrefixCoded(start, shift, result);
-    }
+    return currentRange.boundary;
   }
 }

@@ -46,6 +46,8 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
   protected final double centerLon;
   /** distance (in meters) from lat, lon center location */
   protected final double radiusMeters;
+  /** partial haversin computation */
+  protected final double sortKey;
 
   // we must check these before passing to superclass or circleToBBox, or users can get a strange exception!
   private static double checkRadius(double radiusMeters) {
@@ -89,6 +91,7 @@ public class GeoPointDistanceQuery extends GeoPointInBBoxQuery {
     this.centerLat = centerLat;
     this.centerLon = centerLon;
     this.radiusMeters = radiusMeters;
+    this.sortKey = GeoUtils.distanceQuerySortKey(radiusMeters);
   }
 
   @Override
