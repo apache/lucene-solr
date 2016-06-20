@@ -88,6 +88,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   private ThrottledIndexOutput throttledOutput;
   private Throttling throttling = LuceneTestCase.TEST_NIGHTLY ? Throttling.SOMETIMES : Throttling.NEVER;
 
+  // for testing
+  boolean alwaysCorrupt;
+
   final AtomicInteger inputCloneCount = new AtomicInteger();
 
   // use this for tracking files for crash.
@@ -297,6 +300,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     CollectionUtil.timSort(filesToCorrupt);
     for(String name : filesToCorrupt) {
       int damage = randomState.nextInt(6);
+      if (alwaysCorrupt && damage == 3) {
+        damage = 4;
+      }
       String action = null;
 
       switch(damage) {
@@ -313,9 +319,12 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         try {
           length = fileLength(name);
         } catch (IOException ioe) {
-          // Ignore
-          continue;
+          throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
         }
+
+        // Delete original and write zeros back:
+        deleteFile(name);
+        
         byte[] zeroes = new byte[256];
         long upto = 0;
         try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
@@ -325,7 +334,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
             upto += limit;
           }
         } catch (IOException ioe) {
-          // ignore
+          throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
         }
         break;
 
@@ -341,8 +350,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
                IndexInput ii = in.openInput(name, LuceneTestCase.newIOContext(randomState))) {
               tempFileName = tempOut.getName();
               tempOut.copyBytes(ii, ii.length()/2);
-            } catch (IOException ioe) {
-            // ignore
+          } catch (IOException ioe) {
+            throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
           }
 
           // Delete original and copy bytes back:
@@ -351,8 +360,8 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
                IndexInput ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState))) {
               out.copyBytes(ii, ii.length());
-            } catch (IOException ioe) {
-            // ignore
+          } catch (IOException ioe) {
+            throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
           }
           deleteFile(tempFileName);
         }
@@ -371,32 +380,32 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
           String tempFileName = null;
           try (IndexOutput tempOut = in.createTempOutput("name", "mdw_corrupt", LuceneTestCase.newIOContext(randomState));
                IndexInput ii = in.openInput(name, LuceneTestCase.newIOContext(randomState))) {
-              tempFileName = tempOut.getName();
-              if (ii.length() > 0) {
-                // Copy first part unchanged:
-                long byteToCorrupt = (long) (randomState.nextDouble() * ii.length());
-                if (byteToCorrupt > 0) {
-                  tempOut.copyBytes(ii, byteToCorrupt);
-                }
-
-                // Randomly flip one bit from this byte:
-                byte b = ii.readByte();
-                int bitToFlip = randomState.nextInt(8);
-                b = (byte) (b ^ (1 << bitToFlip));
-                tempOut.writeByte(b);
-
-                action = "flip bit " + bitToFlip + " of byte " + byteToCorrupt + " out of " + ii.length() + " bytes";
-
-                // Copy last part unchanged:
-                long bytesLeft = ii.length() - byteToCorrupt - 1;
-                if (bytesLeft > 0) {
-                  tempOut.copyBytes(ii, bytesLeft);
-                }
-              } else {
-                action = "didn't change";
+            tempFileName = tempOut.getName();
+            if (ii.length() > 0) {
+              // Copy first part unchanged:
+              long byteToCorrupt = (long) (randomState.nextDouble() * ii.length());
+              if (byteToCorrupt > 0) {
+                tempOut.copyBytes(ii, byteToCorrupt);
               }
-            } catch (IOException ioe) {
-            // ignore
+
+              // Randomly flip one bit from this byte:
+              byte b = ii.readByte();
+              int bitToFlip = randomState.nextInt(8);
+              b = (byte) (b ^ (1 << bitToFlip));
+              tempOut.writeByte(b);
+
+              action = "flip bit " + bitToFlip + " of byte " + byteToCorrupt + " out of " + ii.length() + " bytes";
+
+              // Copy last part unchanged:
+              long bytesLeft = ii.length() - byteToCorrupt - 1;
+              if (bytesLeft > 0) {
+                tempOut.copyBytes(ii, bytesLeft);
+              }
+            } else {
+              action = "didn't change";
+            }
+          } catch (IOException ioe) {
+            throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
           }
 
           // Delete original and copy bytes back:
@@ -404,9 +413,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
           try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState));
                IndexInput ii = in.openInput(tempFileName, LuceneTestCase.newIOContext(randomState))) {
-              out.copyBytes(ii, ii.length());
-            } catch (IOException ioe) {
-            // ignore
+            out.copyBytes(ii, ii.length());
+          } catch (IOException ioe) {
+            throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
           }
 
           deleteFile(tempFileName);
@@ -421,7 +430,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
         try (IndexOutput out = in.createOutput(name, LuceneTestCase.newIOContext(randomState))) {
           out.getFilePointer(); // just fake access to prevent compiler warning
         } catch (IOException ioe) {
-          // ignore
+          throw new RuntimeException("hit unexpected IOException while trying to corrupt file " + name, ioe);
         }
         break;
 
