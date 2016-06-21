@@ -39,7 +39,7 @@ public class BufferStore implements Store {
     }
   };
 
-  private final static ConcurrentMap<Integer, BufferStore> bufferStores = new ConcurrentHashMap<>();
+  private final static ConcurrentMap<Integer, BufferStore> bufferStores = new ConcurrentHashMap<>(8192, 0.75f, 512);
 
   private final BlockingQueue<byte[]> buffers;
 
