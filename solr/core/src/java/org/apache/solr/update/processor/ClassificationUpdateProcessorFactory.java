@@ -1,5 +1,6 @@
 package org.apache.solr.update.processor;
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -109,8 +110,8 @@ public class ClassificationUpdateProcessorFactory extends UpdateRequestProcessor
   @Override
   public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
     IndexSchema schema = req.getSchema();
-    LeafReader leafReader = req.getSearcher().getLeafReader();
-    return new ClassificationUpdateProcessor(inputFieldNames, classFieldName, minDf, minTf, k, algorithm, next, leafReader, schema);
+    IndexReader indexReader = req.getSearcher().getIndexReader();
+    return new ClassificationUpdateProcessor(inputFieldNames, classFieldName, minDf, minTf, k, algorithm, next, indexReader, schema);
   }
 
   /**

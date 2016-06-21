@@ -31,7 +31,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.lucene.classification.ClassificationResult;
 import org.apache.lucene.classification.Classifier;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermRangeQuery;
@@ -50,9 +50,9 @@ public class ConfusionMatrixGenerator {
 
   /**
    * get the {@link org.apache.lucene.classification.utils.ConfusionMatrixGenerator.ConfusionMatrix} of a given {@link Classifier},
-   * generated on the given {@link LeafReader}, class and text fields.
+   * generated on the given {@link IndexReader}, class and text fields.
    *
-   * @param reader              the {@link LeafReader} containing the index used for creating the {@link Classifier}
+   * @param reader              the {@link IndexReader} containing the index used for creating the {@link Classifier}
    * @param classifier          the {@link Classifier} whose confusion matrix has to be generated
    * @param classFieldName      the name of the Lucene field used as the classifier's output
    * @param textFieldName       the nome the Lucene field used as the classifier's input
@@ -61,7 +61,7 @@ public class ConfusionMatrixGenerator {
    * @return a {@link org.apache.lucene.classification.utils.ConfusionMatrixGenerator.ConfusionMatrix}
    * @throws IOException if problems occurr while reading the index or using the classifier
    */
-  public static <T> ConfusionMatrix getConfusionMatrix(LeafReader reader, Classifier<T> classifier, String classFieldName,
+  public static <T> ConfusionMatrix getConfusionMatrix(IndexReader reader, Classifier<T> classifier, String classFieldName,
                                                        String textFieldName, long timeoutMilliseconds) throws IOException {
 
     ExecutorService executorService = Executors.newFixedThreadPool(1, new NamedThreadFactory("confusion-matrix-gen-"));

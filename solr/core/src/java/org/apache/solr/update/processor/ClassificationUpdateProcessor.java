@@ -10,6 +10,7 @@ import org.apache.lucene.classification.document.DocumentClassifier;
 import org.apache.lucene.classification.document.KNearestNeighborDocumentClassifier;
 import org.apache.lucene.classification.document.SimpleNaiveBayesDocumentClassifier;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrInputDocument;
@@ -60,7 +61,7 @@ class ClassificationUpdateProcessor
    * @param schema          schema
    */
   public ClassificationUpdateProcessor(String[] inputFieldNames, String classFieldName, int minDf, int minTf, int k, String algorithm,
-                                       UpdateRequestProcessor next, LeafReader indexReader, IndexSchema schema) {
+                                       UpdateRequestProcessor next, IndexReader indexReader, IndexSchema schema) {
     super(next);
     this.classFieldName = classFieldName;
     Map<String, Analyzer> field2analyzer = new HashMap<String, Analyzer>();
