@@ -19,7 +19,6 @@ package org.apache.solr.util;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.noggit.CharArr;
 import org.noggit.JSONParser;
 
 public class RecordingJSONParser extends JSONParser {

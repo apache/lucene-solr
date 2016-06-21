@@ -11,7 +11,6 @@ import org.apache.lucene.classification.document.KNearestNeighborDocumentClassif
 import org.apache.lucene.classification.document.SimpleNaiveBayesDocumentClassifier;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.schema.IndexSchema;
